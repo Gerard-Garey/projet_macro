@@ -13,12 +13,12 @@ Dossier **temporaire**, constitué par l'issue #5 le 29/09/2026 selon la décisi
 | Pièce | Origine | Taille (octets) | SHA-256 |
 |---|---|---|---|
 | `v1.5/Nations_et_Marches_v1_5.tex` | Spécification v1.5 (XeLaTeX, 2 696 lignes, 104 p. compilées) | 414 855 | `097d023fa9d0bde837df9e854604de93dc1fedf45dcd95ec98d1613bded240ec` |
-| `v2.0/prototype/*.py` (27 fichiers) | Moteur v2.0, répertoire `W10_P1/prototype/` de l'archive d'exécution de la session K du 19/09/2026 (`NATIONS_MARCHES_EXECUTION_K_20260919.zip`, SHA-256 `9e67aa768c149de3a906a7e752121075086ca75e711e20c603f832b0845e5bd4`), copié sans modification | 292 661 au total | voir ci-dessous |
+| `v2.0/prototype/*.py` (27 fichiers) | Moteur v2.0, répertoire `W10_P1/prototype/` de l'archive d'exécution de la session K du 19/09/2026 (`NATIONS_MARCHES_EXECUTION_K_20260919.zip`, SHA-256 `9e67aa768c149de3a906a7e752121075086ca75e711e20c603f832b0845e5bd4`), copié sans modification | 292 661 au total | voir le manifeste ci-dessous |
 | `cours/Cours_Nations_et_Marches_Vol1.pdf` | Cours, chapitres 1 à 7 (compilé le 04/09/2026, antérieur à la v1.4) | 185 039 | `4577fa9c4598183eb803d044e577635475e5862c507b995108e00c45e756c910` |
 | `cours/Cours_Nations_et_Marches_Vol2.pdf` | Cours, chapitres 8 à 12 (même date) | 165 623 | `b8f27cf0a3d2ff5aeed74f25a5ceea9b9a4e3a3972bcbd6e2cae0c713462697c` |
 | `faits_mesures_G_K.md` | Synthèse, rédigée le 29/09/2026, des faits mesurés en sessions G à K sur le moteur v2.0 | — | — |
 
-Empreinte du code v2.0 : `sha256sum *.py | sha256sum` dans `v2.0/prototype/` donne `64f4757767544b4b544d2d09b9ac94a1656692c6ad5411b2527f5e19614c8fee`.
+Empreintes : le manifeste `tests/invariants/archive_sha256.txt` donne le SHA-256 de chaque pièce versée (hors ce README et `faits_mesures_G_K.md`), et le test `tests/invariants/test_archive_intacte.py` le vérifie à chaque exécution de la batterie d'invariants, sur toute plateforme.
 
 ## Pièces absentes
 
