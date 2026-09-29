@@ -1,8 +1,10 @@
 name: CI
 
-# Contrôles requis par le ruleset de main (README, « Sécurité du dépôt »).
-# À ADAPTER : ajouter les jobs de tests du projet, et leur nom aux contrôles
-# requis du ruleset.
+# Contrôles requis par le ruleset de main (README, « Sécurité du dépôt » ;
+# .github/ruleset-main.json). Actions publiées par GitHub seulement, épinglées
+# par SHA ; uv et TeX Live s'installent par des commandes visibles (ADR 0003).
+# Exécuteur : ubuntu-latest, plateforme de référence des résultats (ADR 0003,
+# décision M16).
 
 on:
   pull_request:
@@ -17,10 +19,17 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Version d'uv installée par le script officiel (ADR 0003).
+  UV_VERSION: "0.12.20"
+  # Python géré par uv (version de .python-version), jamais celui de
+  # l'exécuteur : la plateforme de référence ne dépend pas de l'image.
+  UV_MANAGED_PYTHON: "1"
+
 jobs:
   controles:
     name: Contrôles du dépôt
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -50,3 +59,76 @@ jobs:
             echo "::error::fichier sensible versionné (voir la liste ci-dessus)"; exit 1
           fi
           echo "Aucun fichier sensible versionné."
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Un seul fil BLAS : le résultat ne dépend pas du nombre de cœurs de
+      # l'exécuteur (ADR 0003).
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Installer uv
+        run: |
+          set -euo pipefail
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Environnement verrouillé
+        run: uv sync --locked
+      - name: Image de l'exécuteur et environnement
+        run: |
+          set -euo pipefail
+          echo "ImageOS=${ImageOS:-?} ImageVersion=${ImageVersion:-?}"
+          uv run --locked python -VV
+          uv pip list
+      - name: Tests unitaires
+        run: uv run --locked pytest -q tests/unitaires
+      - name: Tests d'invariants
+        run: uv run --locked pytest -q tests/invariants
+
+  concordance:
+    name: Concordance spécification-moteur
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Installer uv
+        run: |
+          set -euo pipefail
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Environnement verrouillé
+        run: uv sync --locked
+      - name: Concordance stricte
+        run: uv run --locked python outils/concordance_spec_moteur.py --strict
+
+  compilation:
+    name: Compilation de la spécification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Installer TeX Live
+        # Paquets du préambule v1.5 (CONVENTIONS.md, § 3) : fontspec,
+        # polyglossia, booktabs, microtype (latex-recommended) ; tcolorbox,
+        # enumitem (latex-extra) ; tikz (pictures) ; césure française
+        # (lang-french) ; Latin Modern OpenType déclarée à fontconfig
+        # (fonts-lmodern). dsfont (fonts-extra) est facultatif : le préambule
+        # gère son absence.
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+            texlive-xetex texlive-lang-french texlive-latex-recommended \
+            texlive-latex-extra texlive-pictures texlive-fonts-recommended fonts-lmodern
+      - name: Compiler et contrôler le journal
+        run: bash outils/compiler_specification.sh docs/specification/nations_et_marches.tex

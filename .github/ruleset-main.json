@@ -29,7 +29,10 @@
         "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false,
         "required_status_checks": [
-          { "context": "Contrôles du dépôt", "integration_id": 15368 }
+          { "context": "Contrôles du dépôt", "integration_id": 15368 },
+          { "context": "Tests", "integration_id": 15368 },
+          { "context": "Concordance spécification-moteur", "integration_id": 15368 },
+          { "context": "Compilation de la spécification", "integration_id": 15368 }
         ]
       }
     }
