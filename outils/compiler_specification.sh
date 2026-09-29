@@ -7,8 +7,10 @@
 #
 #  Procedure de docs/specification/CONVENTIONS.md, § 7, commune a la CI et a la
 #  skill compiler-doc :
-#    - passes XeLaTeX (au moins trois) jusqu'a disparition de « Rerun to get
-#      cross-references right » dans le journal ; au-dela de cinq passes, un
+#    - passes XeLaTeX (au moins trois) jusqu'a disparition, dans le journal,
+#      de toute demande de relance (motif « Rerun to get|Rerun LaTeX » :
+#      « Rerun to get cross-references right », et « Table widths have
+#      changed. Rerun LaTeX. » de longtable) ; au-dela de cinq passes, un
 #      renvoi oscille : echec ;
 #    - controle du journal final : aucune ligne commencant par « ! », aucune
 #      occurrence de « undefined » (renvoi ou citation) ; les « Overfull » et
@@ -45,7 +47,7 @@ while :; do
     grep -n -A 3 '^!' "$journal" >&2 || tail -n 30 "$journal" >&2
     exit 1
   fi
-  relance=$(grep -c 'Rerun to get' "$journal")
+  relance=$(grep -c -E 'Rerun to get|Rerun LaTeX' "$journal")
   echo "Passe $passe : terminee (demandes de relance : $relance)."
   if [ "$passe" -ge "$PASSES_MIN" ] && [ "$relance" -eq 0 ]; then
     break

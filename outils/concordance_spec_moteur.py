@@ -13,22 +13,34 @@ analyse `tokenize` et `ast` du Python) et relève les écarts :
 2. format des labels (expression régulière de `CONVENTIONS.md` § 2.1) et
    radical de bloc existant (`noyau`, `moteur` ou module de
    `src/nations/blocs/`) ;
-3. chaque équation numérotée porte un label (dans un environnement
-   multiligne, un par ligne numérotée ; seuls comptent les `\\\\` de niveau
-   supérieur, pas ceux de `cases`, `aligned`, `matrix`, `array`…) ; chaque
-   encadré `lecture`
+3. chaque équation numérotée porte un label : `equation` et `multline`
+   portent un seul numéro, donc exactement un label, sauf `\\nonumber` ou
+   `\\notag` (aucun) ; dans les autres environnements multilignes, un label
+   par ligne numérotée (seuls comptent les `\\\\` de niveau supérieur, pas
+   ceux de `cases`, `aligned`, `matrix`, `array`…) ; chaque encadré `lecture`
    contient `\\variables`, `\\sens`, `\\hyp`, `\\limites` puis `\\tracabilite`,
    dans cet ordre ;
-4. statut et décision `M-` de `\\tracabilite` ;
+4. statut de `\\tracabilite` (`dérivée`, `approchée` ou `choix de
+   conception`) et décision du mainteneur citée dans la provenance, sous la
+   forme « décision Mn » ou « (Mn) » (tiret admis : « M-n » ; espace ou `~`
+   après « décision ») ; chaque numéro cité doit figurer dans le tableau des
+   décisions de `docs/feuille-de-route.md` (lignes qui commencent par
+   `| Mn |`). Une mention nue (« agrégat M2 ») n'est pas une décision ; une
+   feuille de route absente est un écart ;
 5. chaque `\\code{…}` désigne un objet existant de `src/` ou `outils/` ; le
-   troisième argument de `\\tracabilite` désigne le module ou la fonction qui
-   porte la balise du label ;
-6. aucun numéro entre parenthèses écrit en dur, sauf :
+   troisième argument de `\\tracabilite` est un nom nu (la macro l'enveloppe
+   déjà dans `\\code` : `\\tracabilite{…}{…}{\\code{x}}` est un écart) et
+   désigne le module ou la fonction qui porte la balise du label ;
+6. aucun numéro entre parenthèses écrit en dur hors du mode mathématique
+   (`$…$`, `$$…$$`, `\\(…\\)`, `\\[…\\]`, environnements `equation`, `align`,
+   `gather`, `multline`, `flalign`, `alignat`, `eqnarray` et leurs formes
+   étoilées : `$f(2)$` n'est pas un numéro d'équation), sauf :
    - une année (quatre chiffres, de 1000 à 2099 : « Godley et Lavoie
      (2007) ») ;
    - la citation exacte d'un document archivé : « v1.5, éq. (n) » ou
      « v2.0, éq. (n) », éventuellement suivie de « et (m) » ou « , (m) » ;
-   - un exposant ou un indice (`^{(2)}`, `_(3)`) ;
+   - un exposant ou un indice : texte précédent terminé par `^`, `_`, `^{`
+     ou `_{` (`\\textbf{(3)}` est relevé) ;
 7. les paramètres cités par `\\code{…}` dans la table de calibration
    (`tab:calibration`) sont dans `src/nations/moteur/`. Le contrôle du
    glossaire attend que la table soit balisée pour le permettre : il n'est
@@ -65,13 +77,18 @@ MOTIF_LABEL = re.compile(r"eq:[a-z][a-z0-9_]*-[a-z0-9]+(-[a-z0-9]+)*")
 # Radicaux admis hors des modules de blocs (CONVENTIONS.md, § 2.1).
 RADICAUX_TRANSVERSES = ("noyau", "moteur")
 STATUTS = ("dérivée", "approchée", "choix de conception")
-# Décision du mainteneur : « M-n » (CONVENTIONS.md) ou « Mn »
-# (docs/feuille-de-route.md).
-MOTIF_DECISION = re.compile(r"\bM-?\d+\b")
+# Décision du mainteneur citée dans une provenance : « décision Mn » ou
+# « (Mn) », tiret admis (« M-n », CONVENTIONS.md ; « Mn », feuille de route).
+MOTIF_DECISION = re.compile(r"\b[dD]écision[\s~]+M-?(\d+)\b|\(M-?(\d+)\)")
+# Ligne du tableau des décisions de la feuille de route : « | Mn | … ».
+MOTIF_LIGNE_DECISION = re.compile(r"^\|\s*M(\d+)\s*\|", re.MULTILINE)
+FEUILLE_DE_ROUTE = Path("docs") / "feuille-de-route.md"
 RUBRIQUES_LECTURE = ("variables", "sens", "hyp", "limites", "tracabilite")
 ENVIRONNEMENTS_NUMEROTES = (
     "equation", "align", "gather", "multline", "flalign", "alignat", "eqnarray",
 )
+# Environnements à un seul numéro, quel que soit le nombre de lignes.
+ENVIRONNEMENTS_UN_NUMERO = ("equation", "multline")
 # Balise de code : commentaire qui commence par « eq: » (un ou plusieurs #).
 MOTIF_BALISE = re.compile(r"^#+\s*eq:(\S*)")
 # Règle 6 : numéro entre parenthèses, et ses exemptions (année ; citation
@@ -283,6 +300,53 @@ def nom_cite(argument: str) -> str:
     """Nom d'objet d'un argument, débarrassé d'un éventuel `\\code{…}`."""
     m = re.fullmatch(r"\s*\\code\{([^{}]*)\}\s*", argument)
     return (m.group(1) if m else argument).strip()
+
+
+def zones_mathematiques(texte: str) -> list[tuple[int, int]]:
+    """Intervalles `(début, fin)` du texte composés en mode mathématique.
+
+    Environnements mathématiques (`ENVIRONNEMENTS_NUMEROTES`, formes étoilées
+    comprises), puis, hors de ceux-ci, `$…$`, `$$…$$`, `\\(…\\)` et `\\[…\\]`.
+    Une barre oblique inverse et le caractère qui la suit forment un jeton :
+    `\\$` n'ouvre ni ne ferme de mode mathématique, et `\\\\[2pt]` n'est pas
+    un `\\[`.
+    """
+    zones = []
+    noms = "|".join(ENVIRONNEMENTS_NUMEROTES)
+    for m in re.finditer(r"\\begin\{(" + noms + r")(\*?)\}", texte):
+        fin = texte.find("\\end{" + m.group(1) + m.group(2) + "}", m.end())
+        zones.append((m.start(), len(texte) if fin < 0 else fin))
+    hors_env = texte
+    for debut, fin in zones:
+        hors_env = _blanchir(hors_env, debut, fin)
+    fermants = {"$": "$", "$$": "$$", "\\(": "\\)", "\\[": "\\]"}
+    i = 0
+    while i < len(hors_env):
+        if hors_env.startswith("$$", i):
+            ouvrant = "$$"
+        elif hors_env[i] == "$":
+            ouvrant = "$"
+        elif hors_env.startswith("\\(", i) or hors_env.startswith("\\[", i):
+            ouvrant = hors_env[i:i + 2]
+        else:
+            i += 2 if hors_env[i] == "\\" else 1
+            continue
+        debut = i
+        i += len(ouvrant)
+        fermant = fermants[ouvrant]
+        while i < len(hors_env) and not hors_env.startswith(fermant, i):
+            i += 2 if hors_env[i] == "\\" else 1
+        i = min(len(hors_env), i + len(fermant))
+        zones.append((debut, i))
+    return sorted(zones)
+
+
+def lire_decisions(racine: Path) -> set[int] | None:
+    """Numéros des décisions de `docs/feuille-de-route.md` (`None` si absente)."""
+    chemin = racine / FEUILLE_DE_ROUTE
+    if not chemin.is_file():
+        return None
+    return {int(n) for n in MOTIF_LIGNE_DECISION.findall(chemin.read_text(encoding="utf-8"))}
 
 
 # --------------------------------------------------------------------------
@@ -516,8 +580,8 @@ def verifier(tex: Path, racine: Path, src: Path, outils: Path) -> Rapport:
     for nom, debut, contenu, fin in equations:
         dedans = [lab for lab, pos in labels if contenu <= pos < fin]
         corps = texte[contenu:fin]
-        if nom == "equation":
-            attendus = 1
+        if nom in ENVIRONNEMENTS_UN_NUMERO:
+            attendus = 0 if re.search(r"\\(notag|nonumber)\b", corps) else 1
         else:
             lignes = [ln for ln in lignes_de_niveau_superieur(corps) if ln.strip()]
             attendus = sum(1 for ln in lignes if not re.search(r"\\(notag|nonumber)\b", ln))
@@ -573,12 +637,18 @@ def verifier(tex: Path, racine: Path, src: Path, outils: Path) -> Rapport:
             ))
 
     # --- Règles 3, 4 et 5 : encadrés « Lecture » ---------------------------
+    decisions = lire_decisions(racine)
+    if decisions is None:
+        rapport.ecarts.append(Ecart(
+            4, _relatif(racine / FEUILLE_DE_ROUTE, racine),
+            "feuille de route introuvable : décisions M- invérifiables",
+        ))
     lectures = environnements(texte, ("lecture",))
     rapport.nb_lectures = len(lectures)
     for _, debut, contenu, fin in lectures:
         corps = texte[contenu:fin]
         _verifier_lecture(corps, contenu, debut, texte, ou, index, balises_par_label,
-                          labels_par_equation, lectures, rapport.ecarts)
+                          labels_par_equation, lectures, decisions, rapport.ecarts)
 
     # --- Règle 5 : chaque \code{…} désigne un objet existant ---------------
     codes = [(m.group(1), m.start()) for m in re.finditer(r"\\code\{([^{}]*)\}", texte)
@@ -592,12 +662,15 @@ def verifier(tex: Path, racine: Path, src: Path, outils: Path) -> Rapport:
 
     # --- Règle 6 : numéros d'équation en dur -------------------------------
     citations = [(c.start(), c.end()) for c in MOTIF_CITATION_ARCHIVE.finditer(texte)]
+    maths = zones_mathematiques(texte)
     for m in MOTIF_NUMERO.finditer(texte):
         if MOTIF_ANNEE.fullmatch(m.group(0)):
             continue
-        if m.start() > 0 and texte[m.start() - 1] in "^_{":
+        if texte.endswith(("^", "_", "^{", "_{"), 0, m.start()):
             continue
         if any(debut <= m.start() and m.end() <= fin for debut, fin in citations):
+            continue
+        if any(debut <= m.start() < fin for debut, fin in maths):
             continue
         rapport.ecarts.append(Ecart(
             6, ou(m.start()), f"numéro écrit en dur {m.group(0)} : employer \\eqref ou \\ref",
@@ -643,7 +716,7 @@ def _verifier_format(label: str, emplacement: str, admis: set[str], ecarts: list
 
 
 def _verifier_lecture(corps, contenu, debut, texte, ou, index, balises_par_label,
-                      labels_par_equation, lectures, ecarts) -> None:
+                      labels_par_equation, lectures, decisions, ecarts) -> None:
     """Règles 3 à 5 pour un encadré `lecture` (rubriques, traçabilité)."""
     positions = {}
     for rubrique in RUBRIQUES_LECTURE:
@@ -671,8 +744,24 @@ def _verifier_lecture(corps, contenu, debut, texte, ou, index, balises_par_label
     statut = " ".join(statut.split())
     if statut not in STATUTS:
         ecarts.append(Ecart(4, ou(position), f"\\tracabilite : statut « {statut} » hors de {STATUTS}"))
-    if not MOTIF_DECISION.search(provenance):
-        ecarts.append(Ecart(4, ou(position), "\\tracabilite : aucune décision M- citée dans la provenance"))
+    citees = [int(m.group(1) or m.group(2)) for m in MOTIF_DECISION.finditer(provenance)]
+    if not citees:
+        ecarts.append(Ecart(
+            4, ou(position),
+            "\\tracabilite : aucune décision citée dans la provenance (« décision Mn » ou « (Mn) »)",
+        ))
+    elif decisions is not None:
+        for numero in citees:
+            if numero not in decisions:
+                ecarts.append(Ecart(
+                    4, ou(position),
+                    f"\\tracabilite : décision M{numero} absente du tableau des décisions de {FEUILLE_DE_ROUTE.as_posix()}",
+                ))
+    if re.search(r"\\code(?![A-Za-z])", objet):
+        ecarts.append(Ecart(
+            5, ou(position),
+            "\\tracabilite enveloppe déjà son troisième argument dans \\code : écrire le nom nu",
+        ))
     nom = nom_cite(objet)
     if not index.existe(nom):
         ecarts.append(Ecart(5, ou(position), f"\\tracabilite : {nom} ne désigne aucun objet de src/ ni outils/"))
