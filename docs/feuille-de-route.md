@@ -2,21 +2,22 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail.
 
-**Dernière mise à jour** : 29/09/2026 — `main` = `fdb3fd4`, `claude/fondations` = `fcb54a6`.
+**Dernière mise à jour** : 29/09/2026 — `main` = `fdb3fd4`, `claude/fondations` = `da76229`.
 
 ## 1. Branche de travail en cours
 
-- **Branche** : `claude/fondations` — PR #7 (brouillon), partie de `main` `fdb3fd4`, tête `fcb54a6` au 29/09/2026 — jalon **J0 Fondations**.
+- **Branche** : `claude/fondations` — PR #7 (brouillon), partie de `main` `fdb3fd4`, tête `da76229` au 29/09/2026 — jalon **J0 Fondations**.
 - **Périmètre** (fermé, cinq issues) :
   - [x] #2 — Adapter le cadre du projet : `CLAUDE.md`, exigences, glossaire, fiches d'agents — agent : session principale — circuit : 4 — résultats : aucun — fait (`a5d873c`, `75e2cc6`, `377bda3`).
-  - [ ] #3 — ADR de fondation (0001 à 0004) et feuille de route — agent : `architect` — circuit : 4 — résultats : aucun — en cours.
+  - [x] #3 — ADR de fondation (0001 à 0004) et feuille de route — agent : `architect` — circuit : 4 — résultats : aucun — fait (`19839bb` : ADR 0001 à 0004 et feuille de route ; `85bda79` : critères de passage des jalons, M19).
   - [x] #5 — Constituer `archive/` : sélection temporaire de pièces de la première tentative — agent : session principale — circuit : 4 (commit `archive:`) — résultats : aucun — fait (`fcb54a6`). Critères : contenu limité à M6 (source `.tex` v1.5, code v2.0 sans l'état D1, synthèse des faits mesurés G à K avec définitions et fenêtres, PDF des volumes 1 et 2 du cours), pièces versées intactes (M17) ; aucun nom de pays réel associé aux configurations (les mentions d'épisodes historiques et de bibliographie du source v1.5 et du cours sont admises, M17) ; aucune correspondance configurations ↔ pays réels, aucun lien vers un stockage privé, aucune archive compressée ; `archive/` jamais importée.
-  - [ ] #6 — Conventions de la spécification v3, gabarit de fiche comparative et inventaire des blocs du socle — agents : `architect` (`docs/blocs/README.md`, ordre d'instruction, experts pilotes), `docwriter` (`CONVENTIONS.md`, squelette `.tex`, gabarit de fiche) — circuit : 4 — résultats : aucun. Critères : ADR 0004, points 1, 3 et 7 ; le squelette compile en XeLaTeX ; environ neuf blocs du socle inventoriés, chacun avec son expert pilote.
-  - [ ] #4 — Squelette Python du moteur v3 et chaîne de vérification (tests, concordance, compilation LaTeX), réécriture du `README.md` — agents : `coder`, puis `audit` — circuit : 3 (workflow `circuit-technique`, une fois les batteries créées) — résultats : aucun. Critères : ADR 0002 (arborescence des couches), ADR 0003 (uv, `pyproject.toml`, `uv.lock`, CI), ADR 0004 (skill `compiler-doc`, hook LaTeX, concordance `--strict`) ; les trois batteries passent ; plus aucun « À ADAPTER » dans le dépôt.
-- **Ordre conseillé** pour le reste : #3 → #6 → #4. Aucun commit ne change un résultat (le moteur v3 n'existe pas encore).
+  - [x] #6 — Conventions de la spécification v3, gabarit de fiche comparative et inventaire des blocs du socle — agents : `architect` (`docs/blocs/README.md`, ordre d'instruction, experts pilotes), `docwriter` (`CONVENTIONS.md`, squelette `.tex`, gabarit de fiche) — circuit : 4 — résultats : aucun — fait (`85573bc`). Critères : ADR 0004, points 1, 3 et 7 ; le squelette compile en XeLaTeX ; environ neuf blocs du socle inventoriés, chacun avec son expert pilote.
+  - [x] #4 — Squelette Python du moteur v3 et chaîne de vérification (tests, concordance, compilation LaTeX), réécriture du `README.md` — agents : `coder`, puis `audit` — circuit : 3 (workflow `circuit-technique`, une fois les batteries créées) — résultats : aucun — fait (`6090310`, `8ba19ff`, `d8eeb17`, `8c8a633`, `da76229`). Critères : ADR 0002 (arborescence des couches), ADR 0003 (uv, `pyproject.toml`, `uv.lock`, CI), ADR 0004 (skill `compiler-doc`, hook LaTeX, concordance `--strict`) ; les trois batteries passent ; plus aucun « À ADAPTER » dans le dépôt. Pièces livrées : `pyproject.toml`, `uv.lock`, `.python-version`, `src/`, `tests/`, `outils/concordance_spec_moteur.py`, `outils/compiler_specification.sh` (décision du mainteneur du 29/09/2026 de garder ce script, ADR 0004 pt 4), `.claude/skills/compiler-doc/SKILL.md`, `.claude/hooks/preparer_latex.sh` déclaré en `SessionStart` dans `.claude/settings.json` (accepté par le mainteneur le 29/09/2026, ADR 0004 pt 5), `ci.yml` (quatre jobs), `ruleset-main.json`, `README.md`. Surface d'impact documentaire reportée par `architect` dans `CONVENTIONS.md` (§ 1.3, 2.2, 2.3, 3, 7, 9), ADR 0003 et 0004 (§ Conséquences et annotations datées).
+- **Ordre conseillé** pour le reste : commit de #4, puis revue finale complète (ci-dessous), puis sortie du brouillon. Aucun commit ne change un résultat (le moteur v3 n'existe pas encore).
 - **Ordre des commits** : sans objet pour cette branche.
+- **Après la fusion de la PR #7** (mainteneur) : appliquer le ruleset mis à jour (`.github/ruleset-main.json`, contextes requis « Tests », « Concordance spécification-moteur », « Compilation de la spécification », en plus de « Contrôles du dépôt ») par `gh api -X PUT` (README, « Sécurité du dépôt »), **après un premier passage vert de la CI sur `main`** : un contexte requis qui n'a jamais été rapporté bloquerait toute fusion suivante. Tant que le ruleset n'est pas appliqué, seul « Contrôles du dépôt » est exigé.
 - **Revue finale complète** (règle 10, avant la sortie du brouillon) : `audit` sur `git diff main...HEAD` (squelette, scripts, CI, hook) et `/code-review` ; `docwriter` si la spécification a été touchée au-delà du squelette ; `app-review` non déclenché (aucune interface). L'expert pilote n'est pas déclenché (aucune équation).
-- **Critère de passage J0** : CI verte (tests, concordance, compilation) ; plus aucun « À ADAPTER » ; ADR 0001 à 0004 et cette feuille de route en place ; chaque issue #2 à #6 fermée par la fusion (un `Closes #N` par ligne dans la PR #7).
+- **Critère de passage J0** : CI verte (tests, concordance, compilation) ; plus aucun « À ADAPTER » ; ADR 0001 à 0004 et cette feuille de route en place ; chaque issue #2 à #6 fermée par la fusion (un `Closes #N` par ligne dans la PR #7) ; ruleset appliqué par le mainteneur après la fusion (point ci-dessus).
 
 ## 2. Branches suivantes
 
@@ -35,7 +36,7 @@ Aucune au 29/09/2026 : les cinq issues ouvertes (#2 à #6) sont dans le périmè
 
 ## 4. Décisions du mainteneur
 
-Toutes datées du 29/09/2026 et arrêtées par le mainteneur. M1 à M15 sont consignées dans l'ADR 0001 (§ Décision, point de même numéro) ; M16 dans l'ADR 0003 ; M17 précise M6 dans l'ADR 0001 ; M18 et M19 n'ont pas d'ADR (règles de procédure). Le numéro M-n est cité tel quel dans les fiches comparatives, la spécification (provenance des équations) et les issues.
+Toutes datées du 29/09/2026 et arrêtées par le mainteneur. M1 à M15 sont consignées dans l'ADR 0001 (§ Décision, point de même numéro) ; M16 dans l'ADR 0003 ; M17 précise M6 dans l'ADR 0001 ; M18 et M19 n'ont pas d'ADR (règles de procédure). La forme canonique du numéro est `Mn` (`M16`), citée telle quelle dans les fiches comparatives, la spécification (provenance des équations, `CONVENTIONS.md` § 2.3) et les issues ; « M-n » désigne une décision quelconque dans la prose. Deux décisions de mise en œuvre du 29/09/2026 sont consignées par annotation d'ADR sans numéro (elles ne changent aucune décision numérotée) : garder `outils/compiler_specification.sh` (ADR 0004, pt 4) et déclarer le hook `preparer_latex.sh` en `SessionStart` (ADR 0004, pt 5).
 
 | N° | Date | Décision | Où elle est consignée |
 |---|---|---|---|

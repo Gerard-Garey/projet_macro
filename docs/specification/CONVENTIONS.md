@@ -47,7 +47,8 @@ Chaque section de bloc (3 à 10) suit le même déroulé :
 ### 1.3 Renvois
 
 - Tout renvoi passe par `\ref`, `\eqref` ou `\autoref` sur un label nommé : **aucun numéro d'équation, de section, de table ou de page écrit en dur**. La v1.5 en contenait (« (41) et (43) ») et ils ont survécu à une renumérotation ; c'est l'un des défauts relevés dans son inventaire.
-- Seule exception : la **citation d'un document archivé et figé** (v1.5, v2.0), dont les numéros ne bougent plus : on écrit « v1.5, éq. (35), § 8.1 ». Ces citations ne renvoient jamais à une équation du présent document.
+- Seule exception : la **citation d'un document archivé et figé** (v1.5, v2.0), dont les numéros ne bougent plus : on écrit « v1.5, éq. (35), § 8.1 ». Forme exacte reconnue par le script (§ 9, règle 6) : `v1.5` ou `v2.0`, virgule, `éq.` ou `éqs.`, puis le numéro entre parenthèses ; espace ordinaire ou `~` admis entre ces éléments ; des numéros supplémentaires s'ajoutent par « , » ou « et » (« v1.5, éqs. (41) et (43) »). Une mention d'un document archivé hors de cette forme, ou un numéro entre parenthèses ailleurs, est relevée. Ces citations ne renvoient jamais à une équation du présent document.
+- Une énumération dans la prose s'écrit avec `enumerate`, jamais par des numéros entre parenthèses « (1) », « (2) » : le script les relèverait comme des numéros en dur.
 - Familles de labels : `eq:` (équations, § 2.1), `sec:` (sections), `tab:` (tables), `fig:` (figures). Minuscules ASCII, mots séparés par un tiret.
 - Un label ne se renomme pas. Si une équation est retirée, son label disparaît du document et sa balise du code dans le **même commit**, et la table « Ce qui change » le consigne.
 
@@ -64,7 +65,9 @@ Une équation qui ne porte pas de label n'est pas numérotée (`equation*`) : c'
 
 ### 2.2 Balise de code
 
-Le moteur porte, pour chaque label, **exactement une** balise de commentaire `# eq:<bloc>-<nom>` dans `src/`, sur la ligne qui précède l'instruction où l'équation est calculée. Réciproquement, chaque balise du code a son label dans la spécification. Le script `outils/concordance_spec_moteur.py --strict` le vérifie en CI (`docs/exigences.md` § 3.3) ; un écart relevé en cours de branche se corrige aussitôt par un commit `docs:` minimal (règle 9 de `CLAUDE.md`).
+Le moteur porte, pour chaque label, **exactement une** balise de commentaire `# eq:<bloc>-<nom>` dans `src/`, **seule sur sa ligne**, la ligne qui précède l'instruction où l'équation est calculée. Réciproquement, chaque balise du code a son label dans la spécification. Le script `outils/concordance_spec_moteur.py --strict` le vérifie en CI (`docs/exigences.md` § 3.3) ; un écart relevé en cours de branche se corrige aussitôt par un commit `docs:` minimal (règle 9 de `CLAUDE.md`).
+
+Ce que le script tient pour une balise : tout commentaire Python qui commence par un ou plusieurs `#`, des espaces facultatifs, puis `eq:` (motif `^#+\s*eq:`). Chaque commentaire de cette forme compte pour l'unicité : une équation mentionnée dans un second commentaire `# eq:…` (rappel, explication) crée un doublon et un écart ; un commentaire qui ne commence pas par `eq:` après les `#` n'est pas une balise (`# voir eq:prix-marge` évoque l'équation sans la baliser). Une balise placée en fin d'une ligne de code (`x = … # eq:…`) est un écart : elle va seule sur la ligne précédente.
 
 Une équation qui se calcule en plusieurs endroits du code est un défaut de code (localité), pas un motif de dédoubler la balise. Une équation de la spécification que le moteur n'exécute pas encore ne porte pas de label `eq:` : elle est présentée dans une section **proposée** (§ 4.1).
 
@@ -79,9 +82,13 @@ Une équation qui se calcule en plusieurs endroits du code est un défaut de cod
 \sens Le coût unitaire additionne le coût du travail chargé et le coût des intrants, rapportés à la production du pas.
 \hyp Rendements constants sur le pas ; intrants payés au prix du pas courant.
 \limites Ne comprend ni le coût du capital ni les impôts sur la production, portés par la marge (\eqref{eq:prix-marge}).
-\tracabilite{dérivée}{v1.5, éq. (21), § 6.2 ; retenue par la décision M-n}{nations.blocs.prix.cout_unitaire}
+\tracabilite{dérivée}{v1.5, éq. (21), § 6.2 ; retenue par la décision Mn}{nations.blocs.prix.cout_unitaire}
 \end{lecture}
 ```
+
+(`Mn` tient ici la place du numéro de la décision, par exemple `M16` ; notation au § 2.3, « provenance ».)
+
+Chaque équation numérotée qui porte un label est **immédiatement suivie** de son encadré `lecture`, avant l'équation numérotée suivante (§ 9, règle 8) ; un environnement multiligne (`align`…) qui porte plusieurs labels est suivi d'un encadré par label, ou d'un encadré unique qui les commente tous, mais jamais d'une autre équation numérotée avant le premier encadré.
 
 L'encadré **« Lecture »** est l'environnement `lecture` de la v1.5, en **quatre rubriques, dans cet ordre, toutes présentes** :
 1. `\variables` : chaque symbole de l'équation, avec sa définition, son **unité**, son **dénominateur** s'il s'agit d'un ratio, et sa **fenêtre** (ouverture ou clôture du pas, moyenne mobile et sa longueur) ;
@@ -91,7 +98,7 @@ L'encadré **« Lecture »** est l'environnement `lecture` de la v1.5, en **quat
 
 L'encadré se termine par une **ligne de traçabilité** obligatoire, `\tracabilite{<statut>}{<provenance>}{<objet du code>}`. Ce n'est pas une cinquième rubrique de lecture ; c'est le lien avec `docs/exigences.md` § 2.4 et § 3.2 :
 - **statut** : `dérivée`, `approchée` ou `choix de conception`, sans autre valeur ;
-- **provenance** : `v1.5, éq. (n), § x.y` ; `v2.0, \code{archive/v2.0/…}` avec la fonction ; ou `nouvelle : <référence retrouvée>` ; suivie de la **décision du mainteneur** qui l'a retenue (`décision M-n`, `docs/feuille-de-route.md`) et du renvoi à la fiche comparative du bloc ;
+- **provenance** : `v1.5, éq. (n), § x.y` ; pour la v2.0, le chemin du fichier sous `archive/v2.0/` et la fonction, écrits en `\texttt{}` (jamais en `\code{}`, réservé aux objets de `src/` et `outils/`, § 5.4), ou la forme « v2.0, éq. (n) » du § 1.3 quand la pièce archivée numérote l'équation citée ; ou `nouvelle : <référence retrouvée>` ; suivie de la **décision du mainteneur** qui l'a retenue et du renvoi à la fiche comparative du bloc. La décision s'écrit sous sa **forme canonique `Mn`** (`M16`, comme dans `docs/feuille-de-route.md` et les ADR) ; « M-n » n'est que la désignation générique d'une décision quelconque dans la prose de ce fichier et des fiches. Le script reconnaît les deux graphies (§ 9, règle 4) ;
 - **objet du code** : nom qualifié du module ou de la fonction qui porte la balise, vérifié par le script de concordance (§ 5.4).
 
 Une équation dont le statut est « choix de conception » ne cite aucune référence théorique à son appui ; une équation « dérivée » dit de quel problème ou de quelle identité elle dérive, et où la dérivation est donnée (dans le document, ou dans le cours au jalon J8). La v1.5 encadrait déjà deux équations « choix de conception, pas résultat théorique » (v1.5, éq. (41) et (43)) : c'est cet usage qui est généralisé.
@@ -111,14 +118,14 @@ Toute **borne** (plancher, plafond, saturation, `clip`) est un paramètre décla
   - un environnement `proposee` (tcolorbox) pour les sections proposées (§ 4.1) ;
   - un environnement `portee` (tcolorbox) pour les encadrés « ce que le moteur ne fait pas ».
 - Le bloc de compléments ne change que sur mise à jour de ce fichier ; `docwriter` n'y ajoute rien de sa propre initiative. Aucun paquet n'est retiré du préambule v1.5 même s'il semble inutilisé (`tikz` sert aux figures de bilans).
-- La compilation est **XeLaTeX** ; le document ne doit dépendre d'aucun paquet absent de MiKTeX (poste local) ou de TeX Live avec `texlive-xetex`, `texlive-lang-french`, `texlive-latex-extra`, `texlive-fonts-recommended` et `fonts-lmodern` (session cloud). Le préambule v1.5 gère déjà l'absence de `dsfont`.
+- La compilation est **XeLaTeX** ; le document ne doit dépendre d'aucun paquet absent de MiKTeX (poste local) ou de TeX Live tel qu'installé en CI et en session cloud, c'est-à-dire des paquets `texlive-xetex`, `texlive-lang-french`, `texlive-latex-recommended`, `texlive-latex-extra`, `texlive-pictures`, `texlive-fonts-recommended` et `fonts-lmodern`. Cette liste est celle du job « Compilation de la spécification » de `.github/workflows/ci.yml` et de la variable `PAQUETS_TEXLIVE` du hook `.claude/hooks/preparer_latex.sh` ; les trois se tiennent identiques. Le préambule v1.5 gère déjà l'absence de `dsfont` (`texlive-fonts-extra`, non installé).
 
 ## 4. Contenu : invariants
 
 ### 4.1 Le document décrit le moteur exécuté
 
 - Une équation numérotée est une équation **exécutée** par `src/nations/`, dans la configuration de référence, avec les coefficients de la table de calibration. Avant d'écrire qu'un mécanisme agit, vérifier qu'il est actif (`CLAUDE.md`, « Rigueur »).
-- Un mécanisme décidé par le mainteneur mais pas encore codé s'écrit dans un encadré `proposee`, sans label `eq:`, avec le numéro de la décision M-n et l'issue qui le réalisera. L'encadré disparaît quand le code arrive et que l'équation reçoit son label.
+- Un mécanisme décidé par le mainteneur mais pas encore codé s'écrit dans un encadré `proposee`, sans label `eq:`, avec le numéro de la décision (`Mn`, § 2.3) et l'issue qui le réalisera. L'encadré disparaît quand le code arrive et que l'équation reçoit son label.
 - Un mécanisme non décidé n'entre pas dans le document : il reste dans la fiche comparative (`docs/blocs/`).
 
 ### 4.2 Statuts épistémiques et chiffres
@@ -188,9 +195,13 @@ Options que la fiche devra au moins comparer, sans que ce fichier en préfère a
 ## 7. PDF versionné et compilation
 
 - Le PDF `docs/specification/nations_et_marches.pdf` est **versionné** et recompilé à chaque modification du `.tex`, dans le **même commit** `docs:`. Un `.tex` modifié sans son PDF est un commit incomplet.
-- Compilation : XeLaTeX, trois passes au moins, jusqu'à disparition de « Rerun to get cross-references right » dans le journal. La procédure sera fixée par la skill `compiler-doc` (`.claude/skills/compiler-doc/SKILL.md`), à créer sur le modèle d'`outil_usp` : elle n'existe pas encore dans ce dépôt.
-- Contrôles du journal, comparés à l'état d'avant la modification : aucune ligne commençant par `!` ; aucune occurrence de `undefined` (renvoi ou citation) ; les `Overfull` et `Underfull` nouveaux sont listés dans le compte rendu ; nombre de pages et table des matières comparés.
-- Chaîne de composition nommée dans le compte rendu : MiKTeX sur le poste local, TeX Live en session cloud.
+- La procédure de compilation est **portée par le script `outils/compiler_specification.sh`** (`bash outils/compiler_specification.sh [fichier.tex]`, défaut `docs/specification/nations_et_marches.tex`), exécuté par la skill `compiler-doc` (`.claude/skills/compiler-doc/SKILL.md`) sur le poste local et en session cloud, et par le job CI « Compilation de la spécification » (`.github/workflows/ci.yml`). Ni la skill ni la CI ne refont la procédure à la main (principe 7 des workflows). Le script :
+  - enchaîne les passes XeLaTeX (`-interaction=nonstopmode -halt-on-error`), **trois au moins, cinq au plus**, jusqu'à disparition de « Rerun to get » dans le journal ; au-delà de cinq passes, un renvoi oscille et le script échoue ;
+  - échoue sur toute ligne du journal commençant par `!` et sur toute occurrence de `undefined` (renvoi ou citation indéfini) ;
+  - compte et liste les `Overfull` et `Underfull`, sans échouer ;
+  - rend 0 si le PDF est produit et le journal propre, 1 sinon ; il affiche en tête la chaîne de composition (`xelatex --version`).
+- Ce que la skill ajoute au script : la comparaison à l'état d'avant la modification (`Overfull` et `Underfull` **nouveaux**, listés dans le compte rendu et corrigés s'ils dépassent 10 pt sur les lignes modifiées ; nombre de pages et table des matières), la chaîne de composition nommée dans le compte rendu (MiKTeX sur le poste local, TeX Live en session cloud), puis la concordance `--strict` et le contrôle que le `.tex` et le `.pdf` sont modifiés ensemble.
+- `xelatex` est rendu disponible par le hook `SessionStart` `.claude/hooks/preparer_latex.sh` : MiKTeX ajouté au `PATH` sur le poste local ; en session cloud, rien n'est installé au démarrage, la skill lance `bash .claude/hooks/preparer_latex.sh --installer` (TeX Live par `apt`, paquets du § 3) au moment de compiler.
 - Les fichiers auxiliaires (`.aux`, `.log`, `.out`, `.toc`) ne sont pas versionnés.
 
 ## 8. Manière de modifier
@@ -203,20 +214,24 @@ Options que la fiche devra au moins comparer, sans que ce fichier en préfère a
 
 ## 9. Ce que vérifie le script de concordance
 
-Contrat attendu d'`outils/concordance_spec_moteur.py --strict` (mis en place par l'issue #4 ; le détail de mise en œuvre revient à `coder`) :
+Contrat d'`outils/concordance_spec_moteur.py --strict` (issue #4). Le script relit le `.tex` et le code **sans rien importer** (analyse textuelle du `.tex` ; `tokenize` et `ast` pour le Python de `src/` et `outils/`). Sans `--strict`, il rend compte et sort avec le code 0 ; avec `--strict`, tout écart donne le code 1. Chaque écart est rapporté avec le numéro de la règle ci-dessous, l'emplacement `fichier:ligne` et un message.
 
-1. l'ensemble des `\label{eq:…}` du `.tex` et l'ensemble des balises `# eq:…` de `src/` sont égaux, chaque élément apparaissant exactement une fois de chaque côté ;
-2. chaque label respecte l'expression régulière du § 2.1 et son radical de bloc est un module de `src/nations/blocs/` (ou `noyau`, `moteur`) ;
-3. chaque équation numérotée (`\begin{equation}` sans étoile) porte un label ; chaque environnement `lecture` contient `\variables`, `\sens`, `\hyp`, `\limites` puis `\tracabilite`, dans cet ordre ;
-4. le premier argument de `\tracabilite` est l'un des trois statuts ; le deuxième cite une décision `M-` ;
-5. chaque `\code{…}` désigne un objet existant de `src/` ou `outils/` ; le troisième argument de `\tracabilite` désigne le module ou la fonction qui contient la balise du label ;
-6. aucun numéro d'équation en dur : motif `\(\d+\)` hors des citations « v1.5, éq. (n) » et « v2.0 » ;
-7. tout paramètre de la table de calibration cité par `\code{}` existe dans `src/nations/moteur/` ; tout symbole du glossaire est employé dans au moins une équation, et réciproquement (quand la table est balisée pour le permettre).
+**Texte analysé.** Avant l'analyse, le `.tex` est débarrassé de ce qui n'est pas composé, les positions et numéros de ligne étant conservés : environnements `verbatim`, `verbatim*`, `lstlisting` et `comment` ; `\verb|…|` ; commentaires (`%` non échappé jusqu'à la fin de ligne) ; blocs `\iffalse … \fi` (conditions imbriquées comprises). Un label ou un `\code{}` placé dans l'un de ces passages n'est donc pas vu ; un numéro en dur qui s'y trouve n'est pas relevé.
 
-Un contrôle mécanique récurrent qui n'est pas dans cette liste appelle une issue, pas un agent (principe 7 des workflows).
+1. **Égalité et unicité.** L'ensemble des `\label{eq:…}` du `.tex` et l'ensemble des balises `# eq:…` de `src/` sont égaux, chaque élément apparaissant exactement une fois de chaque côté. Une balise est un commentaire Python qui vérifie `^#+\s*eq:` (§ 2.2) ; chaque commentaire de cette forme compte pour l'unicité ; une balise en fin de ligne de code est un écart (elle va seule sur la ligne qui précède l'instruction).
+2. **Format.** Chaque label, du `.tex` comme du code, respecte l'expression régulière du § 2.1 et son radical de bloc est `noyau`, `moteur` ou un module de `src/nations/blocs/` (fichier `.py` ou paquet).
+3. **Équations numérotées et encadrés.** Chaque équation numérotée porte un label : `equation` (sans étoile) en porte un ; dans un environnement multiligne (`align`, `gather`, `multline`, `flalign`, `alignat`, `eqnarray`, sans étoile), **un label par ligne numérotée**. Seuls les `\\` de niveau supérieur séparent les lignes : ceux d'un environnement imbriqué (`cases`, `aligned`, `matrix`, `pmatrix`, `array`…) ou d'un groupe `{…}` ne comptent pas ; une ligne portant `\notag` ou `\nonumber` n'est pas numérotée. Un `\label{eq:…}` hors d'une équation numérotée est un écart. Chaque environnement `lecture` contient `\variables`, `\sens`, `\hyp`, `\limites` puis `\tracabilite`, une fois chacune et dans cet ordre.
+4. **Traçabilité.** Le premier argument de `\tracabilite` est l'un des trois statuts (`dérivée`, `approchée`, `choix de conception`) ; le deuxième cite une décision du mainteneur, reconnue par le motif `\bM-?\d+\b` : la forme canonique `Mn` (`M16`, § 2.3) comme la graphie `M-16` sont acceptées.
+5. **Objets du code.** Chaque `\code{…}` désigne un objet existant de `src/` ou `outils/` (chemin de fichier ou de dossier sous ces racines, module, ou nom pointé résolu objet par objet : fonction, classe, affectation ou importation de niveau module, corps de classe) ; le troisième argument de `\tracabilite` désigne le module ou la fonction qui porte la balise du label de l'équation que l'encadré commente (la dernière équation numérotée qui le précède, sans autre encadré entre les deux).
+6. **Numéros en dur.** Aucun numéro entre parenthèses `\(\d+\)`, sauf : une année de 1000 à 2099 (« Godley et Lavoie (2007) ») ; un exposant ou un indice (`^{(2)}`, `_(3)`) ; la citation exacte d'une équation archivée, « v1.5, éq. (n) » ou « v2.0, éq. (n) » dans la forme du § 1.3 (`éq.` ou `éqs.`, espace ou `~`, numéros supplémentaires par « , » ou « et »). Une énumération « (1), (2) » est relevée (employer `enumerate`) ; une mention d'archive hors de ce motif est relevée.
+7. **Table de calibration et glossaire.** Tout paramètre de la table `tab:calibration` cité par `\code{}` est dans `src/nations/moteur/` (nom qui commence par `nations.moteur.`). Le contrôle du glossaire (tout symbole de `tab:symboles` employé dans au moins une équation, et réciproquement) **n'est pas mis en œuvre** tant que la table des symboles n'est pas balisée pour le permettre ; la sortie du script le signale à chaque exécution (« règle 7, glossaire : non vérifié »). Le baliser et étendre le script relève d'une issue.
+8. **Encadré après l'équation.** Chaque équation numérotée qui porte un label `eq:` est suivie de son encadré `lecture`, avant l'équation numérotée suivante (§ 2.3).
+
+La sortie donne aussi les décomptes (labels, balises, équations numérotées, encadrés, `\code`) : ce sont eux, et non la prose, qui portent les totaux (§ 4.4). Un contrôle mécanique récurrent qui n'est pas dans cette liste appelle une issue, pas un agent (principe 7 des workflows).
 
 ## Historique des conventions
 
 | Date | Modification | Motif |
 |---|---|---|
 | 2026-09-29 | Création (issue #6, branche `claude/fondations`) | Jalon J0 ; préparation de la spécification du socle (J1) |
+| 2026-09-29 | § 3 : liste des paquets TeX Live alignée sur `ci.yml` et le hook ; § 7 : procédure portée par `outils/compiler_specification.sh` ; § 2.2, § 1.3 et § 9 : contrat du script de concordance tel qu'implémenté (balise `^#+\s*eq:`, environnements multilignes, exemptions de la règle 6, règle 8, texte analysé, glossaire non vérifié) ; § 2.3 : forme canonique `Mn` des décisions (issue #4, branche `claude/fondations`) | Surface d'impact documentaire de l'issue #4 ; ADR 0003 et 0004, § Conséquences |
