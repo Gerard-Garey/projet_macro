@@ -25,6 +25,8 @@ export const meta = {
 //    CONTROLEE apres chaque tour (tete, amont et ZONES_PROTEGEES inchanges) ;
 //    une violation detectee arrete le workflow. La session principale
 //    verifie en outre git status et git log apres chaque workflow.
+//  - « expert » designe ici l'expert de fond concerne (macro, monnaie ou
+//    jeu, CLAUDE.md « Sous-agents ») ; le workflow n'en lance aucun.
 //  - Principe 3 : arret des qu'un constat releve d'expert ou du mainteneur,
 //    ou que deux verifications se contredisent. Questions pour expert : pas
 //    de reprise ; statut 'termine avec questions' seulement si les seules
@@ -38,18 +40,22 @@ export const meta = {
 //  supprimee par le workflow : son chemin est rendu dans copie_temporaire.
 // ---------------------------------------------------------------------------
 
-// A ADAPTER : batteries de verification, identiques a CLAUDE.md, « Commandes »
-// (commande complete, lancee depuis la racine du depot)
+// Batteries de verification, identiques a CLAUDE.md, « Commandes »
+// (commande complete, lancee depuis la racine du depot). Mises en place par
+// l'issue #4 : le workflow ne peut pas aboutir avant.
 const BATTERIES = [
-  // 'Rscript tests/test_unitaires.R',
-  // 'pytest -q',
+  'uv run pytest -q tests/unitaires',
+  'uv run pytest -q tests/invariants',
+  'uv run python outils/concordance_spec_moteur.py --strict',
 ]
 
-// A ADAPTER : repertoires que ni coder ni audit ne doivent toucher dans un
-// workflow (references de non-regression, documentation de fond : regle 9)
+// Repertoires que ni coder ni audit ne doivent toucher dans un workflow :
+// references de non-regression, specification (regle 9), archives de la
+// premiere tentative (lecture seule).
 const ZONES_PROTEGEES = [
-  // 'tests/reference/',
-  // 'docs/doc/',
+  'tests/references/',
+  'docs/specification/',
+  'archive/',
 ]
 
 // Consigne commune a tous les agents du workflow (principe 2)
@@ -385,7 +391,7 @@ function noterImplementation(impl) {
 
 async function derouler() {
   if (BATTERIES.length === 0) {
-    return arreter("BATTERIES vide : renseigner les commandes de verification dans .claude/workflows/circuit-technique.js (A ADAPTER)")
+    return arreter("BATTERIES vide : renseigner les commandes de verification dans .claude/workflows/circuit-technique.js (identiques a CLAUDE.md, « Commandes »)")
   }
   if (!issue) {
     return arreter("argument sans numero d'issue (attendu : '76' ou '76 consigne')")
