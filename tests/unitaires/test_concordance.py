@@ -46,6 +46,18 @@ def cout_unitaire(w, y):
 '''
 
 
+# Tableau des décisions de la feuille de route (règle 4) : M3 et M16 existent.
+FEUILLE_DE_ROUTE = """# Feuille de route
+
+## 4. Décisions du mainteneur
+
+| N° | Date | Décision | Trace |
+|---|---|---|---|
+| M3 | 29/09/2026 | Décision fabriquée. | ADR |
+| M16 | 29/09/2026 | Décision fabriquée. | ADR |
+"""
+
+
 def fabriquer(racine, corps_tex=EQUATION, fichiers=None):
     """Crée un dépôt minimal sous `racine` et rend le chemin du `.tex`."""
     code = {
@@ -55,6 +67,7 @@ def fabriquer(racine, corps_tex=EQUATION, fichiers=None):
         "src/nations/moteur/__init__.py": '"""Moteur."""\n',
         "src/nations/moteur/parametres.py": "taux_marge = 0.2\n",
         "outils/outil.py": "def f():\n    return 1\n",
+        "docs/feuille-de-route.md": FEUILLE_DE_ROUTE,
     }
     code.update(fichiers or {})
     for relatif, contenu in code.items():
@@ -220,9 +233,54 @@ def test_tracabilite_qui_ne_porte_pas_la_balise(concordance, tmp_path):
 
 
 def test_tracabilite_au_module_admise(concordance, tmp_path):
-    corps = EQUATION.replace("{nations.blocs.prix.cout_unitaire}", "{\\code{nations.blocs.prix}}")
+    # Le module qui contient la balise est admis, écrit en nom nu.
+    corps = EQUATION.replace("{nations.blocs.prix.cout_unitaire}", "{nations.blocs.prix}")
     tex = fabriquer(tmp_path, corps_tex=corps)
     assert verifier(concordance, tmp_path, tex).ecarts == []
+
+
+def test_tracabilite_avec_code_refusee(concordance, tmp_path):
+    # \tracabilite enveloppe déjà son troisième argument dans \code.
+    corps = EQUATION.replace("{nations.blocs.prix.cout_unitaire}", "{\\code{nations.blocs.prix}}")
+    tex = fabriquer(tmp_path, corps_tex=corps)
+    rapport = verifier(concordance, tmp_path, tex)
+    assert regles(rapport) == [5]
+    assert len(rapport.ecarts) == 1
+    assert "enveloppe déjà son troisième argument dans \\code" in rapport.ecarts[0].message
+
+
+@pytest.mark.parametrize(
+    "provenance",
+    ["v1.5 ; décision~M-3", "choix du mainteneur (M16)", "(M-3)", "Décision M3 et décision M16"],
+)
+def test_decision_existante_admise(concordance, tmp_path, provenance):
+    tex = fabriquer(tmp_path, corps_tex=EQUATION.replace("v1.5, éq. (21), § 6.2 ; décision M-3", provenance))
+    assert verifier(concordance, tmp_path, tex).ecarts == []
+
+
+@pytest.mark.parametrize(
+    ("provenance", "fragment"),
+    [
+        # Mention nue d'un numéro existant : pas une décision citée.
+        ("agrégat M2 de la v1.5", "aucune décision citée"),
+        ("agrégat M3 de la v1.5", "aucune décision citée"),
+        # Forme reconnue, numéro absent du tableau des décisions.
+        ("décision M-99", "M99 absente"),
+        ("(M2)", "M2 absente"),
+    ],
+)
+def test_decision_absente_ou_mal_citee_relevee(concordance, tmp_path, provenance, fragment):
+    tex = fabriquer(tmp_path, corps_tex=EQUATION.replace("v1.5, éq. (21), § 6.2 ; décision M-3", provenance))
+    rapport = verifier(concordance, tmp_path, tex)
+    assert regles(rapport) == [4]
+    assert len(rapport.ecarts) == 1 and fragment in rapport.ecarts[0].message
+
+
+def test_feuille_de_route_absente_relevee(concordance, tmp_path):
+    tex = fabriquer(tmp_path, fichiers={"docs/feuille-de-route.md": None})
+    rapport = verifier(concordance, tmp_path, tex)
+    assert regles(rapport) == [4]
+    assert len(rapport.ecarts) == 1 and "feuille de route introuvable" in rapport.ecarts[0].message
 
 
 def numeros_releves(concordance, tmp_path, phrase):
@@ -254,6 +312,47 @@ def test_citation_archivee_exemptee(concordance, tmp_path):
 def test_mention_d_archive_sans_citation_exacte_relevee(concordance, tmp_path):
     phrase = "Comme en v2.0, la règle (12) s'applique ; v1.5 (3)."
     assert numeros_releves(concordance, tmp_path, phrase) == ["(12)", "(3)"]
+
+
+def test_exposant_et_indice_exemptes_mais_pas_une_accolade_seule(concordance, tmp_path):
+    phrase = "Dérivée f^(2), g_(3), h^{(4)}, k_{(5)} ; mais \\textbf{(6)} et \\emph{(7)} relevés."
+    assert numeros_releves(concordance, tmp_path, phrase) == ["(6)", "(7)"]
+
+
+def test_numero_en_mode_mathematique_ignore(concordance, tmp_path):
+    phrase = textwrap.dedent(r"""
+        On a $f(2) = K(0)$, $$g(3)$$, \(h(4)\) et \[k(5)\].
+        \begin{align*} x(6) \\ y(7) \end{align*}
+        \begin{equation*} z(8) \end{equation*}
+        Hors mode mathématique : 10\$ (9) \$ puis (10), et \\[2pt] (11).
+        """)
+    assert numeros_releves(concordance, tmp_path, phrase) == ["(9)", "(10)", "(11)"]
+
+
+def test_multline_porte_un_seul_label(concordance, tmp_path):
+    multline = textwrap.dedent(r"""
+        \begin{multline}\label{eq:prix-cout-unitaire}
+          c = w \\
+            + y \\
+            + z
+        \end{multline}""")
+    corps = EQUATION.replace(EQUATION_SIMPLE, multline)
+    tex = fabriquer(tmp_path, corps_tex=corps)
+    assert verifier(concordance, tmp_path, tex).ecarts == []
+    # Sans label, un seul écart, quel que soit le nombre de lignes.
+    sans_label = EQUATION + multline.replace("\\label{eq:prix-cout-unitaire}", "")
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=sans_label))
+    assert regles(rapport) == [3]
+    assert len(rapport.ecarts) == 1
+    assert "0 label(s) pour 1 ligne(s)" in rapport.ecarts[0].message
+
+
+@pytest.mark.parametrize("marque", ["\\nonumber", "\\notag"])
+@pytest.mark.parametrize("nom", ["equation", "multline"])
+def test_equation_non_numerotee_sans_label_admise(concordance, tmp_path, marque, nom):
+    corps = EQUATION + f"\n\\begin{{{nom}}}\n  x = 1 {marque}\n\\end{{{nom}}}\n"
+    tex = fabriquer(tmp_path, corps_tex=corps)
+    assert verifier(concordance, tmp_path, tex).ecarts == []
 
 
 def test_parametre_de_calibration_hors_moteur(concordance, tmp_path):
