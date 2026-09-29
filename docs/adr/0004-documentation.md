@@ -1,0 +1,48 @@
+---
+status: accepted
+date: 2026-09-29
+---
+
+# Documentation : une spécification XeLaTeX unique dans la forme de la v1.5, PDF versionné, concordance bloquante, fiches comparatives par bloc, un seul passage de `docwriter` par branche
+
+## Contexte
+
+- Dans la première tentative, la documentation n'a jamais décrit le code exécuté (ADR 0001, § 4 du contexte) : la v1.5 décrit une intention, le document du moteur v2.0 n'a pas été écrit, et le cours décrit une version antérieure à la v1.4. La v1.5 porte des numéros d'équation en dur, des totaux de tests discordants et des paramètres retirés encore employés : autant d'écarts qu'aucun script ne relevait.
+- La v1.5 a néanmoins une forme qui a fait ses preuves et que le mainteneur veut garder (M8) : encadrés « Lecture », régimes A à E, grille des dix configurations, tables « Ce qui change », état des chantiers. Son préambule (XeLaTeX, `fontspec`, `polyglossia`) est conservé dans `archive/`.
+- Le dépôt public `Gerard-Garey/outil_usp`, lu le 29/09/2026, a mis en place une chaîne documentaire dont le mainteneur a demandé la reprise : fichier `.tex` unique avec PDF versionné recompilé et commité à chaque modification, `CONVENTIONS.md`, skill de compilation, hook d'installation LaTeX, script de concordance bloquant en CI, fiche `docwriter` à passage unique par branche, huit principes des workflows. Différence notable : `outil_usp` compile en pdfLaTeX, notre spécification en XeLaTeX.
+- La concordance spécification ↔ moteur est ce qui prime (`CLAUDE.md`, « Contexte » ; objectif O6) : elle doit être mécanique.
+
+## Décision
+
+Arrêtée par le mainteneur le 29/09/2026 (M2, M8, M15) ; règles d'organisation reprises dans `CLAUDE.md` (commit `a5d873c`).
+
+1. **Une spécification unique**, `docs/specification/nations_et_marches.tex`, compilée en **XeLaTeX** sans erreur ni renvoi indéfini, dans la **forme de la v1.5** (plan, encadrés « Lecture » en quatre rubriques, tables « Ce qui change en vX.Y », état des chantiers). Elle décrit le **moteur exécuté** ; une section « proposée » qui précède le code est marquée comme telle (`docs/exigences.md` § 3.1).
+2. **PDF versionné**, recompilé et commité avec chaque modification du `.tex`, pour que le lecteur du dépôt lise sans compiler et que chaque commit porte le document tel qu'il était.
+3. **`docs/specification/CONVENTIONS.md`** (issue #6) : plan fixe, gabarit de section de bloc, labels nommés stables `eq:<bloc>-<nom>`, aucun numéro en dur, préambule intouché, conservation du contenu (élever la précision dans le plan existant, jamais réorganiser), typographie française, étiquettes épistémiques (statut d'équation, provenance avec la décision M-n).
+4. **Skill `.claude/skills/compiler-doc/SKILL.md`** (issue #4) : passes de compilation, contrôle du journal (`!`, `undefined`, `Overfull`), PDF commité avec le `.tex`.
+5. **Hook `.claude/hooks/preparer_latex.sh`** (issue #4) : MiKTeX ajouté au `PATH` sur le poste local ; TeX Live avec `texlive-xetex` installé par `apt` à la demande en session cloud et en CI.
+6. **Concordance mécanique, bloquante en CI** : `outils/concordance_spec_moteur.py --strict` vérifie que chaque `\label{eq:…}` a exactement une balise `# eq:…` dans `src/`, et réciproquement, et que chaque nom de code cité existe ; registre d'exemptions explicite et daté. Un écart relevé en cours de branche se corrige aussitôt par un commit `docs:` minimal (exception de la règle 9).
+7. **Fiches comparatives par bloc**, `docs/blocs/<bloc>.md`, gabarit `docs/blocs/0000-gabarit.md`, inventaire et expert pilote dans `docs/blocs/README.md` (issue #6). Contenu : question posée ; options v1.5, v2.0 et nouvelles avec leurs références vérifiées ; pour chaque option, équations, comportement mesuré et sa source, coût de calcul, défauts connus, lisibilité pour le joueur ; avis de l'expert pilote et de `jeu` ; **décision du mainteneur (M-n)**, reportée dans `docs/feuille-de-route.md`. La fiche reste la trace de l'origine de chaque équation.
+8. **Règle 9 — un seul passage de `docwriter` par branche**, en fin de branche, sur l'état final du code, un commit `docs:` par issue ; `coder` ne touche pas la spécification et liste dans chaque commit proposé la surface d'impact documentaire ; l'expert pilote valide le diff de la spécification une fois. Exceptions : commit `docs:` préparatoire, branche où le document précède le code (jalon J1), écart de concordance qui ferait échouer la CI.
+9. **Chiffres remesurés, jamais recopiés** : une valeur citée dans la spécification vient d'une commande exécutée ou d'une source citée ; les tables d'équations, de paramètres et de calibration se génèrent par script dès qu'elles sont récurrentes (principe 7 des workflows).
+10. **Cours magistral** : reporté au jalon J8 (M15) ; il dérivera chaque bloc de la spécification v3 stabilisée, et ses chiffres se traiteront comme des tests.
+
+## Options écartées
+
+- **Documentation en Markdown ou site généré (Sphinx, MkDocs).** Écarté (M8) : la spécification est un document mathématique long (la v1.5 fait 104 p.) dont la forme a fait ses preuves ; le mainteneur veut la continuité de lecture avec la v1.5 ; les labels LaTeX sont la clé de la concordance.
+- **pdfLaTeX** (choix d'`outil_usp`). Écarté : le préambule v1.5 repose sur `fontspec` et `polyglossia`, propres à XeLaTeX ; changer de moteur obligerait à réécrire le préambule sans gain.
+- **PDF non versionné, produit par la CI seulement.** Écarté : un lecteur du dépôt, ou un relecteur d'une PR, doit voir le document sans outillage ; et le PDF d'un commit ancien doit rester lisible tel qu'il était.
+- **Spécification éclatée en plusieurs fichiers `.tex`** (un par bloc). Écarté : la v1.5 est un fichier unique et sa forme est conservée ; le script de concordance et la skill de compilation restent simples ; le découpage par bloc est porté par les sections et par les fiches comparatives.
+- **Document séparé « moteur exécuté » à côté d'une spécification d'intention** (schéma du 19/09/2026). Écarté : c'est la dualité qui a échoué ; la spécification décrit le moteur exécuté, et l'intention non codée est marquée « proposée » dans le même document.
+- **Contrôleur de conformité sous forme d'agent** (à la manière de `regulatory` d'`outil_usp`). Écarté : la spécification est notre propre texte, pas une réglementation externe ; le script de concordance et `audit` suffisent, et un contrôle mécanique confié à un agent contredit le principe 7 des workflows.
+- **Passages multiples de `docwriter`** au fil de la branche. Écarté (règle 9) : chaque passage rouvre le document sur un code non stabilisé et multiplie les validations de l'expert pilote ; la surface d'impact listée par `coder` suffit à préparer le passage unique.
+- **Numéros d'équation ou de section écrits en dur.** Écarté : la v1.5 en porte, et ils sont faux dès que le plan bouge ; `CONVENTIONS.md` l'interdit et le script le vérifie.
+
+## Conséquences
+
+- **Fichiers** : `docs/specification/nations_et_marches.tex` (squelette, préambule v1.5 repris d'`archive/`), `docs/specification/CONVENTIONS.md`, `docs/blocs/0000-gabarit.md`, `docs/blocs/README.md` (issue #6, `architect` et `docwriter`) ; `outils/concordance_spec_moteur.py`, `.claude/skills/compiler-doc/SKILL.md`, `.claude/hooks/preparer_latex.sh`, job de compilation dans `.github/workflows/ci.yml` (issue #4) ; fiche `docwriter.md` et `CLAUDE.md`, « Sous-agents » (déjà en place).
+- **Effet sur les résultats** : aucun ; l'ADR ne touche pas au moteur.
+- **Ce qui reste à faire** : la première version du plan de la spécification v3 (J1) et la liste des exemptions de concordance initiales (vide au départ). Le sort de la matrice des flux de transactions, absente de la v1.5 sous forme de tableau, revient à la fiche « temps et comptabilité ».
+- **Ce que l'ADR ne règle pas** : le pas de temps et la convention calendaire (à instruire) ; la forme du cours (J8) ; la documentation de l'interface web (J7).
+
+Issues : #3, #4, #6.
