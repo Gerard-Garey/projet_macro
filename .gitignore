@@ -250,3 +250,8 @@ CLAUDE.local.md
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# --- Dossier de lancement : pieces de l'ancien projet, jamais versees --------
+# (depot public ; seule une selection passe dans archive/, voir la PR de la
+# branche de fondations)
+/Dossier de lancement/
