@@ -216,3 +216,37 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Secrets et identifiants (depot public) ----------------------------------
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# --- Claude Code : reglages personnels et copies isolees des agents ----------
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/worktrees/
+
+# --- R ------------------------------------------------------------------------
+.Rhistory
+.RData
+.Rproj.user/
+.Renviron
+
+# --- LaTeX : fichiers auxiliaires ---------------------------------------------
+*.aux
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# --- Systeme / editeurs ---------------------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
