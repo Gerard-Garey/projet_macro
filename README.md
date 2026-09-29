@@ -57,7 +57,7 @@ gh api -X PATCH repos/$R -F allow_squash_merge=false -F allow_rebase_merge=false
   -f 'security_and_analysis[secret_scanning][status]=enabled' -f 'security_and_analysis[secret_scanning_push_protection][status]=enabled'
 gh api -X PUT repos/$R/vulnerability-alerts
 gh api -X PUT repos/$R/automated-security-fixes
-gh api -X PUT repos/$R/actions/permissions -f enabled=true -f allowed_actions=selected
+gh api -X PUT repos/$R/actions/permissions -F enabled=true -f allowed_actions=selected
 gh api -X PUT repos/$R/actions/permissions/selected-actions -F github_owned_allowed=true -F verified_allowed=false
 gh api -X PUT repos/$R/actions/permissions/workflow -f default_workflow_permissions=read -F can_approve_pull_request_reviews=false
 gh api -X POST repos/$R/rulesets --input .github/ruleset-main.json
