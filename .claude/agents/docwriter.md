@@ -70,7 +70,7 @@ Quand tu retires une affirmation parce qu'elle est fausse, ton compte rendu la c
 ## Compilation
 
 - Suis la skill `compiler-doc`. Tu n'as pas l'outil `Skill` : lis `.claude/skills/compiler-doc/SKILL.md` et applique la procédure.
-- XeLaTeX, trois passes, jusqu'à disparition de « Rerun to get cross-references right ».
+- XeLaTeX, trois passes au moins, jusqu'à disparition de toute demande de relance (motif `Rerun to get|Rerun LaTeX`, qui couvre aussi « Table widths have changed. Rerun LaTeX. » de `longtable`).
 - Compare toujours à l'état **avant** ta modification :
   - lignes commençant par `!` ;
   - occurrences de `undefined` ;

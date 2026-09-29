@@ -21,7 +21,7 @@ La procédure (passes, contrôle du journal) est portée par le script `outils/c
    bash outils/compiler_specification.sh
    ```
 
-   Le script enchaîne les passes XeLaTeX (`-interaction=nonstopmode -halt-on-error`), trois au moins, jusqu'à disparition de « Rerun to get cross-references right » ; au-delà de cinq passes, un renvoi oscille et le script échoue. Il contrôle ensuite le journal `docs/specification/nations_et_marches.log` :
+   Le script enchaîne les passes XeLaTeX (`-interaction=nonstopmode -halt-on-error`), trois au moins, jusqu'à disparition de toute demande de relance dans le journal (motif `Rerun to get|Rerun LaTeX` : « Rerun to get cross-references right », et « Table widths have changed. Rerun LaTeX. » de `longtable`) ; au-delà de cinq passes, un renvoi oscille et le script échoue. Il contrôle ensuite le journal `docs/specification/nations_et_marches.log` :
    - aucune ligne commençant par `!` ;
    - aucune occurrence de `undefined` (renvoi ou citation indéfini) ;
    - les `Overfull` et `Underfull` sont comptés et listés, sans faire échouer.

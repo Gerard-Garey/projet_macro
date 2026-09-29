@@ -25,8 +25,9 @@ export const meta = {
 //    CONTROLEE apres chaque tour (tete, amont et ZONES_PROTEGEES inchanges) ;
 //    une violation detectee arrete le workflow. La session principale
 //    verifie en outre git status et git log apres chaque workflow.
-//  - « expert » designe ici l'expert de fond concerne (macro, monnaie ou
-//    jeu, CLAUDE.md « Sous-agents ») ; le workflow n'en lance aucun.
+//  - « expert » designe ici l'expert pilote du sujet, macro ou monnaie
+//    selon le bloc (CLAUDE.md « Sous-agents ») ; jeu donne son avis sur la
+//    jouabilite mais ne tranche pas le fond. Le workflow n'en lance aucun.
 //  - Principe 3 : arret des qu'un constat releve d'expert ou du mainteneur,
 //    ou que deux verifications se contredisent. Questions pour expert : pas
 //    de reprise ; statut 'termine avec questions' seulement si les seules
