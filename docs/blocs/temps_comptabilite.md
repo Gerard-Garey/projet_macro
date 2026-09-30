@@ -154,35 +154,368 @@ Chaque ancien critère est conservé en entier, sources et lignes comprises ; se
 
 ## 3. Options
 
-Non instruit (issue #16, après validation des critères).
+*Instruit par `macro` (expert pilote), 30/09/2026 (issue #16). Critères du § 2 lus tels que validés ; aucun n'est déplacé.*
+
+**Découpage par question.** Le bloc est un cadre, pas un module : trois des cinq questions qu'il tranche (matrices et instruments ; tolérances et soldes ; ordre des phases et empreinte de l'état) ne dépendent pas de la durée du pas. Les options A (v1.5) et B (v2.0) répondent aux cinq questions à leur manière et sont instruites en huit rubriques chacune. Les options C, D, E ne diffèrent que sur la **question 1 (calendrier)** et sur ce qui en découle (budget par pas, variables d'état, perception) ; leurs réponses aux questions 2 à 5 forment un **socle commun « v3 proposé »** (§ 3.N), instruit une fois, avec lequel chacune se combine.
+
+**Mesures.** Toutes exécutées par `uv run python -` le 30/09/2026, sorties citées dans le texte :
+- conversions des taux, des flux et des vitesses pour n = 1, 12, 13, 52 ;
+- intérêts versés dans l'année sur encours constant ;
+- ratio stationnaire K/I selon la règle de conversion ;
+- budget par pas et par tour pour N = 1, 4, 10 ;
+- tableaux de 24 tours des options D et E, et prédicat de date de décision de E ;
+- borne d'accumulation d'arrondi sur 720, 3 120 et 20 280 pas ;
+- contre-épreuve numérique des sommes nulles des deux matrices, de l'égalité ΔRes vue des deux côtés, et du double calcul de E^Bk et E^CB.
+
+Lignes d'archive relues (statut L) ; faits G2, H2, J2/K2b, K2c cités avec leur statut d'`archive/faits_mesures_G_K.md`. Contrôle de la session principale : les conversions des taux (3,9285 / 3,9280 / 3,9236 %) et le ratio K/(n·I) (14,2857 en linéaire pour tout n ; 14,1208 / 14,0840 / 14,0825 / 14,0698 en composé pour n = 4 / 12 / 13 / 52) ont été recalculés à l'identique (`python3`, 30/09/2026).
+
+**Littérature.** Le proxy a refusé l'accès le 30/09/2026 à `bankofengland.co.uk`, `levyinstitute.org`, `ideas.repec.org`, `papers.ssrn.com`, `cepremap.fr` et `marcopassarella.it` : seuls des titres et des résumés ont été lus.
+- Godley et Lavoie, *Monetary Economics*, 2007 : forme des matrices (chap. 2) ; **aucun passage sur la longueur de la période n'a pu être vérifié**.
+- Nikiforos et Zezza, 2017, « Stock-Flow Consistent Macroeconomic Models: A Survey », *Journal of Economic Surveys* 31, 1204–1239 : résumé seul, muet sur la période.
+- Burgess, Burrows, Godin, Kinsella et Millard, 2016, « A dynamic model of financial balances for the United Kingdom », Bank of England Staff Working Paper 614 : fréquence non vérifiée.
+- Zezza et Zezza, 2020, « A Stock-Flow Consistent Quarterly Model of the Italian Economy », Levy Economics Institute Working Paper 958 : son titre établit l'existence d'un modèle stock-flux empirique **trimestriel**.
+
+Aucun modèle stock-flux à pas mensuel ou hebdomadaire n'a été retrouvé. **La littérature retrouvée ne permet pas de conclure** à une durée de pas canonique : le pas le plus court retrouvé est le trimestre, et aucune des options C, D, E n'est plus fidèle que les autres à la littérature.
 
 ### 3.A Option A — v1.5
 
-Non instruit.
+1. **Source exacte.** `archive/v1.5/Nations_et_Marches_v1_5.tex` :
+   - § « Temps » l. 396–402 ; § « Bilans et cohérence stock-flux » l. 404–420 ; § « Ordre de résolution d'un tick » l. 422–432 ;
+   - § « Règles de caisse et bornes numériques » l. 483–489 (`sec:sfc`) ;
+   - bilan de la banque centrale l. 995 ; éq. `eq:ecb` l. 998–1005, contrainte E^CB/H ≥ κ (négatif admis) l. 1006 ;
+   - « Précisions de la v1.2 » l. 1012 (chiffres rapportés) ; délais rapportés l. 1800–1803.
+2. **Équations.** Toutes « choix de conception », sauf les identités, « dérivées » :
+   - tick = une semaine (l. 399) ; mois = 4 ticks (l. 400) ; conversion unique i^(w) = (1+i)^{1/52} − 1 (l. 402) ;
+   - M = C + D, H = C + Res (l. 420) ; bilan BC G + e R^FX + B^CB + L^CB + A^G = C + Res + E^CB (l. 995) ;
+   - « quatre portes » de la monnaie (l. 485) ; règles de caisse sans découvert, contrainte hebdomadaire v(π^e)(M_j + ½ p_j Q_j) avec v = exp(a·min(π^e, 1)) (l. 487–488) ;
+   - bornes (l. 489) : prix ×[0,7 ; 1,19] par semaine, salaires ×[0,9 ; 2] par mois, π^e ≤ 12, taux directeur ≤ 1, prime ≤ 0,3.
+
+   La matrice des flux est affirmée « fermée » (l. 405) mais **n'existe pas sous forme de tableau**.
+3. **État stationnaire impliqué.** Sans objet pour un cadre, sauf sur un point : la fenêtre « un an » y vaut soit 52 ticks (conversion) soit 12 mois × 4 = 48 ticks, et **48 ≠ 52** (l. 400 contre 402). Aucun ratio annuel n'est calculable sans lever cette ambiguïté : critère 2 (b) non satisfait.
+4. **Comportement mesuré.** Non mesuré : aucune équation de la v1.5 n'a été garantie exécutée. Les chiffres de la l. 1012 (« +50 % de dépôts la première année », effondrement en 45 ans, monétisation cachée de 2,5 % du PIB par an) sont **rapportés** (R), non remesurés.
+5. **Coût de calcul.** 52 pas par an, 8 étapes par pas, budget de 1 ms par pas ; coût non mesuré. La v1.7 « une dizaine de secondes pour 200 ans » est un chiffre rapporté (ADR 0001 § 3).
+6. **Défauts connus.**
+   - (i) 48 ≠ 52.
+   - (ii) Matrice des flux absente.
+   - (iii) Table des bilans (l. 414) sans A^G ni E^CB.
+   - (iv) « Finance » (étape 5) placée avant « État » (étape 7).
+   - (v) Décisions des joueurs en « Fin de mois » (étape 8) : un levier s'applique au tick suivant.
+   - (vi) Bornes numériques absolues (l. 488–489), qui concernent l'instabilité 15.
+   - (vii) Seigneuriage distribué sur le stock (l. 1012, rapporté).
+   - (viii) Aucune tolérance définie.
+
+   Instabilités 2 et 3 concernées.
+7. **Identités de bilan touchées.** Au moins 20 postes. Le compte du Trésor « dépôt au Trésor M^G » (l. 415) ne dit pas chez qui il est tenu. Aucune règle ne dit quel poste est calculé comme résidu : non spécifié, donc non vérifiable.
+8. **Ce que le joueur en percevrait.** Un tour de 4 ticks, mais 12 ou 13 tours par an selon la lecture ; effet d'un levier au tick suivant la décision. Délais « 6 à 12 mois » et « 12 à 18 mois » rapportés (l. 1801–1802), jamais vérifiés.
 
 ### 3.B Option B — v2.0
 
-Non instruit.
+1. **Source exacte.**
+   - `archive/v2.0/prototype/model.py` :
+     - calendrier : `WEEKS`, `DECISION_WEEKS`, `PERIODS_PER_YEAR` (l. 36–38) ; `wk(r)` (l. 40–41) ;
+     - grand livre : `Ledger.transfer` (l. 49–61, tolérance l. 55) ;
+     - état initial : `Res` résiduel puis `L_cb` (l. 556–557) ; `E_cb` posé (l. 562) ; `AG_free` (l. 564) ;
+     - date de décision : `month` (l. 607–608) ;
+     - intérêts impayés ajoutés au principal (l. 1016) ; flux annuels `/ WEEKS` (l. 1021, 1203, 1212) ; `lam_ell / WEEKS` (l. 1039) ;
+     - intérêts publics (l. 1172–1182) ; rémunération sur position nette (l. 1189) ; versement `seig` (l. 1207–1209) ;
+     - `Res` résiduel et report sur `L_cb` (l. 1278–1283, copies l. 556–557, 1574–1575, 1631–1632) ; `E_cb` posé (l. 1633) ;
+     - `P_hist[-1-13]` (l. 1292–1294) ; divisions par 13 (l. 1300, 1305) ; tolérances (l. 1460–1470).
+   - `worldn.py` l. 164–166 ; `numerical_audit.py` l. 10–20.
+   - Faits G2, H2, J2/K2b, K2c (§ 5) et D1 (§ 2, R).
+2. **Équations.**
+   - Calendrier : 52 pas, date de décision t mod 4 = 0, **13 périodes par an**.
+   - Conversions : taux composée `wk` ; flux linéaires X/52 ; vitesses λ/52 ou λ/13 selon le bloc.
+   - Identité de bilan bancaire écrite comme **affectation** (`Res = …`, l. 1280), puis « si Res < 0 : L_cb += −Res » (l. 1282–1283) ; `E_cb` posé (l. 562).
+   - Tolérances `1e-9·max(1, montant)` (l. 55), `1e-8·max(|Y|, 1) + k·eps·Σ|opérandes|` (l. 1463–1469), `/max(1, |E_cb|)` (`numerical_audit.py` l. 16–20).
+   - Versement de la BC assis sur un profit qui inclut les intérêts **dus** (l. 1182, 1207).
+3. **État stationnaire impliqué.** Sans objet pour le cadre. L'année des décisions (13 × 4 = 52) et celle de la conversion (52) coïncident : c'est la seule option historique au calendrier cohérent. Mais l'état D1 n'est pas résolu (150 ans de préparation, ADR 0001 § 2).
+4. **Comportement mesuré.**
+   - **G2 (S+O)** : `Res` diverge de 2,44e−4 en semaine 5 (pays seul contre monde) ; `L_cb` de 8,58e−5 (×100) et 1,22e−4 (permutation) en semaine 1.
+   - **H2 (S+O)** : sur 260 semaines, `L_cb`/B_close ≤ 1,449e−13 et `Res`/B_close ≤ 8,23e−15.
+   - **J2/K2b (S ; O jusqu'à 920)** : `Res` franchit 1e−12 de l'échelle en semaine 910 (ratio maximal 3,30e−12) ; `L_cb` en semaine 1 154.
+   - **K2c (S+O)** : arrêt en semaine 824 sous ×100 sur un paiement de −1,86e−9.
+   - **Vitesse** : 308,6 ms par semaine simulée (29/09/2026, moteur entier ; ADR 0001 § 3).
+5. **Coût de calcul.** 52 pas par an ; `_step_normal` de 900 lignes ; part du grand livre non isolée : non mesuré.
+6. **Défauts connus.**
+   - Instabilité 16 réintroduite (S+O, G2, K2c) ; instabilité 2 par `AG_free`.
+   - Historiques dans l'état (≈ 70 Mo sur 72).
+   - Quatre points d'écriture d'une même identité.
+   - Intérêts impayés ajoutés au principal ; `E_cb` posé, qui rend le contrôle circulaire.
+   - Intérêt sur position nette ; versement assis sur des intérêts dus.
+   - Division par 13 en ligne ; 13 « mois » par an.
+7. **Identités de bilan touchées.** Compte du Trésor **à la banque** (`led.dep["G"]`) ; pas de billets ; `Res` dérivé ; `E_cb` posé ; A^G avec une fraction gratuite. Le grand livre unique des dépôts est l'acquis à garder (ADR 0001 § 8).
+8. **Ce que le joueur en percevrait.** Aucun tour ni levier n'existe. En projetant un tour sur la date de décision : 13 tours par an ; barème fiscal avec k = 0, taux directeur avec k = 1 pas. Deux dates d'effet différentes, non déclarées.
 
-### 3.C Option C — pas mensuel unique
+### 3.C, 3.D, 3.E — Question 1 : le calendrier
 
-Non instruit.
+Rubriques 1 à 5 et 8 par option ; les rubriques 6 et 7 sont communes (§ 3.N). Symboles provisoires : n_a pas par an, n_m pas par tour.
 
-### 3.D Option D — pas hebdomadaire, 52 pas, 13 dates de décision
+| Rubrique | **C — pas mensuel unique** | **D — hebdomadaire, 13 dates de 4 semaines** | **E — hebdomadaire, mois de 4 ou 5 semaines** |
+|---|---|---|---|
+| 1. Source | Piste de `docs/feuille-de-route.md` § 5 ; `CONVENTIONS.md` § 6 ; littérature : trimestriel au plus fin | Forme v2.0 assumée (`model.py` l. 36–38, 607) | `CONVENTIONS.md` § 6 ; motif « 4-4-5 » proposé par `macro` ; aucune référence retrouvée |
+| 2. Équations (choix de conception) | n_a = 12 ; n_m = 1 ; date de décision : tout pas ; tour n = pas n − 1 ; mois = (n−1) mod 12 + 1, année = (n−1) div 12 + 1 ; pas_par_an = 12 × 1 ; tour 13 = mois 1 de l'année 2 | n_a = 52 ; n_m = 4 ; date de décision t mod 4 = 0 ; 13 tours par an ; 13 × 4 = 52 ; « période » (t mod 52) div 4 + 1 ∈ {1..13} ; le tour 14 est la période 1 de l'année 2 | n_a = 52 ; motif (4, 4, 5) × 4 ; date de décision t mod 52 ∈ {0, 4, 8, 13, 17, 21, 26, 30, 34, 39, 43, 47} (vérifié : 24 dates sur 104 pas) ; 12 tours par an ; tour 13 : pas 52, janvier de l'année 2 |
+| Tableau des tours (crit. 8 amendé) | Tours égaux, 12 par an : la formule suffit | Tableau exécuté : tours 1–13 → pas 0–51, périodes 1–13 de l'année 1 ; tours 14–26 → pas 52–103 ; tour 27 → pas 104–107, période 1 de l'année 3 | Tableau exécuté (tour ; pas ; longueur ; mois) : 1 ; 0–3 ; 4 ; janv · 2 ; 4–7 ; 4 ; févr · 3 ; 8–12 ; 5 ; mars · 4 ; 13–16 ; 4 ; avr · 5 ; 17–20 ; 4 ; mai · 6 ; 21–25 ; 5 ; juin · 7 ; 26–29 ; 4 ; juil · 8 ; 30–33 ; 4 ; août · 9 ; 34–38 ; 5 ; sept · 10 ; 39–42 ; 4 ; oct · 11 ; 43–46 ; 4 ; nov · 12 ; 47–51 ; 5 ; déc · 13 ; 52–55 ; 4 ; janv année 2 · … · 24 ; 99–103 ; 5 ; déc année 2 |
+| Année du joueur = année de la conversion ? | Oui | En durée oui, en mois non : 13 tours par an, sans mois calendaire | Oui |
+| 3. État stationnaire | Registre de 12 valeurs de l'indice, P_{−k} = P/(1+π̄)^{k/12} ; « un an » = 12 pas, « un mois » = 1 pas | Registre de 13 valeurs ; « un mois » = 4 pas | Registre de 12 valeurs ; « un mois » = 4 ou 5 pas : un flux « mensuel » stationnaire n'est pas constant d'un tour à l'autre |
+| 4. Comportement mesuré | Non mesuré | Non mesuré en v3 ; aucun défaut calendaire relevé en G–K | Non mesuré |
+| 5. Coût (crit. 4) | 4,333 ms par pays-pas (52/12) ; tour : 4,33 / 17,3 / 43,3 ms pour N = 1 / 4 / 10 ; 60 ans d'un pays : 3,12 s ; `semaines_par_pas = 52/12` ; 720 pas sur la fenêtre longue | 1 ms par pays-pas ; tour : 4 / 16 / 40 ms ; 3,12 s ; `semaines_par_pas = 1` ; 3 120 pas | 1 ms ; tour : 5 / 20 / 50 ms au plus ; 3,12 s ; `semaines_par_pas = 1` ; 3 120 pas |
+| 8. Joueur (crit. 5) | Partie de 60 à 120 tours ; plus court délai : 1 tour ; tout se date au tour ; une seule date (année, mois) | 65 à 130 tours ; plus court délai : ¼ de tour ; le joueur lit « période 5 de l'année 2 », pas un mois | 60 à 120 tours ; plus court délai : ¼ ou ⅕ de tour ; tous les flux cumulés sur le tour oscillent de **+25 % / −20 %** entre un tour de 4 et un tour de 5 semaines : dents de scie sur chaque indicateur mensuel, que 7 (c) interdit de normaliser |
 
-Non instruit.
+Toutes trois satisfont 7 (a) : n_a entier, tour en nombre entier de pas, une seule année.
 
-### 3.E Option E — pas hebdomadaire, mois calendaires de 4 ou 5 semaines
+### 3.N Socle commun aux options nouvelles — questions 2 à 5
 
-Non instruit.
+Indépendant de la durée du pas, il s'applique à C, D ou E. Statut : identités **dérivées** ; règles de conversion, liste des instruments et phases : **choix de conception**.
+
+#### Q2 — Conversions (critères 7 (b) et 14)
+
+Une seule équation `eq:moteur-conversion-taux` déclare la règle pour les trois natures.
+
+| Nature | Règle linéaire x/n_a | Règle composée (1+x)^{1/n_a} − 1 |
+|---|---|---|
+| Taux i = 4 % : **intérêts versés dans l'année**, encours constant, intérêt payé à chaque pas sur l'encours d'ouverture (forme du 14 (a)) | **4,0000 %** pour n = 12, 13, 52 | 3,9285 % (12), 3,9280 % (13), 3,9236 % (52) : dépend de n |
+| Taux i = 4 % : rendement annuel d'un agent qui **replace** chaque intérêt | 4,0742 % (12), 4,0747 % (13), 4,0795 % (52) : dépend de n | **4,0000 %** pour tout n |
+| Flux annuel X | total annuel = X exactement pour tout n | sans objet |
+| Vitesse λ : fraction de l'écart résorbée en un an | λ = 0,5 : 0,3999 (12), 0,3949 (52) ; λ = 0,1 : 0,0955 / 0,0952 ; λ = 1 : 0,6480 / 0,6357 ; λ = 2 : 0,8878 / 0,8699 : dépend de n | 0,5000 pour tout n (λ < 1 seulement) |
+| **Ratio stationnaire** K_t/(n·I_t), g = 2 %, δ = 5 % (crit. 2 (c)) | **14,2857 = 1/(g+δ) pour tout n** | 14,2857 (1), 14,1208 (4), 14,0840 (12), 14,0825 (13), 14,0698 (52) : dépend de n |
+
+**Lecture de `macro`.**
+- Le chiffre de `monnaie` (critère 7 (b) : 4,0000 % contre 4,0795 %) vaut **pour un intérêt capitalisé**. Or le socle verse les intérêts à chaque pas sur l'encours d'ouverture et interdit toute capitalisation silencieuse (12 (b), 14 (a)).
+- Pour un intérêt **versé**, c'est la règle linéaire qui rend l'année invariante (iX exactement). C'est elle aussi qui rend les ratios stationnaires **indépendants de n_a** (2 (c)), puisque toute grandeur par pas y est proportionnelle à 1/n_a. La composée laisse une dépendance de 1,5 % sur K/I entre n = 1 et n = 52.
+- **Proposition** : une règle unique, **linéaire**, pour les trois natures. Le cadre déclare, en les chiffrant, les deux grandeurs qui dépendent alors de n_a : la fraction annuelle résorbée par une vitesse, et le rendement d'un replacement pas à pas (4,07–4,08 % pour 4 %).
+- L'autre lecture (composée pour les taux, linéaire pour les flux, au choix pour les vitesses) est à décrire au § 6 par `monnaie` : **point frontière, le mainteneur tranche**.
+
+Seconde déclaration (2 (c), 7 (c)). Le test zéro définit le ratio « stock au PIB annuel » comme **stock d'ouverture / (n_a × flux du pas)**, la restitution au tour comme stock de clôture / Σ des 12 tours. Les deux diffèrent par un facteur dû à la croissance dans l'année : 14,2857 contre 14,1552 (12 pas) ou 14,1461 (52 pas), soit 0,9 à 1,0 % pour g = 2 %. Le cadre publie ce facteur.
+
+#### Q3 — Matrices et instruments (critères 1, 10, 11 et 14)
+
+**Liste déclarée des instruments du socle (11 (b) amendé).** Sept instruments, chacun avec un émetteur unique. Sont absents mais non interdits :
+- les billets C (sans billets : **M = D, H = Res**) ;
+- les avances A^G : sans elles, la seule porte de monnaie centrale vers l'État est l'**achat de titres par la banque centrale**, et le compte du Trésor ne devient jamais négatif ;
+- le crédit aux ménages, les actions et l'immobilier (J6) ;
+- le reste du monde (J5 : une colonne, sans réécriture).
+
+| Instrument | Émetteur (−) | Détenteurs (+) | Unité | Fenêtre | Intérêt (encours d'ouverture, versé chaque pas, taux annuel converti une fois) |
+|---|---|---|---|---|---|
+| D dépôts | banque | ménages D_H, entreprises D_F | u.m. | ouverture | i_D (fiche 7) |
+| L crédits | entreprises | banque | u.m. | ouverture | i_L (fiche 7) |
+| B titres publics | État | ménages B_H, banque B_Bk, BC B_CB | u.m. | ouverture | i_B, taux de la dernière date de décision, déclaré comme date de fixation (instabilité 3 traitée) |
+| Res réserves | banque centrale | banque | u.m. | ouverture | i_res (fiche 8) |
+| L^CB refinancement | banque | banque centrale | u.m. | ouverture | i_CB (fiche 8) |
+| M^G compte du Trésor | **banque centrale** (proposition, voir plus bas) | État | u.m. | ouverture | aucun (déclaré) |
+| K, IN capital fixe et stocks | actifs réels, sans émetteur | entreprises | u.m. | ouverture | sans objet |
+
+**Matrice des bilans** (stocks à l'ouverture du pas, u.m. ; + actif, − passif ; D = D_H + D_F, B = B_H + B_Bk + B_CB) :
+
+| Poste | Ménages | Entreprises | Banque | Banque centrale | État | Σ ligne |
+|---|---|---|---|---|---|---|
+| Capital fixe p_K K | | +K | | | | +K |
+| Stocks p·IN | | +IN | | | | +IN |
+| Dépôts | +D_H | +D_F | −D | | | 0 |
+| Crédits | | −L | +L | | | 0 |
+| Titres publics | +B_H | | +B_Bk | +B_CB | −B | 0 |
+| Réserves | | | +Res | −Res | | 0 |
+| Refinancement | | | −L^CB | +L^CB | | 0 |
+| Compte du Trésor | | | | −M^G | +M^G | 0 |
+| Valeur nette | −V_H | −V_F | −E^Bk | −E^CB | −V_G | −(K + IN) |
+| **Σ colonne** | 0 | 0 | 0 | 0 | 0 | 0 |
+
+Valeurs nettes : V_H = D_H + B_H ; V_F = K + IN + D_F − L ; E^Bk = L + B_Bk + Res − D − L^CB ; E^CB = B_CB + L^CB − Res − M^G ; V_G = M^G − B. Leur somme vaut K + IN. Contre-épreuve numérique : toutes les colonnes et toutes les lignes financières à 0,0 ; Σ V = 860 = K + IN.
+
+**Matrice des flux de transactions** (u.m. par pas ; + reçu, − versé ; entreprises en deux sous-colonnes, courant et capital ; la variation d'un actif détenu compte −, celle d'un passif émis compte +) :
+
+| Ligne | Ménages | Entr. courant | Entr. capital | Banque | BC | État | Σ | ΔM | ΔH |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 Consommation C | −C | +C | | | | | 0 | 0 | 0 |
+| 2 Dépense publique G | | +G | | | | −G | 0 | + | + |
+| 3 Investissement I | | +I | −I | | | | 0 | 0 | 0 |
+| 4 Variation des stocks ΔIN | | +ΔIN | −ΔIN | | | | 0 | 0 | 0 |
+| 5 Salaires WB | +WB | −WB | | | | | 0 | 0 | 0 |
+| 6 Transferts Tr | +Tr | | | | | −Tr | 0 | + | + |
+| 7 Impôts T | −T_H | −T_F | | | | +T | 0 | − | − |
+| 8 Amortissement δ p_K K | | −δK | +δK | | | | 0 | 0 | 0 |
+| 9 Intérêts sur crédits i_L L | | −i_L L | | +i_L L | | | 0 | − | 0 |
+| 10 Intérêts sur dépôts i_D D | +i_D D_H | +i_D D_F | | −i_D D | | | 0 | + | 0 |
+| 11 Intérêts sur titres i_B B | +i_B B_H | | | +i_B B_Bk | +i_B B_CB | −i_B B | 0 | + (part B_H) | + (parts B_H, B_Bk) |
+| 12 Intérêts sur réserves i_res Res | | | | +i_res Res | −i_res Res | | 0 | 0 | + |
+| 13 Intérêts sur refinancement i_CB L^CB | | | | −i_CB L^CB | +i_CB L^CB | | 0 | 0 | − |
+| 14 Dividendes des entreprises Div_F | +Div_F | −Div_F | | | | | 0 | 0 | 0 |
+| 15 Dividendes de la banque Div_Bk | +Div_Bk | | | −Div_Bk | | | 0 | + | 0 |
+| 16 Versement du résultat de la BC Π^CB | | | | | −Π^CB | +Π^CB | 0 | 0 | 0 |
+| 17 Δ Dépôts | −ΔD_H | | −ΔD_F | +ΔD | | | 0 | | |
+| 18 Δ Crédits | | | +ΔL | −ΔL | | | 0 | + | 0 |
+| 19 Δ Titres publics | −ΔB_H | | | −ΔB_Bk | −ΔB_CB | +ΔB | 0 | − (B_H) ; + (B_CB acheté aux ménages) | − (B_H, B_Bk émis) ; + (B_CB) |
+| 20 Δ Réserves | | | | −ΔRes | +ΔRes | | 0 | | |
+| 21 Δ Refinancement | | | | +ΔL^CB | −ΔL^CB | | 0 | 0 | + |
+| 22 Δ Compte du Trésor | | | | | +ΔM^G | −ΔM^G | 0 | | |
+| **Σ colonne** | 0 | 0 | 0 | 0 | 0 | 0 | | | |
+
+Contraintes budgétaires (sommes de colonnes) :
+- ménages : ΔD_H = WB + Tr + i_D D_H + i_B B_H + Div_F + Div_Bk − C − T_H − ΔB_H ;
+- entreprises : ΔD_F = (C + G + I + ΔIN − WB − T_F − i_L L − Div_F − δK + i_D D_F) + (δK − I − ΔIN) + ΔL ;
+- banque : ΔRes = (i_L L + i_B B_Bk + i_res Res − i_D D − i_CB L^CB − Div_Bk) + ΔD − ΔL − ΔB_Bk + ΔL^CB ;
+- banque centrale : ΔRes = (i_B B_CB + i_CB L^CB − i_res Res − Π^CB) + ΔB_CB + ΔL^CB − ΔM^G ;
+- État : ΔM^G = T + Π^CB − G − Tr − i_B B + ΔB.
+
+Contre-épreuve numérique :
+- les six colonnes sont à 0,0 ;
+- ΔRes vu de la banque = ΔRes vu de la BC = 7,226 ;
+- E^Bk et E^CB de clôture sont identiques par le stock et par les flux (108,71 ; 15,0) ;
+- ΔM = ΔD = 15,516, décomposé en crédit net, paiements nets de l'État aux non-banques, intérêts et dividendes nets de la banque, achats de la BC aux ménages (5,0 + 9,096 + 1,42 + 0).
+
+**Portes de la monnaie (11 (c)), liste exhaustive.**
+- ΔM = ΔD varie par :
+  - la ligne 18 (crédit net) ;
+  - les lignes 2, 6, 7, 11 (part B_H) et 19 (part B_H) : paiements nets de l'État aux ménages et aux entreprises ;
+  - les lignes 9, 10 et 15 : intérêts et dividendes nets de la banque ;
+  - la ligne 19 quand la BC achète aux ménages.
+- ΔH = ΔRes varie par :
+  - la ligne 21 ;
+  - la ligne 19 (parts B_Bk émis, B_CB acheté) ;
+  - les lignes 12 et 13 ;
+  - tout paiement entre M^G et un compte tenu à la banque.
+- Toute autre ligne est un transfert entre détenteurs. Le test « ΔM et ΔH recalculés depuis la matrice = variation des postes » est le contrôle du script #19.
+
+**Aucun solde résiduel (10).**
+- Chaque instrument est tenu **une fois** dans le noyau, comme position (détenteur, émetteur) : la ligne de la matrice des bilans somme à zéro par construction, sans tolérance.
+- Chaque poste de clôture vaut l'ouverture plus la somme des lignes de flux nommées qui le touchent, appliquées par le noyau.
+- ΔL^CB n'a qu'une source, la ligne 21 : un **flux décidé** en phase 8 par le bloc banque, dont la règle relève de la fiche 7. Aucune règle « si Res < 0 ».
+- E^Bk et E^CB sont calculés **deux fois** (par le stock et par les flux) ; l'écart entre les deux est l'identité vérifiée.
+
+**Compte du Trésor (11 (d)) : deux lectures.**
+- (i) **À la banque centrale** (proposition de `macro`). Chaque impôt draine des réserves et chaque dépense en crée ; la ligne 21 est vivante dès le socle, et le taux directeur atteint le coût de la banque par un flux visible. C'est un mécanisme perçu par le joueur, qui justifie la ligne au sens du critère 6.
+- (ii) **À la banque** (forme v2.0). Aucun paiement de l'État ne touche Res ; la ligne 21 serait morte au socle.
+
+`macro` recommande (i) ; **`monnaie` se prononce au § 6**.
+
+**Règles de caisse.**
+- Moyens de paiement : dépôt (ménages, entreprises), réserves (banque), compte du Trésor (État).
+- Un payeur ne paie pas plus que son moyen de paiement : la part non payée est une **ligne de flux nommée** du bloc (rationnement déclaré ou capitalisation nommée), jamais un découvert ni un ajout au principal.
+- L'ordre de priorité des paiements est déclaré par chaque fiche de bloc.
+- Le cadre impose que le crédit (phase 3) précède les règlements, et que l'émission de titres (phase 7) reconstitue le compte du Trésor.
+
+#### Q4 — Tolérances et échelle (critère 9)
+
+**Forme unique.** |résidu| ≤ ε × S, où S est la **somme des valeurs absolues de tous les postes du bilan contrôlé** :
+- banque : L + B_Bk + Res + D + L^CB + |E^Bk| ;
+- BC : B_CB + L^CB + Res + M^G + |E^CB|.
+
+**Contrôles de la forme.**
+- Sous ×100 : le ratio passe de 0 à 0 sur un bilan de 1,34e7 puis 1,34e9.
+- Sous E^CB = 100, 0, −50 : S vaut 2 400, 2 400, 2 500, contre `max(1, |E_cb|)` = 100, 1, 50 en v2.0.
+
+**Deux identités, vérifiées à la fin de chaque phase.**
+- (a) **Par pas** : au plus 30 opérandes ; borne (n−1)·eps·S ≈ 6,7e−15 S ; résidu observé ≤ 2,6e−16 S sur 200 termes. D'où **ε = 1e−12**, avec une marge supérieure à 100.
+- (b) **Cumulée** (valeur nette par les flux depuis t = 0 contre valeur nette par le stock) :
+  - borne pire cas : 1,6e−13 pour C (720 pas), 6,9e−13 pour D/E (3 120 pas), 4,5e−12 sur 390 ans ;
+  - ε_V = 1e−12 tient sur 60 ans, avec une marge de ×6 pour C et de ×1,4 pour D/E ;
+  - le fait J2 venait d'une compensation (Res recalculé par différence), mécanisme absent ici.
+
+Aucune tolérance sur un flux, aucune constante absolue, aucun `max(1, ·)`.
+
+#### Q5 — Ordre des phases et empreinte de l'état (critères 12 et 13)
+
+| Phase | Contenu | Écrivent | Lisent (ouverture ou phases antérieures) | Lignes de flux |
+|---|---|---|---|---|
+| 0 Ouverture | indice t ; prédicat date de décision (de t seul) | moteur | clôture t−1 | — |
+| 1 Décision (si date de décision) | lecture des **leviers** ; salaires ; anticipations ; indice des prix et glissement (registre) ; règle de taux | leviers, travail, banque centrale, prix | ouverture, registre | — |
+| 2 Plans | production visée, demande de travail, budget de consommation, investissement visé, dépense publique du pas | production, ménages, investissement, finances publiques | 1 | — |
+| 3 Crédit | demande et offre | investissement, banque | 2 | 18 |
+| 4 Production et travail | emploi, production, stocks ; salaires | production, travail | 2, 3 | 5 |
+| 5 Marché des biens | ventes C, G, I ; prix du pas ; variation des stocks | prix, production | 2, 4 | 1, 2, 3, 4 |
+| 6 Revenus et impôts | intérêts sur L, D, B ; impôts ; transferts ; dividendes ; amortissement | finances publiques, banque, investissement, ménages | ouverture, 1, 5 | 6–11, 14, 15 |
+| 7 Titres publics | émission ou rachat ; souscriptions ; achats décidés de la BC | finances publiques, ménages, banque, banque centrale | 6 | 19 |
+| 8 Monnaie centrale | (a) intérêts sur Res et L^CB ; (b) versement du résultat de la BC (résultat du tour, lignes exécutées) ; (c) position de réserves après tous les règlements → refinancement décidé | banque centrale, banque | tout ce qui précède | 12, 13, 16, puis 21 |
+| 9 Clôture | identités par pas et cumulées ; double calcul de E^Bk, E^CB ; mise à jour du registre ; t + 1 | noyau, moteur | tout | — |
+
+**Contreparties de règlement.** Les lignes 17, 20 et 22 ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau.
+
+**Dépendances.** La matrice de dépendance est **triangulaire**. Aucune ligne touchant Res n'est exécutée après 8 (c), et les intérêts publics (phase 6) précèdent le refinancement.
+
+**Dates d'effet (12 (c), 12 (d)).** Un levier saisi au tour n est lu en phase 1 du premier pas du tour, avant tout flux ; l'ordre de saisie est sans effet.
+- Taux directeur → intérêts BC (phase 8) du même pas : **k = 0**.
+- Taux d'imposition → impôts (phase 6) : délai 0.
+- Dépense publique → achats (phase 5) : délai 0, contrepartie visible le même tour.
+
+**Variables d'état imposées par le calendrier (13).**
+- L'indice t.
+- Un registre de l'indice des prix aux 12 (C, E) ou 13 (D) dernières dates de décision, **seulement si** un bloc lit un glissement annuel (fiche 8).
+- Le résultat cumulé de la BC sur le tour : 0 variable sous C, 1 sous D et E.
+
+Total : C, 1 (+12) ; D, 1 + 13 + 1 ; E, 1 + 12 + 1. Dans les trois cas, la date de décision se déduit de t seul et la frontière de tour coïncide avec une frontière de pas.
+
+**Décompte de simplicité (critère 6).**
+
+| Élément du cadre | A v1.5 | B v2.0 | C | D | E |
+|---|---|---|---|---|---|
+| Paramètres | 52, 4, 1/52 ; bornes numériques | WEEKS, DECISION_WEEKS, 13 ; 1e−9, 1e−8, 64·eps… | n_a = 12, n_m = 1, ε, ε_V (4) | 52, 4, ε, ε_V (4) | 52, motif (12 entiers), ε, ε_V |
+| Bornes du cadre | 6 (l. 489) | `max(1, ·)` × 3 | **0** | 0 | 0 |
+| Postes | ≥ 20 | ≈ 14 | 7 + 2 réels | idem | idem |
+| Lignes de flux | non tabulées | non tabulées | 22 | 22 | 22 |
+| Phases | 8 | 10 sections | 9 | 9 | 9 |
+| Variables d'état calendaires | non spécifiées | historiques | 1 (+12) | 1 + 13 + 1 | 1 + 12 + 1 |
+| Dates de décision / mois calendaires | 12 ou 13 (ambigu) | 13 | 12 = 12 | 13 ≠ 12 | 12 = 12 |
+| Pas par an | 52 | 52 | 12 | 52 | 52 |
+
+**Rubriques 6 et 7 communes à C, D, E.** Aucune instabilité connue n'est réintroduite : la 16 est exclue par Q4, les 2 et 3 par la liste d'instruments et la date de fixation, la 15 par l'absence de borne. Défauts propres :
+- E : dents de scie 4/5 sur les flux mensuels ;
+- D : 13 tours par an ;
+- C : perte de la granularité infra-mensuelle.
+
+Les cinq bilans sont couverts par les deux matrices, sans solde résiduel, avec la valeur nette calculée deux fois.
 
 ## 4. Tableau comparatif
 
-Non instruit.
+Renvois : 3.A-k, 3.B-k = rubrique k ; 3.X-Q1 = colonne de l'option X au tableau calendaire ; 3.N-Qk = question k du socle commun.
+
+| Critère | A. v1.5 | B. v2.0 | C. mensuel | D. 13 × 4 | E. 4/5 |
+|---|---|---|---|---|---|
+| 1 Cohérence stock-flux | non : matrice absente (3.A-2, 6) | partielle : Res résiduel (3.B-2, 6) | oui, vérifié (3.N-Q3) | idem | idem |
+| 2 État stationnaire indépendant du pas | non : 48 ≠ 52 (3.A-3) | non : D1 préparé (3.B-3) | oui, exact avec la règle linéaire (3.N-Q2) | oui | oui, flux mensuel non constant (3.E) |
+| 3 Stabilité | 15 ; 2, 3 (3.A-6) | 16 réintroduite (S+O), 2 (3.B-6) | aucune (3.N) | aucune | aucune |
+| 4 Coût | 1 ms par pas, non mesuré (3.A-5) | 308,6 ms par semaine (3.B-4) | 4,33 ms par pas ; 43 ms par tour à 10 pays (3.C-Q1) | 1 ms ; 40 ms | 1 ms ; 50 ms |
+| 5 Lisibilité | effet au tick suivant ; tours ambigus (3.A-8) | deux dates d'effet non déclarées (3.B-8) | tout au tour, k = 0 (3.N-Q5) | 13 tours sans mois (3.D-Q1) | dents de scie 4/5 (3.E-Q1) |
+| 6 Simplicité | ≥ 20 postes, 6 bornes | historiques, 3 `max(1,·)` | **le plus simple** : 4 paramètres, 0 borne, 1 (+12) variables | 13 tours, 15 variables | motif de 12 entiers, 14 variables |
+| 7 Calendrier et conversions | (a) non ; (b) composée seule ; (c) non défini | (a) division par 13 ; (b) trois règles dispersées | (a) oui ; (b) règle unique déclarée ; (c) tour = pas | (a), (b) oui ; (c) « un an » = 13 tours | (a), (b) oui ; (c) flux mensuel non comparable |
+| 8 Rapport pas / tour | 4 ticks ; 12 ou 13 tours | 4 ; 13 | 1 ; 12 ; formule | 4 ; 13 ; tableau | 4 ou 5 ; 12 ; tableau |
+| 9 Tolérances | aucune (3.A-6) | absolues (3.B-2, 4) | ε = 1e−12 × S, marge ×6 (3.N-Q4) | marge ×1,4 | marge ×1,4 |
+| 10 Aucun solde résiduel | non spécifié | non (l. 1278–1283, 562, 1633) | oui (3.N-Q3) | idem | idem |
+| 11 Matrices, instruments, portes, Trésor | sans matrice ; A^G, E^CB omis ; Trésor ambigu | Trésor à la banque ; A^G gratuit | 7 instruments ; portes listées ; Trésor à la BC proposé (3.N-Q3) | idem | idem |
+| 12 Ordre des phases | Finance avant État ; décisions en fin de mois | k = 0 (impôts), 1 pas (taux) | 9 phases triangulaires ; k = 0 (3.N-Q5) | idem | idem |
+| 13 Empreinte de l'état | non spécifiée | historiques dans l'état | 1 (+12) variables | 1 + 13 + 1 | 1 + 12 + 1 |
+| 14 Instruments porteurs d'intérêt | coupon figé prévu ; avances | intérêts dus capitalisés ; position nette ; versement sur dus | iX exact par an avec la règle linéaire (3.N-Q2, Q3) | idem | idem |
 
 ## 5. Avis de l'expert pilote
 
-Non instruit.
+*`macro`, 30/09/2026.*
+
+**Recommandation : option C** (pas mensuel unique : 12 pas par an, décision à chaque pas), **combinée au socle commun § 3.N** : règle de conversion linéaire unique, sept instruments, les deux matrices ci-dessus, tolérance ε = 1e−12 × échelle, neuf phases, compte du Trésor à la banque centrale. Classement : C > E > D > B > A.
+
+Critère par critère :
+- **1, 10, 11, 14** : C, D, E à égalité ; A et B écartés.
+- **2** : indépendance de n_a exacte avec la règle linéaire.
+- **3** : B réintroduit l'instabilité 16.
+- **4** : non discriminant (52 ms par pays-an). C donne 4,33 ms par pas aux blocs, soit une marge quatre fois plus large, et 720 pas au lieu de 3 120 sur 60 ans, d'où une accumulation d'arrondi six fois plus faible.
+- **5** : C est la seule option où tout ce que le joueur lit est ce que le moteur calcule (pas = tour) ; D impose 13 tours sans mois, E des dents de scie 4/5.
+- **6** (règle d'arbitrage) : à exigences comptables égales, C a le moins de paramètres, de variables d'état et de pas, et aucune irrégularité. D et E n'ajoutent aucune identité vérifiable ; leur dynamique infra-mensuelle n'est perçue que si un bloc l'exploite, ce qu'aucune fiche n'a demandé.
+- **7, 8** : C satisfait 7 (a) trivialement et 8 sans tableau.
+- **9, 12, 13** : C a la marge d'arrondi la plus large et le moins de variables.
+
+**Réserves et conditions, seuils écrits avant l'essai.**
+1. J2, identités : |résidu| ≤ 1e−12 × S à la fin de chaque phase, par pas et en cumul, sur 720 pas sans choc ; toute violation est un défaut, jamais un motif d'élargir ε.
+2. J2, invariance d'unité : sous ×100, résidu/S ≤ 1e−12, et les champs économiques diffèrent de moins de 1e−10 en relatif.
+3. J2, budget du noyau seul : ≤ 0,5 ms par pas mensuel sur la plateforme de référence (`test_budget.py`, `semaines_par_pas = 52/12`).
+4. J3, état stationnaire : les ratios du script d'`outils/` égalent ceux du moteur à t = 0 à 1e−9 près ; leur dérive sur 60 ans reste dans les bandes O1 ; le facteur vers le ratio « 12 tours cumulés » (0,9 % pour g = 2 %) est publié.
+5. Fidélité : si une fiche (J3, J6) établit par un fait qu'un mécanisme exige une dynamique infra-mensuelle, le choix se rouvre par une décision M-m citant M22. n_a et n_m restent des **paramètres déclarés** (pas des drapeaux de mode).
+
+**Lectures possibles, à trancher par le mainteneur.**
+- (a) **Conversion** : règle linéaire unique (`macro`) contre composée pour les taux (`monnaie`).
+- (b) **Compte du Trésor** : à la banque centrale (ligne 21 vivante) contre à la banque (ligne 21 morte).
+- (c) **Délai du taux** : k = 0 (recommandé ; la v2.0 avait k = 1 pas pour le taux).
+- (d) **Versement du résultat de la BC** : chaque tour sans troncature (recommandé : une perte est un versement négatif) contre versement des seuls résultats positifs (borne à déclarer, fiche 8).
+- (e) **Ratio stationnaire** : stock / (n_a × flux du pas) pour le test zéro (recommandé), stock / Σ 12 tours pour la restitution ; le facteur entre les deux est publié.
+
+**Ce que C coûte en fidélité.** Aucune dynamique infra-mensuelle : la contrainte de caisse hebdomadaire de la v1.5 (l. 488), les marchés hebdomadaires ou une ruée bancaire en jours (J6) ne sont représentables qu'au mois, et le plus court délai du modèle est un tour. Au regard de la littérature retrouvée (trimestrielle au plus fin), C ne coûte rien. Au regard de la v1.5 et de la v2.0, il abandonne une granularité qu'aucun fait mesuré de G à K n'a exploitée : tous les verdicts y portent sur des fenêtres de 260 semaines et plus, et la décision y est déjà mensuelle.
 
 ## 6. Avis de l'expert consulté (sujets frontière)
 
@@ -206,3 +539,4 @@ Non instruit.
 |---|---|---|
 | 30/09/2026 | Ouverture (issue #15) ; § 1 et § 2 proposés | `macro`, `monnaie`, `jeu` ; session principale |
 | 30/09/2026 | Liste courte (14), principe de simplicité et amendements ; **critères validés** (issue #15) | mainteneur |
+| 30/09/2026 | Instruction déposée (§ 3 à 5, issue #16) | `macro` |
