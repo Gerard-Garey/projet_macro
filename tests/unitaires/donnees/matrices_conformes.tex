@@ -1,0 +1,126 @@
+% Fixture de tests/unitaires/test_matrices.py : les trois tables écrites selon
+% la convention de docs/blocs/temps_comptabilite.md, § 9.7 (issue #19), avec
+% les matrices du § 3.N de la fiche (lignes 11, 19a et 19b scindées, colonne
+% « Réel », valeurs nettes développées, compte du Trésor à la banque centrale).
+% Pieds de page longtable : \endfoot et \endlastfoot (flux), \endfoot seul (portes).
+% Tête répétée des bilans précédée d'une note « Suite de la page précédente ».
+\documentclass{article}
+\usepackage{booktabs}
+\usepackage{longtable}
+\begin{document}
+
+% Ce commentaire ne compte pas : \label{tab:matrice-flux}
+
+\begin{longtable}{lllllll}
+\caption{Matrice des bilans. Stocks à l'ouverture du pas $t$, u.m. ; + actif, − passif.}\label{tab:matrice-bilans}\\
+\toprule
+\textbf{Poste} & \textbf{Ménages} & \textbf{Entreprises} & \textbf{Banque} & \textbf{Banque centrale} & \textbf{État} & \textbf{Réel}\\
+\midrule
+\endfirsthead
+\multicolumn{7}{l}{\emph{Suite de la page précédente}}\\
+\toprule
+\textbf{Poste} & \textbf{Ménages} & \textbf{Entreprises} & \textbf{Banque} & \textbf{Banque centrale} & \textbf{État} & \textbf{Réel}\\
+\midrule
+\endhead
+Capital fixe & & $+K$ & & & & $-K$\\
+Stocks & & $+\mathit{IN}$ & & & & $-\mathit{IN}$\\
+Dépôts & $+D_H$ & $+D_F$ & $-D_H - D_F$ & & & \\
+Crédits & & $-L$ & $+L$ & & & \\
+Titres publics & $+B_H$ & & $+B_{Bk}$ & $+B_{CB}$ & $-B_H - B_{Bk} - B_{CB}$ & \\
+Réserves & & & $+\mathit{Res}$ & $-\mathit{Res}$ & & \\
+Refinancement & & & $-L^{CB}$ & $+L^{CB}$ & & \\
+Compte du Trésor & & & & $-M^G$ & $+M^G$ & \\
+\midrule
+Valeur nette & $-D_H - B_H$ & $-K - \mathit{IN} - D_F + L$ & $-L - B_{Bk} - \mathit{Res} + D_H + D_F + L^{CB}$ & $-B_{CB} - L^{CB} + \mathit{Res} + M^G$ & $-M^G + B_H + B_{Bk} + B_{CB}$ & $+K + \mathit{IN}$\\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{lllllll}
+\caption{Matrice des flux de transactions. u.m. par pas $t$ ; + reçu, − versé.}\label{tab:matrice-flux}\\
+\toprule
+\textbf{Ligne} & \textbf{Ménages} & \textbf{Entr. courant} & \textbf{Entr. capital} & \textbf{Banque} & \textbf{BC} & \textbf{État}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Ligne} & \textbf{Ménages} & \textbf{Entr. courant} & \textbf{Entr. capital} & \textbf{Banque} & \textbf{BC} & \textbf{État}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{7}{r}{\emph{Suite page suivante}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+1 Consommation & $-C$ & $+C$ & & & & \\
+2 Dépense publique & & $+G$ & & & & $-G$\\
+3 Investissement & & $+I$ & $-I$ & & & \\
+4 Variation des stocks & & $+\Delta \mathit{IN}$ & $-\Delta \mathit{IN}$ & & & \\
+5 Salaires & $+\mathit{WB}$ & $-\mathit{WB}$ & & & & \\
+6 Transferts & $+\mathit{Tr}$ & & & & & $-\mathit{Tr}$\\
+7 Impôts & $-T_H$ & $-T_F$ & & & & $+T_H + T_F$\\
+8 Amortissement & & $-\delta K$ & $+\delta K$ & & & \\
+9 Intérêts sur crédits & & $-i_L L$ & & $+i_L L$ & & \\
+10 Intérêts sur dépôts & $+i_D D_H$ & $+i_D D_F$ & & $-i_D D_H - i_D D_F$ & & \\
+11a Intérêts sur titres, ménages & $+i_B B_H$ & & & & & $-i_B B_H$\\
+11b Intérêts sur titres, banque & & & & $+i_B B_{Bk}$ & & $-i_B B_{Bk}$\\
+11c Intérêts sur titres, BC & & & & & $+i_B B_{CB}$ & $-i_B B_{CB}$\\
+12 Intérêts sur réserves & & & & $+i_{res} \mathit{Res}$ & $-i_{res} \mathit{Res}$ & \\
+13 Intérêts sur refinancement & & & & $-i_{CB} L^{CB}$ & $+i_{CB} L^{CB}$ & \\
+14 Dividendes des entreprises & $+\mathit{Div}_F$ & $-\mathit{Div}_F$ & & & & \\
+15 Dividendes de la banque & $+\mathit{Div}_{Bk}$ & & & $-\mathit{Div}_{Bk}$ & & \\
+16 Versement du résultat de la BC & & & & & $-\Pi^{CB}$ & $+\Pi^{CB}$\\
+17 $\Delta$ Dépôts & $-\Delta D_H$ & & $-\Delta D_F$ & $+\Delta D_H + \Delta D_F$ & & \\
+18 $\Delta$ Crédits & & & $+\Delta L$ & $-\Delta L$ & & \\
+19a-ménages Émission primaire, ménages & $-\Delta B_H^p$ & & & & & $+\Delta B_H^p$\\
+19a-banque Émission primaire, banque & & & & $-\Delta B_{Bk}^p$ & & $+\Delta B_{Bk}^p$\\
+19a-BC Émission primaire, BC & & & & & $-\Delta B_{CB}^p$ & $+\Delta B_{CB}^p$\\
+19b-ménages Achats de la BC aux ménages & $+\Delta B_H^s$ & & & & $-\Delta B_H^s$ & \\
+19b-banque Achats de la BC à la banque & & & & $+\Delta B_{Bk}^s$ & $-\Delta B_{Bk}^s$ & \\
+20 $\Delta$ Réserves & & & & $-\Delta \mathit{Res}$ & $+\Delta \mathit{Res}$ & \\
+21 $\Delta$ Refinancement & & & & $+\Delta L^{CB}$ & $-\Delta L^{CB}$ & \\
+22 $\Delta$ Compte du Trésor & & & & & $+\Delta M^G$ & $-\Delta M^G$\\
+\end{longtable}
+
+\begin{longtable}{llll}
+\caption{Portes de la monnaie : signes écrits sous M22 (b), compte du Trésor tenu à la banque centrale.}\label{tab:portes-monnaie}\\
+\toprule
+\textbf{Ligne} & \textbf{Montant} & $\Delta M$ & $\Delta H$\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Ligne} & \textbf{Montant} & $\Delta M$ & $\Delta H$\\
+\midrule
+\endhead
+\multicolumn{4}{r}{\emph{Suite page suivante}}\\
+\endfoot
+1 & $+C$ & 0 & 0\\
+2 & $+G$ & $+$ & $+$\\
+3 & $+I$ & 0 & 0\\
+4 & $+\Delta \mathit{IN}$ & 0 & 0\\
+5 & $+\mathit{WB}$ & 0 & 0\\
+6 & $+\mathit{Tr}$ & $+$ & $+$\\
+7 & $+T_H + T_F$ & $-$ & $-$\\
+8 & $+\delta K$ & 0 & 0\\
+9 & $+i_L L$ & $-$ & 0\\
+10 & $+i_D D_H + i_D D_F$ & $+$ & 0\\
+11a & $+i_B B_H$ & $+$ & $+$\\
+11b & $+i_B B_{Bk}$ & 0 & $+$\\
+11c & $+i_B B_{CB}$ & 0 & 0\\
+12 & $+i_{res} \mathit{Res}$ & 0 & $+$\\
+13 & $+i_{CB} L^{CB}$ & 0 & $-$\\
+14 & $+\mathit{Div}_F$ & 0 & 0\\
+15 & $+\mathit{Div}_{Bk}$ & $+$ & 0\\
+16 & $+\Pi^{CB}$ & 0 & 0\\
+17 & $+\Delta D_H + \Delta D_F$ & poste & poste\\
+18 & $+\Delta L$ & $+$ & 0\\
+19a-ménages & $+\Delta B_H^p$ & $-$ & $-$\\
+19a-banque & $+\Delta B_{Bk}^p$ & 0 & $-$\\
+19a-BC & $+\Delta B_{CB}^p$ & 0 & 0\\
+19b-ménages & $+\Delta B_H^s$ & $+$ & $+$\\
+19b-banque & $+\Delta B_{Bk}^s$ & 0 & $+$\\
+20 & $+\Delta \mathit{Res}$ & poste & poste\\
+21 & $+\Delta L^{CB}$ & 0 & $+$\\
+22 & $+\Delta M^G$ & 0 & 0\\
+\bottomrule
+\end{longtable}
+
+\end{document}
