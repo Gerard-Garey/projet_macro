@@ -211,7 +211,7 @@ L'incohérence que ce paragraphe relevait avant la décision est levée : v1.5 �
 
 ## 9. Ce que vérifie le script de concordance
 
-Contrat d'`outils/concordance_spec_moteur.py --strict` (issue #4). Le script relit le `.tex` et le code **sans rien importer** (analyse textuelle du `.tex` ; `tokenize` et `ast` pour le Python de `src/` et `outils/`). Sans `--strict`, il rend compte et sort avec le code 0 ; avec `--strict`, tout écart donne le code 1. Chaque écart est rapporté avec le numéro de la règle ci-dessous, l'emplacement `fichier:ligne` et un message.
+Contrat d'`outils/concordance_spec_moteur.py --strict` (issue #4) ; le script des matrices, qui le complète, est décrit à la fin de ce paragraphe. Le script relit le `.tex` et le code **sans rien importer** (analyse textuelle du `.tex` ; `tokenize` et `ast` pour le Python de `src/` et `outils/`). Sans `--strict`, il rend compte et sort avec le code 0 ; avec `--strict`, tout écart donne le code 1. Chaque écart est rapporté avec le numéro de la règle ci-dessous, l'emplacement `fichier:ligne` et un message.
 
 **Texte analysé.** Avant l'analyse, le `.tex` est débarrassé de ce qui n'est pas composé, les positions et numéros de ligne étant conservés : environnements `verbatim`, `verbatim*`, `lstlisting` et `comment` ; `\verb|…|` ; commentaires (`%` non échappé jusqu'à la fin de ligne) ; blocs `\iffalse … \fi` (conditions imbriquées comprises). Un label ou un `\code{}` placé dans l'un de ces passages n'est donc pas vu ; un numéro en dur qui s'y trouve n'est pas relevé.
 
@@ -226,6 +226,33 @@ Contrat d'`outils/concordance_spec_moteur.py --strict` (issue #4). Le script rel
 
 La sortie donne aussi les décomptes (labels, balises, équations numérotées, encadrés, `\code`) : ce sont eux, et non la prose, qui portent les totaux (§ 4.4). Un contrôle mécanique récurrent qui n'est pas dans cette liste appelle une issue, pas un agent (principe 7 des workflows).
 
+### Script des matrices
+
+À côté de la concordance, `outils/verifier_matrices.py` (issue #19) vérifie les trois tables du cadre (`sec:cadre`) : `tab:matrice-bilans`, `tab:matrice-flux` et `tab:portes-monnaie`, toutes trois des `longtable`. Son contrat est la convention d'écriture des matrices fixée sur accord du mainteneur le 30/09/2026 (`docs/blocs/temps_comptabilite.md` § 9.7, commit `8fa2614`). Usage : `uv run python outils/verifier_matrices.py [--strict] [fichier.tex]` (défaut : la spécification). Sans `--strict`, il rend compte et sort avec le code 0 ; avec `--strict`, tout écart donne le code 1. Si aucune des trois tables n'est présente, il le dit (« aucune matrice trouvée ») et sort avec le code 0 ; si une partie seulement l'est, les tables absentes sont des écarts. Il relit le `.tex` sans rien importer du moteur, après le même retrait du texte non composé que la concordance, et donne pour chaque table ses décomptes (lignes, colonnes hors étiquette, termes). Il est exécuté par la batterie `tests/unitaires` (`test_matrices.py`), qui le lance en `--strict` sur la spécification.
+
+**Écriture d'une cellule.**
+- Une cellule de matrice est vide, `0`, ou une somme de **termes simples** signés, en une seule formule `$…$` : `$-D_H - B_H$`. Un terme simple est un encours, un flux, le produit d'un taux par l'encours d'un seul détenteur, ou la variation d'un encours ; le script ne décompose pas un produit (`i_L L/n_a`, `\delta K/n_a` sont des termes).
+- Chaque terme porte son signe (`+`, `-` ou `−`), le premier compris ; un terme sans signe est un écart. Parenthèses, crochets, `=`, `\left`, `\right`, `\frac`, `\sum`, `\pm` et `\mp` sont refusés : une cellule ne factorise rien. Un exposant ou un indice signé s'écrit entre accolades (`x^{-1}`).
+- Aucun agrégat dans une cellule : $D$, $B$, $T$, $\Delta D$, $\Delta B$ et leurs intérêts s'écrivent développés par détenteur (`$-D_H - D_F$`) ; les agrégats se définissent dans le texte.
+- Deux écritures d'un même terme sont confondues si elles ne diffèrent que par les espaces, les espaces fins (`\,`, `\;`, `\!`, `\:`, `~`), les accolades d'un seul symbole (`B_{H}` = `B_H`) ou les commandes `\mathit`, `\mathrm`, `\text`, `\textrm`, `\textit` ; toute autre différence les distingue, y compris l'ordre des indices et exposants (`B_H^p` ≠ `B^p_H`).
+
+**Structure des tables.**
+- Les zones d'une `longtable` sont délimitées par `\endfirsthead`, `\endhead`, `\endfoot` et `\endlastfoot` ; la première ligne à plusieurs cellules de la première tête est l'en-tête, les en-têtes répétés lui sont identiques (une note d'une seule cellule, « Suite de la page précédente », est ignorée) ; les pieds sont ignorés ; les filets, la ligne de `\caption` et une ligne faite d'un seul `\multicolumn` sont ignorés.
+- La première colonne porte l'étiquette de la ligne ; son premier mot est l'identifiant (`11a`, `19a-ménages`), identique dans `tab:matrice-flux` et `tab:portes-monnaie`.
+- `tab:matrice-bilans` : une colonne par secteur, puis une colonne « Réel » (actifs réels : −K et −IN sur leurs lignes, +K + IN sur la ligne de valeur nette) ; valeur nette développée secteur par secteur.
+- `tab:matrice-flux` : colonnes reconnues à leur en-tête (« Ménages », « Entr. … » pour les deux sous-colonnes des entreprises, « Banque », « Banque centrale » ou « BC », « État ») ; une seule signature (ΔM, ΔH) par ligne, les lignes à parts de signatures différentes étant scindées (11a/b/c, 19a-ménages/banque/BC, 19b-ménages/banque).
+- Aucune colonne Σ dans les deux matrices.
+- `tab:portes-monnaie`, table non sommée : colonnes « Montant », « ΔM », « ΔH » ; le montant est la somme des termes positifs de la ligne de même identifiant de `tab:matrice-flux`, toujours écrit ; un signe vaut `+`, `-`, `−` ou `0`, et `poste` sur les lignes 17 et 20 (postes de règlement), exigé là et refusé ailleurs.
+- En tête de chaque table (légende) : unité, fenêtre et convention de signe. Ce point **n'est pas vérifié** par le script : il relève de la relecture.
+
+**Ce que le script vérifie**, terme à terme et sans valeur numérique :
+- (a) chaque ligne des deux matrices est nulle : chaque terme y apparaît exactement une fois en `+` et une fois en `−` ;
+- (b) chaque colonne de `tab:matrice-bilans` est nulle au même sens, ligne de valeur nette et colonne « Réel » comprises ;
+- (c) chaque colonne de secteur de `tab:matrice-flux` contient une fois son poste de règlement : ΔD_H (ménages), ΔD_F (entreprises, sous-colonnes réunies), ΔRes (banque et banque centrale), ΔM^G (État) ; ΔRes tiré de la colonne de la banque (ΔD_H et ΔD_F substitués) et ΔRes tiré de la colonne de la banque centrale (ΔM^G substitué) coïncident, égalité qui découle des lignes nulles ;
+- (d) ΔM recomposé depuis `tab:portes-monnaie` (somme des montants par leur signe, lignes « poste » exclues) égale ΔD_H + ΔD_F, et ΔH recomposé égale ΔRes ; les deux tables ont les mêmes identifiants de ligne.
+
+(c) et (d) ne sont pas vérifiés quand des cellules de `tab:matrice-flux` sont mal formées ou que ses lignes ne sont pas nulles : la sortie le signale (« non vérifié »), pour ne pas démultiplier un même défaut.
+
 ## Historique des conventions
 
 | Date | Modification | Motif |
@@ -234,3 +261,4 @@ La sortie donne aussi les décomptes (labels, balises, équations numérotées, 
 | 2026-09-29 | § 3 : liste des paquets TeX Live alignée sur `ci.yml` et le hook ; § 7 : procédure portée par `outils/compiler_specification.sh` ; § 2.2, § 1.3 et § 9 : contrat du script de concordance tel qu'implémenté (balise `^#+\s*eq:`, environnements multilignes, exemptions de la règle 6, règle 8, texte analysé, glossaire non vérifié) ; § 2.3 : forme canonique `Mn` des décisions (issue #4, branche `claude/fondations`) | Surface d'impact documentaire de l'issue #4 ; ADR 0003 et 0004, § Conséquences |
 | 2026-09-30 | § 7 : motif de relance `Rerun to get\|Rerun LaTeX` (message de `longtable` compris) ; § 9 : règle 3 (`multline` à un numéro, `\nonumber` et `\notag`, seul le manque de label relevé), règle 4 (« décision Mn » ou « (Mn) », une décision par mention, numéro vérifié dans la feuille de route), règle 5 (nom nu dans `\tracabilite`), règle 6 (mode mathématique exempté, exposant et indice limités à `^`, `_`, `^{`, `_{`) (issue #4, branche `claude/fondations`) | Contrat aligné sur les corrections du script (eda7278, 4651b5f, 878fc6f) ; décision du mainteneur du 30/09/2026 sur les décisions multiples |
 | 2026-09-30 | § 6 : convention calendaire tranchée (pas mensuel, n_a = 12, n_m = 1, règle de conversion linéaire unique, écriture des intérêts et de l'amortissement dans la matrice des flux, λ ≤ n_a) (issue #17, branche `claude/j1-temps-comptabilite`) | Décision M22 du mainteneur ; ADR 0005 |
+| 2026-09-30 | § 9 : script des matrices `outils/verifier_matrices.py` cité à côté de la concordance, avec son usage, l'écriture d'une cellule, la structure des tables et ce qu'il vérifie (issue #19, branche `claude/j1-temps-comptabilite`) | Convention d'écriture des matrices fixée sur accord du mainteneur le 30/09/2026 (fiche « temps et comptabilité » § 9.7, commit `8fa2614`) ; décision M22 |
