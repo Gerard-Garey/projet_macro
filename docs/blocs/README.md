@@ -8,7 +8,7 @@ Le **socle** est l'économie fermée à un pays (jalons J1 à J3, décision du m
 
 | N° | Bloc | Fiche | Module visé | Expert pilote | Experts consultés | Statut |
 |---|---|---|---|---|---|---|
-| 1 | Temps et comptabilité | `temps_comptabilite.md` | transverse : `src/nations/noyau/` (comptes, grand livre, identités) et `src/nations/moteur/` (calendrier, phases) ; radicaux de labels `noyau` et `moteur` | `macro` | `monnaie` (bilans de la banque et de la banque centrale) ; `jeu` (rapport pas / tour) | à instruire — prochaine : branche J1 n°1 (`docs/feuille-de-route.md` § 1, M21), passe à « en instruction » à la création de son issue |
+| 1 | Temps et comptabilité | `temps_comptabilite.md` | transverse : `src/nations/noyau/` (comptes, grand livre, identités) et `src/nations/moteur/` (calendrier, phases) ; radicaux de labels `noyau` et `moteur` | `macro` | `monnaie` (bilans de la banque et de la banque centrale) ; `jeu` (rapport pas / tour) | **décidée (M22)**, 30/09/2026 : option C (pas mensuel unique) et socle commun § 3.N, lectures (a) à (f) ; ADR 0005 ; passe à « spécifiée » avec la section `sec:cadre` (#18) |
 | 2 | Production et stocks | `production.md` | `src/nations/blocs/production.py` | `macro` | `jeu` | à instruire |
 | 3 | Travail et salaires | `travail.md` | `src/nations/blocs/travail.py` | `macro` | `monnaie` (indexation des salaires sur les anticipations : frontière inflation) ; `jeu` | à instruire |
 | 4 | Prix | `prix.md` | `src/nations/blocs/prix.py` | `macro` | `monnaie` (indexation des prix sur les anticipations : frontière inflation) ; `jeu` | à instruire |
@@ -50,7 +50,7 @@ L'ordre suit les dépendances : une fiche ne s'instruit pas avant que celles don
 
 Deux fiches peuvent s'instruire en parallèle quand leurs dépendances sont satisfaites et que leurs experts pilotes diffèrent : par exemple 6 (`macro`) et 7 (`monnaie`), sous réserve de l'échange sur la frontière crédit. Les anticipations (8) sont lues par 3 et 4 : les fiches 3 et 4 déclarent la variable d'anticipation qu'elles consomment et laissent à 8 sa loi de formation.
 
-Les pistes nouvelles citées (« deux secteurs », « cible de richesse », « corridor explicite », « apprentissage à gain constant », « prix au coût normal majoré », « pas mensuel unique ») viennent de la passation du 29/09/2026 (§ 8) : ce sont des **options à instruire**, non des choix ; chacune doit s'appuyer sur une référence retrouvée dans sa fiche.
+Les pistes nouvelles citées (« deux secteurs », « cible de richesse », « corridor explicite », « apprentissage à gain constant », « prix au coût normal majoré », « pas mensuel unique ») viennent de la passation du 29/09/2026 (§ 8) : ce sont des **options à instruire**, non des choix ; chacune doit s'appuyer sur une référence retrouvée dans sa fiche. La piste « pas mensuel unique » a été instruite et **retenue** (M22, 30/09/2026) : toutes les fiches suivantes expriment leurs vitesses en base annuelle, converties par la règle linéaire unique du cadre, et leurs délais en tours entiers (un pas = un tour).
 
 ## 4. Cycle de vie d'une fiche
 
@@ -76,3 +76,4 @@ Ces désignations sont pressenties, non arrêtées ; elles seront fixées quand 
 |---|---|
 | 29/09/2026 | Création (issue #6, branche `claude/fondations`) : neuf blocs, experts pilotes, ordre d'instruction proposé. |
 | 30/09/2026 | Mainteneur : experts pilotes et modules validés (`macro` pour « temps et comptabilité » et « État et dette », module `finances_publiques.py`) ; gabarit validé à l'usage (M20) ; fiche 1 instruite seule dans la branche J1 n°1 (M21). |
+| 30/09/2026 | Fiche 1 « temps et comptabilité » décidée (M22) : option C et socle commun ; ADR 0005 rédigé (proposé) ; gabarit retouché proposé à la validation du mainteneur (M20, issue #17). |

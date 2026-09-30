@@ -289,7 +289,7 @@ Seconde déclaration (2 (c), 7 (c)). Le test zéro définit le ratio « stock au
 
 #### Q3 — Matrices et instruments (critères 1, 10, 11 et 14)
 
-**Liste déclarée des instruments du socle (11 (b) amendé).** Sept instruments, chacun avec un émetteur unique. Sont absents mais non interdits :
+**Liste déclarée des instruments du socle (11 (b) amendé).** Six instruments financiers, chacun avec un émetteur unique, et deux actifs réels sans émetteur (K, IN). Sont absents mais non interdits :
 - les billets C (sans billets : **M = D, H = Res**) ;
 - les avances A^G : sans elles, la seule porte de monnaie centrale vers l'État est l'**achat de titres par la banque centrale**, et le compte du Trésor ne devient jamais négatif ;
 - le crédit aux ménages, les actions et l'immobilier (J6) ;
@@ -455,7 +455,7 @@ Total : C, 1 + 12 = 13 ; D, 1 + 13 + 1 = 15 ; E, 1 + 12 + 1 = 14. Dans les trois
 |---|---|---|---|---|---|
 | Paramètres | 52, 4, 1/52 ; bornes numériques | WEEKS, DECISION_WEEKS, 13 ; 1e−9, 1e−8, 64·eps… | n_a = 12, n_m = 1, ε, ε_V (4) | 52, 4, ε, ε_V (4) | 52, motif (12 entiers), ε, ε_V |
 | Bornes du cadre | 6 (l. 489) | `max(1, ·)` × 3 | **0** | 0 | 0 |
-| Postes | ≥ 20 | ≈ 14 | 7 + 2 réels | idem | idem |
+| Postes | ≥ 20 | ≈ 14 | 6 + 2 réels | idem | idem |
 | Lignes de flux | non tabulées | non tabulées | 22 | 22 | 22 |
 | Phases | 8 | 10 sections | 9 | 9 | 9 |
 | Variables d'état calendaires | non spécifiées | historiques | 13 | 15 | 14 |
@@ -485,7 +485,7 @@ Renvois : 3.A-k, 3.B-k = rubrique k ; 3.X-Q1 = colonne de l'option X au tableau 
 | 8 Rapport pas / tour | 4 ticks ; 12 ou 13 tours | 4 ; 13 | 1 ; 12 ; formule | 4 ; 13 ; tableau | 4 ou 5 ; 12 ; tableau |
 | 9 Tolérances | aucune (3.A-6) | absolues (3.B-2, 4) | ε = 1e−12 × S ; marge ≥ 100 par la mesure (3.N-Q4) | idem | idem |
 | 10 Aucun solde résiduel | non spécifié | non (l. 1278–1283, 562, 1633) | oui (3.N-Q3) | idem | idem |
-| 11 Matrices, instruments, portes, Trésor | sans matrice ; A^G, E^CB omis ; Trésor ambigu | Trésor à la banque ; A^G gratuit | 7 instruments ; portes listées ; Trésor à la BC proposé (3.N-Q3) | idem | idem |
+| 11 Matrices, instruments, portes, Trésor | sans matrice ; A^G, E^CB omis ; Trésor ambigu | Trésor à la banque ; A^G gratuit | 6 instruments financiers ; portes listées ; Trésor à la BC proposé (3.N-Q3) | idem | idem |
 | 12 Ordre des phases | Finance avant État ; décisions en fin de mois | k = 0 (impôts), 1 pas (taux) | 9 phases triangulaires ; k = 0 (3.N-Q5) | idem | idem |
 | 13 Empreinte de l'état | non spécifiée | historiques dans l'état | 13 variables | 15 | 14 |
 | 14 Instruments porteurs d'intérêt | coupon figé prévu ; avances | intérêts dus capitalisés ; position nette ; versement sur dus | iX exact par an avec la règle linéaire (3.N-Q2, Q3) | idem | idem |
@@ -494,7 +494,7 @@ Renvois : 3.A-k, 3.B-k = rubrique k ; 3.X-Q1 = colonne de l'option X au tableau 
 
 *`macro`, 30/09/2026.*
 
-**Recommandation : option C** (pas mensuel unique : 12 pas par an, décision à chaque pas), **combinée au socle commun § 3.N** : règle de conversion linéaire unique, sept instruments, les deux matrices ci-dessus, tolérance ε = 1e−12 × échelle, neuf phases, compte du Trésor à la banque centrale. Classement : C > E > D > B > A.
+**Recommandation : option C** (pas mensuel unique : 12 pas par an, décision à chaque pas), **combinée au socle commun § 3.N** : règle de conversion linéaire unique, six instruments financiers et deux actifs réels, les deux matrices ci-dessus, tolérance ε = 1e−12 × échelle, neuf phases, compte du Trésor à la banque centrale. Classement : C > E > D > B > A.
 
 Critère par critère :
 - **1, 10, 11, 14** : C, D, E à égalité ; A et B écartés.
