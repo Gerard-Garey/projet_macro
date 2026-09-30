@@ -2,7 +2,7 @@
 
 Règles obligatoires pour écrire et modifier `docs/specification/nations_et_marches.tex`, la spécification de *Nations & Marchés* (moteur v3). Elles s'imposent à `docwriter`, seul agent qui écrit dans `docs/specification/`, et à toute session qui y touche. Elles mettent en œuvre `docs/exigences.md` § 3 (exigences documentaires) et s'inspirent des conventions LaTeX du dépôt public `Gerard-Garey/outil_usp` (`docs/latex/CONVENTIONS.md`), adaptées à un document de conception économique compilé en XeLaTeX.
 
-Ce fichier est tenu par `architect`. Une convention ne change que par une mise à jour datée de ce fichier, renvoyant à l'ADR ou à la décision du mainteneur qui la motive. Le vocabulaire est celui de `CONTEXT.md`.
+Ce fichier est tenu par `docwriter` (décision du mainteneur du 30/09/2026). Une convention ne change que par une mise à jour datée de ce fichier, renvoyant à l'ADR ou à la décision du mainteneur qui la motive. Le vocabulaire est celui de `CONTEXT.md`.
 
 Trois choses priment, dans cet ordre (`docs/exigences.md` § 1.2) :
 1. la **concordance exacte** entre la spécification et le moteur : toute équation active est documentée, toute équation documentée est exécutée ;
