@@ -519,7 +519,84 @@ Critère par critère :
 
 ## 6. Avis de l'expert consulté (sujets frontière)
 
-Non instruit (`monnaie`, bilans de la banque et de la banque centrale).
+*`monnaie`, 30/09/2026 (issue #16), sur la fiche à la tête `758273a`. Mesures par `uv run python -` le 30/09/2026.*
+
+### 6.1 Conversion (lecture (a))
+
+**Chiffres de `macro` reproduits à l'identique.**
+- Intérêts versés dans l'année :
+  - en linéaire, 4,0000 % pour n = 1, 4, 12, 13, 52 ;
+  - en composé, 3,9414 / 3,9285 / 3,9280 / 3,9236 % (n = 4, 12, 13, 52).
+- Rendement d'un agent qui replace chaque intérêt :
+  - en linéaire, 4,0742 / 4,0747 / 4,0795 % (n = 12, 13, 52) ;
+  - en composé, 4,0000 % pour tout n.
+- K/(n·I), avec g = 2 % et δ = 5 % :
+  - en linéaire, 14,2857 pour tout n ;
+  - en composé, 14,1208 / 14,0840 / 14,0825 / 14,0698.
+
+Une « composée » pour un taux de sortie (amortissement) admet deux écritures, 1 − (1 − δ)^{1/n} ou (1+δ)^{1/n} − 1 ; la seconde donne 14,5052. C'est un argument de plus contre la composée : deux formules pour une même nature.
+
+**Lecture.** Le critère B12 raisonnait sur un intérêt **capitalisé**. Ce n'est pas le cas du socle pour les crédits, les titres et le refinancement : l'intérêt y est payé depuis un dépôt ou des réserves (14 (a)). Pour ces instruments, `macro` a raison.
+
+**Nuance à déclarer.** Pour les **dépôts** et les **réserves**, l'intérêt est crédité dans l'instrument lui-même : un encours laissé en place se capitalise par construction. Sous la règle linéaire, son rendement annuel effectif est de 4,0742 % (12 pas) ou 4,0795 % (52 pas) pour 4 % affiché. L'écart est imperceptible et ne touche aucun état stationnaire annuel.
+
+**Avis : ralliement à la règle linéaire unique pour les trois natures**, à trois conditions déclarées dans `eq:moteur-conversion-taux` ou à côté :
+1. le tableau Q2 tel quel, avec les deux grandeurs dépendantes de n_a chiffrées (le replacement est automatique pour D et Res) ;
+2. un **taux réel annuel** restitué et testé (bande O1) défini par r = i − π, exactement comme le fait le moteur : la formule de Fisher exacte n'est pas celle du moteur et ne doit pas être celle du test ;
+3. une vitesse λ ≥ 1 par an n'a pas d'équivalent composé : la linéaire est la seule règle qui admette toute vitesse. La dépendance de la transition à n_a est admise, puisqu'elle ne change pas l'état d'arrivée.
+
+Aucun désaccord résiduel avec `macro`.
+
+### 6.2 Compte du Trésor (lecture (b))
+
+**Avis : à la banque centrale (i)**, avec `macro`.
+- C'est la seule lecture où le coût du refinancement atteint la banque par un flux visible dès le socle : la ligne 21 est vivante et le taux directeur a une assiette.
+- Sans A^G, la monétisation est visible (achat de titres par la BC), ce qui rend lisible la dominance budgétaire (Sargent et Wallace, 1981).
+- Coût : l'État tient une encaisse M^G positive (voir 6.4, constat 5).
+
+Les colonnes ΔM/ΔH de la matrice des flux sont écrites sous cette lecture : la fiche doit le dire.
+
+### 6.3 Versement du résultat de la BC (lecture (d))
+
+**Avis : chaque tour, sans troncature** (une perte est un versement négatif), avec `macro`.
+- E^CB reste égal à sa valeur initiale résolue : aucune borne, et le double calcul est trivial.
+- Le résultat est la somme des lignes exécutées 12, 13 et de la part B_CB de la ligne 11. Sous C, aucune variable « résultat cumulé » n'est nécessaire.
+- Un versement négatif est un paiement de M^G vers E^CB, soumis à la règle de caisse de l'État : à déclarer.
+- La troncature (borne, avec une règle de recapitalisation) est réservée à J6, par une décision citant celle-ci. Aucune source vérifiée ne tranche entre les deux pour un jeu.
+
+### 6.4 Relecture des matrices, des tolérances et des phases
+
+**Contre-épreuve exécutée.**
+- ΔRes vu de la banque = ΔRes vu de la BC (écart 7e−15).
+- E^CB de clôture identique par le stock et par les flux.
+- ΔH recomposé par les portes = ΔRes, à condition de compter à 0 la part B_CB de la ligne 19 pour un achat primaire.
+
+| N° | Emplacement | Constat | Correction proposée |
+|---|---|---|---|
+| 1 | Matrice des flux, ligne 19, colonne ΔH « + (B_CB) » | Vrai seulement pour un achat de la BC sur le marché secondaire. Pour une souscription **primaire**, M^G et B_CB montent dans le même bilan : ΔH = 0 ; H ne naît que quand l'État dépense | Scinder en **19a**, émission ou rachat primaire (ΔM − part B_H ; ΔH − parts B_H, B_Bk ; 0 part B_CB), et **19b**, opérations de la BC sur le marché secondaire (avec les ménages : ΔM +, ΔH + ; avec la banque : ΔM 0, ΔH +) |
+| 2 | Portes de ΔH | Omet la part B_H émis, pourtant portée dans la matrice | « ligne 19a (parts B_H et B_Bk émis) ; ligne 19b (achats de la BC) » |
+| 3 | En-tête des colonnes ΔM/ΔH | Les signes supposent le Trésor à la BC sans le dire | Ajouter « colonnes écrites sous la lecture (i) » |
+| 4 | Règles de caisse et phases | **Réserves négatives intra-pas non déclarées.** La banque règle en réserves les impôts (phase 6), les souscriptions (phase 7) et i_CB L^CB (8 a) **avant** le refinancement (8 c) | Déclarer : Res peut être négatif **entre les phases** d'un même pas (découvert intrajournalier) ; Res ≥ 0 est vérifié à la clôture, après 8 (c) ; le refinancement est un flux décidé qui couvre au moins la position négative, à i_CB. Ce n'est pas la règle v2.0, car c'est une ligne nommée, à un taux nommé, dans une phase nommée |
+| 5 | « L'émission de titres (phase 7) reconstitue le compte du Trésor » | L'État paie G (phase 5), Tr et i_B B (phase 6) **avant** d'émettre (phase 7). Sans A^G ni découvert, il doit tenir une encaisse M^G au moins égale aux dépenses nettes du pas. **Point frontière, deux positions** | (α) `macro` : garder la phase 7 après la phase 6 et faire de M^G un stock stationnaire résolu, publié. (β) `monnaie` : placer l'émission avec le crédit (phase 3, « le financement précède les règlements »), les souscriptions étant lues sur les plans de la phase 2. `monnaie` préfère (β) : aucune encaisse résiduelle à justifier, et une émission rationnée rationne aussitôt la dépense. **Le mainteneur tranche** |
+| 6 | Q4 (b), borne pire cas | La borne n_pas × eps × S suppose une seule opération arrondie par pas. Avec 30 opérandes, le pire cas vaut 4,8e−12 S (720 pas) et 2,1e−11 S (3 120 pas), **au-dessus de ε_V = 1e−12**. Mesuré (5 postes, 30 flux par pas, S ≈ 1e7, 20 graines) : 3,3e−15 S (720 pas), 6,4e−15 S (3 120 pas) | ε_V = 1e−12 tient par la **mesure**, pas par le pire cas. Réécrire : « pire cas 30·n·eps ; mesuré ≤ 1e−14 S sur 3 120 pas ; ε_V = 1e−12 avec une marge ≥ 100 » ; le test J2 vérifie l'accumulation réelle |
+| 7 | Q5, registre de l'indice | La règle de taux le lira : la variable est acquise, pas conditionnelle | Compter le registre comme imposé : C, 1 + 12 |
+
+**Vérifiés sans constat.**
+- Bilans : un émetteur par instrument, expressions de E^Bk et E^CB, Σ V = K + IN.
+- Flux : lignes 9, 10, 12, 13, 15, 16, 20 à 22 ; contraintes budgétaires.
+- Tolérances : échelles S ; ε = 1e−12 par pas.
+- Phases : triangularité, et aucune ligne touchant Res après 8 (c), sous réserve du constat 4.
+
+**Point hors cadre, pour les fiches 8 et 9.** Avec i_B au taux de la dernière date de décision et k = 0, toute la dette publique est à taux variable mensuel : une hausse du taux directeur frappe le budget de l'État dès le tour même. C'est défendable au socle, mais la fiche 9 dira si un encours à taux fixe est introduit.
+
+### 6.5 Préférence entre C, D et E
+
+**C**, avec `macro`, pour des raisons propres au domaine monétaire :
+- sous C, le glissement annuel lu par la règle de taux est exactement P_t / P_{t−12} − 1, sur 12 valeurs, aux dates que lit le joueur. Sous D il y aurait 13 périodes sans mois ; sous E, des flux et des intérêts mensuels qui oscillent de +25 % / −20 %, illisibles pour une règle de taux et pour la prime souveraine ;
+- une constatation mensuelle de la position de réserves et un refinancement mensuel suffisent au corridor ;
+- coût de fidélité assumé : les ruées (Diamond et Dybvig, 1983) et les crises de change se joueront au mois. Si une fiche J6 établit un besoin infra-mensuel, la réserve 5 de `macro` s'applique.
+
+Aucun désaccord avec `macro` sur (a) à (e) ni sur le classement. Un seul point reste ouvert à deux positions : le constat 5.
 
 ## 7. Avis de `jeu`
 
@@ -640,3 +717,4 @@ Non instruit.
 | 30/09/2026 | Liste courte (14), principe de simplicité et amendements ; **critères validés** (issue #15) | mainteneur |
 | 30/09/2026 | Instruction déposée (§ 3 à 5, issue #16) | `macro` |
 | 30/09/2026 | Avis de `jeu` (§ 7, issue #16) | `jeu` |
+| 30/09/2026 | Avis de `monnaie` (§ 6, issue #16) ; sept constats sur le § 3.N, à intégrer | `monnaie` |
