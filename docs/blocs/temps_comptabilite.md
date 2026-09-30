@@ -523,7 +523,106 @@ Non instruit (`monnaie`, bilans de la banque et de la banque centrale).
 
 ## 7. Avis de `jeu`
 
-Non instruit.
+*`jeu`, 30/09/2026 (issue #16), sur la fiche à la tête `758273a`.*
+
+**Chiffres.** Aucun chiffre nouveau. Ceux du § 3 ont été recalculés par `uv run python -c` le 30/09/2026 :
+- écart entre un tour de 5 et un tour de 4 semaines : 5/4 − 1 = +25 % ; 4/5 − 1 = −20 % ;
+- durée de calcul d'un tour pour N = 1 / 4 / 10 pays : 4,33 / 17,33 / 43,33 ms (C) ; 4 / 16 / 40 ms (D) ; 5 / 20 / 50 ms au plus (E) ;
+- partie de 5 à 10 ans : 60 à 120 tours (C, E), 65 à 130 tours (D) ;
+- 60 ans d'un pays : 3 120 ms quelle que soit l'option.
+
+**Question ludique de la fiche.** Le cadre n'ouvre aucun levier et ne crée aucune asymétrie entre pays. Il fixe la **résolution temporelle de l'information** (ce que le joueur lit à chaque tour) et celle de l'**action** (une décision par tour). La question est donc unique : que gagne ou que perd le joueur quand la résolution du moteur (le pas) diffère de celle de sa décision (le tour) ?
+
+### 7.A Option A — v1.5 (brièvement)
+
+- **Ce que voit le joueur** : l'année vaut 48 ou 52 ticks selon la lecture, si bien que la date affichée et la fenêtre du glissement annuel ne coïncident pas. Un levier saisi en « fin de mois » agit au tick suivant, c'est-à-dire au tour suivant : délai d'un tour non déclaré.
+- **Leviers** : sans matrice des flux, leur contrepartie comptable n'est pas montrable.
+- **Stratégies** : sans objet.
+- **Risques** :
+  - bornes absolues (l. 489) qui coupent une réponse sans que le joueur sache pourquoi ;
+  - seigneuriage assis sur le stock, un effet sans coût lisible.
+- **Verdict** : **à revoir**.
+
+### 7.B Option B — v2.0 (brièvement)
+
+- **Ce que voit le joueur** : 13 dates de décision par an, sans mois ; deux dates d'effet différentes et non déclarées (impôts k = 0, taux k = 1 pas).
+- **Leviers** : aucun catalogue. `Res` et `L_cb` sont résiduels : le coût du refinancement n'est jamais un flux que le joueur voit décider.
+- **Stratégies** : sans objet.
+- **Risques** :
+  - historiques dans l'état : pas de reprise exacte, donc pas de contrefactuel apparié, et le test O2 est impossible ;
+  - tolérances absolues.
+- **Verdict** : **à revoir**.
+
+### 7.C Option C — pas mensuel unique
+
+- **Ce que voit le joueur**
+  - Une date (année, mois). Tout ce qui est restitué au tour est exactement ce que le moteur calcule au pas.
+  - Tout délai d'un bloc est un nombre entier de tours, et le glissement annuel compare simplement le tour n au tour n − 12.
+- **Un tour comme plus court délai suffit-il pour 5 (b) ?** Oui, et c'est la seule option où la distinction est nette.
+  - Un effet « instantané » change le flux du tour n dès le tour n ; un effet « différé d'un tour » apparaît au tour n + 1. Ce sont deux colonnes distinctes de la restitution.
+  - Sous D et E, un bloc peut déclarer un délai de 1 à 3 pas que la restitution au tour ne distingue pas de l'instantané, précisément ce que 5 (b) interdit.
+  - C rend cette interdiction **structurelle** ; D et E la laissent à la discipline de chaque fiche.
+- **Délai k = 0 sur les trois leviers types, avec contrepartie le même tour**
+  - *Taux directeur* : lignes 12 et 13 puis versement de la BC (ligne 16) le même mois. Le joueur voit le coût pour la banque centrale et pour son budget.
+  - *Taux d'imposition* : les dépôts des ménages baissent et le compte du Trésor monte, le même tour.
+  - *Dépense publique* : le compte du Trésor baisse, puis l'émission de titres suit, le même tour.
+  - **Condition** : k ne mesure que le premier flux d'intérêt. La transmission du taux directeur à i_L, i_D, à l'investissement et à l'emploi relève des fiches 7 à 9. Elle doit être déclarée en tours entiers au § 9, sinon k = 0 fera croire que la politique monétaire agit en un mois.
+- **Effet de lisibilité propre à C** (lecture du tableau Q5, à vérifier par le test O2 à J4) : une hausse de dépense publique au tour n se lit d'abord dans les ventes et la variation des stocks du tour n, puis dans la production au tour n + 1. Sous D et E, ce délai se produit à l'intérieur du tour et disparaît dans le cumul.
+- **Leviers et stratégies** : sans objet, parce que le cadre n'offre aucun levier. Le versement de la banque centrale est celui du mois, sans lissage caché.
+- **Risques**
+  - *Réponse imperceptible* : aucune du fait du cadre. Une vitesse annuelle λ convertie en λ/12 doit rester ≤ 12 pour un ajustement monotone, contre ≤ 52 en hebdomadaire. Les mécanismes hebdomadaires de la v1.5 (l. 488–489) seront réécrits au mois. C'est un gain : aucun mécanisme ne peut être plus rapide que ce que le joueur voit.
+  - *Piège irréversible sans signal* : aucun créé par le cadre. Une crise qui naît et se dénoue entre deux dates de décision serait, pour le joueur, un piège sans recours, quelle que soit la finesse du pas. Une crise étalée sur plusieurs tours laisse un signal et un tour pour agir (O3).
+  - *Comportement contre-intuitif* : aucun. Le registre de 12 valeurs, résolu à l'état initial, donne un glissement annuel lisible dès le tour 1.
+- **Verdict** : **lisible**.
+
+### 7.D Option D — hebdomadaire, 13 dates de 4 semaines
+
+- **Ce que voit le joueur** : « période 5 de l'année 2 » ; 13 tours par an ; glissement annuel sur 13 tours.
+- **Irrégularité** : perceptible en permanence, mais cognitive et apprise une fois.
+  - Tout délai exprimé en mois se traduit en 13/12 de tour (« 6 mois » ≈ 6,5 tours).
+  - Il y a 8 % de décisions de plus par année simulée.
+- **Exigence non tenue** : D ne satisfait pas l'exigence maintenue du critère 8, « le joueur lit une date (année, mois) ». Il n'a pas de mois à afficher, et M4 dit « tour mensuel ». Rebaptiser les 13 périodes en pseudo-mois serait une tromperie.
+- **Plus court délai** : ¼ de tour, invisible pour le joueur.
+- **Risques**
+  - Comportement contre-intuitif : « l'année a 13 mois ».
+  - Le versement de la BC devient un cumul intra-tour que le joueur ne voit pas se former.
+- **Verdict** : **à revoir**.
+
+### 7.E Option E — hebdomadaire, mois de 4 ou 5 semaines
+
+- **Ce que voit le joueur** : le bon calendrier (année, mois, 12 tours). Mais **tout flux cumulé sur le tour** vaut +25 % en mars, juin, septembre et décembre par rapport au mois précédent, et −20 % le mois suivant.
+- **Irrégularité** : perceptible sur chaque indicateur de flux, à chaque trimestre, pour toute la partie.
+  - Un levier qui déplace la dépense publique d'un point de PIB (environ 1 % du flux mensuel) se cherche dans un bruit calendaire de ±20–25 %.
+  - Le critère 7 (c) interdit la seule correction possible, la normalisation.
+  - Le joueur perd la lecture mois contre mois, précisément celle qu'exige 5 (b). Ce n'est pas une irrégularité apprise une fois comme en D : c'est un **bruit permanent**.
+- **Plus court délai** : ¼ ou ⅕ de tour, invisible pour le joueur.
+- **Risques** : réponse imperceptible, le défaut central ; comportement contre-intuitif (« les impôts ont bondi de 25 % en mars sans que j'aie rien fait »).
+- **Verdict** : **à revoir**.
+
+### Durée de calcul d'un tour (critère 4 (c))
+
+Elle n'est pas discriminante : 43,3 / 40 / 50 ms pour 10 pays, contre un seuil de 1 s. Au J4, un scénario apparié de 10 ans (2 × 120 tours) prend environ 1 s sous C (2 × 120 × 4,33 ms = 1 039 ms), ce qui rend la comparaison avec et sans levier interactive.
+
+### Préférence motivée
+
+**Option C**, comme `macro`, mais pour une autre raison. Une résolution du moteur plus fine que la résolution de la décision n'apporte rien au joueur et crée deux risques :
+- des délais de bloc que la restitution ne distingue pas de l'instantané (5 (b)) ;
+- des événements qui naissent et se dénouent entre deux tours, sans recours (O3).
+
+Sous C, ce que le joueur voit, ce qu'il décide et ce que le moteur calcule ont la même résolution.
+
+**Classement** : C > E > D sur la lettre des critères, puisque D ne tient pas l'exigence « année, mois ». Sur le seul coût perceptif, E est la pire.
+
+**Conditions demandées au § 9** (aucune n'est une réserve sur C) :
+1. Chaque fiche de bloc déclare ses délais de transmission en tours entiers, avec la contrepartie visible le même tour. Pour le taux directeur, k = 0 (premier intérêt) et le délai de transmission à i_L, i_D (fiche 7) sont deux grandeurs distinctes du catalogue.
+2. Chaque vitesse annuelle λ respecte λ ≤ 12 (ajustement monotone sous conversion linéaire à 12 pas). Tout mécanisme hebdomadaire de la v1.5 est réécrit au mois, ou écarté.
+3. Le test O2 de J4 compare, pour chaque levier, le tour n aux tours n − 1 et n + 1 du contrôle apparié.
+
+**Lectures du § 5, vues du joueur**
+- (b) Compte du Trésor à la banque centrale : préféré, parce que le refinancement devient un flux que le joueur voit naître de ses propres paiements.
+- (c) k = 0 : préféré.
+- (d) Versement de la BC sans troncature : préféré. Une perte versée en négatif est un coût lisible ; une troncature est un coût caché.
+- (a) et (e) : pas d'avis ludique, la différence (0,9 à 1,5 %) étant sous le seuil de perception.
 
 ## 8. Décision du mainteneur
 
@@ -540,3 +639,4 @@ Non instruit.
 | 30/09/2026 | Ouverture (issue #15) ; § 1 et § 2 proposés | `macro`, `monnaie`, `jeu` ; session principale |
 | 30/09/2026 | Liste courte (14), principe de simplicité et amendements ; **critères validés** (issue #15) | mainteneur |
 | 30/09/2026 | Instruction déposée (§ 3 à 5, issue #16) | `macro` |
+| 30/09/2026 | Avis de `jeu` (§ 7, issue #16) | `jeu` |
