@@ -355,7 +355,7 @@ Contraintes budgétaires (sommes de colonnes) :
 - ménages : ΔD_H = WB + Tr + i_D D_H + i_B B_H + Div_F + Div_Bk − C − T_H − ΔB_H ;
 - entreprises : ΔD_F = (C + G + I + ΔIN − WB − T_F − i_L L − Div_F − δK + i_D D_F) + (δK − I − ΔIN) + ΔL ;
 - banque : ΔRes = (i_L L + i_B B_Bk + i_res Res − i_D D − i_CB L^CB − Div_Bk) + ΔD − ΔL − ΔB_Bk + ΔL^CB ;
-- banque centrale : ΔRes = (i_B B_CB + i_CB L^CB − i_res Res − Π^CB) + ΔB_CB + ΔL^CB − ΔM^G ;
+- banque centrale : ΔRes = −(i_B B_CB + i_CB L^CB − i_res Res − Π^CB) + ΔB_CB + ΔL^CB − ΔM^G (un intérêt reçu par la BC draine des réserves ; signe corrigé le 30/09/2026 sur constat de `monnaie`, invisible aux contre-épreuves numériques parce que la parenthèse est nulle sous M22 (d)) ;
 - État : ΔM^G = T + Π^CB − G − Tr − i_B B + ΔB.
 
 Contre-épreuve numérique :
@@ -891,13 +891,42 @@ Sections du plan fixe touchées au J1 (#18), toutes en encadrés `proposee` cita
 - **`CONVENTIONS.md` § 6** : clos par renvoi à M22 et à l'ADR 0005 (`docwriter`) ;
 - **`sec:correspondance`** : inchangée.
 
-**Convention d'écriture des deux matrices, proposée pour le script #19** (à fixer dans #19 avant la rédaction de #18) :
-1. **Aucun agrégat dans une cellule.** D s'écrit D_H + D_F, B s'écrit B_H + B_Bk + B_CB, T s'écrit T_H + T_F, etc., pour que chaque terme apparaisse une fois en + et une fois en −. Les définitions agrégées vont dans le texte.
-2. **Valeur nette développée** dans `tab:matrice-bilans`, pour que les colonnes s'annulent terme à terme.
-3. **Colonne « Réel »** dans `tab:matrice-bilans` : −K et −IN sur leurs lignes, +K + IN sur la ligne de valeur nette, pour que toute ligne somme à zéro. Le texte rappelle la forme de Godley et Lavoie (2007, chap. 2) donnée au § 3.N.
-4. **Une ligne par contrepartie** dans `tab:matrice-flux` : 19b est scindée en 19b-ménages et 19b-banque.
-5. **Colonnes ΔM et ΔH hors de la table sommée**, dans une troisième table `tab:portes-monnaie`, que le script lit pour recomposer ΔM et ΔH.
-6. Unités et fenêtres en tête de chaque table.
+**Convention d'écriture des matrices** (`tab:matrice-bilans`, `tab:matrice-flux`, `tab:portes-monnaie`), vérifiée par `outils/verifier_matrices.py` (#19). Proposée par `macro`, relue et complétée par `monnaie` (contre-épreuve symbolique exécutée le 30/09/2026 : toutes les exigences du point 7 sont satisfaites), fixée sur accord du mainteneur.
+
+1. **Termes simples.**
+   - Un terme simple est un symbole d'encours ou de flux, un produit taux × encours détenu par un seul détenteur, ou la variation d'un tel encours.
+   - Une cellule est une somme signée de termes simples ; le script ne décompose pas un produit (p_K K, i_L L, δK sont des termes).
+   - Aucun agrégat dans une cellule. D, B, T, ΔD, ΔB, i_D D, i_B B s'écrivent développés : D_H + D_F ; B_H + B_Bk + B_CB ; T_H + T_F ; ΔD_H + ΔD_F ; ΔB_H^p + ΔB_Bk^p + ΔB_CB^p ; i_D D_H + i_D D_F ; i_B B_H + i_B B_Bk + i_B B_CB.
+   - Les définitions agrégées vont dans le texte.
+2. **Valeur nette développée** dans `tab:matrice-bilans` :
+   - −V_H = −D_H − B_H ;
+   - −V_F = −K − IN − D_F + L ;
+   - −E^Bk = −L − B_Bk − Res + D_H + D_F + L^CB ;
+   - −E^CB = −B_CB − L^CB + Res + M^G ;
+   - −V_G = −M^G + B_H + B_Bk + B_CB.
+3. **Colonne « Réel »** dans `tab:matrice-bilans`.
+   - Elle porte −K et −IN sur leurs lignes, et +K + IN sur la ligne de valeur nette.
+   - Elle est l'opposé de la colonne Σ de Godley et Lavoie (2007, chap. 2), où les actifs réels sont les seuls postes dont la ligne ne somme pas à zéro ; le texte le rappelle.
+   - Ce n'est pas un secteur, et elle n'existe pas dans `tab:matrice-flux`.
+   - Les colonnes Σ des deux tables sont supprimées.
+4. **Une signature par ligne.** Chaque ligne de `tab:matrice-flux` porte une signature (ΔM, ΔH) unique. Une ligne dont les parts diffèrent par la signature est scindée par contrepartie :
+   - 11a / 11b / 11c (ménages, banque, BC) ;
+   - 19a-ménages / 19a-banque / 19a-BC ;
+   - 19b-ménages / 19b-banque.
+
+   Les lignes 7, 10 et 17 restent entières. La numérotation 1–22 est conservée, avec suffixes.
+5. **`tab:portes-monnaie`**, table non sommée, avec une ligne par ligne de `tab:matrice-flux` :
+   - colonnes : montant (somme des termes positifs de la ligne), signe dans ΔM, signe dans ΔH (+, 0, −) ;
+   - lignes 17 et 20 marquées « poste » ; ligne 22 en (0, 0) ;
+   - en tête : « signes écrits sous M22 (b), compte du Trésor tenu à la banque centrale (lecture (i) du § 3.N) ».
+6. **En tête de chaque table** : unité, fenêtre et convention de signe.
+   - Bilans : u.m., ouverture du pas t, + actif / − passif.
+   - Flux : u.m. par pas t, + reçu / − versé, variation d'un actif détenu −, variation d'un passif émis +.
+7. **Ce que le script vérifie.**
+   - (a) Chaque ligne des deux matrices est nulle terme à terme : chaque terme y apparaît exactement une fois en + et une fois en −.
+   - (b) Chaque colonne de `tab:matrice-bilans` est nulle terme à terme.
+   - (c) Les colonnes de `tab:matrice-flux` définissent le poste de règlement de chaque secteur : ΔD_H pour les ménages, ΔD_F pour les entreprises (sous-colonnes réunies), ΔM^G pour l'État, ΔRes pour la banque et pour la BC. Le script vérifie que ΔRes obtenu de la colonne banque (ΔD_H et ΔD_F substitués) et ΔRes obtenu de la colonne BC (ΔM^G substitué) coïncident terme à terme.
+   - (d) ΔM recomposé depuis `tab:portes-monnaie` = ΔD_H + ΔD_F, et ΔH recomposé = ΔRes, terme à terme.
 
 Ces points sont une convention d'écriture, pas un changement des matrices du § 3.N.
 
@@ -931,3 +960,4 @@ Ces points sont une convention d'écriture, pas un changement des matrices du §
 | 30/09/2026 | Décision M22 (option C, lectures (a) à (f)) | mainteneur |
 | 30/09/2026 | ADR 0005 accepté ; gabarit validé (M20) | mainteneur |
 | 30/09/2026 | Conséquences de la décision (§ 9) | `macro` ; session principale |
+| 30/09/2026 | Convention d'écriture des matrices fixée (§ 9.7, relue par `monnaie`) ; signe de la contrainte de la BC corrigé (§ 3.N-Q3) | `monnaie` ; mainteneur ; session principale |
