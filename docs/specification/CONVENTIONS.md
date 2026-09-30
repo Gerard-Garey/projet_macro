@@ -178,19 +178,16 @@ Le glossaire de la notation (`sec:glossaire`, `tab:symboles`) est le **registre*
 - Un nom qui n'existe plus est un écart bloquant en CI : la citation se corrige dans le commit `docs:` minimal.
 - La prose n'emploie jamais un nom de code sans `\code{}` ; réciproquement, `\code{}` ne sert pas à la mise en valeur d'autre chose (mot anglais, terme du jeu).
 
-## 6. Convention calendaire : question ouverte
+## 6. Convention calendaire : tranchée (M22)
 
-La convention calendaire n'est **pas tranchée**. Elle relève de la fiche comparative « temps et comptabilité » (`docs/blocs/temps_comptabilite.md`), première à instruire, et de la décision M-n du mainteneur qui la clora. Jusqu'à cette décision :
+La convention calendaire est **tranchée** par la décision M22 du mainteneur (30/09/2026), consignée dans l'ADR 0005 (`docs/adr/0005-calendrier-et-cadre-comptable.md`) sur la fiche comparative « temps et comptabilité » (`docs/blocs/temps_comptabilite.md`, § 8). Elle est écrite dans `sec:cadre` de la spécification, sous-section « Calendrier et règle de conversion », en section proposée (§ 4.1) jusqu'au jalon J2. Pour la rédaction du document :
 
-- le document emploie les termes de `CONTEXT.md` (**pas**, **date de décision**, **tour**) sans leur attacher de durée ;
-- aucun coefficient « par semaine » ou « par mois » n'est écrit ; les paramètres de vitesse sont exprimés **par an** et convertis par `eq:moteur-conversion-taux` une fois la durée du pas fixée.
+- le **pas** est un mois simulé : n_a = 12 pas par an, n_m = 1 pas par tour ; tout pas est une **date de décision** ; le **tour** n est le pas n − 1 et s'affiche en (année, mois) ; les termes sont ceux de `CONTEXT.md` ;
+- taux, flux annuels et vitesses d'ajustement s'écrivent **par an** et se convertissent au pas par la seule **règle linéaire** x/n_a, `eq:moteur-conversion-taux` (label posé au J2, avec sa balise) ; aucun coefficient « par semaine » ni « par mois » n'est écrit ailleurs, et une fenêtre « d'un an » vaut exactement n_a pas ;
+- dans la matrice des flux, un intérêt ou un amortissement s'écrit taux annuel × encours d'ouverture / n_a (`$i_L L/n_a$`, `$\delta K/n_a$`) : c'est la règle de conversion appliquée, non une seconde conversion ; un tel produit reste un terme simple au sens du § 9 ;
+- toute vitesse d'ajustement annuelle λ respecte λ ≤ n_a ; les deux grandeurs qui dépendent de n_a (fraction annuelle résorbée par une vitesse, rendement d'un encours dont l'intérêt est crédité dans l'instrument) sont chiffrées dans `sec:cadre`.
 
-L'inventaire de la v1.5 (annexe A de la passation du 29/09/2026) relève une **incohérence interne** que la fiche devra lever :
-- v1.5 § 3.4 « Temps » : le tick est une semaine, le mois compte 4 ticks, les taux sont convertis par $(1+i)^{1/52}-1$ ;
-- 4 ticks × 12 mois = 48 ticks, alors que la conversion des taux, les moyennes mobiles d'un an ($\lambda_q = 1/52$) et le glissement de l'indice des prix supposent 52 ; le document ne dit pas comment l'année de 52 semaines se répartit en 12 mois de 4 ;
-- le moteur v2.0 prend 13 dates de décision par an (`DECISION_WEEKS = 4`, 52/4), soit un « mois » qui n'en est pas un.
-
-Options que la fiche devra au moins comparer, sans que ce fichier en préfère aucune : pas mensuel unique (12 pas par an, décisions à chaque pas) ; pas hebdomadaire avec 52 pas et 13 dates de décision de 4 semaines ; pas hebdomadaire avec mois calendaires de 4 ou 5 semaines. Le budget de calcul est fixé par pays-semaine (`CLAUDE.md`) : la fiche dira comment il se lit si le pas est mensuel. Le tour du jeu est mensuel (décision du mainteneur du 29/09/2026), ce qui contraint le rapport entre pas et tour, pas la durée du pas.
+L'incohérence que ce paragraphe relevait avant la décision est levée : v1.5 § 3.4 « Temps », tick hebdomadaire, mois de 4 ticks et conversion par $(1+i)^{1/52}-1$, soit 48 ticks par an selon le calendrier contre 52 selon la conversion ; moteur v2.0, 13 dates de décision par an (`DECISION_WEEKS = 4`). Elle est consignée dans l'ADR 0005 (§ Contexte) et, avec les autres options écartées (pas hebdomadaire à 13 dates de 4 semaines, pas hebdomadaire à mois de 4 ou 5 semaines), dans `sec:ecartees`. Le budget de calcul, fixé par pays-semaine (M13), se lit 52/12 ms par pays-pas. Changer n_a, n_m ou la règle de conversion demande une décision M-m citant M22.
 
 ## 7. PDF versionné et compilation
 
@@ -236,3 +233,4 @@ La sortie donne aussi les décomptes (labels, balises, équations numérotées, 
 | 2026-09-29 | Création (issue #6, branche `claude/fondations`) | Jalon J0 ; préparation de la spécification du socle (J1) |
 | 2026-09-29 | § 3 : liste des paquets TeX Live alignée sur `ci.yml` et le hook ; § 7 : procédure portée par `outils/compiler_specification.sh` ; § 2.2, § 1.3 et § 9 : contrat du script de concordance tel qu'implémenté (balise `^#+\s*eq:`, environnements multilignes, exemptions de la règle 6, règle 8, texte analysé, glossaire non vérifié) ; § 2.3 : forme canonique `Mn` des décisions (issue #4, branche `claude/fondations`) | Surface d'impact documentaire de l'issue #4 ; ADR 0003 et 0004, § Conséquences |
 | 2026-09-30 | § 7 : motif de relance `Rerun to get\|Rerun LaTeX` (message de `longtable` compris) ; § 9 : règle 3 (`multline` à un numéro, `\nonumber` et `\notag`, seul le manque de label relevé), règle 4 (« décision Mn » ou « (Mn) », une décision par mention, numéro vérifié dans la feuille de route), règle 5 (nom nu dans `\tracabilite`), règle 6 (mode mathématique exempté, exposant et indice limités à `^`, `_`, `^{`, `_{`) (issue #4, branche `claude/fondations`) | Contrat aligné sur les corrections du script (eda7278, 4651b5f, 878fc6f) ; décision du mainteneur du 30/09/2026 sur les décisions multiples |
+| 2026-09-30 | § 6 : convention calendaire tranchée (pas mensuel, n_a = 12, n_m = 1, règle de conversion linéaire unique, écriture des intérêts et de l'amortissement dans la matrice des flux, λ ≤ n_a) (issue #17, branche `claude/j1-temps-comptabilite`) | Décision M22 du mainteneur ; ADR 0005 |
