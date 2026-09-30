@@ -62,6 +62,15 @@ Le projet est mené avec Claude Code : sous-agents spécialisés (pilotage, expe
 - **toute affirmation sur le code s'adosse à une mesure** exécutée ; tout changement de résultat a son tableau avant / après et son visa ;
 - l'origine de chaque bloc (v1.5, v2.0 ou nouvelle) est **décidée par le mainteneur** sur fiche comparative.
 
+## Routage du modèle et de l'effort
+
+`architect`, `macro`, `monnaie` et `jeu` ne tournent plus systématiquement sur Fable : Opus par défaut, effort `medium` pour la routine et `high` pour le jugement, Fable réservé à une liste fermée de cas ou à l'accord du mainteneur, avec des plafonds d'escalade (`docs/agents/routage.md`, ADR 0005). Politique issue du modèle `Modele_vibe_code`, adaptée à ce projet ; ses critères se réévaluent à mesure que le projet évolue (après les dix premières consultations, puis à chaque point d'étape d'`architect`).
+
+- **Où** : critères (matrice, contrats partagés, seuil « macro », plafonds) dans `docs/agents/routage.md` ; effort et plafond de tours de routine dans le frontmatter des fiches de base ; rôles dédoublés, effort et plafond de jugement dans `.claude/outils/fiches_jumelles.sh` (`ROLES`, `EFFORT_APPROFONDI`, `TOURS_APPROFONDI`), puis `bash .claude/outils/fiches_jumelles.sh` pour régénérer les fiches `-approfondi`.
+- **Articulation** : les règles de `CLAUDE.md` priment (visa, décisions réservées au mainteneur, deux lectures d'une source).
+- **Vérification** : `bash .claude/outils/fiches_jumelles.sh --verifier` (la CI) ; dans une session neuve, une consultation de chaque fiche puis `bash .claude/outils/bilan_journal.sh` (modèle réellement servi, journal local du hook `SubagentStop`) ; les escalades sont notées dans la PR (section « Consultations escaladées »).
+- **Limites** : un plafond de tours n'est pas un plafond de tokens ; l'effort effectif n'est pas observable dans le journal ; la politique ne supprime pas les angles morts des modèles.
+
 ## Sécurité du dépôt
 
 Le dépôt est public. Réglages appliqués (`OWNER/REPO` : `Gerard-Garey/projet_macro`) :

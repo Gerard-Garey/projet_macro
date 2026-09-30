@@ -59,6 +59,7 @@ Toutes datées du 29/09/2026 et arrêtées par le mainteneur. M1 à M15 sont con
 | M17 | 29/09/2026 | Les pièces d'`archive/` sont versées intactes. Le source v1.5 et le cours citent des pays réels comme épisodes historiques et en bibliographie seulement, jamais dans la grille des dix configurations ; la règle est « aucun nom de pays réel associé aux configurations » ; le critère de l'issue #5 (« aucune occurrence ») est corrigé en ce sens. | ADR 0001, pt 6 ; `docs/exigences.md` § 2.9 |
 | M18 | 29/09/2026 | Le gabarit de fiche comparative (`docs/blocs/0000-gabarit.md`, issue #6) est validé par le mainteneur après la fusion de la PR #7, avant la première fiche du jalon J1. | § 2 ci-dessus et § 6 ci-dessous (J1) |
 | M19 | 29/09/2026 | Critères de passage des jalons J1 à J8 arrêtés (§ 6) ; le budget de calcul passe de J2 à J3, J2 ne mesurant que le coût du noyau. | § 6 ci-dessous |
+| M20 | 30/09/2026 | Routage du modèle et de l'effort d'`architect`, `macro`, `monnaie` et `jeu` : Opus par défaut (effort `medium` en routine, `high` en jugement, fiches `-approfondi` générées), Fable réservé aux cas de `docs/agents/routage.md` § 4.1 ou à l'accord du mainteneur, plafonds d'escalade, lecture ciblée, retour structuré, journal local des consultations ; politique du modèle `Modele_vibe_code` adaptée au projet. Branche ad hoc hors branche de travail, sur instruction du mainteneur. | ADR 0005, `docs/agents/routage.md` |
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 
