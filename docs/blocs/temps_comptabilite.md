@@ -3,8 +3,8 @@ bloc: Temps et comptabilité
 module: transverse : src/nations/noyau/ (comptes, grand livre, identités) et src/nations/moteur/ (calendrier, phases) ; radicaux de labels `noyau` et `moteur`
 expert pilote: macro
 experts consultés: monnaie (bilans de la banque et de la banque centrale : réserves, refinancement, avances) ; jeu (rapport pas / tour)
-statut: avis rendus
-décision: —
+statut: décidée (M22)
+décision: M22 (30/09/2026)
 issue: #15
 ---
 
@@ -720,7 +720,18 @@ Sous C, ce que le joueur voit, ce qu'il décide et ce que le moteur calcule ont 
 
 ## 8. Décision du mainteneur
 
-Non instruit.
+- **Numéro** : M22 (reporté dans `docs/feuille-de-route.md`, § 4).
+- **Date** : 30/09/2026.
+- **Option retenue** : **C**, pas mensuel unique (12 pas par an, un pas = un tour, décision à chaque pas), combinée au socle commun du § 3.N tel que corrigé par les constats de `monnaie` (§ 6.4). Lectures du § 5 :
+  - (a) règle de conversion **linéaire unique** pour les taux, les flux et les vitesses, avec les trois conditions de `monnaie` (§ 6.1) ;
+  - (b) compte du Trésor tenu **à la banque centrale** ;
+  - (c) **k = 0** : un changement de taux s'applique dès le tour de la décision ;
+  - (d) résultat de la banque centrale versé **chaque tour, sans troncature** (une perte est un versement négatif) ;
+  - (e) ratio stationnaire = stock d'ouverture / (12 × flux du pas), le facteur vers le ratio sur 12 tours étant publié ;
+  - (f) émission des titres publics **après les règlements** (position (α), phase 7), avec une encaisse M^G stationnaire résolue.
+- **Motifs** : le mainteneur a retenu les recommandations concordantes de `macro`, `monnaie` et `jeu` (§ 5 à 7) et, sur le seul point de désaccord (f), la position conforme au principe de simplicité (une variable de moins, encaisse exactement stationnaire, un tour d'alerte pour le joueur). Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : les cinq réserves du § 5, avec leurs seuils écrits avant l'essai (identités et invariance d'unité à J2, budget du noyau seul à J2, état stationnaire à J3, réouverture par une décision M-m citant M22 si un fait établit un besoin infra-mensuel) ; les trois conditions de `jeu` (§ 7) pour le § 9.
+- **Ce qui est écarté et pourquoi** : A (v1.5 : matrice des flux absente, 48 ≠ 52, bornes absolues) ; B (v2.0 : soldes résiduels, tolérances absolues, historiques dans l'état) ; D (13 tours par an sans mois : l'exigence « année, mois » du critère 8 n'est pas tenue) ; E (bruit calendaire de ±20–25 % sur les flux mensuels) ; la conversion composée pour les taux (intérêts versés inexacts, ratios stationnaires dépendant du pas) ; le compte du Trésor à la banque (refinancement inerte au socle) ; la troncature du versement de la banque centrale (réservée à J6) ; l'émission avant les règlements (β : une variable de prévision de plus). Ces pistes alimentent `sec:ecartees` de la spécification (#18).
 
 ## 9. Conséquences de la décision
 
@@ -736,3 +747,4 @@ Non instruit.
 | 30/09/2026 | Avis de `jeu` (§ 7, issue #16) | `jeu` |
 | 30/09/2026 | Avis de `monnaie` (§ 6, issue #16) ; sept constats sur le § 3.N | `monnaie` |
 | 30/09/2026 | Constats 1 à 4, 6 et 7 intégrés au § 3.N ; constat 5 porté au § 5, lecture (f) ; statut « avis rendus » | `macro` ; session principale |
+| 30/09/2026 | Décision M22 (option C, lectures (a) à (f)) | mainteneur |
