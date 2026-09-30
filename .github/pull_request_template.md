@@ -8,6 +8,10 @@ Closes #
 
 <!-- « Aucun », ou un tableau avant / après par commit qui change un résultat : grandeur / avant / après / écart / explication, avec le visa. -->
 
+## Consultations escaladées
+
+<!-- « Aucune », ou une ligne par escalade (docs/agents/routage.md, § 7) : fiche / modèle / critère déclenché / statut obtenu / suite. -->
+
 ## Contrôles
 
 - [ ] Batteries de `CLAUDE.md`, « Commandes », vertes

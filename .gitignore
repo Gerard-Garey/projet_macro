@@ -230,6 +230,7 @@ id_ed25519*
 .claude/settings.local.json
 CLAUDE.local.md
 .claude/worktrees/
+.claude/journal-agents.jsonl
 
 # --- R ------------------------------------------------------------------------
 .Rhistory
