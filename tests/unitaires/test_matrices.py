@@ -93,7 +93,6 @@ def test_specification_reelle(matrices, capsys):
     assert "aucune matrice trouvée" in sortie or "Aucun écart." in sortie
 
 
-@pytest.mark.xfail(strict=True, reason="tables écrites par l'issue #18")
 def test_specification_reelle_porte_les_trois_tables(matrices, capsys):
     """La spécification contient les trois tables et passe en `--strict`."""
     texte = matrices.TEX_DEFAUT.read_text(encoding="utf-8")
