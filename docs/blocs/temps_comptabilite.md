@@ -735,7 +735,188 @@ Sous C, ce que le joueur voit, ce qu'il décide et ce que le moteur calcule ont 
 
 ## 9. Conséquences de la décision
 
-Non instruit.
+*Rédigé par `macro` (expert pilote), 30/09/2026, d'après M22 (§ 8) et l'ADR 0005. « pt n » désigne le point n de la décision de l'ADR 0005 ; « Q1 » à « Q5 », les questions du § 3.N.*
+
+### 9.1 Labels d'équation
+
+**Au jalon J1 (#18), aucun label.** La section `sec:cadre` est écrite sans `\label{eq:…}` : chaque mécanisme figure dans un encadré `proposee` citant M22 et l'issue de réalisation (J2), avec les équations en `equation*` (`CONVENTIONS.md` § 4.1 ; règle 1 de la concordance). `eq:moteur-conversion-taux`, promis par `CONVENTIONS.md` § 5.2, n'apparaîtra qu'au J2.
+
+**Au jalon J2, labels à créer** (forme `eq:<module>-<nom>`). `coder` pose une balise par label ; `docwriter` retire l'encadré `proposee` et pose le label dans le même passage.
+
+| Label | Ce que l'équation détermine | Statut | Provenance | Couche |
+|---|---|---|---|---|
+| `eq:moteur-calendrier-date` | tour n = pas n − 1 ; mois = (n − 1) mod 12 + 1 ; année = (n − 1) div 12 + 1 | choix de conception | M22, pt 1 ; Q1 | `moteur/` |
+| `eq:moteur-date-decision` | prédicat vrai à tout pas (n_m = 1), déduit de t seul | choix de conception | M22, pt 2 | `moteur/` |
+| `eq:moteur-conversion-taux` | x_pas = x_an / n_a pour les trois natures ; une fenêtre « d'un an » vaut n_a pas | choix de conception | M22, pt 4, lecture (a) ; Q2 | `moteur/` |
+| `eq:moteur-registre-prix` | mise à jour du registre en phase 9 (longueur n_a) ; glissement annuel P_t / P_{t−12} − 1 | choix de conception | M22, pt 16 ; Q5 | `moteur/` ou `etat/` |
+| `eq:noyau-cloture-poste` | clôture = ouverture + somme des lignes de flux nommées, poste par poste | dérivée | M22, pt 8 ; Q3 | `noyau/` |
+| `eq:noyau-somme-ligne` | chaque ligne de la matrice des flux somme à zéro | dérivée | M22, pt 6 ; Q3 | `noyau/` |
+| `eq:noyau-somme-colonne` | chaque colonne de la matrice des flux somme à zéro | dérivée | M22, pt 6 ; Q3 | `noyau/` |
+| `eq:noyau-valeur-nette-stock` | V = actifs − passifs, par secteur | dérivée | M22, pt 8 ; critère 10 (c) | `noyau/` |
+| `eq:noyau-valeur-nette-flux` | V_{t+1} = V_t + résultat − distribution, cumulé depuis t = 0 | dérivée | M22, pt 8 ; critère 10 (c) | `noyau/` |
+| `eq:noyau-echelle-bilan` | S = somme des valeurs absolues de tous les postes du bilan contrôlé | choix de conception | M22, pt 14 ; Q4 | `noyau/` |
+| `eq:noyau-tolerance-pas` | \|résidu\| ≤ ε · S à la fin de chaque phase | choix de conception | M22, pt 14 ; Q4 (a) | `noyau/` |
+| `eq:noyau-tolerance-cumulee` | \|V_stock − V_flux\| ≤ ε_V · S (phase 9) | choix de conception | M22, pt 14 ; Q4 (b) | `noyau/` |
+| `eq:noyau-reserves-cloture` | Res_{t+1} ≥ 0 en phase 9, après 8 (c) ; position négative intra-pas admise | choix de conception | M22, pt 10 | `noyau/` |
+| `eq:noyau-variation-monnaie` | ΔM = ΔD, recomposé par les portes de Q3 | dérivée | M22, pt 6 ; critère 11 (c) | `noyau/` |
+| `eq:noyau-variation-monnaie-centrale` | ΔH = ΔRes, recomposé par les portes de Q3 | dérivée | M22, pt 6 ; critère 11 (c) | `noyau/` |
+
+**Au jalon J3** : `eq:moteur-ratio-pib-annuel` (lecture (e)). Le radical reste à confirmer, car `CONVENTIONS.md` § 2.1 n'en attribue aucun à `observation/` (voir 9.8).
+
+**Hors cadre, dans leurs fiches** : le cadre fixe pour chacun la ligne, la phase et la forme (pts 10 à 13), non l'équation.
+- La règle de refinancement : ligne 21, phase 8 (c), fiche 7.
+- Le versement du résultat de la banque centrale : ligne 16, phase 8 (b), fiche 8.
+- L'émission des titres : ligne 19a, phase 7, ΔB = G + Tr + i_B B − T − Π^CB + (M^G* − M^G d'ouverture), fiche 9.
+- Les lignes de rationnement des règles de caisse : chaque bloc payeur.
+
+### 9.2 Paramètres
+
+Quatre paramètres, aucune borne (pt 18), à porter dans `tab:calibration` au J2. Au J1, ils figurent dans l'encadré `proposee` de `sec:cadre`, sans `\code{}`. Les noms dans le code sont des propositions, que `coder` peut changer.
+
+| Symbole | Nom proposé (`nations.moteur.parametres`) | Valeur | Unité | Source | Équation |
+|---|---|---|---|---|---|
+| n_a | `pas_par_an` | 12 | pas par an | M22, pt 1 | `eq:moteur-conversion-taux`, `eq:moteur-calendrier-date`, `eq:moteur-registre-prix` |
+| n_m | `pas_par_tour` | 1 | pas par tour | M22, pt 1 | `eq:moteur-date-decision` |
+| ε | `tolerance_identite_pas` | 1e−12 | sans dimension (résidu / S) | M22, pt 14 ; Q4 (a) | `eq:noyau-tolerance-pas` |
+| ε_V | `tolerance_identite_cumulee` | 1e−12 | sans dimension (résidu / S) | M22, pt 14 ; Q4 (b), tenue par la mesure | `eq:noyau-tolerance-cumulee` |
+
+**Grandeurs dérivées, qui ne sont pas des paramètres :**
+- la longueur du registre (= n_a) ;
+- `semaines_par_pas = 52/12` de `tests/invariants/test_budget.py` ;
+- le facteur entre les deux ratios au PIB annuel (0,9 % pour g = 2 %), publié à J3 ;
+- les deux grandeurs dépendantes de n_a (pt 5), publiées dans `sec:cadre`.
+
+**M^G\*** n'est pas un paramètre du cadre. C'est une variable de l'état initial résolu, calculée par le script d'état stationnaire selon la règle de la fiche 9, et bornée par le cadre à au plus (G + Tr + i_B B)/n_a. Le cadre exige seulement qu'elle existe, qu'elle soit publiée, et qu'à l'état stationnaire M^G de clôture lui soit égal à chaque pas.
+
+### 9.3 Ce qui reste paramétrable après la décision
+
+**Sans rouvrir M22** (décision de la fiche concernée, ou visa de l'expert pilote pour un resserrement) :
+- les taux i_D, i_L (fiche 7) ; i_res, i_CB et leur écart (fiche 8) ; i_B et un éventuel encours à taux fixe (fiche 9) ;
+- la règle de refinancement (fiche 7) ;
+- la règle de M^G* et l'ordre de priorité des paiements de l'État (fiche 9) ;
+- l'ajout d'une ligne ou d'une colonne prévu par le pt 7 (billets, avances, crédit aux ménages, actions, immobilier, reste du monde) ;
+- un **resserrement** de ε ou de ε_V.
+
+**Par une décision M-m citant M22** :
+- n_a ou n_m ;
+- la règle de conversion ;
+- la localisation du compte du Trésor ;
+- l'ordre des neuf phases ;
+- le délai k ;
+- la troncature du versement de la banque centrale (J6) ;
+- tout **élargissement** de ε ou de ε_V, qui n'est jamais un correctif.
+
+**Aucun drapeau de mode** (ADR 0002) : le code a un seul calendrier, une seule règle de conversion et un seul ordre de phases. n_a et n_m sont des paramètres parce que toute fenêtre et toute conversion s'écrivent en fonction d'eux.
+
+### 9.4 Interfaces
+
+**Ce que chaque fiche de bloc déclare :**
+- ses vitesses en base annuelle, converties par `eq:moteur-conversion-taux`, avec λ ≤ 12 ;
+- ses fenêtres en pas entiers ;
+- ses délais de transmission en tours entiers, avec la contrepartie comptable visible le même tour ;
+- ses flux, chacun dans une ligne de la matrice de Q3 et une phase de Q5 ;
+- sa règle de caisse ;
+- ses variables retardées, avec leur valeur stationnaire explicite.
+
+**Lignes et phases par bloc.** Les lignes 17, 20 et 22 sont des contreparties de règlement appliquées par le noyau.
+
+| Bloc | Phases où il écrit | Lignes de flux qu'il propose | Ce qu'il lit du cadre |
+|---|---|---|---|
+| 2 Production et stocks | 2, 4, 5 | 4 | t, conversion ; phases 2 à 4 |
+| 3 Travail et salaires | 1, 4 | 5 | registre, conversion |
+| 4 Prix | 1, 5 | aucune (variables) | registre |
+| 5 Ménages | 2, 5, 7 | 1 ; parts ménages de 19a et 19b ; reçoit 5, 6, 10, 11, 14, 15 | ouverture, phases 1 à 6 |
+| 6 Investissement et financement | 2, 3, 5, 6 | 3, 8, 9 (payeur), 14, 18 (demande) | phases 2 à 5 |
+| 7 Banque commerciale | 3, 6, 7, 8 (c) | 18 (offre), 9 (receveur), 10, 15 ; part banque de 19a et 19b ; 21 | position de réserves après 8 (b) ; découvert intra-pas |
+| 8 Banque centrale et anticipations | 1, 7, 8 (a) et (b) | 19a part B_CB^p, 19b ; 12, 13, 16 | registre ; encours d'ouverture de Res et L^CB |
+| 9 État et dette | 2, 5, 6, 7 | 2, 6, 7, 11 (payeur), 19a | M^G d'ouverture et M^G* ; phases 5 et 6 |
+
+**Leviers du socle.** Tous sont lus en phase 1 du tour n, avant tout flux ; l'ordre de saisie est sans effet, et aucun ne s'applique à un pas déjà exécuté.
+
+| Levier (bloc) | Premier flux modifié | Délai | Contrepartie visible le même tour | Ce que le délai ne mesure pas |
+|---|---|---|---|---|
+| Taux directeur (8) | intérêts sur Res et L^CB (lignes 12, 13, phase 8 (a)) | k = 0 | versement Π^CB (ligne 16) → M^G ; résultat de la banque ; Res et L^CB à la clôture | la transmission à i_L, i_D, à l'investissement et à l'emploi (fiches 7, 6, 2, 3), en tours entiers, distincte de k au catalogue |
+| Taux d'imposition (9) | impôts (ligne 7, phase 6) | 0 | D_H, D_F baissent ; M^G monte ; Res baisse ; émission du tour réduite d'autant | l'effet sur C et I |
+| Dépense publique (9) | achats publics (ligne 2, phase 5) | 0 | M^G baisse, D_F monte, Res monte ; ventes et ΔIN du tour n ; émission (19a) le même tour ; production au tour n + 1 | l'effet sur l'emploi |
+| Transferts (9) | transferts (ligne 6, phase 6) | 0 | D_H monte, M^G baisse, Res monte ; 19a le même tour | l'effet sur C |
+
+L'émission de titres n'est pas un levier au socle : sous (α), ΔB est le besoin réalisé du pas. Un placement raté laisse M^G sous M^G*, et le rationnement de la dépense frappe le tour n + 1.
+
+### 9.5 Conditions de `jeu` (§ 7, reprises telles quelles)
+
+1. Chaque fiche de bloc déclare ses délais de transmission en tours entiers, avec la contrepartie visible le même tour. Pour le taux directeur, k = 0 (premier intérêt) et le délai de transmission à i_L, i_D (fiche 7) sont deux grandeurs distinctes du catalogue.
+2. Chaque vitesse annuelle λ respecte λ ≤ 12 (ajustement monotone sous conversion linéaire à 12 pas). Tout mécanisme hebdomadaire de la v1.5 est réécrit au mois, ou écarté.
+3. Le test O2 de J4 compare, pour chaque levier, le tour n aux tours n − 1 et n + 1 du contrôle apparié.
+
+**Mise en œuvre :**
+- condition 1 : une rubrique obligatoire de chaque fiche et du catalogue `sec:leviers` ;
+- condition 2 : une validation de la table de calibration au chargement (λ/n_a ≤ 1), jamais un écrêtage ;
+- condition 3 : le test O2 de J4.
+
+### 9.6 Tests attendus
+
+Chaque test énonce une propriété, jamais une valeur à reproduire, avec des seuils écrits avant l'essai (§ 5 ; ADR 0005, pts 19 à 21). À J2, les blocs n'existent pas encore : un générateur déterministe à graine explicite propose les flux au noyau.
+
+| Jalon | Test | Propriété vérifiée | Seuil |
+|---|---|---|---|
+| J2 | Identités par pas | à la fin de chaque phase : sommes nulles ; clôture = ouverture + flux | \|résidu\| ≤ 1e−12 × S, 720 pas sans choc |
+| J2 | Identité cumulée | V par le stock = V par les flux depuis t = 0 | ≤ 1e−12 × S sur 720 pas ; accumulation mesurée et publiée |
+| J2 | Invariance d'unité | nominaux ×100 : ratios résidu / S et champs inchangés | ≤ 1e−12 ; écart relatif ≤ 1e−10 |
+| J2 | Reprise | sauvegarde à la frontière de tour, rechargée : trajectoire bit à bit ; décisions différentes après reprise : divergence à partir de la phase 1 seulement | bit à bit ; première différence en phase 1 |
+| J2 | Capitalisation annuelle | intérêts versés : somme sur n_a pas = i·X ; intérêt crédité dans l'encours : rendement (1 + i/n_a)^{n_a} − 1 déclaré | 1e−12 relatif |
+| J2 | Conversion unique | aucune division par n_a hors de `eq:moteur-conversion-taux` ; Σ des X/n_a = X | contrôle par script ; 1e−12 relatif |
+| J2 | Calendrier | date de t seul ; tour 13 = mois 1 de l'année 2 ; tour 25 = mois 1 de l'année 3 | égalités exactes |
+| J2 | Triangularité | aucune phase ne lit une variable d'une phase ultérieure | aucune lecture hors ordre |
+| J2 | Découvert intra-pas | Res négatif après la phase 7, ligne 21 > 0, Res ≥ 0 en phase 9, aucune affectation hors ligne | Res_{t+1} ≥ 0 ; ΔL^CB = ligne 21 |
+| J2 | Portes de la monnaie à l'exécution | ΔM et ΔH recomposés = ΔD et ΔRes | ≤ 1e−12 × S |
+| J2 | Concordance ΔM/ΔH depuis la spécification | script #19 | code 0 en `--strict` |
+| J2 | Budget du noyau seul | `test_budget.py`, `semaines_par_pas = 52/12`, plateforme de référence | ≤ 0,5 ms par pas |
+| J2 | Registre | longueur n_a, aucun autre historique (13 variables calendaires) | décompte exact |
+| J3 | État stationnaire | ratios du script = moteur à t = 0 ; dérive dans les bandes O1 sur 60 ans ; registre stationnaire ; M^G = M^G* | 1e−9 ; bandes O1 |
+| J3 | Budget du socle | `test_budget.py` sur le socle complet | ≤ 52/12 ms par pays-pas |
+| J4 | O2 par levier | effet du signe attendu au tour n, comparé aux tours n − 1 et n + 1 ; contrepartie du tableau 9.4 visible | signe et date exacts |
+
+### 9.7 Surface de spécification
+
+Sections du plan fixe touchées au J1 (#18), toutes en encadrés `proposee` citant M22 :
+- **`sec:cadre`** : les sept points de #18, plus les deux grandeurs dépendantes de n_a et la liste exhaustive des portes de la monnaie ;
+- **`sec:changements-v3x`** : une ligne « cadre calendaire et comptable (M22) » ;
+- **`sec:ecartees`** : les pistes écartées de l'ADR 0005 ;
+- **`tab:symboles`** :
+  - t, n_a, n_m, ε, ε_V, S ;
+  - les instruments ; les valeurs nettes ; M, H ;
+  - les flux des 22 lignes ; M^G* ;
+- **`sec:leviers`** : le tableau 9.4 ;
+- **`sec:calibration`** : les quatre paramètres, sans `\code{}` avant J2 ;
+- **`CONVENTIONS.md` § 6** : clos par renvoi à M22 et à l'ADR 0005 (`docwriter`) ;
+- **`sec:correspondance`** : inchangée.
+
+**Convention d'écriture des deux matrices, proposée pour le script #19** (à fixer dans #19 avant la rédaction de #18) :
+1. **Aucun agrégat dans une cellule.** D s'écrit D_H + D_F, B s'écrit B_H + B_Bk + B_CB, T s'écrit T_H + T_F, etc., pour que chaque terme apparaisse une fois en + et une fois en −. Les définitions agrégées vont dans le texte.
+2. **Valeur nette développée** dans `tab:matrice-bilans`, pour que les colonnes s'annulent terme à terme.
+3. **Colonne « Réel »** dans `tab:matrice-bilans` : −K et −IN sur leurs lignes, +K + IN sur la ligne de valeur nette, pour que toute ligne somme à zéro. Le texte rappelle la forme de Godley et Lavoie (2007, chap. 2) donnée au § 3.N.
+4. **Une ligne par contrepartie** dans `tab:matrice-flux` : 19b est scindée en 19b-ménages et 19b-banque.
+5. **Colonnes ΔM et ΔH hors de la table sommée**, dans une troisième table `tab:portes-monnaie`, que le script lit pour recomposer ΔM et ΔH.
+6. Unités et fenêtres en tête de chaque table.
+
+Ces points sont une convention d'écriture, pas un changement des matrices du § 3.N.
+
+### 9.8 Issues proposées (titres, non créées ; #18 et #19 exclues)
+
+**Branche J2 (noyau)**, périmètre à fixer par `architect` :
+1. `noyau/` : grand livre par positions, interface « ouvrir un pas, proposer un flux, clore une phase », identités, échelle S, tolérances, double calcul des valeurs nettes, Res ≥ 0 à la clôture.
+2. `moteur/` : calendrier, conversion linéaire unique, ordonnanceur des neuf phases à exposition triangulaire, paramètres typés.
+3. `etat/` : schéma d'état versionné (t, registre, postes), sauvegarde et reprise exactes, test à la frontière de tour.
+4. Tests d'invariants du cadre.
+5. `docs:` passage de `sec:cadre` de « proposée » à exécutée.
+
+**Outillage transverse :**
+6. Script de contrôle : aucune division par n_a hors de `eq:moteur-conversion-taux` dans `src/`.
+7. `CONVENTIONS.md` § 2.1 : radical de label pour `observation/`, avant J3.
+
+**Fiches suivantes** (trois issues par fiche, M21) :
+8. à 10. Fiche « production et stocks » : critères ; instruction et avis ; décision et section proposée.
+11. Catalogue des leviers du socle (`sec:leviers`), complété fiche par fiche.
 
 ## 10. Historique de la fiche
 
@@ -748,3 +929,5 @@ Non instruit.
 | 30/09/2026 | Avis de `monnaie` (§ 6, issue #16) ; sept constats sur le § 3.N | `monnaie` |
 | 30/09/2026 | Constats 1 à 4, 6 et 7 intégrés au § 3.N ; constat 5 porté au § 5, lecture (f) ; statut « avis rendus » | `macro` ; session principale |
 | 30/09/2026 | Décision M22 (option C, lectures (a) à (f)) | mainteneur |
+| 30/09/2026 | ADR 0005 accepté ; gabarit validé (M20) | mainteneur |
+| 30/09/2026 | Conséquences de la décision (§ 9) | `macro` ; session principale |
