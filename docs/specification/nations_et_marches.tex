@@ -1,0 +1,391 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}[SmallCapsFont={Latin Modern Roman Caps}]
+\usepackage{polyglossia}
+\setdefaultlanguage{french}
+\newcommand{\og}{« }
+\newcommand{\fg}{ »}
+\usepackage{amsmath,amssymb,amsthm}
+\IfFileExists{dsfont.sty}{\usepackage{dsfont}}{}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{microtype}
+\usepackage[colorlinks=true,linkcolor=blue!60!black,urlcolor=blue!60!black,citecolor=blue!60!black]{hyperref}
+
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows,shapes.geometric,calc,fit}
+\tikzset{
+  agent/.style={draw,rounded corners=3pt,thick,fill=blue!6,minimum width=2.6cm,minimum height=0.9cm,align=center,font=\small},
+  actif/.style={draw,rounded corners=2pt,fill=orange!10,minimum width=2.2cm,minimum height=0.8cm,align=center,font=\small},
+  pol/.style={draw,rounded corners=2pt,fill=green!10,minimum width=2.2cm,minimum height=0.8cm,align=center,font=\small},
+  var/.style={draw,ellipse,fill=gray!10,align=center,font=\small,inner sep=2pt},
+  crise/.style={draw,rounded corners=2pt,fill=red!8,minimum width=2.4cm,minimum height=0.8cm,align=center,font=\small},
+  flux/.style={->,>=latex,thick},
+  fluxm/.style={->,>=latex,thick,blue!60!black},
+  fluxf/.style={->,>=latex,thick,orange!80!black},
+  fluxp/.style={->,>=latex,thick,green!50!black,dashed},
+  lab/.style={font=\scriptsize,fill=white,inner sep=1pt,align=center},
+}
+
+
+\newtcolorbox{lecture}[1][]{breakable,enhanced,colback=yellow!4,colframe=yellow!50!black,fonttitle=\bfseries\small,title={Lecture --- #1},fontupper=\small,left=4pt,right=4pt,top=3pt,bottom=3pt}
+\newcommand{\variables}{\par\noindent\textbf{Variables.} }
+\newcommand{\sens}{\par\noindent\textbf{Ce que dit l'équation.} }
+\newcommand{\hyp}{\par\noindent\textbf{Hypothèses.} }
+\newcommand{\limites}{\par\noindent\textbf{Limites.} }
+\newcommand{\up}{$\uparrow$}
+\newcommand{\dn}{$\downarrow$}
+
+\setlength{\parskip}{4pt}
+\setlist{nosep}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\pos}[1]{{\left[#1\right]^{+}}}
+\newcommand{\clip}[3]{\operatorname{clip}\!\left(#1;\,#2,\,#3\right)}
+\IfFileExists{dsfont.sty}{\newcommand{\ind}{\mathds{1}}}{\newcommand{\ind}{\mathbf{1}}}   % repli si dsfont est absent de l'environnement de compilation
+\DeclareMathOperator{\sgn}{sgn}
+
+\newtcolorbox{vic}[1][]{colback=orange!6,colframe=orange!60!black,fonttitle=\bfseries,title={Ce que l'on retient de Victoria~3 / E\&F --- #1}}
+\newtcolorbox{design}[1][]{colback=blue!5,colframe=blue!50!black,fonttitle=\bfseries,title={Choix de conception --- #1}}
+\newtcolorbox{lit}[1][]{colback=green!5,colframe=green!40!black,fonttitle=\bfseries,title={Ancrage théorique --- #1}}
+\newtcolorbox{joueur}[1][]{colback=gray!8,colframe=black!60,fonttitle=\bfseries,title={Leviers du joueur --- #1}}
+
+% ---- Compléments v3 : début ----
+% Ajouts propres à la spécification v3 (docs/specification/CONVENTIONS.md, § 3).
+% Ce bloc ne change que sur mise à jour de CONVENTIONS.md.
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\tracabilite}[3]{\par\smallskip\noindent\textbf{Statut.} #1. \textbf{Provenance.} #2. \textbf{Code.} \code{#3}.}
+\newtcolorbox{proposee}[1][]{breakable,enhanced,colback=red!3,colframe=red!45!black,fonttitle=\bfseries,title={Section proposée, non exécutée --- #1}}
+\newtcolorbox{portee}[1][]{breakable,enhanced,colback=gray!4,colframe=gray!55!black,fonttitle=\bfseries,title={Ce que le moteur ne fait pas --- #1}}
+% ---- Compléments v3 : fin ----
+
+\title{\textbf{Nations \& Marchés --- spécification v3}\\[4pt]
+\large Simulateur macroéconomique multi-pays à cohérence stock-flux\\[2pt]
+\normalsize Version 3.0-socle (brouillon) --- périmètre exécuté : aucun bloc}
+\author{}
+\date{Septembre 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Ce document est la spécification du moteur v3 de \emph{Nations \& Marchés}, simulateur macroéconomique multi-pays à cohérence stock-flux destiné à devenir un jeu tour par tour mensuel où chaque joueur incarne l'État d'un pays. Il décrit le moteur exécuté : toute équation numérotée y est exécutée par le moteur, et toute équation exécutée y est numérotée. La version 3.0-socle est un squelette : elle fixe le plan du document, les règles de lecture des équations et les tables qui accueilleront la spécification du socle (économie fermée à un pays). Aucun bloc n'est encore spécifié ni exécuté ; le document ne contient donc aucune équation numérotée. La spécification v1.5 et le moteur v2.0 de la première tentative sont des sources historiques, instruites bloc par bloc sur fiche comparative ; ils ne font pas référence.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%=====================================================================
+\section*{Ce qui change en v3.x}
+\addcontentsline{toc}{section}{Ce qui change en v3.x}
+\phantomsection\label{sec:changements-v3x}
+%=====================================================================
+Chaque version de la spécification v3 ajoute ici sa table, la plus récente en tête ; les tables des versions antérieures sont conservées à la suite. Chaque ligne donne la modification, la section touchée et ce que le moteur ou l'audit a révélé.
+
+\subsection*{Version 3.0-socle (brouillon)}
+Version initiale : squelette du document (plan, conventions de lecture, tables vides). Aucune modification à consigner.
+
+\begin{center}\small
+\begin{longtable}{p{0.5cm}p{6.3cm}p{2.1cm}p{5.8cm}}
+\toprule
+\textbf{\#} & \textbf{Modification} & \textbf{Section} & \textbf{Ce que le moteur ou l'audit a révélé}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{\#} & \textbf{Modification} & \textbf{Section} & \textbf{Ce que le moteur ou l'audit a révélé}\\
+\midrule
+\endhead
+\multicolumn{4}{l}{\emph{Aucune ligne.}}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+%=====================================================================
+\section{Objet, principes et lecture du document}
+\label{sec:objet}
+%=====================================================================
+Cette section dit ce que le document décrit, les principes de conception auxquels le moteur obéit, et comment lire une équation et son encadré. Elle s'ouvre au jalon J1.
+
+\subsection*{Objet}
+La spécification décrit le moteur v3 tel qu'il est exécuté. Une équation numérotée est une équation exécutée par le moteur, dans la configuration de référence, avec les coefficients de la table de calibration (\S\ref{sec:calibration}) ; réciproquement, toute équation exécutée est numérotée ici. La correspondance entre chaque équation et l'endroit du code qui la calcule est tenue en annexe (\S\ref{sec:correspondance}) et vérifiée par un script en intégration continue. Un mécanisme décidé mais pas encore codé figure dans un encadré « section proposée », sans numéro d'équation ; un mécanisme non décidé n'entre pas dans le document.
+
+\subsection*{Principes de conception}
+Les principes suivants sont non négociables ; ils reprennent le cahier des charges du projet (\nolinkurl{docs/exigences.md}, \S~2.1).
+\begin{enumerate}
+\item \textbf{Un joueur, un État.} Le joueur fixe le cadre ; il ne construit pas les usines, sauf en mode planifié.
+\item \textbf{Secteur privé autonome}, avec des règles de comportement dérivées de l'optimisation mais locales dans le temps : l'agent décide à partir de ce qu'il observe.
+\item \textbf{Plusieurs approches viables.} Économie libérale et économie planifiée doivent être jouables, avec des forces et des faiblesses différentes, sans hiérarchie imposée.
+\item \textbf{Émergence plutôt que script.} Inflation, chômage, cycles et crises résultent des interactions et des décisions, pas de tirages imposés.
+\item \textbf{Cohérence stock-flux stricte.} Tout flux quitte un bilan pour entrer dans un autre ; aucune monnaie n'est créée ni détruite hors des mécanismes explicites. C'est un test permanent du moteur.
+\end{enumerate}
+
+\subsection*{Lire une équation}
+Chaque équation numérotée porte un label nommé, de la forme \texttt{eq:<bloc>-<nom>}, et le code du moteur porte, sur la ligne qui précède le calcul, une balise de commentaire identique. Elle est suivie d'un encadré « Lecture » en quatre rubriques, toujours présentes et dans cet ordre :
+\begin{itemize}
+\item \textbf{Variables} : chaque symbole, avec sa définition, son unité, son dénominateur s'il s'agit d'un ratio, et sa fenêtre (ouverture ou clôture du pas, moyenne mobile et sa longueur) ;
+\item \textbf{Ce que dit l'équation} : son sens en langage courant, lisible par un joueur ;
+\item \textbf{Hypothèses} : ce que l'équation suppose ;
+\item \textbf{Limites} : ce qu'elle ne fait pas, les cas où elle est fausse, les bornes qui s'y appliquent.
+\end{itemize}
+L'encadré se termine par une ligne de traçabilité : le statut de l'équation, sa provenance (v1.5, v2.0 ou nouvelle, avec la référence retrouvée) suivie de la décision du mainteneur qui l'a retenue, et l'objet du code qui la calcule. Les paramètres ne sont pas répétés dans les sections de bloc : ils figurent une seule fois dans la table de calibration (\S\ref{sec:calibration}), et les symboles dans le glossaire de la notation (\S\ref{sec:glossaire}).
+
+\subsection*{Statuts épistémiques}
+Chaque équation porte l'un de trois statuts :
+\begin{itemize}
+\item \textbf{dérivée} : obtenue d'un problème d'optimisation ou d'une identité ; le document dit lequel et où la dérivation est donnée ;
+\item \textbf{approchée} : règle locale qui approche une solution optimale ;
+\item \textbf{choix de conception} : sans fondement théorique, retenue pour le jeu ; aucune référence théorique n'est citée à son appui.
+\end{itemize}
+Chaque affirmation factuelle distingue ce que le \emph{modèle produit}, qui se recalcule et cite la commande qui le produit, ce qui est \emph{établi}, avec sa source et sa date, et ce qui est \emph{contesté}, avec les positions en présence. Un résultat du modèle n'est jamais présenté comme un fait empirique.
+
+%=====================================================================
+\section{Cadre : temps, entités, comptabilité}
+\label{sec:cadre}
+%=====================================================================
+Cette section fixera le cadre commun à tous les blocs : entités et indices, convention calendaire, matrice des bilans et matrice des flux de transactions, identités comptables et leurs tolérances, règles de caisse, ordre des phases d'un pas. Elle s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative « temps et comptabilité » (\nolinkurl{docs/blocs/temps_comptabilite.md}, expert pilote : \texttt{macro}), première fiche à instruire.
+
+La convention calendaire n'est pas encore tranchée. D'ici là, le document emploie les termes \emph{pas} (unité de temps du moteur), \emph{date de décision} (pas où les décisions mensuelles sont révisées) et \emph{tour} (intervalle entre deux décisions des joueurs, un mois) sans leur attacher de durée ; les taux sont exprimés en base annuelle et leur conversion au pas sera donnée une seule fois, dans cette section. Les tolérances des identités comptables seront relatives à l'échelle du bilan concerné, jamais des constantes absolues.
+
+%=====================================================================
+\section{Production et stocks}
+\label{sec:production}
+%=====================================================================
+Ce bloc portera le côté offre : fonction de production, nombre de secteurs du socle, stocks et production visée. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/production.md} (expert pilote : \texttt{macro}). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{Travail et salaires}
+\label{sec:travail}
+%=====================================================================
+Ce bloc portera la demande de travail et la formation du salaire nominal, qui définit le coût du travail lu par le bloc des prix (\S\ref{sec:prix}). Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/travail.md} (expert pilote : \texttt{macro} ; \texttt{monnaie} consulté sur l'indexation des salaires aux anticipations). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{Prix}
+\label{sec:prix}
+%=====================================================================
+Ce bloc portera la formation des prix : coût unitaire, marge et indexation. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/prix.md} (expert pilote : \texttt{macro} ; \texttt{monnaie} consulté sur l'indexation des prix aux anticipations). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{Ménages}
+\label{sec:menages}
+%=====================================================================
+Ce bloc portera le revenu disponible, la consommation, l'épargne et la détention de dépôts et de titres par les ménages. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/menages.md} (expert pilote : \texttt{macro} ; \texttt{monnaie} consulté sur la détention de titres publics). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{Investissement et financement des entreprises}
+\label{sec:investissement}
+%=====================================================================
+Ce bloc portera l'investissement, l'autofinancement et la demande de crédit des entreprises. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/investissement.md} (expert pilote : \texttt{macro} ; \texttt{monnaie} consulté sur la rencontre de la demande et de l'offre de crédit). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{Banque commerciale}
+\label{sec:banque}
+%=====================================================================
+Ce bloc portera l'offre de crédit, les dépôts, les fonds propres, les réserves et le refinancement de la banque commerciale. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/banque.md} (expert pilote : \texttt{monnaie} ; \texttt{macro} consulté sur la demande de crédit des entreprises). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{Banque centrale et anticipations}
+\label{sec:banque_centrale}
+%=====================================================================
+Ce bloc portera la règle de taux, le bilan de la banque centrale, la formation des anticipations et la crédibilité ; les blocs des salaires (\S\ref{sec:travail}) et des prix (\S\ref{sec:prix}) lisent les anticipations qu'il forme. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/banque_centrale.md} (expert pilote : \texttt{monnaie} ; \texttt{macro} consulté sur les prix et les salaires). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{État et dette}
+\label{sec:finances_publiques}
+%=====================================================================
+Ce bloc portera les recettes et les dépenses de l'État, son solde, la dette publique et son placement auprès des ménages, de la banque et de la banque centrale ; il clôt le bouclage stock-flux du socle. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/finances_publiques.md} (expert pilote : \texttt{macro} ; \texttt{monnaie} consulté sur le placement de la dette et la prime). Aucune équation n'est encore spécifiée.
+
+%=====================================================================
+\section{Leviers du joueur (socle)}
+\label{sec:leviers}
+%=====================================================================
+Cette section tiendra le catalogue des leviers de l'économie fermée : pour chacun, son type, son unité, son délai d'effet et sa contrepartie comptable. Elle s'ouvre au jalon J1, avec les blocs que les leviers touchent, et se complète au jalon J4 (simulateur utilisable). Aucun levier n'est encore spécifié.
+
+\begin{center}\small
+\begin{longtable}{p{3.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{4.3cm}}
+\caption{Catalogue des leviers du socle.}\label{tab:leviers}\\
+\toprule
+\textbf{Levier} & \textbf{Type} & \textbf{Unité} & \textbf{Délai} & \textbf{Contrepartie comptable}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Levier} & \textbf{Type} & \textbf{Unité} & \textbf{Délai} & \textbf{Contrepartie comptable}\\
+\midrule
+\endhead
+\multicolumn{5}{l}{\emph{Aucune ligne : aucun levier n'est spécifié en version 3.0-socle.}}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+%=====================================================================
+\section{État stationnaire résolu et calibration}
+\label{sec:calibration}
+%=====================================================================
+Cette section tiendra la table de calibration, où chaque paramètre figure une seule fois, l'état stationnaire résolu (état initial calculé comme équilibre des règles en vigueur, recalculable à la main depuis la table) et le test zéro : 60 ans de simulation sans choc depuis l'état stationnaire résolu, dont les bandes de ratios de stocks sont écrites avant l'essai. La table s'ouvre au jalon J1 avec les premières équations ; l'état stationnaire et le test zéro, au jalon J3.
+
+\begin{center}\small
+\begin{longtable}{p{1.5cm}>{\raggedright\arraybackslash}p{3.0cm}p{1.4cm}p{1.8cm}p{3.4cm}p{2.6cm}}
+\caption{Table de calibration.}\label{tab:calibration}\\
+\toprule
+\textbf{Symbole} & \textbf{Nom dans le code} & \textbf{Valeur} & \textbf{Unité} & \textbf{Source} & \textbf{Équation}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Symbole} & \textbf{Nom dans le code} & \textbf{Valeur} & \textbf{Unité} & \textbf{Source} & \textbf{Équation}\\
+\midrule
+\endhead
+\multicolumn{6}{l}{\emph{Aucune ligne : aucun paramètre n'est spécifié en version 3.0-socle.}}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+%=====================================================================
+\section{Validation : tests, propriétés, faits mesurés}
+\label{sec:validation}
+%=====================================================================
+Cette section rapportera ce que le moteur produit, chaque chiffre accompagné de la commande qui le produit, et distinguera ce que le modèle produit, ce qui est établi et ce qui est contesté ; les critères y sont écrits avant l'essai et les verdicts antérieurs y restent publiés. Elle s'ouvre au jalon J3.
+
+%=====================================================================
+\section[Réservé : économie ouverte et régimes de souveraineté]{\emph{Réservé} : économie ouverte et régimes de souveraineté}
+\label{sec:ouverture}
+%=====================================================================
+Section réservée au commerce, au change, à la balance des paiements et aux régimes de souveraineté A à E. Elle s'ouvre au jalon J5 et ne contient aucune équation avant la décision du mainteneur qui l'ouvre.
+
+%=====================================================================
+\section[Réservé : actifs et crises financières]{\emph{Réservé} : actifs et crises financières}
+\label{sec:crises}
+%=====================================================================
+Section réservée aux actifs, aux ruées, au défaut, à l'hyperinflation et à l'économie effondrée. Elle s'ouvre au jalon J6 et ne contient aucune équation avant la décision du mainteneur qui l'ouvre.
+
+%=====================================================================
+\section[Réservé : systèmes économiques, soutien politique, jeu]{\emph{Réservé} : systèmes économiques, soutien politique, jeu}
+\label{sec:jeu}
+%=====================================================================
+Section réservée à la planification, à la nationalisation, au soutien politique, au score et aux conditions de fin de partie. Elle s'ouvre au jalon J7 et ne contient aucune équation avant la décision du mainteneur qui l'ouvre.
+
+%=====================================================================
+\section{Pistes écartées}
+\label{sec:ecartees}
+%=====================================================================
+Cette section consigne les pistes écartées et le motif de leur rejet ; elle sera complétée par les fiches comparatives à partir du jalon J1. Les pistes écartées par la première tentative sont maintenues, sauf argument nouveau (\nolinkurl{docs/exigences.md}, \S~2.8) :
+\begin{itemize}
+\item guerre ;
+\item promoteurs immobiliers ;
+\item intermédiation non bancaire détaillée ;
+\item chaînes de valeur multi-frontières ;
+\item sous-secteurs publics ;
+\item statistiques truquées ;
+\item compétitivité hors-prix endogène ;
+\item épargne de précaution politique.
+\end{itemize}
+Les motifs de ces rejets figurent dans la spécification v1.5 (section « Pistes écartées ») ; ils seront repris ici quand la fiche comparative du bloc concerné les réexaminera.
+
+%=====================================================================
+\section{État des chantiers ouverts}
+\label{sec:chantiers}
+%=====================================================================
+Cette section dit, pour chaque chantier, ce qui a été essayé et pourquoi cela a échoué ; un chantier clos reste dans la table. Elle s'ouvre au jalon J1.
+
+\begin{center}\small
+\begin{longtable}{p{1.6cm}p{4.4cm}p{1.6cm}p{7.0cm}}
+\caption{État des chantiers ouverts.}\label{tab:chantiers}\\
+\toprule
+\textbf{Version} & \textbf{Chantier} & \textbf{État} & \textbf{Ce qui a été essayé, et pourquoi cela a échoué}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Version} & \textbf{Chantier} & \textbf{État} & \textbf{Ce qui a été essayé, et pourquoi cela a échoué}\\
+\midrule
+\endhead
+\multicolumn{4}{l}{\emph{Aucune ligne : aucun mécanisme n'a encore été essayé sur le moteur v3.}}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection*{Instabilités connues de la première tentative}
+Les instabilités ci-dessous ont été observées sur le moteur v2.0 ou rapportées par la première tentative ; elles ne se réintroduisent pas sans fait nouveau et test (\nolinkurl{docs/exigences.md}, \S~2.8). La liste reprend la synthèse des faits mesurés versée dans l'archive (\nolinkurl{archive/faits_mesures_G_K.md}, \S~6), dans ses termes ; les noms de mécanismes et de variables sont ceux du moteur v2.0, et chaque fiche comparative les explicitera pour son bloc. Statut de la source : \emph{R}, rapporté par la première tentative et non reproduit pendant les sessions G à K ; \emph{S+O}, mesuré et reproduit par exécution pendant ces sessions.
+
+\begin{center}\small
+\begin{longtable}{p{0.5cm}p{11.2cm}>{\raggedright\arraybackslash}p{3.0cm}}
+\caption{Instabilités connues de la première tentative.}\label{tab:instabilites}\\
+\toprule
+\textbf{\#} & \textbf{Instabilité (termes du moteur v2.0)} & \textbf{Statut de la source}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{\#} & \textbf{Instabilité (termes du moteur v2.0)} & \textbf{Statut de la source}\\
+\midrule
+\endhead
+1 & Construction répondant au niveau du rapport de prix \texttt{p\_Z/p\_K} : cycle de 3,5 ans & R\\
+2 & Avances au Trésor sans intérêt & R\\
+3 & Coupon de consolidation au taux du moment & R\\
+4 & Estimateur du taux naturel \texttt{r*} sans ancre ni bande & R\\
+5 & Dividende de trésorerie sans règle fiscale & R\\
+6 & Effet richesse normé par défaut & R\\
+7 & Ancrage salarial fort sur la productivité marginale & R\\
+8 & Épargne de précaution (\emph{buffer-stock}) calibrée sur un risque indépendant et identiquement distribué, sans persistance & R\\
+9 & Mode de prix \texttt{normal\_average} seul : prix de l'équipement multiplié par 4,8 en 60 ans & R\\
+10 & Variante N1, dépréciation au prix lissé : prix multiplié par 2,9 & R\\
+11 & Variante N5, dépréciation indexée & R\\
+12 & Variante N6, correction de marge par le gain & R\\
+13 & Variante R1, élasticité à référence mobile & R\\
+14 & Règle de prix sans terme de demande (terme R3 retiré) : trajectoire instable (essai G1b) ; production d'équipement nulle en semaine 736 sur 60 ans & S+O (G1b) ; R (semaine 736)\\
+15 & Un plafond produit un cycle & R\\
+16 & Tolérances absolues sur des soldes résiduels ou des montants en unité locale & S+O (essais G2, J2, K2c)\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\appendix
+
+%=====================================================================
+\section{Correspondance équations \texorpdfstring{$\leftrightarrow$}{<->} code}
+\label{sec:correspondance}
+%=====================================================================
+Cette annexe associe à chaque label d'équation le module et la fonction du moteur qui portent sa balise ; elle est générée ou vérifiée par le script de concordance. Elle s'ouvre au jalon J1. En version 3.0-socle, la spécification ne porte aucun label d'équation et le moteur aucune balise : la concordance est vide des deux côtés.
+
+\begin{center}\small
+\begin{longtable}{p{5.0cm}p{6.6cm}p{3.2cm}}
+\caption{Correspondance équations $\leftrightarrow$ code.}\label{tab:correspondance}\\
+\toprule
+\textbf{Label} & \textbf{Objet du code (module, fonction)} & \textbf{Section}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Label} & \textbf{Objet du code (module, fonction)} & \textbf{Section}\\
+\midrule
+\endhead
+\multicolumn{3}{l}{\emph{Aucune ligne : aucune équation numérotée en version 3.0-socle.}}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+%=====================================================================
+\section{Glossaire de la notation}
+\label{sec:glossaire}
+%=====================================================================
+Cette annexe est le registre des symboles : tout symbole employé dans une équation y figure, avec sa définition, son unité, son bloc et le label de l'équation qui le définit ; tout symbole qui y figure est employé. Un symbole a un seul sens dans tout le document. Elle s'ouvre au jalon J1.
+
+Indices réservés : pays $i$, secteur $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Une variable $x_t$ est la valeur d'ouverture du pas $t$, $x_{t+1}$ sa valeur de clôture, sauf mention contraire. Une variable anticipée porte l'exposant $e$, une cible l'exposant $\ast$, une valeur de long terme ou stationnaire une barre.
+
+\begin{center}\small
+\begin{longtable}{p{1.6cm}p{5.6cm}p{2.0cm}p{2.2cm}p{2.8cm}}
+\caption{Glossaire de la notation.}\label{tab:symboles}\\
+\toprule
+\textbf{Symbole} & \textbf{Définition} & \textbf{Unité} & \textbf{Bloc} & \textbf{Équation}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Symbole} & \textbf{Définition} & \textbf{Unité} & \textbf{Bloc} & \textbf{Équation}\\
+\midrule
+\endhead
+\multicolumn{5}{l}{\emph{Aucune ligne : aucun symbole n'est défini en version 3.0-socle.}}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\end{document}

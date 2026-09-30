@@ -22,7 +22,10 @@ On te dit laquelle on attend ; à défaut, **revue légère** (règle 10 de `CLA
 
 ## Points de contrôle
 
-**À ADAPTER** : un point par exigence d'interface de `docs/exigences.md` (disposition, onglets, saisie, restitution). Toujours :
+Les exigences d'interface sont au § 5 de `docs/exigences.md`. Jusqu'au jalon J4, l'interface est la restitution du simulateur : ligne de commande et rapports. L'interface web arrive au jalon J7, et ses points de contrôle s'ajouteront ici. Contrôle un point par exigence du § 5, et toujours :
+
+- **Grandeurs affichées** : chaque indicateur porte sa définition, son unité, son dénominateur et sa fenêtre ; il vient du module d'observation du moteur, jamais d'un recalcul dans l'interface.
+- **Reproductibilité** : un rapport de scénario indique la version du moteur (commit), les paramètres et la graine, de sorte qu'on puisse le rejouer.
 
 - **Aucun calcul hors du module de calcul** : repère toute statistique, tout seuil métier codé en dur ou toute transformation quantitative dans les fichiers d'interface.
 - **Saisie** : contrôle des entrées avec message explicite ; aucune donnée modifiée silencieusement.

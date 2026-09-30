@@ -1,0 +1,34 @@
+[project]
+name = "nations"
+version = "0.0.0"
+description = "Nations & Marchés : moteur v3 d'un simulateur macroéconomique multi-pays à cohérence stock-flux."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=2.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.20,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "nations"
+module-root = "src"
+
+[tool.pytest.ini_options]
+# Un succès inattendu (xpass) fait échouer la batterie (CLAUDE.md, « Règles des
+# tests ») ; archive/ n'est jamais collectée (lecture seule, jamais importée).
+minversion = "8.0"
+testpaths = ["tests"]
+norecursedirs = ["archive", "Dossier de lancement", ".git", ".venv", "docs"]
+xfail_strict = true
+addopts = ["--strict-markers", "--import-mode=importlib"]
+markers = [
+    "budget: test du budget de calcul (au plus 1 ms par pays-semaine)",
+]
