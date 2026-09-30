@@ -1,11 +1,11 @@
 ---
-status: proposed
+status: accepted
 date: 2026-09-30
 ---
 
 # Calendrier et cadre comptable du moteur : pas mensuel unique, conversion linéaire, matrices à sommes nulles sans solde résiduel, tolérance 1e−12 relative, neuf phases triangulaires
 
-> Statut « proposé » : rédigé par `architect` le 30/09/2026 sur la décision M22 du mainteneur ; passe à « accepté » sur son accord (issue #17, critère d'acceptation « ADR 0005 accepté par le mainteneur »).
+> Statut « accepté » : rédigé par `architect` le 30/09/2026 sur la décision M22 du mainteneur, accepté par le mainteneur le 30/09/2026 (issue #17).
 
 ## Contexte
 

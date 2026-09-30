@@ -76,4 +76,4 @@ Ces désignations sont pressenties, non arrêtées ; elles seront fixées quand 
 |---|---|
 | 29/09/2026 | Création (issue #6, branche `claude/fondations`) : neuf blocs, experts pilotes, ordre d'instruction proposé. |
 | 30/09/2026 | Mainteneur : experts pilotes et modules validés (`macro` pour « temps et comptabilité » et « État et dette », module `finances_publiques.py`) ; gabarit validé à l'usage (M20) ; fiche 1 instruite seule dans la branche J1 n°1 (M21). |
-| 30/09/2026 | Fiche 1 « temps et comptabilité » décidée (M22) : option C et socle commun ; ADR 0005 rédigé (proposé) ; gabarit retouché proposé à la validation du mainteneur (M20, issue #17). |
+| 30/09/2026 | Fiche 1 « temps et comptabilité » décidée (M22) : option C et socle commun ; ADR 0005 accepté ; gabarit retouché validé par le mainteneur (M20, issue #17). |
