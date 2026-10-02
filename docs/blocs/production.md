@@ -308,7 +308,7 @@ Conclusion sur la littérature :
    - g^e = g0, alors que la v2.0 suppose elle-même une croissance stationnaire g0/(1 − α moyen) ≈ 2,24 % par an (l. 449) (L, calcul).
 
    Conséquences :
-   - S/Q < s*, donc la **borne max(·, 0) de la l. 923 est active à l'état stationnaire**. Aucun stock n'est offert (S = Y), et la marge Y − Q = γ S vaut environ 0,16 % des ventes du pas : un surcroît de demande supérieur à 0,16 % est rationné alors que des stocks existent (calcul analytique ; **à remesurer** sur le prototype par S1).
+   - S/Q < s*, donc la **borne max(·, 0) de la l. 923 est active à l'état stationnaire**. Aucun stock n'est offert (S = Y), et la marge Y − Q = γ S vaut environ 0,16 % des ventes du pas : un surcroît de demande supérieur à 0,16 % est rationné alors que des stocks existent (calcul analytique ; remesuré le 02/10/2026 sur le prototype, profil par défaut, non D1, script S1 : la borne est active toutes les semaines dans la consommation, et dans l'équipement hors de l'épisode des années 37 à 39 ; voir 3.B-4 et l'interprétation qui suit les verdicts).
    - L'état initial pose Sinv = s* Ycol et Q̄ = Ycol (l. 491, 493). Ce n'est pas l'état stationnaire de la règle (κ < 1, S/Q < s*) : il y a une transition dès t = 0, et D1 a été obtenu après 150 ans de préparation (R). Le critère 3 (b) n'est pas satisfait.
    - Le taux d'utilisation a une forme fermée conditionnelle à L_prof, donc aux prix (fiche 4).
 4. **Comportement mesuré.**
@@ -317,7 +317,71 @@ Conclusion sur la littérature :
    - D1 sur 60 ans (R) : dérive du prix de l'équipement relatif à la consommation de 12,8 %, épisode de 13,6 %.
    - Instabilité 9 (R ; commentaire lu à la l. 83, L) : prix de l'équipement ×4,8 en 60 ans sous `normal_average`.
    - Instabilité 14 (R) : production d'équipement nulle en semaine 736.
-   - Ratio de stocks, activation de la borne de la l. 923 et sensibilité aux vitesses : non mesurés en G–K ; **à remesurer** (script S1).
+   - Ratio de stocks, activation de la borne de la l. 923 (branche exécutée l. 946) et sensibilité aux vitesses : non mesurés en G–K ; **remesurés le 02/10/2026** (profil par défaut, non D1 ; script S1, § 9.7). Verdicts et interprétation ci-dessous.
+   - **Remesure S1, 02/10/2026** (statut : remesuré le 02/10/2026, profil par défaut, non D1). Critères écrits avant l'essai au § 9.7, commités en `227607e`.
+     - **Exécution.** Commande : `uv run python outils/remesurer_v2_production.py --sortie <fichier>`. Script au commit `dfe896f`, audit conforme. Valeurs par défaut : 60 ans, graine 0, cinq branches. Durée 32 s, code de sortie 0. Modèle `2.5-claude-w10-20260914` ; pilote sous Python 3.12.3, numpy 2.5.3, scipy 1.18.1.
+     - **Contrôles.** Les cinq branches sont remesurées, sans aucune semaine exclue dans la fenêtre. `find archive -name __pycache__` est vide : `archive/` n'a pas été modifiée.
+     - **Critère (i) : non satisfait.** Branche nominale, années 31 à 60, moyenne des moyennes annuelles :
+       - consommation : Sinv/(s*·Q̄) = 0,91644, part des semaines avec excess > 0 = 0,0 ;
+       - équipement : Sinv/(s*·Q̄) = 0,92703, part des semaines avec excess > 0 = **0,08013**, au-dessus du seuil de 0,05.
+       - La condition sur le ratio (< 0,99) tient dans les deux secteurs. La condition sur la part des semaines n'échoue que dans l'équipement.
+     - **Critère (ii) : satisfait.** Ratio Sinv/Q en semaines, valeurs ×0,5 puis ×2, écart relatif :
+
+       | Vitesse | Consommation | Équipement |
+       |---|---|---|
+       | `mu_ema` | 4,10410 et 3,68462 ; écart 0,10221 | 8,07675 et 3,85009 ; écart 0,52331 |
+       | `lam_inv_2` | 3,41802 et 3,74767 ; écart 0,09645 | 3,64464 et 3,93041 ; écart 0,07841 |
+
+     - **Portée.** Ces verdicts ne changent pas M24 (réserve 5 du § 5).
+
+   **Interprétation de la remesure S1.**
+
+   *`macro`, 02/10/2026. Les valeurs sont lues dans le JSON de sortie : moyennes annuelles et moyennes de fenêtre de toutes les grandeurs du script. Ce que le prototype produit est séparé de ce que je prédisais.*
+
+   **Ce que le prototype produit** (profil par défaut, années 31 à 60).
+
+   - **Consommation, branche nominale :**
+     - Sinv/(s*·Q̄) vaut 0,9164, et l'excédent de stock n'est jamais positif : la borne max(·, 0) est active **toutes les semaines**.
+     - Sinv/Q vaut 3,651 semaines.
+     - D > S dans 3,72 % des semaines, avec un rationnement moyen (D − Q)/D de 0,02 %. Comme aucun stock n'est jamais offert, chacune de ces semaines est une semaine de demande rationnée alors que le stock vaut environ 3,65 semaines de ventes.
+     - Y/Ŷ vaut 0,9993.
+   - **Équipement, branche nominale :**
+     - L'excédent de stock est nul 27 années sur 30. Il est positif dans un seul épisode : part de 0,48 en année 37, 1,0 en année 38, 0,92 en année 39, avec Sinv/(s*·Q̄) de 1,079, 1,184 et 1,050.
+     - Hors épisode, Sinv/(s*·Q̄) décroît de 0,995 (année 40) à 0,894–0,896 (années 45 à 60).
+     - D > S dans 29,5 % des semaines ; rationnement moyen de 0,09 %.
+     - Le dépassement du seuil de 5 % (0,080) tient donc **entièrement à cet épisode**.
+   - **Branche μ ×0,5 :** les deux secteurs changent de régime.
+     - Consommation : excédent positif 35,8 % des semaines, D > S 64,6 %.
+     - Équipement : Sinv/(s*·Q̄) = 1,925 en moyenne de fenêtre ; Sinv/Q = 8,08 semaines ; rationnement moyen de 15,8 %. Les moyennes quinquennales oscillent entre 0,88 et 3,0 sur les 60 ans, si bien que la moyenne de fenêtre n'y décrit pas un état stationnaire.
+   - **Branches λ ×0,5 et ×2, μ ×2 :** pas de changement de régime dans la consommation (excédent jamais positif).
+
+   **Ma prédiction analytique** (3.B-3 ; bloc seul, demande exogène, g^e = g0/52, croissance de 2,206 % par an prise de G1 ; ce n'est pas un fait), confrontée à la remesure :
+
+   | Point prédit | Prédiction | Ce que le prototype produit | Lecture |
+   |---|---|---|---|
+   | Borne active à l'état stationnaire (S/Q < s*) | oui | consommation : toutes les semaines ; équipement : 27 années sur 30 | **confirmée qualitativement** |
+   | Pénurie alors que des stocks existent | oui (marge d'environ 0,16 %) | D > S dans 3,7 % (consommation) et 29,5 % (équipement) des semaines, aucun stock offert | **confirmée qualitativement** ; l'ampleur au-delà du seuil de 0,16 % n'est pas mesurée par le script |
+   | Niveau Sinv/(s*·Q̄) | ≈ 0,93 | 0,916 (consommation) ; 0,927 (équipement, épisode compris) ; 0,895 (équipement, années 45 à 60) | même ordre de grandeur, un peu plus bas ; **écart non expliqué** |
+   | Niveau Sinv/Q | 3,7107 semaines | 3,651 (consommation) | −1,6 % ; non expliqué |
+   | Sens de l'effet de λ (×0,5 baisse le ratio, ×2 le monte) | −13,8 % et +3,6 % | consommation : −6,4 % et +2,7 % par rapport à la branche nominale | **sens confirmé**, ampleur plus faible |
+   | Sens de l'effet de μ ×2 | +3,0 % | consommation : +0,9 % | sens confirmé |
+   | Sens de l'effet de μ ×0,5 | −12,7 % | consommation : **+12,4 %** (4,104 contre 3,651) | **contredit** : le prototype change de régime, la prédiction du bloc seul ne s'y applique pas |
+
+   Causes candidates des écarts, **non vérifiées** :
+   - la croissance réalisée sous le profil par défaut n'est pas mesurée par le script, et peut différer des 2,206 % de G1, qui portait sur D1 ;
+   - Y/Ŷ est inférieur à 1 (0,9993 et 0,9985) ;
+   - la demande n'est pas exogène dans le prototype ;
+   - les commandes suivies sont plafonnées à 1,1 × S (l. 1418) ;
+   - la marge réagit aux stocks (l. 1086–1099).
+
+   Le script ne permet pas de les départager. **Aucune mesure supplémentaire n'est demandée**, puisque le verdict ne touche pas M24.
+
+   **Conséquence pour la fiche.** Les verdicts sont publiés tels quels.
+   - Le critère (i) est non satisfait par la part des semaines dans l'équipement, sans requalification après coup. Le fait que le dépassement tienne à un seul épisode est une **observation**, pas une correction du critère.
+   - Le critère (ii) établit, sur le prototype lui-même, que **les vitesses déplacent l'état d'arrivée** (8 % à 52 %). C'est le défaut pour lequel B est écartée au critère 4.
+   - La branche μ ×0,5 montre en outre une sensibilité de régime (oscillation de grande amplitude, rationnement de 15,8 % dans l'équipement) que l'analyse linéaire ne prévoyait pas. Je la consigne comme observation sur l'option écartée ; elle n'appelle aucune suite.
+   - M24 est inchangée (réserve 5).
+
 5. **Coût de calcul.**
    - Quatre secteurs, matrices 4 × 4, quelques centaines d'opérations vectorielles par semaine dans cette partie.
    - L'inverse de Leontief (l. 447) et le point fixe `solve_init` (l. 1956) ne s'exécutent qu'au chargement.
@@ -1194,3 +1258,4 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
 | 02/10/2026 | Statut « avis rendus » (aucun constat de vérificateur à intégrer) | session principale |
 | 02/10/2026 | Décision M24 : option C, lectures (a) à (g) en (i), ordre « travail, puis production » en phase 4 | mainteneur |
 | 02/10/2026 | Conséquences de la décision (§ 9) ; lecture opérationnelle de S1 confirmée et critères de S1 versés au § 9.7 avant l'essai ; numérotation N9 et N11 au § 3.N-1 et précision du § 3.N-8 sur les instabilités 10, 11 et 14 | `macro` ; session principale |
+| 02/10/2026 | Remesure S1 exécutée (script `dfe896f`, critères au § 9.7, `227607e`) : (i) non satisfait (part des semaines dans l'équipement 0,080 > 0,05, épisode des années 37 à 39) ; (ii) satisfait (écarts de 0,078 à 0,523) ; mentions « à remesurer » du § 3.B levées ; interprétation de `macro` ; M24 inchangée | session principale ; `macro` |
