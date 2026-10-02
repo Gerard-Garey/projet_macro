@@ -6,7 +6,7 @@ Politique appliquée par la session principale quand elle consulte `architect` o
 
 ## 1. Principes
 
-1. **Opus par défaut, Fable rarement.** Fable est réservé aux cas du § 4 ; il n'est jamais un réflexe devant une difficulté.
+1. **Opus par défaut, Fable rarement.** Fable est réservé aux cas du § 4.1, ou à l'accord du mainteneur ; il n'est jamais un réflexe devant une difficulté.
 2. **L'effort se règle indépendamment du modèle** : `medium` pour la routine, `high` pour le jugement.
 3. **Les sous-agents rendent des constats, des preuves et des points ouverts ; la session principale applique la politique et décide de la suite.** Un agent signale les critères qu'il a rencontrés (§ 6), il ne décide pas de sa propre escalade, et il ne peut lancer aucun autre agent (l'outil `Agent` est absent de sa liste d'outils).
 4. **Aucune escalade sans motif observable, aucune boucle** : plafonds du § 5.
@@ -14,13 +14,13 @@ Politique appliquée par la session principale quand elle consulte `architect` o
 
 ## 2. Mécanisme
 
-Le paramètre `model` d'un appel `Agent` l'emporte sur le `model` de la fiche ; l'effort, lui, ne peut pas être passé à l'appel et vient de la fiche (champ `effort`). D'où deux fiches par rôle, au même corps :
+Le paramètre `model` d'un appel `Agent` l'emporte sur le `model` de la fiche ; l'effort, lui, ne peut pas être passé à l'appel et vient de la fiche (champ `effort`), qui prime sur l'effort de la session (documentation Claude Code des sous-agents, champ `effort` : « Overrides the session effort level ») mais n'est pas observable dans le journal (§ 7). D'où deux fiches par rôle, au même corps :
 
-| Fiche | Modèle de la fiche | Effort | `maxTurns` | Usage |
+| Fiche | Modèle servi | Effort | `maxTurns` | Usage |
 |---|---|---|---|---|
 | `architect`, `macro`, `monnaie`, `jeu` | `opus` | `medium` | 40 | routine (§ 3) |
 | `architect-approfondi`, `macro-approfondi`, `monnaie-approfondi`, `jeu-approfondi` | `opus` | `high` | 80 | jugement (§ 3) |
-| `architect-approfondi`, `macro-approfondi`, `monnaie-approfondi`, `jeu-approfondi` appelées avec `model: "fable"` | Fable | `high` | 80 | cas du § 4 seulement |
+| `architect-approfondi`, `macro-approfondi`, `monnaie-approfondi`, `jeu-approfondi` appelées avec `model: "fable"` | Fable (fiche : `opus`, l'appel l'emporte) | `high` | 80 | cas du § 4.1, ou accord du mainteneur |
 
 - Les fiches `-approfondi` sont **générées** par `bash .claude/outils/fiches_jumelles.sh` à partir de la fiche de base : seul le frontmatter diffère (nom, description, effort, `maxTurns`). Ne jamais les modifier à la main ; la CI (job « Contrôles du dépôt ») vérifie la concordance (`--verifier`). La liste des rôles dédoublés est la variable `ROLES` du script.
 - Fable en `xhigh` ou `max` : jamais sans accord explicite du mainteneur (il faudrait alors une troisième fiche, à créer sur décision). Fable en `medium` (fiche de base appelée avec `model: "fable"`) : sur indication explicite du mainteneur seulement.
@@ -40,16 +40,18 @@ Le paramètre `model` d'un appel `Agent` l'emporte sur le `model` de la fiche ; 
 | architect | Rédaction d'un ADR **d'architecture** (couches, invariants, contrats) | — | **Fable** (routage initial) | contexte, options écartées, conséquences | décision du mainteneur | ADR proposé |
 | architect | Rédaction d'un ADR d'organisation (Git, processus, outillage) | — | jugement | idem | idem | idem |
 | `macro`, `monnaie` (expert pilote), `jeu` | Validation après audit, sans changement de résultat | — | routine | diff, rapport d'audit, verdict référencé | relance ciblée si une preuve manque | verdict |
-| `macro`, `monnaie` (expert pilote), `jeu` | Validation avec tableau avant / après ; conformité à une source ; spécification ou plan | — | jugement | citation précise (texte, article, paragraphe) ou mesure exécutée ; chaque conclusion marquée vérifiée / hypothèse / non vérifiée | § 4.1 ; deux lectures → § 4.4 | verdict, matrice ou plan complet |
+| `macro`, `monnaie` (expert pilote), `jeu` | Validation avec tableau avant / après (hors résultat final ou verdict) ; conformité à une source ; spécification ou plan | — | jugement | citation précise (texte, article, paragraphe) ou mesure exécutée ; chaque conclusion marquée vérifiée / hypothèse / non vérifiée | § 4.1 ; deux lectures → § 4.4 | verdict, matrice ou plan complet |
 | `macro`, `monnaie` (expert pilote), `jeu` | Fiche comparative (instruction par l'expert pilote, avis de `jeu`), nouvelle approche | au moins deux options sans preuve qui départage | jugement | options, apport de chacune, références retrouvées | **arbitrage du mainteneur** ; Fable seulement à sa demande ou par § 4.1 | options décrites |
-| tous | Changement d'un résultat final ou d'un verdict | tableau avant / après | jugement | tableau avant / après, lignes expliquées | Fable **seulement sur décision du mainteneur** | visa |
+| tous | Changement d'un résultat final ou d'un verdict | tableau avant / après | jugement | tableau avant / après, lignes expliquées | Fable **seulement sur décision du mainteneur** | visa du mainteneur |
+
+Mission absente de la matrice (par exemple révision globale, relecture d'une PR, revue de fond avant un jalon) : jugement par défaut ; la session principale propose de l'ajouter à la matrice au point d'étape suivant.
 
 ## 4. Critères
 
 ### 4.1 Fable sans demander au mainteneur (liste fermée)
 
 1. **Échec documenté d'Opus `high`** : après la consultation en jugement (et, s'il y a lieu, la relance ciblée), la preuve attendue manque encore **et** le blocage est de raisonnement — ni une information manquante, ni une exploration interrompue (§ 5.1).
-2. **Désaccord entre agents** : expert contre `audit`, deux experts entre eux, ou un avis contre un ADR accepté. Fable **instruit** le désaccord ; la décision reste au mainteneur quand `CLAUDE.md` la lui réserve.
+2. **Désaccord entre agents** : expert contre `audit`, deux experts entre eux, ou un avis rendu par un agent qui contredit un ADR accepté alors que la question ne porte pas sur cet ADR (une issue ou une consultation qui propose de le modifier est une issue sensible, § 4.2 : Opus `high` d'abord, ADR 0005, décision 3). Fable **instruit** le désaccord, par une consultation neuve de la fiche `-approfondi` du rôle dont relève la question (le fond à l'expert pilote, la jouabilité à `jeu`, la forme du code et les ADR à `architect`), avec le dossier (§ 5.4) ; la décision reste au mainteneur quand `CLAUDE.md` la lui réserve.
 3. **Rédaction d'un ADR d'architecture** (routage initial, § 3).
 
 Tout autre usage de Fable est **proposé** au mainteneur (un message, réponse oui / non), qui peut aussi le demander d'office.
@@ -80,27 +82,28 @@ Sous le seuil : jugement, sans question au mainteneur.
 
 ## 5. Transitions, plafonds et arrêts
 
-### 5.1 Quatre actions, choisies selon la nature du blocage
+### 5.1 Cinq actions, choisies selon la nature du blocage
 
 | Blocage constaté dans le retour | Action | Forme |
 |---|---|---|
-| statut `complet` sans les preuves prévues, ou retour sans bloc « Retour » (plafond de tours probable) | **relance ciblée** | reprise du même agent (`SendMessage`), contexte conservé, même fiche ; statut requalifié `partiel` |
-| exploration incomplète en routine (lectures non faites, périmètre non couvert) | **hausse d'effort** | consultation neuve de la fiche `-approfondi`, avec le dossier (§ 5.4) |
+| statut `complet` sans les preuves prévues, retour marqué partiel par Claude Code (plafond de tours `maxTurns` atteint), ou retour sans bloc « Retour » | **relance ciblée** | reprise du même agent (`SendMessage`), contexte conservé, même fiche ; statut requalifié `partiel` |
+| exploration incomplète (lectures non faites, périmètre non couvert) ou blocage de raisonnement, en routine | **hausse d'effort** | consultation neuve de la fiche `-approfondi`, avec le dossier (§ 5.4) |
+| exploration incomplète en jugement | **relance ciblée** | reprise du même agent (`SendMessage`), même fiche ; ensuite arrêt (§ 5.2) |
 | blocage de raisonnement en jugement, ou critère du § 4.1 | **changement de modèle** | consultation neuve de la fiche `-approfondi` avec `model: "fable"`, avec le dossier |
 | information, source ou mesure manquante | **obtenir l'information ou la preuve** | lancer la mesure, retrouver la source, ou demander au mainteneur |
 | décision réservée (visa, deux lectures, approche, source non retrouvée, Fable proposé) | **décision humaine** | question au mainteneur, avec les rapports |
 
-Ordre selon la nature du blocage : information → preuve ; exploration → effort ; raisonnement → modèle. Pas de palier Opus `high` imposé avant Fable quand un critère du § 4.1 est présent d'emblée.
+Ordre selon la nature du blocage : information → preuve ; exploration → effort ; raisonnement → effort en routine, puis modèle en jugement. Pas de palier Opus `high` imposé avant Fable quand un critère du § 4.1 est présent d'emblée : § 4.1.3 (ADR d'architecture) dès le départ, § 4.1.2 (désaccord) dès qu'il est constaté, même entre consultations de routine.
 
 ### 5.2 Plafonds
 
-- **Par question** : au plus une relance ciblée, une hausse d'effort et une consultation Fable ; ensuite arrêt et compte rendu au mainteneur, statut `revue requise`.
+- **Par question** : au plus une relance ciblée, une hausse d'effort et une consultation Fable ; ensuite arrêt et compte rendu au mainteneur, statut `revue requise` ; l'accord du mainteneur lève le plafond (§ 5.5).
 - **Par branche de travail** : au-delà de **3 consultations Fable** (ADR compris), accord du mainteneur avant chaque nouvelle consultation.
 - **Par consultation** : `maxTurns` de la fiche (40 ou 80). Ce plafond borne les tours, **pas les tokens** ; une réponse courte ne borne pas le raisonnement.
 
 ### 5.3 Modèle indisponible, plafond atteint
 
-Arrêt et question au mainteneur : attendre, ou accepter une consultation Opus `high` dont l'avis porte la mention « rendu sans Fable, à revoir ». Jamais de remplacement silencieux : le journal (§ 7) compare le modèle servi au modèle demandé.
+Arrêt et question au mainteneur : attendre, ou accepter une consultation Opus `high` dont l'avis porte la mention « rendu sans Fable, à revoir ». Jamais de remplacement silencieux : la session principale compare le modèle servi, relevé par le journal (§ 7), au modèle demandé, qu'elle note dans la ligne d'escalade de la PR (le journal ne voit pas le `model` passé à l'appel).
 
 ### 5.4 Dossier d'escalade
 
@@ -119,7 +122,7 @@ Preuve attendue pour conclure :
 ### 5.5 Priorité entre règles
 
 1. `CLAUDE.md` (visa, décisions réservées au mainteneur, deux lectures d'une source) ;
-2. indisponibilité d'un modèle ou plafond atteint (§ 5.2, § 5.3) : arrêt ;
+2. indisponibilité d'un modèle ou plafond atteint (§ 5.2, § 5.3) : arrêt et question au mainteneur ; son accord lève le plafond ;
 3. décisions explicites du mainteneur ;
 4. critères du § 4.1 ;
 5. jugement de la session principale, appuyé sur les signaux du § 3.
@@ -132,15 +135,15 @@ Chaque consultation se termine par un bloc « Retour » (fiches `architect`, `ma
 
 ## 7. Traçabilité
 
-- **Journal local** : le hook `SubagentStop` (`.claude/hooks/journal_agents.sh`) ajoute une ligne JSON par consultation à `.claude/journal-agents.jsonl` (non versionné) : date, agent, identifiant, modèles servis, nombre d'appels au modèle, contexte au dernier appel (tokens d'entrée, cache compris), durée. Il ne mesure ni l'effort (non exposé) ni les tokens de sortie (non fiables dans le transcript). En session cloud, il disparaît avec le conteneur.
-- **Bilan** : `bash .claude/outils/bilan_journal.sh` agrège le journal par agent et par modèle.
-- **Trace durable** : chaque escalade (hausse d'effort, Fable, relance, arrêt) est notée par la session principale dans la PR de la branche de travail, une ligne : `fiche / modèle / critère déclenché / statut obtenu / suite`.
-- `/usage` donne, sur abonnement, la part de chaque sous-agent ; aucune autre mesure de consommation n'est disponible.
+- **Journal local** : le hook `SubagentStop` (`.claude/hooks/journal_agents.sh`) ajoute une ligne JSON par sous-agent terminé (toutes fiches, pas seulement les consultations) à `.claude/journal-agents.jsonl` (non versionné) : date, agent, identifiant, modèles servis, nombre d'appels au modèle, contexte au dernier appel (tokens d'entrée, cache compris), durée. Il ne mesure ni l'effort (non exposé) ni les tokens de sortie (non fiables dans le transcript). Le transcript est écrit de façon asynchrone et peut ne pas contenir les derniers messages quand le hook s'exécute : appels et contexte au dernier appel sont des minorants possibles. En session cloud, il disparaît avec le conteneur : avant la fin d'une telle session, la session principale colle la sortie de `bash .claude/outils/bilan_journal.sh` dans un commentaire de la PR de la branche de travail.
+- **Bilan** : `bash .claude/outils/bilan_journal.sh` agrège le journal par agent et par modèle. Une reprise (`SendMessage`) ajoute pour le même sous-agent une ligne cumulative (appels, durée attente comprise) : le bilan ne garde que la dernière et compte les reprises.
+- **Trace durable** : chaque escalade (hausse d'effort, Fable), relance ciblée ou arrêt est notée par la session principale dans la PR de la branche de travail, une ligne : `fiche / modèle / critère déclenché / statut obtenu / suite`. Hors de toute branche ouverte (point d'étape entre deux branches, par exemple), la ligne va dans la section « Escalades, relances et arrêts hors branche » de `docs/feuille-de-route.md`, et une consultation Fable faite hors branche compte pour la branche suivante (§ 5.2).
+- `/usage` (abonnement) attribue approximativement l'usage récent aux sous-agents (24 h ou 7 jours, poste courant seulement : une session cloud n'est vue que d'elle-même) ; l'export OpenTelemetry est l'autre source, que le dépôt ne configure pas.
 
 ## 8. Calibration et retour arrière
 
-- **Calibration** : après les dix premières consultations `architect`, `macro`, `monnaie`, `jeu`, puis à chaque point d'étape d'`architect`, relire le bilan du journal et les lignes d'escalade des PR : part des relances ciblées (fiches trop légères ?), escalades vers Fable et leur apport réel, contexte au dernier appel (lectures trop larges ?). Ajuster les seuils et efforts par un commit `claude:` motivé ; une réorientation durable s'annote dans l'ADR 0005.
-- **Retour au comportement antérieur** (Fable pour tout) : remettre `model: fable` dans `architect.md`, `macro.md`, `monnaie.md` et `jeu.md`, retirer `effort` et `maxTurns`, relancer le script, ou annuler le commit de fusion de la PR qui a introduit la politique (`git revert -m 1 <sha>`).
+- **Calibration** : après les dix premières consultations `architect`, `macro`, `monnaie`, `jeu`, puis à chaque point d'étape d'`architect`, relire le bilan du journal et les lignes d'escalade des PR et de `docs/feuille-de-route.md` (escalades hors branche) : part des relances ciblées (fiches trop légères ?), escalades vers Fable et leur apport réel, contexte au dernier appel (lectures trop larges ?). Ajuster les seuils et efforts par un commit `claude:` motivé ; une réorientation durable s'annote dans l'ADR 0005.
+- **Retour au comportement antérieur** (Fable pour tout), sur décision du mainteneur : de préférence, annuler le commit de fusion de la PR qui a introduit la politique (`git revert -m 1 <sha>`), puis rétablir l'ADR 0005, la ligne M20 et la section « Escalades, relances et arrêts hors branche » de la feuille de route, avec ses lignes (l'annulation les supprime), en les annotant « Politique abandonnée le … » (ou `superseded by NNNN` si un nouvel ADR consigne le retour) ; à défaut, à la main : remettre `model: fable` dans `architect.md`, `macro.md`, `monnaie.md` et `jeu.md`, retirer `effort`, `maxTurns` et la phrase « Fiche de routine… » des descriptions, vider `ROLES` dans `.claude/outils/fiches_jumelles.sh`, supprimer les fiches `-approfondi` et le contrôle CI correspondant, retirer de `CLAUDE.md` le paragraphe « Routage du modèle et de l'effort », et annoter l'ADR 0005 et la ligne M20.
 
 ## 9. Adapter la politique à un projet
 
@@ -149,9 +152,9 @@ Emplacements réellement lus :
 | Emplacement | Ce qu'on y adapte |
 |---|---|
 | `docs/agents/routage.md` (ce fichier) | matrice (§ 3), seuils et contrats partagés (§ 4.2, § 4.3), plafonds (§ 5.2) |
-| frontmatter de `architect.md`, `macro.md`, `monnaie.md` et `jeu.md` | effort et `maxTurns` de routine ; le script en tire les fiches `-approfondi` |
+| frontmatter de `architect.md`, `macro.md`, `monnaie.md` et `jeu.md` | effort et `maxTurns` de routine ; le script reprend leur modèle, leurs outils et leur corps dans les fiches `-approfondi` |
 | `.claude/outils/fiches_jumelles.sh`, variables `ROLES`, `EFFORT_APPROFONDI`, `TOURS_APPROFONDI` | rôles dédoublés (experts supplémentaires), effort et plafond de jugement |
-| `CLAUDE.md`, « Sous-agents » | renvoi à ce fichier ; règles qui priment (§ 5.5, rang 1) |
+| `CLAUDE.md`, « Sous-agents » | renvoi à ce fichier ; règles qui priment (§ 5.5, rang 1) ; liste du § 4.1 et plafonds du § 5.2, recopiés : à tenir identiques |
 
 Ces critères s'articulent avec `CLAUDE.md` sans le remplacer : les décisions qu'il réserve au mainteneur restent les siennes quel que soit le modèle. Vérification : `bash .claude/outils/fiches_jumelles.sh --verifier` (la CI), puis, dans une session neuve, une consultation de chaque fiche suivie de `bash .claude/outils/bilan_journal.sh` pour lire le modèle servi.
 

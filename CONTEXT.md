@@ -68,5 +68,6 @@ Vocabulaire à employer tel quel dans le code, la documentation, les issues et l
 - **Mesure** : commande exécutée et sa sortie, qui fonde une affirmation sur le comportement du code.
 - **Consultation** : un appel d'`architect` ou d'un agent de fond (`macro`, `monnaie`, `jeu`) par la session principale ; se termine par un bloc « Retour » (statut `complet`, `partiel` ou `revue requise`).
 - **Routine / jugement** : les deux niveaux d'une consultation — fiche de base (Opus, effort `medium`) ou fiche `-approfondi` (Opus, effort `high`) ; voir `docs/agents/routage.md`.
-- **Escalade** : passage d'une consultation à un niveau supérieur, hausse d'effort (routine → jugement) ou changement de modèle (Opus → Fable), sur un critère observable ; distincte de la **relance ciblée** (même agent, preuves manquantes) et de la demande d'information.
+- **Escalade** : passage d'une consultation à un niveau supérieur, hausse d'effort (routine → jugement) ou changement de modèle (Opus → Fable), sur un critère observable ; distincte de la **relance ciblée** (même agent, même fiche, retour incomplet) et de la demande d'information.
+- **Question** (routage) : la question résiduelle d'une consultation, rattachée à une issue ou à une mission ; unité des plafonds de `docs/agents/routage.md` (§ 5.2) ; la reformuler ne remet pas ses plafonds à zéro.
 - **Dossier d'escalade** : question résiduelle, contraintes, conclusions établies, sources, tentatives, contradictions et preuve attendue, transmis à la consultation suivante pour éviter une nouvelle revue globale.
