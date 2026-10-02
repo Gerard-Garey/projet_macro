@@ -1,6 +1,6 @@
 # Inventaire des blocs du socle
 
-Tenu par `architect`. Ce fichier désigne, pour chaque bloc de la spécification, l'**expert pilote** (qui instruit la fiche comparative, spécifie en amont et valide en aval), les **experts consultés** sur les sujets frontière, le **module** de `src/nations/blocs/` visé et l'**ordre d'instruction**. Il fait foi pour « l'expert » de `CLAUDE.md` et du workflow `circuit-technique`. Le gabarit des fiches est `0000-gabarit.md` ; il doit être validé par le mainteneur avant la première fiche (issue #6).
+Tenu par `architect`. Ce fichier désigne, pour chaque bloc de la spécification, l'**expert pilote** (qui instruit la fiche comparative, spécifie en amont et valide en aval), les **experts consultés** sur les sujets frontière, le **module** de `src/nations/blocs/` visé et l'**ordre d'instruction**. Il fait foi pour « l'expert » de `CLAUDE.md` et du workflow `circuit-technique`. Le gabarit des fiches est `0000-gabarit.md` ; il est validé **à l'usage** (M20, 30/09/2026) : éprouvé sur la première fiche, « temps et comptabilité », puis validé par le mainteneur avec ses retouches, à la décision de cette fiche. Les désignations d'experts pilotes et de modules du § 1 ont été validées par le mainteneur le 30/09/2026.
 
 Le **socle** est l'économie fermée à un pays (jalons J1 à J3, décision du mainteneur du 29/09/2026 : premier jalon en économie fermée). Les blocs hors socle (commerce et change, actifs et crises, systèmes économiques et soutien politique) seront inventoriés ici aux jalons J5 à J7 ; ils ne sont pas instruits avant.
 
@@ -8,7 +8,7 @@ Le **socle** est l'économie fermée à un pays (jalons J1 à J3, décision du m
 
 | N° | Bloc | Fiche | Module visé | Expert pilote | Experts consultés | Statut |
 |---|---|---|---|---|---|---|
-| 1 | Temps et comptabilité | `temps_comptabilite.md` | transverse : `src/nations/noyau/` (comptes, grand livre, identités) et `src/nations/moteur/` (calendrier, phases) ; radicaux de labels `noyau` et `moteur` | `macro` | `monnaie` (bilans de la banque et de la banque centrale) ; `jeu` (rapport pas / tour) | à instruire |
+| 1 | Temps et comptabilité | `temps_comptabilite.md` | transverse : `src/nations/noyau/` (comptes, grand livre, identités) et `src/nations/moteur/` (calendrier, phases) ; radicaux de labels `noyau` et `moteur` | `macro` | `monnaie` (bilans de la banque et de la banque centrale) ; `jeu` (rapport pas / tour) | **décidée (M22)**, 30/09/2026 : option C (pas mensuel unique) et socle commun § 3.N, lectures (a) à (f) ; ADR 0005 ; passe à « spécifiée » avec la section `sec:cadre` (#18) |
 | 2 | Production et stocks | `production.md` | `src/nations/blocs/production.py` | `macro` | `jeu` | à instruire |
 | 3 | Travail et salaires | `travail.md` | `src/nations/blocs/travail.py` | `macro` | `monnaie` (indexation des salaires sur les anticipations : frontière inflation) ; `jeu` | à instruire |
 | 4 | Prix | `prix.md` | `src/nations/blocs/prix.py` | `macro` | `monnaie` (indexation des prix sur les anticipations : frontière inflation) ; `jeu` | à instruire |
@@ -50,13 +50,15 @@ L'ordre suit les dépendances : une fiche ne s'instruit pas avant que celles don
 
 Deux fiches peuvent s'instruire en parallèle quand leurs dépendances sont satisfaites et que leurs experts pilotes diffèrent : par exemple 6 (`macro`) et 7 (`monnaie`), sous réserve de l'échange sur la frontière crédit. Les anticipations (8) sont lues par 3 et 4 : les fiches 3 et 4 déclarent la variable d'anticipation qu'elles consomment et laissent à 8 sa loi de formation.
 
-Les pistes nouvelles citées (« deux secteurs », « cible de richesse », « corridor explicite », « apprentissage à gain constant », « prix au coût normal majoré », « pas mensuel unique ») viennent de la passation du 29/09/2026 (§ 8) : ce sont des **options à instruire**, non des choix ; chacune doit s'appuyer sur une référence retrouvée dans sa fiche.
+Les pistes nouvelles citées (« deux secteurs », « cible de richesse », « corridor explicite », « apprentissage à gain constant », « prix au coût normal majoré », « pas mensuel unique ») viennent de la passation du 29/09/2026 (§ 8) : ce sont des **options à instruire**, non des choix ; chacune doit s'appuyer sur une référence retrouvée dans sa fiche. La piste « pas mensuel unique » a été instruite et **retenue** (M22, 30/09/2026) : toutes les fiches suivantes expriment leurs vitesses en base annuelle, converties par la règle linéaire unique du cadre, et leurs délais en tours entiers (un pas = un tour).
 
 ## 4. Cycle de vie d'une fiche
 
 `à instruire` → `en instruction` (expert pilote saisi, issue ouverte) → `avis rendus` (expert pilote, expert consulté, `jeu`) → `décidée (M-n)` (décision du mainteneur reportée dans `docs/feuille-de-route.md`) → `spécifiée` (section de la spécification rédigée par `docwriter`, labels créés) → `implémentée` (module codé, balises posées, concordance verte).
 
 Une fiche décidée ne se réécrit pas : une révision passe par une nouvelle décision M-m, datée, qui cite la précédente. Le statut de ce tableau est mis à jour par `architect` à chaque changement.
+
+Rythme d'instruction arrêté par M21 (30/09/2026) : la fiche 1 s'instruit **seule**, dans une branche de travail dédiée, jusqu'à sa décision et sa section de spécification ; les fiches suivantes s'instruisent par branches de trois à cinq issues, une branche technique d'outillage pouvant s'intercaler entre deux branches de fiches. Chaque fiche donne lieu à au moins trois issues : critères écrits avant l'instruction (§ 1 et § 2 de la fiche, validés par le mainteneur), instruction et avis (§ 3 à 7), décision et section de spécification (§ 8 et 9). La première fiche sert aussi d'épreuve du gabarit (M20) : les retours des agents sur le gabarit sont consignés dans leur compte rendu et soumis au mainteneur avec la décision.
 
 ## 5. Hors socle (inventaire à venir)
 
@@ -67,3 +69,11 @@ Une fiche décidée ne se réécrit pas : une révision passe par une nouvelle d
 | Systèmes économiques (planification, nationalisation), soutien politique, conditions de fin | J7 | `macro` (systèmes) ; `jeu` (soutien, fin) |
 
 Ces désignations sont pressenties, non arrêtées ; elles seront fixées quand le socle sera décidé.
+
+## 6. Historique de l'inventaire
+
+| Date | Événement |
+|---|---|
+| 29/09/2026 | Création (issue #6, branche `claude/fondations`) : neuf blocs, experts pilotes, ordre d'instruction proposé. |
+| 30/09/2026 | Mainteneur : experts pilotes et modules validés (`macro` pour « temps et comptabilité » et « État et dette », module `finances_publiques.py`) ; gabarit validé à l'usage (M20) ; fiche 1 instruite seule dans la branche J1 n°1 (M21). |
+| 30/09/2026 | Fiche 1 « temps et comptabilité » décidée (M22) : option C et socle commun ; ADR 0005 accepté ; gabarit retouché validé par le mainteneur (M20, issue #17). |

@@ -21,3 +21,14 @@ def concordance():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="session")
+def matrices():
+    """Module `outils/verifier_matrices.py`, chargé par son chemin."""
+    chemin = RACINE / "outils" / "verifier_matrices.py"
+    spec = importlib.util.spec_from_file_location("verifier_matrices", chemin)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module

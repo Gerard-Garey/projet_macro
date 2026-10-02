@@ -42,6 +42,14 @@ uv run python outils/concordance_spec_moteur.py --strict
 
 Un succès inattendu d'un test marqué en échec attendu fait échouer la batterie (`xfail_strict`). La concordance applique le contrat de `docs/specification/CONVENTIONS.md` § 9 ; sans `--strict`, elle rend compte sans échouer.
 
+Vérification des matrices des bilans et des flux de la spécification (tables `tab:matrice-bilans`, `tab:matrice-flux` et `tab:portes-monnaie` de la section du cadre, lues terme à terme ; contrat de `docs/specification/CONVENTIONS.md` § 9, « Script des matrices » ; défaut : la spécification) :
+
+```bash
+uv run python outils/verifier_matrices.py [--strict] [fichier.tex]
+```
+
+Sans `--strict`, elle rend compte sans échouer ; la batterie `tests/unitaires` la lance en `--strict` sur la spécification.
+
 Compilation de la spécification (XeLaTeX ; MiKTeX sur le poste local, TeX Live en session cloud et en CI) :
 
 ```bash
