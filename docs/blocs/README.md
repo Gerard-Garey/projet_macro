@@ -8,7 +8,7 @@ Le **socle** est l'économie fermée à un pays (jalons J1 à J3, décision du m
 
 | N° | Bloc | Fiche | Module visé | Expert pilote | Experts consultés | Statut |
 |---|---|---|---|---|---|---|
-| 1 | Temps et comptabilité | `temps_comptabilite.md` | transverse : `src/nations/noyau/` (comptes, grand livre, identités) et `src/nations/moteur/` (calendrier, phases) ; radicaux de labels `noyau` et `moteur` | `macro` | `monnaie` (bilans de la banque et de la banque centrale) ; `jeu` (rapport pas / tour) | **décidée (M22)**, 30/09/2026 : option C (pas mensuel unique) et socle commun § 3.N, lectures (a) à (f) ; ADR 0005 ; section `sec:cadre` rédigée en section **proposée** et validée par `macro` et `monnaie` (#18, PR #20 fusionnée le 02/10/2026, `3518e18`) ; reste « décidée » au sens du § 4, dont le statut « spécifiée » exige des labels créés, que `CONVENTIONS.md` § 2.2 renvoie au code (J2) : définition soumise au mainteneur au point d'étape du 02/10/2026 |
+| 1 | Temps et comptabilité | `temps_comptabilite.md` | transverse : `src/nations/noyau/` (comptes, grand livre, identités) et `src/nations/moteur/` (calendrier, phases) ; radicaux de labels `noyau` et `moteur` | `macro` | `monnaie` (bilans de la banque et de la banque centrale) ; `jeu` (rapport pas / tour) | **décidée (M22)**, 30/09/2026 : option C (pas mensuel unique) et socle commun § 3.N, lectures (a) à (f) ; ADR 0005 . **Spécifiée**, 02/10/2026 : section `sec:cadre` rédigée en section proposée et validée par `macro` et `monnaie` (#18, PR #20 fusionnée le 02/10/2026, `3518e18`) ; labels `noyau` et `moteur` posés au J2 |
 | 2 | Production et stocks | `production.md` | `src/nations/blocs/production.py` | `macro` | `jeu` | à instruire |
 | 3 | Travail et salaires | `travail.md` | `src/nations/blocs/travail.py` | `macro` | `monnaie` (indexation des salaires sur les anticipations : frontière inflation) ; `jeu` | à instruire |
 | 4 | Prix | `prix.md` | `src/nations/blocs/prix.py` | `macro` | `monnaie` (indexation des prix sur les anticipations : frontière inflation) ; `jeu` | à instruire |
@@ -54,7 +54,9 @@ Les pistes nouvelles citées (« deux secteurs », « cible de richesse », « c
 
 ## 4. Cycle de vie d'une fiche
 
-`à instruire` → `en instruction` (expert pilote saisi, issue ouverte) → `avis rendus` (expert pilote, expert consulté, `jeu`) → `décidée (M-n)` (décision du mainteneur reportée dans `docs/feuille-de-route.md`) → `spécifiée` (section de la spécification rédigée par `docwriter`, labels créés) → `implémentée` (module codé, balises posées, concordance verte).
+`à instruire` → `en instruction` (expert pilote saisi, issue ouverte) → `avis rendus` (expert pilote, expert consulté, `jeu`) → `décidée (M-n)` (décision du mainteneur reportée dans `docs/feuille-de-route.md`) → `spécifiée` (section **proposée** de la spécification rédigée par `docwriter` et validée par l'expert pilote ; sans label `eq:`, une équation non exécutée n'en portant pas, `CONVENTIONS.md` § 2.2) → `implémentée` (module codé, labels `eq:` créés et balises posées, concordance verte).
+
+Définition de « spécifiée » et d'« implémentée » arrêtée par le mainteneur le 02/10/2026 (point d'étape après la PR #20) : la précédente exigeait des labels créés dès « spécifiée », ce qu'aucune fiche ne pouvait atteindre avant le code.
 
 Une fiche décidée ne se réécrit pas : une révision passe par une nouvelle décision M-m, datée, qui cite la précédente. Le statut de ce tableau est mis à jour par `architect` à chaque changement.
 
@@ -77,4 +79,4 @@ Ces désignations sont pressenties, non arrêtées ; elles seront fixées quand 
 | 29/09/2026 | Création (issue #6, branche `claude/fondations`) : neuf blocs, experts pilotes, ordre d'instruction proposé. |
 | 30/09/2026 | Mainteneur : experts pilotes et modules validés (`macro` pour « temps et comptabilité » et « État et dette », module `finances_publiques.py`) ; gabarit validé à l'usage (M20) ; fiche 1 instruite seule dans la branche J1 n°1 (M21). |
 | 30/09/2026 | Fiche 1 « temps et comptabilité » décidée (M22) : option C et socle commun ; ADR 0005 accepté ; gabarit retouché validé par le mainteneur (M20, issue #17). |
-| 02/10/2026 | PR #20 fusionnée (`3518e18`) : section `sec:cadre` proposée, sans label `eq:` ; la fiche 1 reste « décidée » en attendant que le mainteneur précise le statut « spécifiée » d'une section proposée (§ 4). |
+| 02/10/2026 | PR #20 fusionnée (`3518e18`) : section `sec:cadre` proposée, sans label `eq:`. Mainteneur : « spécifiée » redéfinie (section proposée rédigée par `docwriter` et validée par l'expert pilote ; les labels font passer à « implémentée », § 4) ; fiche 1 « temps et comptabilité » passée à « spécifiée ». |
