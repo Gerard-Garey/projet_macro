@@ -162,7 +162,7 @@ Le cadre a été retenu par la décision M22 du mainteneur (30/09/2026), consign
 \subsection{Entités et indices}
 \label{sec:cadre-entites}
 \begin{proposee}[entités et indices, décision M22]
-\textbf{Indices réservés.} Pays $i$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Le cadre du socle est écrit pour un pays : l'indice $i$ y est omis ; les barrières entre pays et l'ordre canonique des pays relèvent du jalon J5. La colonne « entreprises » est écrite pour le secteur institutionnel entier : sa division par secteur productif $j$ relève du bloc « production et stocks » (\S\ref{sec:production}), les strates $h$ du bloc « ménages » (\S\ref{sec:menages}).
+\textbf{Indices réservés.} Pays $c$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Le cadre du socle est écrit pour un pays : l'indice $c$ y est omis ; les barrières entre pays et l'ordre canonique des pays relèvent du jalon J5. La colonne « entreprises » est écrite pour le secteur institutionnel entier : sa division par secteur productif $j$ relève du bloc « production et stocks » (\S\ref{sec:production}), les strates $h$ du bloc « ménages » (\S\ref{sec:menages}).
 
 \textbf{Secteurs institutionnels.} Cinq secteurs, chacun avec son bilan : ménages, entreprises, banque commerciale, banque centrale, État. Dans les symboles, un indice ou un exposant marque le secteur détenteur ou émetteur : $H$ (ménages), $F$ (entreprises), $\mathit{Bk}$ (banque), $\mathit{CB}$ (banque centrale), $G$ (État). Ces marques ne sont pas des grandeurs : $B_H$ est l'encours de titres publics détenu par les ménages, sans rapport avec la monnaie centrale $H$ ; de même, $M^G$ est le compte du Trésor, sans rapport avec la dépense publique $G$. Dans les identités, l'indice $s \in \{H, F, \mathit{Bk}, \mathit{CB}, G\}$ parcourt les secteurs, et l'indice $\ell$ les lignes de la matrice des flux.
 
@@ -290,7 +290,7 @@ Valeur nette & $-D_H - B_H$ & $-K - \mathit{IN} - D_F + L$ & $-L - B_{\mathit{Bk
 \begin{proposee}[matrice des flux de transactions, décision M22]
 La matrice des flux (tableau~\ref{tab:matrice-flux}) donne, pour chaque flux du pas, le montant reçu ($+$) ou versé ($-$) par chaque secteur, les variations de postes financiers comprises : la variation d'un actif détenu compte $-$, celle d'un passif émis compte $+$. Les entreprises ont deux sous-colonnes, courant et capital. Chaque ligne somme à zéro : tout flux quitte un bilan pour entrer dans un autre. Chaque colonne somme à zéro : c'est la contrainte budgétaire du secteur. Tout flux de tout bloc du socle a sa ligne ; aucune monnaie n'est créée ni détruite hors d'une ligne.
 
-Chaque ligne porte une seule signature d'effet sur la masse monétaire $M$ et sur la monnaie centrale $H$ (\S\ref{sec:cadre-portes}) ; une ligne dont les parts ont des signatures différentes est scindée par contrepartie. Ainsi la ligne 11 (intérêts sur titres publics) est scindée en 11a, 11b, 11c selon le détenteur ; la ligne 19a (marché primaire : émission ou rachat par l'État, exposant $p$) selon le souscripteur ; la ligne 19b (achats ou ventes de la banque centrale sur le marché secondaire, exposant $s$) selon la contrepartie. La variation d'un encours de titres combine les deux marchés : $\Delta B_H = \Delta B_H^p - \Delta B_H^s$, $\Delta B_{\mathit{Bk}} = \Delta B_{\mathit{Bk}}^p - \Delta B_{\mathit{Bk}}^s$, $\Delta B_{\mathit{CB}} = \Delta B_{\mathit{CB}}^p + \Delta B_H^s + \Delta B_{\mathit{Bk}}^s$.
+Chaque ligne porte une seule signature d'effet sur la masse monétaire $M$ et sur la monnaie centrale $H$ (\S\ref{sec:cadre-portes}) ; une ligne dont les parts ont des signatures différentes est scindée par contrepartie. Ainsi la ligne 11 (intérêts sur titres publics) est scindée en 11a, 11b, 11c selon le détenteur ; la ligne 19a (marché primaire : émission ou rachat par l'État, exposant $\mathrm{prim}$) selon le souscripteur ; la ligne 19b (achats ou ventes de la banque centrale sur le marché secondaire, exposant $\mathrm{sec}$) selon la contrepartie. La variation d'un encours de titres combine les deux marchés : $\Delta B_H = \Delta B_H^{\mathrm{prim}} - \Delta B_H^{\mathrm{sec}}$, $\Delta B_{\mathit{Bk}} = \Delta B_{\mathit{Bk}}^{\mathrm{prim}} - \Delta B_{\mathit{Bk}}^{\mathrm{sec}}$, $\Delta B_{\mathit{CB}} = \Delta B_{\mathit{CB}}^{\mathrm{prim}} + \Delta B_H^{\mathrm{sec}} + \Delta B_{\mathit{Bk}}^{\mathrm{sec}}$.
 
 Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau. La contrainte budgétaire des entreprises est la somme de leurs deux sous-colonnes : l'investissement, la variation des stocks et l'amortissement s'y annulent. Un intérêt payé par la banque à la banque centrale (ligne 13) draine des réserves, un intérêt payé par la banque centrale sur les réserves (ligne 12) en crée ; un intérêt payé par l'État à la banque centrale (ligne 11c) et le versement du résultat $\Pi^{\mathit{CB}}$ (ligne 16) n'en déplacent aucune, puisque le compte du Trésor est un passif de la banque centrale.
 
@@ -334,11 +334,11 @@ Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas d
 16 Versement du résultat de la banque centrale & & & & & $-\Pi^{\mathit{CB}}$ & $+\Pi^{\mathit{CB}}$\\
 17 $\Delta$ Dépôts & $-\Delta D_H$ & & $-\Delta D_F$ & $+\Delta D_H + \Delta D_F$ & & \\
 18 $\Delta$ Crédits & & & $+\Delta L$ & $-\Delta L$ & & \\
-19a-ménages Émission primaire, ménages & $-\Delta B_H^p$ & & & & & $+\Delta B_H^p$\\
-19a-banque Émission primaire, banque & & & & $-\Delta B_{\mathit{Bk}}^p$ & & $+\Delta B_{\mathit{Bk}}^p$\\
-19a-BC Émission primaire, banque centrale & & & & & $-\Delta B_{\mathit{CB}}^p$ & $+\Delta B_{\mathit{CB}}^p$\\
-19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^s$ & & & & $-\Delta B_H^s$ & \\
-19b-banque Achats de la banque centrale à la banque & & & & $+\Delta B_{\mathit{Bk}}^s$ & $-\Delta B_{\mathit{Bk}}^s$ & \\
+19a-ménages Émission primaire, ménages & $-\Delta B_H^{\mathrm{prim}}$ & & & & & $+\Delta B_H^{\mathrm{prim}}$\\
+19a-banque Émission primaire, banque & & & & $-\Delta B_{\mathit{Bk}}^{\mathrm{prim}}$ & & $+\Delta B_{\mathit{Bk}}^{\mathrm{prim}}$\\
+19a-BC Émission primaire, banque centrale & & & & & $-\Delta B_{\mathit{CB}}^{\mathrm{prim}}$ & $+\Delta B_{\mathit{CB}}^{\mathrm{prim}}$\\
+19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^{\mathrm{sec}}$ & & & & $-\Delta B_H^{\mathrm{sec}}$ & \\
+19b-banque Achats de la banque centrale à la banque & & & & $+\Delta B_{\mathit{Bk}}^{\mathrm{sec}}$ & $-\Delta B_{\mathit{Bk}}^{\mathrm{sec}}$ & \\
 20 $\Delta$ Réserves & & & & $-\Delta \mathit{Res}$ & $+\Delta \mathit{Res}$ & \\
 21 $\Delta$ Refinancement & & & & $+\Delta L^{\mathit{CB}}$ & $-\Delta L^{\mathit{CB}}$ & \\
 22 $\Delta$ Compte du Trésor & & & & & $+\Delta M^G$ & $-\Delta M^G$\\
@@ -403,11 +403,11 @@ Ce contrôle a déjà servi : il a révélé, dans la fiche comparative, une err
 16 Versement du résultat de la banque centrale & $+\Pi^{\mathit{CB}}$ & 0 & 0\\
 17 $\Delta$ Dépôts & $+\Delta D_H + \Delta D_F$ & poste & poste\\
 18 $\Delta$ Crédits & $+\Delta L$ & $+$ & 0\\
-19a-ménages Émission primaire, ménages & $+\Delta B_H^p$ & $-$ & $-$\\
-19a-banque Émission primaire, banque & $+\Delta B_{\mathit{Bk}}^p$ & 0 & $-$\\
-19a-BC Émission primaire, banque centrale & $+\Delta B_{\mathit{CB}}^p$ & 0 & 0\\
-19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^s$ & $+$ & $+$\\
-19b-banque Achats de la banque centrale à la banque & $+\Delta B_{\mathit{Bk}}^s$ & 0 & $+$\\
+19a-ménages Émission primaire, ménages & $+\Delta B_H^{\mathrm{prim}}$ & $-$ & $-$\\
+19a-banque Émission primaire, banque & $+\Delta B_{\mathit{Bk}}^{\mathrm{prim}}$ & 0 & $-$\\
+19a-BC Émission primaire, banque centrale & $+\Delta B_{\mathit{CB}}^{\mathrm{prim}}$ & 0 & 0\\
+19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^{\mathrm{sec}}$ & $+$ & $+$\\
+19b-banque Achats de la banque centrale à la banque & $+\Delta B_{\mathit{Bk}}^{\mathrm{sec}}$ & 0 & $+$\\
 20 $\Delta$ Réserves & $+\Delta \mathit{Res}$ & poste & poste\\
 21 $\Delta$ Refinancement & $+\Delta L^{\mathit{CB}}$ & 0 & $+$\\
 22 $\Delta$ Compte du Trésor & $+\Delta M^G$ & 0 & 0\\
@@ -472,7 +472,7 @@ jamais une fraction du stock $E^{\mathit{CB}}$. Ses trois termes reposent sur de
 
 \textbf{Encaisse du Trésor et émission des titres publics.} Sans avances, le compte du Trésor $M^G$ n'est jamais négatif. L'État émet ses titres après les règlements du pas, en phase 7 (décision M22, lecture (f)) : il émet le besoin réalisé du pas,
 \begin{multline*}
-\Delta B_H^p + \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{CB}}^p = G + \mathit{Tr} + i_B B_H/n_a + i_B B_{\mathit{Bk}}/n_a + i_B B_{\mathit{CB}}/n_a\\
+\Delta B_H^{\mathrm{prim}} + \Delta B_{\mathit{Bk}}^{\mathrm{prim}} + \Delta B_{\mathit{CB}}^{\mathrm{prim}} = G + \mathit{Tr} + i_B B_H/n_a + i_B B_{\mathit{Bk}}/n_a + i_B B_{\mathit{CB}}/n_a\\
 - T_H - T_F - \Pi^{\mathit{CB}} + M^{G*} - M^G_t ,
 \end{multline*}
 de sorte que le compte du Trésor clôt à l'encaisse stationnaire $M^{G*}$. Celle-ci couvre les paiements du pas qui précèdent l'émission ; elle n'excède pas les paiements bruts d'un pas avant impôts, $G + \mathit{Tr} + i_B B/n_a$, soit environ un mois de dépenses publiques. Elle n'est pas un paramètre : c'est une variable de l'état initial résolu, calculée par le script d'état stationnaire selon la règle du bloc État et dette (\S\ref{sec:finances_publiques}), et publiée. Un placement raté laisse $M^G$ sous $M^{G*}$, et le rationnement de la dépense frappe le tour suivant : le joueur dispose d'un tour de signal. L'émission de titres n'est pas un levier du socle.
@@ -701,7 +701,7 @@ Pistes écartées par la décision M22 (ADR 0005 ; fiche \nolinkurl{docs/blocs/t
 \item \textbf{Troncature du versement de la banque centrale} (résultats positifs seulement) : elle exige une borne et une règle de recapitalisation ; réservée au jalon J6, par une décision citant M22.
 \item \textbf{Émission des titres publics avant les règlements}, sur un besoin planifié en phase 3 : une variable de prévision de plus (les impôts planifiés) et une encaisse du Trésor non constante à la clôture ; le principe de simplicité a tranché pour l'émission après les règlements. La lisibilité, le rationnement de la dépense frappant le tour même d'un placement raté, reste consignée comme argument en sa faveur.
 \item \textbf{Plusieurs calendriers dans le code, choisis par un paramètre} : c'est un drapeau de mode, exclu par l'architecture (ADR 0002) ; une comparaison entre pas hebdomadaire et pas mensuel se ferait sur deux branches ou par un script d'outillage.
-\item \textbf{Tolérance cumulée justifiée par le pire cas d'arrondi} : $30 \times 3\,120 \times 2{,}2 \cdot 10^{-16} \approx 2{,}1 \cdot 10^{-11}\,S$ sur les 3\,120 pas hebdomadaires de 60 ans, au-dessus de $10^{-12}$ sans être observé ; la tolérance tient par la mesure, que le test du jalon J2 vérifie.
+\item \textbf{Tolérance cumulée justifiée par le pire cas d'arrondi} : $30 \times 3\,120 \times 2{,}22 \cdot 10^{-16} \approx 2{,}1 \cdot 10^{-11}\,S$ sur les 3\,120 pas hebdomadaires de 60 ans, au-dessus de $10^{-12}$ sans être observé ; la tolérance tient par la mesure, que le test du jalon J2 vérifie.
 \end{itemize}
 
 %=====================================================================
@@ -792,7 +792,7 @@ Cette annexe associe à chaque label d'équation le module et la fonction du mot
 %=====================================================================
 Cette annexe est le registre des symboles : tout symbole employé dans une équation y figure, avec sa définition, son unité, son bloc et le label de l'équation qui le définit ; tout symbole qui y figure est employé. Un symbole a un seul sens dans tout le document. Elle s'ouvre au jalon J1. Les symboles du cadre (\S\ref{sec:cadre}), proposé, renvoient à la sous-section qui les définit : ils n'ont pas encore de label d'équation.
 
-Indices réservés : pays $i$, secteur $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Une variable $x_t$ est la valeur d'ouverture du pas $t$, $x_{t+1}$ sa valeur de clôture, sauf mention contraire. Une variable anticipée porte l'exposant $e$, une cible l'exposant $\ast$, une valeur de long terme ou stationnaire une barre.
+Indices réservés : pays $c$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Une variable $x_t$ est la valeur d'ouverture du pas $t$, $x_{t+1}$ sa valeur de clôture, sauf mention contraire. Une variable anticipée porte l'exposant $e$, une cible l'exposant $\ast$, une valeur de long terme ou stationnaire une barre.
 
 \begin{center}\small
 \begin{longtable}{>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.8cm}}
@@ -841,7 +841,7 @@ $\delta$ & taux d'amortissement du capital fixe & par an & cadre & \S\ref{sec:ca
 $\mathit{Div}_F$, $\mathit{Div}_{\mathit{Bk}}$ & dividendes versés aux ménages par les entreprises, par la banque & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
 $\Pi^{\mathit{CB}}$ & résultat de la banque centrale versé à l'État & u.m. par pas & cadre & \S\ref{sec:cadre-caisse}, proposée\\
 $\Delta x$ & variation d'un poste $x$ sur le pas, $x_{t+1} - x_t$ ($\Delta D_H$, $\Delta L$, $\Delta \mathit{IN}$…) & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
-$\Delta B_X^p$, $\Delta B_X^s$ & titres publics souscrits par $X$ sur le marché primaire ; vendus par $X$ à la banque centrale sur le marché secondaire & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
+$\Delta B_s^{\mathrm{prim}}$, $\Delta B_s^{\mathrm{sec}}$ & titres publics souscrits par le secteur $s$ sur le marché primaire, $s \in \{H, \mathit{Bk}, \mathit{CB}\}$ ; vendus par $s$ à la banque centrale sur le marché secondaire, $s \in \{H, \mathit{Bk}\}$ & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
 $f_{\ell,s,t}$ & montant de la ligne $\ell$ dans la colonne du secteur $s$ au pas $t$ & u.m. par pas & cadre & \S\ref{sec:cadre-identites}, proposée\\
 $S$, $S^{\mathit{Bk}}$, $S^{\mathit{CB}}$ & échelle du bilan contrôlé : somme des valeurs absolues de tous ses postes, valeur nette comprise & u.m. & cadre & \S\ref{sec:cadre-identites}, proposée\\
 $\varepsilon$, $\varepsilon_V$ & tolérances des identités par pas et de l'identité cumulée, rapportées à $S$ & sans dimension & cadre & \S\ref{sec:cadre-identites}, proposée\\
