@@ -473,3 +473,95 @@ def test_equation_labellisee_sans_lecture(concordance, tmp_path):
     rapport = verifier(concordance, tmp_path, tex)
     assert regles(rapport) == [8]
     assert rapport.ecarts[0].emplacement.endswith(":6")
+
+
+# Issue #8 : faux négatifs de la préparation du texte. Chaque cas place, après
+# le passage à effacer, un numéro en dur (15) que la règle 6 doit relever :
+# s'il ne l'est pas, la suite du document a été effacée sans écart.
+
+
+def releves(rapport):
+    """Numéros en dur relevés par la règle 6."""
+    return sorted(re.findall(r"\(\d+\)", " ".join(
+        e.message for e in rapport.ecarts if e.regle == 6)))
+
+
+def test_iffalse_ignore_les_conditions_etoolbox(concordance, tmp_path):
+    # \ifbool et \iftoggle (etoolbox) sont des commandes, pas des conditions :
+    # le \fi qui suit ferme le \iffalse.
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \ifbool{brouillon}{(12)}{} \iftoggle{notes}{(13)}{}
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_ignore_ifdef_et_ifstrequal(concordance, tmp_path):
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \ifdef{\brouillon}{(12)}{} \ifdefmacro{\a}{}{} \ifstrequal{a}{b}{(13)}{}
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_newif_dans_le_bloc_ne_declare_rien(concordance, tmp_path):
+    # Dans un bloc sauté, \newif n'est pas exécuté : \ifbrouillon n'est pas
+    # une condition, et le \fi ferme le \iffalse.
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \newif\ifbrouillon (12)
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_condition_declaree_par_newif_comptee(concordance, tmp_path):
+    # Déclarée hors du bloc, \ifbrouillon est une condition : son \fi ne ferme
+    # pas le \iffalse, et (14) reste dans le bloc.
+    corps = EQUATION + textwrap.dedent(r"""
+        \newif\ifbrouillon
+        \iffalse
+        \ifbrouillon (13) \fi (14) \ifnum1=1 \fi
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_non_referme_est_un_ecart(concordance, tmp_path):
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \ifx\a\b (14) \fi
+        Plus loin, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    # Rien n'est effacé : la suite est analysée.
+    assert regles(rapport) == [0, 6] and releves(rapport) == ["(14)", "(15)"]
+    ecart = next(e for e in rapport.ecarts if e.regle == 0)
+    assert "\\iffalse non refermé" in ecart.message
+    attendu = (PREAMBULE + corps).split("\n").index("\\iffalse") + 1
+    assert ecart.emplacement.endswith(f":{attendu}")
+
+
+def test_verbatim_cite_en_commentaire(concordance, tmp_path):
+    # Le commentaire est ouvert avant le \begin{verbatim} qu'il cite : il
+    # n'ouvre rien, et le texte jusqu'au vrai verbatim reste analysé.
+    corps = EQUATION + textwrap.dedent(r"""
+        % Exemple : \begin{verbatim} ouvre un verbatim.
+        Entre les deux, (15) est relevé.
+        \begin{verbatim}
+        (16) % \end{verbatim} n'est pas un commentaire
+        \end{verbatim}
+        Ni \verb|%| ni \% n'ouvre de commentaire : (17) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)", "(17)"]

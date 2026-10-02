@@ -72,8 +72,9 @@ Si aucune des trois tables n'est présente, le script le dit (« aucune matrice
 trouvée ») et sort avec le code 0 ; si une partie seulement l'est, les tables
 absentes sont des écarts.
 
-Le texte non composé est retiré avant l'analyse par `preparer_tex` du script
-de concordance (positions et numéros de ligne conservés).
+Le texte non composé est retiré avant l'analyse par `preparer_tex_et_anomalies`
+du script de concordance (numéros de ligne conservés) ; une
+anomalie de ce retrait (un `\\iffalse` non refermé) est un écart `structure`.
 
 Usage : `uv run python outils/verifier_matrices.py [--strict] [fichier.tex]`
 (défaut : `docs/specification/nations_et_marches.tex`). Sans `--strict`, le
@@ -115,6 +116,7 @@ def _charger_concordance():
 
 _concordance = _charger_concordance()
 preparer_tex = _concordance.preparer_tex
+preparer_tex_et_anomalies = _concordance.preparer_tex_et_anomalies
 numero_ligne = _concordance.numero_ligne
 lire_arguments = _concordance.lire_arguments
 environnements = _concordance.environnements
@@ -827,7 +829,11 @@ def verifier(tex: Path) -> Rapport:
     """Lit les trois tables de `tex` et applique les points (a) à (d)."""
     rapport = Rapport()
     chemin = _relatif(tex)
-    texte = preparer_tex(tex.read_text(encoding="utf-8"))
+    texte, anomalies = preparer_tex_et_anomalies(tex.read_text(encoding="utf-8"))
+    # Anomalie de la préparation (un `\iffalse` non refermé) : écart de structure.
+    for position, message in anomalies:
+        rapport.ecarts.append(Ecart("structure", f"{chemin}:{numero_ligne(texte, position)}",
+                                    message))
     tables: dict[str, Table] = {}
     for label in LABELS:
         table, ecarts = lire_table(texte, label, chemin)
