@@ -285,7 +285,7 @@ Une seule équation `eq:moteur-conversion-taux` déclare la règle pour les troi
 - **Proposition** : une règle unique, **linéaire**, pour les trois natures. Le cadre déclare, en les chiffrant, les deux grandeurs qui dépendent alors de n_a : la fraction annuelle résorbée par une vitesse, et le rendement d'un replacement pas à pas (4,07–4,08 % pour 4 %).
 - L'autre lecture (composée pour les taux, linéaire pour les flux, au choix pour les vitesses) est à décrire au § 6 par `monnaie` : **point frontière, le mainteneur tranche**.
 
-Seconde déclaration (2 (c), 7 (c)). Le test zéro définit le ratio « stock au PIB annuel » comme **stock d'ouverture / (n_a × flux du pas)**, la restitution au tour comme stock de clôture / Σ des 12 tours. Les deux diffèrent par un facteur dû à la croissance dans l'année : 14,2857 contre 14,1552 (12 pas) ou 14,1461 (52 pas), soit 0,9 à 1,0 % pour g = 2 %. Le cadre publie ce facteur.
+Seconde déclaration (2 (c), 7 (c)). Le test zéro définit le ratio « stock au PIB annuel » comme **stock d'ouverture / (n_a × flux du pas)**, la restitution au tour comme stock de clôture / Σ des 12 tours. Le ratio restitué vaut celui du test zéro multiplié par n_a(1 + g/n_a) / Σ_{u=0}^{n_a−1} (1 + g/n_a)^{−u}, facteur dû à la croissance dans l'année : 14,4409 contre 14,2857 (12 pas, g = 2 %, δ = 5 %), soit 1,0109 (+1,09 %). Le cadre publie ce facteur. (Correction du 02/10/2026, mesurée par `macro` : les valeurs 14,1552 et 14,1461 publiées auparavant rapportaient le stock d'ouverture aux 12 flux suivants, ce qui n'est pas la définition de M22 (e).)
 
 #### Q3 — Matrices et instruments (critères 1, 10, 11 et 14)
 
@@ -409,7 +409,7 @@ Contre-épreuve numérique :
 - Sous E^CB = 100, 0, −50 : S vaut 2 400, 2 400, 2 500, contre `max(1, |E_cb|)` = 100, 1, 50 en v2.0.
 
 **Deux identités, vérifiées à la fin de chaque phase.**
-- (a) **Par pas** : au plus 30 opérandes ; borne (n−1)·eps·S ≈ 6,7e−15 S ; résidu observé ≤ 2,6e−16 S sur 200 termes. D'où **ε = 1e−12**, avec une marge supérieure à 100.
+- (a) **Par pas** : au plus n = 30 opérandes ; borne (n−1)·eps·S ≈ 6,4e−15 S (eps = 2^−52 ≈ 2,22e−16 ; majorée par n·eps·S ≈ 6,7e−15 S ; correction du 02/10/2026) ; résidu observé ≤ 2,6e−16 S sur 200 termes. D'où **ε = 1e−12**, avec une marge supérieure à 100.
 - (b) **Cumulée** (valeur nette par les flux depuis t = 0 contre valeur nette par le stock) :
   - pire cas 30·n_pas·eps·S = 4,8e−12 S (720 pas) et 2,1e−11 S (3 120 pas), **au-dessus de 1e−12** : le pire cas n'est pas le critère ;
   - mesuré (5 postes, 30 flux par pas, S ≈ 1e7, 20 graines) : résidu maximal 3,3e−15 S (720 pas) et 8,3e−15 S (3 120 pas) selon `macro`, 3,3e−15 et 6,4e−15 selon `monnaie` ;
@@ -427,11 +427,13 @@ Aucune tolérance sur un flux, aucune constante absolue, aucun `max(1, ·)`.
 | 2 Plans | production visée, demande de travail, budget de consommation, investissement visé, dépense publique du pas | production, ménages, investissement, finances publiques | 1 | — |
 | 3 Crédit | demande et offre | investissement, banque | 2 | 18 |
 | 4 Production et travail | emploi, production, stocks ; salaires | production, travail | 2, 3 | 5 |
-| 5 Marché des biens | ventes C, G, I ; prix du pas ; variation des stocks | prix, production | 2, 4 | 1, 2, 3, 4 |
-| 6 Revenus et impôts | intérêts sur L, D, B ; impôts ; transferts ; dividendes ; amortissement | finances publiques, banque, investissement, ménages | ouverture, 1, 5 | 6–11, 14, 15 |
+| 5 Marché des biens | ventes C, G, I ; prix du pas ; variation des stocks | production, prix, ménages, investissement, finances publiques | 2, 4 | 1, 2, 3, 4 |
+| 6 Revenus et impôts | intérêts sur L, D, B ; impôts ; transferts ; dividendes ; amortissement | finances publiques, banque, investissement | ouverture, 1, 5 | 6–11, 14, 15 |
 | 7 Titres publics | émission ou rachat ; souscriptions ; achats décidés de la BC | finances publiques, ménages, banque, banque centrale | 6 | 19 |
 | 8 Monnaie centrale | (a) intérêts sur Res et L^CB ; (b) versement du résultat de la BC (résultat du tour, lignes exécutées) ; (c) position de réserves après tous les règlements → refinancement décidé | banque centrale, banque | tout ce qui précède | 12, 13, 16, puis 21 |
 | 9 Clôture | identités par pas et cumulées ; double calcul de E^Bk, E^CB ; mise à jour du registre ; t + 1 | noyau, moteur | tout | — |
+
+*Correction du 02/10/2026 (validation de fond de `macro`) : la colonne « Écrivent » des phases 5 et 6 est alignée sur le tableau du § 9.4 et l'attribution des lignes de la matrice ; les ménages proposent la ligne 1 en phase 5 et aucune ligne en phase 6.*
 
 **Contreparties de règlement.** Les lignes 17, 20 et 22 ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau.
 
@@ -510,7 +512,7 @@ Critère par critère :
 1. J2, identités : |résidu| ≤ 1e−12 × S à la fin de chaque phase, par pas et en cumul, sur 720 pas sans choc ; le pire cas théorique (30·n·eps) dépasse ε_V dès 720 pas et n'est pas le critère, c'est l'accumulation mesurée qui l'est ; toute violation est un défaut, jamais un motif d'élargir ε.
 2. J2, invariance d'unité : sous ×100, résidu/S ≤ 1e−12, et les champs économiques diffèrent de moins de 1e−10 en relatif.
 3. J2, budget du noyau seul : ≤ 0,5 ms par pas mensuel sur la plateforme de référence (`test_budget.py`, `semaines_par_pas = 52/12`).
-4. J3, état stationnaire : les ratios du script d'`outils/` égalent ceux du moteur à t = 0 à 1e−9 près ; leur dérive sur 60 ans reste dans les bandes O1 ; le facteur vers le ratio « 12 tours cumulés » (0,9 % pour g = 2 %) est publié.
+4. J3, état stationnaire : les ratios du script d'`outils/` égalent ceux du moteur à t = 0 à 1e−9 près ; leur dérive sur 60 ans reste dans les bandes O1 ; le facteur vers le ratio « 12 tours cumulés » (1,0109, soit +1,09 % pour g = 2 % ; correction du 02/10/2026) est publié.
 5. Fidélité : si une fiche (J3, J6) établit par un fait qu'un mécanisme exige une dynamique infra-mensuelle, le choix se rouvre par une décision M-m citant M22. n_a et n_m restent des **paramètres déclarés** (pas des drapeaux de mode).
 
 **Lectures possibles, à trancher par le mainteneur.**
@@ -783,7 +785,7 @@ Quatre paramètres, aucune borne (pt 18), à porter dans `tab:calibration` au J2
 **Grandeurs dérivées, qui ne sont pas des paramètres :**
 - la longueur du registre (= n_a) ;
 - `semaines_par_pas = 52/12` de `tests/invariants/test_budget.py` ;
-- le facteur entre les deux ratios au PIB annuel (0,9 % pour g = 2 %), publié à J3 ;
+- le facteur entre les deux ratios au PIB annuel (1,0109, soit +1,09 % pour g = 2 % ; correction du 02/10/2026), publié à J3 ;
 - les deux grandeurs dépendantes de n_a (pt 5), publiées dans `sec:cadre`.
 
 **M^G\*** n'est pas un paramètre du cadre. C'est une variable de l'état initial résolu, calculée par le script d'état stationnaire selon la règle de la fiche 9, et bornée par le cadre à au plus (G + Tr + i_B B)/n_a. Le cadre exige seulement qu'elle existe, qu'elle soit publiée, et qu'à l'état stationnaire M^G de clôture lui soit égal à chaque pas.
