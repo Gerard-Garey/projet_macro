@@ -2,7 +2,7 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail.
 
-**Dernière mise à jour** : 30/09/2026 — `main` = `facf97f` (commit de fusion de la PR #7) ; branche de travail `claude/j1-temps-comptabilite` (§ 1), tête `f080090` (décision M22 consignée dans la fiche) ; la présente mise à jour consigne M22 (§ 4) et l'ADR 0005 (accepté).
+**Dernière mise à jour** : 02/10/2026 — `main` = `7a17e01` (commit de fusion de la PR #22) ; branche de travail `claude/j1-temps-comptabilite` (§ 1), tête `86ae3cb` (fusion de `main` après la PR #22) ; la présente mise à jour, faite avant la sortie du brouillon de la PR #20, coche #18 et #19, consigne la fusion de la PR #22 (§ 7), ajoute #21 aux issues hors plan (§ 3) et annote l'ADR 0005 (pts 14 et 17, corrections de chiffres). Mise à jour précédente : 30/09/2026 (M22, ADR 0005 accepté).
 
 ## 1. Branche de travail en cours
 
@@ -11,12 +11,13 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 - **Périmètre** (fermé, cinq issues ; issues créées le 30/09/2026 sur accord du mainteneur) :
   - [x] #15 — Fiche « temps et comptabilité » : question posée et critères d'évaluation, écrits avant l'instruction — agent : `macro` (expert pilote), `monnaie` et `jeu` consultés sur les critères de leur domaine ; commit `docs:` par la session principale — circuit : 1 (première étape) — résultats : aucun — **point de décision franchi** le 30/09/2026 : critères validés par le mainteneur (commentaire de l'issue ; commits `1ed2050`, `5a31b4a`, `300b23b`, `4b96a02`).
   - [x] #16 — Fiche « temps et comptabilité » : instruction des options et avis (`macro`, `monnaie`, `jeu`) — agents : `macro` (§ 3 à 5), `monnaie` (§ 6), `jeu` (§ 7) ; commit `docs:` par la session principale — circuit : 1 — résultats : aucun — statut de la fiche « avis rendus » atteint le 30/09/2026 (commits `758273a`, `22a0dd6`, `4773077`, `7ae563a`).
-  - [ ] #17 — Décision du mainteneur sur la fiche « temps et comptabilité » (M22) et validation du gabarit à l'usage (M20) — agents : mainteneur (décision), `architect` (consignation : § 4 ci-dessous, `docs/blocs/README.md`, `CONTEXT.md`, ADR 0005), session principale (§ 8 de la fiche dans les mots du mainteneur, retouches du gabarit), `docwriter` (`CONVENTIONS.md` § 6, en fin de branche) — circuit : 1 — résultats : aucun — **M22 prise le 30/09/2026** (§ 8 de la fiche, commit `f080090`) ; ADR 0005 accepté et gabarit retouché validé (M20) le 30/09/2026 ; restent : § 9 de la fiche, `CONVENTIONS.md` § 6 (fin de branche).
-  - [ ] #18 — Spécification : section « Cadre : temps, entités, comptabilité » (proposée) issue de M22 — agent : `docwriter` ; validation de fond par `macro`, `monnaie` sur les bilans de la banque et de la banque centrale — circuit : 1 (fin) — résultats : aucun — PDF recompilé dans le même commit, concordance `--strict` verte.
-  - [ ] #19 — Script de vérification des matrices des bilans et des flux (sommes nulles), lu depuis la spécification — agents : `coder`, puis `audit` (workflow `circuit-technique`) — circuit : 3 — résultats : aucun (le moteur v3 n'exécute encore rien).
+  - [ ] #17 — Décision du mainteneur sur la fiche « temps et comptabilité » (M22) et validation du gabarit à l'usage (M20) — agents : mainteneur (décision), `architect` (consignation : § 4 ci-dessous, `docs/blocs/README.md`, `CONTEXT.md`, ADR 0005), session principale (§ 8 de la fiche dans les mots du mainteneur, retouches du gabarit), `docwriter` (`CONVENTIONS.md` § 6, en fin de branche) — circuit : 1 — résultats : aucun — **M22 prise le 30/09/2026** (§ 8 de la fiche, commit `f080090`) ; ADR 0005 accepté et gabarit retouché validé (M20) le 30/09/2026 ; `CONVENTIONS.md` § 6 clos par `5ab629c` ; ADR 0005 annoté le 02/10/2026 (pts 14 et 17, corrections de chiffres, décision inchangée) ; reste : § 9 de la fiche.
+  - [x] #18 — Spécification : section « Cadre : temps, entités, comptabilité » (proposée) issue de M22 — agent : `docwriter` ; validation de fond par `macro`, `monnaie` sur les bilans de la banque et de la banque centrale — circuit : 1 (fin) — résultats : aucun — PDF recompilé dans le même commit, concordance `--strict` verte — commit `5ab629c`, plus les corrections issues de la validation de fond (à venir) ; validation de fond `macro` et `monnaie` faite le 02/10/2026 : validé avec corrections.
+  - [x] #19 — Script de vérification des matrices des bilans et des flux (sommes nulles), lu depuis la spécification — agents : `coder`, puis `audit` (workflow `circuit-technique`) — circuit : 3 — résultats : aucun (le moteur v3 n'exécute encore rien) — commits `42b7e2e`, `567c65c`, `a59118a`, `4e4fdd1` ; trois cas non relevés par l'audit léger reportés en #21 (hors plan, § 3).
 - **Ordre** : 1 → validation des critères → 2 → décision M22 → 3 → 4 → 5 (la convention d'écriture des tableaux est fixée dans l'issue 5 avant la rédaction de l'issue 4, pour que le script lise ce que `docwriter` écrit ; le script ne s'exécute sur la spécification qu'une fois l'issue 4 commitée).
 - **Ordre des commits** : sans objet (aucun résultat ne change).
 - **Revue finale complète** (règle 10, avant la sortie du brouillon) : `audit` sur `git diff main...HEAD` (script et tests) et `/code-review` ; `docwriter` a déjà fait son passage unique (issue 4) ; `macro` valide le diff de la spécification et la fiche ; `app-review` non déclenché (aucune interface).
+- **État au 02/10/2026** (avant la sortie du brouillon de la PR #20) : validation de fond de `macro` et `monnaie` faite (validé avec corrections, à commiter) ; revue finale complète (règle 10) faite par `audit` et `/code-review` : conforme avec réserves mineures.
 - **Ce que cette branche ne fait pas** : aucune autre fiche (M21) ; aucun code du noyau (J2) ; aucune issue d'outillage (#8 à #14, branche technique à part, § 2).
 
 ## 2. Branches suivantes
@@ -32,7 +33,7 @@ Les issues de ces branches ne sont pas encore créées : `architect` les rédige
 
 ## 3. Issues hors plan
 
-Au 30/09/2026, sept issues ouvertes, toutes d'outillage, aucune dans le périmètre de la branche J1 n°1 (M21) :
+Au 02/10/2026, quatorze issues ouvertes hors du périmètre de la branche J1 n°1 (M21) : les sept d'outillage de J0 (#8 à #14) ; #21, née de l'audit de #19 ; #23 à #28, nées de la validation de fond (`macro`, `monnaie`) et de la revue finale complète de la PR #20, créées le 02/10/2026 sur accord du mainteneur.
 
 | Issue | Objet | Module touché | Groupe proposé | Remarque |
 |---|---|---|---|---|
@@ -43,6 +44,13 @@ Au 30/09/2026, sept issues ouvertes, toutes d'outillage, aucune dans le périmè
 | #13 | Test d'archive : ignorer `__pycache__` | `tests/invariants/test_archive_intacte.py` | branche technique | Gêne toute exécution du prototype v2.0 pour remesurer un fait : à traiter en premier dans la branche technique. |
 | #11 | Dependabot : suivre ou non `uv.lock` | `.github/dependabot.yml` | décision du mainteneur | Libellé proposé : `ready-for-human`. |
 | #14 | Ruleset de `main` : concorder le JSON et le ruleset appliqué | `.github/ruleset-main.json` ou interface web | décision du mainteneur | Libellé proposé : `ready-for-human`. |
+| #21 | `verifier_matrices` : lignes des têtes de `longtable` (trois cas non relevés) | `outils/verifier_matrices.py` (`lire_table`) | branche technique | `ready-for-agent` ; aucune table conforme touchée, mais une table mal écrite passe ; un test par cas. |
+| #23 | Notation : doubles emplois de i (pays / taux), G et H, exposants s et p | `docs/specification/`, `outils/verifier_matrices.py` | décision du mainteneur, avant la fiche « banque commerciale » | `needs-triage` ; avis de `macro` : garder i pour les taux, renommer l'indice des pays. |
+| #24 | Conversion des taux de croissance et des cibles d'inflation ; phase de l'indice P_t | fiches « prix » et « banque centrale et anticipations » | branches des fiches J1 | `needs-triage` ; frontière `macro` / `monnaie`. |
+| #25 | Contrôler les contraintes budgétaires en prose de `sec:cadre-flux` contre `tab:matrice-flux` | `outils/verifier_matrices.py` | branche technique | `needs-triage` ; née de l'omission de ΔL^CB corrigée dans la PR #20. |
+| #26 | Cas limites du cadre monétaire hérités de M22 (perte de la BC, E^CB, M^G\*, découvert intra-pas, corridor) | fiches 7 à 9 | branches des fiches J1 | `needs-triage` ; M^G\* renvoyée à la fiche 9 par le mainteneur le 02/10/2026. |
+| #27 | `verifier_matrices` : fichier absent, test périmé, trois défauts de lecture des cellules | `outils/verifier_matrices.py`, `tests/unitaires/test_matrices.py` | branche technique | `ready-for-agent` ; à traiter avec #21. |
+| #28 | Lancer `verifier_matrices.py --strict` en CI et dans les batteries | `.github/workflows/`, `CLAUDE.md`, `.claude/workflows/circuit-technique.js` | branche technique | `ready-for-agent`. |
 
 ## 4. Décisions du mainteneur
 
@@ -111,6 +119,7 @@ Critères de passage arrêtés par le mainteneur le 29/09/2026 (M19).
 | Branche | PR | Jalon | Fusion | Issues et commits |
 |---|---|---|---|---|
 | `claude/fondations` | #7 | J0 | 30/09/2026, commit de fusion `facf97f` | #2 (`a5d873c`, `75e2cc6`, `377bda3`) ; #3 (`19839bb`, `85bda79`) ; #5 (`fcb54a6`, `84e6ad9`) ; #6 (`85573bc`) ; #4 (`6090310`, `8ba19ff`, `d8eeb17`, `8c8a633`, `da76229`, `bd0cd44`, `eda7278`, `4651b5f`, `878fc6f`, `75c9e72`). Revue finale complète faite avant la sortie du brouillon ; aucun résultat changé (le moteur v3 n'exécute rien). Issues nées de la revue : #8 à #13 (audit, `docwriter`, session principale) ; #14 après la fusion (ruleset). |
+| `claude/routage-modele-effort` | #22 | hors jalon (ad hoc ; M23, ADR 0006) | 02/10/2026, commit de fusion `7a17e01` | Aucune issue : branche ad hoc portant M23, fusionnée dans `claude/j1-temps-comptabilite` par `86ae3cb`. Dix commits, dont `e0df3bb` (routage du modèle et de l'effort, fiches `-approfondi`), `4408522` (politique de routage et ADR, créé sous le numéro 0005 puis renuméroté 0006 par `b81265d`), `3cded24` (contrôle CI des fiches `-approfondi`), `1ad0a98` (section « Escalades, relances et arrêts » du modèle de PR), `b81265d` et `14f86f5` (relecture d'`architect-approfondi`), `a554cf4` (relecture du diff de correction). Aucun résultat changé. |
 
 ## 8. Escalades, relances et arrêts hors branche
 
