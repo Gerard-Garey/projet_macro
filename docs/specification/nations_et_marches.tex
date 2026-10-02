@@ -292,22 +292,7 @@ La matrice des flux (tableau~\ref{tab:matrice-flux}) donne, pour chaque flux du 
 
 Chaque ligne porte une seule signature d'effet sur la masse monétaire $M$ et sur la monnaie centrale $H$ (\S\ref{sec:cadre-portes}) ; une ligne dont les parts ont des signatures différentes est scindée par contrepartie. Ainsi la ligne 11 (intérêts sur titres publics) est scindée en 11a, 11b, 11c selon le détenteur ; la ligne 19a (marché primaire : émission ou rachat par l'État, exposant $p$) selon le souscripteur ; la ligne 19b (achats ou ventes de la banque centrale sur le marché secondaire, exposant $s$) selon la contrepartie. La variation d'un encours de titres combine les deux marchés : $\Delta B_H = \Delta B_H^p - \Delta B_H^s$, $\Delta B_{\mathit{Bk}} = \Delta B_{\mathit{Bk}}^p - \Delta B_{\mathit{Bk}}^s$, $\Delta B_{\mathit{CB}} = \Delta B_{\mathit{CB}}^p + \Delta B_H^s + \Delta B_{\mathit{Bk}}^s$.
 
-Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau. Les colonnes, résolues en ces postes, donnent les contraintes budgétaires ; colonnes des ménages et des entreprises :
-\begin{align*}
-\Delta D_H &= \mathit{WB} + \mathit{Tr} + i_D D_H/n_a + i_B B_H/n_a + \mathit{Div}_F + \mathit{Div}_{\mathit{Bk}}\\
-&\quad - C - T_H - \Delta B_H^p + \Delta B_H^s ,\\
-\Delta D_F &= C + G - \mathit{WB} - T_F - i_L L/n_a + i_D D_F/n_a - \mathit{Div}_F + \Delta L ,\\
-\intertext{colonne de la banque :}
-\Delta \mathit{Res} &= i_L L/n_a + i_B B_{\mathit{Bk}}/n_a + i_{\mathit{res}} \mathit{Res}/n_a - i_D D_H/n_a - i_D D_F/n_a - i_{\mathit{CB}} L^{\mathit{CB}}/n_a\\
-&\quad - \mathit{Div}_{\mathit{Bk}} + \Delta D_H + \Delta D_F - \Delta L - \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{Bk}}^s + \Delta L^{\mathit{CB}} ,\\
-\intertext{colonne de la banque centrale :}
-\Delta \mathit{Res} &= \Pi^{\mathit{CB}} - i_B B_{\mathit{CB}}/n_a - i_{\mathit{CB}} L^{\mathit{CB}}/n_a + i_{\mathit{res}} \mathit{Res}/n_a\\
-&\quad + \Delta B_{\mathit{CB}}^p + \Delta B_H^s + \Delta B_{\mathit{Bk}}^s + \Delta L^{\mathit{CB}} - \Delta M^G ,\\
-\intertext{colonne de l'État :}
-\Delta M^G &= T_H + T_F + \Pi^{\mathit{CB}} - G - \mathit{Tr} - i_B B_H/n_a - i_B B_{\mathit{Bk}}/n_a - i_B B_{\mathit{CB}}/n_a\\
-&\quad + \Delta B_H^p + \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{CB}}^p .
-\end{align*}
-Dans les entreprises, l'investissement, la variation des stocks et l'amortissement s'annulent entre les deux sous-colonnes. Les deux expressions de $\Delta \mathit{Res}$ coïncident terme à terme une fois $\Delta D_H$, $\Delta D_F$ et $\Delta M^G$ substitués : c'est une conséquence des lignes nulles. Un intérêt payé par la banque à la banque centrale (ligne 13) draine des réserves, un intérêt payé par la banque centrale sur les réserves (ligne 12) en crée ; un intérêt payé par l'État à la banque centrale (ligne 11c) et le versement du résultat $\Pi^{\mathit{CB}}$ (ligne 16) n'en déplacent aucune, puisque le compte du Trésor est un passif de la banque centrale.
+Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau. La contrainte budgétaire des entreprises est la somme de leurs deux sous-colonnes : l'investissement, la variation des stocks et l'amortissement s'y annulent. Un intérêt payé par la banque à la banque centrale (ligne 13) draine des réserves, un intérêt payé par la banque centrale sur les réserves (ligne 12) en crée ; un intérêt payé par l'État à la banque centrale (ligne 11c) et le versement du résultat $\Pi^{\mathit{CB}}$ (ligne 16) n'en déplacent aucune, puisque le compte du Trésor est un passif de la banque centrale.
 
 \textbf{Statut.} Dérivée (sommes nulles, contraintes budgétaires) ; la liste des lignes et leur découpage sont des choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (points 6, 8 et 11 à 13 de l'ADR 0005).
 \end{proposee}
@@ -375,7 +360,7 @@ Les lignes 17 et 20 portent les postes de règlement eux-mêmes ($\Delta D_H + \
 \begin{enumerate}[label=(\alph*)]
 \item que chaque ligne des deux matrices est nulle ;
 \item que chaque colonne de la matrice des bilans est nulle ;
-\item que chaque colonne de secteur de la matrice des flux contient une fois son poste de règlement ($\Delta D_H$, $\Delta D_F$, $\Delta \mathit{Res}$ pour la banque et pour la banque centrale, $\Delta M^G$) et que les deux expressions de $\Delta \mathit{Res}$ coïncident ;
+\item que chaque colonne de secteur de la matrice des flux contient une fois son poste de règlement ($\Delta D_H$, $\Delta D_F$, $\Delta \mathit{Res}$ pour la banque et pour la banque centrale, $\Delta M^G$) et que l'expression de $\Delta \mathit{Res}$ tirée de la colonne de la banque, $\Delta D_H$ et $\Delta D_F$ substitués, coïncide avec celle tirée de la colonne de la banque centrale, $\Delta M^G$ substitué, ce qu'impliquent les lignes nulles du point (a) ;
 \item que $\Delta M$ et $\Delta H$ recomposés depuis les portes égalent $\Delta D_H + \Delta D_F$ et $\Delta \mathit{Res}$, et que le montant de chaque porte est la somme des termes positifs de sa ligne.
 \end{enumerate}
 Ce contrôle a déjà servi : il a révélé, dans la fiche comparative, une erreur de signe dans la contrainte budgétaire de la banque centrale, invisible aux contre-épreuves numériques parce que le terme en cause est nul sous la décision M22, lecture (d).
