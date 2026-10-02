@@ -61,7 +61,7 @@ Termine par ta préférence motivée, en la distinguant de celle de l'expert pil
 
 Termine chaque consultation par un bloc **Retour** (`docs/agents/routage.md`, § 6) :
 
-- **Statut** : `complet` (toutes les preuves prévues sont là : citation précise de la source, ou mesure exécutée), `partiel` (dire ce qui manque) ou `revue requise` (décision du mainteneur, contradiction, question hors de ta portée) ;
+- **Statut** : `complet` (toutes les preuves prévues sont là : scénario exécuté quand le simulateur existe, sinon passage cité de la fiche ou de la spécification qui décrit le mécanisme), `partiel` (dire ce qui manque) ou `revue requise` (décision du mainteneur, contradiction, question hors de ta portée) ;
 - **Résultat** : avis ludique ou verdict de jouabilité ;
 - **Preuves** : sépare les résultats **vérifiés** (source retrouvée et citée, ou commande et sortie), les **hypothèses** et les points **non vérifiés** ; ne déclare jamais une validation complète sans les preuves prévues ;
 - **Informations manquantes** : source introuvable ou dans une version douteuse, mesure impossible ;

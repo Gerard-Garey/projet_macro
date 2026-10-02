@@ -5,7 +5,7 @@
 #  Genere, pour chaque role de ROLES, la fiche .claude/agents/<role>-approfondi.md
 #  a partir de la fiche de base .claude/agents/<role>.md : meme corps, memes
 #  outils, meme modele ; seuls changent le nom, la description, l'effort et
-#  maxTurns. Politique : docs/agents/routage.md, § 2 ; decision : ADR 0005.
+#  maxTurns. Politique : docs/agents/routage.md, § 2 ; decision : ADR 0006.
 #
 #  Usage :
 #    bash .claude/outils/fiches_jumelles.sh             # (re)genere les fiches
