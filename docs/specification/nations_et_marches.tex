@@ -164,7 +164,7 @@ Le cadre a été retenu par la décision M22 du mainteneur (30/09/2026), consign
 \begin{proposee}[entités et indices, décision M22]
 \textbf{Indices réservés.} Pays $i$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Le cadre du socle est écrit pour un pays : l'indice $i$ y est omis ; les barrières entre pays et l'ordre canonique des pays relèvent du jalon J5. La colonne « entreprises » est écrite pour le secteur institutionnel entier : sa division par secteur productif $j$ relève du bloc « production et stocks » (\S\ref{sec:production}), les strates $h$ du bloc « ménages » (\S\ref{sec:menages}).
 
-\textbf{Secteurs institutionnels.} Cinq secteurs, chacun avec son bilan : ménages, entreprises, banque commerciale, banque centrale, État. Dans les symboles, un indice ou un exposant marque le secteur détenteur ou émetteur : $H$ (ménages), $F$ (entreprises), $\mathit{Bk}$ (banque), $\mathit{CB}$ (banque centrale), $G$ (État). Ces marques ne sont pas des grandeurs : $B_H$ est l'encours de titres publics détenu par les ménages, sans rapport avec la monnaie centrale $H$. Dans les identités, l'indice $s \in \{H, F, \mathit{Bk}, \mathit{CB}, G\}$ parcourt les secteurs, et l'indice $\ell$ les lignes de la matrice des flux.
+\textbf{Secteurs institutionnels.} Cinq secteurs, chacun avec son bilan : ménages, entreprises, banque commerciale, banque centrale, État. Dans les symboles, un indice ou un exposant marque le secteur détenteur ou émetteur : $H$ (ménages), $F$ (entreprises), $\mathit{Bk}$ (banque), $\mathit{CB}$ (banque centrale), $G$ (État). Ces marques ne sont pas des grandeurs : $B_H$ est l'encours de titres publics détenu par les ménages, sans rapport avec la monnaie centrale $H$ ; de même, $M^G$ est le compte du Trésor, sans rapport avec la dépense publique $G$. Dans les identités, l'indice $s \in \{H, F, \mathit{Bk}, \mathit{CB}, G\}$ parcourt les secteurs, et l'indice $\ell$ les lignes de la matrice des flux.
 
 \textbf{Temps.} Le pas $t = 0, 1, 2, \dots$ est l'unité de temps du moteur ; le tour $n = 1, 2, \dots$ est l'unité du jeu. Une variable $x_t$ est la valeur d'ouverture du pas $t$, $x_{t+1}$ sa valeur de clôture ; une variable de flux est datée du pas où elle s'exécute.
 \end{proposee}
@@ -184,13 +184,15 @@ Le tour 13 est le mois 1 de l'année 2. La frontière de tour coïncide avec une
 \begin{equation*}
 x^{\mathrm{pas}} = \frac{x^{\mathrm{an}}}{n_a},
 \end{equation*}
-pour les trois natures : taux d'intérêt, flux annuel, vitesse d'ajustement (décision M22, lecture (a)). C'est la seule conversion du moteur : aucune division par un nombre de périodes n'est écrite ailleurs, et une fenêtre « d'un an » vaut exactement $n_a$ pas. Dans la matrice des flux (\S\ref{sec:cadre-flux}), un intérêt ou un amortissement s'écrit donc taux annuel × encours d'ouverture$/n_a$. Sur un encours constant $X$ au taux annuel $i_X$, les intérêts versés dans l'année valent $n_a \cdot (i_X/n_a)\,X = i_X X$ exactement, quel que soit $n_a$ ; et comme toute grandeur par pas est proportionnelle à $1/n_a$, un ratio stationnaire écrit en base annuelle ne dépend pas de $n_a$.
+pour les trois natures : taux d'intérêt, flux annuel, vitesse d'ajustement (décision M22, lecture (a)). C'est la seule conversion du moteur : aucune division par un nombre de périodes n'est écrite ailleurs, et une fenêtre « d'un an » vaut exactement $n_a$ pas. Dans la matrice des flux (\S\ref{sec:cadre-flux}), un intérêt ou un amortissement s'écrit donc taux annuel × encours d'ouverture$/n_a$. Sur un encours constant $X$ au taux annuel $i_X$, les intérêts versés dans l'année valent $n_a \cdot (i_X/n_a)\,X = i_X X$ exactement, quel que soit $n_a$ ; et comme toute grandeur par pas est proportionnelle à $1/n_a$, un ratio stationnaire écrit en base annuelle ne dépend pas de $n_a$, pourvu que les taux de croissance soient eux aussi écrits en base annuelle linéaire ($g/n_a$ par pas).
 
 \textbf{Deux grandeurs qui dépendent de $n_a$, déclarées.} Elles touchent la transition, jamais l'état d'arrivée :
 \begin{itemize}
 \item la fraction annuelle de l'écart résorbée par une vitesse d'ajustement annuelle $\lambda$, $1 - (1 - \lambda/n_a)^{n_a}$ : 0,3999 pour $\lambda = 0{,}5$ par an et $n_a = 12$ ;
 \item le rendement annuel d'un encours dont l'intérêt est crédité dans l'instrument lui-même (dépôts, réserves), $(1 + i_X/n_a)^{n_a} - 1$ : 4,0742\,\% pour $i_X = 4\,\%$ par an et $n_a = 12$.
 \end{itemize}
+Un taux de croissance ou d'inflation n'est aucune des trois natures nommées par la décision M22, lecture (a). Converti par la même règle, un taux annuel $x$ donne une croissance annuelle effective $(1 + x/n_a)^{n_a} - 1$, soit 2,0184\,\% pour $x = 2\,\%$ et $n_a = 12$ : une cible d'inflation ou de croissance convertie ainsi déplacerait l'état d'arrivée. Le traitement des cibles relève des fiches « prix » et « banque centrale et anticipations » ; le glissement $\pi_t$ ci-dessous est mesuré, jamais converti.
+
 
 \textbf{Conditions déclarées.} Toute vitesse d'ajustement respecte $\lambda \le n_a$, soit au plus 1 par pas, condition d'un ajustement monotone ; elle se contrôle au chargement de la table de calibration, jamais par un écrêtage. Une vitesse de 1 par an ou plus est admise : la règle linéaire est la seule qui l'admette. Le taux réel annuel restitué et testé est $r = i_X - \pi$, où $\pi$ est l'inflation annuelle (glissement annuel de l'indice des prix) : c'est la forme que le moteur calculera, non la relation de Fisher exacte.
 
@@ -206,7 +208,7 @@ et sa valeur stationnaire est explicite, $P_{t-u} = P_t\,(1 + \bar\pi)^{-u/n_a}$
 \end{equation*}
 soit 1,0109 pour $g = 2\,\%$ par an : le ratio restitué dépasse d'environ 1,1\,\% celui du test zéro. Ce facteur est publié avec l'état stationnaire (\S\ref{sec:calibration}, jalon J3).
 
-\textbf{Budget de calcul.} Le budget reste d'au plus 1\,ms par pays-semaine (décision M13), soit 52\,ms par pays-an ; avec un pas mensuel, il se lit $52/12 \approx 4{,}333$\,ms par pays-pas, seuil que prend le test de budget (\nolinkurl{tests/invariants/test_budget.py}, avec 52/12 semaines par pas). Un tour d'un monde à 10 pays coûte au plus $10 \times 52/12 \approx 43{,}3$\,ms de moteur, hors barrières entre pays et hors IA. La fenêtre longue de 60 ans compte 720 pas.
+\textbf{Budget de calcul.} Le budget reste d'au plus 1\,ms par pays-semaine (décision M13), soit 52\,ms par pays-an ; avec un pas mensuel, il se lit $52/12 \approx 4{,}333$\,ms par pays-pas, seuil que prendra le test de budget (\nolinkurl{tests/invariants/test_budget.py}, avec 52/12 semaines par pas). Un tour d'un monde à 10 pays coûte au plus $10 \times 52/12 \approx 43{,}3$\,ms de moteur, hors barrières entre pays et hors IA. La fenêtre longue de 60 ans compte 720 pas.
 
 \textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (points 1 à 5, 16 et 17 de l'ADR 0005).
 \end{proposee}
@@ -301,12 +303,12 @@ Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas d
 &\quad - \mathit{Div}_{\mathit{Bk}} + \Delta D_H + \Delta D_F - \Delta L - \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{Bk}}^s + \Delta L^{\mathit{CB}} ,\\
 \intertext{colonne de la banque centrale :}
 \Delta \mathit{Res} &= \Pi^{\mathit{CB}} - i_B B_{\mathit{CB}}/n_a - i_{\mathit{CB}} L^{\mathit{CB}}/n_a + i_{\mathit{res}} \mathit{Res}/n_a\\
-&\quad + \Delta B_{\mathit{CB}}^p + \Delta B_H^s + \Delta B_{\mathit{Bk}}^s - \Delta M^G ,\\
+&\quad + \Delta B_{\mathit{CB}}^p + \Delta B_H^s + \Delta B_{\mathit{Bk}}^s + \Delta L^{\mathit{CB}} - \Delta M^G ,\\
 \intertext{colonne de l'État :}
 \Delta M^G &= T_H + T_F + \Pi^{\mathit{CB}} - G - \mathit{Tr} - i_B B_H/n_a - i_B B_{\mathit{Bk}}/n_a - i_B B_{\mathit{CB}}/n_a\\
 &\quad + \Delta B_H^p + \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{CB}}^p .
 \end{align*}
-Dans les entreprises, l'investissement, la variation des stocks et l'amortissement s'annulent entre les deux sous-colonnes. Les deux expressions de $\Delta \mathit{Res}$ coïncident terme à terme une fois $\Delta D_H$, $\Delta D_F$ et $\Delta M^G$ substitués : c'est une conséquence des lignes nulles. Un intérêt reçu par la banque centrale draine des réserves ; le versement de son résultat, $\Pi^{\mathit{CB}}$, n'en déplace aucune, puisque le compte du Trésor est un passif de la banque centrale.
+Dans les entreprises, l'investissement, la variation des stocks et l'amortissement s'annulent entre les deux sous-colonnes. Les deux expressions de $\Delta \mathit{Res}$ coïncident terme à terme une fois $\Delta D_H$, $\Delta D_F$ et $\Delta M^G$ substitués : c'est une conséquence des lignes nulles. Un intérêt payé par la banque à la banque centrale (ligne 13) draine des réserves, un intérêt payé par la banque centrale sur les réserves (ligne 12) en crée ; un intérêt payé par l'État à la banque centrale (ligne 11c) et le versement du résultat $\Pi^{\mathit{CB}}$ (ligne 16) n'en déplacent aucune, puisque le compte du Trésor est un passif de la banque centrale.
 
 \textbf{Statut.} Dérivée (sommes nulles, contraintes budgétaires) ; la liste des lignes et leur découpage sont des choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (points 6, 8 et 11 à 13 de l'ADR 0005).
 \end{proposee}
@@ -445,10 +447,10 @@ V^{\mathrm{stock}}_{s,t} = \sum \text{actifs de } s - \sum \text{passifs de } s,
 V^{\mathrm{flux}}_{s,t+1} = V^{\mathrm{flux}}_{s,t} + \text{résultat}_{s,t} - \text{distribution}_{s,t}, \qquad V^{\mathrm{flux}}_{s,0} = V^{\mathrm{stock}}_{s,0} .
 \end{gather*}
 
-\textbf{Échelle du bilan.} Toute tolérance sur un montant est relative à l'échelle $S$ du bilan contrôlé : la somme des valeurs absolues de tous ses postes, valeur nette comprise. Pour la banque et pour la banque centrale :
+\textbf{Échelle du bilan.} Toute tolérance sur un montant est relative à l'échelle $S$ du bilan contrôlé : la somme des valeurs absolues de tous ses postes, valeur nette comprise. Pour la banque et pour la banque centrale, les réserves pouvant être négatives entre les phases (\S\ref{sec:cadre-caisse}) :
 \begin{equation*}
-S^{\mathit{Bk}} = L + B_{\mathit{Bk}} + \mathit{Res} + D_H + D_F + L^{\mathit{CB}} + |E^{\mathit{Bk}}| , \qquad
-S^{\mathit{CB}} = B_{\mathit{CB}} + L^{\mathit{CB}} + \mathit{Res} + M^G + |E^{\mathit{CB}}| .
+S^{\mathit{Bk}} = L + B_{\mathit{Bk}} + |\mathit{Res}| + D_H + D_F + L^{\mathit{CB}} + |E^{\mathit{Bk}}| , \qquad
+S^{\mathit{CB}} = B_{\mathit{CB}} + L^{\mathit{CB}} + |\mathit{Res}| + M^G + |E^{\mathit{CB}}| .
 \end{equation*}
 L'échelle est invariante par redénomination : sous une multiplication de tous les nominaux par 100, chaque ratio résidu$/S$ est inchangé. La banque centrale est rapportée à l'échelle de son propre bilan, jamais à ses fonds propres, qui peuvent être nuls ou négatifs. La date à laquelle $S$ est évaluée (ouverture du pas ou clôture de la phase contrôlée) n'est pas fixée par la décision M22 ; elle le sera avec le noyau, au jalon J2.
 
@@ -458,7 +460,7 @@ L'échelle est invariante par redénomination : sous une multiplication de tous 
 |V^{\mathrm{stock}}_{s,t} - V^{\mathrm{flux}}_{s,t}| \le \varepsilon_V\, S , \\
 \varepsilon = \varepsilon_V = 10^{-12} .
 \end{gather*}
-Les identités par pas (sommes nulles ; clôture égale à ouverture plus flux, poste par poste) sont vérifiées à la fin de chaque phase ; elles portent sur au plus 30 opérandes, dont l'arrondi en double précision est borné par environ $30 \times 2{,}2 \cdot 10^{-16} \approx 6{,}7 \cdot 10^{-15}\,S$, loin sous $\varepsilon$. L'identité cumulée de la valeur nette est vérifiée en phase 9. Son pire cas théorique, $30 \times 720 \times 2{,}2 \cdot 10^{-16} \approx 4{,}8 \cdot 10^{-12}\,S$ sur les 720 pas de la fenêtre longue, dépasse $\varepsilon_V$ : la tolérance cumulée ne tient donc pas par le pire cas mais par la mesure. Sur un grand livre synthétique (fiche comparative, \S~3.N), l'accumulation mesurée reste de l'ordre de $10^{-15}$ à $10^{-14}\,S$ sur 720 pas, soit une marge d'au moins 100 ; ce n'est pas un résultat du moteur, et le test du jalon J2 mesurera l'accumulation réelle sur la fenêtre longue. Aucune tolérance absolue, aucune tolérance de la forme « absolue sous 1, relative au-dessus », aucune tolérance rapportée à un flux ; une violation est un défaut à corriger, jamais un motif d'élargir $\varepsilon$ ou $\varepsilon_V$.
+Les identités par pas (sommes nulles ; clôture égale à ouverture plus flux, poste par poste) sont vérifiées à la fin de chaque phase ; elles portent sur au plus 30 opérandes, dont l'arrondi en double précision est borné par environ $29 \times 2{,}22 \cdot 10^{-16} \approx 6{,}4 \cdot 10^{-15}$ fois la somme des valeurs absolues des opérandes (29 additions arrondies, epsilon machine $2^{-52} \approx 2{,}22 \cdot 10^{-16}$), somme de l'ordre de $S$ : loin sous $\varepsilon$. L'identité cumulée de la valeur nette est vérifiée en phase 9. Son pire cas théorique, $30 \times 720 \times 2{,}2 \cdot 10^{-16} \approx 4{,}8 \cdot 10^{-12}\,S$ sur les 720 pas de la fenêtre longue, dépasse $\varepsilon_V$ : la tolérance cumulée ne tient donc pas par le pire cas mais par la mesure. Sur un grand livre synthétique (fiche comparative, \S~3.N), l'accumulation mesurée reste sous $3{,}3 \cdot 10^{-15}\,S$ sur 720 pas (20 graines), et sous $10^{-14}\,S$ sur 3\,120 pas, soit une marge d'au moins 100 ; ce n'est pas un résultat du moteur, et le test du jalon J2 mesurera l'accumulation réelle sur la fenêtre longue. Aucune tolérance absolue, aucune tolérance de la forme « absolue sous 1, relative au-dessus », aucune tolérance rapportée à un flux ; une violation est un défaut à corriger, jamais un motif d'élargir $\varepsilon$ ou $\varepsilon_V$.
 
 \textbf{Critères du jalon J2, écrits avant l'essai.} Identités par pas et cumulées à $10^{-12}\,S$ sur 720 pas sans choc ; invariance d'unité sous une multiplication des nominaux par 100 (résidu$/S \le 10^{-12}$, champs économiques identiques à $10^{-10}$ près en relatif) ; reprise identique, y compris à la frontière de tour ; coût du noyau seul d'au plus 0,5\,ms par pas mensuel sur la plateforme de référence.
 
@@ -482,7 +484,7 @@ est une identité de clôture, vérifiée en phase 9, après la phase 8\,(c), no
 \begin{equation*}
 \Pi^{\mathit{CB}} = i_B B_{\mathit{CB}}/n_a + i_{\mathit{CB}} L^{\mathit{CB}}/n_a - i_{\mathit{res}} \mathit{Res}/n_a ,
 \end{equation*}
-jamais une fraction du stock $E^{\mathit{CB}}$. Une perte est un versement négatif, paiement du compte du Trésor vers la banque centrale soumis à la règle de caisse de l'État. Les fonds propres $E^{\mathit{CB}}$ restent à leur valeur initiale résolue.
+jamais une fraction du stock $E^{\mathit{CB}}$. Ses trois termes reposent sur des encours d'ouverture ($B_{\mathit{CB}}$, $L^{\mathit{CB}}$, $\mathit{Res}$) et des taux arrêtés en phase 1 : la banque centrale le calcule en phase 1, et seul son versement (ligne 16) s'exécute en phase 8\,(b). L'émission de la phase 7, qui le compte, lit donc une variable de la phase 1, non un flux d'une phase ultérieure. Une recette de la banque centrale assise sur une grandeur intra-pas romprait cette propriété et demanderait une décision citant M22. Une perte est un versement négatif, paiement du compte du Trésor vers la banque centrale soumis à la règle de caisse de l'État. Les fonds propres $E^{\mathit{CB}}$ restent à leur valeur initiale résolue.
 
 \textbf{Encaisse du Trésor et émission des titres publics.} Sans avances, le compte du Trésor $M^G$ n'est jamais négatif. L'État émet ses titres après les règlements du pas, en phase 7 (décision M22, lecture (f)) : il émet le besoin réalisé du pas,
 \begin{multline*}
@@ -497,7 +499,7 @@ de sorte que le compte du Trésor clôt à l'encaisse stationnaire $M^{G*}$. Cel
 \subsection{Ordre des phases d'un pas}
 \label{sec:cadre-phases}
 \begin{proposee}[ordre des phases, décision M22]
-Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'ouverture, notée phase 0 (tableau~\ref{tab:phases}) ; l'ordonnanceur les exécute dans cet ordre. Chaque flux s'exécute dans une phase et une seule ; un bloc ne lit que l'état d'ouverture ou des variables produites dans une phase antérieure du même pas, si bien que la matrice de dépendance est triangulaire et qu'aucune résolution simultanée n'est nécessaire. Les identités par pas sont vérifiées à la fin de chaque phase. Tous les règlements du pas précèdent la phase 8, où la banque centrale exécute ses opérations : aucune ligne touchant les réserves n'est exécutée après le refinancement de la phase 8\,(c), et les intérêts publics (phase 6) le précèdent. Les lignes 17, 20 et 22 sont les contreparties de règlement, appliquées par le noyau dans chaque phase.
+Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'ouverture, notée phase 0 (tableau~\ref{tab:phases}) ; l'ordonnanceur les exécute dans cet ordre. Chaque flux s'exécute dans une phase et une seule ; un bloc ne lit que l'état d'ouverture, des variables produites dans une phase antérieure du même pas ou, dans sa propre phase, des variables produites avant lui dans l'ordre d'exécution déclaré de cette phase (sous-phases (a), (b), (c) de la phase 8 ; ordre des blocs des phases 1, 5 et 7, fixé par leurs fiches) ; la matrice de dépendance est donc triangulaire et aucune résolution simultanée n'est nécessaire. Les identités par pas sont vérifiées à la fin de chaque phase. Tous les règlements du pas précèdent la phase 8, où la banque centrale exécute ses opérations : aucune ligne touchant les réserves n'est exécutée après le refinancement de la phase 8\,(c), et les intérêts publics (phase 6) le précèdent. Les lignes 17, 20 et 22 sont les contreparties de règlement, appliquées par le noyau dans chaque phase.
 
 \textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (point 15 de l'ADR 0005).
 \end{proposee}
@@ -514,13 +516,13 @@ Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'o
 \midrule
 \endhead
 0 Ouverture & indice $t$ ; prédicat de date de décision, tiré de $t$ seul & moteur & clôture du pas précédent & aucune\\
-1 Décision & lecture des leviers ; salaires ; anticipations ; indice des prix et glissement annuel (registre) ; règle de taux & moteur (leviers), travail, prix, banque centrale & ouverture, registre & aucune\\
+1 Décision & lecture des leviers ; salaires ; anticipations ; indice des prix et glissement annuel (registre) ; règle de taux ; résultat de la banque centrale du pas, $\Pi^{\mathit{CB}}$ (versé en 8\,(b)) & moteur (leviers), travail, prix, banque centrale & ouverture, registre & aucune\\
 2 Plans & production visée, demande de travail, budget de consommation, investissement visé, dépense publique du pas & production, ménages, investissement, État & phase 1 & aucune\\
 3 Crédit & demande et offre de crédit & investissement, banque & phase 2 & 18\\
 4 Production et travail & emploi, production, stocks ; salaires versés & production, travail & phases 2 et 3 & 5\\
 5 Marché des biens & ventes (consommation, dépense publique, investissement) ; prix du pas ; variation des stocks & production, prix, ménages, investissement, État & phases 2 et 4 & 1 à 4\\
 6 Revenus et impôts & intérêts sur crédits, dépôts et titres ; impôts ; transferts ; dividendes ; amortissement & État, banque, investissement & ouverture, phases 1 et 5 & 6 à 10, 11a à 11c, 14, 15\\
-7 Titres publics & émission ou rachat ; souscriptions ; achats décidés de la banque centrale & État, ménages, banque, banque centrale & phase 6 & 19a, 19b\\
+7 Titres publics & émission ou rachat ; souscriptions ; achats décidés de la banque centrale & État, ménages, banque, banque centrale & ouverture, phases 1, 5 et 6 & 19a, 19b\\
 8 Monnaie centrale & (a) intérêts sur réserves et refinancement ; (b) versement du résultat de la banque centrale ; (c) position de réserves après tous les règlements, puis refinancement décidé & banque centrale (a, b), banque (c) & tout ce qui précède & 12, 13, puis 16, puis 21\\
 9 Clôture & identités par pas et cumulée ; double calcul des valeurs nettes ; $\mathit{Res}_{t+1} \ge 0$ ; mise à jour du registre ; passage à $t + 1$ & noyau, moteur & tout & aucune\\
 \bottomrule
@@ -531,7 +533,7 @@ Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'o
 \begin{itemize}
 \item Aucune dynamique infra-mensuelle : le plus court délai du modèle est un tour ; une contrainte de caisse hebdomadaire, des marchés hebdomadaires ou une ruée bancaire en quelques jours ne sont représentables qu'au mois. Le choix se rouvre par une décision citant M22 si une fiche établit, par un fait mesuré, qu'un mécanisme exige une dynamique infra-mensuelle.
 \item Ni billets, ni avances au Trésor, ni crédit aux ménages, ni actions, ni immobilier, ni reste du monde : ces instruments et secteurs s'ajouteront par une ligne ou une colonne (jalons J5 et J6).
-\item Aucune réévaluation des actifs : le cadre n'a ni ligne ni matrice de réévaluation (gains ou pertes en capital) ; le capital fixe et les stocks varient par les seules lignes 3, 4 et 8.
+\item Aucune réévaluation des actifs : le cadre n'a ni ligne ni matrice de réévaluation (gains ou pertes en capital) ; le capital fixe et les stocks varient par les seules lignes 3, 4 et 8 ; ils sont donc tenus à leur valeur comptable en u.m. (investissements et variations de stocks cumulés, moins l'amortissement), non au prix courant. Le volume du capital ou des stocks, si un bloc le lit, est une variable de ce bloc, non un poste ; une évaluation au prix courant demanderait une ligne de réévaluation et une décision citant M22.
 \item Aucune troncature du versement de la banque centrale : elle exigerait une borne et une règle de recapitalisation, et reste réservée au jalon J6.
 \item Aucun encours de dette publique à taux fixe : toute la dette porte le taux de la dernière date de décision, et une hausse du taux directeur frappe le budget de l'État dès le tour même ; un encours à taux fixe relèverait du bloc « État et dette » (\S\ref{sec:finances_publiques}).
 \item Aucune borne : le cadre n'introduit que des paramètres déclarés, portés dans la table de calibration (\S\ref{sec:calibration}).
@@ -600,7 +602,7 @@ Tous les leviers d'un tour sont lus en phase 1 du tour $n$, avant tout flux (\S\
 
 \begin{center}\small
 \begin{longtable}{>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{1.1cm}>{\raggedright\arraybackslash}p{4.7cm}>{\raggedright\arraybackslash}p{2.9cm}}
-\caption{Dates d'effet des leviers types fixées par le cadre (proposées, décision M22). Délai en tours entre la lecture du levier en phase 1 et le premier flux modifié.}\label{tab:leviers-cadre}\\
+\caption{Dates d'effet des leviers types fixées par le cadre (proposées, décision M22). Délai en tours entre la lecture du levier en phase 1 et le premier flux modifié. Les effets sur les réserves sont bruts, avant l'émission de la phase 7 : à la clôture, la variation des réserves due au levier est nulle quand les titres émis sont souscrits par les ménages ou la banque, et égale au montant souscrit par la banque centrale.}\label{tab:leviers-cadre}\\
 \toprule
 \textbf{Levier (bloc)} & \textbf{Premier flux modifié} & \textbf{Délai} & \textbf{Contrepartie visible le même tour} & \textbf{Ce que le délai ne mesure pas}\\
 \midrule
@@ -609,7 +611,7 @@ Tous les leviers d'un tour sont lus en phase 1 du tour $n$, avant tout flux (\S\
 \textbf{Levier (bloc)} & \textbf{Premier flux modifié} & \textbf{Délai} & \textbf{Contrepartie visible le même tour} & \textbf{Ce que le délai ne mesure pas}\\
 \midrule
 \endhead
-Taux directeur (\S\ref{sec:banque_centrale}) & intérêts sur réserves et sur refinancement (lignes 12 et 13, phase 8\,(a)) & 0 tour & versement du résultat de la banque centrale (ligne 16) sur le compte du Trésor ; résultat de la banque ; réserves et refinancement à la clôture & la transmission aux taux des dépôts et des crédits, à l'investissement et à l'emploi, déclarée en tours entiers par ces blocs\\
+Taux directeur (\S\ref{sec:banque_centrale}) & intérêts sur titres publics (lignes 11a à 11c, phase 6), dans la mesure où leur taux suit le taux directeur (\S\ref{sec:finances_publiques}) ; intérêts sur réserves et sur refinancement (lignes 12 et 13, phase 8\,(a)) & 0 tour & versement du résultat de la banque centrale (ligne 16) sur le compte du Trésor ; résultat de la banque ; réserves et refinancement à la clôture & la transmission aux taux des dépôts et des crédits, à l'investissement et à l'emploi, déclarée en tours entiers par ces blocs\\
 Taux d'imposition (\S\ref{sec:finances_publiques}) & impôts (ligne 7, phase 6) & 0 tour & dépôts des ménages et des entreprises en baisse ; compte du Trésor en hausse ; réserves en baisse ; émission du tour réduite d'autant & l'effet sur la consommation et l'investissement\\
 Dépense publique (\S\ref{sec:finances_publiques}) & achats publics (ligne 2, phase 5) & 0 tour & compte du Trésor en baisse ; dépôts des entreprises et réserves en hausse ; ventes et variation des stocks du tour ; émission (lignes 19a) le même tour ; production au tour suivant & l'effet sur l'emploi\\
 Transferts (\S\ref{sec:finances_publiques}) & transferts (ligne 6, phase 6) & 0 tour & dépôts des ménages et réserves en hausse ; compte du Trésor en baisse ; émission (lignes 19a) le même tour & l'effet sur la consommation\\
