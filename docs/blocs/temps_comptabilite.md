@@ -404,6 +404,8 @@ Contre-épreuve numérique :
 - banque : L + B_Bk + Res + D + L^CB + |E^Bk| ;
 - BC : B_CB + L^CB + Res + M^G + |E^CB|.
 
+(Res en valeur absolue, |Res|, dans les deux échelles, les réserves pouvant être négatives entre les phases : correction du 02/10/2026.)
+
 **Contrôles de la forme.**
 - Sous ×100 : le ratio passe de 0 à 0 sur un bilan de 1,34e7 puis 1,34e9.
 - Sous E^CB = 100, 0, −50 : S vaut 2 400, 2 400, 2 500, contre `max(1, |E_cb|)` = 100, 1, 50 en v2.0.
@@ -423,17 +425,17 @@ Aucune tolérance sur un flux, aucune constante absolue, aucun `max(1, ·)`.
 | Phase | Contenu | Écrivent | Lisent (ouverture ou phases antérieures) | Lignes de flux |
 |---|---|---|---|---|
 | 0 Ouverture | indice t ; prédicat date de décision (de t seul) | moteur | clôture t−1 | — |
-| 1 Décision (si date de décision) | lecture des **leviers** ; salaires ; anticipations ; indice des prix et glissement (registre) ; règle de taux | leviers, travail, banque centrale, prix | ouverture, registre | — |
+| 1 Décision (si date de décision) | lecture des **leviers** ; salaires ; anticipations ; indice des prix et glissement (registre) ; règle de taux ; résultat de la BC du pas, Π^CB (versé en 8 (b)) | leviers, travail, banque centrale, prix | ouverture, registre | — |
 | 2 Plans | production visée, demande de travail, budget de consommation, investissement visé, dépense publique du pas | production, ménages, investissement, finances publiques | 1 | — |
 | 3 Crédit | demande et offre | investissement, banque | 2 | 18 |
 | 4 Production et travail | emploi, production, stocks ; salaires | production, travail | 2, 3 | 5 |
 | 5 Marché des biens | ventes C, G, I ; prix du pas ; variation des stocks | production, prix, ménages, investissement, finances publiques | 2, 4 | 1, 2, 3, 4 |
 | 6 Revenus et impôts | intérêts sur L, D, B ; impôts ; transferts ; dividendes ; amortissement | finances publiques, banque, investissement | ouverture, 1, 5 | 6–11, 14, 15 |
-| 7 Titres publics | émission ou rachat ; souscriptions ; achats décidés de la BC | finances publiques, ménages, banque, banque centrale | 6 | 19 |
+| 7 Titres publics | émission ou rachat ; souscriptions ; achats décidés de la BC | finances publiques, ménages, banque, banque centrale | ouverture, 1, 5, 6 | 19 |
 | 8 Monnaie centrale | (a) intérêts sur Res et L^CB ; (b) versement du résultat de la BC (résultat du tour, lignes exécutées) ; (c) position de réserves après tous les règlements → refinancement décidé | banque centrale, banque | tout ce qui précède | 12, 13, 16, puis 21 |
 | 9 Clôture | identités par pas et cumulées ; double calcul de E^Bk, E^CB ; mise à jour du registre ; t + 1 | noyau, moteur | tout | — |
 
-*Correction du 02/10/2026 (validation de fond de `macro`) : la colonne « Écrivent » des phases 5 et 6 est alignée sur le tableau du § 9.4 et l'attribution des lignes de la matrice ; les ménages proposent la ligne 1 en phase 5 et aucune ligne en phase 6.*
+*Correction du 02/10/2026 (validation de fond de `macro`) : les colonnes des phases 1, 5, 6 et 7 sont alignées sur le tableau du § 9.4, l'attribution des lignes de la matrice et `tab:phases` ; les ménages proposent la ligne 1 en phase 5 et aucune ligne en phase 6 ; Π^CB est calculé en phase 1 ; la phase 7 lit l'ouverture et les phases 1, 5 et 6.*
 
 **Contreparties de règlement.** Les lignes 17, 20 et 22 ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau.
 
