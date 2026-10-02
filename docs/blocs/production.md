@@ -3,7 +3,7 @@ bloc: Production et stocks
 module: src/nations/blocs/production.py
 expert pilote: macro
 experts consultés: jeu (lisibilité de la production, des stocks et du délai entre demande et production ; nombre de secteurs vu du joueur) ; monnaie non consulté (docs/blocs/README.md § 1)
-statut: en instruction (critères validés par le mainteneur le 02/10/2026)
+statut: avis rendus (critères validés le 02/10/2026 ; décision M24 attendue)
 décision: —
 issue: #34
 ---
@@ -737,7 +737,175 @@ Sans objet, parce que `docs/blocs/README.md` § 1 ne désigne pour ce bloc aucun
 
 ## 7. Avis de `jeu`
 
-Non instruit (jalon 2 de #34).
+*`jeu`, 02/10/2026 (issue #34), sur la fiche à la tête `8e9fe38` (branche `claude/j1-cadre-production`).*
+
+**Chiffres.** Aucun moteur n'existe encore (`src/nations/blocs/` ne contient que `__init__.py`). J'ai écrit une maquette indépendante du socle 3.N avec J = 1 (équations N1 à N7, population active constante, prix fixes), qui n'importe pas les scripts de `macro`. Je l'ai exécutée le 02/10/2026 par `uv run python <scratchpad>/jeu_c.py`, puis `jeu_c2.py` et deux commandes en ligne ; les scripts sont hors dépôt.
+- **Exemple daté M5 (G +1 % aux tours 1 à 12, soit 0,2 % de la demande ; m = 0).** Production : +0,000 % au tour 1, +0,084 % au tour 2, +0,142 % au tour 3, +0,182 % au tour 4, +0,245 % au tour 9, +0,239 % au tour 13, +0,152 % au tour 14, −0,003 % au tour 18, −0,030 % au tour 24. Avec m = 0,6 : +0,449 % au tour 9, +0,577 % au tour 13, +0,121 % au tour 24. Mes chiffres concordent avec M5 à 0,001 point près, ce qui relève de l'arrondi.
+- **Même choc multiplié par 10 (G +10 %, soit 2 % de la demande).** Production : +0,836 % au tour 2, +2,450 % au tour 9, −0,301 % au tour 24. Stocks de clôture : 1,380 mois au tour 1, 1,361 au tour 4, 1,445 au tour 18.
+- **Contrepartie du tour 1.** Les stocks passent de 1,4000 à 1,3980 mois de ventes. La variation des stocks rapportée aux ventes du tour passe de +0,233 % à +0,033 %.
+- **Ratio restitué stationnaire** (forme de M22, lecture (e) : stock de clôture / moyenne mensuelle des ventes des 12 derniers tours) : 1,4152 mois, et non 1,4.
+- **Cycle avec demande induite** (choc G +1 % aux tours 1 à 12) :
+  - m = 0,6 : pic à +0,577 % au tour 13, creux à −0,105 % au tour 40 (0,18 fois le pic) ;
+  - m = 0,8 : pic à +0,797 % au tour 13, creux à −0,248 % au tour 60 (0,31 fois le pic).
+- **Plafond d'emploi.** Hypothèses : chômage initial de 5 %, emploi ajusté sans retard, prix fixes ; demande permanente en hausse de 10 %.
+  - L'emploi atteint son plafond au tour 3.
+  - La production visée non réalisée, (y* − y)/y*, vaut 1,72 % au tour 3, 11,13 % au tour 12 et 16,31 % au tour 24.
+  - Le stock en mois de ventes effectives vaut 1,182 au tour 1, 0,706 au tour 12 et 0,208 au tour 24.
+  - La **première demande non servie apparaît au tour 30** (3,82 %, puis 4,08 %).
+  - Avec une demande en hausse de 6 % seulement, aucune demande non servie n'apparaît en 121 tours.
+- **Taux d'utilisation.** Avec tu* = 0,8 et un emploi au plafond depuis 5 % de chômage, tu = 0,842. Après 48 tours sans investissement (δ = 5 %), K^vol vaut 0,818 fois sa valeur initiale et tu = 0,978.
+- **Valorisation.** Écart à l'état stationnaire entre le résultat sous le coût courant (lecture (a)(ii)) et sous le coût moyen pondéré (a)(i), avec une marge μ = 0,25 (**hypothèse**) : 0,007 % de la marge brute à π̄ = 2 %, 0,110 % à 10 %, 2,207 % à 50 %.
+
+**Question ludique de la fiche.** Le bloc n'ouvre aucun levier. Il fixe trois choses :
+- **ce que le joueur voit de l'offre** quand il agit sur la demande : délai, ampleur, contrepartie ;
+- **les signaux de tension** : stocks, pénurie, utilisation ;
+- **le nombre de marchés** affichés.
+
+La question est donc : chaque grandeur affichée a-t-elle un sens, une cause que le joueur peut relier à ses décisions et une conséquence ?
+
+### 7.A Option A — v1.5 (brièvement)
+
+- **Ce que voit le joueur** :
+  - un tick hebdomadaire, contraire à M22 ;
+  - huit secteurs, dont aucun n'est l'objet d'un levier au socle ;
+  - un taux d'utilisation dégénéré (proche de 1), donc muet ;
+  - une transition initiale de 3 à 5 ans (l. 2080, R).
+- **Leviers** : aucun propre. La contrepartie de ΔIN n'est pas montrable, ΔIN n'étant pas défini (3.A-6 (ii)).
+- **Stratégies** : sans objet.
+- **Risques** :
+  - *piège sans signal* : la transition initiale fait dériver la partie avant toute décision, et le joueur hérite d'une trajectoire qu'il n'a pas causée ;
+  - *création de stock* par la loi des stocks telle qu'écrite (3.A-6 (i)) : des biens qui apparaissent sans production, ce qui est inexplicable.
+- **Verdict** : **à revoir**.
+
+### 7.B Option B — v2.0 (brièvement)
+
+- **Ce que voit le joueur** :
+  - un cycle propre de 6 ans (3.B-8), relancé par la transition initiale (état initial non résolu, 3.B-3) : une oscillation sans aucune décision du joueur ;
+  - des pénuries dès qu'un surcroît de demande dépasse 0,16 %, alors que des stocks existent (borne active, 3.B-3).
+- **Leviers** : aucun propre.
+- **Stratégies** : sans objet.
+- **Risques** :
+  - *comportement contre-intuitif* non explicable (« les entrepôts sont pleins et les rayons vides ») ;
+  - un prix relatif de l'équipement qui dérive de 12,8 % sur 60 ans (R), sans cause lisible ni levier qui le corrige ;
+  - un taux d'utilisation écrêté par `clip` : le signal se tait précisément quand il serait utile.
+- **Verdict** : **à revoir**.
+
+### 7.C Option C — socle 3.N, J = 1
+
+- **Ce que voit le joueur** :
+  - Une hausse de la dépense publique au tour n se lit le tour même dans les ventes et dans la variation des stocks, puis à partir du tour n + 1 dans la production et l'emploi.
+  - La production dépasse les ventes pendant la reconstitution des stocks (pic au tour 9 pour un choc qui dure 12 tours).
+  - Un léger « trou d'air » suit la fin de la relance : −0,030 % au tour 24 pour G +1 %, −0,301 % pour G +10 %.
+  - Chaque étape s'explique par une identité affichable : production = ventes + variation des stocks.
+- **Ampleur** : la réponse est linéaire. G +1 % (0,2 point de demande) donne un effet à la limite du perceptible ; un levier de l'ordre d'un point de PIB (G +5 %) donne +0,4 % de production au tour 2 et +1,2 % au tour 9 avec m = 0, ce qui est nettement perceptible.
+- **Leviers** : le bloc n'en ouvre aucun (conforme à `docs/exigences.md` § 2.1, point 1). Le tableau levier → indicateur → délai → contrepartie du § 5 est lisible.
+- **Stratégies** : aucune stratégie dominante n'est créée par le bloc. Deux points de vigilance relèvent d'autres fiches :
+  - **(i) Le chômage comme bouton de la dépense.** Sous la technique de Leontief, avec une productivité exogène et un emploi sans retard, le taux d'emploi est exactement l'écart de production. G devient alors un réglage du chômage presque instantané, au tour suivant. Son coût doit apparaître ailleurs : salaires et prix quand le chômage est bas (fiches 3 et 4), dette (fiche 9). Sinon, la gestion de la demande domine toutes les autres approches.
+  - **(ii) Aucun levier n'agit sur l'offre au socle 3.N** (constat de `jeu`, non relevé au § 5). La capacité est un indicateur sans plafond, la production ne dépend que de pr·N, et pr suit une tendance exogène. L'investissement n'a donc qu'un effet de demande, et la croissance tendancielle est la même quelle que soit la politique suivie. Pour le simulateur (J1 à J4), c'est acceptable comme simplification déclarée. Pour le jeu (J7), cela restreint le principe « plusieurs approches viables » à la gestion du cycle. Le point vaut pour C comme pour D : il tient au socle 3.N-1, pas au nombre de secteurs. Issue proposée ci-dessous.
+- **Risques** :
+  - *Réponse imperceptible* : pour les petits leviers seulement, et seulement si la restitution n'affiche que des niveaux. Le stock en mois de ventes bouge de 1,400 à 1,398 au tour 1 pour G +1 %, ce qui est invisible à deux décimales. La variation des stocks rapportée aux ventes bouge de +0,23 % à +0,03 %, ce qui est visible.
+  - *Effet instantané sans coût* : aucun dans le bloc ; voir le point (i) ci-dessus pour les autres fiches.
+  - *Piège sans signal* : aucun, à condition que la restitution suive le § 9 (point 3). La demande non servie est un signal **tardif** : 29 tours après le premier signal dans mon cas d'école.
+  - *Comportement contre-intuitif* : la boucle devient explosive à λ_v = 12 (alternance d'un mois sur l'autre, 3.N-8). Ce serait illisible ; la réserve 3 du § 5 le prévient et je la soutiens.
+- **Verdict** : **lisible**, sous les clarifications sur les indicateurs données plus bas.
+
+### 7.D Option D — socle 3.N, J = 2
+
+- **Ce que voit le joueur** : tout ce que voit C, plus l'emploi et le prix du secteur d'équipement. Un choc sur l'investissement, par exemple le taux par la fiche 6, frappe d'abord ce secteur.
+- **Leviers** : aucun nouveau (3.J (e)). La composition de G est inerte faute de capital public.
+- **Stratégies** : aucune nouvelle.
+- **Risques** :
+  - *Comportement contre-intuitif* : un prix relatif p_2/p_1 qui dérive (instabilités 9 à 11 et 14 ; 12,8 % sur D1, R) est le pire signal pour un joueur. Il bouge sans que le joueur l'ait causé, il ne peut pas le corriger et l'interface ne peut pas l'expliquer.
+  - L'apport perçu, un investissement qui se voit à part, s'obtient sous C sans prix relatif : il suffit de restituer les ventes par acheteur (C^vol, G^vol, I^vol), déjà exécutées en lignes 1 à 3.
+- **Verdict** : **à revoir pour le socle**. Ce n'est pas une objection à deux secteurs en soi : un secteur se justifie quand il apporte un levier (capital public, politique industrielle) ou un choc propre (J5, J6).
+
+### Réponses aux huit questions de `macro`
+
+1. **J = 1 contre J = 2.**
+   - Sur 60 à 120 tours, le secteur d'équipement distinct ne se perçoit que comme une répartition de l'emploi et un prix relatif.
+   - L'information utile, la chute de l'investissement après une hausse de taux, est déjà lisible sous C par les ventes par acheteur.
+   - Le coût perçu de D est un prix relatif qui peut dériver sans cause lisible.
+   - Pour un jeu inspiré de Victoria 3, le joueur s'attend à des marchés. Mais un marché sans levier ni choc propre est un décor, et ici un décor instable. Les secteurs doivent arriver avec leur raison d'être ludique : énergie et alimentation (chocs d'offre, échanges) au J5, construction au J6.
+   - **J = 1**.
+2. **Indicateurs du tour** : tableau ci-dessous. Un taux d'utilisation au-delà de 100 % est compris (« au-delà de la capacité normale, heures supplémentaires ») s'il est libellé ainsi et affiché à côté de son niveau normal (80 %). Il est pratiquement **inatteignable en jeu normal** : 0,842 au plafond d'emploi ; 0,978 seulement après 4 ans sans aucun investissement. Le vrai risque n'est pas le dépassement de 100 % : c'est un indicateur **sans conséquence**. Si rien ne dépend de tu, ni l'investissement (fiche 6) ni les prix (fiche 4), le joueur apprendra à l'ignorer.
+3. **Délai et ampleur.**
+   - Le délai d'un tour est net : la restitution distingue « ventes et stocks au tour n » de « production au tour n + 1 ».
+   - L'ampleur de G +1 % (+0,08 %, puis +0,25 %) est sous le seuil de perception dans un jeu sans contrefactuel, puisque la croissance tendancielle est de 0,165 % par tour. À G +5 % ou +10 %, c'est perceptible.
+   - Il ne faut **pas de nouvel indicateur économique**. Il faut :
+     - (a) restituer au tour la ligne d'identité : demande adressée, ventes, production, variation des stocks (en % des ventes) ;
+     - (b) dans le simulateur (J4), l'écart au scénario de contrôle apparié (O2) ;
+     - (c) sous C, le taux d'emploi, qui sert d'écart de production sans calcul supplémentaire.
+   - Une seule grandeur restituée est à ajouter, sans variable d'état : la **production visée non réalisée** (y* − y)/y*. Voir la question 5.
+4. **Cycle des stocks amorti.**
+   - Avec m = 0,6 ou 0,8, le joueur voit en une partie une bosse, puis un creux de 0,18 à 0,31 fois le pic, 27 à 47 tours plus tard. C'est perçu comme une « relance suivie d'un trou d'air », moins comme un cycle.
+   - **C'est souhaitable** : une décision a un écho différé, émergent, explicable par les stocks au-dessus de la normale. Le joueur qui relance à nouveau dans le creux apprend la procyclicité à ses dépens, ce qui est de bon jeu.
+   - Deux conditions :
+     - la période reste dans la bande de 3 à 8 ans et amortie ; un cycle plus court qu'un an serait du bruit, un cycle explosif un piège ;
+     - le signal précurseur du creux (stocks au-dessus de leur niveau normal) est affiché. Pour G +1 % il est minuscule (+0,008 mois), donc seuls les leviers d'un point de PIB et plus produisent un écho visible.
+   - Le cycle propre ne doit jamais apparaître **sans impulsion**. C'est le cas sous C, puisque l'état initial est résolu.
+5. **Rationnement et signal de pénurie.**
+   - **Proportionnel, préféré pour le socle.** La dépense publique est elle aussi rationnée, et le joueur reçoit la sanction directe de la pénurie sur son propre levier : « votre dépense n'a été exécutée qu'à 91 % ». Restitution demandée : dépense publique demandée / exécutée, en u.m.
+   - **« L'État d'abord »** rend le joueur immunisé contre la pénurie qu'il cause. L'éviction des ménages devient totale et ne se voit que si la demande non servie des ménages est affichée. C'est un trait réaliste d'une économie planifiée ou de guerre (v1.5 l. 771) : elle doit être un **levier** du mode planifié (J7), avec sa contrepartie visible (demande des ménages non servie, dépôts non dépensés), non une règle du socle. La compatibilité d'une priorité réglable par levier avec la règle « aucun drapeau de mode » (ADR 0002) est à confirmer par `architect`.
+   - **Risque à tester au J4** (scénario adverse) : sous rationnement proportionnel, sur-commander est gratuit si la part non exécutée de G reste au Trésor sans coût. L'État capte alors une plus grande part des biens. Ce n'est pas bloquant, car l'éviction des ménages est visible, mais c'est à documenter.
+   - **La demande non servie est un mauvais signal précurseur** : nulle en jeu normal, elle n'apparaît qu'une fois les stocks épuisés (tour 30 dans le cas d'école, 27 tours après la saturation de l'emploi). C'est un indicateur de crise, pas d'alerte. Les signaux précurseurs sont :
+     - les stocks en mois de ventes sous leur niveau normal ;
+     - la **production visée non réalisée** (y* − y)/y*, positive dès que l'emploi plafonne (1,72 % au tour 3, 11,13 % au tour 12). Elle se calcule à partir de deux grandeurs que le bloc tient déjà ; elle est restituée, ce n'est ni un flux ni une variable d'état.
+6. **Valorisation des stocks.**
+   - Le joueur ne s'en soucie pas en régime normal : l'écart vaut 0,11 % de la marge brute à 10 % d'inflation, 2,2 % à 50 % (μ = 0,25, hypothèse).
+   - Sous une hyperinflation, les « profits d'inflation » imposés sont un phénomène réel, mais de niche. Ils ne justifient pas une réévaluation dans une ligne de transaction, qui demanderait une décision citant M22.
+   - Pas de préférence ludique : (i) convient.
+7. **Chômage en retard sur la production, ou au même tour.**
+   - **Préférence pour un retard modéré par ajustement partiel** (fiche 3), pour deux raisons :
+     - (a) La rétention de main-d'œuvre crée un **signal précurseur** : la productivité apparente y/N baisse sous sa tendance et les profits se compriment avant les licenciements (O3).
+     - (b) Elle crée le dilemme classique « la production repart, le chômage tarde ». C'est une tension politique lisible (le chômage est l'indicateur le plus visible pour un État). Elle retire au joueur le réglage du chômage au tour près (point (i) du 7.C).
+   - Conditions :
+     - demi-vie de l'ordre de 2 à 6 tours ;
+     - restitution de la productivité apparente rapportée à sa tendance ;
+     - mesure par `macro` de la boucle combinée (cycle de l'emploi, 52 mois à la vitesse de la v2.0, plus cycle de Metzler), pour que deux cycles superposés restent lisibles.
+   - La justification empirique (loi d'Okun, rétention) n'est pas sourcée dans la fiche (3.N-1) : elle relève de `macro`. Mon avis est une préférence de conception.
+8. **Mode planifié (J7).**
+   - **Jouable à bien unique, en forme réduite**, avec trois leviers : un objectif de production ou d'emploi par directive, le partage entre consommation, investissement et dépense publique, et un prix administré (fiche 4) qui produit du rationnement.
+   - Le surplomb monétaire de la v1.5 (Ω) **émerge** déjà du socle : le budget non dépensé reste en dépôts (3.N-3). C'est un bon point d'émergence.
+   - Forces : plein emploi par directive, aucun cycle des stocks. Faiblesses : rationnement, surplomb, pénalité de productivité.
+   - Ce que J = 1 ne permet pas :
+     - la tension du plan au sens de Leontief et les priorités entre secteurs, qui exigent J ≥ 2 et des intrants ;
+     - la pénalité de complexité à la Hayek, croissante avec le nombre de biens (v1.5, `sec:plan`) ;
+     - surtout, la **croissance extensive par accumulation forcée**, qui exige un capital productif, absent du socle 3.N (point (ii) du 7.C).
+   - Le tableau entrées-sorties n'est donc pas requis pour que le mode planifié soit jouable. Un capital productif l'est pour que ce mode ait sa stratégie signature. L'indexation par j du socle (3.J (d)) laisse la question ouverte jusqu'à la fiche du J7, sans réécrire M24.
+
+### Indicateurs du tour (critère 11 (a))
+
+| Indicateur | Verdict | Motif ou point à clarifier |
+|---|---|---|
+| Indice de production (volume, base 100 = état initial résolu ; tour et 12 tours) | **lisible** | Afficher le glissement annuel (12 tours) et la croissance tendancielle de référence, avec le taux effectif de 2,0184 % et non le paramètre (lecture (f)) |
+| Taux d'utilisation | **à clarifier** | Libellé « utilisation de la capacité normale des équipements », niveau normal affiché, dépassement de 100 % permis et expliqué. Surtout, dire ce qu'il déclenche (investissement, fiche 6 ; prix, fiche 4) ; sans conséquence, il est à retirer de la restitution |
+| Stocks en mois de ventes | **à clarifier** | Niveau normal affiché dans **la même définition** que l'indicateur (1,4152 mois selon la lecture (e) de M22, et non 1,4), sinon le joueur voit un écart permanent à l'état stationnaire. Indicateur lent : le compléter par la variation des stocks en % des ventes du tour, qui reflète le choc le tour même |
+| Demande non servie (%) | **à clarifier** | Signal de crise, non précurseur ; à ventiler par acheteur, avec la dépense publique demandée / exécutée en u.m. Précurseur à restituer : production visée non réalisée, (y* − y)/y* |
+| Emploi | **lisible** | Sous C sans retard, c'est l'écart de production ; avec un retard (fiche 3), ajouter la productivité apparente rapportée à sa tendance |
+
+### Préférence motivée
+
+**Option C**, comme `macro`, mais pour une autre raison. `macro` la retient pour ses exigences (état stationnaire exact, aucune instabilité connue) et pour sa simplicité. Je la retiens parce que **chaque grandeur qu'elle affiche a une cause que le joueur peut relier à une décision**. Sous D, le prix relatif de l'équipement peut bouger sans cause lisible ni levier. Sous A et B, l'état initial non résolu fait bouger la partie avant le premier tour.
+
+**Classement** : C > D > B > A, identique à celui de `macro`. D n'est pas illisible ; il paie un mécanisme sans usage ludique au socle.
+
+**Accords et réserves sur les lectures du § 5** :
+- (a) (i), sans préférence ludique ;
+- (b) (i), sans enjeu ludique ;
+- (c) (i), préférée : sous (ii), une pénurie persiste sans que les entreprises la voient, et le joueur ne peut se l'expliquer ;
+- (d) J = 1 ;
+- (e) (i), sous la condition du tableau ci-dessus ;
+- (f) (i), en restituant le taux effectif ;
+- (g) (i) au socle, et la priorité de l'État comme levier du mode planifié au J7.
+
+**Conditions demandées au § 9** (aucune n'est une réserve sur C) :
+1. **Restitution au tour** de la ligne d'identité : demande adressée, ventes par acheteur, production, variation des stocks en % des ventes, demande non servie par acheteur. Pour l'État : dépense demandée / exécutée.
+2. **Niveaux normaux** affichés dans la définition exacte de l'indicateur (stocks : 1,4152 mois en restitution ; utilisation : tu*).
+3. **Production visée non réalisée**, (y* − y)/y*, ajoutée aux grandeurs restituées du § 1.1, comme signal précurseur de pénurie.
+4. **Taux d'utilisation** : la fiche 6 (ou la fiche 4) dit ce qu'il déclenche ; sinon, il sort de la restitution.
+5. **Fiche 3** : retard d'emploi par ajustement partiel préféré par `jeu`, avec la mesure de la boucle combinée emploi – stocks par `macro`.
+6. **Test O2 au J4** : la dépense publique à +1 % et à +5 % du flux mensuel, plus un scénario adverse de sur-commande publique sous pénurie.
+7. **Avant J7** : le point « aucun levier n'agit sur l'offre » est traité (issue ci-dessous).
 
 ## 8. Décision du mainteneur
 
@@ -754,6 +922,6 @@ Non instruit.
 | 02/10/2026 | Ouverture (issue #34) ; § 1 et § 2 proposés | `macro` ; session principale |
 | 02/10/2026 | Critères validés tels quels ; seuils des critères 3, 4 et 9 adoptés ; bandes du critère 6 renvoyées au J3 (issue #34) | mainteneur |
 | 02/10/2026 | Instruction déposée (§ 3 à 5) : options A et B, socle commun 3.N, options C (J = 1) et D (J = 2) ; recommandation C ; lectures (a) à (g) ; remesure S1 demandée | `macro` |
-| | Avis de `jeu` (§ 7) | `jeu` |
+| 02/10/2026 | Avis de `jeu` (§ 7) : préférence C (classement C > D > B > A), sept conditions de restitution au § 9, une issue proposée (aucun levier d'offre au socle 3.N) | `jeu` |
 | | Constats intégrés ; statut « avis rendus » | `macro` ; session principale |
 | | Décision M24 | mainteneur |
