@@ -288,7 +288,7 @@ Valeur nette & $-D_H - B_H$ & $-K - \mathit{IN} - D_F + L$ & $-L - B_{\mathit{Bk
 \subsection{Matrice des flux de transactions}
 \label{sec:cadre-flux}
 \begin{proposee}[matrice des flux de transactions, décision M22]
-La matrice des flux (tableau~\ref{tab:matrice-flux}) donne, pour chaque flux du pas, le montant reçu ($+$) ou versé ($-$) par chaque secteur, les variations de postes financiers comprises : la variation d'un actif détenu compte $-$, celle d'un passif émis compte $+$. Les entreprises ont deux sous-colonnes, courant et capital. Chaque ligne somme à zéro : tout flux quitte un bilan pour entrer dans un autre. Chaque colonne somme à zéro : c'est la contrainte budgétaire du secteur. Tout flux de tout bloc du socle a sa ligne ; aucune monnaie n'est créée ni détruite hors d'une ligne.
+La matrice des flux (tableau~\ref{tab:matrice-flux}) donne, pour chaque flux du pas, le montant reçu ($+$) ou versé ($-$) par chaque secteur, les variations de postes financiers comprises : la variation d'un actif détenu compte $-$, celle d'un passif émis compte $+$. Les entreprises ont deux sous-colonnes, courant et capital. Chaque ligne somme à zéro : tout flux quitte un bilan pour entrer dans un autre. Chaque colonne de secteur somme à zéro, les deux sous-colonnes des entreprises étant réunies : c'est la contrainte budgétaire du secteur ; prise seule, une sous-colonne des entreprises n'est pas nulle en général. Tout flux de tout bloc du socle a sa ligne ; aucune monnaie n'est créée ni détruite hors d'une ligne.
 
 Chaque ligne porte une seule signature d'effet sur la masse monétaire $M$ et sur la monnaie centrale $H$ (\S\ref{sec:cadre-portes}) ; une ligne dont les parts ont des signatures différentes est scindée par contrepartie. Ainsi la ligne 11 (intérêts sur titres publics) est scindée en 11a, 11b, 11c selon le détenteur ; la ligne 19a (marché primaire : émission ou rachat par l'État, exposant $\mathrm{prim}$) selon le souscripteur ; la ligne 19b (achats ou ventes de la banque centrale sur le marché secondaire, exposant $\mathrm{sec}$) selon la contrepartie. La variation d'un encours de titres combine les deux marchés : $\Delta B_H = \Delta B_H^{\mathrm{prim}} - \Delta B_H^{\mathrm{sec}}$, $\Delta B_{\mathit{Bk}} = \Delta B_{\mathit{Bk}}^{\mathrm{prim}} - \Delta B_{\mathit{Bk}}^{\mathrm{sec}}$, $\Delta B_{\mathit{CB}} = \Delta B_{\mathit{CB}}^{\mathrm{prim}} + \Delta B_H^{\mathrm{sec}} + \Delta B_{\mathit{Bk}}^{\mathrm{sec}}$.
 
@@ -300,7 +300,7 @@ Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas d
 \begin{center}\footnotesize
 \setlength{\tabcolsep}{2.5pt}
 \begin{longtable}{>{\raggedright\arraybackslash}p{3.3cm}*{6}{>{\raggedright\arraybackslash}p{1.92cm}}}
-\caption{Matrice des flux de transactions (proposée, décision M22). Flux du pas $t$, en u.m. par pas ; $+$ reçu, $-$ versé ; variation d'un actif détenu $-$, d'un passif émis $+$ ; intérêts et amortissement assis sur l'encours d'ouverture, taux annuels convertis par $n_a$ ; chaque ligne et chaque colonne somment à zéro.}\label{tab:matrice-flux}\\
+\caption{Matrice des flux de transactions (proposée, décision M22). Flux du pas $t$, en u.m. par pas ; $+$ reçu, $-$ versé ; variation d'un actif détenu $-$, d'un passif émis $+$ ; intérêts et amortissement assis sur l'encours d'ouverture, taux annuels convertis par $n_a$ ; chaque ligne somme à zéro, et chaque colonne de secteur aussi, les deux sous-colonnes des entreprises réunies.}\label{tab:matrice-flux}\\
 \toprule
 \textbf{Ligne} & \textbf{Ménages} & \textbf{Entr. courant} & \textbf{Entr. capital} & \textbf{Banque} & \textbf{BC} & \textbf{État}\\
 \midrule
@@ -360,7 +360,7 @@ Les lignes 17 et 20 portent les postes de règlement eux-mêmes ($\Delta D_H + \
 \begin{enumerate}[label=(\alph*)]
 \item que chaque ligne des deux matrices est nulle ;
 \item que chaque colonne de la matrice des bilans est nulle ;
-\item que chaque colonne de secteur de la matrice des flux contient une fois son poste de règlement ($\Delta D_H$, $\Delta D_F$, $\Delta \mathit{Res}$ pour la banque et pour la banque centrale, $\Delta M^G$) et que l'expression de $\Delta \mathit{Res}$ tirée de la colonne de la banque, $\Delta D_H$ et $\Delta D_F$ substitués, coïncide avec celle tirée de la colonne de la banque centrale, $\Delta M^G$ substitué, ce qu'impliquent les lignes nulles du point (a) ;
+\item que chaque colonne de secteur de la matrice des flux, les deux sous-colonnes des entreprises réunies, contient une fois son poste de règlement ($\Delta D_H$, $\Delta D_F$, $\Delta \mathit{Res}$ pour la banque et pour la banque centrale, $\Delta M^G$) et que l'expression de $\Delta \mathit{Res}$ tirée de la colonne de la banque, $\Delta D_H$ et $\Delta D_F$ substitués, coïncide avec celle tirée de la colonne de la banque centrale, $\Delta M^G$ substitué, ce qu'impliquent les lignes nulles du point (a) ;
 \item que $\Delta M$ et $\Delta H$ recomposés depuis les portes égalent $\Delta D_H + \Delta D_F$ et $\Delta \mathit{Res}$, et que le montant de chaque porte est la somme des termes positifs de sa ligne.
 \end{enumerate}
 Ce contrôle a déjà servi : il a révélé, dans la fiche comparative, une erreur de signe dans la contrainte budgétaire de la banque centrale, invisible aux contre-épreuves numériques parce que le terme en cause est nul sous la décision M22, lecture (d).
@@ -417,11 +417,11 @@ Ce contrôle a déjà servi : il a révélé, dans la fiche comparative, une err
 \subsection{Identités comptables et tolérances}
 \label{sec:cadre-identites}
 \begin{proposee}[identités comptables et tolérances, décision M22]
-\textbf{Aucun solde résiduel.} Chaque instrument est tenu une seule fois par le noyau, comme position (détenteur, émetteur) : sa ligne de la matrice des bilans somme à zéro par construction, sans tolérance. Chaque poste de clôture vaut son ouverture plus la somme des lignes de flux nommées qui le touchent ; aucun poste n'est obtenu par différence des autres. En notant $\Delta x_t$ la somme des lignes de flux nommées qui touchent le poste $x$ au pas $t$, et $f_{\ell,s,t}$ le montant de la ligne $\ell$ dans la colonne du secteur $s$ :
+\textbf{Aucun solde résiduel.} Chaque instrument est tenu une seule fois par le noyau, comme position (détenteur, émetteur) : sa ligne de la matrice des bilans somme à zéro par construction, sans tolérance. Chaque poste de clôture vaut son ouverture plus la somme des lignes de flux nommées qui le touchent ; aucun poste n'est obtenu par différence des autres. En notant $\Delta x_t$ la somme des lignes de flux nommées qui touchent le poste $x$ au pas $t$, et $f_{\ell,s,t}$ le montant de la ligne $\ell$ dans la colonne du secteur $s$ (pour les entreprises, la somme de leurs deux sous-colonnes) :
 \begin{gather*}
 x_{t+1} = x_t + \Delta x_t \quad\text{pour chaque poste } x, \\
 \sum_{s} f_{\ell,s,t} = 0 \quad\text{pour chaque ligne } \ell, \qquad
-\sum_{\ell} f_{\ell,s,t} = 0 \quad\text{pour chaque colonne } s .
+\sum_{\ell} f_{\ell,s,t} = 0 \quad\text{pour chaque secteur } s .
 \end{gather*}
 En particulier, la variation du refinancement $\Delta L^{\mathit{CB}}$ n'a qu'une source, la ligne 21, flux décidé en phase 8\,(c) ; aucune règle ne corrige un solde de réserves négatif en l'ajoutant au refinancement.
 
@@ -842,7 +842,7 @@ $\mathit{Div}_F$, $\mathit{Div}_{\mathit{Bk}}$ & dividendes versés aux ménages
 $\Pi^{\mathit{CB}}$ & résultat de la banque centrale versé à l'État & u.m. par pas & cadre & \S\ref{sec:cadre-caisse}, proposée\\
 $\Delta x$ & variation d'un poste $x$ sur le pas, $x_{t+1} - x_t$ ($\Delta D_H$, $\Delta L$, $\Delta \mathit{IN}$…) & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
 $\Delta B_s^{\mathrm{prim}}$, $\Delta B_s^{\mathrm{sec}}$ & titres publics souscrits par le secteur $s$ sur le marché primaire, $s \in \{H, \mathit{Bk}, \mathit{CB}\}$ ; vendus par $s$ à la banque centrale sur le marché secondaire, $s \in \{H, \mathit{Bk}\}$ & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
-$f_{\ell,s,t}$ & montant de la ligne $\ell$ dans la colonne du secteur $s$ au pas $t$ & u.m. par pas & cadre & \S\ref{sec:cadre-identites}, proposée\\
+$f_{\ell,s,t}$ & montant de la ligne $\ell$ dans la colonne du secteur $s$ au pas $t$ (entreprises : deux sous-colonnes réunies) & u.m. par pas & cadre & \S\ref{sec:cadre-identites}, proposée\\
 $S$, $S^{\mathit{Bk}}$, $S^{\mathit{CB}}$ & échelle du bilan contrôlé : somme des valeurs absolues de tous ses postes, valeur nette comprise & u.m. & cadre & \S\ref{sec:cadre-identites}, proposée\\
 $\varepsilon$, $\varepsilon_V$ & tolérances des identités par pas et de l'identité cumulée, rapportées à $S$ & sans dimension & cadre & \S\ref{sec:cadre-identites}, proposée\\
 \bottomrule
