@@ -17,7 +17,11 @@ analyse `tokenize` et `ast` du Python) et relève les écarts :
    portent un seul numéro, donc exactement un label, sauf `\\nonumber` ou
    `\\notag` (aucun) ; dans les autres environnements multilignes, un label
    par ligne numérotée (seuls comptent les `\\\\` de niveau supérieur, pas
-   ceux de `cases`, `aligned`, `matrix`, `array`…) ; chaque encadré `lecture`
+   ceux de `cases`, `aligned`, `matrix`, `array`…), contrôlé ligne par
+   ligne : une ligne numérotée sans label est un manque, un second label sur
+   une même ligne numérotée est un excès, un label sur une ligne marquée
+   `\\notag` ou `\\nonumber` est un écart (pour `equation` et `multline`,
+   la ligne est l'environnement entier) ; chaque encadré `lecture`
    contient `\\variables`, `\\sens`, `\\hyp`, `\\limites` puis `\\tracabilite`,
    dans cet ordre ;
 4. statut de `\\tracabilite` (`dérivée`, `approchée` ou `choix de
@@ -50,8 +54,14 @@ analyse `tokenize` et `ast` du Python) et relève les écarts :
 
 Avant l'analyse, le `.tex` est débarrassé de ce qui n'est pas composé : les
 environnements `verbatim`, `verbatim*`, `lstlisting` et `comment`, les
-`\\verb|…|`, les commentaires (`%` non échappé) et les blocs
-`\\iffalse … \\fi`.
+`\\verb|…|` et les commentaires (`%` non échappé), retirés en un seul
+parcours de gauche à droite (le premier ouvert l'emporte : un
+`\\begin{verbatim}` cité dans un commentaire n'ouvre rien), puis les blocs
+`\\iffalse … \\fi`. Dans un bloc, seules comptent pour l'appariement des
+`\\fi` les conditions primitives de TeX et d'ε-TeX et les noms déclarés par
+`\\newif` hors d'un bloc (`\\ifbool`, `\\iftoggle`… n'en sont pas). Un
+`\\iffalse` non refermé n'efface rien : c'est un écart (règle 0, texte
+analysé), et la suite est analysée.
 
 Usage : `uv run python outils/concordance_spec_moteur.py [--strict]`. Sans
 `--strict`, le script rend compte et sort avec le code 0 ; avec `--strict`,
@@ -140,73 +150,156 @@ class Rapport:
 # --------------------------------------------------------------------------
 
 
-def retirer_commentaires_tex(texte: str) -> str:
-    """Efface les commentaires LaTeX (`%` non échappé jusqu'à la fin de ligne).
-
-    Les fins de ligne sont conservées, pour que les positions restent
-    traduisibles en numéros de ligne.
-    """
-    lignes = []
-    for ligne in texte.split("\n"):
-        coupure = len(ligne)
-        for i, car in enumerate(ligne):
-            if car == "%":
-                # Nombre de barres obliques inverses qui précèdent le `%`.
-                n = 0
-                while i - n - 1 >= 0 and ligne[i - n - 1] == "\\":
-                    n += 1
-                if n % 2 == 0:
-                    coupure = i
-                    break
-        lignes.append(ligne[:coupure])
-    return "\n".join(lignes)
-
-
 def _blanchir(texte: str, debut: int, fin: int) -> str:
     """Remplace `texte[debut:fin]` par des espaces, fins de ligne conservées."""
     blanc = "".join("\n" if c == "\n" else " " for c in texte[debut:fin])
     return texte[:debut] + blanc + texte[fin:]
 
 
-def retirer_verbatim(texte: str) -> str:
-    """Efface les environnements verbatim et les `\\verb|…|`."""
+def _blanchir_zones(texte: str, zones: list[tuple[int, int]]) -> str:
+    """Blanchit des intervalles `(début, fin)` disjoints, rangés dans l'ordre."""
+    morceaux = []
+    precedent = 0
+    for debut, fin in zones:
+        morceaux.append(texte[precedent:debut])
+        morceaux.append("".join("\n" if c == "\n" else " " for c in texte[debut:fin]))
+        precedent = fin
+    morceaux.append(texte[precedent:])
+    return "".join(morceaux)
+
+
+def retirer_commentaires_et_verbatim(texte: str) -> str:
+    """Efface commentaires, environnements verbatim et `\\verb|…|`, en un parcours.
+
+    Le texte est lu une seule fois, de gauche à droite, comme TeX le lit : le
+    premier de ces passages ouvert l'emporte. Un `%` non échappé efface la fin
+    de sa ligne, `\\begin{verbatim}` cité compris ; dans un verbatim ou un
+    `\\verb`, un `%` est un caractère comme un autre. Une barre oblique inverse
+    et le caractère qui la suit forment un jeton : `\\%` n'ouvre pas de
+    commentaire, `\\\\%` en ouvre un. Un verbatim sans fin n'est pas effacé.
+    Un commentaire est supprimé, un verbatim remplacé par des espaces ; les fins
+    de ligne sont conservées, pour que les positions restent traduisibles en
+    numéros de ligne.
+    """
     noms = "|".join(re.escape(n) for n in ENVIRONNEMENTS_VERBATIM)
-    motif = re.compile(r"\\begin\{(" + noms + r")\}.*?\\end\{\1\}", re.DOTALL)
-    for m in reversed(list(motif.finditer(texte))):
-        texte = _blanchir(texte, m.start(), m.end())
-    for m in reversed(list(re.finditer(r"\\verb\*?([^A-Za-z\s*]).*?\1", texte))):
-        texte = _blanchir(texte, m.start(), m.end())
-    return texte
+    debut_verbatim = re.compile(r"\\begin\{(" + noms + r")\}")
+    verb = re.compile(r"\\verb\*?([^A-Za-z\s*]).*?\1")
+    special = re.compile(r"[%\\]")
+    morceaux = []
+    copie = 0  # début du texte pas encore recopié
+    i = 0
+    while (m := special.search(texte, i)) is not None:
+        i = m.start()
+        if texte[i] == "%":
+            fin = texte.find("\n", i)
+            fin = len(texte) if fin < 0 else fin
+            morceaux.append(texte[copie:i])
+            copie = i = fin
+            continue
+        fin = None
+        env = debut_verbatim.match(texte, i)
+        if env is not None:
+            fermeture = "\\end{" + env.group(1) + "}"
+            trouve = texte.find(fermeture, env.end())
+            if trouve >= 0:
+                fin = trouve + len(fermeture)
+        if fin is None and (v := verb.match(texte, i)) is not None:
+            fin = v.end()
+        if fin is None:
+            i += 2
+            continue
+        morceaux.append(texte[copie:i])
+        morceaux.append("".join("\n" if c == "\n" else " " for c in texte[i:fin]))
+        copie = i = fin
+    morceaux.append(texte[copie:])
+    return "".join(morceaux)
 
 
-def retirer_iffalse(texte: str) -> str:
-    """Efface les blocs `\\iffalse … \\fi`, conditions imbriquées comprises."""
-    jeton = re.compile(r"\\(if[A-Za-z@]*|fi)(?![A-Za-z@])")
-    while True:
-        debut = re.search(r"\\iffalse(?![A-Za-z@])", texte)
-        if debut is None:
-            return texte
-        profondeur = 0
-        fin = len(texte)
-        for m in jeton.finditer(texte, debut.start()):
-            nom = m.group(1)
-            # \ifthenelse (commande) et \iff (symbole) ne sont pas des
-            # conditions fermées par \fi.
-            if nom in ("ifthenelse", "iff"):
-                continue
-            profondeur += -1 if nom == "fi" else 1
-            if profondeur == 0:
-                fin = m.end()
-                break
-        texte = _blanchir(texte, debut.start(), fin)
+# Conditions de TeX (primitives) et d'ε-TeX (`\ifdefined`, `\ifcsname`,
+# `\iffontchar`) : seules elles, et les noms déclarés par `\newif`, ouvrent
+# une condition dont TeX apparie le `\fi` quand il saute un bloc `\iffalse`. `\ifbool`,
+# `\iftoggle`, `\ifdef…`, `\ifstrequal` (etoolbox), `\ifthenelse` (ifthen) ou
+# `\iff` (symbole) n'en sont pas.
+CONDITIONS_PRIMITIVES = frozenset({
+    "if", "ifcat", "ifnum", "ifdim", "ifodd", "ifvmode", "ifhmode", "ifmmode",
+    "ifinner", "ifvoid", "ifhbox", "ifvbox", "ifx", "ifeof", "iftrue", "iffalse",
+    "ifcase", "ifdefined", "ifcsname", "iffontchar",
+})
+
+
+def retirer_iffalse(texte: str) -> tuple[str, list[tuple[int, str]]]:
+    """Efface les blocs `\\iffalse … \\fi`, conditions imbriquées comprises.
+
+    Le texte est lu de gauche à droite. Un `\\newif\\ifnom` lu hors d'un bloc
+    déclare `\\ifnom` comme condition pour la suite ; écrit dans un bloc, il
+    n'est pas exécuté et ne déclare rien. Dans un bloc, seules comptent les
+    conditions de `CONDITIONS_PRIMITIVES` et les noms déjà déclarés. Un
+    `\\iffalse` sans son `\\fi` n'efface rien : il est rendu comme anomalie
+    `(position, message)`, et la lecture reprend après lui.
+
+    Comme dans `retirer_commentaires_et_verbatim`, une barre oblique inverse
+    et le caractère qui la suit forment un jeton : un mot n'est une commande
+    que précédé d'un nombre impair de barres (`\\\\iffalse` est un saut de
+    ligne suivi du mot « iffalse »). La déclaration admet des accolades
+    (`\\newif{\\ifnom}`).
+    """
+    # Les paires `\\` qui précèdent le jeton sont consommées hors du groupe
+    # `jeton` : seule la barre restante ouvre la commande.
+    jeton = re.compile(
+        r"(?<!\\)(?:\\\\)*(?P<jeton>\\(?P<nom>newif|if[A-Za-z@]*|fi))(?![A-Za-z@])")
+    declaration = re.compile(r"\s*(\{\s*)?\\(?P<nom>if[A-Za-z@]+)(?![A-Za-z@])(?(1)\s*\})")
+    declarees: set[str] = set()
+    zones = []
+    anomalies = []
+    position = 0
+    while (m := jeton.search(texte, position)) is not None:
+        position = m.end()
+        nom = m.group("nom")
+        if nom == "newif":
+            d = declaration.match(texte, m.end())
+            if d is not None:
+                declarees.add(d.group("nom"))
+                position = d.end()
+            continue
+        if nom != "iffalse":
+            continue
+        profondeur = 1
+        for j in jeton.finditer(texte, m.end()):
+            nom_j = j.group("nom")
+            if nom_j == "fi":
+                profondeur -= 1
+                if profondeur == 0:
+                    zones.append((m.start("jeton"), j.end()))
+                    position = j.end()
+                    break
+            elif nom_j in CONDITIONS_PRIMITIVES or nom_j in declarees:
+                profondeur += 1
+        else:
+            anomalies.append((m.start("jeton"),
+                              "\\iffalse non refermé (aucun \\fi apparié) : "
+                              "la suite est analysée"))
+    return _blanchir_zones(texte, zones), anomalies
+
+
+def preparer_tex_et_anomalies(texte: str) -> tuple[str, list[tuple[int, str]]]:
+    """Texte composé et anomalies `(position, message)` de sa préparation.
+
+    Commentaires et verbatim sont retirés en un parcours, puis les blocs
+    `\\iffalse` ; les numéros de ligne sont conservés (pas les positions : un
+    commentaire est supprimé). La position d'une anomalie se lit dans le texte
+    rendu ; une anomalie (un `\\iffalse` non refermé) est un écart pour
+    l'appelant.
+    """
+    return retirer_iffalse(retirer_commentaires_et_verbatim(texte))
 
 
 def preparer_tex(texte: str) -> str:
     """Texte composé : sans verbatim, commentaires ni blocs `\\iffalse`.
 
-    Les positions et les numéros de ligne sont conservés.
+    Les numéros de ligne sont conservés ; les anomalies sont lues par
+    `preparer_tex_et_anomalies`.
     """
-    return retirer_iffalse(retirer_commentaires_tex(retirer_verbatim(texte)))
+    return preparer_tex_et_anomalies(texte)[0]
 
 
 def lignes_de_niveau_superieur(corps: str) -> list[str]:
@@ -559,14 +652,19 @@ def verifier(tex: Path, racine: Path, src: Path, outils: Path) -> Rapport:
     rapport.ecarts.extend(ecarts_code)
     rapport.nb_balises = len(balises)
 
+    anomalies: list[tuple[int, str]] = []
     if not tex.is_file():
         rapport.ecarts.append(Ecart(1, nom_tex, "spécification introuvable"))
         texte = ""
     else:
-        texte = preparer_tex(tex.read_text(encoding="utf-8"))
+        texte, anomalies = preparer_tex_et_anomalies(tex.read_text(encoding="utf-8"))
 
     def ou(position: int) -> str:
         return f"{nom_tex}:{numero_ligne(texte, position)}"
+
+    # --- Texte analysé (règle 0) : anomalies de la préparation -------------
+    for position, message in anomalies:
+        rapport.ecarts.append(Ecart(0, ou(position), message))
 
     # --- Règle 3 (équations numérotées) et relevé des labels ---------------
     labels: list[tuple[str, int]] = [
@@ -578,20 +676,49 @@ def verifier(tex: Path, racine: Path, src: Path, outils: Path) -> Rapport:
     rapport.nb_equations = len(equations)
     labels_par_equation: list[tuple[int, list[str]]] = []
     for nom, debut, contenu, fin in equations:
-        dedans = [lab for lab, pos in labels if contenu <= pos < fin]
+        dedans = [(lab, pos) for lab, pos in labels if contenu <= pos < fin]
         corps = texte[contenu:fin]
         if nom in ENVIRONNEMENTS_UN_NUMERO:
-            attendus = 0 if re.search(r"\\(notag|nonumber)\b", corps) else 1
+            # Un seul numéro : l'environnement entier est une seule ligne,
+            # contrôlée comme celles des environnements multilignes.
+            lignes = [(contenu, corps)]
         else:
-            lignes = [ln for ln in lignes_de_niveau_superieur(corps) if ln.strip()]
-            attendus = sum(1 for ln in lignes if not re.search(r"\\(notag|nonumber)\b", ln))
-        if len(dedans) < attendus:
+            # Une ligne par `\\` de niveau supérieur : chaque morceau commence
+            # deux caractères après la fin du précédent (le séparateur).
+            lignes, position = [], contenu
+            for ligne in lignes_de_niveau_superieur(corps):
+                lignes.append((position, ligne))
+                position += len(ligne) + 2
+        attendus = etiquetees = 0
+        for position, ligne in lignes:
+            if nom not in ENVIRONNEMENTS_UN_NUMERO and not ligne.strip():
+                continue  # ligne vide après un `\\` final
+            siens = [(lab, pos) for lab, pos in dedans
+                     if position <= pos < position + len(ligne)]
+            if re.search(r"\\(notag|nonumber)\b", ligne):
+                for label, pos in siens:
+                    rapport.ecarts.append(Ecart(
+                        3, ou(pos),
+                        f"{label} sur une ligne non numérotée ({nom}, "
+                        "\\notag ou \\nonumber)",
+                    ))
+                continue
+            attendus += 1
+            if siens:
+                etiquetees += 1
+            for label, pos in siens[1:]:
+                rapport.ecarts.append(Ecart(
+                    3, ou(pos),
+                    f"{label} en excès : second label eq: d'une même ligne "
+                    f"numérotée ({nom})",
+                ))
+        if etiquetees < attendus:
             rapport.ecarts.append(Ecart(
                 3, ou(debut),
                 f"équation numérotée ({nom}) sans label eq: "
-                f"({len(dedans)} label(s) pour {attendus} ligne(s) numérotée(s))",
+                f"({etiquetees} label(s) pour {attendus} ligne(s) numérotée(s))",
             ))
-        labels_par_equation.append((fin, dedans))
+        labels_par_equation.append((fin, [lab for lab, _ in dedans]))
     for label, position in labels:
         if not any(contenu <= position < fin for _, _, contenu, fin in equations):
             rapport.ecarts.append(Ecart(

@@ -464,6 +464,77 @@ def test_align_a_deux_lignes_et_un_label(concordance, tmp_path):
     assert "1 label(s) pour 2 ligne(s)" in rapport.ecarts[0].message
 
 
+def ecarts_de_regle_3(concordance, racine, corps):
+    """Écarts de règle 3 relevés sur une spécification fabriquée."""
+    rapport = verifier(concordance, racine, fabriquer(racine, corps_tex=corps))
+    return [e for e in rapport.ecarts if e.regle == 3]
+
+
+@pytest.mark.parametrize("marque", ["\\nonumber", "\\notag"])
+def test_label_sur_equation_non_numerotee_releve(concordance, tmp_path, marque):
+    # Issue #12, premier cas : le label pointe sur un autre compteur.
+    equation = EQUATION_SIMPLE.replace("c = w / y", f"c = w / y {marque}")
+    ecarts = ecarts_de_regle_3(concordance, tmp_path, EQUATION.replace(EQUATION_SIMPLE, equation))
+    assert len(ecarts) == 1
+    assert "eq:prix-cout-unitaire sur une ligne non numérotée (equation" in ecarts[0].message
+
+
+def test_label_sur_ligne_d_align_non_numerotee_releve(concordance, tmp_path):
+    # Issue #12, deuxième cas : une ligne numérotée, deux labels dont l'un
+    # sur la ligne marquée \notag.
+    align = textwrap.dedent(r"""
+        \begin{align}
+          c &= w \label{eq:prix-cout-unitaire} \\
+          d &= y \notag \label{eq:prix-marge}
+        \end{align}""")
+    prix = PRIX + "\n\ndef marge():\n    # eq:prix-marge\n    return 0\n"
+    tex = fabriquer(tmp_path, corps_tex=EQUATION.replace(EQUATION_SIMPLE, align),
+                    fichiers={"src/nations/blocs/prix.py": prix})
+    ecarts = [e for e in verifier(concordance, tmp_path, tex).ecarts if e.regle == 3]
+    assert len(ecarts) == 1
+    assert "eq:prix-marge sur une ligne non numérotée (align" in ecarts[0].message
+
+
+def test_label_deplace_sur_la_ligne_non_numerotee_releve(concordance, tmp_path):
+    # Issue #12, constat d'audit : autant de labels que de lignes numérotées,
+    # mais le label est sur la ligne \notag et la ligne numérotée n'en a pas.
+    # La comparaison des totaux ne le voit pas ; le contrôle ligne par ligne
+    # relève l'écart et le manque.
+    align = textwrap.dedent(r"""
+        \begin{align}
+          c &= w \\
+          d &= y \notag \label{eq:prix-cout-unitaire}
+        \end{align}""")
+    ecarts = ecarts_de_regle_3(concordance, tmp_path, EQUATION.replace(EQUATION_SIMPLE, align))
+    messages = [e.message for e in ecarts]
+    assert len(messages) == 2
+    assert any("eq:prix-cout-unitaire sur une ligne non numérotée (align" in m for m in messages)
+    assert any("sans label eq: (0 label(s) pour 1 ligne(s)" in m for m in messages)
+
+
+def test_second_label_sur_une_ligne_d_align_releve(concordance, tmp_path):
+    align = textwrap.dedent(r"""
+        \begin{align}
+          c &= w \label{eq:prix-cout-unitaire}\label{eq:prix-marge}
+        \end{align}""")
+    prix = PRIX + "\n\ndef marge():\n    # eq:prix-marge\n    return 0\n"
+    tex = fabriquer(tmp_path, corps_tex=EQUATION.replace(EQUATION_SIMPLE, align),
+                    fichiers={"src/nations/blocs/prix.py": prix})
+    ecarts = [e for e in verifier(concordance, tmp_path, tex).ecarts if e.regle == 3]
+    assert len(ecarts) == 1
+    assert "eq:prix-marge en excès" in ecarts[0].message
+
+
+def test_second_label_dans_une_equation_releve(concordance, tmp_path):
+    # Issue #12, troisième cas : deux labels pour un seul numéro.
+    equation = EQUATION_SIMPLE.replace(
+        "\\label{eq:prix-cout-unitaire}", "\\label{eq:prix-cout-unitaire}\\label{eq:prix-marge}",
+    )
+    ecarts = ecarts_de_regle_3(concordance, tmp_path, EQUATION.replace(EQUATION_SIMPLE, equation))
+    assert len(ecarts) == 1
+    assert "eq:prix-marge en excès" in ecarts[0].message
+
+
 def test_equation_labellisee_sans_lecture(concordance, tmp_path):
     # Deux équations labellisées, un seul encadré, placé après la seconde.
     premiere = "\n\\begin{equation}\\label{eq:prix-marge}\n  m = 0\n\\end{equation}\n"
@@ -473,3 +544,135 @@ def test_equation_labellisee_sans_lecture(concordance, tmp_path):
     rapport = verifier(concordance, tmp_path, tex)
     assert regles(rapport) == [8]
     assert rapport.ecarts[0].emplacement.endswith(":6")
+
+
+# Issue #8 : faux négatifs de la préparation du texte. Chaque cas place, après
+# le passage à effacer, un numéro en dur (15) que la règle 6 doit relever :
+# s'il ne l'est pas, la suite du document a été effacée sans écart.
+
+
+def releves(rapport):
+    """Numéros en dur relevés par la règle 6."""
+    return sorted(re.findall(r"\(\d+\)", " ".join(
+        e.message for e in rapport.ecarts if e.regle == 6)))
+
+
+def test_iffalse_ignore_les_conditions_etoolbox(concordance, tmp_path):
+    # \ifbool et \iftoggle (etoolbox) sont des commandes, pas des conditions :
+    # le \fi qui suit ferme le \iffalse.
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \ifbool{brouillon}{(12)}{} \iftoggle{notes}{(13)}{}
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_ignore_ifdef_et_ifstrequal(concordance, tmp_path):
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \ifdef{\brouillon}{(12)}{} \ifdefmacro{\a}{}{} \ifstrequal{a}{b}{(13)}{}
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_newif_dans_le_bloc_ne_declare_rien(concordance, tmp_path):
+    # Dans un bloc sauté, \newif n'est pas exécuté : \ifbrouillon n'est pas
+    # une condition, et le \fi ferme le \iffalse.
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \newif\ifbrouillon (12)
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_condition_declaree_par_newif_comptee(concordance, tmp_path):
+    # Déclarée hors du bloc, \ifbrouillon est une condition : son \fi ne ferme
+    # pas le \iffalse, et (14) reste dans le bloc.
+    corps = EQUATION + textwrap.dedent(r"""
+        \newif\ifbrouillon
+        \iffalse
+        \ifbrouillon (13) \fi (14) \ifnum1=1 \fi
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_iffalse_non_referme_est_un_ecart(concordance, tmp_path):
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        \ifx\a\b (14) \fi
+        Plus loin, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    # Rien n'est effacé : la suite est analysée.
+    assert regles(rapport) == [0, 6] and releves(rapport) == ["(14)", "(15)"]
+    ecart = next(e for e in rapport.ecarts if e.regle == 0)
+    assert "\\iffalse non refermé" in ecart.message
+    attendu = (PREAMBULE + corps).split("\n").index("\\iffalse") + 1
+    assert ecart.emplacement.endswith(f":{attendu}")
+
+
+def test_saut_de_ligne_suivi_de_iffalse_n_ouvre_rien(concordance, tmp_path):
+    # `\\iffalse` est un saut de ligne suivi du mot « iffalse » : aucun bloc
+    # n'est ouvert, donc aucun écart de règle 0, et (15) est analysé.
+    corps = EQUATION + textwrap.dedent(r"""
+        Une ligne\\iffalse puis la suite : (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_saut_de_ligne_suivi_de_fi_ne_ferme_pas_le_bloc(concordance, tmp_path):
+    # Dans un bloc, `A\\fi B` est un saut de ligne suivi du mot « fi » : le
+    # bloc reste ouvert jusqu'au vrai \fi, et (14) est effacé. Avec un nombre
+    # impair de barres, `\\\fi` est un saut de ligne suivi de \fi.
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        A\\fi B (14)
+        \fi
+        Après le bloc, (15) est relevé.
+        \iffalse (16) \\\fi
+        Après le second bloc, (17) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)", "(17)"]
+
+
+def test_iffalse_condition_declaree_par_newif_entre_accolades(concordance, tmp_path):
+    # `\newif{\ifbrouillon}` déclare la condition comme `\newif\ifbrouillon` :
+    # son \fi ne ferme pas le \iffalse, et (14) reste dans le bloc.
+    corps = EQUATION + textwrap.dedent(r"""
+        \newif{\ifbrouillon}
+        \iffalse
+        \ifbrouillon (13) \fi (14)
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_verbatim_cite_en_commentaire(concordance, tmp_path):
+    # Le commentaire est ouvert avant le \begin{verbatim} qu'il cite : il
+    # n'ouvre rien, et le texte jusqu'au vrai verbatim reste analysé.
+    corps = EQUATION + textwrap.dedent(r"""
+        % Exemple : \begin{verbatim} ouvre un verbatim.
+        Entre les deux, (15) est relevé.
+        \begin{verbatim}
+        (16) % \end{verbatim} n'est pas un commentaire
+        \end{verbatim}
+        Ni \verb|%| ni \% n'ouvre de commentaire : (17) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)", "(17)"]

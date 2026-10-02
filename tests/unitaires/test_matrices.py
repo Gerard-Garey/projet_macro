@@ -335,3 +335,20 @@ def test_poste_exige_sur_les_lignes_17_et_20(matrices, tmp_path, capsys, ident, 
             f"« poste » exigé sur les lignes 17 et 20 (postes de règlement), lu « {colonne} »"
             ) in sortie
     assert "1 écart(s)" in sortie
+
+
+def test_iffalse_non_referme_est_un_ecart_sans_effacer_les_tables(matrices, tmp_path, capsys):
+    """Issue #8 : un `\\iffalse` sans `\\fi` apparié est un écart et n'efface plus la suite.
+
+    `\\ifx` est une condition primitive : le `\\fi` lui revient, le `\\iffalse` reste ouvert.
+    """
+    texte = muter("\\begin{document}", "\\begin{document}\n\\iffalse \\ifx\\a\\b \\fi")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    ligne = ligne_de(texte, "\\iffalse")
+    assert (f"1. [structure] {tmp_path / 'spec.tex'}:{ligne} : \\iffalse non refermé "
+            "(aucun \\fi apparié) : la suite est analysée") in sortie
+    assert "1 écart(s)" in sortie
+    # Les tables qui suivent sont lues.
+    assert "tab:matrice-bilans : 9 lignes, 6 colonnes" in sortie
+    assert "tab:portes-monnaie : 28 lignes, 3 colonnes" in sortie

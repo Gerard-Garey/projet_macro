@@ -3,7 +3,7 @@ bloc: Temps et comptabilité
 module: transverse : src/nations/noyau/ (comptes, grand livre, identités) et src/nations/moteur/ (calendrier, phases) ; radicaux de labels `noyau` et `moteur`
 expert pilote: macro
 experts consultés: monnaie (bilans de la banque et de la banque centrale : réserves, refinancement, avances) ; jeu (rapport pas / tour)
-statut: décidée (M22)
+statut: spécifiée (02/10/2026)
 décision: M22 (30/09/2026)
 issue: #15
 ---
