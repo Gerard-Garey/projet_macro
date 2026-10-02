@@ -3,8 +3,8 @@ bloc: Production et stocks
 module: src/nations/blocs/production.py
 expert pilote: macro
 experts consultés: jeu (lisibilité de la production, des stocks et du délai entre demande et production ; nombre de secteurs vu du joueur) ; monnaie non consulté (docs/blocs/README.md § 1)
-statut: avis rendus (critères validés le 02/10/2026 ; décision M24 attendue)
-décision: —
+statut: décidée (M24, 02/10/2026)
+décision: M24 (02/10/2026)
 issue: #34
 ---
 
@@ -909,7 +909,21 @@ La question est donc : chaque grandeur affichée a-t-elle un sens, une cause que
 
 ## 8. Décision du mainteneur
 
-Sans objet avant l'instruction : décision M24 attendue au jalon 3 de #34.
+- **Numéro** : M24 (reporté dans `docs/feuille-de-route.md`, § 4).
+- **Date** : 02/10/2026.
+- **Option retenue** : **C**, socle commun du § 3.N avec un bien unique (J = 1), équations indexées par j dès le socle. Lectures du § 5 :
+  - (a) valorisation des stocks au **coût moyen pondéré** (conforme à la l. 520 de `sec:cadre`, sans réévaluation dans une ligne de transaction) ;
+  - (b) ordre interne de la phase 4 : **travail, puis production** ; l'emploi est tenu par le bloc 3 et lu par le bloc 2. Cette lecture modifie un contrat partagé (`tab:phases`, l. 486) : décision citant M22, consignée par ADR ;
+  - (c) anticipations fondées sur la **demande adressée**, servie ou non ;
+  - (d) **J = 1** ;
+  - (e) capacité tenue comme un **indicateur sans plafond** ;
+  - (f) conversion **linéaire** de la croissance de productivité, g_pr/n_a, la croissance effective (2,0184 % pour 2 %) étant publiée ;
+  - (g) rationnement **proportionnel** au socle ; la priorité de l'État relève d'un levier éventuel du mode planifié (J7).
+  - Q4 : volume du capital au bloc 2, ajustement de l'emploi au bloc 3, à confirmer par les fiches 3 et 6.
+- **Motifs** : le mainteneur a retenu les recommandations concordantes de `macro` (§ 5) et de `jeu` (§ 7), sur toutes les lectures. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : les cinq réserves du § 5, avec leurs seuils écrits avant l'essai (état stationnaire, vitesses, boucle fermée et coût au J3 ; remesure S1, dont le verdict ne change pas la décision) ; les sept conditions de restitution de `jeu` (§ 7) pour le § 9.
+- **Ce qui est écarté et pourquoi** : A (v1.5) et B (v2.0), qui échouent au critère 4 (ratio stocks / ventes stationnaire dépendant des vitesses) et aux critères 1 (b) et 3 (b) ; B a en outre une borne active à l'état stationnaire et un cycle propre de 6 ans ; D (J = 2), qui n'ajoute aucune identité vérifiable et paie un prix relatif à stabiliser sans levier qui l'exploite ; la valorisation au coût courant ; l'ordre « production, puis travail » ; le plafond de capacité ; la priorité de l'État au socle.
+- **Issue liée** : « aucun levier n'agit sur l'offre au socle 3.N » (proposée par `jeu`, créée sur accord du mainteneur), à instruire aux fiches 4 et 6, au plus tard avant J7.
 
 ## 9. Conséquences de la décision
 
@@ -923,5 +937,5 @@ Non instruit.
 | 02/10/2026 | Critères validés tels quels ; seuils des critères 3, 4 et 9 adoptés ; bandes du critère 6 renvoyées au J3 (issue #34) | mainteneur |
 | 02/10/2026 | Instruction déposée (§ 3 à 5) : options A et B, socle commun 3.N, options C (J = 1) et D (J = 2) ; recommandation C ; lectures (a) à (g) ; remesure S1 demandée | `macro` |
 | 02/10/2026 | Avis de `jeu` (§ 7) : préférence C (classement C > D > B > A), sept conditions de restitution au § 9, une issue proposée (aucun levier d'offre au socle 3.N) | `jeu` |
-| | Constats intégrés ; statut « avis rendus » | `macro` ; session principale |
-| | Décision M24 | mainteneur |
+| 02/10/2026 | Statut « avis rendus » (aucun constat de vérificateur à intégrer) | session principale |
+| 02/10/2026 | Décision M24 : option C, lectures (a) à (g) en (i), ordre « travail, puis production » en phase 4 | mainteneur |
