@@ -623,7 +623,6 @@ def test_iffalse_non_referme_est_un_ecart(concordance, tmp_path):
     assert ecart.emplacement.endswith(f":{attendu}")
 
 
-
 def test_saut_de_ligne_suivi_de_iffalse_n_ouvre_rien(concordance, tmp_path):
     # `\\iffalse` est un saut de ligne suivi du mot « iffalse » : aucun bloc
     # n'est ouvert, donc aucun écart de règle 0, et (15) est analysé.
@@ -662,6 +661,7 @@ def test_iffalse_condition_declaree_par_newif_entre_accolades(concordance, tmp_p
         """)
     rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
     assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
 
 def test_verbatim_cite_en_commentaire(concordance, tmp_path):
     # Le commentaire est ouvert avant le \begin{verbatim} qu'il cite : il
