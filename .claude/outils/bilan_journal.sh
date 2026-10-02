@@ -3,8 +3,11 @@
 #  .claude/outils/bilan_journal.sh  --  bilan du journal des sous-agents
 #
 #  Agrege .claude/journal-agents.jsonl (hook SubagentStop) par agent et par
-#  modele servi : nombre de consultations, appels au modele, contexte au
-#  dernier appel (moyenne et maximum), duree. Sert a la calibration de
+#  modele servi : nombre de sous-agents, reprises, appels au modele, contexte
+#  au dernier appel (moyenne et maximum), duree. Une reprise (SendMessage)
+#  ajoute une ligne cumulative pour le meme (session, id) : seule la derniere
+#  est retenue, les precedentes sont comptees comme reprises ; sa duree
+#  inclut l'attente entre les executions. Sert a la calibration de
 #  docs/agents/routage.md, § 8. Aucune donnee de consommation n'est estimee :
 #  seules les grandeurs lues dans les transcripts sont restituees.
 #
@@ -22,17 +25,24 @@ done
 "$py" - "$journal" <<'PY'
 import json, sys
 from collections import defaultdict
-g = defaultdict(list)
+der, nb = {}, defaultdict(int)
 for l in open(sys.argv[1], encoding="utf-8"):
     try:
         d = json.loads(l)
     except Exception:
         continue
+    k = (d.get("session"), d.get("id")) if d.get("id") else (None, len(der))
+    der[k] = d
+    nb[k] += 1
+g = defaultdict(list)
+for k, d in der.items():
+    d["_reprises"] = nb[k] - 1
     g[(d.get("agent") or "?", ",".join(d.get("modeles") or ["?"]))].append(d)
-print("%-24s %-28s %5s %7s %12s %12s %9s" % ("agent", "modele(s) servi(s)", "n", "appels", "ctx moyen", "ctx max", "duree moy"))
+print("%-24s %-28s %5s %8s %7s %12s %12s %9s" % ("agent", "modele(s) servi(s)", "n", "reprises", "appels", "ctx moyen", "ctx max", "duree moy"))
 for (a, m), v in sorted(g.items()):
     ctx = [x["contexte_final"] for x in v if x.get("contexte_final") is not None]
     du = [x["duree_s"] for x in v if x.get("duree_s") is not None]
-    print("%-24s %-28s %5d %7d %12s %12s %8ss" % (a, m[:28], len(v), sum(x.get("appels") or 0 for x in v),
-          round(sum(ctx)/len(ctx)) if ctx else "-", max(ctx) if ctx else "-", round(sum(du)/len(du)) if du else "-"))
+    print("%-24s %-28s %5d %8d %7d %12s %12s %9s" % (a, m[:28], len(v), sum(x["_reprises"] for x in v),
+          sum(x.get("appels") or 0 for x in v),
+          round(sum(ctx)/len(ctx)) if ctx else "-", max(ctx) if ctx else "-", "%ds" % round(sum(du)/len(du)) if du else "-"))
 PY

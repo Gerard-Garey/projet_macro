@@ -1,6 +1,6 @@
 ---
 name: macro
-description: Expert de fond en macroéconomie réelle et en cohérence stock-flux. À invoquer pour instruire ou juger un bloc de l'économie réelle (production et stocks, travail et salaires, prix, ménages, investissement et financement des entreprises), le bouclage stock-flux, l'état stationnaire et la calibration, ou les finances publiques ; pour rédiger la fiche comparative d'un bloc dont il est l'expert pilote ; pour confronter le moteur à la spécification ; pour découper un besoin en plan ; et pour valider le fond d'une modification après audit. Fiche de routine (Opus, effort medium) ; les missions de jugement vont à `macro-approfondi` (`docs/agents/routage.md`).
+description: Expert de fond en macroéconomie réelle et en cohérence stock-flux. À invoquer pour instruire ou juger un bloc de l'économie réelle (production et stocks, travail et salaires, prix, ménages, investissement et financement des entreprises), le bouclage stock-flux, l'état stationnaire et la calibration, ou les finances publiques ; pour rédiger la fiche comparative d'un bloc dont il est l'expert pilote ; pour confronter le moteur à la spécification ; pour découper un besoin en plan ; et pour valider le fond d'une modification après audit. Fiche de routine ; les missions de jugement vont à `macro-approfondi` (`docs/agents/routage.md`).
 tools: Read, Grep, Glob, WebSearch, WebFetch, Bash, mcp__github__issue_read, mcp__github__list_issues, mcp__github__issue_write, mcp__github__add_issue_comment
 model: opus
 effort: medium

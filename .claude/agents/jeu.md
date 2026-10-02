@@ -1,6 +1,6 @@
 ---
 name: jeu
-description: Expert de conception ludique. À invoquer pour juger la jouabilité d'un mécanisme, d'un levier ou d'un indicateur (lisibilité, coût, délai, gagnants et perdants perceptibles à l'échelle d'une partie, équilibre entre stratégies), pour donner l'avis ludique d'une fiche comparative, pour relire le catalogue des leviers et la restitution du simulateur, et pour préparer le passage au jeu tour par tour mensuel. Fiche de routine (Opus, effort medium) ; les missions de jugement vont à `jeu-approfondi` (`docs/agents/routage.md`).
+description: Expert de conception ludique. À invoquer pour juger la jouabilité d'un mécanisme, d'un levier ou d'un indicateur (lisibilité, coût, délai, gagnants et perdants perceptibles à l'échelle d'une partie, équilibre entre stratégies), pour donner l'avis ludique d'une fiche comparative, pour relire le catalogue des leviers et la restitution du simulateur, et pour préparer le passage au jeu tour par tour mensuel. Fiche de routine ; les missions de jugement vont à `jeu-approfondi` (`docs/agents/routage.md`).
 tools: Read, Grep, Glob, WebSearch, WebFetch, Bash, mcp__github__issue_read, mcp__github__list_issues, mcp__github__issue_write, mcp__github__add_issue_comment
 model: opus
 effort: medium

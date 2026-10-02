@@ -10,7 +10,9 @@
 #  Usage :
 #    bash .claude/outils/fiches_jumelles.sh             # (re)genere les fiches
 #    bash .claude/outils/fiches_jumelles.sh --verifier  # controle (CI) : code 1
-#                                                       # si une fiche differe
+#        si une fiche differe de sa generation ou si une fiche de base est
+#        mal formee
+#  Toute autre option : usage, code 2 (aucune fiche n'est ecrite).
 #  Les fiches generees ne se modifient jamais a la main : modifier la fiche de
 #  base, puis relancer le script.
 ###############################################################################
@@ -25,6 +27,14 @@ TOURS_APPROFONDI="80"
 racine="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 agents="$racine/.claude/agents"
 mode="${1:-generer}"
+case "$mode" in
+  generer|--verifier) ;;
+  *) echo "usage : $0 [--verifier]" >&2; exit 2 ;;
+esac
+
+# Champs admis dans une fiche de base : tout autre champ ne serait pas reporte
+# dans la fiche -approfondi.
+CHAMPS_ADMIS="name description tools model effort maxTurns"
 
 # Valeur d'un champ du frontmatter (premiere occurrence, entre les deux ---)
 champ() {
@@ -35,6 +45,26 @@ champ() {
 # Corps : tout ce qui suit le second ---
 corps() {
   awk 'n>=2 {print; next} $0=="---" {n++}' "$1"
+}
+
+# Fiche de base bien formee : champs admis seulement, effort et maxTurns
+# presents, une seule mention « Fiche de routine » dans la description
+# (le suffixe retire par generer).
+controler_base() {
+  local src="$agents/$1.md" c ok=0
+  [ -f "$src" ] || { echo "::error file=.claude/agents/$1.md::fiche de base absente"; return 1; }
+  for c in $(awk 'NR==1 && $0=="---" {f=1; next} f && $0=="---" {exit}
+                  f && match($0, /^[A-Za-z_]+:/) {print substr($0, 1, RLENGTH-1)}' "$src"); do
+    case " $CHAMPS_ADMIS " in *" $c "*) ;; *)
+      echo "::error file=.claude/agents/$1.md::champ « $c » non reporte dans la fiche -approfondi (ajouter le champ a CHAMPS_ADMIS et a generer)"; ok=1 ;;
+    esac
+  done
+  for c in effort maxTurns; do
+    [ -n "$(champ "$src" "$c")" ] || { echo "::error file=.claude/agents/$1.md::champ $c absent"; ok=1; }
+  done
+  [ "$(champ "$src" description | grep -o 'Fiche de routine' | wc -l)" -eq 1 ] \
+    || { echo "::error file=.claude/agents/$1.md::la description doit contenir une fois « Fiche de routine »"; ok=1; }
+  return $ok
 }
 
 generer() {
@@ -63,14 +93,24 @@ generer() {
 statut=0
 for role in $ROLES; do
   cible="$agents/$role-approfondi.md"
+  if ! controler_base "$role"; then
+    statut=1
+    continue
+  fi
   if [ "$mode" = "--verifier" ]; then
     if ! diff -q <(generer "$role") "$cible" >/dev/null 2>&1; then
       echo "::error file=.claude/agents/$role-approfondi.md::fiche absente ou differente de sa generation depuis $role.md (relancer bash .claude/outils/fiches_jumelles.sh)"
       statut=1
     fi
   else
-    generer "$role" > "$cible.tmp" && mv "$cible.tmp" "$cible"
-    echo "genere : .claude/agents/$role-approfondi.md"
+    if generer "$role" > "$cible.tmp"; then
+      mv "$cible.tmp" "$cible"
+      echo "genere : .claude/agents/$role-approfondi.md"
+    else
+      rm -f "$cible.tmp"
+      echo "::error file=.claude/agents/$role-approfondi.md::fiche non generee (fiche de base incomplete)"
+      statut=1
+    fi
   fi
 done
 
