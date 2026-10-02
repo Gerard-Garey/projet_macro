@@ -52,6 +52,8 @@ jobs:
             done
           done
           exit $statut
+      - name: Fiches -approfondi à jour
+        run: bash .claude/outils/fiches_jumelles.sh --verifier
       - name: Aucun fichier sensible versionné
         run: |
           set -euo pipefail
