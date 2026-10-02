@@ -963,3 +963,5 @@ Ces points sont une convention d'écriture, pas un changement des matrices du §
 | 30/09/2026 | ADR 0005 accepté ; gabarit validé (M20) | mainteneur |
 | 30/09/2026 | Conséquences de la décision (§ 9) | `macro` ; session principale |
 | 30/09/2026 | Convention d'écriture des matrices fixée (§ 9.7, relue par `monnaie`) ; signe de la contrainte de la BC corrigé (§ 3.N-Q3) | `monnaie` ; mainteneur ; session principale |
+| 30/09/2026 | Section `sec:cadre` de la spécification proposée (issue #18, `5ab629c`) ; script de vérification des matrices (issue #19) | `docwriter` ; `coder`, `audit` |
+| 02/10/2026 | Validation de fond de `sec:cadre` : validé avec corrections (omission de ΔL^CB dans la contrainte de la BC en prose, triangularité de Π^CB, échelle S, valeur comptable de K et IN) ; facteur des ratios (1,0109), borne d'arrondi et Q5 corrigés dans la fiche (`19b6f0a`) ; M^G\* renvoyée à la fiche 9 (#26) ; issues #23 à #26 | `macro`, `monnaie` ; mainteneur ; session principale |
