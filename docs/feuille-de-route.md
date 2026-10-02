@@ -36,7 +36,7 @@ Aucune au 29/09/2026 : les cinq issues ouvertes (#2 à #6) sont dans le périmè
 
 ## 4. Décisions du mainteneur
 
-Toutes arrêtées par le mainteneur, datées du 29/09/2026 sauf mention contraire dans la colonne « Date ». M1 à M15 sont consignées dans l'ADR 0001 (§ Décision, point de même numéro) ; M16 dans l'ADR 0003 ; M17 précise M6 dans l'ADR 0001 ; M18 et M19 n'ont pas d'ADR (règles de procédure). La forme canonique du numéro est `Mn` (`M16`), citée telle quelle dans les fiches comparatives, la spécification (provenance des équations, `CONVENTIONS.md` § 2.3) et les issues ; « M-n » désigne une décision quelconque dans la prose. Deux décisions de mise en œuvre du 29/09/2026 sont consignées par annotation d'ADR sans numéro (elles ne changent aucune décision numérotée) : garder `outils/compiler_specification.sh` (ADR 0004, pt 4) et déclarer le hook `preparer_latex.sh` en `SessionStart` (ADR 0004, pt 5).
+Toutes arrêtées par le mainteneur, datées du 29/09/2026 sauf mention contraire dans la colonne « Date ». M1 à M15 sont consignées dans l'ADR 0001 (§ Décision, point de même numéro) ; M16 dans l'ADR 0003 ; M17 précise M6 dans l'ADR 0001 ; M18 et M19 n'ont pas d'ADR (règles de procédure) ; M23 est consignée dans l'ADR 0006. La forme canonique du numéro est `Mn` (`M16`), citée telle quelle dans les fiches comparatives, la spécification (provenance des équations, `CONVENTIONS.md` § 2.3) et les issues ; « M-n » désigne une décision quelconque dans la prose. Deux décisions de mise en œuvre du 29/09/2026 sont consignées par annotation d'ADR sans numéro (elles ne changent aucune décision numérotée) : garder `outils/compiler_specification.sh` (ADR 0004, pt 4) et déclarer le hook `preparer_latex.sh` en `SessionStart` (ADR 0004, pt 5).
 
 | N° | Date | Décision | Où elle est consignée |
 |---|---|---|---|
@@ -93,7 +93,7 @@ Critères de passage arrêtés par le mainteneur le 29/09/2026 (M19).
 
 ## 8. Escalades, relances et arrêts hors branche
 
-Consultations faites hors de toute branche ouverte (`docs/agents/routage.md`, § 7) ; une consultation Fable compte pour la branche suivante (§ 5.2).
+Consultations faites hors de toute branche ouverte (`docs/agents/routage.md`, § 7) ; une consultation Fable compte pour la branche suivante (`docs/agents/routage.md`, § 5.2).
 
 | Date | Fiche / modèle / critère déclenché / statut obtenu / suite |
 |---|---|
