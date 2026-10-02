@@ -236,38 +236,48 @@ def retirer_iffalse(texte: str) -> tuple[str, list[tuple[int, str]]]:
     conditions de `CONDITIONS_PRIMITIVES` et les noms déjà déclarés. Un
     `\\iffalse` sans son `\\fi` n'efface rien : il est rendu comme anomalie
     `(position, message)`, et la lecture reprend après lui.
+
+    Comme dans `retirer_commentaires_et_verbatim`, une barre oblique inverse
+    et le caractère qui la suit forment un jeton : un mot n'est une commande
+    que précédé d'un nombre impair de barres (`\\\\iffalse` est un saut de
+    ligne suivi du mot « iffalse »). La déclaration admet des accolades
+    (`\\newif{\\ifnom}`).
     """
-    jeton = re.compile(r"\\(newif|if[A-Za-z@]*|fi)(?![A-Za-z@])")
-    declaration = re.compile(r"\s*\\(if[A-Za-z@]+)(?![A-Za-z@])")
+    # Les paires `\\` qui précèdent le jeton sont consommées hors du groupe
+    # `jeton` : seule la barre restante ouvre la commande.
+    jeton = re.compile(
+        r"(?<!\\)(?:\\\\)*(?P<jeton>\\(?P<nom>newif|if[A-Za-z@]*|fi))(?![A-Za-z@])")
+    declaration = re.compile(r"\s*(\{\s*)?\\(?P<nom>if[A-Za-z@]+)(?![A-Za-z@])(?(1)\s*\})")
     declarees: set[str] = set()
     zones = []
     anomalies = []
     position = 0
     while (m := jeton.search(texte, position)) is not None:
         position = m.end()
-        nom = m.group(1)
+        nom = m.group("nom")
         if nom == "newif":
             d = declaration.match(texte, m.end())
             if d is not None:
-                declarees.add(d.group(1))
+                declarees.add(d.group("nom"))
                 position = d.end()
             continue
         if nom != "iffalse":
             continue
         profondeur = 1
         for j in jeton.finditer(texte, m.end()):
-            nom_j = j.group(1)
+            nom_j = j.group("nom")
             if nom_j == "fi":
                 profondeur -= 1
                 if profondeur == 0:
-                    zones.append((m.start(), j.end()))
+                    zones.append((m.start("jeton"), j.end()))
                     position = j.end()
                     break
             elif nom_j in CONDITIONS_PRIMITIVES or nom_j in declarees:
                 profondeur += 1
         else:
-            anomalies.append((m.start(), "\\iffalse non refermé (aucun \\fi apparié) : "
-                                         "la suite est analysée"))
+            anomalies.append((m.start("jeton"),
+                              "\\iffalse non refermé (aucun \\fi apparié) : "
+                              "la suite est analysée"))
     return _blanchir_zones(texte, zones), anomalies
 
 
@@ -669,7 +679,8 @@ def verifier(tex: Path, racine: Path, src: Path, outils: Path) -> Rapport:
         dedans = [(lab, pos) for lab, pos in labels if contenu <= pos < fin]
         corps = texte[contenu:fin]
         if nom in ENVIRONNEMENTS_UN_NUMERO:
-            # Un seul numéro : comparaison des totaux.
+            # Un seul numéro : l'environnement entier est une seule ligne,
+            # contrôlée comme celles des environnements multilignes.
             lignes = [(contenu, corps)]
         else:
             # Une ligne par `\\` de niveau supérieur : chaque morceau commence

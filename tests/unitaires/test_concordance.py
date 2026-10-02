@@ -623,6 +623,46 @@ def test_iffalse_non_referme_est_un_ecart(concordance, tmp_path):
     assert ecart.emplacement.endswith(f":{attendu}")
 
 
+
+def test_saut_de_ligne_suivi_de_iffalse_n_ouvre_rien(concordance, tmp_path):
+    # `\\iffalse` est un saut de ligne suivi du mot « iffalse » : aucun bloc
+    # n'est ouvert, donc aucun écart de règle 0, et (15) est analysé.
+    corps = EQUATION + textwrap.dedent(r"""
+        Une ligne\\iffalse puis la suite : (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
+
+def test_saut_de_ligne_suivi_de_fi_ne_ferme_pas_le_bloc(concordance, tmp_path):
+    # Dans un bloc, `A\\fi B` est un saut de ligne suivi du mot « fi » : le
+    # bloc reste ouvert jusqu'au vrai \fi, et (14) est effacé. Avec un nombre
+    # impair de barres, `\\\fi` est un saut de ligne suivi de \fi.
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse
+        A\\fi B (14)
+        \fi
+        Après le bloc, (15) est relevé.
+        \iffalse (16) \\\fi
+        Après le second bloc, (17) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)", "(17)"]
+
+
+def test_iffalse_condition_declaree_par_newif_entre_accolades(concordance, tmp_path):
+    # `\newif{\ifbrouillon}` déclare la condition comme `\newif\ifbrouillon` :
+    # son \fi ne ferme pas le \iffalse, et (14) reste dans le bloc.
+    corps = EQUATION + textwrap.dedent(r"""
+        \newif{\ifbrouillon}
+        \iffalse
+        \ifbrouillon (13) \fi (14)
+        \fi
+        Après le bloc, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
+
 def test_verbatim_cite_en_commentaire(concordance, tmp_path):
     # Le commentaire est ouvert avant le \begin{verbatim} qu'il cite : il
     # n'ouvre rien, et le texte jusqu'au vrai verbatim reste analysé.
