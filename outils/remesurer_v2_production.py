@@ -1,6 +1,7 @@
 """Remesure, sur le prototype v2.0, des faits de la fiche « production et stocks ».
 
-Contrat : spécification S1 de l'issue #34 (rédigée par `macro`). Le script
+Contrat : fiche `docs/blocs/production.md` § 9.7 (remesure S1, issue #34 ;
+critères écrits par `macro` avant l'essai). Le script
 exécute le prototype v2.0 **dans un processus séparé, sur une copie
 temporaire**, jamais par import (CLAUDE.md, invariant 4) : `archive/` n'est ni
 importée ni modifiée, et la copie est vérifiée contre le manifeste
@@ -11,9 +12,9 @@ classe `Params`, sans le profil D1, non versé ; `reference_parameters()` est
 inutilisable, `config/reference.json` étant absent), remesurer :
 
 - le ratio stocks / ventes stationnaire ;
-- la part des semaines où la borne `excess > 0` joue (`model.py` l. 923 ; en
-  économie fermée, `world is None`, la branche exécutée est la copie
-  identique des l. 945-947) ;
+- la part des semaines où la borne `excess > 0` joue : `model.py` l. 923
+  (monde) et l. 946 (économie fermée, `world is None`, branche exécutée),
+  identiques ;
 - la sensibilité de ce ratio à `mu_ema` (l. 1418) et à `lam_inv_2` (l. 644),
   multipliés par 0,5 et par 2.
 
@@ -34,36 +35,39 @@ après le pas, est exclue et décomptée) :
 - `sinv_sur_cible` : Sinv / (s* · Q̄), sans unité ; Sinv et Q̄ (l. 1418) en fin
   de semaine, soit les valeurs que la borne compare la semaine suivante ;
 - `part_excess_positif` : part des semaines où excess = max(Sinv − s* · Q̄, 0)
-  > 0, Sinv et Q̄ pris à l'ouverture de la semaine, comme l. 946 ;
+  > 0 strictement, Sinv et Q̄ pris à l'ouverture de la semaine, comme l. 923
+  et l. 946 ;
 - `part_d_sup_s` : part des semaines où D > S (`_dbg[0]`, `_dbg[1]`, l. 1072) ;
 - `rationnement_relatif` : (D − Q) / D, sans unité ;
 - `y_sur_yhat` : Y / Ŷ, Y production effective (l. 680, lue dans
   `_diag_cu['Y']`, actif sous `wsps2`), Ŷ production planifiée (`_dbgL[2]`,
   l. 660).
 
-Un rapport de dénominateur nul ou négatif, ou non fini, est omis de la
-moyenne ; le nombre de valeurs retenues et omises est publié par grandeur,
+Un rapport de dénominateur nul ou négatif, ou non fini, et une indicatrice
+dont un opérande n'est pas fini, sont omis de la moyenne ; le nombre de valeurs retenues et omises est publié par grandeur,
 secteur et année (`effectifs`) ; une année sans valeur donne `null`.
 
-**Critères, écrits avant l'essai** (spécification S1, reproduits tels quels ;
-verdicts publiés quel que soit le résultat) :
+**Critères, écrits avant l'essai** (fiche § 9.7 ; verdicts publiés quel que
+soit le résultat) :
 
-(i) années 30 à 60 de la branche nominale, secteurs consommation et
-équipement : Sinv/(s* Q̄) < 0,99 et part des semaines avec excess > 0 < 5 %
-(prédiction : ≈ 0,93, borne active) ;
-
-(ii) écart relatif de Sinv/Q entre les branches ×0,5 et ×2 > 1e−6 pour
-chacune des deux vitesses.
-
-Lecture opérationnelle retenue par le script (à confirmer par l'expert
-pilote) : la fenêtre « années 30 à 60 » est celle des années numérotées 31 à
-60, soit t ∈ [30 ans, 60 ans[ ; la grandeur d'une fenêtre est la moyenne de
-ses moyennes annuelles ; (i) est satisfait si les deux conditions tiennent
-dans chacun des deux secteurs ; (ii) prend la même fenêtre et les mêmes
-secteurs, l'écart relatif vaut |r(×2) − r(×0,5)| / |r(×0,5)| et une vitesse
-satisfait le critère si l'écart dépasse 1e−6 dans chacun des deux secteurs.
-Une fenêtre que la simulation ne couvre pas, ou une branche non remesurée,
-donne le verdict « non évaluable ».
+- **fenêtre** : années numérotées 31 à 60, soit t ∈ [30, 60[ ans ; la
+  grandeur de fenêtre est la moyenne des moyennes annuelles ;
+- **semaines exclues** : une semaine d'effondrement est exclue ; leur nombre
+  dans la fenêtre est publié avec chaque verdict ; une année sans semaine
+  valide rend le verdict « non évaluable » (en plus du § 9.7, restitution
+  propre au script : le drapeau `effondrement_dans_fenetre` signale une
+  fenêtre qui contient un effondrement ; le verdict se calcule quand même) ;
+- **critère (i)** : branche nominale ; dans chacun des secteurs consommation
+  (2) et équipement (3), Sinv/(s*·Q̄) < 0,99 et part des semaines avec
+  excess > 0 inférieure à 5 %. La prédiction informative, issue du bloc seul,
+  est d'environ 0,93 ; elle n'entre pas dans le seuil ;
+- **critère (ii)** : pour chaque vitesse, écart relatif
+  |r(× 2) − r(× 0,5)|/|r(× 0,5)| > 1e−6, avec r = Sinv/Q sur la même
+  fenêtre, dans chacun des deux secteurs ; le verdict global exige les deux
+  vitesses ;
+- **statut du fait** : « remesuré le <date>, profil par défaut, non D1 ».
+  Une fenêtre que la simulation ne couvre pas, ou une branche non remesurée
+  (« non remesurable »), donne le verdict « non évaluable ».
 
 **Exécution.** Le prototype importe `scipy` (`wealth_utility.py`), absent de
 l'environnement du projet : le pilote tourne dans un environnement `uv`
@@ -83,6 +87,7 @@ import argparse
 import datetime
 import hashlib
 import importlib.metadata
+import inspect
 import json
 import math
 import os
@@ -128,11 +133,30 @@ VERSION_SCIPY = "1.18.1"
 MENTION = "remesuré le {date}, profil par défaut, non D1"
 PROFIL = "valeurs par défaut de Params (prototype v2.0), sans le profil D1"
 
+
+
+def rapport(num, den) -> list[float | None]:
+    """Rapports terme à terme ; `None` (omis et compté) si le dénominateur est
+    nul ou négatif, ou si le rapport n'est pas fini. Recopiée dans le pilote."""
+    valeurs = [float(a) / float(b) if float(b) > 0 else None for a, b in zip(num, den)]
+    return [v if v is not None and math.isfinite(v) else None for v in valeurs]
+
+
+def indicatrice(gauche, droite) -> list[float | None]:
+    """1.0 si gauche > droite, 0.0 sinon, terme à terme ; `None` (omise et
+    comptée) si un opérande n'est pas fini. Recopiée dans le pilote."""
+    return [
+        float(float(g) > float(d)) if math.isfinite(float(g)) and math.isfinite(float(d)) else None
+        for g, d in zip(gauche, droite)
+    ]
+
+
 # Pilote exécuté par `python -c` dans le répertoire temporaire qui contient la
 # copie `prototype/` (importée comme paquet, comme `python -m prototype.simulate`).
-# Arguments : surcharges (JSON), années, graine, fichier de sortie.
+# Arguments : surcharges (JSON), années, graine, fichier de sortie. `rapport`
+# et `indicatrice` y sont recopiées depuis ce module (`inspect.getsource`).
 PILOTE = r'''
-import json, platform, sys
+import json, math, platform, sys
 import numpy as np
 import scipy
 from prototype.model import Economy, Params, WEEKS, MODEL_VERSION
@@ -145,11 +169,7 @@ e = Economy(Params(**kw), seed=graine)
 p = e.p
 
 
-def rapport(num, den):
-    # Dénominateur nul ou négatif, ou rapport non fini : None (omis et compté).
-    valeurs = [float(a / b) if b > 0 else None for a, b in zip(num, den)]
-    return [v if v is not None and np.isfinite(v) else None for v in valeurs]
-
+''' + inspect.getsource(rapport) + "\n\n" + inspect.getsource(indicatrice) + r'''
 
 semaines = []
 for _ in range(annees * WEEKS):
@@ -162,12 +182,12 @@ for _ in range(annees * WEEKS):
         continue
     D, S = e._dbg[0], e._dbg[1]
     Q = np.minimum(D, S)
-    excess = np.maximum(sinv_ouverture - p.s_star * qbar_ouverture, 0.0)
     semaines.append(dict(
         sinv_sur_q=rapport(e.Sinv, Q),
         sinv_sur_cible=rapport(e.Sinv, p.s_star * e.Qbar),
-        part_excess_positif=[float(x > 0) for x in excess],
-        part_d_sup_s=[float(d > s) for d, s in zip(D, S)],
+        # excess = max(Sinv - s* Qbar, 0) > 0 (l. 923, l. 946), à l'ouverture.
+        part_excess_positif=indicatrice(sinv_ouverture, p.s_star * qbar_ouverture),
+        part_d_sup_s=indicatrice(D, S),
         rationnement_relatif=rapport(D - Q, D),
         y_sur_yhat=rapport(e._diag_cu["Y"], e._dbgL[2]),
     ))
@@ -344,6 +364,19 @@ def moyenne_fenetre(annees: list[dict], grandeur: str, secteur: str, fenetre=FEN
     return math.fsum(valeurs) / len(valeurs)
 
 
+def semaines_exclues_fenetre(annees: list[dict] | None, fenetre=FENETRE) -> int | None:
+    """Semaines d'effondrement exclues dans les années de la fenêtre présentes ;
+    `None` si la branche n'est pas remesurée."""
+    if annees is None:
+        return None
+    return sum(a["semaines_exclues"] for a in annees if fenetre[0] <= a["annee"] <= fenetre[1])
+
+
+def _effondrement(*nombres: int | None) -> bool:
+    """Vrai si la fenêtre contient au moins une semaine d'effondrement exclue."""
+    return any(n is not None and n > 0 for n in nombres)
+
+
 def _annees_remesurees(branches: dict, nom: str) -> list[dict] | None:
     branche = branches.get(nom)
     return branche["annees"] if branche and branche["statut"] == "remesuré" else None
@@ -352,9 +385,10 @@ def _annees_remesurees(branches: dict, nom: str) -> list[dict] | None:
 def verdict_i(branches: dict, fenetre=FENETRE) -> dict:
     """Critère (i), branche nominale."""
     texte = (
-        "(i) années 30 à 60 de la branche nominale, secteurs consommation et "
-        "équipement : Sinv/(s* Q̄) < 0,99 et part des semaines avec excess > 0 "
-        "< 5 % (prédiction : ≈ 0,93, borne active)"
+        "(i) branche nominale, années 31 à 60 ; dans chacun des secteurs "
+        "consommation et équipement, Sinv/(s*·Q̄) < 0,99 et part des semaines "
+        "avec excess > 0 inférieure à 5 % (prédiction informative ≈ 0,93, "
+        "hors seuil)"
     )
     annees = _annees_remesurees(branches, "nominal")
     valeurs = {
@@ -373,7 +407,9 @@ def verdict_i(branches: dict, fenetre=FENETRE) -> dict:
         verdict = "satisfait"
     else:
         verdict = "non satisfait"
-    return dict(critere=texte, fenetre=list(fenetre), valeurs=valeurs, verdict=verdict)
+    exclues = semaines_exclues_fenetre(annees, fenetre)
+    return dict(critere=texte, fenetre=list(fenetre), valeurs=valeurs, verdict=verdict,
+                semaines_exclues=exclues, effondrement_dans_fenetre=_effondrement(exclues))
 
 
 def ecart_relatif(a: float, b: float) -> float:
@@ -384,8 +420,9 @@ def ecart_relatif(a: float, b: float) -> float:
 def verdict_ii(branches: dict, fenetre=FENETRE) -> dict:
     """Critère (ii), une vitesse à la fois."""
     texte = (
-        "(ii) écart relatif de Sinv/Q entre les branches ×0,5 et ×2 > 1e−6 "
-        "pour chacune des deux vitesses"
+        "(ii) pour chaque vitesse, écart relatif |r(× 2) − r(× 0,5)|/|r(× 0,5)| "
+        "> 1e−6, r = Sinv/Q sur les années 31 à 60, dans chacun des secteurs "
+        "consommation et équipement ; le verdict global exige les deux vitesses"
     )
     par_vitesse = {}
     for vitesse, (moitie, double) in VITESSES.items():
@@ -403,13 +440,23 @@ def verdict_ii(branches: dict, fenetre=FENETRE) -> dict:
             valeurs[secteur] = dict(x0_5=r_m, x2=r_d, ecart_relatif=ecart)
             satisfait &= ecart > SEUIL_ECART_RELATIF
         verdict = ("satisfait" if satisfait else "non satisfait") if evaluable else "non évaluable"
-        par_vitesse[vitesse] = dict(valeurs=valeurs, verdict=verdict)
+        exclues = {
+            moitie: semaines_exclues_fenetre(a_m, fenetre),
+            double: semaines_exclues_fenetre(a_d, fenetre),
+        }
+        par_vitesse[vitesse] = dict(
+            valeurs=valeurs, verdict=verdict, semaines_exclues=exclues,
+            effondrement_dans_fenetre=_effondrement(*exclues.values()),
+        )
     verdicts = {v["verdict"] for v in par_vitesse.values()}
     if "non évaluable" in verdicts:
         global_ = "non évaluable"
     else:
         global_ = "satisfait" if verdicts == {"satisfait"} else "non satisfait"
-    return dict(critere=texte, fenetre=list(fenetre), vitesses=par_vitesse, verdict=global_)
+    return dict(
+        critere=texte, fenetre=list(fenetre), vitesses=par_vitesse, verdict=global_,
+        effondrement_dans_fenetre=any(v["effondrement_dans_fenetre"] for v in par_vitesse.values()),
+    )
 
 
 def rediger(contexte: dict, branches: dict, fenetre=FENETRE) -> dict:

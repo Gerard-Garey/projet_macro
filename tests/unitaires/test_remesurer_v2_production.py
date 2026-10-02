@@ -246,6 +246,36 @@ def test_verdict_ii(remesure):
     assert resultat["verdict"] == "non évaluable"
 
 
+def test_semaines_exclues_publiees_avec_chaque_verdict(remesure):
+    # Deux semaines d'effondrement en année 2 (dans la fenêtre (2, 3)), une en
+    # année 1 (hors fenêtre) : le verdict se calcule quand même.
+    semaines = [semaine(0.93) for _ in range(3 * SEMAINES)]
+    semaines[5] = semaines[SEMAINES + 1] = semaines[SEMAINES + 2] = None
+    avec = branche(remesure.agreger(semaines))
+    sans = branche(annees_constantes(remesure, 3, valeur=0.93))
+    resultat = remesure.verdict_i({"nominal": avec}, (2, 3))
+    assert resultat["verdict"] == "satisfait"
+    assert (resultat["semaines_exclues"], resultat["effondrement_dans_fenetre"]) == (2, True)
+    resultat = remesure.verdict_i({"nominal": sans}, (2, 3))
+    assert (resultat["semaines_exclues"], resultat["effondrement_dans_fenetre"]) == (0, False)
+    branches = {"mu_x0.5": sans, "mu_x2": avec, "lam_x0.5": sans, "lam_x2": sans}
+    resultat = remesure.verdict_ii(branches, (2, 3))
+    assert resultat["vitesses"]["mu_ema"]["semaines_exclues"] == {"mu_x0.5": 0, "mu_x2": 2}
+    assert resultat["vitesses"]["mu_ema"]["effondrement_dans_fenetre"] is True
+    assert resultat["vitesses"]["lam_inv_2"]["effondrement_dans_fenetre"] is False
+    assert resultat["effondrement_dans_fenetre"] is True
+    assert resultat["verdict"] == "non satisfait"  # écart nul : calculé malgré l'effondrement
+    echec = remesure.verdict_i({"nominal": {"statut": "non remesurable", "exception": "x"}}, (2, 3))
+    assert (echec["semaines_exclues"], echec["effondrement_dans_fenetre"]) == (None, False)
+
+
+def test_annee_sans_semaine_valide_non_evaluable(remesure):
+    semaines = [semaine(0.93)] * SEMAINES + [None] * SEMAINES
+    resultat = remesure.verdict_i({"nominal": branche(remesure.agreger(semaines))}, (1, 2))
+    assert resultat["verdict"] == "non évaluable"
+    assert resultat["semaines_exclues"] == SEMAINES
+
+
 def test_ecart_relatif(remesure):
     assert remesure.ecart_relatif(4.0, 2.0) == 0.5
     assert remesure.ecart_relatif(0.0, 1.0) == float("inf")
@@ -271,6 +301,28 @@ def test_json_strict(remesure, tmp_path):
 def test_pilote_syntaxe_et_sans_reference_a_l_archive(remesure):
     ast.parse(remesure.PILOTE)
     assert "archive" not in remesure.PILOTE
+    # Les fonctions de relevé sont celles du module, recopiées.
+    assert "def rapport(" in remesure.PILOTE and "def indicatrice(" in remesure.PILOTE
+
+
+def test_indicatrice_omet_un_operande_non_fini(remesure):
+    nan, inf = float("nan"), float("inf")
+    assert remesure.indicatrice([2.0, 1.0, nan, 1.0, inf], [1.0, 1.0, 0.0, nan, 0.0]) == [
+        1.0, 0.0, None, None, None,
+    ]
+    # Une semaine NaN est omise et comptée, pas comptée comme « non ».
+    releve = semaine(1.0)
+    releve["part_excess_positif"] = remesure.indicatrice([nan, 2.0, 2.0, 2.0], [0.0, 1.0, 1.0, 1.0])
+    annee = remesure.agreger([releve] + [semaine(1.0, excess=1.0)] * (SEMAINES - 1))[0]
+    assert annee["secteurs"]["alimentation"]["part_excess_positif"] == 1.0
+    assert annee["effectifs"]["alimentation"]["part_excess_positif"] == {"retenues": SEMAINES - 1, "omises": 1}
+
+
+def test_rapport_omet_denominateur_nul_et_non_fini(remesure):
+    nan = float("nan")
+    assert remesure.rapport([4.0, 1.0, 1.0, nan, 1.0], [2.0, 0.0, -1.0, 1.0, nan]) == [
+        2.0, None, None, None, None,
+    ]
 
 
 def test_echec_du_prototype_consigne(remesure, tmp_path):
