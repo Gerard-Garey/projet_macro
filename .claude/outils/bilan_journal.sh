@@ -16,6 +16,9 @@
 #  « import json » (alias du Microsoft Store sous Windows) est ecarte
 #  (docs/agents/routage.md, § 7).
 #
+#  Les lignes vides (ni agent, ni modele, ni appel) ecrites par le hook avant
+#  le 02/10/2026 pour les sous-agents internes de Claude Code sont ignorees.
+#
 #  Usage : bash .claude/outils/bilan_journal.sh [journal]
 ###############################################################################
 set -euo pipefail
@@ -36,6 +39,8 @@ for l in open(sys.argv[1], encoding="utf-8"):
         d = json.loads(l)
     except Exception:
         continue
+    if not d.get("agent") and not d.get("modeles") and not d.get("appels"):
+        continue  # sous-agent interne (ancien hook) : rien de mesure
     k = (d.get("session"), d.get("id")) if d.get("id") else (None, len(der))
     der[k] = d
     nb[k] += 1

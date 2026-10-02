@@ -19,6 +19,9 @@
 #  l'environnement du projet ; un interpreteur qui echoue au test
 #  « import json » (alias du Microsoft Store sous Windows) est ecarte
 #  (docs/agents/routage.md, § 7).
+#  Un sous-agent sans type ni transcript (sous-agent interne de Claude Code,
+#  qui n'est lance par aucune fiche du projet) n'est pas journalise : il n'y
+#  a rien a mesurer, et sa ligne vide fausserait le bilan.
 #  N'echoue jamais et n'ecrit rien sur la sortie standard : une session sans
 #  Python, ou un transcript illisible, se poursuit sans journal.
 ###############################################################################
@@ -49,6 +52,9 @@ if not agent and chemin:
         agent = json.load(open(chemin[:-len(".jsonl")] + ".meta.json", encoding="utf-8")).get("agentType", "")
     except Exception:
         pass
+
+if not agent and not (chemin and os.path.exists(chemin)):
+    raise SystemExit(0)  # sous-agent interne : rien a journaliser
 
 modeles, ids, contexte, debut, fin = [], set(), None, None, None
 if chemin and os.path.exists(chemin):
