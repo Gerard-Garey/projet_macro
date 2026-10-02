@@ -464,6 +464,77 @@ def test_align_a_deux_lignes_et_un_label(concordance, tmp_path):
     assert "1 label(s) pour 2 ligne(s)" in rapport.ecarts[0].message
 
 
+def ecarts_de_regle_3(concordance, racine, corps):
+    """Écarts de règle 3 relevés sur une spécification fabriquée."""
+    rapport = verifier(concordance, racine, fabriquer(racine, corps_tex=corps))
+    return [e for e in rapport.ecarts if e.regle == 3]
+
+
+@pytest.mark.parametrize("marque", ["\\nonumber", "\\notag"])
+def test_label_sur_equation_non_numerotee_releve(concordance, tmp_path, marque):
+    # Issue #12, premier cas : le label pointe sur un autre compteur.
+    equation = EQUATION_SIMPLE.replace("c = w / y", f"c = w / y {marque}")
+    ecarts = ecarts_de_regle_3(concordance, tmp_path, EQUATION.replace(EQUATION_SIMPLE, equation))
+    assert len(ecarts) == 1
+    assert "eq:prix-cout-unitaire sur une ligne non numérotée (equation" in ecarts[0].message
+
+
+def test_label_sur_ligne_d_align_non_numerotee_releve(concordance, tmp_path):
+    # Issue #12, deuxième cas : une ligne numérotée, deux labels dont l'un
+    # sur la ligne marquée \notag.
+    align = textwrap.dedent(r"""
+        \begin{align}
+          c &= w \label{eq:prix-cout-unitaire} \\
+          d &= y \notag \label{eq:prix-marge}
+        \end{align}""")
+    prix = PRIX + "\n\ndef marge():\n    # eq:prix-marge\n    return 0\n"
+    tex = fabriquer(tmp_path, corps_tex=EQUATION.replace(EQUATION_SIMPLE, align),
+                    fichiers={"src/nations/blocs/prix.py": prix})
+    ecarts = [e for e in verifier(concordance, tmp_path, tex).ecarts if e.regle == 3]
+    assert len(ecarts) == 1
+    assert "eq:prix-marge sur une ligne non numérotée (align" in ecarts[0].message
+
+
+def test_label_deplace_sur_la_ligne_non_numerotee_releve(concordance, tmp_path):
+    # Issue #12, constat d'audit : autant de labels que de lignes numérotées,
+    # mais le label est sur la ligne \notag et la ligne numérotée n'en a pas.
+    # La comparaison des totaux ne le voit pas ; le contrôle ligne par ligne
+    # relève l'écart et le manque.
+    align = textwrap.dedent(r"""
+        \begin{align}
+          c &= w \\
+          d &= y \notag \label{eq:prix-cout-unitaire}
+        \end{align}""")
+    ecarts = ecarts_de_regle_3(concordance, tmp_path, EQUATION.replace(EQUATION_SIMPLE, align))
+    messages = [e.message for e in ecarts]
+    assert len(messages) == 2
+    assert any("eq:prix-cout-unitaire sur une ligne non numérotée (align" in m for m in messages)
+    assert any("sans label eq: (0 label(s) pour 1 ligne(s)" in m for m in messages)
+
+
+def test_second_label_sur_une_ligne_d_align_releve(concordance, tmp_path):
+    align = textwrap.dedent(r"""
+        \begin{align}
+          c &= w \label{eq:prix-cout-unitaire}\label{eq:prix-marge}
+        \end{align}""")
+    prix = PRIX + "\n\ndef marge():\n    # eq:prix-marge\n    return 0\n"
+    tex = fabriquer(tmp_path, corps_tex=EQUATION.replace(EQUATION_SIMPLE, align),
+                    fichiers={"src/nations/blocs/prix.py": prix})
+    ecarts = [e for e in verifier(concordance, tmp_path, tex).ecarts if e.regle == 3]
+    assert len(ecarts) == 1
+    assert "eq:prix-marge en excès" in ecarts[0].message
+
+
+def test_second_label_dans_une_equation_releve(concordance, tmp_path):
+    # Issue #12, troisième cas : deux labels pour un seul numéro.
+    equation = EQUATION_SIMPLE.replace(
+        "\\label{eq:prix-cout-unitaire}", "\\label{eq:prix-cout-unitaire}\\label{eq:prix-marge}",
+    )
+    ecarts = ecarts_de_regle_3(concordance, tmp_path, EQUATION.replace(EQUATION_SIMPLE, equation))
+    assert len(ecarts) == 1
+    assert "eq:prix-marge en excès" in ecarts[0].message
+
+
 def test_equation_labellisee_sans_lecture(concordance, tmp_path):
     # Deux équations labellisées, un seul encadré, placé après la seconde.
     premiere = "\n\\begin{equation}\\label{eq:prix-marge}\n  m = 0\n\\end{equation}\n"

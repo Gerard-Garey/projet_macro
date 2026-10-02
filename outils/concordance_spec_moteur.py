@@ -17,7 +17,11 @@ analyse `tokenize` et `ast` du Python) et relève les écarts :
    portent un seul numéro, donc exactement un label, sauf `\\nonumber` ou
    `\\notag` (aucun) ; dans les autres environnements multilignes, un label
    par ligne numérotée (seuls comptent les `\\\\` de niveau supérieur, pas
-   ceux de `cases`, `aligned`, `matrix`, `array`…) ; chaque encadré `lecture`
+   ceux de `cases`, `aligned`, `matrix`, `array`…), contrôlé ligne par
+   ligne : une ligne numérotée sans label est un manque, un second label sur
+   une même ligne numérotée est un excès, un label sur une ligne marquée
+   `\\notag` ou `\\nonumber` est un écart (pour `equation` et `multline`,
+   la ligne est l'environnement entier) ; chaque encadré `lecture`
    contient `\\variables`, `\\sens`, `\\hyp`, `\\limites` puis `\\tracabilite`,
    dans cet ordre ;
 4. statut de `\\tracabilite` (`dérivée`, `approchée` ou `choix de
@@ -662,20 +666,48 @@ def verifier(tex: Path, racine: Path, src: Path, outils: Path) -> Rapport:
     rapport.nb_equations = len(equations)
     labels_par_equation: list[tuple[int, list[str]]] = []
     for nom, debut, contenu, fin in equations:
-        dedans = [lab for lab, pos in labels if contenu <= pos < fin]
+        dedans = [(lab, pos) for lab, pos in labels if contenu <= pos < fin]
         corps = texte[contenu:fin]
         if nom in ENVIRONNEMENTS_UN_NUMERO:
-            attendus = 0 if re.search(r"\\(notag|nonumber)\b", corps) else 1
+            # Un seul numéro : comparaison des totaux.
+            lignes = [(contenu, corps)]
         else:
-            lignes = [ln for ln in lignes_de_niveau_superieur(corps) if ln.strip()]
-            attendus = sum(1 for ln in lignes if not re.search(r"\\(notag|nonumber)\b", ln))
-        if len(dedans) < attendus:
+            # Une ligne par `\\` de niveau supérieur : chaque morceau commence
+            # deux caractères après la fin du précédent (le séparateur).
+            lignes, position = [], contenu
+            for ligne in lignes_de_niveau_superieur(corps):
+                lignes.append((position, ligne))
+                position += len(ligne) + 2
+        attendus = etiquetees = 0
+        for position, ligne in lignes:
+            if nom not in ENVIRONNEMENTS_UN_NUMERO and not ligne.strip():
+                continue  # ligne vide après un `\\` final
+            siens = [(lab, pos) for lab, pos in dedans
+                     if position <= pos < position + len(ligne)]
+            if re.search(r"\\(notag|nonumber)\b", ligne):
+                for label, pos in siens:
+                    rapport.ecarts.append(Ecart(
+                        3, ou(pos),
+                        f"{label} sur une ligne non numérotée ({nom}, "
+                        "\\notag ou \\nonumber)",
+                    ))
+                continue
+            attendus += 1
+            if siens:
+                etiquetees += 1
+            for label, pos in siens[1:]:
+                rapport.ecarts.append(Ecart(
+                    3, ou(pos),
+                    f"{label} en excès : second label eq: d'une même ligne "
+                    f"numérotée ({nom})",
+                ))
+        if etiquetees < attendus:
             rapport.ecarts.append(Ecart(
                 3, ou(debut),
                 f"équation numérotée ({nom}) sans label eq: "
-                f"({len(dedans)} label(s) pour {attendus} ligne(s) numérotée(s))",
+                f"({etiquetees} label(s) pour {attendus} ligne(s) numérotée(s))",
             ))
-        labels_par_equation.append((fin, dedans))
+        labels_par_equation.append((fin, [lab for lab, _ in dedans]))
     for label, position in labels:
         if not any(contenu <= position < fin for _, _, contenu, fin in equations):
             rapport.ecarts.append(Ecart(
