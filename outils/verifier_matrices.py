@@ -44,7 +44,7 @@ tenant : `$-D_H - B_H$`.
   accolades d'un seul symbole (`B_{H}` = `B_H`) ou les commandes de police
   `\\mathit`, `\\mathrm`, `\\text`, `\\textrm` et `\\textit` (`\\mathit{Res}`
   = `Res`). Toute autre différence les distingue : l'ordre des indices et
-  exposants est significatif (`B_H^p` ≠ `B^p_H`).
+  exposants est significatif (`B_H^{\\mathrm{prim}}` ≠ `B^{\\mathrm{prim}}_H`).
 - Les secteurs (`SECTEURS`, reconnus à l'en-tête de colonne), leurs postes de
   règlement (`POSTES_DE_REGLEMENT`) et les lignes marquées « poste »
   (`LIGNES_POSTE`) sont déclarés en tête du script.
