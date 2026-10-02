@@ -10,8 +10,8 @@
 #  inclut l'attente entre les executions. Sert a la calibration de
 #  docs/agents/routage.md, § 8. Aucune donnee de consommation n'est estimee :
 #  seules les grandeurs lues dans les transcripts sont restituees.
-#  Exception a CLAUDE.md (« Python s'execute toujours par uv run ») : python3
-#  ou python du systeme est appele directement, sans dependre de
+#  Exception a CLAUDE.md et a l'ADR 0003, pt 1 (« Python s'execute toujours
+#  par uv run ») : python3 ou python du systeme est appele directement, sans dependre de
 #  l'environnement du projet ; un interpreteur qui echoue au test
 #  « import json » (alias du Microsoft Store sous Windows) est ecarte
 #  (docs/agents/routage.md, § 7).
