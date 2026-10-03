@@ -728,7 +728,222 @@ Non instruit (`monnaie`, frontière dette publique : détention de dépôts et d
 
 ## 7. Avis de `jeu`
 
-Non instruit.
+*`jeu`, 03/10/2026 (issue #41, jalon 2), sur la fiche à l'état `d88a47e` (branche `claude/j1-economie-reelle`, PR #43). Réponses aux six questions de `macro`.*
+
+**Chiffres.** Aucun moteur n'existe encore. J'ai écrit une maquette indépendante, qui n'importe aucun script `f5_*` ni `p4_*`.
+- **Forme.** Contrairement à B1, elle est écrite **en niveaux**, sans détendance. On peut donc la confronter à B1, détendue, sans reprendre ses conventions.
+- **Contenu.** Le socle N1 à N7, avec la tendance géométrique. L'emploi R, plafonné à la population active (U^eq = 5 %). Des prix exogènes sur leur sentier. La règle C avec le plafond du § 3.N-6 (a). Le revenu YD = θ_H·p·y + (i_D/12)·D_H + Tr. Une variante en **équilibre partiel du bloc** (PE) tient sur son sentier la production qui alimente le revenu.
+- **Hypothèses** : celles du § 3.0 (g = π̄ = 2 %, ν = 1, λ_V = 0,4, i_D = 3 %, θ_H = 0,8, part de G de 20 %).
+- **Exécution** le 03/10/2026, hors dépôt : `uv run --no-project python jeu_men1.py` à `jeu_men12.py`.
+
+- **Contrôle de la maquette.**
+  - Sans choc, la dérive relative est au plus de 4·10⁻¹⁴ sur 720 tours.
+  - Elle reproduit à la troisième décimale, sur les neuf tours et pour les deux exemples du § 3.L, les colonnes « plan », « YD » et « taux d'épargne ».
+  - Elle reproduit les valeurs propres de la boucle propre de F5 : 0,96678 et 0,96772, soit 20,5 et 21,1 tours ; 0,98339 et 0,98385 ; 0,93355 et 0,93551.
+  - Elle reproduit la sur-commande. Le service vaut 1 jusqu'au tour 8, puis il est rationné aux tours 9 à 12 (minimum 0,850). La demande non servie des ménages est nulle dès le tour 13. La richesse est à +6,33 %, soit 0,79 mois de consommation. La production reste au plafond jusqu'au tour 134 et revient à +0,77 % au tour 240.
+  - Elle reproduit le tableau Q3 dans la convention de Godley et Lavoie, où la perte d'inflation vaut π_mensuel·V_{−1}. Dans la convention (1 − 1/Π)·V, le taux corrigé vaudrait 2,029 % et 2,291 %. L'écart tient à la convention ; je retiens celle de `macro`.
+- **Constat 1 : la colonne « ratio » du § 3.L n'est pas le ratio annoncé.** Le § 3.L la définit comme V/(12·YD), mais elle vaut **V/V̄**, la richesse rapportée à son sentier stationnaire. B1 divise par le YD stationnaire (`o['V']/(12*b.YD)`). Avec les définitions de la fiche, le ratio **baisse** après un transfert, parce que le revenu monte avant la richesse :
+
+  | Tour | Colonne publiée (= V/V̄) | V d'ouverture / (12 × YD du tour), lecture du test zéro | V de clôture / somme des 12 derniers YD, lecture de restitution (e) |
+  |---|---|---|---|
+  | 1 | 1,00000 | 0,99010 | 1,0216 |
+  | 9 | 1,00427 | 0,98425 | 1,0151 |
+  | 13 | 1,00669 | 0,99270 | 1,0108 |
+  | 24 | 1,00726 | 1,00074 | 1,0184 |
+
+  Le niveau normal dans la lecture (e) vaut **1,0216 an, et non 1** : 12ν(Γ − 1)/(1 − Γ^{−12}), vérifié par la formule et par la maquette.
+- **Constat 2 : le ratio sort de la bande pendant la sur-commande.** La fiche écrit « ratio de richesse au plus à +0,99 % de ν, donc dans la bande de ±2 % ». Dans la lecture du test zéro, le ratio tombe à **0,9514 au tour 2** et reste hors de ±2 % des tours 2 à 10. Il culmine à 1,0166 au tour 159. Le chiffre +0,99 % est la valeur du seul tour 13. Le critère 11 (c) étant une mesure, aucun verdict ne change.
+- **Constat 3 : hausse de taux.** Une hausse de i_D d'un point donne un plan **+0,66 %** au tour n + 1, et non +0,6 % comme l'écrit le § 3.N-9. Le terme de richesse ajoute 0,06 point.
+
+**Question ludique de la fiche.** Le bloc n'ouvre aucun levier. C'est pourtant par lui que trois leviers atteignent la demande : les transferts, les impôts et, à l'envers, le taux. Il porte aussi la mémoire des crises : l'épargne forcée, puis son déblocage. Les questions sont donc les suivantes :
+- un transfert agit-il dans l'année, avec une contrepartie visible ?
+- la richesse donne-t-elle une inertie que le joueur peut anticiper ?
+- un signe contre-intuitif (taux → consommation) reste-t-il explicable ?
+
+### 7.A, 7.B, 7.S et 7.R (brièvement)
+
+- **A : à revoir.** La cible d'Euler sans ancre fait dériver la consommation avant toute décision du joueur. Les trois strates touchent M22. A est la seule option qui donne au taux le signe intuitif, mais par un mécanisme réfuté (hypothèse n° 3). Je ne demande pas qu'il soit repris sans fait nouveau.
+- **B : à revoir.** Elle repose sur un plafond invisible (0,9 × encaisse, instabilité 15), un état caché et une branche itérative.
+- **S : à revoir avec α libres.** Le niveau normal de richesse dépendrait de la vitesse α_2 : un réglage de vitesse déplacerait ce que le joueur prend pour la norme. Avec α_1 dérivée de ν et de λ_V, S est identique à C.
+- **R1 : inadmissible.** Avec α_Y < 0, une hausse de revenu ferait baisser la consommation. C'est un comportement contre-intuitif sans récit possible.
+- **R2 : hors classement**, référence non mesurée. Son multiplicateur contemporain casserait la règle des délais (« décision au tour n, effet sur le secteur privé au tour n + 1 au plus tôt »).
+
+### 7.C Option C — cible de richesse avec terme de tendance
+
+- **Ce que voit le joueur.**
+  - **Transfert** de +1 % du revenu disponible aux tours 1 à 12 :
+    - au tour 1, la contrepartie est visible : les dépôts montent et le taux d'épargne passe de 3,97 à 4,92 % ;
+    - la consommation monte dès le tour 2 (+0,66 %) ;
+    - à la fin des transferts, en PE, elle retombe en un tour (+0,77 % au tour 13, +0,12 % au tour 14), puis s'éteint lentement (+0,09 % au tour 24).
+  - **Dépense publique** : effet sur la consommation au tour n + 2. Le premier tour où l'écart de C atteint 0,1 % est le tour 5 pour G +1 %.
+  - **Délais mécaniques** : transferts et impôts → consommation, 1 tour ; dépense publique → consommation, 2 tours ; taux → consommation, 1 tour. Ils sont **lisibles** et cohérents avec mes avis sur les fiches 3 (question 5) et 4 (question 2).
+- **Leviers.** Aucun levier propre. **Transferts et dépense publique ne sont pas redondants** (production supplémentaire en u.m. par u.m. publique, θ_H = 0,8) :
+
+  | Horizon | G | Transferts du même montant |
+  |---|---|---|
+  | 12 tours | 1,49 | 0,85 |
+  | 24 tours | 3,03 | 2,18 |
+  | 60 tours | 3,72 | 3,35 |
+  | 120 tours | 4,67 | 4,57 |
+
+  G est plus rapide. Les transferts rattrapent G sur une partie et laissent de la richesse aux ménages. C'est un vrai arbitrage, qui prendra son sens avec la dette (fiche 9) et le soutien politique (J7).
+- **Stratégies.** La règle n'ouvre aucune « remise à zéro gratuite ». En revanche, la persistance de l'activité dépend de la fermeture (risque ci-dessous).
+- **Risques.**
+  - *Persistance quasi permanente sans fuite* (réserve 5 de `macro`, #44). Après les transferts de +1 % du revenu disponible aux tours 1 à 12, l'écart de production vaut :
+
+    | θ_H | Tour 13 | Tour 36 | Tour 60 | Tour 240 |
+    |---|---|---|---|---|
+    | 0,8 | +1,43 % | +0,28 % | +0,21 % | +0,02 % |
+    | 1 | +2,15 % | +1,17 % | +1,01 % | +0,94 % |
+
+    Sous θ_H = 1, une relance d'un an laisserait un gain d'activité quasi permanent, sans signal ni coût à ce stade. Ce serait une stratégie dominante (relance ponctuelle) et, symétriquement, un piège (austérité ponctuelle). Ce n'est pas un défaut de la fiche 5 seule ; je demande un critère de jouabilité à la fermeture (condition 10).
+  - *Signe contre-intuitif du taux* (question 4).
+  - *Ratio de richesse trompeur à court terme* (constats 1 et 2) : il faut le doubler d'un signal (question 1).
+- **Verdict : lisible**, sous les conditions 1 à 10.
+
+### 7.D Variante à deux types
+
+Elle est identique à C au niveau agrégé. Sa valeur ludique n'apparaît qu'avec le transfert ciblé (question 6). **Lisible au J4**, sans objet au socle.
+
+### Réponses aux six questions de `macro`
+
+1. **ν et le taux d'épargne : lisibles, à condition de les restituer sous forme additive et de doubler le ratio d'un signal.**
+   - **ν** se lit bien : « les ménages détiennent un an de revenu en dépôts ».
+     - Son niveau normal doit être publié **dans la définition affichée** : 1,0216 an dans la lecture (e), et non 1. C'est le même principe que les stocks à 1,4152 mois (fiche 2) et la part salariale à 0,7989 (fiches 3 et 4).
+     - Le ratio est un indicateur **lent**, mauvais signal à court terme. Il baisse après un transfert (1,0216 → 1,0108 au tour 13) et tombe à 0,951 au tour 2 de la sur-commande, alors que les dépôts montent.
+     - Je demande donc un indicateur de plus, **l'écart à la richesse visée**, (V − V*)/C en mois de consommation, V* étant la cible que lit la règle. C'est le même choix que ξ à la fiche 4 : afficher la variable que lit la règle.
+     - Ce signal précurseur dit le sens de la consommation à venir. Pendant les transferts, −0,12 à −0,21 mois (EG) : « les ménages reconstituent leur épargne ». Après une sur-commande de 24 tours, +1,87 mois au tour 25 : « réserve d'épargne à dépenser, rattrapage à venir ».
+   - **Taux d'épargne : les deux, mais sous forme additive**, plutôt que deux taux à dénominateurs différents. Restituer le taux nominal, comptable et lié à ΔV, décomposé en points de revenu nominal :
+
+     | | π̄ = 2 % | π̄ = 10 % |
+     |---|---|---|
+     | Taux nominal | 3,97 % | 11,57 % |
+     | dont maintien de la richesse face à l'inflation | 1,98 | 9,57 |
+     | dont épargne réelle | 1,98 | 2,00 |
+
+     Sans décomposition, un joueur verrait en haute inflation des ménages qui « épargnent trois fois plus » et y lirait une crise de confiance qui n'existe pas. Décomposé, le chiffre rend visible la **taxe d'inflation payée par les déposants** : un perdant identifiable (O2) et une matière pour le soutien politique (J7).
+     - Le taux corrigé de Haig-Simons (2,025 % et 2,209 %) figure dans la définition, sans ligne propre.
+     - Le niveau normal est publié **à l'inflation mesurée**, 12γ^e·ν, pour qu'une hausse mécanique ne se lise pas comme un écart.
+2. **Demi-vie de 21 tours : perceptible et bien placée, mais là où il faut.**
+   - Sur une partie de 60 à 120 tours, un écart de richesse est divisé par 7 à 50 : le retour se voit dans la partie, sans être instantané.
+   - Pour λ_V × 0,5, la demi-vie est de 41 tours : le retour n'est vu qu'en partie longue. Pour λ_V × 2, elle est de 10 tours.
+   - Après un transfert ordinaire, la queue est minuscule (+0,09 % de C au tour 24, moins d'un cran à une décimale). L'inertie de la richesse ne se perçoit qu'après les **chocs de richesse importants** : épargne forcée, crise. C'est là qu'elle a un sens ludique (le rattrapage d'après-guerre).
+   - Ce que le joueur voit de la persistance d'activité dépend de la boucle conjointe (42,6 à 49 tours à θ_H = 0,8 ; environ 200 à 1 000 à θ_H = 1), d'où la condition 10.
+3. **Seuil du critère 12 (d) : entre 0,50 et 0,85**, en équilibre partiel du bloc ; détail plus bas.
+4. **Taux qui relève la consommation : à déclarer, à décomposer, et à mesurer en net avant d'ouvrir le levier.**
+   - L'ampleur n'est pas marginale. Avec ν = 1, un point de i_D vaut un transfert permanent de 1 % du revenu disponible, soit environ quatre fois G +1 % en demande. En PE, la consommation monte de +0,66 % au tour 2 et de +1,03 % au tour 120.
+   - Une hausse de 0,25 point fait monter C de 0,1 % dès le tour 2. Avec des intérêts versés de l'extérieur et sans compensation par les dividendes, C est à +0,85 % au tour 60 (EG).
+   - Le joueur qui relève le taux contre l'inflation verrait sa consommation monter. Sans explication, c'est contre-intuitif ; avec elle, c'est lisible : « vous enrichissez les épargnants ».
+   - Restitution :
+     - le revenu disponible décomposé par source (salaires, intérêts, dividendes, transferts, impôts), en contributions additives, avec la ligne « intérêts reçus » qui saute au tour même ;
+     - dans la fiche du levier (J4) : signe +, délai de 1 tour, gagnants (déposants), perdants (emprunteurs : entreprises, État) et contrepartie (charges d'intérêts).
+   - **Condition** : le signe **net** d'une hausse de taux sur la demande totale à 12 et 36 tours est mesuré et publié avec les fiches 6 à 9 avant que le levier de taux ne s'ouvre au J4. Les intérêts reçus sont en partie compensés par des dividendes plus faibles et par la charge de l'État.
+   - Le canal de substitution (variante PCEX2) relève de `macro` et `monnaie`. Je ne demande pas d'écart à la littérature.
+5. **Dimension de la sur-commande : le doublement pendant 12 tours ne suffit pas comme scénario adverse.**
+   - Les stocks absorbent les 8 premiers tours. Le rationnement ne dure que 4 tours, ce qui ne remplit pas le libellé du critère 11 (c) (« dépense demandée supérieure au disponible du pas pendant 12 tours »).
+   - Surtout, la demande non servie des ménages cesse **le tour même** où le choc cesse, si bien que le seuil de 12 tours n'est pas éprouvé.
+
+     | Scénario (prix figés, sans politique) | Rationnement | Service minimal | Dernière demande non servie des ménages | Demande non servie cumulée | Plan maximal | Plafond d'emploi actif jusqu'au tour |
+     |---|---|---|---|---|---|---|
+     | G ×2, 6 tours | aucun | 1 | — | 0 | +4,99 % | 61 |
+     | G ×1,5, 12 tours | aucun | 1 | — | 0 | +4,99 % | 62 |
+     | **G ×2, 12 tours** | tours 9 à 12 | 0,850 | tour 12 | 0,60 mois de C | +5,67 % | 134 |
+     | G ×2, 20 tours | tours 9 à 62 | 0,830 | tour 62 | 2,5 mois | +9,48 % | 206 |
+     | **G ×2, 24 tours** | tours 9 à 89 | 0,820 | tour 89 | 4,0 mois | +11,29 % | 234 |
+     | G ×3, 12 tours | tours 4 à 69 | 0,714 | tour 69 | 3,3 mois | +10,62 % | 214 |
+     | G ×2, 12 tours, θ_H = 1 | tours 8 à 47 | 0,842 | tour 47 | 0,7 mois | +5,86 % | ≥ 480 |
+     | G ×2, 24 tours, θ_H = 1 | tours 8 à ≥ 480 | 0,803 | jamais résorbée | — | +11,90 % | ≥ 480 |
+
+   - **Proposition** : deux dimensions, écrites avant l'essai.
+     - (a) **G ×2 pendant 12 tours**, pour la continuité avec la condition 6 de la fiche 2.
+     - (b) **G ×2 pendant 24 tours**, qui donne 16 tours de rationnement pendant le choc. Deux ans d'économie de guerre sont une stratégie plausible dans une partie, plus que le triplement. La durée éprouve l'accumulation de l'épargne forcée et le critère 11 (b) : le plan reste borné (+11,3 % au plus).
+   - Dans la maquette à prix figés, (b) **échoue** au seuil de 12 tours (demande non servie jusqu'au tour 89). Le seuil n'est tenable qu'avec les prix (M, fiche 4) et la politique (fiche 8) ; c'est ce que le test du J4 doit établir. Accord avec la réserve 8 de `macro`.
+   - **Gratuité de la sur-commande** (11 (d)). Sous rationnement proportionnel, gonfler la commande capte des biens sans payer la part non servie. Dans l'épisode (b), passer de ×2 à ×4 aux tours 13 à 24 augmente le volume servi à l'État de +49 % (4,12 → 6,15) et réduit celui des ménages de −23 % (8,60 → 6,64), avec un service tombé à 0,61. C'est une **priorité de fait, gratuite**. Le levier G du J4 ne doit pas la permettre sans coût ni affichage (condition 9).
+6. **Deux types : renvoi au J4 avec les transferts ciblés, d'accord.**
+   - Au socle, sans levier ciblé, D est indiscernable de C : l'afficher serait de la complexité sans mécanisme perçu.
+   - Au J4 :
+     - (i) D entre avec le levier ;
+     - (ii) un test vérifie qu'en l'absence de transfert ciblé la trajectoire est identique à C, à 1e−12 près ;
+     - (iii) le catalogue déclare que le transfert ciblé a une propension d'impact de 1, contre α_Y pour le transfert universel.
+   - Pour la stabilisation, le ciblé domine alors l'universel. C'est acceptable comme leçon, à condition que l'universel garde un autre rôle (richesse, soutien politique au J7) ; sinon un des deux leviers est redondant. Question à poser au J4.
+   - χ se calibre sur une source lue (KVW, environ 20 % du revenu, `macro`).
+
+### Indicateurs du tour (critère 12 (a))
+
+| Indicateur | Verdict | Motif ou point à clarifier |
+|---|---|---|
+| Consommation en volume (glissement sur 12 tours) | **lisible** | Niveau normal g dans la définition exacte |
+| Dépense demandée, exécutée, taux d'exécution | **lisible** | Condition 1 de la fiche 2 |
+| Demande non servie des ménages | **lisible** | Signal de crise, non précurseur (`CONTEXT.md`) ; avec elle, la **demande non servie cumulée de l'épisode** (épargne forcée), en mois de consommation |
+| Revenu disponible réel (glissement sur 12 tours) | **à clarifier** | Décomposé par source en contributions additives : c'est ce qui rend lisibles les transferts et le canal du taux (question 4) |
+| Taux d'épargne (12 tours) | **à clarifier** | Nominal, décomposé en maintien face à l'inflation et épargne réelle ; niveau normal à l'inflation mesurée (question 1) |
+| Richesse en années de revenu | **à clarifier** | Niveau normal dans la définition affichée (1,0216 an sous la lecture (e)) ; indicateur lent, non utilisable comme signal |
+| Écart à la richesse visée, (V − V*)/C en mois | **à ajouter** | Signal précurseur du sens de la consommation ; c'est la variable que lit la règle |
+| Composition dépôts / titres | **hors du tableau de bord** sous B_H ≡ 0 | Ligne figée à 0 ; elle revient avec une demande de titres (fiche 9 ou J6) |
+
+### Préférence motivée
+
+- **Ma préférence va à C**, comme celle de `macro`.
+  - **Mes motifs propres** :
+    - des délais d'un tour, uniformes ;
+    - une contrepartie visible le tour même (dépôts, taux d'épargne) ;
+    - un arbitrage réel entre transferts et dépense publique (vitesse contre persistance) ;
+    - une inertie de la richesse qui donne un rattrapage lisible après les crises ;
+    - un niveau normal ν exact, qu'aucun réglage de vitesse ne déplace.
+  - **Les motifs de `macro`**, que je ne juge pas : critères 3, 4, 5 et 14.
+- **Classement** : C = D au socle (D au J4, avec le ciblage) > S (α dérivées, sinon à revoir) > B > A. R1 est exclue ; R2 est hors classement.
+- **Lectures soumises au § 5** :
+  - (a) π^lu = glissement mesuré : **accord**. Une annonce ne déplace pas l'épargne le tour même, conformément à la fiche 3 (question 5).
+  - (b) Plafond en phase 2 : **accord**, sans enjeu ludique tant qu'il est inactif (marge d'environ 12 mois). S'il devient actif : mention « ménages à court de dépôts ».
+  - (c) B_H ≡ 0 : **accord au socle**. Qui détient la dette deviendra une question de jeu (crises O3, J4 à J7).
+  - (d) Canal rentier seul : **accepté au socle**, sous les conditions de la question 4.
+  - (e) Taux d'épargne : **les deux, sous forme additive** (question 1). C'est une nuance de forme, non un désaccord.
+- **Cohérence avec mes avis antérieurs.**
+  - Fiche 3, question 7, et fiche 4, question 8 : j'y demandais que la consommation des ménages porte le coût d'une baisse de ω* ou d'un gel des prix. La règle C le permet par Div_F, avec α_Y = 0,6 au tour n + 1. L'ampleur dépend de la distribution (fiche 6).
+  - La lecture (G) reste préférée (fiche 3, question 10).
+- **Coût en fidélité** : je ne demande aucun écart à la littérature. La décomposition du taux d'épargne, l'écart à la richesse visée et le revenu par source sont des choix de restitution. La borne haute du seuil (12 (d)) est un argument de jeu, signalé comme tel.
+
+### Conditions demandées au § 9 (restitution et essais)
+
+1. **Revenu disponible décomposé par source** (salaires, intérêts, dividendes, transferts, impôts), au tour et sur 12 tours, en contributions additives à sa variation.
+2. **Taux d'épargne nominal** sur 12 tours, décomposé en points de revenu nominal (maintien de la richesse face à l'inflation, épargne réelle), avec son niveau normal à l'inflation mesurée, 12γ^e·ν. Le taux de Haig-Simons figure dans la définition.
+3. **Richesse en années de revenu**, avec son niveau normal dans la définition affichée (1,0216 an à g = π̄ = 2 %, ν = 1, lecture (e)), publié par le script d'état stationnaire.
+4. **Écart à la richesse visée**, (V − V*)/C en mois de consommation, nommé « réserve d'épargne » s'il est positif et « épargne à reconstituer » s'il est négatif.
+5. **Demande non servie cumulée de l'épisode** (épargne forcée), en mois de consommation, à côté de la demande non servie du tour.
+6. **Composition dépôts / titres hors du tableau de bord** tant que B_H ≡ 0.
+7. **Tableau levier → indicateur → délai → contrepartie** (critère 12 (c)), avec le délai mécanique et le délai perçu (premier tour où l'écart de C atteint 0,1 % : 2 pour les transferts et les impôts, 5 pour G +1 %, 2 pour i_D +0,25 point). Le signe + du taux y est déclaré, avec gagnants et perdants.
+8. **Signe net du taux** sur la demande totale à 12 et 36 tours, mesuré avec les fiches 6 à 9 et publié avant l'ouverture du levier de taux (J4).
+9. **Sur-commande au J4**, avec prix et politique endogènes, en deux dimensions écrites avant l'essai : G ×2 pendant 12 tours et G ×2 pendant 24 tours. Sont publiés la part servie aux ménages, la demande non servie cumulée, le rattrapage, l'activité de la borne d'emploi (critère 8 (c)) et le volume servi à l'État. La gratuité de la commande non servie est soit supprimée, soit rendue visible et coûteuse (fiche 9, J4).
+10. **Persistance d'une impulsion de demande** (J3, à la fermeture de #44). Après une dépense publique ou des transferts aux tours 1 à 12, l'écart de production revient sous la moitié de son pic en au plus 60 tours, soit la fenêtre de partie la plus courte. Le critère est à écrire avant l'essai.
+    - θ_H = 0,8 : le seuil est tenu dans la maquette.
+    - θ_H = 1 : il ne l'est pas (+1,01 % au tour 60 pour un pic de +2,15 %).
+
+### Seuil proposé au mainteneur (critère 12 (d))
+
+- **Grandeur** : part = Σ_{t=1..12}(C_t − C̄_t) / Σ_{t=1..12} Tr_t, pour un transfert de 1 % du revenu disponible stationnaire aux tours 1 à 12.
+  - Elle est mesurée **en équilibre partiel du bloc** : revenus hors transfert et prix sur leur sentier, comme la boucle propre du critère 5 (b).
+  - Sans dimension (u.m. par u.m.) ; fenêtre : tours 1 à 12.
+  - Avec le délai d'un tour, elle ne peut dépasser 11/12 ≈ 0,917.
+- **Seuil** : **de 0,50 à 0,85, bornes comprises**, à la calibration proposée. Aux vitesses × 0,5 et × 2, les valeurs sont publiées sans être exigées.
+- **Mesures** (maquette indépendante, `jeu_men3.py` et `jeu_men4.py`) :
+
+  | Calibration | PE, tours 1 à 12 | PE, tours 1 à 24 | Impulsion : part dépensée dans les 12 tours suivant le versement | EG, tours 1 à 12 |
+  |---|---|---|---|---|
+  | ν = 1, λ_V = 0,4, i_D = 3 % | **0,628** | 0,786 | 0,744 | 1,007 |
+  | i_D = 0 | 0,624 | 0,776 | 0,737 | 1,000 |
+  | λ_V × 0,5 | 0,761 | 0,860 | 0,847 | 1,401 |
+  | λ_V × 2 | 0,421 | 0,755 | 0,650 | 0,530 |
+  | ν = 0,5 | 0,786 | 0,905 | 0,886 | 1,470 |
+  | ν = 2 | 0,310 | 0,543 | 0,457 | 0,372 |
+  | π̄ = 10 % | 0,614 | 0,759 | 0,723 | 0,983 |
+
+  - **Frontières sous C** : à ν = 1, la part vaut 0,516 à λ_V = 0,6, 0,466 à 0,7 et 0,836 à 0,1. Le seuil demande donc environ 0,08 ≤ λ_V ≤ 0,62 à ν = 1, et λ_V ≤ 0,26 environ à ν = 2.
+  - **EG** : la part dépasse 1 sous l'effet du multiplicateur. Elle dépend des fiches 6 et 9 et n'est que publiée au J4.
+- **Motifs.**
+  - **Borne basse, 0,50.** « Plus de la moitié d'un transfert est dépensée dans l'année » : en deçà, le transfert agit surtout après l'année de la décision, et le joueur ne le relie plus à son effet. Le levier se réduit alors à un placement en dépôts, dominé par G pour la stabilisation (G : 1,49 contre 0,85 par u.m. à 12 tours, même à 0,63). L'ordre de grandeur n'est pas contredit par la littérature lue par `macro` (50 à 90 % de dépense totale en trois mois, PSJM 2013), dont le jugement relève de `macro`.
+  - **Borne haute, 0,85.** Au-delà, le transfert devient une dépense publique décalée d'un tour : deux leviers pour une même chose. Le rattrapage disparaît, faute de richesse accumulée. À ν = 1, il y faut λ_V ≤ 0,08, soit une demi-vie de la richesse d'environ 100 tours, plus longue qu'une partie : un choc de richesse ne se résorberait plus pendant la partie. *Argument de jeu, signalé comme tel.*
+- **Transparence.** Je propose ce seuil après avoir mesuré les parts. Il ne départage pas les options : seule C a une forme fermée tenue. Il contraint la calibration du J3 (νλ_V), et son rôle est d'empêcher une calibration qui rendrait le transfert muet dans l'année ou identique à G.
+- **Vérification au J3** : appel direct de la fonction du bloc en équilibre partiel, sans le programme entier (`CLAUDE.md`, « Règles des tests »).
 
 ## 8. Décision du mainteneur
 
@@ -745,3 +960,4 @@ Non instruit.
 | 03/10/2026 | Ouverture (issue #41) ; § 1 et § 2 proposés | `macro` ; session principale |
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, bouclage avec la fiche 9 en risque assumé, B_H ≡ 0 admise, ménage représentatif et variante à deux types, `monnaie` consulté aussi sur l'inflation, Q11 au J4 ; issue #41) | mainteneur |
 | 03/10/2026 | Instruction déposée (§ 3 à 5), partielle (boucle conjointe avec SN, C et M et état conjoint avec la fiche 6 non mesurés ; une relance ciblée après la limite de tours) : options A, B, S, C, R, D ; recommandation C (cible de richesse avec terme de tendance, B_H ≡ 0) ; § 1.1 aligné sur l'ADR 0008 | `macro` ; session principale |
+| 03/10/2026 | Avis de `jeu` (§ 7) : préférence C ; seuil du critère 12 (d) proposé (part d'un transfert dépensée en 12 tours entre 0,50 et 0,85, en équilibre partiel ; 0,628 à la calibration) ; double dimension de la sur-commande (G ×2 pendant 12 et 24 tours) ; conditions de restitution ; trois constats chiffrés transmis à `macro` | `jeu` |
