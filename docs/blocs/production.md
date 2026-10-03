@@ -136,7 +136,7 @@ Sont des **exigences** (ils peuvent écarter une option) : 1, 3, 4, 5, 6, 7, 8, 
 
 ### Amendements adoptés
 
-Aucun à ce jour.
+- **Amendement de notation (03/10/2026, visa du mainteneur)** : dans le critère 3 et au § 9.6, « prix au taux annuel π̄ » et « inflation π̄/n_a » se lisent « prix en hausse de (1 + π̄)^{1/n_a} − 1 par pas », π̄ étant le glissement annuel stationnaire de `sec:cadre-calendrier`. Seuils inchangés ; aucun verdict antérieur. Origine : validation de fond de `sec:production` par `macro`.
 
 ## 3. Options
 
@@ -163,8 +163,8 @@ Aucun à ce jour.
 | M3 | `vp_c.py` | Valeurs propres du socle 3.N, demande exogène | 3.N-8 |
 | M4 | `met.py`, `frontiere.py` et une commande en ligne | Socle avec demande induite (complément hors critère) : simulation d'impulsion, frontière de stabilité, variante avec ajustement partiel de l'emploi | 3.N-8 |
 | M5 | `exemple.py` | Exemple daté : dépense publique +1 % pendant 12 tours | 3.N-8, critère 11 |
-| M6 | `valo.py` | Valorisation des stocks sur un pas où prix et coûts varient ; rapports stationnaires ρ_IN et ρ_K ; vérification par simulation | 3.N-4 |
-| M7 | commande en ligne | Dépendance de ρ_IN et ρ_K à n_a | 3.N-4 |
+| M6 | `valo.py` | Valorisation des stocks sur un pas où prix et coûts varient ; rapports stationnaires ρ̄_IN et ρ̄_K ; vérification par simulation | 3.N-4 |
+| M7 | commande en ligne | Dépendance de ρ̄_IN et ρ̄_K à n_a | 3.N-4 |
 | M8 | `cout.py` | Maquette du socle 3.N en Python pur, coût d'un pas pour J = 1, 2, 4, 8 | 3.N-11 |
 | M9 | commande en ligne | Cas à la main : demande supérieure de 10 % au disponible | 3.N-3 |
 | M10 | commande en ligne | Règle de Godley et Lavoie « littérale » sous croissance ; contre-épreuve du socle | 3.N-2 |
@@ -435,7 +435,7 @@ Le socle reprend la forme du modèle DIS de Godley et Lavoie (2007, chap. 9 ; é
 #### 3.N-1 Technique (critères 3, 7, 13)
 
 - **Leontief en travail.** La production requiert N = y/pr travailleurs.
-  - Statut : dérivée, pour une technique à coefficients fixes déclarée comme telle (critère 7 (a)).
+  - Statut : choix de conception pour la technique à coefficients fixes ; N4 et N5 en sont dérivées (critère 7 (a)).
   - Provenance : Godley et Lavoie, modèle DIS (N = y/pr).
 - **Productivité (N9).**
   - Règle : pr_{j,t+1} = pr_{j,t} (1 + g_pr/n_a), tendance exogène au socle, variable d'état (un choc de niveau, jalon J5, n'exigera pas de réécriture).
@@ -508,16 +508,16 @@ Quatre règles de valorisation sont comparées sur un pas où coûts et prix var
 | Prix de vente (v2.0, l. 1019) | −6,5 | 132,1 par les flux, contre 175,5 au bilan (l. 1709) | — | réévaluation non tracée ; écartée |
 
 **Rapports stationnaires** (M6, M7), sous la croissance g et l'inflation π̄ des coûts :
-- **ρ_IN** = IN/(UC · IN^vol) = 1/[1 + (π̄/n_a)(1 + n_a σ/(1 + gσ))]. Pour g = 2 % et σ = 1,4 mois : 0,996021 à π̄ = 2 %, 0,980418 à 10 %, 0,909203 à 50 % (simulations identiques). Par ailleurs IN/(p · IN^vol) = ρ_IN/(1 + μ), où μ est la marge (fiche 4).
-- **ΔIN** = [(1 + g/n_a)(1 + π̄/n_a) − 1] · IN, soit 0,33361 % de IN par pas à g = π̄ = 2 %.
-- **Dépendance déclarée à n_a** (critère 3 (c)) : ρ_IN vaut 0,992725, 0,996021, 0,997295 et 0,997677 pour n_a = 4, 12, 52 et n_a → ∞. C'est un écart d'ordre π̄/n_a, qui disparaît sous la règle de Godley et Lavoie (ρ = 1). Les ratios du critère 3 (a) ne dépendent pas de n_a.
+- **ρ̄_IN** = IN/(UC · IN^vol) = 1/[1 + ((1 + π̄)^{1/n_a} − 1)(1 + n_a σ/(1 + gσ))], π̄ étant le glissement annuel stationnaire (`sec:cadre-calendrier`). Pour g = 2 % et σ = 1,4 mois : 0,996057 à π̄ = 2 %, 0,981246 à 10 %, 0,923901 à 50 % (simulations identiques). Par ailleurs IN/(p · IN^vol) = ρ̄_IN/(1 + μ), où μ est la marge (fiche 4).
+- **ΔIN** = [(1 + g/n_a)(1 + π̄)^{1/n_a} − 1] · IN, soit 0,33210 % de IN par pas à g = π̄ = 2 %.
+- **Dépendance déclarée à n_a** (critère 3 (c)) : ρ̄_IN vaut 0,992779, 0,996057, 0,997321 et 0,997700 pour n_a = 4, 12, 52 et n_a → ∞. C'est un écart d'ordre (1 + π̄)^{1/n_a} − 1, qui disparaît sous la règle de Godley et Lavoie (ρ = 1). Les ratios du critère 3 (a) ne dépendent pas de n_a.
 
 #### 3.N-5 Volume du capital et emploi : proposition sur Q4
 
 - **Volume du capital : au bloc 2.**
   - Règle (N10, phase 5, dérivée) : K^vol_{j,t+1} = (1 − δ/n_a) K^vol_{j,t} + I^vol_{j,t}, où I^vol est le volume livré après rationnement et δ le δ du cadre.
   - Motifs : le bloc 2 exécute les livraisons et lit le capital pour la capacité. Le bloc 6 décide l'investissement visé (phase 2), lit K^vol à l'ouverture et écrit les lignes 3 et 8 en valeur comptable.
-  - **Constat transmis à la fiche 6** : K est tenu en valeur comptable et la ligne 8 vaut δK/n_a sur cette valeur, d'où K/(p K^vol) = (g + δ)/[n_a((1 + π̄/n_a)(1 + g/n_a) − 1) + δ]. Ce rapport vaut 0,7775 pour g = π̄ = 2 % et δ = 5 %, 1,0000 pour π̄ = 0 et 0,4114 pour π̄ = 10 % (M6, simulations identiques). L'amortissement comptable sous-estime alors l'amortissement au prix courant d'environ 22 % à π̄ = 2 %. Le K/Y d'O1 doit déclarer s'il est comptable ou en volume valorisé. Ce sont les instabilités 10 et 11 qui guettent une correction ad hoc.
+  - **Constat transmis à la fiche 6** : K est tenu en valeur comptable et la ligne 8 vaut δK/n_a sur cette valeur, d'où K/(p K^vol) = (g + δ)/[n_a((1 + π̄)^{1/n_a}(1 + g/n_a) − 1) + δ]. Ce rapport, noté ρ̄_K, vaut 0,7791 pour g = π̄ = 2 % et δ = 5 %, 1,0000 pour π̄ = 0 et 0,4221 pour π̄ = 10 % (M6, simulations identiques). L'amortissement comptable sous-estime alors l'amortissement au prix courant d'environ 22 % à π̄ = 2 %. Le K/Y d'O1 doit déclarer s'il est comptable ou en volume valorisé. Ce sont les instabilités 10 et 11 qui guettent une correction ad hoc.
 - **Ajustement de l'emploi : au bloc 3.** Le bloc 2 transmet N* (phase 2) et lit N (phase 4). Le bloc 3 porte la rétention de main-d'œuvre éventuelle, la contrainte d'offre de travail et la masse salariale (ligne 5).
   - Si la fiche 3 retient un ajustement partiel de vitesse λ_N, la boucle redevient du second ordre en hausse (3.N-8).
   - Conséquence sur le contrat des phases : 3.N-6, lecture (b).
@@ -609,7 +609,7 @@ Les autres bornes du socle relèvent d'autres blocs : l'emploi au plus égal à 
 - **Sous-colonne courante** : C + G + I + ΔIN − WB − T_F − δK/n_a − i_L L/n_a + i_D D_F/n_a − Div_F.
   - Avec la ligne 4 de 3.N-4 : (ventes − cm·v) − (WB − UC·y) − T_F − δK/n_a − intérêts nets − Div_F, soit les profits non distribués FU.
 - **Sous-colonne capital** : −FU.
-- **Valeur stationnaire** : FU = ΔV_F = [(1 + g/n_a)(1 + π̄/n_a) − 1] V_F, soit 0,33361 % de V_F par pas à g = π̄ = 2 %, non nul dès que V_F > 0. C'est le (γ/n_a) V_F attendu, au terme croisé près.
+- **Valeur stationnaire** : FU = ΔV_F = [(1 + g/n_a)(1 + π̄)^{1/n_a} − 1] V_F, soit 0,33210 % de V_F par pas à g = π̄ = 2 %, non nul dès que V_F > 0. C'est le (γ/n_a) V_F attendu, au terme croisé près.
 - Aucun flux du socle ne présuppose l'issue de Q2 (fiche 6).
 
 #### 3.N-11 État stationnaire résolu et coût (critères 3, 9)
@@ -619,12 +619,12 @@ Les autres bornes du socle relèvent d'autres blocs : l'emploi au plus égal à 
 - stock d'ouverture / ventes du pas = n_a σ, soit 1,4 pour σ = 1,4/12 an ;
 - y/v = 1 + gσ, soit 1,002333 ;
 - productivité / tendance = 1 ;
-- tu* = κ/(K^vol/(n_a y)), conditionnel au K/Y de la fiche 6 (tu* = 0,8 si K^vol/(n_a y) = 3 ans et κ = 2,4 ans) ;
-- ρ_IN, ΔIN et ρ_K : 3.N-4 et 3.N-5.
+- t̄u = κ/(K^vol/(n_a y)), conditionnel au K/Y de la fiche 6 (t̄u = 0,8 si K^vol/(n_a y) = 3 ans et κ = 2,4 ans) ;
+- ρ̄_IN, ΔIN et ρ̄_K : 3.N-4 et 3.N-5.
 
-Ni λ_v, ni λ_IN, ni la durée du pas n'entrent dans ces formes. Seuls ρ_IN et ρ_K dépendent de n_a, à l'ordre π̄/n_a (déclaré).
+Ni λ_v, ni λ_IN, ni la durée du pas n'entrent dans ces formes. Seuls ρ̄_IN et ρ̄_K dépendent de n_a, à l'ordre (1 + π̄)^{1/n_a} − 1 (déclaré).
 
-**État initial résolu, sans préparation** : à partir de v_0, résolu par le socle, on pose y_0 = v_0(1 + gσ), v^e_0 = v_0, IN^vol_0 = n_a σ v_0, IN_0 = ρ_IN UC_0 IN^vol_0, pr_0 par normalisation, K^vol_0 = n_a κ y_0/tu* (avec tu* de la fiche 6).
+**État initial résolu, sans préparation** : à partir de v_0, résolu par le socle, on pose y_0 = v_0(1 + gσ), v^e_0 = v_0, IN^vol_0 = n_a σ v_0, IN_0 = ρ̄_IN UC_0 IN^vol_0, pr_0 par normalisation, K^vol_0 = n_a κ y_0/t̄u (avec t̄u de la fiche 6).
 
 **Croissance (critère 3 (d)).**
 - Source de g : g_pr (bloc 2) et g_N (blocs 3 et 5).
@@ -671,7 +671,7 @@ Les « repères observés » du tableau de la v1.5 (l. 2019–2033) sont sans so
    - La production et l'emploi répondent au tour suivant : 1 tour, ou davantage si le bloc 3 retient un retard.
    - Il n'y a pas de cycle propre ; un cycle amorti de 3 à 8 ans apparaît si la demande est induite.
    - Indicateurs : un seul indice de production, le taux d'utilisation, les stocks en mois et la demande non servie.
-9. **Empreinte.** Quatre variables d'état : v^e (u.v. par pas, valeur stationnaire v_0) ; IN^vol (u.v., n_a σ v_0) ; pr (normalisation) ; K^vol (n_a κ y_0/tu*). S'y ajoutent les postes IN et K du cadre. Aucun historique, aucun drapeau de mode, aucun tirage aléatoire.
+9. **Empreinte.** Quatre variables d'état : v^e (u.v. par pas, valeur stationnaire v_0) ; IN^vol (u.v., n_a σ v_0) ; pr (normalisation) ; K^vol (n_a κ y_0/t̄u). S'y ajoutent les postes IN et K du cadre. Aucun historique, aucun drapeau de mode, aucun tirage aléatoire.
 
 ### 3.D Option D — socle 3.N, J = 2 (consommation et équipement)
 
@@ -707,12 +707,12 @@ Renvois : 3.A-k et 3.B-k désignent la rubrique k ; 3.N-k la sous-section du soc
 | Critère | A. v1.5 | B. v2.0 | C. socle, J = 1 | D. socle, J = 2 |
 |---|---|---|---|---|
 | 1 (a) Lignes, monnaie | Pas de matrice (3.A-7) ; loi des stocks non conservatrice telle qu'écrite (3.A-6 (i)) | Loi des stocks conservatrice ; pas de matrice (3.B-7) | Oui : lignes 1 à 4, aucune ligne nouvelle (3.C-7) | Oui (3.D-2) |
-| 1 (b) Volume et valeur | Non : ΔIN non défini (3.A-6 (ii)) | Non : réévaluation implicite au prix courant (3.B-6 (iii)) | Oui : coût moyen pondéré, ρ_IN explicite (3.N-4) | Oui (3.N-4) |
+| 1 (b) Volume et valeur | Non : ΔIN non défini (3.A-6 (ii)) | Non : réévaluation implicite au prix courant (3.B-6 (iii)) | Oui : coût moyen pondéré, ρ̄_IN explicite (3.N-4) | Oui (3.N-4) |
 | 1 (c) Secteurs | Bilan par j, sans matrice | Grand livre par j | Sans objet | Colonne consolidée et comptes de production par j (3.D-2) |
-| 2 Sous-colonnes (mesure) | Non calculable (3.A-7) | Écart égal à la réévaluation (3.B-7) | FU = 0,33361 % de V_F par pas (3.N-10) | Idem |
+| 2 Sous-colonnes (mesure) | Non calculable (3.A-7) | Écart égal à la réévaluation (3.B-7) | FU = 0,33210 % de V_F par pas (3.N-10) | Idem |
 | 3 (a) Formes fermées | Ratio des stocks calculable, mais dépend des vitesses ; utilisation dégénérée (3.A-3) | Idem ; utilisation conditionnelle aux prix (3.B-3) | Oui (3.N-11) | Oui, plus le prix relatif (3.D-3) |
 | 3 (b) État initial résolu | Non : transitoire de 3 à 5 ans (R) (3.A-3) | Non : état initial hors état stationnaire de sa propre règle, D1 préparé (3.B-3) | Oui (3.N-11) | Oui |
-| 3 (c) Indépendance de n_a | λ_L non transposable (3.A-6 (iv)) | Non vérifiée | Oui ; ρ_IN et ρ_K dépendent de n_a à l'ordre π̄/n_a, déclaré (3.N-4) | Idem |
+| 3 (c) Indépendance de n_a | λ_L non transposable (3.A-6 (iv)) | Non vérifiée | Oui ; ρ̄_IN et ρ̄_K dépendent de n_a à l'ordre (1 + π̄)^{1/n_a} − 1, déclaré (3.N-4) | Idem |
 | 3 (d) Source et conversion de g | g^e non déclaré | g^e = g0 ≠ croissance propre (3.B-3) | g dérivé, conversion linéaire chiffrée (3.N-11) | Idem |
 | 4 (a) Vitesses et état d'arrivée | **Non** : environ 5 % d'écart entre les branches ×0,5 et ×2 (3.A-3) | **Non** : environ 9 % d'écart (3.B-3) | Oui : 1,400000000000 dans toutes les branches (3.N-2) | Oui |
 | 4 (b) Intégrateur sans ancre | Non relevé | Non relevé | Aucun | Aucun |
@@ -745,7 +745,7 @@ Classement : C > D > B > A.
 
 Critère par critère :
 - **1 et 4 (exigences)** : A et B sont écartés. La règle de production visée qu'ils partagent fait dépendre le ratio stocks / ventes des vitesses (environ 5 % et 9 % d'écart entre les branches) ; A n'a pas de valorisation des stocks et B réévalue sans ligne. Le socle corrige le défaut par deux termes (tendance et croissance de la cible) dont l'effet est exact (M10).
-- **3** : seul le socle a un état initial résolu en forme fermée. Sa seule dépendance à n_a (ρ_IN, ordre π̄/n_a) est déclarée.
+- **3** : seul le socle a un état initial résolu en forme fermée. Sa seule dépendance à n_a (ρ̄_IN, ordre (1 + π̄)^{1/n_a} − 1) est déclarée.
 - **5** : sans demande induite, le socle n'a pas de cycle propre ; B a un cycle propre de 6 ans et un stock gelé à l'état stationnaire.
 - **7** : le socle n'a aucune borne active, contre 9 bornes pour B.
 - **10** (règle d'arbitrage, principe de simplicité) : à exigences comptables égales, C et D se valent sur les identités. D n'ajoute aucune identité vérifiable et un seul mécanisme perçu, l'accélérateur visible dans l'équipement. Il paie ce mécanisme d'un prix relatif à stabiliser, précisément la zone des instabilités 9 à 11 et 14 et de la dérive de 12,8 % de D1, sans aucun levier du socle qui l'exploite. Les secteurs arrivent aux jalons J5 et J6 avec leurs mécanismes propres.
@@ -760,7 +760,7 @@ Critère par critère :
 
 **Lectures possibles, à trancher par le mainteneur.**
 - **(a) Valorisation des stocks.**
-  - (i) Coût moyen pondéré : conforme à la l. 520 de `sec:cadre`, gain réalisé à la vente, ρ_IN = 0,996021, faible dépendance à n_a.
+  - (i) Coût moyen pondéré : conforme à la l. 520 de `sec:cadre`, gain réalisé à la vente, ρ̄_IN = 0,996057, faible dépendance à n_a.
   - (ii) Coût unitaire courant de Godley et Lavoie : ρ = 1 exactement et forme de la littérature, mais gain de détention latent inscrit dans la ligne 4 (+4,2 sur 138,6 dans l'exemple de 3.N-4). C'est une réévaluation dans une ligne de transaction : décision citant M22.
   - Avis : (i).
 - **(b) Ordre interne de la phase 4.**
@@ -793,7 +793,7 @@ Critère par critère :
 **Constats transmis aux autres fiches.**
 - **Fiche 3** : ordre de la phase 4 ; contrainte d'offre de travail ; un retard d'emploi éventuel rend la boucle du second ordre (module √(1 − λ_N/n_a)).
 - **Fiche 4** : UC est partagé ; sous J = 1, la boucle de l'amortissement dans le prix devient un point fixe scalaire.
-- **Fiche 6** : ρ_K = 0,7775 ; définition de K/Y ; Q2.
+- **Fiche 6** : ρ̄_K = 0,7791 ; définition de K/Y ; Q2.
 
 ## 6. Avis de l'expert consulté
 
@@ -817,7 +817,7 @@ Sans objet, parce que `docs/blocs/README.md` § 1 ne désigne pour ce bloc aucun
   - Le stock en mois de ventes effectives vaut 1,182 au tour 1, 0,706 au tour 12 et 0,208 au tour 24.
   - La **première demande non servie apparaît au tour 30** (3,82 %, puis 4,08 %).
   - Avec une demande en hausse de 6 % seulement, aucune demande non servie n'apparaît en 121 tours.
-- **Taux d'utilisation.** Avec tu* = 0,8 et un emploi au plafond depuis 5 % de chômage, tu = 0,842. Après 48 tours sans investissement (δ = 5 %), K^vol vaut 0,818 fois sa valeur initiale et tu = 0,978.
+- **Taux d'utilisation.** Avec t̄u = 0,8 et un emploi au plafond depuis 5 % de chômage, tu = 0,842. Après 48 tours sans investissement (δ = 5 %), K^vol vaut 0,818 fois sa valeur initiale et tu = 0,978.
 - **Valorisation.** Écart à l'état stationnaire entre le résultat sous le coût courant (lecture (a)(ii)) et sous le coût moyen pondéré (a)(i), avec une marge μ = 0,25 (**hypothèse**) : 0,007 % de la marge brute à π̄ = 2 %, 0,110 % à 10 %, 2,207 % à 50 %.
 
 **Question ludique de la fiche.** Le bloc n'ouvre aucun levier. Il fixe trois choses :
@@ -964,7 +964,7 @@ La question est donc : chaque grandeur affichée a-t-elle un sens, une cause que
 
 **Conditions demandées au § 9** (aucune n'est une réserve sur C) :
 1. **Restitution au tour** de la ligne d'identité : demande adressée, ventes par acheteur, production, variation des stocks en % des ventes, demande non servie par acheteur. Pour l'État : dépense demandée / exécutée.
-2. **Niveaux normaux** affichés dans la définition exacte de l'indicateur (stocks : 1,4152 mois en restitution ; utilisation : tu*).
+2. **Niveaux normaux** affichés dans la définition exacte de l'indicateur (stocks : 1,4152 mois en restitution ; utilisation : t̄u).
 3. **Production visée non réalisée**, (y* − y)/y*, ajoutée aux grandeurs restituées du § 1.1, comme signal précurseur de pénurie.
 4. **Taux d'utilisation** : la fiche 6 (ou la fiche 4) dit ce qu'il déclenche ; sinon, il sort de la restitution.
 5. **Fiche 3** : retard d'emploi par ajustement partiel préféré par `jeu`, avec la mesure de la boucle combinée emploi – stocks par `macro`.
@@ -1030,7 +1030,7 @@ Cinq paramètres, à porter dans `tab:calibration` au jalon J1, sans `\code{}` a
 | λ_IN | `vitesse_correction_stocks` | 1,5 (indicative, J3) | par an | M24 ; 3.N-8 | `eq:production-visee` |
 | σ | `stock_cible` | 1,4/12 ≈ 0,1167 (indicative) | années de ventes, restituées en mois (12σ) | ordre de grandeur Census MTIS 2025, 1,36 à 1,39 mois (extraits ; source primaire non lue) | `eq:production-stock-cible` |
 | g_pr | `croissance_productivite` | à fixer avec O1 (J3) | par an, conversion linéaire | M24, lecture (f) | `eq:production-productivite` |
-| κ | `capital_par_production_normale` | à fixer avec la fiche 6 (tu* ≈ 0,8 visé ; G.17, 79,4 % sur 1972–2025, extrait non lu) | années | M24, lecture (e) | `eq:production-capacite` |
+| κ | `capital_par_production_normale` | à fixer avec la fiche 6 (t̄u ≈ 0,8 visé ; G.17, 79,4 % sur 1972–2025, extrait non lu) | années | M24, lecture (e) | `eq:production-capacite` |
 
 **Conditions déclarées, contrôlées au chargement, jamais par écrêtage** : λ_v ≤ n_a et λ_IN ≤ n_a. Le domaine de stabilité en boucle fermée (réserve 3 du § 5) se vérifie au J3 par le test 9.6.
 
@@ -1038,7 +1038,7 @@ Cinq paramètres, à porter dans `tab:calibration` au jalon J1, sans `\code{}` a
 - **J** : c'est la dimension du schéma d'état, fixée à 1 par M24 ;
 - **δ** : paramètre du cadre (ligne 8), dont la valeur relève de la fiche 6 ;
 - **g** : dérivé, g = n_a[(1 + g_pr/n_a)(1 + g_N/n_a) − 1], où g_N vient des blocs 3 et 5 ;
-- **ρ_IN, ρ_K et tu\*** : grandeurs de l'état stationnaire ;
+- **ρ̄_IN, ρ̄_K et t̄u** : grandeurs de l'état stationnaire ;
 - les niveaux normaux restitués (9.5) et la croissance effective de 2,0184 % pour g_pr = 2 %, publiés par le script d'état stationnaire (M19).
 
 ### 9.3 Ce qui reste paramétrable après la décision
@@ -1065,7 +1065,7 @@ Cinq paramètres, à porter dans `tab:calibration` au jalon J1, sans `\code{}` a
 
 | Phase | Lit | Écrit, ou propose au noyau |
 |---|---|---|
-| 2 | ouverture : v^e, IN^vol, IN, pr, K^vol | y*, IN^vol*, N* (vers le bloc 3) ; aucun autre plan de la phase 2 n'est lu |
+| 2 | ouverture : v^e, IN^vol, pr | y*, IN^vol*, N* (vers le bloc 3) ; aucun autre plan de la phase 2 n'est lu |
 | 4 | phase 2 ; N_t, écrit **avant lui** par le bloc 3 dans la même phase (ordre « travail, puis production », M24 (b)) | y, y^cap, tu ; production visée non réalisée (restituée) |
 | 5 | plans de demande des ménages, de l'État et des entreprises, en u.m. (phase 2) ; prix p_t du bloc 4, écrit **avant lui** ; W_t (phase 1) ; y (phase 4) | v, taux de service v/d, volumes servis par acheteur, d − v par acheteur ; **ligne 4** (ΔIN) ; IN^vol_{t+1}, K^vol_{t+1}, v^e_{t+1}, pr_{t+1} |
 
@@ -1112,7 +1112,7 @@ Aucune ligne nouvelle ; `tab:matrice-flux` et `tab:portes-monnaie` sont inchang�
 2. **Niveaux normaux** affichés dans la définition exacte de l'indicateur.
    *Mise en œuvre* :
    - Stocks restitués : niveau normal = n_a σ × n_a(1 + g/n_a)/Σ_{u=0}^{n_a−1}(1 + g/n_a)^{−u}, en mois. Cela fait **1,4152 mois** pour σ = 1,4/12 et g = 2 % (facteur 1,0109 de M22, lecture (e) ; recalculé le 02/10/2026 par `uv run python`, 1,0108664 × 1,4 = 1,4152130), contre 1,4 dans la définition du test zéro.
-   - Utilisation : tu\*.
+   - Utilisation : t̄u.
    - Production : glissement stationnaire de 2,0184 %.
    - Les trois valeurs sont publiées par le script d'état stationnaire (J3) et affichées au J4.
 3. **Production visée non réalisée**, (y* − y)/y*, ajoutée aux grandeurs restituées comme signal précurseur de pénurie.
@@ -1132,7 +1132,7 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
 
 | Jalon | Test | Propriété | Seuil |
 |---|---|---|---|
-| J3 | État stationnaire | Un pas sans choc depuis l'état résolu laisse v^e, IN^vol, IN, pr et K^vol sur leur trajectoire (croissance g/n_a, inflation π̄/n_a) ; IN/(UC·IN^vol) = ρ_IN | 1e−10 relatif |
+| J3 | État stationnaire | Un pas sans choc depuis l'état résolu laisse v^e, IN^vol, IN, pr et K^vol sur leur trajectoire (croissance g/n_a, inflation π̄/n_a) ; IN/(UC·IN^vol) = ρ̄_IN | 1e−10 relatif |
 | J3 | Vitesses (critère 4) | Choc G +1 % pendant 12 tours ; branches λ_v, λ_IN × 0,5 et × 2 : écart des ratios stocks / ventes et y/v | ≤ 1e−6 après 720 pas |
 | J3 | Boucle propre | Valeurs propres du bloc, demande exogène : réelles, dans ]0, 1[ (0,75 et 0,8735 à la calibration) | module < 1 pour la calibration et les vitesses × 0,5 et × 2 |
 | J3 | Boucle fermée | Rayon spectral de la linéarisation du socle complet | < 1 pour la calibration et les vitesses × 0,5 et × 2 ; si m > 0,8 ou σ > 2 mois, recalibration avant l'essai |
@@ -1144,7 +1144,7 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
 | J3 | Empreinte | Quatre variables d'état par secteur (J = 1 : 4), aucun historique, aucun tirage aléatoire | décompte exact |
 | J3 | Coût | Part du bloc dans `tests/invariants/test_budget.py` | ≤ 0,48 ms par pays-pas |
 | J4 | O2 (condition 6 de `jeu`) | G +1 % et +5 % du flux mensuel : effet de signe attendu au tour n sur les ventes et les stocks, au tour n + 1 sur la production ; scénario adverse de sur-commande publique sous pénurie (éviction des ménages visible) | signe et date exacts |
-| J4 | Restitution | Niveaux normaux égaux aux valeurs publiées du script d'état stationnaire (1,4152 mois ; tu\* ; 2,0184 %) | 1e−9 relatif |
+| J4 | Restitution | Niveaux normaux égaux aux valeurs publiées du script d'état stationnaire (1,4152 mois ; t̄u ; 2,0184 %) | 1e−9 relatif |
 | maintenant | Remesure S1 (9.7) | Critères (i) et (ii) | verdicts publiés au § 3.B-4, sans effet sur M24 |
 
 **Précision sur le § 3.N-8 (a)** : sous J = 1, les instabilités 1 et 9, ainsi que les parties « équipement » des 10, 11 et 14, n'ont pas d'objet, puisqu'il n'y a ni construction ni prix relatif du capital. En revanche, la règle de prix sans terme de demande (14) et l'amortissement dans le coût (10 et 11) restent des risques des fiches 4 et 6. `tab:instabilites` ne doit donc pas les dire « écartées par construction ».
@@ -1170,6 +1170,7 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
 - **Critère (i)** : branche nominale ; dans **chacun** des secteurs consommation (2) et équipement (3), Sinv/(s*·Q̄) < 0,99 et part des semaines avec excess > 0 inférieure à 5 %. La prédiction informative, issue du bloc seul (3.B-3), est d'environ 0,93 ; elle n'entre pas dans le seuil.
 - **Critère (ii)** : pour chaque vitesse, écart relatif |r(× 2) − r(× 0,5)|/|r(× 0,5)| > 1e−6, avec r = Sinv/Q sur la même fenêtre, dans **chacun** des deux secteurs. Le verdict global exige les deux vitesses.
 - **Statut du fait** : « remesuré le <date>, profil par défaut, non D1 ». Verdicts publiés quel que soit le résultat, au § 3.B-4, par une ligne datée. Une branche non exécutable est déclarée « non remesurable ».
+- *Précision prospective du 03/10/2026 (constat m1 de l'audit, revue finale ; décision du mainteneur sur avis de `macro`)* : la formule du critère (ii) n'est pas définie pour r(× 0,5) = 0 ; l'écart vaut 0 si r(× 2) = 0 aussi, sinon le critère est « non évaluable » pour ce secteur. Sans effet sur les verdicts publiés (r de 3,418 à 8,077), qui restent publiés tels quels.
 
 ### 9.8 Contrats partagés touchés, surface de spécification, constats transmis
 
@@ -1189,7 +1190,7 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
   - valorisation au coût moyen pondéré ;
   - rationnement proportionnel ;
   - phases et ordre interne des phases 4 et 5 ;
-  - état stationnaire en forme fermée : v^e = v, IN^vol = n_a σ v, y/v = 1 + gσ, ρ_IN, ΔIN, tu\*, avec la dépendance de ρ_IN à n_a déclarée ;
+  - état stationnaire en forme fermée : v^e = v, IN^vol = n_a σ v, y/v = 1 + gσ, ρ̄_IN, ΔIN, t̄u, avec la dépendance de ρ̄_IN à n_a déclarée ;
   - conditions déclarées (λ ≤ n_a, domaine de boucle fermée) ;
   - grandeurs restituées du tableau 9.4 ;
   - un encadré `portee` : J = 1 ; pas d'intrants ; pas de levier d'offre (#37) ; capacité sans plafond ; emploi au bloc 3 ; volume du capital au bloc 2.
@@ -1221,12 +1222,13 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
   - p_t est écrit en phase 5 avant le bloc 2 et ne lit pas v_t ;
   - sous J = 1, il n'y a pas de prix relatif, mais la règle de prix doit garder un terme de demande (instabilité 14 ; acquis R3, R) ;
   - un amortissement inclus dans le coût est un point fixe scalaire, et les instabilités 10 et 11 restent à surveiller ;
-  - condition 4 (taux d'utilisation) ; #37 ; #24 (croissance effective publiée, lecture (f)).
+  - condition 4 (taux d'utilisation) ; #37 ; #24 (croissance effective publiée, lecture (f)) ;
+  - fixer la phase (2 ou 4) où le bloc 2 écrit UC, avant la phase 5 où le bloc prix le lit ; au J5, terme d'intrants et triangularité de la matrice des lectures.
 - **Fiche 6** :
   - confirmer Q4 : K^vol au bloc 2, I^vol livré après rationnement, lignes 3 et 8 au bloc 6 ;
-  - **constat** : la valeur comptable du capital vaut ρ_K = 0,7775 fois sa valeur au prix courant à g = π̄ = 2 % et δ = 5 % (0,4114 à π̄ = 10 %). Le K/Y d'O1 doit dire s'il est comptable ou en volume valorisé ;
-  - calibrer κ avec tu\* ; condition 4 ; #37 (levier d'offre) ;
-  - **Q2 et M1 de #36** : si la fiche 6 retient une ligne de profits non distribués (voie (ii) de Q2), la clause de `sec:cadre-flux`, « prise seule, une sous-colonne des entreprises n'est pas nulle en général », devient fausse et est à reprendre, ainsi que la légende de `tab:matrice-flux`. C'est un contrat partagé : décision citant M22. Sous la voie (i), elle reste exacte. La valeur stationnaire des profits non distribués du socle est donnée au § 3.N-10 (0,33361 % de V_F par pas).
+  - **constat** : la valeur comptable du capital vaut ρ̄_K = 0,7791 fois sa valeur au prix courant à g = π̄ = 2 % et δ = 5 % (0,4221 à π̄ = 10 %). Le K/Y d'O1 doit dire s'il est comptable ou en volume valorisé ;
+  - calibrer κ avec t̄u ; condition 4 ; #37 (levier d'offre) ;
+  - **Q2 et M1 de #36** : si la fiche 6 retient une ligne de profits non distribués (voie (ii) de Q2), la clause de `sec:cadre-flux`, « prise seule, une sous-colonne des entreprises n'est pas nulle en général », devient fausse et est à reprendre, ainsi que la légende de `tab:matrice-flux`. C'est un contrat partagé : décision citant M22. Sous la voie (i), elle reste exacte. La valeur stationnaire des profits non distribués du socle est donnée au § 3.N-10 (0,33210 % de V_F par pas).
 - **Fiches 5 et 9** :
   - les plans de demande sont en u.m. en phase 2 ; sous rationnement proportionnel, le budget non dépensé reste en dépôts ou sur le compte du Trésor ;
   - restituer la dépense demandée / exécutée ;
@@ -1259,3 +1261,4 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
 | 02/10/2026 | Décision M24 : option C, lectures (a) à (g) en (i), ordre « travail, puis production » en phase 4 | mainteneur |
 | 02/10/2026 | Conséquences de la décision (§ 9) ; lecture opérationnelle de S1 confirmée et critères de S1 versés au § 9.7 avant l'essai ; numérotation N9 et N11 au § 3.N-1 et précision du § 3.N-8 sur les instabilités 10, 11 et 14 | `macro` ; session principale |
 | 02/10/2026 | Remesure S1 exécutée (script `dfe896f`, critères au § 9.7, `227607e`) : (i) non satisfait (part des semaines dans l'équipement 0,080 > 0,05, épisode des années 37 à 39) ; (ii) satisfait (écarts de 0,078 à 0,523) ; mentions « à remesurer » du § 3.B levées ; interprétation de `macro` ; M24 inchangée | session principale ; `macro` |
+| 03/10/2026 | Validation de fond de `sec:production` (`macro`) : lecture de π̄ comme glissement annuel confirmée ; ρ̄_IN, ΔIN, FU et ρ̄_K recalculés (0,996057 ; 0,33210 % ; 0,7791) ; notation barrée (ρ̄_IN, ρ̄_K, t̄u) ; statut de la technique ; lectures de la phase 2 (§ 9.4) ; phase de UC transmise à la fiche 4 (§ 9.8) ; amendement de notation du critère 3 et du § 9.6 ; précision prospective du § 9.7 (constat m1) | `macro` ; mainteneur ; session principale |
