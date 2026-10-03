@@ -108,6 +108,9 @@ Au 03/10/2026, après la fusion de la PR #35 (`3021eaa`), **douze issues ouverte
 | #50 | J3 : `src/nations/blocs/travail.py` et ses tests (fiche 3, § 9.6), balises `eq:travail-*` | `src/nations/blocs/travail.py`, `tests/` | J3 (branche à définir au point d'étape qui précède J3) | `needs-triage` ; création approuvée le 03/10/2026. Après J2 (noyau) ; circuit 1 en aval (`coder` → `audit`, validation de `macro`). |
 | #51 | J3 : `src/nations/blocs/prix.py` et ses tests (fiche 4, § 9.6), balises `eq:prix-*` | `src/nations/blocs/prix.py`, `tests/` | J3, même branche que #50 (blocs couplés, registre de l'indice des prix de l'ADR 0008) | `needs-triage` ; création approuvée le 03/10/2026. Lit le registre de 13 niveaux (`etat/`, J2). |
 | #52 | J4 : restitution des blocs 3 et 4 et scénarios O2, demande pulsée et gel des prix | restitution (J4) ; scénarios | J4 (branche à définir) | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. Circuit `coder`, `app-review`, `jeu` ; critères écrits avant l'essai ; seuil du critère 10 (d) de la fiche 4 à confirmer avant le J4 ; recoupe #47 (gel des prix) et #46 (scénarios O2). |
+| #53 | J4 : scénario de surchauffe publique en boucle conjointe (sur-commande, forme O3) | scénarios (J4) ; fiche 5 § 3.C-10 et § 7 | J4, avec #52 | `needs-triage` ; rédigée par `jeu`, création approuvée le 03/10/2026. Critères écrits avant l'essai ; seuils 8 (c) et 11 (c) de la fiche 5 inchangés ; ψ_ξ ∈ {0 ; 0,5}. |
+| #54 | Fiche 8 : essai d'aller-retour de la cible π* (pas de stimulant gratuit à l'impact) | fiche 8 ; fiche 5 § 6.5 et § 7 | n° 4 (fiche 8) | `needs-triage` ; rédigée par `jeu`, création approuvée le 03/10/2026. Critères écrits avant l'essai, validés par `monnaie`. |
+| #55 | Calibration de la fiche 6 : distribution positive, condition entre μ̄ et K^vol/(n_a y) | fiche 6 § 3.N et § 5 (réserve 3) ; calibration | J3 (calibration) | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. x_max = 2,933 ans à μ̄ = 0,25. |
 
 ## 4. Décisions du mainteneur
 
@@ -172,6 +175,8 @@ Décisions prises **en cours de branche**, le 03/10/2026 (PR #43), sans numéro 
 - **Seuil du critère 11 (d) de la fiche 3 adopté** : demi-vie de l'emploi de 2 à 4 tours ; λ_N = 3,5 par an (M25) donne 2,01 tours.
 - **#44 rattachée à la branche n° 4 sans `Closes`** ; elle se ferme au J3 avec le script d'état stationnaire (§ 2 et § 3).
 - **Création de #49 à #52** (§ 3).
+- **Fiche 6** (après le dépôt de l'instruction) : visa de l'amendement de notation des critères sous (G) ; amendement prospectif du critère 6 (écart ≤ 1e−6 mesuré après 2 160 pas, et non 720) ; lecture annuelle des taux de la v1.5, T_K en dépendance déclarée (`docs/blocs/investissement.md` § 2, amendements).
+- **Création de #53, #54 et #55** (proposées par `jeu` et `macro`, fiches 5 et 6) et d'un commentaire de `macro` sur #44 (§ 3).
 
 ### Décisions du point d'étape du 03/10/2026
 

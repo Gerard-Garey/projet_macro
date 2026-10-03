@@ -280,9 +280,12 @@ Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les ques
 - **Critère 9 (a)** : le classement de I^vol ≥ 0 (contrainte technique si l'irréversibilité est déclarée, ou borne à seuil libre) est proposé par la fiche et tranché par le mainteneur à M28.
 - **Q6** : le bloc 6 est instruit comme propriétaire de la ligne 14 (règle de distribution) ; le propriétaire de la ligne 9 est fixé avec la fiche 7.
 
-*Amendement proposé par `macro` le 03/10/2026, **en attente du visa du mainteneur** (ne vaut pas adoption) :*
+Décisions du mainteneur du 03/10/2026, prises **après** le dépôt de l'instruction (§ 3 à 5) :
 
-- **Amendement de notation (03/10/2026, visa du mainteneur à recueillir)**. Sous la lecture (G) de M25 (b) (ADR 0008, partie I) :
+- **Amendement prospectif du critère 6, essai du J3** (proposé par `macro`, § 5, lecture (f)) : l'écart entre les branches ×0,5 et ×2 se mesure **après 2 160 pas** au lieu de 720, seuil de 1e−6 inchangé. Motif : le seuil de 720 pas est inatteignable par la lenteur de la valeur comptable du capital (racine d'au moins 0,9926), non par une dépendance à la vitesse (S : 3,9e−6 à 720 pas, 3,0e−6 à 1 440, 1,6e−7 à 2 160 ; C : 3,2e−6 à 720). Correction prospective : aucun essai n'avait été fait ; le critère d'origine reste publié ci-dessus.
+- **Lecture de la v1.5 (option A)** : les taux d'`eq:invest` et de l'accumulation se lisent **annuels**, convertis en x/n_a ; la dépendance de l'état d'arrivée au délai de livraison T_K (x de 2,9804 à 2,9753 pour T_K = 1 à 6 pas) est une **dépendance déclarée**, comme celle à n_a, et non une vitesse au sens du § 2.7. Aucun verdict ne change (A échoue au critère 6 par ι).
+
+- **Amendement de notation (03/10/2026, proposé par `macro`, visa du mainteneur le 03/10/2026)**. Sous la lecture (G) de M25 (b) (ADR 0008, partie I) :
   - **Critère 5 (a)** :
     - « volumes en croissance de g/n_a par pas » se lit « volumes en croissance de γ = (1 + g)^{1/n_a} − 1 par pas » ;
     - « I^vol/K^vol = (g + δ)/n_a par pas, soit g + δ = 7 % par an […] quel que soit n_a » se lit « I^vol/K^vol = (n_aγ + δ)/n_a par pas, soit n_aγ + δ = 6,9852 %, 6,9819 % et 6,9806 % par an pour n_a = 4, 12 et 52 (g = 2 %, δ = 5 %) ». Cette dépendance à n_a est déclarée (ADR 0008, I.6).
@@ -364,7 +367,7 @@ Ces valeurs reproduisent exactement celles mesurées par la session principale (
    - Λ = clip(1 − η_ℓ(ℓ − ℓ̄), 0, 1).
    - K_{t+1} = (1 − δ)K_t + I_t, livré après T_K mois.
    - Div = min(ψΠ⁺, (M − R)⁺) + ¼(M − R − m̄ pQ)⁺.
-   - **Interprétation** : les taux de `eq:invest` et de l'accumulation sont annuels, alors que la v1.5 travaille « par tick » (semaine). La transposition les lit comme annuels, convertis en x/n_a. Écrite par tick, avec δ annuel, l'accumulation serait absurde. Deux lectures sont donc possibles ; je retiens la seconde.
+   - **Interprétation** : les taux de `eq:invest` et de l'accumulation sont annuels, alors que la v1.5 travaille « par tick » (semaine). La transposition les lit comme annuels, convertis en x/n_a. Écrite par tick, avec δ annuel, l'accumulation serait absurde. Deux lectures sont donc possibles ; je retiens la seconde. *Lecture retenue par le mainteneur le 03/10/2026 (§ 2, amendements).*
    - La moyenne mobile E[Π^brut] n'a **pas de vitesse** (l. 571 : « moyenne mobile »).
 
 3. **Verdicts par critère.**
@@ -1013,3 +1016,4 @@ Non instruit.
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, lecture d'O1, période publiée, deux voies de #36, contrats sensibles des phases 3 et 6, variantes révisant M24, I^vol ≥ 0 tranché à M28, ligne 14 ; issue #42) | mainteneur |
 | 03/10/2026 | Jalon 2, partie 1 : § 3.0, options A (v1.5) et B (v2.0), statut des faits, acquis pour la suite ; A et B échouent au critère 6 (exigence) et, sur maquette sans stocks, au critère 7 (c) ; amendement de notation sous (G) proposé, en attente du visa | `macro` ; session principale |
 | 03/10/2026 | Jalon 2, partie 2 : socle F, options S, C, R et PI, boucles avec N1 à N7 et boucle conjointe, état stationnaire conjoint, voies (i)/(ii) de #36 (sortie de `verifier_matrices.py` avant et sur copie), cas à la main, Q2, Q3, Q5, Q11, Q12, exemple daté ; § 4 et § 5 (recommandation S + F, lecture (a), voie (i), amendement prospectif du critère 6 proposé) | `macro` ; session principale |
+| 03/10/2026 | Décisions du mainteneur : visa de l'amendement de notation sous (G) ; amendement prospectif du critère 6 (2 160 pas) ; lecture annuelle des taux de la v1.5 et T_K en dépendance déclarée | mainteneur ; session principale |
