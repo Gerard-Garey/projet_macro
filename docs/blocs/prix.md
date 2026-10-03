@@ -3,7 +3,7 @@ bloc: Prix
 module: src/nations/blocs/prix.py
 expert pilote: macro
 experts consultés: monnaie (indexation des prix sur les anticipations, indice et glissement lus par la règle de taux : frontière inflation) ; jeu
-statut: en instruction (critères validés le 03/10/2026)
+statut: avis rendus (03/10/2026)
 décision: —
 issue: #40
 ---
@@ -807,7 +807,174 @@ Dans la ligne 10, le premier chiffre est le délai salaire → prix et le second
 
 ## 6. Avis de l'expert consulté
 
-Non instruit (`monnaie`, frontière inflation et volet « prix » de #24, au jalon 2).
+*Rédigé par `monnaie` (expert consulté : frontière inflation et volet « prix » de #24) le 03/10/2026, sur la fiche à l'état `ff3f97d` (branche `claude/j1-economie-reelle`, PR #43). Cet avis reste cohérent avec mon avis sur la fiche 3 (`travail.md` § 6, conditions C1 à C8). Il y apporte une précision, au § 6.3.*
+
+*Sources lues dans le dépôt :*
+- *fiche 4, § 1 à 5 ;*
+- *fiche 3, § 3.N-2 à 3.N-6, § 5 et § 6 ;*
+- *issue #24 ;*
+- *`sec:cadre-calendrier` et `tab:phases` (l. 190 à 215 et 495 à 512) ;*
+- *ADR 0005, pt 16 ;*
+- *`archive/faits_mesures_G_K.md`, § 6 à 8.*
+
+*J'ai relancé le script P10 de `macro` et ajouté trois scripts de contrôle (commandes au Retour). Pour chaque référence, j'indique ce qui a été lu (texte primaire), ce qui a été extrait (résumé ou notice) et ce qui est cité de mémoire.*
+
+### 6.1 Réponses aux six questions de `macro`
+
+**Q1 — Phase de P_t.** Je préfère **(c)**. Le repli acceptable est (a), à condition de corriger T2 (Q6). Je ne demande pas (b).
+
+1. **Le calendrier de Barro et Gordon ne tranche pas la Q1.**
+   - Ce qu'il fixe : les anticipations sont données avant la décision de la période. Résumé du document de travail NBER w0807 (1981), publié au *JPE* 91(4), 589-610 (1983), extrait : « At each point in time, the policymaker optimizes subject to given inflationary expectations ».
+   - Ce calendrier contraint la date de π^e, déjà réglée par la lecture (a) de la Q3 de la fiche 3. Il ne dit pas quelle inflation la règle lit.
+   - Sous M, p_n ne dépend que de l'état d'ouverture : W_n (Q3 (a)), UC_n, ξ_n et la marge retardée. Dans les trois lectures, l'inflation lue par la règle au tour n est donc prédéterminée par rapport aux leviers du tour n. Il n'y a de simultanéité dans aucun cas.
+2. **Même information pour la règle et pour le joueur.**
+   - Sous (c), la règle du tour n lit π_{n−1}, l'inflation que le joueur voit quand il décide. La prescription de la règle se recalcule depuis l'écran ; elle peut être restituée comme indicateur (« taux indiqué par la règle »).
+   - Sous (b), la règle lit π_n, que le joueur ne voit pas avant de décider. Pour rétablir la symétrie, il faudrait afficher le prix du tour n avant la décision, ce qui revient à fixer ce prix à la fin du tour n − 1. On change alors l'étiquette des tours et l'on révise M24 sans rien gagner.
+   - En multijoueur, un pays non joué sous règle automatique disposerait sous (b) d'une information que le joueur humain n'a pas (point signalé à `jeu`).
+3. **Pratique et littérature.**
+   - Taylor (1993), *Carnegie-Rochester Conference Series on Public Policy* 39, 195-214, **lu**, p. 202 : « p is the rate of inflation over the previous four quarters ». Et plus bas : « Using the inflation rate over the previous four quarters on the right-hand side of equation (1) indicates that the interest-rate policy rule is written in "real" terms with the lagged inflation rate serving as a proxy for expected inflation ».
+   - Orphanides (2001), *AER* 91(4), 964-985, résumé **extrait** : « reliance on the information actually available to policy makers in real time is essential for the analysis of monetary policy rules ».
+   - McCallum (1999), *Handbook of Macroeconomics*, vol. 1, ch. 23, 1483-1530. Le résumé de NBER w6016 (**extrait**) cite l'« operationality of rule specifications ». L'idée qu'une règle ne lit que des variables observables à la date de la décision est **citée de mémoire**.
+   - (c) est la lecture opérationnelle.
+4. **Le délai d'un tour n'est pas neutre pour la stabilité de la règle. La cause principale est pourtant la fenêtre de 12 mois du glissement.**
+   - Sous fermeture neutre, (b) et (c) sont identiques. P10 relancé, option M, λ_w = 1 : rayon 0,9068 et une racine unité, pour λ_e = 0,5, 1 et 2, sous les deux lectures. Sous fermeture ancrée : 0,9909 en (c) contre 0,9907 en (b) (λ_e = 0,5).
+   - J'ai ajouté à la même maquette une **règle hypothétique** et un canal taux réel → demande autonome (script `m4_regle2.py`, **illustration, pas le fait nouveau de C2**) :
+     - règle : r_t − r̄ = r^s_t + a_π(π_lu − π̄), avec r^s_t = r^s_{t−1} + (k/n_a)(π_lu − π̄) ;
+     - demande autonome : A·exp(−s(r_t − r̄)) en phase 2 du même tour ;
+     - plans indexés sur π^e ; λ_e = λ_w = 1 ; m = 0,6 ; autres hypothèses de `macro` au § 3.0 ;
+     - aucun plancher, aucun terme d'activité, aucune crédibilité.
+
+   Rayon spectral (période) :
+
+   | s | a_π | k (par an) | glissement, lecture (c) | glissement, lecture (b) | variation mensuelle annualisée, lue au tour précédent |
+   |---|---|---|---|---|---|
+   | 1 | 0,5 | 0 | 0,9771 (monotone) | 0,9766 | 0,9787 |
+   | 1 | 1,5 | 0 | **1,0056 (21 tours)** | 0,9883 (20 tours) | 0,9659 |
+   | 1 | 0,5 | 0,5 | 0,9675 (195 tours) | 0,9671 (198 tours) | 0,9707 (212 tours) |
+   | 1 | 1,5 | 0,5 | **1,0127 (21 tours)** | 0,9951 (20 tours) | 0,9734 (422 tours) |
+   | 1 | 0,5 | 2 | **1,0231 (30 tours)** | **1,0111 (29 tours)** | 0,9450 (275 tours) |
+   | 3 | 1,5 | 0,5 | **1,0967 (17 tours)** | **1,0613 (16 tours)** | **1,3897 (6 tours)** |
+
+   - Pour s = 1, a_π = 1,5, k = 0,5, à λ_e = 0,5 / 1 / 2 : (c) donne 1,0174 / 1,0127 / 1,0074 ; (b) donne 0,9992 / 0,9951 / 0,9907.
+   - Ce que j'en lis :
+     - le tour de retard déplace la frontière de stabilité ;
+     - le retard dominant est la fenêtre du glissement, de 5,5 tours en moyenne : la variation mensuelle stabilise des cas où le glissement explose, sous (b) comme sous (c) ;
+     - c'est donc une question de la fiche 8 (mesure lue, coefficients), qui ne justifie pas de déplacer le prix en phase 1.
+   - **Clause de réouverture proposée pour M26** : on rouvre la Q1 vers (b) si l'analyse C2 de la fiche 8 montre que le délai d'un tour est déterminant à la calibration retenue. Sous M, ce passage ne serait qu'un réordonnancement, puisque p_n ne lit que l'ouverture. Il demanderait une décision citant M26, M24 et M22.
+5. **(a) contre (c).** Les trajectoires sont identiques. Je préfère (c) pour deux raisons :
+   - la restitution : l'indice du tour n est le prix du tour n ;
+   - (a) tend le piège de T2 (Q6).
+
+   Sur l'empreinte, ma préférence est faible : un registre de n_a + 1 = 13 niveaux plutôt que π_t en variable d'état. Une seule source nominale subsiste, d'où se recalculent le glissement et la variation sur le tour. Le choix revient à `architect`, avec la décision citant M22 et l'ADR 0005, pt 16.
+
+**Q2 — Anticipation consommée.**
+- **Oui pour M** : M ne consomme rien (coefficient 0 sur base courante).
+- **Oui pour D** : son coefficient est ma règle appliquée part par part. La part retardée (1 − θ, avec θ = λ_p/n_a) reçoit le coefficient 1 sur π^e ; la part courante (θ) reçoit 0.
+  - Écart stationnaire calculé : ln p − ln((1 + μ̄)UC) = (1 − θ)[ln(1 + π^e) − ln(1 + π̄)]/(n_a θ). Il est nul sous (G) si C1 tient.
+  - **Aucun double compte avec SN.** Le gain d'impact d'une hausse de ln(1 + π^e) sur ln p, rapporté à Δ/n_a, vaut 1,000000 sous D comme sous M. Un choc permanent de π^e avec salaires indexés laisse la marge de D inchangée sur 240 pas (écart 0).
+  - L'option A additionne au contraire ϖπ^e et un rappel sur coût courant.
+- **Réserve contre D : sa marge stationnaire dépend de C1.**
+  - Exemple de la fiche 3 : π^e = 2,2 % pour π̄ = 3 %. On obtient p/[(1 + μ̄)UC] − 1 = −1,227 %, −0,583 % et −0,260 % pour λ_p = 0,6, 1,2 et 2,4. Un échec de C1 à la fiche 8 ferait donc échouer D au critère 4.
+  - Sous M, le même échec ne touche pas la marge, seulement U* par SN. **M résiste mieux à un défaut de la fiche 8.**
+- **Conséquence pour la suite.** Sous M, π^e n'atteint les prix que par les salaires SN, avec un gain de 1 dans le même tour (W_t en phase 1, UC_t en phase 2, p_t en phase 5).
+  - Un levier « indexation légale » au J4 avec un coefficient inférieur à 1 affaiblirait d'autant le canal des anticipations vers les prix.
+  - La fiche 8 ne doit ajouter aucun canal direct π^e → p (double compte).
+
+**Q3 — Boucle 5 (e).** Sur la dichotomie, je suis d'accord.
+- La partie réelle ne dépend pas de λ_e, et le rythme a une racine unité (P10 relancé). C'est la propriété voulue : une politique accélérationniste à la Friedman-Phelps, conforme à l'intention du mainteneur. Il ne faut pas la « corriger » dans les blocs 3 et 4 (indexation inférieure à 1, ancre sur π̄ dans le prix) : ce serait un second ancrage.
+
+En revanche, je **ne dirais pas « entièrement C2 »**.
+- C2 garantit la **valeur** stationnaire π̄ = π*. La **stabilité** du rythme dépend de toute la boucle :
+  - la règle : a_π, gain intégral, mesure lue, délai, plancher ;
+  - le canal taux → demande des fiches 5, 6 et 9, signe compris (acquis R : « la politique monétaire peut agir à l'envers ») ;
+  - la loi d'anticipation : λ_e et crédibilité ;
+  - les paramètres des blocs 3 et 4 : λ_w·β, ψ_ξ, λ_μ.
+- **Les rayons publiés ne suffisent pas.** Ce sont des entrées nécessaires, mais l'instabilité 4 est l'« estimateur de r* sans ancre ni bande » (faits § 6, R). Le fait nouveau doit porter sur la boucle qui contient cet estimateur, et les rayons publiés ne contiennent ni l'estimateur ni le canal du taux.
+- L'illustration de Q1 le montre :
+  - k = 2 par an déstabilise (1,0231, période 30 tours) ;
+  - k = 0,5 par an est stable (0,9675) mais avec une période d'environ 195 tours, au-delà d'une partie de 60 à 120 tours (point pour `jeu`).
+- Le fait nouveau se produit donc à la fiche 8, une fois connue l'élasticité des plans au taux (fiches 5 et 6) : grille × 0,5 et × 2, délai de la lecture retenue, période de la racine dominante comparée à la durée d'une partie.
+
+**Q4 — Lecture des taux.** Oui. M ne contient aucun taux annuel. Le choix repose sur la fiche 3 (g_pr et π^e dans SN), la fiche 8 (cible, π^e) et M24 (f). Je maintiens **(G)**, condition C4 de la fiche 3. La fiche 4 ajoute deux arguments mineurs :
+1. **Restitution de la variation sur le tour.** À π̄ = 2 %, l'annualisation géométrique (1 + v)^12 − 1 donne 2,0000 %, l'annualisation linéaire 12v donne 1,9819 %. Sous (L), le joueur verrait deux inflations annuelles. Si la variation est restituée annualisée, elle doit l'être géométriquement.
+2. **Exactitude de D.** D n'est exacte que sous (G), ou sous (L) avec un π^e en taux linéaire.
+
+**Q5 — Canal de transmission par la marge.** Acceptable, aux conditions suivantes.
+- **Effet transitoire.** Le canal est ancré sur μ̄ : il ne touche ni π̄ ni U*. L'effet durable de la politique monétaire sur l'inflation reste porté par le seul bloc 8.
+- **Effet stabilisant.** La boucle 5 (e) est plus amortie : 0,9068 contre 0,9172 pour R.
+- **Délais.** Taux du tour n → plans du tour n (si les fiches 5 et 6 lisent i_n en phase 2) → stocks du tour n → ξ_{n+1} → marge → π_{n+1} → lecture par la règle au tour n + 2 sous (c). Il faut au moins 2 tours pour qu'une décision apparaisse dans l'entrée de la règle par ce canal.
+- **Statut empirique : contesté.**
+  - Nekarda et Ramey, document de travail NBER w19099 (2013), résumé **extrait** : « markups are procyclical conditional on a technology shock. However, we find that they are either procyclical or acyclical conditional on demand shocks. Thus, the textbook NK explanation for the effects of government spending or monetary policy is not supported by the behavior of the markup ». La version *JMCB* (2020) n'a pas été relue par moi.
+  - En sens contraire, Barth et Ramey, NBER w7675 (2000), publié dans *NBER Macroeconomics Annual* 16 (2001), résumé **extrait** : après une contraction monétaire, « many industries exhibit periods of falling output and rising price-wage ratios », lu comme un canal de coût.
+  - Aucune des deux sources n'établit la forme de M.
+- **Absence à déclarer dans la portée.** Le socle n'a pas de canal de coût (UC = W/pr ne contient aucun intérêt). Une hausse de taux ne relève donc jamais les prix par les coûts : le modèle ne reproduit pas l'« énigme des prix » (*price puzzle*).
+  - La forme NHUC de Godley et Lavoie (citée de mémoire par `macro`) introduirait ce canal, mais ferait dépendre la part salariale du taux (critère 3 (d)).
+  - Un intérêt sur le fonds de roulement introduit par les fiches 6 ou 7 n'entrerait pas dans la base du prix sans révision de M26.
+- **Signe hérité.** Le canal par la marge prend le signe de l'effet net du taux sur la demande. Si la fiche 5 a un canal rentier dominant, une hausse de taux relève la demande, baisse les stocks et monte la marge : la marge amplifie un effet pervers. À vérifier aux fiches 5 et 8.
+- **Second tour.** La compression des marges réduit les profits non distribués, donc l'investissement et la demande de crédit (fiches 6 et 7). À mesurer à la fiche 7.
+
+**Q6 — Constat T2 sous (a).** C'est un défaut à éliminer, quelle que soit la Q1.
+- Valeurs recalculées, β = 2 : U* se déplace de −ln(1 + π̄)/(n_a β), soit −0,0825 point (2 %) et −0,3971 point (10 %) à n_a = 12, et −0,2475 et −1,1914 point à n_a = 4.
+- Lecture monétaire : la courbe de long terme n'est plus verticale. Passer de 2 % à 10 % d'inflation achèterait −0,31 point de U* de façon permanente. C'est un arbitrage exploitable par un joueur ou une IA, et il dépend de n_a. Il contredit la propriété de taux naturel sur laquelle repose le cadre de Barro et Gordon (résumé w0807, extrait : « the equilibrium unemployment rate ends up independent of "policy" »), ainsi que la logique de C1 et C2.
+- **Remède** : écrire T2 sur le dernier prix connu, p_{t−1}, quelle que soit l'étiquette retenue pour la Q1. C'est la dernière entrée du registre sous (b) et (c), et P_t sous (a).
+- **Critère proposé avant l'essai (J3)**, test de propriété du script d'état stationnaire : U* égal à U^eq à 1e−10 près en relatif, pour π̄ ∈ {0 ; 2 % ; 10 %} et n_a ∈ {4 ; 12 ; 52}. Le même contrôle s'étend à la fiche 8 : le taux réel stationnaire de la règle doit être indépendant de π̄ (dates de i et de π appariées).
+- Ce constat plaide pour (c).
+
+### 6.2 Avis général sur M, côté monnaie
+
+**Favorable à M**, avec la lecture (c) et les choix du § 5 : base UC, UC en phase 2, terme ξ, aucune anticipation consommée, règle neutre entre (L) et (G).
+- **Verticalité de long terme.** p/UC = 1 + μ̄ ne dépend ni de π̄, ni de n_a, ni des vitesses. Le bloc 4 n'apporte aucun second ancrage nominal ; le rythme n'est ancré que par le bloc 8. C'est conforme à l'intention du mainteneur, que C8 demande de reconfirmer.
+- **Robustesse à un défaut de C1**, contrairement à D (Q2).
+- **Une seule entrée des anticipations**, par les salaires. La chaîne « anticipations → salaires → prix » est lisible et ne comporte aucun double compte.
+- **Haute inflation (J6).** M répercute UC en entier à chaque tour, sans `flex`. Gagnon (2009), *QJE* 124(3), 1221-1263, résumé **extrait** : au-delà de 10 à 15 % d'inflation annuelle, « few price decreases are observed and both the frequency and average magnitude are important determinants of inflation ».
+  - Une fréquence fixe (λ_p de D) sous-estimerait la répercussion en haute inflation.
+  - M ne pose pas ce problème, parce que sa rigidité porte sur la marge, qui est un rapport, et non sur le niveau du prix. C'est un avantage de M sur D pour les régimes de type Cagan.
+- **C contre M.** Une règle de taux qui lirait une inflation alternée d'un tour sur l'autre amplifierait l'alternance. C'est un motif monétaire de plus pour écarter C.
+- **Aucun désaccord de fond avec `macro`** n'est à décrire en deux positions. J'apporte trois précisions : la stabilité ne relève pas de C2 seule (Q3) ; une clause de réouverture de la Q1 (Q1, point 4) ; le niveau des prix sous C2 (§ 6.3).
+
+### 6.3 Précision à mon avis sur la fiche 3
+
+À la fiche 3 (§ 6.2), j'ai écrit : « le niveau des prix n'est pas ancré, sauf si la fiche 8 retient un terme de niveau des prix ». C'est incomplet.
+
+**L'identité.** Sous C2 en forme intégrale sur le glissement, en logarithmes et sous (G), on a Σ_t(ℓ_t − ℓ*) = Σ_{12 derniers} x − Σ_{12 premiers} x. Ici ℓ_t = ln(P_t/P_{t−12}) et x est l'écart en logarithme du niveau des prix à son sentier tendanciel. Vérification numérique : 7,251e−05 des deux côtés.
+
+**Si r̄ est inchangé après un choc**, r* revient à r̄. La somme des écarts de glissement est alors nulle, et **le niveau des prix revient sur son sentier d'avant le choc**. Les deux formes de C2 sont donc équivalentes aussi sur ce point.
+
+**Si r̄ se déplace durablement de Δr̄**, par exemple après une expansion budgétaire permanente, le niveau reste déplacé de Δr̄/k (n_a = 12) et π revient à π*. Le niveau n'étant pas un rapport, le critère 4 n'est pas en cause.
+
+**Conséquence pour le joueur** (`jeu`) : après un dépassement, la règle automatique produit une période d'inflation sous la cible (dépendance à l'histoire).
+
+L'énoncé de la fiche 4 (« le bloc ne fixe pas le niveau ») reste exact : c'est le bloc 8 qui le fixerait.
+
+### 6.4 Points transmis à la fiche 8, en complément de C1 à C8
+
+- **C9 — Information de la règle.** La règle a la même information que le joueur : au tour n, π_{n−1} (glissement restitué), U_{n−1} et π^e d'ouverture. Sa prescription est restituée.
+- **C10 — Contenu du fait nouveau de C2.** Il inclut :
+  - le délai de lecture de la Q1 retenue (1 tour sous (c)) ;
+  - la mesure lue (le glissement est le retard dominant) ;
+  - le canal taux → demande des fiches 5, 6 et 9, avec son signe ;
+  - la loi d'anticipation ;
+  - ψ_ξ et λ_μ de M ;
+  - le plancher ;
+  - la grille × 0,5 et × 2 ;
+  - la période de la racine dominante, comparée à une partie.
+
+  L'illustration du § 6.1 (Q1, point 4) contient des cas explosifs. La clause de réouverture de la Q1 y est attachée.
+- **C11 — Retour du niveau des prix sous C2** (§ 6.3) : à déclarer et à soumettre à `jeu`.
+- **C12 — Phase de formation de π^e.** La condition de Barro et Gordon s'écrit : la π^e consommée au tour n ne lit aucun levier du tour n. Sous (c), le délai prix → anticipation → salaire dépend de la formation :
+  - 2 tours si π^e est formée en phase 1 du tour n à partir de π_{n−1} et lue au tour n + 1 ;
+  - 1 tour si elle est formée en tête de phase 1, avant la lecture des leviers, et lue ensuite par le bloc 3 (bloc 8 en deux temps : anticipations, puis règle) ;
+  - 1 tour aussi si elle est formée après la phase 5 du tour n − 1, ce qui révise `tab:phases`.
+
+  Ce choix revient à la fiche 8 ; il ne conditionne pas M26.
+- **C13 — Ni canal direct π^e → p, ni canal de coût au socle.** Aucun canal direct, ni dans le bloc 8 ni dans le bloc 4 sous M. Un canal de coût du taux au socle demanderait de réviser M26.
+
+### 6.5 Points signalés à `jeu` (non tranchés)
+
+- Symétrie d'information entre la règle automatique et le joueur ; restitution du « taux indiqué par la règle ».
+- Cycles très longs (environ 200 tours) sous une règle intégrale lente ; retour du niveau des prix.
+- Variation sur le tour annualisée géométriquement, si elle est restituée annualisée.
+- Lisibilité de « resserrement → marges comprimées » ; le modèle ne reproduit pas l'« énigme des prix ».
 
 ## 7. Avis de `jeu`
 
@@ -1032,3 +1199,5 @@ Non instruit.
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, critère 5 (e) en exigence, part salariale sur W/(p·pr), trois lectures de P_t, terme de demande, variante en tu, lecture unique de #24, Q10 ; issue #40) | mainteneur |
 | 03/10/2026 | Instruction déposée (§ 3 à 5) : options A, B, socle 3.N, options nouvelles ; recommandation M (marge à rappel vers μ̄ avec terme de stocks), P_t en lecture (c) ; mesures conjointes avec la fiche 3 (critères 3 (d) et 5 (e)) ; remesure proposée | `macro` |
 | 03/10/2026 | Avis de `jeu` (§ 7) : préférence M > D > R > C > B > A, C jugée rédhibitoire (alternance dès la calibration) ; lecture (c) de P_t préférée ; seuil du critère 10 (d) proposé (0,2 point pour +1 %, 1,0 point pour +5 %) ; conditions sur le prix administré et le levier de répartition au J4 ; correction de son avis sur la fiche 3 (question 7) | `jeu` |
+| 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à M avec la lecture (c) de P_t ; clause de réouverture de la Q1 proposée ; T2 sous (a) à éliminer ; précision à son avis sur la fiche 3 (retour du niveau des prix sous C2) ; conditions C9 à C13 transmises à la fiche 8 | `monnaie` |
+| 03/10/2026 | Statut « avis rendus » | session principale |

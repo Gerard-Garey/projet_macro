@@ -326,7 +326,7 @@ Avec g = 2 %, on trouve 0,9452 et 72,9 ; 0,9762 et 95,8. **Observation transmise
   - Sous la lecture (w1), ω* = 1/(1 + μ̄) : le terme de niveau vaut alors ln[(1 + μ_{t−1})/(1 + μ̄)], l'écart de la marge effective du pas précédent à la marge normale.
   - Statut : approchée. Provenance :
     - forme WS-PS (acquis R, faits § 8) ;
-    - semi-élasticité calée sur l'élasticité de −0,1 de la courbe des salaires (Blanchflower et Oswald, 1995, *JEP* 9(3), 153-167 ; extrait de recherche, source primaire non lue), d'où β = 0,1/U* = 2 à U* = 5 % ;
+    - semi-élasticité calée sur l'élasticité de −0,1 de la courbe des salaires (Blanchflower et Oswald, NBER WP 11338, 2005, p. 1 et p. 4 ; −0,07 après correction du biais de publication), d'où β = 0,1/U* = 2 à U* = 5 % (1,4 avec −0,07). L'équation en correction d'erreur est discutée par Blanchard et Katz (NBER WP 6924, 1999, p. 5) : terme de niveau absent des équations agrégées américaines, voisin de 0,25 par an en Europe.
     - équation en correction d'erreur discutée par Blanchard et Katz (1999, *AER* 89(2), 69-74 ; notice retrouvée, contenu non lu).
 - **(T3-SP) Phillips sans niveau** : ln W_t = ln W_{t−1} + ln(1 + g_pr/n_a) + (1/n_a)·ln(1 + π^e_t) − (φ/n_a)(U_{t−1} − U^eq). Elle est instruite pour comparaison.
 - **Verdict sur SP.** À prix exogènes, la valeur propre du salaire vaut **1** : **échec du critère 5 (b)**. Le salaire réel n'a pas d'ancre propre, ce qui est un continuum au sens du critère 4 (b), documenté. Sous une marge instantanée, SN se réduit à SP avec φ = λ_w·β et U^eq = U* : SN n'apporte que la correction de l'écart de marge (fiche 4, terme de demande, instabilité 14), et c'est elle qui ancre le salaire réel du bloc. **SP est écartée.**
@@ -473,22 +473,104 @@ Croissance du salaire (C10) :
 
 #### 3.N-11 Faits et calibration (critères 10 et 15)
 
-Statut : **extraits de recherche du 03/10/2026, sources primaires non lues** (lecture refusée par le proxy de la session). **Aucun n'est « établi » au sens de la fiche 2.**
+Statut : les sources primaires ont été lues le 03/10/2026, en texte intégral (version NBER ou version publiée en accès libre), sauf mention « non lu ». Les pages citées sont celles des versions lues. Un fait établi porte sa source, son échantillon et sa date. Un résultat du modèle n'en porte pas.
 
-| Grandeur | Valeur lue | Source | Réserve |
-|---|---|---|---|
-| Coefficient d'Okun, États-Unis | −0,4 à −0,5 ; relation forte et stable ; deux retards trimestriels de la production améliorent l'ajustement (« le temps d'ajuster l'emploi ») | Ball, Leigh et Loungani (2017), *JMCB* 49(7), 1413-1441 | coefficients des retards non retenus (extrait confus) |
-| Okun original | écart de PIB d'environ 3 % par point de chômage | Okun (1962), « Potential GNP: Its Measurement and Significance » | — |
-| Main-d'œuvre quasi fixe | coûts fixes d'embauche et de formation | Oi (1962), *JPE* 70(6), 538-555 | — |
-| Rétention de main-d'œuvre | histoire du concept | Biddle (2014), *JEP* 28(2), 197-212 | notice seule |
-| **Contesté** : procyclicité de la productivité | corrélation productivité – production d'environ 0,63 avant 1984, proche de 0 après 1985 | Galí et van Rens (2021), *EJ* 131(633), 302-326 | — |
-| Élasticité de la courbe des salaires | −0,1 | Blanchflower et Oswald (1995) | — |
-| Vitesse d'ajustement de l'emploi | **non trouvée** (Hamermesh et Pfann, 1996, *JEL* 34(3), 1264-1292 : notice seule) | — | — |
-| Pente de Phillips des salaires | **non trouvée** | — | — |
-| Part salariale | 0,52 | Penn World Table (fiche 2, extrait) | — |
+| N° | Grandeur | Valeur lue (unité, fréquence, échantillon) | Source exacte | Statut |
+|---|---|---|---|---|
+| F1 | Coefficient d'Okun, États-Unis | **−0,411** (é.-t. 0,024), R² ajusté 0,817. Unité : points de chômage par % d'écart de production. Annuel, 1948-2011, filtre HP λ = 100. Aucune rupture au test sup-Wald ; −0,35 (1948-1979) contre −0,41 (1980-2011), p = 0,20 | Ball, Leigh et Loungani, NBER WP 18668, § III.A p. 7, tableau 1 p. 24 | établi |
+| F2 | Symétrie du coefficient d'Okun | −0,37 (écarts positifs) et −0,39 (écarts négatifs), p = 0,61. Annuel | *idem*, p. 7 | établi, au pas annuel seulement |
+| F3 | Retards trimestriels d'Okun | En niveaux, HP 1 600, 1948T2-2011T4 : β0 = −0,245, β1 = −0,133, β2 = −0,116, somme −0,494. Les auteurs parlent de « modest delays in the full adjustment of unemployment to output ». Calcul : part contemporaine 49,6 %, cumul de 76,5 % au trimestre suivant, retard moyen de 0,74 trimestre. Forme : retards distribués **symétriques** | *idem*, p. 6, p. 10, tableau 2 p. 25 | établi |
+| F4 | Décomposition de la loi d'Okun | Élasticité de l'emploi à la production γ = **0,543** (0,040). Élasticité du chômage à l'emploi δ = **−0,728** (0,027). β = −0,405. Annuel, 1948-2011, SUR, HP 100. β = γδ n'est pas rejeté (p = 0,38) | *idem*, p. 12, tableau 4 p. 27 | établi |
+| F5 | Dispersion entre pays | −0,15 (Japon), −0,45 (États-Unis), −0,85 (Espagne). Moyenne de 20 pays : −0,40. Annuel, 1980-2011 | *idem*, p. 3, p. 15 | établi |
+| F6 | Okun original | Okun estimait environ −0,3 en trimestriel, sans retard (1947T2-1960T4), d'où sa règle de 3 % de production par point de chômage. L'écart avec −0,4 ou −0,5 vient de l'absence de retards | *idem*, p. 11-12. Okun (1962) **non lu** : citation de seconde main | établi par BLL |
+| F7 | Vitesse d'ajustement de l'emploi, industrie manufacturière | Coefficient de Koyck ρ_T, trimestriel : régression de ln E sur l'indice de production industrielle, 1973-1990. Les crochets donnent les retards médian et moyen, en trimestres. **États-Unis : 0,383** (0,039) [0 ; 0,6], soit 62 % de l'ajustement dans le trimestre. **Allemagne : 0,837** [3 ; 5,1]. **France : 0,935** [10 ; 14,4]. **Belgique : 0,823** [3 ; 4,6]. Dans les quatre pays, les heures s'ajustent bien plus vite que l'emploi. Forme : ajustement partiel **symétrique** | Abraham et Houseman, NBER WP 4390 : § III p. 11-13, § IV p. 14-15, tableau 3A | établi, daté (1973-1990, industrie manufacturière). Biais possible vers un ajustement rapide aux États-Unis : l'indice de production y est construit en partie sur les heures (p. 16) |
+| F8 | Ajustement au niveau de l'usine | AR(1) mensuel de l'emploi : 0,474 (7 usines regroupées), 0,361 (agrégées). L'ajustement se fait par sauts : l'emploi ne bouge pas pour de petits chocs et rejoint d'un coup son nouveau niveau pour les grands | Hamermesh, NBER WP 2572, p. 14-16 et tableau 1 | établi pour l'échantillon (une entreprise, 1983-1987), non généralisable |
+| F9 | **Asymétrie aux points de retournement**, États-Unis, après-guerre | Emploi mesuré par log(1 − taux de chômage). Ses **pics suivent ceux de la production de 2,25 trimestres** (203 jours). Ses **creux coïncident** avec ceux de la production (0,13 trimestre, 12 jours). Selon les méthodes, le retard au pic va de 1 à 3 trimestres et les creux sont à moins d'un trimestre. Les contractions de l'emploi sont plus brèves et plus violentes : croissance moyenne de +0,18 % en expansion contre −0,39 % en contraction, par trimestre. Les auteurs résument : « employment is a lagging indicator of output cycles only when coming down but not when going up » | McKay et Reis, NBER WP 12400 : résumé, p. 6-8 (résultats 2 et 3), p. 16 | établi (robuste à des centaines de combinaisons de méthodes, selon les auteurs) |
+| F10 | Procyclicité de la productivité | Corrélation avec la production ; filtre passe-bande ; secteur privé non agricole, 1948-2015. Productivité horaire : 0,63 (1948-1984) → 0,07 (1985-2015). **Productivité par personne : 0,78 → 0,50**. Corrélation de la productivité horaire avec les heures : 0,23 → −0,43 | Galí et van Rens, *EJ* 131 : tableau 1 p. 306, p. 307-309 | La **baisse** est établie (« highly significant, robust », p. 308). Le **signe actuel est contesté** (« controversial », p. 307). Hors des États-Unis, aucun retournement comparable (p. 309, annexe en ligne B.2 non lue) |
+| F11 | Main-d'œuvre quasi fixe | « labor is a quasi-fixed factor » : les entreprises absorbent d'abord les variations de production par les heures et l'effort | Oi (1962) **non lu**. Cité par BLL p. 5 et par Galí et van Rens p. 303 | mécanisme établi, de seconde main |
+| F12 | Rétention, histoire du concept | — | Biddle (2014) : **non lu** | non trouvé |
+| F13 | Coûts d'ajustement asymétriques | — | Hamermesh et Pfann (1996) : **non lu** | non trouvé |
+| F14 | Courbe des salaires (niveau) | Élasticité du salaire réel au taux de chômage local : environ **−0,1** (16 pays dans le livre de 1994, plus de 40 pays ensuite). Méta-analyse : −0,1 sans correction, **−0,07** après correction du biais de publication. Bande du livre : « −0,05 to −0,20 ». États-Unis, panel d'États 1980-2001, annuel : −0,08 ; −0,16 avec instruments ; environ −0,1 pour les spécifications complètes ; −0,07 et −0,12 selon la période | Blanchflower et Oswald, NBER WP 11338 : résumé, p. 1, p. 4 et note 5, p. 11-12, p. 14 | établi |
+| F15 | Persistance du salaire régional | Coefficient du salaire retardé, annuel : 0,955 sans effets fixes d'État ; 0,699 avec ; 0,60 (instrumenté, spécification préférée) ; 0,81 et 0,71 | *idem*, p. 11-12, p. 15 | établi pour le panel, dépend de la spécification |
+| F16 | Correction d'erreur dans l'équation de salaire agrégée | **États-Unis : coefficient proche de 0**, souvent de mauvais signe, non significatif. **Europe : (1 − μλ) ≈ 0,25** en moyenne. Annuel | Blanchard et Katz, NBER WP 6924, § II p. 5 | établi sur données agrégées. Contesté par F14-F15 sur données micro (Blanchard et Katz p. 6-7 ; Blanchflower et Oswald p. 12) |
+| F17 | Pente de Phillips des salaires, États-Unis | Coefficient du chômage dans la hausse trimestrielle des gains horaires, 1964T1-2009T3 : **−0,079** (0,015) (col. 3, indexation sur l'inflation en glissement sur 4 trimestres, de coefficient 0,565). Effet de niveau δ = −(ψ0 + ψ1) : 0,073 (col. 6) à 0,099 (col. 8, échantillon arrêté en 2007T4) | Galí, NBER WP 15758 : p. 17 (éq. 19-20), § 4.2 p. 23-25, tableau 1 | établi pour l'échantillon. Forme réduite d'un modèle NK, indexation inférieure à 1. Hypothèse : unités cohérentes (points de hausse trimestrielle par point de chômage) |
+| F18 | Part salariale | 0,52 | Penn World Table (fiche 2, extrait) | non relu ici |
 
-- **Ce que le modèle produit** (R, C10) : dU/d ln y = −(1 − U*) = **−0,95**. C'est environ le double des −0,4 à −0,5 de l'extrait. Cause : ni heures ni participation endogène, population active exogène. Limite déclarée.
-- **Pente de Phillips implicite** : λ_w·β = 2 points de hausse salariale par point d'écart de chômage et par an. La v2.0 donne un ordre comparable en modèle (I1c, O). Calibration au J3.
+**Conversions.**
+- Convention du § 3.C : le facteur par tour vaut 1 − λ_N/12 ; un coefficient trimestriel ρ_T devient ρ_T^{1/3} par mois.
+- Commande : `uv run --no-project python conv.py`.
+
+| Source | Coefficient lu | Persistance par tour | Demi-vie (tours) | λ_N équivalent (par an) |
+|---|---|---|---|---|
+| F7, États-Unis | ρ_T = 0,383 | 0,7262 | **2,17** | 3,29 |
+| F7, Allemagne | 0,837 | 0,9424 | 11,69 | 0,69 |
+| F7, France | 0,935 | 0,9778 | 30,94 | 0,27 |
+| F7, Belgique | 0,823 | 0,9371 | 10,67 | 0,75 |
+| F3, ajustement partiel mensuel qui reproduit la part du trimestre 0 (49,6 %) | — | 0,6946 | **1,90** | 3,66 |
+| F8, usines regroupées (agrégées) | ρ_M = 0,474 (0,361) | — | 0,93 (0,68) | 6,31 (7,67) |
+| Seuils de `jeu` et calibration | λ_N = 3,51 ; 2,48 ; 2,40 ; 1,91 | — | 2,00 ; 2,99 ; 3,11 ; 4,00 | — |
+
+- Contrôle de l'ajustement mensuel calé sur F3 : il donne un cumul de 0,831 au trimestre suivant, contre 0,765 dans BLL. Une forme géométrique n'épouse donc qu'approximativement les retards distribués de BLL.
+- Salaires :
+  - F15 : correction annuelle 1 − ρ de 0,19 à 0,40, soit λ_w linéaire de 0,21 à 0,50 par an ;
+  - F16, Europe : correction de 0,25, soit λ_w = 0,284 ;
+  - SN avec λ_w = 1 : correction annuelle 1 − (11/12)^12 = **0,648** ;
+  - F17 : 4 × δ = **0,29 à 0,40** point de hausse salariale annuelle par point de chômage. La pente d'impact de SN vaut λ_w·β = **2,0**.
+
+**Ce que le modèle produit, confronté aux faits.** Ce sont des résultats du modèle, non sourcés.
+- **Okun**, R et C : dU/d ln y = −(1 − U*) = −0,95, contre −0,41 (F1).
+  - Décomposition (F4) : γ = 1 contre 0,54, δ = −0,95 contre −0,73.
+  - C ne modifie γ que pendant quelques tours (N = N* hors transitoire). La limite déclarée subsiste. Elle tient à la fois à l'absence de marge d'heures ou d'effort (γ) et à la population active exogène (δ).
+- **Retard moyen** : nul sous R ; demi-vie de 3,11 tours sous C avec λ_N = 2,4, en baisse seulement. Faits : 1,9 à 2,2 tours aux États-Unis (F3, F7) ; 10,7 à 30,9 tours en Allemagne, en Belgique et en France (F7).
+- **Points de retournement**, mesurés par `uv run --no-project python points.py` (N* sinusoïdal, amplitude 2 %, g = 0) :
+
+  | Règle | Retard au pic | Retard au creux |
+  |---|---|---|
+  | R | 0 | 0 |
+  | C, demi-vie 2 tours | 0 | 2 tours |
+  | C, demi-vie 3 tours | 0 | 3 tours (période 36) ; 4 tours (périodes 60 et 96) |
+  | C, demi-vie 4 tours | 0 | 4 à 5 tours |
+  | Faits (F9) | 3 à 9 tours | moins de 3 tours (0,4 tour en moyenne) |
+
+  - Sous C, quand N*_t < N_{t−1}, N_t < N_{t−1} : l'emploi baisse dès le premier tour de recul. C ne peut donc **jamais** retarder un pic. Elle retarde en revanche les creux, ce qui est l'**asymétrie inverse** de F9.
+  - Reproduire le retard au pic exige N < N* en fin d'expansion, donc une marge d'heures. La technique de M24 ne la permet pas sans pénurie : c'est le défaut de D.
+- **Productivité par personne** : acyclique sous R. Sous C, elle baisse en récession et ne dépasse jamais sa tendance. Fait : procyclique, à 0,50 après 1985 (F10).
+- **Salaires** :
+  - β = 0,1/U* = **2,0** est conforme à F14 (1,4 avec l'élasticité corrigée de −0,07).
+  - λ_w = 1 donne une correction annuelle de 0,648. Les faits donnent 0,19 à 0,40 (F15), 0,25 (F16, Europe) et environ 0 (F16, États-Unis agrégés).
+  - La pente d'impact λ_w·β = 2 points par an vaut **5 à 7 fois** les 0,29 à 0,40 de F17.
+  - L'excès vient de λ_w, non de β. Avec λ_w = 0,284 : pente de 0,57 et demi-vie de SN de 28,9 tours, contre 7,97 tours aujourd'hui.
+
+#### 3.N-12 Verdict sur le critère 10 (b), option C (additif du 03/10/2026, sources lues)
+
+**Le retard d'emploi est soutenu par des faits établis quant à son existence et à son ordre de grandeur. Sa forme asymétrique ne l'est pas.**
+
+- **Établi** :
+  - l'emploi suit la production avec retard (F3, F7) ;
+  - les entreprises absorbent d'abord par les heures et l'effort (F7, F11) ;
+  - la productivité par personne est procyclique (F10).
+
+  C représente la moitié « baisse » de ces faits.
+- **Non établi** : « embauche immédiate, débauche lente ».
+  - Les ajustements mesurés sont symétriques (F3, F7). F2 ne trouve aucune asymétrie au pas annuel.
+  - La seule asymétrie établie (F9) va dans l'autre sens aux points de retournement : retard aux pics, coïncidence aux creux.
+  - Le récit de C « la reprise est là, mais le chômage monte encore » (§ 7.C) est donc un **produit de la règle**, non un fait. Aux États-Unis, les creux du chômage et de la production coïncident en moyenne (0,13 trimestre). BLL (§ IV) attribuent les « reprises sans emplois » à une croissance lente, non à un retard d'emploi.
+- **Demi-vie impliquée** : de **1,9 à 2,2 tours** aux États-Unis.
+  - Elle se place à la borne basse du seuil de 2 à 4 tours de `jeu`. Le calage sur F3 (1,90) est même juste en dessous.
+  - λ_N = 2,4 (3,11 tours) est plus lent que les faits américains, mais reste dans la fourchette de `jeu`.
+  - Avec 3 tours ou plus, le retard au creux atteint 3 à 4 tours. Il sort alors de la fourchette de F9 (« à moins d'un trimestre »).
+  - Les valeurs européennes (10,7 à 30,9 tours) sont très au-delà de la borne haute de 4 tours, que `jeu` a fixée pour limiter le gain de la demande pulsée.
+
+**Deux lectures du critère 10 (b).** C'est la formulation du critère qui est en cause, non un manque de documentation. Le mainteneur tranche.
+- **(i)** Le critère exige qu'un retard d'emploi soit établi et que son ordre de grandeur soit sourcé. **C le satisfait**, à condition de déclarer la forme asymétrique comme une approximation imposée par la technique de M24, avec son écart à F9, et de caler λ_N sur environ 2 tours.
+- **(ii)** Le critère exige que la règle elle-même soit soutenue, asymétrie comprise. **C ne le satisfait pas**, et R prévaut.
+
+Mon avis : la lecture (i) est la plus fidèle au texte adopté (« un retard d'emploi n'est retenu que s'il est soutenu par un fait établi et sourcé »). Sur les faits, C, avec une demi-vie de 2 tours, est mieux placée que R :
+- en faveur de C : le retard moyen (F3, F7) et la productivité par personne (F10). R est contredite sur ces deux points ;
+- en faveur de R : les creux (F9), mais C n'en est qu'à 2 tours, ce qui reste à moins d'un trimestre ;
+- échec commun : le retard au pic (F9) et le coefficient d'Okun (F1).
+
+La branche « mécanisme perçu » est remplie selon `jeu` pour les chocs d'un point de demande ou plus, y compris à 2 tours (§ 7 : chômage de +0,48 point au tour 4 contre +0,97 sous R ; pic de +2,38 contre +2,75).
 
 ### 3.R Option R — référence sans retard : N = min{N*, N^pa}, salaire SN
 
@@ -512,12 +594,12 @@ Statut : **extraits de recherche du 03/10/2026, sources primaires non lues** (le
 
 1. **Règle (T4-C)** : N_t = min{N^pa_t, max{N*_t, (1 + g_N/n_a)(1 − λ_N/n_a)N_{t−1} + (λ_N/n_a)N*_t}}.
    - L'entreprise embauche sans délai ce que son plan exige. Elle ne réduit un effectif excédentaire qu'à la vitesse λ_N.
-   - Statut : approchée. Provenance : main-d'œuvre quasi fixe et rétention (Oi, 1962 ; Biddle, 2014 ; extraits). Le terme de tendance a la même construction que N1 (fiche 2).
+   - Statut : approchée. Provenance : retard de l'emploi sur la production (BLL, tableau 2 ; Abraham et Houseman, tableau 3A) et main-d'œuvre quasi fixe (Oi, 1962, cité par BLL p. 5). **La forme asymétrique est un choix imposé par la technique de M24**, sans marge d'heures. Elle n'est pas établie, et elle est inverse de McKay et Reis (2006) aux points de retournement : aucun retard au pic, retard de 2 tours au creux à demi-vie de 2 tours. À déclarer dans les `\limites`.
 2. **État stationnaire** : N = N* exactement, quel que soit λ_N, puisque N_{t−1} = N*_t/(1 + g_N/n_a) sur la trajectoire de référence.
 3. **Production** : y = min{y*, pr·N} = y* dans les deux régimes, puisque N ≥ N*. **La production est identique à celle de R** (C5 : impulsions de ±1 %, mêmes écarts que R à 1e−16 près). Le retard n'affecte que N, U, WB et les profits. La boucle combinée est celle de R, plus la valeur propre découplée 1 − λ_N/n_a = 0,8 en régime de baisse. Bande respectée, comme R.
 4. **Demi-vie de l'écart d'emploi** : ln 2/(−ln(1 − λ_N/n_a)) = **3,11 tours** à λ_N = 2,4 ; 6,58 tours à ×0,5 ; 1,36 tour à ×2.
    - Correspondance demi-vie → λ_N : 2 tours → 3,51 ; 3 tours → 2,48 ; 6 tours → 1,31 par an.
-   - L'extrait d'Okun (« un à deux trimestres ») suggère une demi-vie d'un trimestre environ. Ce n'est pas un fait établi.
+   - Faits : demi-vie de 1,9 tour (BLL, tableau 2, calage mensuel) à 2,2 tours (Abraham et Houseman, États-Unis, 1973-1990) ; 10,7 à 30,9 tours en Belgique, en Allemagne et en France. Calibration proposée : **λ_N = 3,5 par an**, soit une demi-vie de **2,01 tours**. Aux vitesses ×0,5 et ×2 : 4,40 et 0,79 tour (publiées).
 5. **Productivité apparente** : elle est inférieure ou égale à 1. Elle baisse dans les récessions, et elle ne peut dépasser la tendance dans les reprises (Leontief). La procyclicité n'est donc représentée qu'à moitié, alors qu'elle est contestée.
 
 ### 3.D Option D — ajustement partiel symétrique avec terme de tendance (nouvelle), salaire SN
@@ -605,7 +687,7 @@ Aucun fait D1 n'a été remesuré.
 | 7 Bornes | 9 | environ 13 (dont 0,98 à seuil libre) | 1 (conservation) | 1 | 1 |
 | 8 Rétention | N/N* = 1,000032 à l'état stationnaire | N < N* à l'état stationnaire | nulle | transitoire, nulle à l'état stationnaire | transitoire, plus pénurie en reprise |
 | 9 Inflation | π^ref avec max ; ω_u | idx_u·max ; incomplète (≈ 0,9992) | coefficient 1, vertical | idem | idem |
-| 10 Retard | sans tendance | sans tendance | référence | extraits concordants, **non établis** | idem, en contradiction avec la procyclicité |
+| 10 Retard | sans tendance | sans tendance | retard nul, contredit par F3 et F7 ; creux conformes à F9 | retard établi (demi-vie de 1,9 à 2,2 tours) ; forme asymétrique non établie, inverse de F9 aux pics et aux creux | forme symétrique comme F7, mais pénurie (échec du critère 5 (c)) |
 | 11 Lisibilité | — | — | U, W, W/P, part salariale | plus productivité apparente et excédent | plus pénurie en reprise |
 | 12 Empreinte | environ 13 paramètres ; 4 variables d'état | environ 15 paramètres ; 6 variables d'état (3 cachées) ; 4 drapeaux | 4 paramètres ; 3 variables d'état | 5 ; 4 | 5 ; 4 |
 | 13 Coût | puissances, sans itération (non mesuré) | idem (non mesuré) | 1,03 µs par pas (maquette) | idem | idem |
@@ -628,11 +710,13 @@ Aucun fait D1 n'a été remesuré.
 - Une seule borne, de conservation.
 - Une ancre réelle (le niveau) et une pente de long terme verticale.
 - Le minimum de paramètres.
-- R est imposée par le critère 10 (b) tant que le retard n'est pas soutenu par un fait établi.
+- (Motif remplacé par l'additif du 03/10/2026 : voir ci-dessous, « La recommandation dépend de la lecture du critère 10 (b) ».)
 
-**Option C, prête en alternative.** C'est celle que je préfère si un retard est retenu. Elle ne modifie pas la dynamique de production (la bande est tenue), elle représente la rétention et elle donne la productivité apparente demandée par `jeu`. Son adoption exige deux conditions :
-1. la lecture des sources primaires (Ball, Leigh et Loungani, 2017 ; Oi, 1962 ; Biddle, 2014) par une session qui y a accès, ou par le mainteneur ;
-2. l'avis de `jeu` sur le mécanisme perçu.
+*Additif du 03/10/2026 (sources primaires lues, § 3.N-11 et § 3.N-12) :*
+
+**La recommandation dépend de la lecture du critère 10 (b), que tranche le mainteneur.**
+- **Lecture (i)** : je recommande **C**, salaire SN, avec **λ_N = 3,5 par an** (demi-vie de 2,01 tours), et les lectures (a) à (f) inchangées. Le retard est établi. C ne change pas la production, de sorte que la bande du critère 5 (c) et l'état stationnaire restent ceux de R. Le retard est perçu (`jeu`, § 7), et la demi-vie de 2 tours minimise le gain de la demande pulsée mesuré par `jeu`.
+- **Lecture (ii)** : **R** reste imposée.
 
 **Écartées.**
 - D : échec du critère 5 (c), exigence.
@@ -646,6 +730,9 @@ Aucun fait D1 n'a été remesuré.
 4. Coefficient d'Okun de −0,95 : limite déclarée.
 5. Bande à m = 0,8 tenue à 0,1 ou 0,2 tour près : toute recalibration de la fiche 2 au J3 la revérifie.
 6. Critère 7 (c) mesuré au J3 ou au J4. La maquette dépasse 12 tours sans rétroaction des prix.
+7. **λ_w = 1 est hors des ordres de grandeur sourcés** (correction annuelle de 0,648 contre 0,19 à 0,40 ; pente d'impact de 2 contre 0,29 à 0,40). β = 2 est conforme. Recalibration de λ_w au J3, avec le critère 5 (d) et la remesure T1. Sujet frontière avec `monnaie` (indexation inférieure à 1 dans F17).
+8. **Archétypes** : la vitesse d'ajustement de l'emploi varie d'un facteur 14 entre pays (F7), et le coefficient d'Okun d'un facteur 5 (F5). Calibrer un archétype « continental » sortirait du seuil de 2 à 4 tours de `jeu` et amplifierait la demande pulsée. Question pour J5, à soumettre à `jeu` et au mainteneur.
+9. **Sous C**, la restitution et la spécification ne présentent pas comme un fait « le chômage monte encore pendant la reprise ». L'écart à F9 est déclaré dans les `\limites`.
 
 ## 6. Avis de l'expert consulté
 
@@ -971,3 +1058,4 @@ Non instruit.
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à R + SN, lectures (a) et (G), indexation complète, aucun désaccord de fond ; huit conditions transmises à la fiche 8 (C1 à C8) | `monnaie` |
 | 03/10/2026 | Statut « avis rendus » | session principale |
 | 03/10/2026 | `jeu` corrige sa réponse à la question 7 du § 7 (levier sur la norme ω*, lecture (w2)) : sous une règle de prix qui ancre μ̄, ω* ne déplace pas la part salariale et le conflit devient une inflation permanente ; correction consignée au § 7 de la fiche 4 (`docs/blocs/prix.md`) | `jeu` ; session principale |
+| 03/10/2026 | Additif de `macro` : sources primaires lues (BLL 2013, Abraham et Houseman 1993, Hamermesh 1988, McKay et Reis 2006, Galí et van Rens 2021, Blanchflower et Oswald 2005, Blanchard et Katz 1999, Galí 2010) ; § 3.N-11 remplacé, § 3.N-12 ajouté ; retard établi, forme asymétrique non établie ; deux lectures du critère 10 (b) soumises au mainteneur ; λ_N = 3,5 proposé sous la lecture (i) ; réserve sur λ_w | `macro` |
