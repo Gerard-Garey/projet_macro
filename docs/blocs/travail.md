@@ -537,22 +537,22 @@ Statut : **extraits de recherche du 03/10/2026, sources primaires non lues** (le
 
 ### 3.L Restitution et exemple daté (critère 11)
 
-**Exemple** (C6) : même choc que la fiche 2. Dépense publique +1 % aux tours 1 à 12, part de G 20 % (hypothèse), demande +0,2 %, demande exogène, g = 0, U* = 5 %. La production reproduit exactement la fiche 2 (M5). Écarts au sentier :
+**Exemple** (C6, script corrigé `t6_exemple_corrige.py`) : même choc que la fiche 2. Dépense publique +1 % aux tours 1 à 12, part de G 20 % (hypothèse), demande +0,2 %, demande exogène, g = 0, U* = 5 %, λ_w = 1, β = 2, λ_N = 2,4. La production reproduit exactement la fiche 2 (M5). Écarts au sentier :
 
 | Tour | Production % | Emploi R % | Emploi C % | U (R), points | U (C), points | (y/N)/pr − 1 (C) % | W (R), H-p1 % | W (R), H-p2 % | W (C), H-p1 % |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 |
 | 2 | +0,084 | +0,084 | +0,084 | −0,080 | −0,080 | 0,000 | 0,000 | 0,000 | 0,000 |
 | 3 | +0,142 | +0,142 | +0,142 | −0,135 | −0,135 | 0,000 | +0,013 | +0,013 | +0,013 |
-| 4 | +0,183 | +0,183 | +0,183 | −0,174 | −0,174 | 0,000 | +0,034 | +0,036 | +0,034 |
-| 9 | +0,246 | +0,246 | +0,246 | −0,233 | −0,233 | 0,000 | +0,142 | +0,210 | +0,142 |
-| 13 | +0,239 | +0,239 | +0,244 | −0,228 | −0,232 | −0,004 | +0,188 | +0,365 | +0,189 |
-| 14 | +0,153 | +0,153 | +0,226 | −0,145 | −0,214 | −0,073 | +0,195 | +0,403 | +0,196 |
-| 18 | −0,003 | −0,003 | +0,110 | +0,003 | −0,105 | −0,113 | +0,127 | +0,452 | +0,181 |
-| 24 | −0,030 | −0,030 | +0,008 | +0,029 | −0,008 | −0,038 | +0,027 | +0,431 | +0,092 |
+| 4 | +0,183 | +0,183 | +0,183 | −0,174 | −0,174 | 0,000 | +0,035 | +0,036 | +0,035 |
+| 9 | +0,246 | +0,246 | +0,246 | −0,233 | −0,233 | 0,000 | +0,172 | +0,210 | +0,172 |
+| 13 | +0,239 | +0,239 | +0,244 | −0,228 | −0,232 | −0,004 | +0,258 | +0,365 | +0,258 |
+| 14 | +0,153 | +0,153 | +0,226 | −0,145 | −0,214 | −0,073 | +0,274 | +0,403 | +0,275 |
+| 18 | −0,003 | −0,003 | +0,110 | +0,003 | −0,105 | −0,113 | +0,234 | +0,452 | +0,295 |
+| 24 | −0,030 | −0,030 | +0,008 | +0,029 | −0,008 | −0,038 | +0,121 | +0,431 | +0,216 |
 
-- **H-p1** : prix sur leur sentier, donc le salaire réel varie et l'écart se referme. **H-p2** : marge instantanée, donc W/P est constant et le niveau nominal se déplace durablement. C'est une racine unité nominale, qui relève de la fiche 8.
-- **Choc de −1 %, option C** : emploi −0,017 % au tour 2 contre −0,084 % de production ; productivité apparente −0,067 % ; U +0,016 point contre +0,080 sous R. Au tour 9 : −0,182 %, U +0,173 point.
+- **H-p1** : prix sur leur sentier, donc le salaire réel varie et l'écart se referme, avec une demi-vie de 7,97 tours (§ 3.N-7). **H-p2** : marge instantanée, donc W/P est constant et le niveau nominal se déplace durablement. C'est une racine unité nominale, qui relève de la fiche 8.
+- **Choc de −1 %, option C** : emploi −0,017 % au tour 2 contre −0,084 % de production ; productivité apparente −0,067 % ; U +0,016 point contre +0,080 sous R. Au tour 9 : −0,182 %, U +0,173 point. Le salaire de C (H-p1) est à −0,090 % au tour 9 et −0,175 % au tour 13, contre −0,172 % et −0,258 % sous R.
 
 **Délais en tours entiers** (R ; C identique en hausse) :
 - dépense publique → stocks au tour n, production et emploi au tour n + 1, salaire au tour n + 2 ;
@@ -860,3 +860,4 @@ Non instruit.
 | 03/10/2026 | Instruction déposée (§ 3 à 5) : options A, B, socle 3.N, R, C, D ; recommandation R (salaire SN, lectures (a) à (f)), C en alternative conditionnelle ; A, B, D et SP écartées ; remesure T1 proposée | `macro` |
 | 03/10/2026 | Additif de `macro` après la décision du mainteneur sur la part salariale et la lecture unique des taux annuels : § 3.N-4 remplacé (lectures communes (L) et (G), préférence (G) avec révision de M24 (f)), condition 3 (d) sur W/(p·pr) avec écart publié (C13), § 4 et § 5 mis à jour | `macro` ; session principale |
 | 03/10/2026 | Avis de `jeu` (§ 7) : préférence C > R > D > B > A, R imposée par le critère 10 (b) tant que les sources ne sont pas lues ; seuil de demi-vie de 2 à 4 tours proposé ; lecture (G) préférée ; écart relevé dans la colonne « W (R), H-p1 » du § 3.L | `jeu` |
+| 03/10/2026 | Correction de l'exemple daté du § 3.L (constat de `jeu`) : la règle de salaire du script soustrayait deux fois l'écart de salaire, ce qui revenait à λ_w = 2 et β = 1 au lieu de λ_w = 1 et β = 2 ; colonnes « W, H-p1 » de R et de C remesurées ; colonne H-p2, valeur propre et verdicts inchangés | `macro` ; `jeu` |
