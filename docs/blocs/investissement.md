@@ -1000,7 +1000,287 @@ Non instruit (`monnaie`, frontière crédit, au jalon 2).
 
 ## 7. Avis de `jeu`
 
-Non instruit.
+*`jeu`, 03/10/2026 (issue #42, jalon 2), sur la fiche à l'état `0586a92` (branche `claude/j1-economie-reelle`, PR #43). Réponses aux quatre questions de `macro`.*
+
+**Chiffres.** Aucun moteur n'existe encore. J'ai utilisé deux maquettes, exécutées le 03/10/2026 hors dépôt.
+
+- **Équilibre partiel du bloc (PE)**, écrite par `jeu` à partir des seules équations du § 3.S (`pe.py`).
+  - Hypothèses : ŷ et prix sur leur sentier, K^vol par N10, ti mis à jour sur tu.
+  - Contrôle : dérive nulle sans choc sur 720 tours. I^vol/ŷ vaut 0,1396380 aux tours 1 et 720, soit le ti du § 3.E.
+- **Boucle conjointe (EG)** : c'est la maquette `conj6.py` de `macro` (fiches 2 à 6, option S, F, x = 2, η_r = 2, λ_ti = 0,02, régime H). **Elle n'est pas indépendante.**
+  - `jeu` y a ajouté trois choses (`m1.py` à `m5.py`) :
+    - la transmission d'une hausse de taux aux intérêts versés (i_L·L) et reçus (i_D·D_F, i_D·V), sans toucher à l'état stationnaire ;
+    - l'investissement en volume livré, I/p ;
+    - la consommation en volume.
+  - Contrôle : la maquette reproduit au troisième chiffre les deux tableaux du § 3.L, pour I en u.m., tu et les dividendes.
+  - Hypothèses de la maquette EG :
+    - pas d'impôts ;
+    - G exogène ;
+    - π^e exogène, sans règle de taux ;
+    - les intérêts de la dette publique sont versés sans règle budgétaire ;
+    - transmission complète : i_L et i_D montent d'autant.
+  - Les chiffres de signe net (question 1, point 3) dépendent entièrement de ces hypothèses.
+
+**Question ludique de la fiche.** Le bloc n'ouvre aucun levier propre. Trois leviers le traversent : le taux, la dépense publique et l'impôt sur les entreprises. Au socle, il porte aussi la seule trace de ce que le crédit coûte aux entreprises. Trois questions en découlent :
+- le taux a-t-il, par l'investissement, un effet identifiable, durable dans une partie, et du bon signe une fois tous les canaux réunis ?
+- les indicateurs du bloc bougent-ils quand il se passe quelque chose, et seulement dans ce cas ?
+- le financement crée-t-il des gagnants et des perdants lisibles, ou une remise à zéro silencieuse ?
+
+### 7.A, 7.B, 7.P et 7.R (brièvement)
+
+- **A : à revoir.** Les échecs aux critères 6 et 7 (c) sont confirmés avec les stocks (rayons de 1,11 à 1,34). Le résultat est un cycle d'investissement explosif sans cause que le joueur ait donnée. Son indicateur q/q\* était lisible : l'idée d'un indicateur rapporté à sa norme est reprise pour S, sous la forme ϱ_L − ϱ̄_L.
+- **B : à revoir.** Elle a les mêmes échecs, environ neuf bornes, et des coudes actifs à l'état stationnaire, c'est-à-dire des planchers invisibles.
+- **PI : écartée, d'accord.** Elle est instable dès m = 0,6 dans la boucle réduite.
+- **R : hors classement.** C'est une référence d'état stationnaire seulement (accélérateur plein, rayon 4,02).
+
+### 7.S Option S — part d'investissement visée, avec la règle F
+
+- **Récit en une phrase** : « les entreprises investissent une part stable de la production qu'elles attendent ; un point de taux réel du crédit au-dessus de sa norme en retranche 2 %, tant qu'il dure ». Une seule phrase, sans exception cachée.
+- **Ce que voit le joueur** (EG, sauf mention contraire).
+  - **Taux réel du crédit +1 point aux tours 1 à 12** (canal de l'investissement seul, expérience du § 3.L) :
+    - investissement en volume : −1,98 % au tour 1, −2,17 % au tour 6, −2,07 % au tour 12, puis −0,08 % au tour 13 ;
+    - production : −0,230 % au tour 4, −0,244 % au tour 6 ; écart cumulé des tours 1 à 12 : −0,157 %.
+  - **Même hausse maintenue** :
+    - investissement : −2,05 % au tour 24, −1,94 % au tour 120 ;
+    - 94 % de l'effet du tour 12 subsiste au tour 120 ; en PE, 95,7 % à λ_ti = 0,02 et encore 79 % à λ_ti = 0,10 ;
+    - l'effet « absorbé par ti à très long terme » (§ 3.Q, Q12) est donc invisible dans une partie : **le levier ne s'use pas**.
+  - **Dépense publique +1 % aux tours 1 à 12** : l'investissement en volume monte au plus de +0,20 % (tours 6 à 9).
+    - Le +0,647 % d'investissement du § 3.L au tour 14 est en u.m. : en volume, il vaut +0,120 %.
+    - Plus des quatre cinquièmes du chiffre publié sont donc du prix (p +0,527 %).
+  - **Dépense publique +5 % aux tours 1 à 12** :
+    - investissement en volume : +1,01 % au tour 6, pour une production à +1,41 % ;
+    - il reste au-dessus de +0,5 % pendant 11 tours, à partir du tour 4.
+  - **Élasticité de l'investissement à la production : 1 par construction** (I^vol = ti·ŷ).
+    - L'investissement est le miroir de la production, avec un tour de retard.
+    - En volume, il est moins ample qu'elle dans les chocs mesurés (pic de +1,01 % contre +1,41 %).
+    - Qu'il soit en fait plus volatil que le PIB est un fait stylisé à vérifier par `macro` (critère 16). Je ne demande pas d'accélérateur : R vaut 4,02.
+- **Leviers.**
+  - **Taux** : un canal direct et durable, avec un délai d'un tour. La contrepartie est visible le tour même (crédit nouveau −4,48 % au tour 1, § 3.L).
+  - **Dépense publique** : aucun canal propre ; l'investissement suit la production.
+  - **Impôt sur les entreprises** : F3 retranche T̂_F du dividende résiduel, et le plan de S ne lit aucun profit.
+    - L'impôt tombe donc entièrement sur les dividendes, c'est-à-dire sur le revenu des ménages, jamais sur l'investissement.
+    - C'est une lecture des équations F3 et du § 3.S, non mesurée : T_F = 0 dans la maquette.
+- **Stratégies.**
+  - Aucune remise à zéro gratuite du côté du capital : ti ne saute pas et K ne se réévalue pas.
+  - **Sous-investir ne coûte rien à la production** (forme concrète de #37). Avec le taux à +1 point pendant 120 tours :
+    - l'investissement est à −1,94 % ;
+    - la production n'est qu'à −0,05 % au tour 120 (tu à 0,808) ;
+    - une désinflation par le taux n'a donc aucun coût d'offre futur.
+
+    D'accord pour laisser #37 ouverte jusqu'au J7.
+  - **Asymétrie fiscale** : l'impôt sur les sociétés ne touche pas l'investissement, alors qu'un crédit d'impôt (Q12) multiplie le plan, de façon durable à l'échelle d'une partie, comme le taux. La combinaison « impôt élevé et crédit d'impôt » est à éprouver au J4 pour écarter une stratégie dominante (condition 10).
+- **Risques.**
+  - *Signe net du taux* (question 1, point 3) : le seul canal du bon signe est faible.
+  - *Indicateurs morts* :
+    - le taux d'utilisation (question 2) ;
+    - le levier L/K, qui vaut 0,40000 à tous les tours du § 3.L.
+  - *Dividendes au tour, très bruités* (§ 7.F).
+  - *Le rationnement du crédit ne touche pas l'investissement sous J = 1.*
+    - Cas à la main du § 3.F : les dividendes passent de 7,83 à 6,28 (−20 % au tour) et l'investissement est inchangé.
+    - Pour le joueur, une crise du crédit se lit comme une baisse des dividendes.
+    - Accepté au socle. À revoir avant les types de crise du J6 (O3), avec l'accélérateur financier placé dans l'offre du bloc 7 (`monnaie`).
+  - *Pas de surendettement possible des entreprises.*
+    - Sous F, L/K = lv\* à chaque pas où le plan est servi : un choc passe par les dividendes et les dépôts, jamais par une dette qui s'accumule.
+    - Aucune crise de dette privée ne peut émerger au socle. Limite à déclarer, à rouvrir au J6 (issue 2 proposée).
+- **Verdict : lisible**, sous les conditions 1 à 11.
+
+### 7.C Option C — ajustement du capital avec terme de tendance
+
+- **Avec un canal du taux : à revoir.** Une hausse durable d'un point déplace le taux d'utilisation d'arrivée : tu/t̄u vaut 1,4, puis 1,8 et 1,2 selon la vitesse (§ 3.C). Le niveau normal affiché serait faux, et un réglage de vitesse le déplacerait. C'est ce que j'ai refusé pour S à la fiche 5, quand les α étaient libres.
+- **Sans canal du taux : à revoir.** Le taux n'atteint alors l'investissement que par la demande.
+  - J'ai pris comme approximation S avec η_r = 0 : même absence d'effet direct, mais ce n'est pas C.
+  - Avec transmission complète, une hausse d'un point **relève** la production (écart cumulé de +0,246 % sur les tours 1 à 12) et les prix (+0,664 % au tour 12).
+  - Le principal levier monétaire aurait le signe inverse.
+- **Accélérateur sur tu** : ∂I/∂ŷ = λ_K·x = 0,1, contre I/ŷ = 0,1396. L'élasticité vaut donc environ 0,72 (calcul à la main sur l'équation du § 3.C), moins que S. Aucun gain de lisibilité.
+
+### 7.F Règle de financement F
+
+- **Ordre de priorité des paiements** (salaires, puis intérêts et impôts, puis dividendes en dernier) : **lisible**. Le joueur voit qui absorbe un choc de trésorerie, et c'est l'actionnaire.
+- **Variantes écartées** (levier sur p K^vol, cible de dépôts sur les ventes du pas) : d'accord. Explosives (1,05 et 1,49), elles seraient injouables.
+- **Le dividende du tour est un résiduel de caisse, et il oscille.** Après une dépense publique de +5 % aux tours 1 à 12 :
+  - +7,96 % au tour 1, −6,96 % au tour 7, +5,33 % au tour 12, −1,23 % au tour 13, +13,43 % au tour 18 ;
+  - six changements de sens sur les tours 1 à 36, avec un extrême 6 tours après la fin du choc ;
+  - la somme sur 12 tours est bien plus calme : +0,17 % au tour 12, −1,21 % au tour 14, +6,59 % au tour 24, +0,04 % au tour 36 ;
+  - le revenu disponible des ménages reste lisse (de +0,56 % à +2,82 %, en hausse continue sur les tours 1 à 12).
+
+  Le bruit ne se propage donc pas : c'est une question d'affichage.
+- **La dépense publique se voit d'abord dans les dividendes** (+1,59 % au tour 1 pour G +1 %, avant toute hausse de production). Les entreprises encaissent la commande sur leurs stocks et distribuent l'excédent : « la relance profite d'abord aux actionnaires ». Les gagnants sont lisibles, si la restitution les montre (condition 5).
+- **Verdict : lisible**, sous les conditions 4 à 6.
+
+### Réponses aux quatre questions de `macro`
+
+1. **Perceptibilité : oui pour le taux sur l'investissement, non pour la dépense publique de +1 %. Le signe net du taux n'est pas acquis.**
+   - **Taux.** Le chiffre de −2 % est vérifié (−1,98 % au tour 1).
+     - Il apparaît au tour où le taux du crédit publié change, donc au tour n + 1 de la décision si la banque reporte le taux directeur dans le tour (fiche 7).
+     - Il est durable (point 7.S).
+     - Sur la production, l'effet est faible : −0,230 % au tour 4 (vérifié), soit −0,2 point de glissement à une décimale.
+   - **Dépense publique.** Le +0,65 % au tour 14 est en u.m. ; en volume, il vaut +0,12 %.
+     - Pour G +1 %, l'investissement n'est pas un signal : il ne dépasse pas +0,20 %.
+     - Pour G +5 %, il l'est : +1,01 %, et 11 tours au-dessus de +0,5 %.
+   - **Point 3 : signe net d'une hausse d'un point** (transmission complète, tours 1 à 12). La fiche 6 n'en est pas seule maîtresse, mais elle en porte le seul terme du bon signe.
+
+     | η_r | Production, écart cumulé tours 1 à 12 | Tours 1 à 36 | Prix, tour 12 | Prix, tour 36 |
+     |---|---|---|---|---|
+     | 0 | +0,246 % | +0,081 % | +0,664 % | +0,483 % |
+     | 2 (proposé) | **+0,090 %** | +0,056 % | **+0,248 %** | +0,357 % |
+     | 4 | −0,063 % | +0,032 % | −0,157 % | +0,234 % |
+     | 6 | −0,212 % | +0,009 % | −0,551 % | +0,115 % |
+     | 8 | −0,358 % | −0,014 % | −0,934 % | −0,002 % |
+
+     - **Maintenue 120 tours à η_r = 2** : production +0,27 % et prix +4,25 % au tour 120.
+     - **Par canal**, à η_r = 2 :
+       - investissement seul : −0,157 % ;
+       - avec les intérêts versés par les entreprises : −0,527 %, avec des dividendes en baisse de 9,5 % à 11,7 % ;
+       - avec en plus les intérêts reçus par les ménages : +0,090 %.
+
+       Le canal rentier de la fiche 5 l'emporte.
+     - **Ce n'est pas un verdict sur S.** Le signe dépend de la fiche 7 (transmission à i_D), de la fiche 8 (règle de taux) et de la fiche 9 (qui paie les intérêts de la dette publique).
+     - **Mais sous S avec η_r = 2, le canal de l'investissement ne garantit pas à lui seul le signe intuitif du principal levier monétaire.**
+     - Je ne demande pas de relever η_r pour corriger le signe. Ce serait un **choix de conception**, dont `macro` et `monnaie` diraient le coût en fidélité.
+     - Je demande la mesure avant l'ouverture du levier (condition 9, issue 1). C'est la condition 8 de la fiche 5, chiffrée ici.
+   - **Seuil** : voir plus bas.
+
+2. **Taux d'utilisation : ni chiffre avec niveau normal au tableau du tour, ni libellé « capacités tendues ». Hors du tableau du tour.**
+   - **Mesures** (EG) :
+     - Après un choc temporaire, tu revient en 24 tours (G +5 % : 0,8112 au tour 6, 0,7939 au tour 18, 0,7997 au tour 24).
+     - Il ne s'écarte durablement qu'après un choc permanent :
+       - G +5 % maintenu : 0,8048 au tour 24, 0,8035 au tour 120, 0,8006 au tour 480 ;
+       - taux +1 point maintenu : 0,8077 au tour 120.
+     - Les demi-vies de 240 à 900 tours (réserve 6) ne concernent donc que les chocs permanents. C'est une nuance, pas un désaccord.
+   - **Conséquence sous S : tu agit sur ti, de façon imperceptible.**
+     - Pour un écart de +0,0035 pendant 120 tours, ti monte de 0,07 % (calcul à la main sur l'équation du § 3.S : (λ_ti/n_a)·Δtu·120).
+     - Sous M26, tu n'a aucun effet sur les prix.
+   - **Variante T** (ψ_tu = 0,5) : avec Δtu ≈ 0,004 durable, la cible de marge monterait de 0,2 % en log, et U\* de 0,1 point (forme de la fiche 4 : +1,25 point pour Δtu = 0,05). Elle est imperceptible elle aussi et ajoute un paramètre : **je ne la recommande pas à M28**.
+   - **Pourquoi pas « capacités tendues »** : le libellé promet une conséquence (goulot, inflation) qui n'existe pas au socle. Ce serait un piège de lecture.
+   - **Condition 4 de la fiche 2, réglée ainsi** :
+     - tu sort du tableau du tour ;
+     - il reste publié dans les séries et dans la fiche détaillée de l'investissement, avec la mention : « capacité normale utilisée, sans plafond ni effet sur les prix au socle ; elle infléchit très lentement la part d'investissement (moins de 0,1 % en dix ans pour un écart d'un demi-point) » ;
+     - il revient au tableau quand un canal d'offre (#37) lui donne un effet perceptible.
+3. **Dividendes qui montent avec le taux : c'est un effet de l'expérience, à ne pas mettre en avant.**
+   - **Le +3,2 % vient de l'isolement du canal de l'investissement.**
+     - Si les entreprises paient aussi leur crédit plus cher, les dividendes baissent : −9,52 % au tour 1, −11,68 % au tour 2.
+     - Avec transmission complète (les dépôts des entreprises rapportent aussi davantage) : −6,86 % au tour 1.
+     - Le joueur qui relève le taux voit donc baisser les dividendes : c'est le signe intuitif.
+   - **Le mécanisme subsiste et atténue la baisse** : la trésorerie libérée par l'investissement non fait est distribuée. Il se déclare dans la fiche du levier.
+   - **Restitution** :
+     - (i) dividendes et profits non distribués **sur 12 tours seulement**, avec le taux de distribution, jamais la valeur du tour au tableau de bord (bruit mesuré au § 7.F) ;
+     - (ii) **emplois de la trésorerie des entreprises** au tour, en contributions additives (condition 5) ;
+     - (iii) crédit refusé : « demande de crédit non satisfaite : x u.m. ; absorbée par les dividendes (y) et les dépôts (z) ; investissement non touché ».
+4. **K/Y (ii) au joueur, (i) dans le bilan : lisible, à deux conditions.**
+   - **(ii) au joueur, à clarifier sur la fenêtre.**
+     - Dans la définition du test zéro : 1,997 an à 2 % et 1,984 à 10 %. C'est une grandeur physique.
+     - Dans la définition de restitution (lecture (e) : stock de clôture / somme des 12 derniers PIB), le niveau normal vaut **2,040 ans à 2 % et 2,110 à 10 %**.
+       - Le facteur est Γ·12/Σ_{u=0}^{11}Γ^{−u}, soit 1,0216 et 1,0638 (calcul `python3 -c`).
+       - C'est un effet de fenêtre qui dépend de l'inflation, comme pour le ratio de richesse de la fiche 5.
+       - Le niveau normal se publie dans la définition affichée, à l'inflation mesurée.
+     - K/Y bouge lentement : après une dépense publique de +5 % permanente, K^vol/(n_a y) passe de 2,000 à 1,972 au tour 6, puis 1,991 au tour 120. C'est un indicateur structurel, à placer au panneau annuel et non au tableau du tour.
+   - **(i) dans le bilan, avec une ligne de rapprochement** : « écart de valorisation, capital au coût historique », égale à −(1 − ρ̄_K) : −22,1 % à 2 %, −57,9 % à 10 %.
+     - Sans elle, le joueur voit la valeur nette des entreprises V_F tomber de 1,19 à 0,76 an de PIB entre 2 % et 10 % d'inflation.
+     - Il y lirait une perte qui n'existe pas physiquement.
+   - **Levier.**
+     - L/K comptable est constant (0,40000 à tous les tours ; 0,399341 seulement sous rationnement) : hors du tableau.
+     - À sa place, « dette des entreprises en années de PIB », L/(12 × PIB) : 0,622 à 2 % et 0,334 à 10 % (test zéro, 0,4 × K/Y (i) du § 3.E), soit 0,635 et 0,356 dans la définition de restitution.
+     - Cette dette bouge avec l'activité et l'inflation. Elle montre que l'inflation allège la dette des emprunteurs : des gagnants et des perdants lisibles (O2).
+
+### Indicateurs du tour (critère 12 (a))
+
+| Indicateur | Verdict | Motif ou point à clarifier |
+|---|---|---|
+| Investissement, **en volume** (glissement sur 12 tours) | **à clarifier** | En u.m., plus des quatre cinquièmes du mouvement après G +1 % sont du prix (+0,647 % contre +0,120 % au tour 14). Valeur nominale en second, avec la décomposition volume / prix |
+| Taux d'investissement, ΣI/ΣPIB sur 12 tours | **lisible** | Niveau normal publié : 13,945 % à 2 %, 13,849 % à 10 % |
+| Écart du taux réel du crédit à sa norme, ϱ_L − ϱ̄_L | **à ajouter** | C'est la variable que lit la règle, rapportée à sa norme comme q/q\*. Mention dans la définition : « −2 % d'investissement par point » |
+| Crédit nouveau ; demande de crédit non satisfaite | **lisible** | La demande non satisfaite porte la mention « absorbée par les dividendes et les dépôts ; investissement non touché » |
+| Dividendes, profits non distribués, taux de distribution | **à clarifier** | Sur 12 tours seulement ; au tour, bruit de −7 % à +13 % après G +5 % |
+| Emplois de la trésorerie des entreprises (au tour) | **à ajouter** | Explique les mouvements des dividendes (condition 5) |
+| Dette des entreprises en années de PIB | **à ajouter** | Remplace le levier ; niveau normal à l'inflation mesurée |
+| Levier L/K | **hors du tableau** | Constant par construction |
+| Taux d'utilisation | **hors du tableau du tour** | Conséquence déclarée mais imperceptible (question 2) |
+| K/Y (ii) | **à clarifier** ; panneau annuel | Niveau normal dans la définition affichée (2,040 ans à 2 % sous la lecture (e)) |
+| Part d'investissement visée ti | **hors du tableau** | Imperceptible dans une partie |
+
+### Préférence motivée
+
+- **Ma préférence va à S avec F**, comme celle de `macro`.
+  - **Mes motifs propres** :
+    - une règle en une phrase ;
+    - un effet du taux sur l'investissement immédiat, chiffrable (−2 % par point) et durable dans une partie (94 % au tour 120) ;
+    - aucun cycle explosif sans cause, puisqu'il n'y a pas d'accélérateur ;
+    - des niveaux normaux exacts, qu'aucune vitesse ne déplace ;
+    - I^vol ≥ 0 et Div ≥ 0 tenus par la forme, donc sans plancher invisible ;
+    - une impulsion temporaire qui ne laisse pas de gain permanent : après G +1 %, la production culmine à +0,283 % au tour 6 et revient à +0,040 % au tour 14. La condition 10 de la fiche 5 est tenue dans cette boucle.
+  - **Les motifs de `macro`**, que je ne juge pas : critères 3 à 7, 9 et 13.
+- **Faiblesses ludiques**, toutes déclarables et aucune rédhibitoire au socle :
+  - l'investissement n'est qu'un miroir de la production ;
+  - deux indicateurs sont morts (tu, L/K) ;
+  - le rationnement du crédit et l'impôt sur les sociétés ne touchent pas l'investissement ;
+  - aucune crise de dette privée n'est possible ;
+  - le signe net du taux n'est pas établi.
+- **Classement** : S > C sans canal du taux > C avec canal du taux > PI > B > A. R est hors classement.
+- **Lectures soumises au § 5** :
+  - (a) **Fermeture.** Pas d'objection ludique au supermultiplicateur.
+    - Une dépense publique durable a un effet de niveau qui se renforce lentement : +0,68 % au tour 24, +0,95 % au tour 480. C'est lisible : « l'investissement suit et amplifie lentement ».
+    - Je refuse la fermeture kaleckienne par C avec canal du taux : la norme affichée dépendrait de la vitesse.
+    - La fermeture wicksellienne révise M24 et n'est pas de mon ressort. Le point reste contesté.
+  - (b) **Lecture (a) de Q7 : accord.** Les conditions de crédit sont publiées à l'ouverture : le joueur et les entreprises ont la même information. Le délai d'un tour respecte la grammaire commune.
+  - (c) **Voie (i) : accord.** FU apparaît de toute façon dans le tableau de trésorerie (condition 5).
+  - (d) **Levier sur K comptable : accord**, avec sa conséquence : le levier sort du tableau (condition 4).
+  - (e) **Div ≥ 0 comme contrainte de domaine : accord.**
+    - Elle est inactive dans mes scénarios adverses : G −5 % (dividendes / ventes au plus bas à 5,54 %) et G −25 % (2,59 %).
+    - Si elle s'active, le tableau affiche « dividendes suspendus ».
+  - (f) **Amendement du critère 6 : aucun enjeu ludique.** Accord sur le principe : la lenteur n'est pas un continuum.
+- **Coût en fidélité** : je ne demande aucun écart à la littérature. L'investissement en volume, l'écart du taux à sa norme, la trésorerie, la dette en années de PIB et le retrait de tu et de L/K du tableau sont des choix de restitution. Relever η_r pour le signe net serait un choix de conception : je ne le demande pas.
+
+### Conditions demandées au § 9
+
+1. **Investissement restitué en volume** (glissement sur 12 tours), l'u.m. en second, avec la décomposition volume / prix.
+2. **Écart du taux réel du crédit à sa norme**, ϱ_L − ϱ̄_L, en points, avec la mention « −2 % d'investissement par point, au tour où le taux du crédit change ».
+3. **Taux d'utilisation hors du tableau du tour.**
+   - Il reste publié dans les séries et la fiche détaillée, avec la mention de la question 2.
+   - Pas de libellé qualitatif.
+   - Variante T non retenue.
+   - Retour au tableau avec un canal d'offre (#37).
+4. **Levier L/K hors du tableau.**
+   - À sa place, la dette des entreprises en années de PIB et la dette nette L − D_F.
+   - Leurs niveaux normaux sont publiés dans la définition affichée, à l'inflation mesurée.
+5. **Emplois de la trésorerie des entreprises** au tour, en contributions additives : ventes encaissées, salaires, intérêts nets, impôts, investissement non financé par le crédit, variation des dépôts, et dividendes (résiduel). Dividendes et profits non distribués sur 12 tours seulement.
+6. **Crédit refusé** : « absorbé par les dividendes (y) et les dépôts (z) ; investissement non touché (J = 1) ».
+7. **K/Y (ii)** au panneau annuel, avec son niveau normal dans la définition affichée (2,040 ans à 2 % sous la lecture (e)). Dans le bilan, K comptable avec la ligne « écart de valorisation, capital au coût historique » (−(1 − ρ̄_K)).
+8. **Tableau levier → indicateur → délai → contrepartie** (critère 12 (c)), délai mécanique et délai perçu :
+
+   | Levier | Indicateur | Délai | Contrepartie |
+   |---|---|---|---|
+   | Taux | Investissement | Tour où i_L change | Crédit nouveau, dividendes |
+   | Dépense publique | Investissement | n + 2 en volume | Dividendes, dès le tour n |
+   | Impôt sur les entreprises | Dividendes | Le tour même ; aucun effet sur l'investissement | Revenu des ménages |
+
+   Pour le taux, les dividendes baissent sauf la part d'investissement non faite, qui est distribuée. Gagnants et perdants sont nommés.
+9. **Signe net d'une hausse de taux** sur la production et les prix, à 12, 36 et 120 tours. Il est mesuré avec les fiches 5 à 9 avant l'ouverture du levier de taux au J4, avec des critères écrits avant l'essai (issue 1). C'est la condition 8 de la fiche 5, chiffrée ici.
+10. **Catalogue J4 : asymétrie fiscale.** La combinaison « impôt sur les sociétés et crédit d'impôt sur l'investissement » est éprouvée contre une stratégie dominante : un scénario apparié par levier et un scénario combiné.
+11. **Limites déclarées pour le J6** (O3) : le rationnement du crédit et le surendettement des entreprises ne touchent pas l'investissement au socle. Ils sont à rouvrir avec la fiche 7 (accélérateur financier dans l'offre) avant de définir les crises de crédit (issue 2).
+
+### Seuil proposé au mainteneur (critère 12 (d))
+
+- **Grandeur** : e_I(t) = I^vol_t / I^vol,réf_t − 1, en %, l'investissement en volume rapporté à la trajectoire de référence, même état et même graine.
+- **(d1) Taux** : taux réel du crédit anticipé +1 point aux tours 1 à 12.
+  - **Seuil** : **|e_I(t)| ≥ 1,0 % à chacun des tours 1 à 12**, en équilibre partiel du bloc, à la calibration proposée. Aux vitesses ×0,5 et ×2 sur η_r, les valeurs sont publiées.
+  - **Mesuré** : −1,980 % (PE, η_r = 2), et −1,97 % à −2,17 % en EG.
+  - **Contrainte de calibration** : η_r ≥ ln(1/0,99)/0,01 = 1,005.
+  - **Motif** : en deçà, le canal de l'investissement disparaît derrière le canal rentier de la consommation (+0,66 % de C au tour 2 par point de i_D, fiche 5). Le joueur ne relie plus le taux à l'investissement.
+  - **Borne haute** : je n'ai trouvé aucun argument ludique pour en fixer une, et je n'en propose pas.
+- **(d2) Persistance (garde)** : même choc maintenu 120 tours.
+  - **Seuil** : e_I(120)/e_I(12) ≥ 0,5, en PE.
+  - **Mesuré** : 0,957 à λ_ti = 0,02 et 0,793 à λ_ti = 0,10. Le seuil ne contraint pas la calibration actuelle.
+  - **Motif** : il empêche qu'une calibration du J3 rende le levier « usé » au cours d'une partie.
+- **(d3) Dépense publique +5 % aux tours 1 à 12.**
+  - **Seuil** : e_I ≥ +0,5 % pendant au moins 6 des tours 1 à 24, en boucle conjointe, au J4 (scénario O2).
+  - **Mesuré** dans la maquette : 11 tours, à partir du tour 4, pic de +1,01 % au tour 6.
+  - **G +1 %** : valeurs publiées sans être exigées (pic de +0,20 %). L'exiger demanderait un accélérateur, donc une instabilité connue (R vaut 4,02).
+- **Transparence.**
+  - Je propose ces seuils après avoir mesuré les réponses. Ils ne départagent pas les options : seule S a ses formes fermées sans vitesse avec un canal du taux.
+  - Leur rôle est d'encadrer la calibration du J3 (η_r, λ_ti).
+  - Vérification au J3 par appel direct de la fonction du bloc en équilibre partiel, sans le programme entier (`CLAUDE.md`, « Règles des tests »).
+
+**Issues proposées par `jeu`** (création soumise au mainteneur ; corps dans le compte rendu de la session, PR #43) : « Signe net d'une hausse de taux sur la production et les prix : essai conjoint des fiches 5 à 9 avant l'ouverture du levier de taux (J4) » ; « J6 — crises de crédit et dette des entreprises : sous la règle F, le rationnement et le surendettement ne touchent pas l'investissement ».
 
 ## 8. Décision du mainteneur
 
@@ -1020,3 +1300,4 @@ Non instruit.
 | 03/10/2026 | Jalon 2, partie 2 : socle F, options S, C, R et PI, boucles avec N1 à N7 et boucle conjointe, état stationnaire conjoint, voies (i)/(ii) de #36 (sortie de `verifier_matrices.py` avant et sur copie), cas à la main, Q2, Q3, Q5, Q11, Q12, exemple daté ; § 4 et § 5 (recommandation S + F, lecture (a), voie (i), amendement prospectif du critère 6 proposé) | `macro` ; session principale |
 | 03/10/2026 | Décisions du mainteneur : visa de l'amendement de notation sous (G) ; amendement prospectif du critère 6 (2 160 pas) ; lecture annuelle des taux de la v1.5 et T_K en dépendance déclarée | mainteneur ; session principale |
 | 03/10/2026 | Contre-épreuve indépendante de la partie 2 (formes fermées du § 3.E, cas à la main, boucle réduite avec N1 à N7, boucle conjointe) : concordance au 4e chiffre ; précisions d'écriture (taux nominal des formes fermées, configuration du tableau des variantes de F, condition A avec v/y, Div/ventes, période) | session principale |
+| 03/10/2026 | Avis de `jeu` (§ 7) : S + F lisible sous onze conditions ; C, A et B à revoir ; taux d'utilisation hors du tableau du tour, variante T non recommandée ; seuils (d1) à (d3) du critère 12 (d) proposés ; signe net d'une hausse de taux non établi (maquette de `macro` étendue, non indépendante) ; deux issues proposées | `jeu` ; session principale |
