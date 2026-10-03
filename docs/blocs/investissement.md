@@ -3,7 +3,7 @@ bloc: Investissement et financement des entreprises
 module: src/nations/blocs/investissement.py
 expert pilote: macro
 experts consultés: monnaie (demande de crédit face à l'offre bancaire : frontière crédit) ; jeu
-statut: avis rendus (03/10/2026 ; désaccord `macro` / `monnaie` sur le canal permanent du taux)
+statut: avis rendus (03/10/2026)
 décision: —
 issue: #42
 ---
@@ -1421,6 +1421,132 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 
 **Commentaire proposé par `monnaie` sur #44** (soumis au mainteneur ; texte dans le compte rendu de la session, PR #43).
 
+### 6.6 Additif de `monnaie` (03/10/2026) : S-ζ après les mesures de `macro`
+
+*Relance ciblée sur le désaccord S / S-ζ. J'ai lu l'additif de `macro` (§ 5), le § 3.L remesuré et les scripts `regle6.py`, `r1.py`, `r3.py`, `r5.py` et `r7.py` à `r10.py`.*
+
+*J'ai écrit quatre scripts dans `monnaie6/` :*
+- *`m6_fisc.py` : copie de `regle6.py` où un prélèvement forfaitaire sur les ménages est réglé sur B/PIB ;*
+- *`m6_fisc1.py` à `m6_fisc3.py` : les essais.*
+
+*Les sorties de maquette sont des résultats de modèle. Elles n'ont pas le statut de faits.*
+
+**1. Vérification des mesures de `macro` (question 1)**
+
+- **Mesures reproduites** au dernier chiffre affiché. Statut : vérifié.
+  - Sans T9, modules dominants :
+    - S : 1,009238 à τ = 0 et 1,002206 à τ = 0,25 ;
+    - S-ζ (ζ = 2) : 1,008902 et 1,001229 (`r1.py`, `r7.py`).
+  - S-ζ avec T9, τ = 0,25 :
+    - r̄ = 3,83265 %, π̄ = 2,00000 %, tu = 0,84569 ;
+    - valeurs identiques au 8e chiffre dans les branches ×0,5 et ×2 de k_I, a_π, η_r et des vitesses des blocs 2 à 5 ;
+    - demi-vie de 632 tours (`r8.py`).
+  - S avec T9, τ = 0,25 : racine unitaire. Au tour 7 200, r vaut 13,27 %, 19,68 % ou 27,90 % selon λ_ti (`r8.py`).
+  - Sensibilité de r̄ à la dette : 72,5 pb par point de B/PIB à ζ = 2 (`r9.py`), 36,2 à ζ = 4 et 8,5 à ζ = 17 (`r10.py`).
+- **Mon constat initial est confirmé.** Avec le canal du plan seul, S a deux racines unitaires (la nominale et celle de l'action intégrale) ; S-ζ n'en a qu'une, la nominale (`r1.py`). Statut : vérifié.
+- **(a) Le ratio « pb par point de B/PIB » n'identifie pas un effet de la dette sur le taux.**
+  - Sous T9 (τ = 0,25), B/PIB monte de +3,91 points. Cette hausse se décompose ainsi (`m6_fisc2.py`) :
+    - ΔV = +0,54 point ;
+    - ΔD_F = 0,00 ;
+    - −ΔL = +3,37 points.
+  - 86 % de la hausse de B est donc le miroir de la baisse du crédit. C'est l'identité B = V + D_F − L, avec une banque sans fonds propres.
+  - Cette décomposition est la même pour ζ = 2 et ζ = 10. Le ratio divise donc r̄ − ϱ̄ (∝ 1/ζ) par un résultat d'allocation qui ne dépend pas de ζ.
+  - Statut : décomposition vérifiée ; interprétation : hypothèse.
+- **Rapporté à la dépense publique** (G +0,223 point de PIB), r̄ monte de :
+  - 1 270 pb par point de G/PIB à ζ = 2 ;
+  - 635 pb à ζ = 4 ;
+  - 254 pb à ζ = 10 ;
+  - 149 pb à ζ = 17.
+
+  (Calcul fait sur les sorties de `r8.py` et `r10.py`.)
+  - Laubach, FEDS 2003-12, version de mai 2003, résumé lu : « roughly 25 basis points » par point de déficit projeté rapporté au PIB.
+  - Les concepts diffèrent : taux longs à terme d'un côté, taux réel stationnaire de l'autre. Le rapprochement n'est qu'un ordre de grandeur (hypothèse).
+  - Le chiffre « vingt fois » de `macro` n'est donc pas robuste. La sensibilité de r̄ tient à l'allocation au moins autant qu'à ζ : pour G +0,223 point, I^vol baisse de 0,756 point, parce que C monte de 0,533 point.
+  - Mécanisme supposé (hypothèse) : sous F3, la trésorerie libérée par l'investissement non fait est distribuée en dividendes, qui soutiennent C.
+- **(b)** Le terme T9 lit i − i0 même quand le canal « D » est coupé (`regle6.py`, ligne de YD). C'est sans effet sur les mesures publiées, faites avec tous les canaux. Statut : vérifié par lecture.
+- **(c) Limite de la maquette** : banque sans fonds propres, i_L = i_D et Div_Bk ≡ 0. Le canal de la marge bancaire (C29) est absent. Non mesuré.
+- **(d) Le réglage τ = 0 est un cas limite** : G y vaut 0,40 % de la demande et B/PIB 41 %, sans fiscalité. Il ne devrait pas peser dans la calibration (avis).
+
+**2. Faut-il la reprise forfaitaire T9, ou une règle de dette suffit-elle ? (fait nouveau)**
+
+*Montage (`m6_fisc1.py` à `m6_fisc3.py`) : sans T9, un prélèvement forfaitaire T = θ·p·y sur les ménages, avec b = B/(12 p y).*
+
+- **Cible intégrale de B/PIB** (θ suit (k_B/n_a)(b − b0)) : explosive et oscillante pour tous les ζ testés (0 à 10).
+  - τ = 0,25 : de 1,001231 à 1,001379 avec k_B = 0,2 ; de 1,000021 à 1,000216 avec k_B = 0,05 et ζ ≥ 2.
+  - τ = 0 : de 1,0045 à 1,0080.
+  - Statut : vérifié (maquette).
+- **Réaction de Bohn** (T/PIB = φ_B(b − b0)), τ = 0,25 :
+  - **Stabilité locale** : acquise dès ζ = 4 avec φ_B = 0,005 (0,999050). À ζ = 2, il faut φ_B = 0,1 (0,999351).
+  - **Pas d'arrivée sous G +1 % permanent** dans deux cas pourtant stables localement :
+    - ζ = 4, φ_B = 0,02 : r +15,3 points au tour 1 200, puis divergence ;
+    - ζ = 2, φ_B = 0,1 : r +9,3 points au tour 4 800, puis divergence.
+
+    Les deux convergent sous G +0,1 % (`m6_fisc3.py`).
+  - **Arrivée sous G +1 %** dans deux cas : r̄ +0,841 point (ζ = 4, φ_B = 0,1) et +0,629 point (ζ = 10, φ_B = 0,02). Les valeurs sont identiques, à 1e−4 point près, dans les branches ×0,5 et ×2 de λ_ti et de k_I (`m6_fisc2.py`).
+  - **À τ = 0** : aucune combinaison testée (φ_B ≤ 0,1, ζ ≤ 10) n'est stable localement (`m6_fisc1.py`).
+  - Statut : vérifié (maquette).
+- **Lecture (hypothèse, algèbre approchée)** : à l'état stationnaire, une règle de Bohn ne reprend qu'une fraction φ_B/(g − i + φ_B) du surcroît d'intérêts.
+  - Le reste est un revenu rentier permanent.
+  - Avec i < g (ici i0 = 3 % contre 4,04 %), cette fraction est inférieure à 1 pour tout φ_B fini. T9 est la limite φ_B → ∞.
+- **Littérature**
+  - Leeper (1991), *JME* 27(1), 129-147 (résumé lu) : l'existence et l'unicité de l'équilibre dépendent ensemble de la réaction de la politique monétaire et de celle de la politique budgétaire à la dette.
+  - Bohn (1998), *QJE* 113(3), 949-963 (résumé lu) : le surplus primaire des États-Unis croît avec B/PIB.
+  - Point propre au modèle (hypothèse) : la soutenabilité de la dette ne suffit pas, c'est le gain statique de la demande au taux qui décide (C36 (i)).
+  - Godley et Lavoie, par reproduction (vignette sfcr `gl2-pc.Rmd`, section « The puzzling impact of interest rates reconsidered », modèle PCEX2) : l'effet expansionniste du taux y est traité en faisant dépendre la propension à consommer du taux, α1 = α10 − ι·r[−1]. C'est la voie ν(r). Ouvrage non lu.
+
+**3. Portée de S-ζ (question 2)**
+
+- **Je retire ζ = 2**, pour deux raisons.
+  - **Calibration** : ζ = σ/(ϱ̄_L + δ), pour K/Y ∝ (coût d'usage)^−σ (CES, calcul à la main). Avec ϱ̄_L + δ ≈ 6 % :
+    - ζ = 2 suppose σ ≈ 0,12 ;
+    - σ = 0,25 donne ζ ≈ 4,2.
+  - σ = 0,12 est sous l'estimation basse de Chirinko, Fazzari et Meyer (environ −0,25 sur données de firmes). Statut de cette référence :
+    - valeur relevée par moteur de recherche, document de travail Levy n° 175 (1996), publié dans *JPubE* 74(1), 1999 ;
+    - texte non lu (accès bloqué par le proxy) ;
+    - σ est **contestée**.
+  - **Effet sur r̄** : à allocation donnée, r̄ ∝ 1/ζ (`r8.py`). ζ = 2 double l'écart de r̄ par rapport à ζ = 4.
+- **Je me range à la proposition de `macro`**, avec deux précisions.
+  - S-ζ est retenue à M28, et ζ est calibré au J3 sur σ (coût d'usage), pas sur l'effet de la dette sur le taux (§ 1 (a)).
+    - Ordre de grandeur : 4 à 8, pour σ de 0,25 à 0,5 (hypothèse).
+    - Au-delà, la borne Div ≥ 0 devient atteignable après une baisse de taux de quelques points (`macro`, (f) : −2,25 points à ζ = 17).
+  - C37 est nécessaire mais ne suffit pas : S avec T9 garde une racine unitaire (`r7.py`, `r8.py`). Si ζ sort de la spécification, un autre canal de niveau doit le remplacer : ν(r), ou une fermeture budgétaire de U. T9 seul ne ferme pas le modèle.
+- **Pour le joueur, le choix est neutre** : la demi-vie vaut 218 tours à ζ = 4 et 252 tours à ζ = 17 (`r10.py`).
+
+**4. Précision prospective de C36**
+
+- **(ii)** J'accepte l'horizon déclaré, mais je refuse l'alternative « seuil de 1e−3 à 7 200 tours ».
+  - C'est un relâchement du seuil de 1e−6. Il ne sert qu'à ζ = 2 (écart de 1,6e−3 à 7 200 tours). À ζ ≥ 4, r̄ est atteint, à l'affichage, dès 7 200 tours (`r10.py`).
+  - Dix demi-vies laissent environ 1e−3 du transitoire, ce qui est incompatible avec 1e−6.
+  - **Contre-proposition :**
+    - (ii-a) r̄ et π̄ sont calculés par résolution du point fixe dans chaque branche, à 1e−6 relatif ;
+    - (ii-b) la trajectoire simulée après G +1 % permanent atteint ce point fixe (écart relatif inférieur à 1e−3) en au plus 20 demi-vies de la racine dominante.
+- **(iii)** Un module inférieur à 1 au point fixe ne suffit pas : au moins quatre cas mesurés sont stables localement sans arrivée (`macro` : ζ = 4 et 6 sans T9 ; ici : Bohn ζ = 4, φ_B = 0,02 et ζ = 2, φ_B = 0,1).
+  - **Proposition de lecture de « aucune rampe »** : module dominant inférieur à 1, hors racine nominale et hors état inerte déclaré, **et** (ii-b) satisfait.
+- **L'ancien verdict ne change pas** : S-ζ (ζ = 2) avec T9 passe C36 dans son libellé initial ; S, et tout cas sans reprise budgétaire, échouent.
+
+**5. Condition transmise à la fiche 9 (question 3)** : accord. Je l'écris comme suit.
+
+- **C37 — Qui paie le surcroît d'intérêts publics (fiche 9, avec la fiche 8).**
+  - **Exigence** : la règle budgétaire de référence (test zéro, pays non joués) reprend aux agents privés, à fréquence nulle, le surcroît d'intérêts sur B qu'entraîne une hausse durable du taux. Cette reprise doit assurer deux choses :
+    - C36 (i) tient, tous canaux réunis ;
+    - l'arrivée existe après G +1 % permanent (C36 (ii-b)).
+  - **Mesuré** (maquettes, τ = 0,25) :
+    - T9 suffit pour tous les ζ testés (2 à 17) ;
+    - une réaction de Bohn avec φ_B ≤ 0,1 ne suffit pas toujours : à ζ = 2, il faut φ_B = 0,1 pour la seule stabilité locale, et même avec elle, l'arrivée manque dans deux cas sur quatre (§ 2) ;
+    - une cible intégrale de B/PIB échoue.
+  - C37 ne remplace pas un canal de niveau (ζ ou ν(r)), puisque S avec T9 garde une racine unitaire.
+  - **Financement des intérêts par le déficit** : c'est un régime déclaré, une dominance budgétaire au sens de Leeper (1991), pas une référence. Le gain de la demande au taux y est positif, et la règle C2 y explose.
+  - **Pays joué** : la fiche 9 et `jeu` décident si le joueur choisit de reprendre ou non ce surcroît.
+
+**6. Désaccord résiduel (question 4)**
+
+- **Portée de S-ζ** : aucun désaccord. Je me range à `macro` et retire ζ = 2.
+- **Précision de C36** :
+  - *`macro`* : (ii) se juge à au moins dix demi-vies, ou avec un seuil de 1e−3 à 7 200 tours ; (iii) se lit « module dominant inférieur à 1, hors racine nominale ».
+  - *`monnaie`* : (ii) se juge par résolution du point fixe à 1e−6, plus une arrivée simulée à 1e−3 en au plus 20 demi-vies ; (iii) exige un module inférieur à 1 **et** une arrivée simulée, puisque la stabilité locale ne suffit pas (au moins quatre cas mesurés).
+
+**Signalé à `jeu` (non tranché)** : si le joueur finance les intérêts par le déficit, un resserrement durable devient expansionniste à long terme, et la règle C2 diverge si le joueur la délègue. La question est de savoir si c'est lisible comme « dominance budgétaire » ou illisible, comme un paradoxe. À instruire avec la fiche 9.
+
 ## 7. Avis de `jeu`
 
 *`jeu`, 03/10/2026 (issue #42, jalon 2), sur la fiche à l'état `0586a92` (branche `claude/j1-economie-reelle`, PR #43). Réponses aux quatre questions de `macro`.*
@@ -1726,3 +1852,4 @@ Non instruit.
 | 03/10/2026 | Avis de `jeu` (§ 7) : S + F lisible sous onze conditions ; C, A et B à revoir ; taux d'utilisation hors du tableau du tour, variante T non recommandée ; seuils (d1) à (d3) du critère 12 (d) proposés ; signe net d'une hausse de taux non établi (maquette de `macro` étendue, non indépendante) ; deux issues proposées | `jeu` ; session principale |
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à S + F, lecture (a), i_L à l'ouverture, ϱ_L sur π\*, voie (i), aucune prime sur le levier au socle ; conditions C27 à C36 ; **désaccord avec `macro`** : S-ζ (canal permanent du taux par le niveau de tu visé) contre S seule. Statut « avis rendus » | `monnaie` ; session principale |
 | 03/10/2026 | Additif de `macro` (§ 5) : S et S-ζ mesurées avec une règle à action intégrale dans la boucle conjointe (constat de `monnaie` confirmé sous reprise budgétaire des intérêts ; fait nouveau sans elle : gain statique positif, aucun ζ testé ne tient C36) ; § 3.L remesuré avec tous les canaux du taux (C34) et l'investissement en volume (signe des dividendes corrigé) ; réserve 6 nuancée | `macro` ; session principale |
+| 03/10/2026 | Relance ciblée de `monnaie` (§ 6.6) : mesures de `macro` reproduites ; ζ = 2 retiré, ralliement à S-ζ avec ζ calibré au J3 ; C37 (fiche 9 : reprise du surcroît d'intérêts publics) ; fait nouveau : une règle de Bohn ou une cible intégrale de dette ne remplace pas la reprise ; désaccord résiduel sur la rédaction prospective de C36 seulement | `monnaie` ; session principale |
