@@ -35,7 +35,7 @@ Sous M22, un pas est un tour (n_a = 12, n_m = 1) : toute fenêtre exprimée en p
 
 | Contrat | Source | Ce qu'il impose à la fiche 5 | Ce qui le rouvrirait |
 |---|---|---|---|
-| Calendrier et conversions | M22 ; ADR 0005 ; `tab:phases` (l. 505, 508, 510) | Pas mensuel, n_a = 12, un pas = un tour. Conversion **linéaire unique** des taux, flux et vitesses, avec λ ≤ n_a. Plan de consommation écrit en phase 2 ; ligne 1 en phase 5 ; souscriptions de titres en phase 7. Neuf phases triangulaires, aucune résolution simultanée. Ratio de stock du test zéro : stock d'ouverture / (12 × flux du pas) ; en restitution : stock de clôture / somme des 12 derniers tours (lecture (e)) | Décision M-m citant M22 |
+| Calendrier et conversions | M22 ; ADR 0005 ; `tab:phases` (l. 505, 508, 510) | Pas mensuel, n_a = 12, un pas = un tour. Deux conversions selon la nature du taux (ADR 0008, point I.2) : **linéaire** (x/n_a) pour les taux de flux (i_D, i_B, intérêts) et les vitesses, avec λ ≤ n_a ; **géométrique** ((1 + x)^{1/n_a}) pour les taux de croissance et d'inflation (g, π̄, π^e, et la tendance de la cible de richesse). Plan de consommation écrit en phase 2 ; ligne 1 en phase 5 ; souscriptions de titres en phase 7. Neuf phases triangulaires, aucune résolution simultanée. Ratio de stock du test zéro : stock d'ouverture / (12 × flux du pas) ; en restitution : stock de clôture / somme des 12 derniers tours (lecture (e)) | Décision M-m citant M22 |
 | Plans de demande en u.m. et rationnement | M24 (g) ; fiche 2 § 9.4 et § 9.8 ; `sec:production-ventes` (l. 636 à 639) | Le bloc 5 rend en phase 2 un plan de dépense en u.m. La demande en volume d_{H,j,t} = plan / p_{j,t} est formée par le bloc 2 en phase 5. Le rationnement est proportionnel, sans paramètre ni priorité. Le budget non dépensé reste en dépôts, et « ce qu'en font les acheteurs au pas suivant relève de leurs blocs » (l. 639) : la fiche 5 le dit. À plan donné, la demande en volume a une élasticité de −1 au prix du pas | Décision citant M24 |
 | Ordre interne de la phase 5 et ligne 1 | M24 ; fiche 2 § 9.4 ; `sec:production-phases` (l. 692) | « Prix, puis production, puis ménages, investissement, État ». Le bloc 5 propose la ligne 1 sur le volume servi : C = p_{j,t}·C^vol_t, avec C^vol_t = v_{H,j,t}. Il ne lit pas les autres acheteurs | Décision citant M24, et M22 si `tab:phases` change |
 | Phase 2 sans ordre interne | `sec:cadre-phases` (l. 487) ; `sec:production-phases` (l. 690) | Le plan des ménages ne lit aucun autre plan de la phase 2 : ni y*, ni N*, ni les plans de l'investissement et de l'État. Une telle lecture demanderait un ordre interne de la phase 2, absent de la liste des phases à ordre interne (1, 4, 5, 7, 8) | Décision citant M22 |
@@ -213,15 +213,514 @@ Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les ques
 
 ## 3. Options
 
-Non instruit (jalon 2 de l'issue #41, après validation des critères).
+*Rédigé par `macro` (expert pilote), 03/10/2026, sur la fiche à l'état `de91847` et l'ADR 0008 (proposé, `ffe4520`). Branche `claude/j1-economie-reelle`, PR #43.*
+
+### 3.0 Conventions de l'instruction
+
+**Découpage par question** (gabarit, § 3). Les options nouvelles (S, C, R, D) partagent un socle commun (§ 3.N) : revenu disponible, revenu lu (Q2), inflation (Q3, Q10), portefeuille (Q4), phases (Q5, Q7), bornes, strates (Q6). Elles ne diffèrent que par la règle de consommation. A et B sont instruites en entier.
+
+**Notation provisoire** (critère 15), fixée à la décision :
+- C^plan_t : plan de consommation, en u.m. par pas, écrit en phase 2 (exposant `plan`, comme G^plan de la fiche 2).
+- YD_t : revenu disponible du pas.
+- YD^e_t : revenu disponible anticipé du pas.
+- ν : cible de richesse, en années de revenu disponible.
+- λ_V : vitesse annuelle de rappel de la richesse.
+- α_1, α_2 : propensions de la forme de Godley et Lavoie (option S).
+- θ_H : part de la valeur de la production marginale qui atteint le revenu disponible dans le pas (critère 6).
+- Γ = [(1 + g)(1 + π̄)]^{1/n_a} : facteur de croissance nominale par pas ; γ = Γ − 1.
+
+Contrôle par `grep -c -F` sur `nations_et_marches.tex` :
+- `\nu`, `\theta`, `YD`, `Y^D`, `\lambda_V`, `\mathrm{plan}`, `V^*` : 0 occurrence chacun ;
+- `\alpha` : 1 occurrence, dans `sec:ecartees` (l. 1026), au sens de la part du capital de la v1.5, donc une collision de lecture à juger par `docwriter` ;
+- `\rho` : pris (ρ̄_IN, ρ̄_K), d'où « r » est évité pour un taux propre au bloc ;
+- `\chi` : 1 occurrence, locale (l. 617).
+
+**Classement des taux du bloc (ADR 0008, point I.2)** :
+
+| Taux | Nature | Conversion |
+|---|---|---|
+| i_D, i_B (lignes 10, 11a) | flux sur encours | linéaire, i/n_a |
+| λ_V | vitesse | linéaire, λ_V/n_a, avec λ_V ≤ n_a |
+| g, π̄, π^e, et l'inflation lue dans le terme de tendance | croissance ou inflation | géométrique : Γ = [(1 + g)(1 + π)]^{1/n_a} |
+| ν | cible de niveau, en années | V* = ν·n_a·YD^e |
+
+ν n'est pas un taux. Son facteur n_a est un changement d'unité, non une conversion.
+
+**Hypothèses de calcul** (ce ne sont pas des calibrations) :
+- g = 2 %, π̄ = 2 % et 10 %, n_a = 12 (et 4, 52) ;
+- ν = 1 an, λ_V = 0,4 par an ;
+- i_D = 0 ou 3 % ;
+- θ_H = 0,8 (salaires seuls : ω̄ = 1/(1 + μ̄), μ̄ = 0,25 ; profits retenus) ou 1,0 (profits distribués dans le pas) ;
+- impôts et transferts nuls (hypothèse provisoire, critère 10 (c)) ;
+- fiche 2 : λ_v = 3, λ_IN = 1,5 par an, σ = 1,4 mois ;
+- emploi R plafonné à N^pa avec U^eq = 5 % ; prix figés à (1 + μ̄)·UC sur leur sentier.
+
+**Calculs** (03/10/2026). Commande : `uv run --no-project [--with numpy] python <script>` dans le scratchpad. Sorties citées au Retour.
+
+| N° | Script | Objet |
+|---|---|---|
+| F1 | `f5_calculs.py` | formes fermées sous (G) : SIM (revenu courant et retardé), cible sans tendance, transposition v2.0 ; n_a = 4, 12, 52 ; π̄ = 2 % et 10 % |
+| F2 | `f5_F2.py` | contre-épreuve par simulation de la règle C |
+| F3 | `f5_calculs.py` | taux d'épargne nominal et corrigé (Haig-Simons) |
+| F4 | `f5_calculs.py` | m_H d'impact et de long terme |
+| F5 | `f5_calculs.py` | boucle propre (critère 5 (b)) |
+| B1 | `f5_boucle.py` | boucle fiche 2 + ménages (critère 5 (c)), avec validation ; exemples datés ; sur-commande |
+| B2 | `f5_sc.py` | sur-commande sur 720 pas |
+
+**Validations et contre-épreuves** :
+- B1, avec la règle fixe d = A + m·y_{t−1} et g = 0, reproduit exactement la fiche 2 : 0,9459 et 73,0 tours (m = 0,6) ; 0,9770 et 95,9 tours (m = 0,8).
+- F1 recalcule les illustrations du critère 4, avec un écart dû à la lecture (G), dans laquelle elles n'avaient pas été écrites :
+  - (i) SIM : 0,9098 contre 0,9094 publié (π̄ = 2 %) ; 0,7757 contre 0,7754 (10 %) ; α_2 ×0,5 : 1,6690 contre 1,6677 ; ×2 : 0,4764 contre 0,4763 ;
+  - (ii) cible sans tendance : 0,9265 / 0,9618 / 0,9806 contre 0,9262 / 0,9617 / 0,9805.
+- **Constat sur la rédaction du critère 4 (ii).** La formule s'y lit « C = revenu + (λ_V/n_a)(V* − V) ». Prise à la lettre, elle donne V > V* et un signe absurde : on consommerait plus sous la cible. Les chiffres publiés correspondent à **C = revenu − (λ_V/n_a)(V* − V)**. Je ne modifie pas le critère ; je signale une coquille de signe, à corriger de façon prospective si le mainteneur le juge utile.
+- Une première version de la contre-épreuve F2 portait une erreur de détendance : le facteur Γ était compté deux fois dans YD^e. Elle donnait 0,96 à 0,9998 au lieu de 1. Elle est corrigée dans `f5_F2.py` ; aucun chiffre publié n'en provient.
+
+**Intégrité des sources** : `sha256sum` de `model.py` (e1505b7e…) et du `.tex` de la v1.5 (097d023f…), identiques à `tests/invariants/archive_sha256.txt`. Lignes vérifiées le 03/10/2026.
+
+**Littérature** :
+
+| Source | Ce qui est établi | Statut |
+|---|---|---|
+| Godley et Lavoie (2007), SIM (chap. 3) et PC (chap. 4) | SIM : C = α_1·YD + α_2·H_{−1}, avec α_1 = 0,6, α_2 = 0,4, θ = 0,2 ; SIMEX : YD^e = YD_{−1} ; PC (éq. 4.5) : C = α_1·YD + α_2·V_{−1} ; demande de titres (éq. 4.7) : B_h = V(λ_0 + λ_1·r − λ_2·YD/V), avec λ_0 = 0,635, λ_1 = 5, λ_2 = 0,01, r̄ = 2,5 % | **lu par reproduction** : PKSFC (A. Godin), fichiers `SIM.txt`, `SIMEX.txt` et `PC.txt` (le tutoriel les dit tirés de l'appendice 3.1, p. 91 de l'ouvrage). **Ouvrage non lu** |
+| *Idem*, PCEX2 | α_1 = α_10 − ι·r (α_10 = 0,7, ι = 4) : la propension baisse avec le taux | reproduction sfcr (J. Macalós), `gl2-pc.Rmd` l. 339 à 344. Ouvrage non lu |
+| *Idem*, DISINF (chap. 9) et INSOUT (chap. 10) | revenu « Haig-Simons » : ydhs = c + Δmh ; ydr = YDr/p − π·V_{−1}/p ; consommation réelle sur le revenu réel corrigé de la perte d'inflation sur la richesse ; INSOUT α_1 = 0,95, α_2 = 0,05 | reproduction sfcr, `gl6-dis.Rmd` l. 73 à 77, `gl7-insout.Rmd` l. 264 à 279. Ouvrage non lu. **Q3 : le chapitre est retrouvé par reproduction, la page n'est pas vérifiée** |
+| *Idem*, GROWTH (chap. 11) | C_k = α_1(YD^e_kr + NL_k) + α_2·V_k(−1) (éq. 11.53, α_1 = 0,75, α_2 = 0,064) ; YD_kr = YDr/P − ΔP·V_k(−1)/P (11.55) | reproduction sfcr, `gl8-growth.Rmd` l. 116 à 127, 226 et 227 |
+| Jappelli et Pistaferri (2010), NBER WP 15739 | Blundell, Pistaferri et Preston (2008) : propension à consommer un choc transitoire d'environ 5 % (plus forte chez les pauvres), un choc permanent d'environ 0,65 (WP p. 42). Hall et Mishkin : 29 % (p. 42). Italie : environ 1 et 0,3 (note 20). Johnson, Parker et Souleles (2006) : 20 à 40 % du remboursement de 2001 dépensés en biens non durables en trois mois (p. 29). Conclusion : forte hétérogénéité, rôle des contraintes de liquidité (p. 47-48) | **lu** |
+| Parker, Souleles, Johnson et McClelland, NBER WP 16684 (version de 2013) | 12 à 30 % des paiements de 2008 en biens non durables sur trois mois ; 50 à 90 % de dépense totale | **lu** (résumé, p. 1 du PDF) |
+| Kaplan, Violante et Weidner, NBER WP 20073 (2014) | 25 à 40 % des ménages américains « hand-to-mouth », estimation préférée un tiers (p. 3) ; 31 % en moyenne sur 1989-2010, dont deux tiers « riches » (p. 22) ; environ 20 % du revenu (p. 23) | **lu** |
+| Carroll, Otsuka et Slacalek, NBER WP 12746 (2006) | propension à consommer la richesse immobilière : environ 2 cents au trimestre suivant, 9 cents à long terme (p. 2) ; « sagesse conventionnelle » de 3 à 5 cents (p. 1) ; 4 à 10 cents sur plusieurs années (p. 13) ; l'effet de la richesse boursière est plus faible | **lu** |
+| Galí, López-Salido et Vallés, NBER WP 11578 | existence vérifiée (PDF téléchargé) | **contenu non lu** |
+| Fagereng, Holm et Natvik (gains de loterie) | — | **non retrouvé** dans la session |
+| Taux d'épargne, richesse rapportée au revenu (Fed Z.1, BCE) | page B.101h de la Fed accessible ; BCE non accessible | **non lu**, aucun chiffre retenu |
+
+**Ce que la littérature permet de conclure** :
+- la propension à consommer un revenu transitoire est hétérogène : environ 0,05 dans les modèles d'assurance, mais 0,2 à 0,4 sur un trimestre pour des transferts ponctuels (biens non durables) et 0,5 à 0,9 en dépense totale ;
+- un tiers environ des ménages sont contraints ;
+- l'effet richesse, pour une richesse peu liquide, est de 2 à 10 cents par an.
+
+Elle **ne permet pas** de caler λ_V sur la richesse **liquide** (dépôts), qui est celle du socle : la source pertinente (gains de loterie) n'a pas été lue.
+
+### 3.A Option A — v1.5
+
+1. **Source.** `archive/v1.5/Nations_et_Marches_v1_5.tex` :
+   - `eq:yd` (l. 631) ;
+   - `eq:cB`, `eq:cH`, `eq:cM` (l. 645 à 648) et leur lecture (l. 651 à 656) ;
+   - `eq:portfolio` (l. 696) ;
+   - table de calibration : l. 2253 (σ = 1), l. 2254 (β = 1/(1 + ρ)), l. 2255 (c_B, c_M, c_H = 0,95 ; 0,80 ; 0,50), l. 2256 (c^V = 0,03), l. 2292 (ψ_h et cov̄), l. 2311 (révision : c = 0,95 ; 0,90 ; 0,80 et c^V = 0 ; 0,04 ; 0,08), l. 2321 (ρ = 0,01).
+
+   **Équations jamais garanties exécutées.**
+
+2. **Équations.**
+   - Strate basse : E_B = c_B·Y^d_B + c^V_B·V_B, avec c_h = c^0_h(1 − ψ_h(1 − cov)) et cov écrêté à [0, 1].
+   - Strate haute : une cible d'Euler sur la croissance, E_{H,t+1}/E_{H,t} = (β(1 + i^D)/(1 + π^e))^{1/σ}, et un « ajustement partiel vers κ_E(Y^perm_H + r·V_H) ».
+   - Strate moyenne : mélange λ_M, sans valeur dans la table.
+   - Y^perm : moyenne mobile exponentielle, sans vitesse donnée.
+   - Portefeuille : parts de Tobin bornées à [0, 1].
+   - **κ_E et λ_M n'ont pas de valeur** (`grep` : l. 647, 648 et 651 seulement ; κ_E désigne par ailleurs la vitesse du cours des actions, l. 1362 et 1367 : collision). La v2.0 porte `kappaE = 0.9` (`model.py` l. 161), qui n'est employé nulle part (L).
+
+3. **État stationnaire.** Il est **non calculable** sans choisir une transposition, pour deux raisons :
+   - la combinaison de la cible d'Euler et de l'ancrage de niveau n'est pas écrite (critère 2 du gabarit) ;
+   - la vitesse de Y^perm n'est pas donnée.
+
+   Ce qui se démontre :
+   - la cible d'Euler seule est un intégrateur sans ancre (critère 4 (b)) : la consommation croît au taux d'Euler, qui n'égale g que si r = ρ + σg. Sinon E/YD dérive ; à r = ρ + σg, tout niveau est stationnaire (continuum) ;
+   - un ancrage sur Y^perm lissé sans terme de tendance reste en dessous d'un revenu croissant, d'un écart fonction de la vitesse (critère 4 (iii)) ;
+   - strate basse révisée (c^V = 0) : V/(n_a·YD) = (1 − c_B/Γ)/(n_aγ). Le ratio n'est défini que si γ > 0 et diverge sous croissance nominale nulle.
+
+4. **Comportement.** Non mesuré. Les chiffres de la v1.5 (l. 2065, S1 : « propensions ×0,8 : u 20 %, taux zéro » ; l. 2073) sont rapportés et invérifiables.
+
+5. **Coût.** Sans itération dans la forme écrite. Non mesuré.
+
+6. **Défauts.**
+   - Critère 4 (Euler sans ancre ; Y^perm sans tendance).
+   - Trois strates : sous-colonnes de `tab:matrice-flux`, contrat M22.
+   - Bornes à seuil libre : clip de cov, parts dans [0, 1] « on les borne » (l. 700), subsistance de Stone-Geary.
+   - Canal de substitution au taux : l'hypothèse réfutée n° 3 n'est pas reprise sans fait nouveau.
+   - β est employé deux fois (escompte et Stone-Geary) : critère 15.
+
+7. **Identités.** Ligne 1 ; colonne des ménages en trois strates. Crédit aux ménages (`eq:yd`, i^L_h·L_h) : absent du socle.
+
+8. **Joueur.** Multiplicateur « strate basse » lisible ; canal du taux à la Ramsey (IS).
+
+9. **Empreinte.** Y^perm et E_{H,t−1} par strate, soit 6 variables d'état au moins ; une quinzaine de paramètres, dont 2 sans valeur.
+
+### 3.B Option B — v2.0
+
+1. **Source** (statut L, lignes vérifiées le 03/10/2026). `archive/v2.0/prototype/model.py` :
+   - l. 159 : `c` = (0,95 ; 0,90 ; 0,80), `cV` = (0 ; 0,04 ; 0,08) ;
+   - l. 162 et 163 : `household_mode='euler'`, `euler_share` = (0 ; 0,5 ; 1) ;
+   - l. 165 : `wiu_epsilon` = 0 ;
+   - l. 185 : `portfolio_mode='legacy'` ;
+   - l. 197 : `hh_income_speed` = 0,02 par semaine ;
+   - l. 200 : `cash_consumption_fraction` = 0,9 ;
+   - l. 214 : `sB` = 0,30 ;
+   - l. 789 et 792 : `getattr` (état caché) ;
+   - l. 793 : E_income = c·Yd + cV·V/52 ;
+   - l. 795 et 796 : clip à [0 ; 0,9 × encaisse] ;
+   - l. 803 à 838 : branches ; l. 838 : E = min((1 − mix)·E_income + mix·E_opt, encaisse) ;
+   - l. 1222 : achats de titres = min(sB·(Yd − E), 0,5 × dépôts) ;
+   - `joint_portfolio.py` l. 84 et 117 (`brentq`) ; `wealth_utility.py` l. 16 et 37 (Newton, jusqu'à 100 itérations) ; `households.py` l. 74 à 107.
+
+   **Branche active dans D1.** `portfolio_mode='joint_equity'` (faits § 1.1, S+O) impose, par les contrôles des l. 345 et 368 et le test des l. 828 et 829, `sigma` = 1, `household_mode='euler'`, `assets` = True et `wiu_epsilon` > 0. Les l. 803 à 805 sautent alors l'optimiseur liquide, et `decision_and_settlement` (l. 833) résout, chaque semaine :
+   - un problème d'utilité de la richesse à horizon de 520 semaines par ménage (`joint_solver.solve`) ;
+   - un équilibre du prix des actions (`brentq`).
+
+   **Coefficients effectifs de D1 non établis** : `c`, `cV`, `euler_share`, `wiu_epsilon`, `wiu_targets`, `joint_years`. `config/reference.json` est absent. Le seul profil lisible est celui des valeurs par défaut (`portfolio_mode='legacy'`), qui n'est pas D1.
+
+2. **Équations.**
+   - Partie active transposable : la règle de revenu, C = c·YD + cV·V par an. La v2.0 lit le revenu de la semaine même ; transposée sur M24, elle lit YD_{t−1}.
+   - Plafond : C ≤ 0,9 × encaisse.
+   - Titres : achats en flux, sB·(Yd − E), sans cible de stock ; rachats proportionnels (`treasury.py` l. 59 à 82).
+
+3. **État stationnaire** de la règle de revenu transposée (F1, n_a = 12) : V/(n_a·YD) = (1 − c/Γ)/(n_aγ + cV).
+
+   | Groupe | π̄ = 2 % | π̄ = 10 % | π̄ = 2 %, n_a = 4 / 52 |
+   |---|---|---|---|
+   | B | 1,3393 | 0,5107 | 1,4914 / 1,2802 |
+   | M | 1,2924 | 0,6976 | 1,3642 / 1,2646 |
+   | H | 1,6933 | 1,0612 | 1,7352 / 1,6770 |
+
+   - Le groupe B (cV = 0) n'a d'ancre que la croissance nominale : pas d'état stationnaire à γ = 0 (critère 4 (b)).
+   - cV est à la fois niveau et vitesse (critère 4 (i)).
+   - La part B_H/V_H dépend de l'histoire budgétaire (titres achetés en flux, rachats) : aucune forme fermée.
+
+4. **Comportement.**
+   - G1 : 0 semaine de contrainte budgétaire d'un groupe de ménages sur 260 ; 145 semaines dans la branche « R3 désactivé » (S+O).
+   - Acquis R : « la propension ne fixe pas la dépense » ; « la politique monétaire peut agir à l'envers ».
+   - Aucune élasticité causale de la demande au taux n'est identifiée par G (S+O, G-T).
+
+5. **Coût.** La branche active itère (`brentq` ; Newton jusqu'à 100 fois, sur 520 périodes et 3 ménages) : **échec du critère 14**, qui est une exigence. Coût non mesuré.
+
+6. **Défauts.**
+   - Branche active itérative, qui exige des actions (J6) : non transposable au socle.
+   - Plafond 0,9 × encaisse, à seuil libre : instabilité 15.
+   - `np.maximum(dépôts, 0)` (l. 795).
+   - État caché (l. 789 et 792).
+   - Drapeaux : `household_mode`, `portfolio_mode`, `euler_share`, `wiu_*`.
+   - Instabilités 6 (effet richesse normé par défaut, R, sens à établir) et 8 (buffer-stock, branche `plan_buffer_stock`, l. 818) : non réintroduites si seule la règle de revenu est transposée.
+
+7. **Identités.** Lignes 1, 11a et 19a-ménages. Les actions et l'immobilier sont hors socle.
+
+8. **Joueur.** Propensions par groupe lisibles ; le plafond d'encaisse est invisible.
+
+9. **Empreinte.** Y^perm_real et `_other_perm_real` (cachées), plus les états de l'optimiseur.
+
+### 3.N Socle commun des options nouvelles (S, C, R, D)
+
+**3.N-1 Revenu disponible** (critère 10). Il est connu à la fin de la phase 6 :
+
+YD_t = WB_t (bloc 3, phase 4) + Tr_t (bloc 9, phase 6) + i_D·D_{H,t}/n_a (bloc 7) + i_B·B_{H,t}/n_a (bloc 9) + Div_{F,t} (bloc 6) + Div_{Bk,t} (bloc 7) − T_{H,t} (bloc 9).
+
+La forme est symbolique, quelles que soient les règles d'impôt et de dividende. Les hypothèses provisoires (impôts et transferts nuls, θ_H) sont remplacées aux fiches 6 et 9. Aucune anticipation ricardienne des impôts (critère 10 (d)).
+
+**3.N-2 Revenu lu par le plan (Q2).** Retenu pour S, C et D : **(i) le revenu du pas précédent, porté en variable d'état**, YD^e_t = Γ^e·YD_{t−1}, avec Γ^e = [(1 + g)(1 + π^lu)]^{1/n_a} (ADR 0008, I.1).
+- Le terme de tendance supprime la dépendance du ratio stationnaire à n_a qu'aurait un revenu retardé sans tendance (critère 3 (b)).
+- Le délai impôts → consommation et transferts → consommation est d'**un tour** : cela **confirme la fiche 2, § 9.4**.
+- (ii), un revenu lissé (v2.0, `Yperm`), est écarté : vitesse de lissage dans l'état d'arrivée sans terme de tendance, ou état de plus avec.
+- (iii), les composantes connues en phase 1, ne donne pas WB_t (phase 4). C'est l'option R.
+
+**3.N-3 Inflation lue dans la tendance (Q10) et revenu corrigé (Q3).**
+
+Le terme γ·V qu'épargnent les ménages se décompose en deux parts :
+- la perte d'inflation sur la richesse nominale, soit la correction de Haig-Simons de Godley et Lavoie (ydr = YDr/p − π·V_{−1}/p, reproduction sfcr) ;
+- la part de croissance réelle.
+
+Trois lectures de π^lu :
+
+| Lecture | Valeur stationnaire | Condition d'exactitude |
+|---|---|---|
+| **(a)** glissement mesuré π_{t−1}, lu dans le registre (ADR 0008, II.2) | π̄ | toujours exacte, quelle que soit la fiche 8 |
+| **(b)** π^e de la fiche 8 | π̄ | exacte seulement si C1 tient ; sinon le ratio vaut (γ^e + λ_V/n_a)/(γ + λ_V/n_a) fois la cible, fonction de λ_V : critère 4 |
+| **(c)** π̄ (cible) | π̄ | exacte seulement si π̄ = π* (C2) |
+
+Je recommande **(a)**, sous l'avis de `monnaie`.
+
+Q3, avec ν = 1 et n_a = 12 (F3) :
+
+| | π̄ = 2 % | π̄ = 10 % |
+|---|---|---|
+| Taux d'épargne nominal = n_aγν | 3,967 % | 11,567 % |
+| C/YD | 0,96033 | 0,88433 |
+| Revenu de Haig-Simons / revenu nominal | 0,98018 | 0,90431 |
+| Taux d'épargne corrigé (Haig-Simons) | 2,025 % | 2,209 % |
+
+Le taux nominal triple avec l'inflation ; le taux corrigé ne bouge presque pas. **Je propose de restituer les deux** ; avis de `jeu`.
+
+**3.N-4 Portefeuille (Q4).** Recommandé au socle : **B_H ≡ 0**.
+- Lignes 11a, 19a-ménages et 19b-ménages à montant nul, sans retrait (un retrait demanderait une décision citant M22).
+- D_H = V_H, aucune règle de portefeuille, aucune ligne ajoutée.
+- Le placement est assuré par la banque et la banque centrale (fiches 7 à 9).
+- La dette publique reste une richesse des ménages, mais indirecte : la banque la porte, financée par les dépôts.
+
+Variantes instruites :
+- **demande de Tobin** (PC, éq. 4.7) : part stationnaire λ_0 + λ_1·(i_B − i_D) − λ_2/(n_aν), en forme fermée. Elle exige une clôture du placement en phase 7 : une baisse de la demande impose un acheteur (rachat 19a négatif, ou 19b) ;
+- **part fixe**.
+
+Les deux sont renvoyées à la fiche 9 ou à J6, avec l'avis de `monnaie`.
+
+**3.N-5 Phases et lectures** (critère 2) :
+
+| Phase | Le bloc 5 lit | Le bloc 5 écrit |
+|---|---|---|
+| 1 | — | — |
+| 2 | ouverture : D_H, B_H, YD_{t−1}, registre (π_{t−1}) ; paramètres g, ν, λ_V | C^plan_t |
+| 5, après les blocs 4 et 2 | p_t, v_{H,t} | ligne 1, C_t = p_t·v_{H,t} |
+| 6 | lignes 5 à 15 reçues | YD_t (variable d'état pour t + 1) |
+| 7 | sans objet sous B_H ≡ 0 | — |
+
+- La matrice des lectures est triangulaire ; aucune lecture de N*, y*, G^plan ni I^plan.
+- Q5 (ordre interne de la phase 7) est sans objet sous B_H ≡ 0.
+
+**3.N-6 Paiements et bornes (Q7, critère 8).**
+- D_H ≥ 0 et B_H ≥ 0 sont des contraintes de conservation, sans paramètre, inactives à l'état stationnaire, avec une marge d'environ 12ν mois de consommation.
+- Le plan ne connaît pas WB_t. Le paiement de la phase 5 doit vérifier C ≤ D_{H,t} + WB_t. Deux lectures, soumises au mainteneur (critère de tri de #38) :
+  - **(a)** plafond du plan à D_{H,t} d'ouverture, en phase 2 : payable par construction, mais c'est une conservation resserrée, donc **à seuil libre** au sens du tri ;
+  - **(b)** plafond en phase 5 à D_H après la phase 4 : c'est la vraie contrainte de conservation, mais il faut que le bloc 2 lise D_H avant de servir, ou un pré-plafond du bloc 5 en tête de phase 5, ce qui modifie l'ordre de M24.
+- Je préfère (a), déclarée et testée, inactive à l'état stationnaire.
+- Priorité des paiements : ligne 1 (phase 5), puis ligne 7 (phase 6, après les recettes de la phase 6).
+- **Cas à la main** (impôts doublés pendant un tour ; D_H = 1 200, WB = 80, plan 96, T_H = 16 → 32, intérêts 3) :
+  - D_H vaut 1 280 après la phase 4, 1 184 après la phase 5, 1 155 après la phase 6, soit environ 12 mois de marge ;
+  - le plan du tour suivant baisse de (1 − νλ_V)·16 = 9,6 sous C.
+- **Aucune autre borne** dans S, C et D.
+
+**3.N-7 Cohérence stock-flux (critère 1).**
+- Cas à la main : demande des ménages servie à 90 %. D_H = 1 200, plan 96, WB = 80, i_D = 3 %, Div = T = Tr = 0.
+- C = 86,4 ; YD = 80 + 3 = 83.
+- Par le stock : D_H = 1 200 + 80 − 86,4 + 3 = 1 196,6. Par les flux : V + YD − C = 1 200 + 83 − 86,4 = 1 196,6.
+- Le budget non dépensé, 9,6, reste en D_H.
+- Aucune ligne ajoutée ; les signatures de `tab:portes-monnaie` sont inchangées.
+
+**3.N-8 Strates (Q6).** Un ménage représentatif au socle, indexé par h comme J = 1 sous M24 (d). La variante à deux types est instruite en D.
+
+**3.N-9 Canal du taux (Q8, critère 5 (d)).**
+- Sous S, C et D, le seul canal est **rentier**. Une hausse de i_D au tour n augmente la ligne 10 dès la phase 6 du tour n, puis le plan au tour n + 1.
+- Ordre de grandeur, ν = 1 : +1 point de i_D donne +1 % de YD par mois, et +0,6 % du plan au tour n + 1 (α_Y = 1 − νλ_V = 0,6).
+- Le signe est **positif** (acquis R « à l'envers ») ; il est déclaré.
+- Le canal de substitution n'est pas repris : hypothèse réfutée n° 3, sans fait nouveau. La variante PCEX2 (α_1 = α_10 − ι·r) est notée pour `monnaie` et la fiche 8 (élasticité C10).
+
+**3.N-10 Population active (Q9).** Tenue par le bloc 3 (M25 (d)) : sans objet ici.
+
+**3.N-11 Leviers ciblés (Q11).** Renvoyés au J4. Interface : un transfert ciblé entre dans Tr_t ; sous D, il porte une part de revenu distincte (§ 3.D).
+
+### 3.S Option S — forme SIM / PC de Godley et Lavoie
+
+1. **Source.** Reproduction PKSFC : SIM, SIMEX, PC (éq. 4.5). C^plan_t = α_1·YD_{t−1} + (α_2/n_a)·V_{H,t}. Statut : approchée.
+2. **État stationnaire** (F1) : V/(n_a·YD) = (1 − α_1/Γ)/(n_aγ + α_2).
+   - α_1 = 0,6, α_2 = 0,4 : 0,9143 (π̄ = 2 %) ; 0,7868 (10 %) ; 0,9229 et 0,9109 à n_a = 4 et 52.
+   - Avec le revenu courant : 0,9098 ; à α_2 ×0,5 : 1,6690 ; à ×2 : 0,4764.
+3. **Critère 4 : échec.** α_2 est à la fois le niveau et la vitesse. Le ratio dépend aussi de n_a, par 1/Γ.
+4. **Lecture** : S coïncide avec C si α_1 est **dérivée** de ν et de λ_V (§ 3.C). Écrite avec α_1 et α_2 libres, elle échoue au critère 4 (i).
+5. **Empreinte** : 2 paramètres ; 1 variable d'état (YD_{t−1}).
+
+### 3.C Option C — cible de richesse avec terme de tendance (piste de la feuille de route, § 5)
+
+1. **Équations.**
+   - C^plan_t = YD^e_t − γ^e_t·V_{H,t} − (λ_V/n_a)(V*_t − V_{H,t}) ;
+   - V*_t = ν·n_a·YD^e_t ;
+   - YD^e_t = Γ^e_t·YD_{t−1} ;
+   - γ^e_t = [(1 + g)(1 + π_{t−1})]^{1/n_a} − 1.
+
+   Lecture : les ménages dépensent le revenu attendu, moins l'épargne d'entretien (pour que la richesse suive la croissance nominale : correction de Haig-Simons plus croissance réelle), moins une fraction λ_V/n_a de l'écart à la richesse visée.
+
+   Forme équivalente : C = α_Y·YD^e + (λ_V/n_a − γ)·V, avec α_Y = 1 − νλ_V. C'est la forme S avec α_1 dérivée.
+
+   Variante écartée, la tendance sur V* : α_Y = 1 − ν(n_aγ + λ_V). Elle dépend de π̄ et devient négative en haute inflation.
+
+   Statut : approchée (cible de stock de Godley et Lavoie) ; terme de tendance : choix de conception, sur le modèle de la fiche 2, l. 617. Provenance : α_3 = (1 − α_1)/α_2, la richesse cible implicite de SIM (reproduction).
+
+2. **État stationnaire.**
+   - V_H/(n_a·YD) = ν **exactement**, quels que soient λ_V, n_a et π̄. F2 : 1,000000000000 pour λ_V = 0,2 / 0,4 / 0,8, n_a = 4 / 12 / 52, π̄ = 2 % et 10 %.
+   - Taux d'épargne : n_aγν (identité du critère 3 (a)) ; C/YD = 1 − n_aγν.
+   - Dépendance à n_a : seulement par n_aγ (0,039802 / 0,039671 / 0,039620 à n_a = 4 / 12 / 52), donc dans le taux d'épargne, non dans ν. C'est le point I.6 de l'ADR 0008.
+   - **ν fixe le ratio de richesse ; λ_V fixe la propension d'impact** α_Y = 1 − νλ_V.
+   - **Condition de domaine** (déclarée) : νλ_V < 1, d'où α_Y > 0. À ν = 1, λ_V ≤ 0,8 garde α_Y ≥ 0,2.
+
+3. **Boucle propre** (F5, revenu hors intérêts exogène) : valeur propre réelle.
+
+   | | i_D = 0 | i_D = 3 % | i_D = 10 % |
+   |---|---|---|---|
+   | λ_V = 0,4 | 0,96678 (20,5 tours) | 0,96772 (21,1 tours) | 0,96994 (22,7 tours) |
+   | λ_V ×0,5 | 0,98339 (41,4 tours) | 0,98385 (42,6 tours) | — |
+   | λ_V ×2 | 0,93355 (10,1 tours) | 0,93551 (10,4 tours) | — |
+
+   Toutes sont inférieures à 1.
+
+4. **Boucle avec la fiche 2** (B1 ; prix figés, emploi R ; demi-vie en tours) :
+
+   | | i_D = 0 | i_D = 3 % |
+   |---|---|---|
+   | θ_H = 0,8 | 0,9838, racine réelle, 42,6 | 0,9859, racine réelle, 49,0 |
+   | θ_H = 0,8, plage sur la grille ×0,5 / ×2 | 0,9761 à 0,9889 | 0,9768 à 0,9903 |
+   | θ_H = 1,0, toute la grille | 0,9964 à 0,9965 (environ 197) | 0,9993 (environ 1 000) |
+
+   - La grille croise les vitesses de la fiche 2 ×0,5 et ×2 avec λ_V ×0,5 et ×2. À π̄ = 10 % (θ_H = 0,8, i_D = 3 %) : 0,9820.
+   - Rayon < 1 partout (exigence tenue).
+   - La racine dominante est **réelle**. Seule une période de 559 à 750 tours apparaît (vitesses de la fiche 2 ×0,5, λ_V ×2) ; aucune paire n'entre dans la bande de 36 à 96 tours, et aucune n'est exigée.
+   - **Sous θ_H = 1, la racine est quasi unitaire** : sans impôts ni autre fuite, le niveau d'activité est presque indéterminé. C'est le constat de bouclage (#44), qui se ferme avec les fiches 6, 8 et 9.
+
+5. **Propension m_H** (F4, critère 6) :
+
+   | | Impact | Long terme |
+   |---|---|---|
+   | θ_H = 0,8, i_D = 0 | 0,4808 | 0,7683 |
+   | θ_H = 0,8, i_D = 3 % | 0,4808 | 0,7920 |
+   | θ_H = 1,0, i_D = 0 | 0,6010 | 0,9603 |
+   | θ_H = 1,0, i_D = 3 % | 0,6010 | 0,9900 |
+
+   - Formules : impact = α_Y·θ_H·(1 + g)^{1/n_a} ; long terme = θ_H(1 − n_aγν)/(1 − i_Dν).
+   - **Si θ_H = 1, m_H de long terme dépasse 0,8 à lui seul (seuil de la réserve 3 de la fiche 2).** θ_H dépend de la fiche 6 (dividendes) et de la fiche 9 (impôts).
+
+6. **Défauts.**
+   - Canal du taux rentier seulement (§ 3.N-9).
+   - λ_V n'a pas de source lue sur la richesse liquide. L'effet richesse lu (2 à 10 cents, richesse peu liquide) est bien inférieur à λ_V − n_aγ = 0,36 par an : **fidélité à déclarer**.
+   - Aucune instabilité connue réintroduite : pas de plafond (instabilité 15), pas de buffer-stock (8), effet richesse non normé par défaut (6 : le paramètre est déclaré).
+
+7. **Coût.** Une dizaine d'opérations flottantes plus une puissance, sans itération. Non mesuré.
+
+8. **Joueur.** Taux d'épargne, ratio de richesse et niveau normal ν lisibles ; épargne forcée visible sous rationnement. Voir les exemples du § 3.L.
+
+9. **Empreinte.** 2 paramètres (ν, λ_V) ; 1 variable d'état (YD_{t−1}, u.m., valeur stationnaire YD_t/Γ) ; lecture du registre de l'ADR 0008, sans état ajouté.
+
+### 3.R Option R — référence « sans retard »
+
+Deux sens sont instruits :
+- **(R1) Sans retard d'ajustement** (λ_V = n_a) : α_Y = 1 − 12ν < 0. Inadmissible : une hausse de revenu ferait baisser la consommation. Ce cas montre que la condition de domaine νλ_V < 1 est contraignante.
+- **(R2) Sans retard de revenu** : le plan lit WB_t, ce qui le déplace en phase 5, avant le bloc 2. Cela modifie `tab:phases` et l'ordre de la phase 5 de M24 (décision citant M22 et M24). Le multiplicateur devient contemporain. **Non mesuré.** Il n'est retenu que comme référence.
+
+### 3.D Variante à deux types (Q6)
+
+- Une part χ du revenu va aux contraints (C¹ = YD^{1,e}) ; la richesse est tenue par l'autre type, selon la règle C avec ν₂.
+- **Au niveau agrégé, l'équation est identique à C avec ν = (1 − χ)ν₂**, et α_Y = 1 − νλ_V ne dépend pas de χ (démonstration algébrique : la somme des deux règles redonne C).
+- Sans levier ciblé, χ n'est pas identifiable au socle. Il ne devient distinct qu'avec un transfert ciblé (Q11, J4), dont la propension vaut 1 pour les contraints.
+- Ordre de grandeur sourcé : environ un tiers des ménages, environ 20 % du revenu (KVW, p. 3 et 23).
+- Des comptes séparés (sous-colonnes) toucheraient M22.
+
+### 3.L Restitution et exemples datés (critère 12)
+
+Maquette B1 : prix figés, emploi R, θ_H = 0,8, i_D = 3 %, ν = 1, λ_V = 0,4. Écarts au sentier ; ratio = V/(12·YD) ; taux d'épargne stationnaire 0,03967.
+
+| Tour | (i) G +1 %, tours 1 à 12 : plan / YD / taux d'épargne / ratio | (ii) transferts +1 % de YD, tours 1 à 12 : plan / YD / taux d'épargne / ratio |
+|---|---|---|
+| 1 | 0 / 0 / 0,03967 / 1,00000 | 0 / +1,000 % / 0,04918 / 1,00000 |
+| 2 | 0 / +0,081 % / 0,04045 / 1,00000 | +0,656 % / +1,002 % / 0,04297 / 1,00083 |
+| 3 | +0,053 % / +0,138 % / 0,04048 / 1,00007 | +0,669 % / +1,215 % / 0,04485 / 1,00114 |
+| 4 | +0,091 % / +0,194 % / 0,04066 / 1,00014 | +0,819 % / +1,368 % / 0,04487 / 1,00161 |
+| 9 | +0,257 % / +0,405 % / 0,04109 / 1,00068 | +1,360 % / +2,034 % / 0,04602 / 1,00427 |
+| 13 | +0,350 % / +0,509 % / 0,04119 / 1,00121 | +1,705 % / +1,410 % / 0,03687 / 1,00669 |
+| 14 | +0,369 % / +0,447 % / 0,04042 / 1,00135 | +1,124 % / +1,483 % / 0,04307 / 1,00648 |
+| 18 | +0,264 % / +0,292 % / 0,03994 / 1,00158 | +0,992 % / +1,068 % / 0,04040 / 1,00718 |
+| 24 | +0,159 % / +0,137 % / 0,03947 / 1,00161 | +0,715 % / +0,651 % / 0,03907 / 1,00726 |
+
+- C égale le plan : la demande des ménages est entièrement servie.
+- Délais : G au tour n, consommation au tour n + 2 ; transferts au tour n, consommation au tour n + 1.
+- La part d'un transfert dépensée en 12 tours (critère 12 (d)) n'est **pas calculée** : à extraire de la même maquette.
+
+**Sur-commande** (critère 11 ; maquettes B1 et B2 ; G doublé, part de 20 %, tours 1 à 12 ; plafond N^pa) :
+- taux de service de 1 jusqu'au tour 8, puis 0,869 / 0,856 / 0,853 / 0,850 aux tours 9 à 12 ;
+- **demande non servie des ménages nulle dès le tour 13** : seuil de 12 tours tenu ;
+- épargne forcée : richesse +6,33 % au tour 13, soit 0,79 mois de consommation ;
+- ratio de richesse au plus à +0,99 % de ν, donc dans la bande de ±2 % ;
+- **en revanche, la production reste au plafond N^pa (+5,26 %) au moins jusqu'au tour 120.** Elle est revenue à +0,77 % au tour 240 et à +0,03 % au tour 480. Sans rappel des prix ni de la politique, la borne d'emploi reste active plus de 100 tours après le choc : le critère 8 (c) n'est pas évaluable dans cette maquette. C'est le même constat que la maquette C8 de la fiche 3.
+
+### Statut des faits de la première tentative (critère 17)
+
+| Fait | Statut |
+|---|---|
+| G1 : 0 et 145 semaines de contrainte des ménages | S+O |
+| Acquis « propension ≠ dépense », « à l'envers », « préparation décisive » | R |
+| Hypothèse réfutée 3 | R |
+| Instabilités 6, 8 et 15 | R |
+| Lignes de la v2.0 et branche active | L, vérifiées le 03/10/2026 ; coefficients de D1 non établis |
+| Chiffres de la v1.5 (l. 2065, 2073) | rapportés, invérifiables |
+
+**Remesure proposée, non lancée : V5-1** (`outils/remesurer_v2_menages.py`, `coder` puis `audit`, processus séparé, profil par défaut, non D1). Critères écrits avant l'essai :
+- *Branches* : `household_mode='income'` ; `cV` ×0,5 et ×2 ; graine 0 ; 60 ans.
+- *Grandeur* : par groupe h, V_h/(52·Yd_h hebdomadaire moyen de l'année), moyenne des années 31 à 60.
+- *(i)* Groupe B : écart relatif de la grandeur à (1 − c/Γ_s)/(n_s·γ_s) au plus de 10 %, Γ_s étant la croissance nominale hebdomadaire mesurée.
+- *(ii)* Groupes M et H : écart relatif entre ×0,5 et ×2 supérieur à 1e−6 (dépendance à la vitesse).
+- *(iii)* Nombre de semaines où le plafond de 0,9 × encaisse est actif, publié.
+- Verdicts publiés quel que soit le résultat. **Ils ne changent pas la recommandation.**
 
 ## 4. Tableau comparatif
 
-Non instruit.
+| Critère | A (v1.5) | B (v2.0) | S (SIM/PC) | C (cible avec tendance) | R | D (deux types) |
+|---|---|---|---|---|---|---|
+| 1 Matrices | strates : sous-colonnes, M22 (3.A-7) | 11a, 19a ; actions hors socle (3.B-7) | ligne 1 (3.N-7) | ligne 1 ; cas à 90 % bouclé (3.N-7) | idem C | idem C (comptes séparés = M22) |
+| 2 Phases | non écrites | revenu de la semaine même | triangulaire (3.N-5) | triangulaire ; délai impôts → C : 1 tour (3.N-2) | R2 révise M24 et M22 | idem C |
+| 3 Forme fermée | non calculable (3.A-3) | groupes : formule ; B_H/V_H non (3.B-3) | oui, dépend de α_2 (3.S-2) | **ν exact** (F2) | R1 hors domaine | idem C, ν = (1 − χ)ν₂ |
+| 3 (b) n_a | — | 1,49 / 1,34 / 1,28 (B) | 0,9229 / 0,9143 / 0,9109 | ν exact ; taux d'épargne par n_aγ (ADR 0008, I.6) | — | idem C |
+| 3 (d) π̄ | — | 1,34 → 0,51 (B) | 0,914 → 0,787 | ν inchangé ; épargne 3,97 % → 11,57 % (HS : 2,03 % → 2,21 %) | — | idem C |
+| 3 (e) Bouclage | — | — | ratio de V/YD | ν·n_a·YD = (L − D_F) + (B − M^G) − E_Bk − E_CB ; fermeture à #44 | — | idem C |
+| 4 Vitesses | **échec** (Euler sans ancre) | **échec** (cV niveau et vitesse) | **échec** | **tenu** (F2) | — | tenu |
+| 5 (a) | substitution réfutée (3) | 8, 15, état caché | rien de réintroduit | rien de réintroduit | — | idem C |
+| 5 (b) | non calculé | non calculé | non calculé | 0,9668 (λ_V ×0,5 / ×2 : 0,9834 / 0,9336) | — | idem C |
+| 5 (c) | — | — | non calculé | 0,9761 à 0,9903 (θ_H = 0,8) ; 0,9993 (θ_H = 1) ; bande sans objet (racine réelle) | non mesuré | idem C |
+| 5 (d) | Euler (IS) | rentier, aucune élasticité identifiée | rentier + | **rentier +** (3.N-9) | — | idem C |
+| 6 m_H | — | — | α_1·θ_H | 0,48 / 0,77 à 0,79 (θ_H = 0,8) ; 0,60 / 0,96 à 0,99 (θ_H = 1) | — | idem C |
+| 7 Test zéro | — | — | — | préalable tenu ; mesure au J3 | — | — |
+| 8 Bornes | clip de cov, parts [0, 1], subsistance | 0,9 × encaisse, max(0) | conservation + lecture (a) ou (b) (3.N-6) | idem S | — | idem |
+| 9 Titres | Tobin borné | flux sB, sans stock | B_H ≡ 0 recommandé (3.N-4) | idem | — | idem |
+| 10 Lectures | `eq:yd` (crédit hors socle) | — | symbolique (3.N-1) | idem | — | idem |
+| 11 Sur-commande | — | — | — | non servie nulle dès le tour 13 ; production au plafond plus de 100 tours (sans prix ni politique) | — | — |
+| 12 Lisibilité | strates lisibles | groupes | — | exemples du § 3.L ; restitution HS proposée | — | ciblage au J4 |
+| 13 Empreinte | environ 6 états, environ 15 paramètres (2 sans valeur) | états cachés, drapeaux | 1 état, 2 paramètres | 1 état, 2 paramètres | — | 1 état, 3 paramètres |
+| 14 Coût | non mesuré | **itératif : échec** | négligeable (décompte) | négligeable, non mesuré | — | idem |
+| 15 Notation | β double, collision κ_E | — | α : 1 occurrence (`sec:ecartees`) | ν, λ_V, θ_H libres | — | χ libre |
+| 16 Faits | — | — | — | MPC : JP 2010, PSJM 2013 ; effet richesse : COS 2006 ; λ_V sur richesse liquide **non sourcé** | — | KVW 2014 |
+| 17 Statuts | rapportés | L ; D1 non établi ; V5-1 proposée | — | — | — | — |
 
 ## 5. Avis de l'expert pilote
 
-Non instruit.
+*`macro`, 03/10/2026.*
+
+**Recommandation : option C** (cible de richesse avec terme de tendance), ménage représentatif, avec les choix suivants :
+- revenu lu : YD_{t−1} avec tendance (Q2 (i)) ;
+- inflation de la tendance : glissement mesuré π_{t−1} (Q10 (a)) ;
+- revenu corrigé de Haig-Simons implicite, taux d'épargne restitué nominal et corrigé (Q3) ;
+- **B_H ≡ 0** au socle (Q4) ;
+- plafond du plan à D_{H,t} d'ouverture, lecture (a) du § 3.N-6 ;
+- la variante D notée pour le J4 (Q6, Q11).
+
+Calibration indicative : ν = 1 an, λ_V = 0,4 par an (α_Y = 0,6).
+
+**Motifs** :
+- seule option qui tient le critère 4 (ν exact, F2) ;
+- forme fermée ;
+- aucune borne à seuil libre hors 3.N-6 (a) ;
+- deux paramètres et une variable d'état ;
+- rayon < 1 sur toute la grille (B1) ;
+- D est équivalente au niveau agrégé sans levier ciblé (principe de simplicité).
+
+**Écartées** :
+- A : critère 4 et strates qui touchent M22 ;
+- B : critère 14 pour la branche active, critère 4 pour la règle de revenu, plafond ;
+- S, écrite avec α libres : critère 4 ;
+- R1 : hors domaine.
+
+R2 reste la référence non mesurée.
+
+**Réserves**, avec leurs critères écrits avant l'essai (J3) :
+1. Un pas sans choc depuis l'état résolu laisse V_H/(n_a·YD) = ν et YD_{t−1} sur leur sentier à 1e−10 près en relatif.
+2. Critère 4 : écart au plus de 1e−6 après 720 pas entre λ_V ×0,5 et ×2.
+3. **Boucle conjointe SN, C, M et ménages (critère 5 (c) complet) : non mesurée.** Rayon < 1 exigé à la calibration ; publication aux vitesses ×0,5 et ×2.
+4. **m_H de long terme supérieur à 0,8 si θ_H = 1** : réserve 3 de la fiche 2, à trancher avec la fiche 6 (distribution des dividendes) et la fiche 9 (impôts).
+5. **Racine quasi unitaire sans fuite** (θ_H = 1 : 0,9993) : le niveau d'activité n'est fermé que par les fiches 6, 8 et 9 (#44). Le calcul conjoint avec la fiche 6 est à faire avant M27-M28 ; il n'est pas fait ici.
+6. Condition de domaine νλ_V < 1, déclarée et contrôlée au chargement.
+7. Calibration de λ_V et de ν sur des sources lues (richesse liquide, gains de loterie, comptes financiers) : **à instruire**.
+8. Sur-commande : seuil du critère 11 (c) tenu dans la maquette, mais la borne N ≤ N^pa reste active plus de 100 tours sans rappel des prix ni de la politique. Mesure au J3 ou au J4 avec les fiches 4 et 8.
+
+**Lectures soumises au mainteneur** :
+- (a) Q10 : π^lu = glissement mesuré, π^e ou π̄ ;
+- (b) § 3.N-6 : plafond en phase 2 (seuil libre déclaré) ou en phase 5 (révision de M24) ;
+- (c) Q4 : B_H ≡ 0 ou demande de Tobin ;
+- (d) canal du taux : rentier seul, ou variante PCEX2 α_1(r). Cette dernière demande un fait nouveau contre l'hypothèse réfutée 3 ;
+- (e) restitution du taux d'épargne : nominal, corrigé, ou les deux.
+
+**Coût en fidélité** :
+- aucun canal de substitution : le taux agit sur la consommation à l'envers ;
+- effet richesse plus fort que celui que mesure la littérature lue (richesse peu liquide) ;
+- aucune hétérogénéité au socle ;
+- la forme C n'est pas écrite telle quelle par Godley et Lavoie : c'est leur α_3 cible, rendue exacte sous croissance.
 
 ## 6. Avis de l'expert consulté
 
@@ -245,3 +744,4 @@ Non instruit.
 |---|---|---|
 | 03/10/2026 | Ouverture (issue #41) ; § 1 et § 2 proposés | `macro` ; session principale |
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, bouclage avec la fiche 9 en risque assumé, B_H ≡ 0 admise, ménage représentatif et variante à deux types, `monnaie` consulté aussi sur l'inflation, Q11 au J4 ; issue #41) | mainteneur |
+| 03/10/2026 | Instruction déposée (§ 3 à 5), partielle (boucle conjointe avec SN, C et M et état conjoint avec la fiche 6 non mesurés ; une relance ciblée après la limite de tours) : options A, B, S, C, R, D ; recommandation C (cible de richesse avec terme de tendance, B_H ≡ 0) ; § 1.1 aligné sur l'ADR 0008 | `macro` ; session principale |
