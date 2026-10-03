@@ -494,7 +494,7 @@ Les deux sont renvoyées à la fiche 9 ou à J6, avec l'avis de `monnaie`.
 
 **3.N-9 Canal du taux (Q8, critère 5 (d)).**
 - Sous S, C et D, le seul canal est **rentier**. Une hausse de i_D au tour n augmente la ligne 10 dès la phase 6 du tour n, puis le plan au tour n + 1.
-- Ordre de grandeur, ν = 1 : +1 point de i_D donne +1 % de YD par mois, et +0,6 % du plan au tour n + 1 (α_Y = 1 − νλ_V = 0,6).
+- Ordre de grandeur, ν = 1 : +1 point de i_D donne +1 % de YD au tour n, et **+0,656 % du plan au tour n + 1**. La propension α_Y = 1 − νλ_V = 0,6, appliquée à un revenu qui vaut 1/0,960 fois le plan (C/YD = 1 − n_aγν), en donne 0,625 point. Le terme de richesse (λ_V/n_a − γ)·ΔV, c'est-à-dire la hausse de revenu restée en dépôts, ajoute 0,031 point.
 - Le signe est **positif** (acquis R « à l'envers ») ; il est déclaré.
 - Le canal de substitution n'est pas repris : hypothèse réfutée n° 3, sans fait nouveau. La variante PCEX2 (α_1 = α_10 − ι·r) est notée pour `monnaie` et la fiche 8 (élasticité C10).
 
@@ -581,6 +581,236 @@ Les deux sont renvoyées à la fiche 9 ou à J6, avec l'avis de `monnaie`.
 
 9. **Empreinte.** 2 paramètres (ν, λ_V) ; 1 variable d'état (YD_{t−1}, u.m., valeur stationnaire YD_t/Γ) ; lecture du registre de l'ADR 0008, sans état ajouté.
 
+#### 3.C-10 Boucle conjointe (critère 5 (c) complet ; réserve 3 du § 5)
+
+*Additif de `macro`, 03/10/2026. Maquette hors dépôt, indépendante des scripts B1 et B2.*
+
+**Système**
+- Fiche 2 : N1 à N7, lecture (G).
+- Bloc 3 :
+  - salaire SN : λ_w = 1, β = 2, U^eq = 5 %, lecture (w1) ;
+  - emploi C : λ_N = 3,5 (M25).
+- Bloc 4 : règle M, avec λ_μ = 1,2 et ψ_ξ = 0,5 (M26). P_t est en lecture (c), registre de 13 niveaux (ADR 0008, II.3).
+- Bloc 5 : règle C, avec ν = 1 et λ_V = 0,4.
+- Autres valeurs : g = π̄ = 2 %, n_a = 12, σ = 1,4 mois, μ̄ = 0,25.
+
+**Hypothèses de calcul** (ce ne sont pas des calibrations) :
+- **Anticipation** : π^e = π̄, exogène, substitut de la fiche 8. SN la lit à l'ouverture.
+- **Dépense autonome** (État et investissement) : planifiée en u.m. au prix p_{t−1}(1 + π^e)^{1/n_a}, comme à la fiche 4 (§ 3.0).
+  - Son volume Ā est résolu pour que la demande stationnaire vaille 1.
+  - N^pa est résolu pour que U = U^eq. C'est la variable de fermeture de #44.
+- **θ_H = 0,8** se lit YD = WB_t + i_D·V/n_a : salaires seuls, sureffectif compris (WB = W·N avec N ≥ N*).
+- **θ_H = 1** se lit YD = p_t v_t + UC_t(y_t − v_t) + i_D·V/n_a : salaires plus résultat courant (fiche 4, § 3.N-11), distribué dans le pas.
+  - À prix figés, cette lecture redonne exactement les rayons de B1 : 0,9965 et 0,9993.
+- Impôts et transferts nuls. Le plafond du § 3.N-6 (a) n'est pas modélisé.
+- **Inflation lue dans la tendance (Q10)**, deux lectures :
+  - (a) π_{t−1} = P_{t−1}/P_{t−13} − 1, lue dans le registre ;
+  - (c) π̄.
+  - Sous π^e = π̄ exogène, (b) coïncide avec (c).
+
+**Régimes d'emploi.** La règle T4-C a un coude à l'état stationnaire :
+- régime H (hausse) : N = N*, comme sous R ;
+- régime B (baisse) : N = rétention.
+
+Le jacobien est calculé dans chaque régime. La règle réelle alterne entre les deux ; sa convergence est vérifiée par simulation non linéaire.
+
+**Scripts.** Commande : `uv run --no-project --with numpy python <script>`, dans le sous-dossier `f5c` du scratchpad.
+
+| N° | Script | Objet |
+|---|---|---|
+| J1 | `j_modele.py`, `j1_valid.py` | maquette détendue et jacobien ; validations |
+| J2 | `j2_calib.py` | calibration |
+| J3 | `j3_grille.py` | vitesses une à une, toutes ensemble, grille factorielle 3^6 |
+| J4 | `j4_mecanisme.py` | mécanisme et frontières de (a) |
+| J5 | `j5_transfert.py` | part du transfert ; exemples datés |
+| J6 | `j6_surcommande.py`, `j7_attrib.py`, `j8_compl.py` | sur-commande ; attribution |
+| K | `k_niveaux.py`, `k2_compare.py`, `k3_diag.py`, `k5.py` | contre-épreuve en niveaux |
+
+**Validations (J1).** Réduite, la maquette reproduit :
+- **fiche 2** : 0,9452 et 72,9 tours (g = 2 %, m = 0,6) ; 0,9459 et 73,0 tours (g = 0) ;
+- **fiche 4**, § 3.N-9 (e), M + SN, emploi R : 0,8969 / 0,9068 / 0,9225 / 0,9385 ;
+- **fiche 5**, B1 : 0,9838 et 0,9859 (θ_H = 0,8, i_D = 0 et 3 %) ; 0,9965 et 0,9993 (θ_H = 1) ;
+- **pas sans choc** : écart au sentier de 1,1e−16 au plus.
+
+**Contre-épreuve indépendante (K).** Une seconde maquette est écrite en niveaux, sans détendance et sans importer la première. pr y croît à g_pr, N^pa à g_N = 0,5 %, et les prix sont en u.m.
+- **Sentier sans choc** : tenu à 1,8e−11 pour la production et 2,9e−11 pour le prix, sur 600 tours.
+- **Racine dominante, 16 cas du tableau 1.** Elle est estimée sur la simulation : ajustement AR(2) si la racine est complexe, rapport sur 40 tours si elle est réelle.
+  - Elle égale celle du jacobien au 4e chiffre, période comprise.
+  - Exception : θ_H = 1, (c), régime B. La racine réelle dominante (0,9537) y est à peine excitée par une impulsion de transfert ; la trajectoire décroît plus vite qu'elle.
+- **Trajectoires** : la simulation en niveaux, la simulation détendue non linéaire et la propagation linéaire J^t coïncident à 4 chiffres jusqu'au tour 200.
+
+**Corrections en cours de calcul** (déclarées ; aucun chiffre publié n'en provient) :
+1. **Régime B forcé.** La première version gardait y = min(y*, N), ce qui crée un second coude à l'état stationnaire. Or N ≥ N* sous T4-C donne y = y*. Le rayon du régime B en était faussé : 0,9663 au lieu de 0,9613 sous (c).
+2. **Estimateur.** L'AR(2) ne sépare pas deux racines réelles voisines (0,9637 et 0,9366) : il donnait 0,9856. Il est remplacé, pour les racines réelles, par le rapport sur 40 tours.
+
+**Racine unitaire.** Le niveau nominal porte une racine unitaire, attendue et déclarée (fiche 4, § 3.N-9).
+- |λ − 1| ≤ 1,7e−9.
+- Les composantes réelles du vecteur propre valent au plus 8,3e−9 de sa norme.
+- Elle est exclue du rayon.
+
+**1. Calibration (J2).** Chaque case donne le rayon hors racine nominale, puis la demi-vie en tours (racine réelle) ou la période en tours (paire complexe).
+
+| | (c) régime H | (c) régime B | (a) régime H | (a) régime B |
+|---|---|---|---|---|
+| θ_H = 0,8 ; i_D = 0 | 0,9642 ; 19,0 | 0,9619 ; 17,8 | **1,0253** ; période 17,4 | **1,0007** ; période 19,4 |
+| θ_H = 0,8 ; i_D = 3 % | 0,9637 ; 18,8 | 0,9613 ; 17,6 | **1,0275** ; période 17,3 | **1,0029** ; période 19,3 |
+| θ_H = 1 ; i_D = 0 | 0,9566 ; 15,6 | 0,9539 ; 14,7 | **1,0537** ; période 17,2 | **1,0556** ; période 19,2 |
+| θ_H = 1 ; i_D = 3 % | 0,9565 ; 15,6 | 0,9537 ; 14,6 | **1,0561** ; période 17,1 | **1,0580** ; période 19,1 |
+
+- **À π̄ = 10 %** (θ_H = 0,8, i_D = 3 %) : (c) 0,9636 / 0,9609 ; (a) 1,0271 / 1,0027.
+- **Règle T4-C réelle** (alternance des régimes ; impulsion de 1e−8) :
+  - sous (a), l'enveloppe croît de **1,0171 par tour** à θ_H = 0,8 (doublement en 41 tours) et de 1,0385 à θ_H = 1 ;
+  - sous (c), elle converge.
+
+**2. Vitesses ×0,5 et ×2 (J3)**, θ_H = 0,8, i_D = 3 %. Toutes les vitesses ensemble :
+
+| | (c) H | (c) B | (a) H | (a) B |
+|---|---|---|---|---|
+| ×0,5 | 0,9880, réelle, demi-vie 57,5 | 0,9875, réelle, demi-vie 55,0 | 0,9950, période 23,7, demi-vie 137,5 | 0,9917, réelle, demi-vie 83,4 |
+| ×2 | 0,9189, réelle, demi-vie 8,2 | 0,9169, réelle, demi-vie 8,0 | **1,0550**, période 8,0 | **1,0187**, période 8,4 |
+
+Une vitesse à la fois :
+- **Sous (c)** : de 0,9404 (λ_IN ×2, B) à 0,9796 (λ_IN ×0,5, H). La racine dominante est réelle, sauf des paires de 337 à 2 844 tours (λ_v ×2, λ_IN ×2, λ_V ×0,5).
+- **Sous (a)** :
+  - toutes les variations du régime H sont explosives, de 1,0004 (λ_w ×0,5) à 1,0564 (λ_w ×2) ;
+  - en régime B, seules λ_v ×2, λ_N ×0,5, λ_w ×0,5, λ_μ ×2 et λ_V ×2 sont stables.
+
+Grille factorielle 3^6 (729 combinaisons par cas) : plage du rayon, puis nombre de combinaisons instables.
+
+| Cas | (c) H | (c) B | (a) H | (a) B |
+|---|---|---|---|---|
+| θ_H = 0,8 ; i_D = 0 | 0,9035 à 0,9902 ; 0 | 0,8814 à 0,9902 ; 0 | 0,9678 à 1,0764 ; 492 | 0,9633 à 1,0746 ; 317 |
+| θ_H = 0,8 ; i_D = 3 % | 0,9017 à 0,9903 ; 0 | 0,8805 à 0,9903 ; 0 | 0,9693 à 1,0791 ; 513 | 0,9647 à 1,0776 ; 325 |
+| θ_H = 1 ; i_D = 0 | 0,8974 à 0,9840 ; 0 | 0,8685 à 1,0034 ; 3 | 0,9665 à 1,1165 ; 639 | 0,9594 à 1,1558 ; 613 |
+| θ_H = 1 ; i_D = 3 % | 0,8976 à 0,9840 ; 0 | 0,8684 à 1,0111 ; 10 | 0,9683 à 1,1197 ; 645 | 0,9611 à 1,1600 ; 617 |
+
+- **Sous (c), θ_H = 0,8** : paires complexes dominantes de 81 à 11 458 tours. Quelques-unes tombent dans la bande de 36 à 96 tours (régime B), qui n'est pas exigée.
+- **Sous (c), θ_H = 1, régime B** :
+  - les 3 et 10 combinaisons instables (au plus 1,0111, période 28,4) ont toutes λ_N ×0,5, λ_w ×2 et λ_μ ×0,5 ;
+  - le régime B n'est jamais permanent. Dans le pire cas, la règle réelle converge : impulsions ±1e−4, |y| passe de 1,4e−4 à 2,7e−14 en 1 200 tours.
+- **Sous (a)** : périodes de 8,0 à 27,9 tours.
+
+**3. Mécanisme de l'instabilité sous (a) (J4)**
+
+Sous (a), le terme d'entretien γ^e·V lit l'inflation mesurée :
+- ∂C^plan/∂π_{t−1} = −Γ^e(n_aν − α_Y)·YD_{t−1}/[n_a(1 + π_{t−1})] ;
+- soit environ −0,93·YD à l'état stationnaire : **un point de glissement retire environ 0,93 % du revenu mensuel au plan**.
+
+La boucle est la suivante : glissement en hausse, plan en baisse, puis stocks, production, emploi, chômage en hausse, salaire SN et ξ en baisse, prix en baisse, et le glissement baisse de 1 à 13 tours plus tard. C'est une rétroaction négative, retardée par la fenêtre du glissement et de fort gain : elle donne une oscillation croissante de 17 à 19 tours.
+
+Mesures :
+- **Canal porteur : salaire → coût → prix.**
+  - Salaires figés : stable (0,9921 / 0,9926).
+  - ψ_ξ = 0 : encore explosive (1,0210 / 1,0126).
+  - Prix et salaires figés : 0,9859. π est alors constant, et (a) coïncide avec (c).
+- **Frontières**, régime H :
+  - ν < 0,586 (λ_V = 0,4) ;
+  - correction partielle π^lu = h·π_{t−1} + (1 − h)π̄ : h < 0,604. En régime B, h < 0,949.
+- **Autres mesures de l'inflation** : la variation sur un tour annualisée donne 1,0387 (période 6,7), la variation sur 3 tours 1,0781 (période 9,0). Aucune ne stabilise.
+- **n_a = 4** : (a) 1,0415 / 1,0349 ; (c) 0,8853 / 0,8836. Ce n'est donc pas un artefact du pas mensuel.
+- **Statut.** Aucune instabilité de `tab:instabilites` ne correspond : c'est un mécanisme nouveau, mesuré en maquette. Godley et Lavoie corrigent le revenu de la perte d'inflation sur la richesse (DISINF, reproduction sfcr, § 3.0). La stabilité de cette correction dans leurs modèles n'est pas vérifiée ici.
+
+**4. Part d'un transfert dépensée (critère 12 (d) ; J5)**
+
+Transfert de +1 % du YD stationnaire aux tours 1 à 12.
+- Part = Σ(C_t − C̄)/ΣTr_t, en u.m. détendues.
+- En volume : Σ(C_t/p_t − C̄/p̄)/ΣTr_t, transferts au prix de référence.
+
+| Maquette | 12 tours | 24 tours | 120 tours |
+|---|---|---|---|
+| Bloc 5 seul (revenus hors intérêts exogènes) | 0,627 | 0,780 | 0,981 |
+| B1 (figés, emploi R ; θ_H = 0,8 ; i_D = 3 %) | 1,002 | 1,969 | 4,081 |
+| Conjointe (c), θ_H = 0,8 : u.m. / volume | 1,046 / **0,578** | 2,295 / 0,464 | 10,591 / 0,484 |
+| Conjointe (c), θ_H = 1 : u.m. / volume | 1,378 / 0,695 | 3,066 / 0,311 | 10,573 / 0,116 |
+| Conjointe (a), θ_H = 0,8 : u.m. / volume (non stationnaire) | 0,684 / 0,294 | 1,240 / 0,304 | — |
+
+- **Part propre au ménage** : 0,627 en 12 tours, la même dans toutes les maquettes sous (c), puisque la règle C ne lit aucun prix.
+- **En u.m., la boucle dépasse 1.** Deux causes :
+  - les revenus induits ;
+  - une hausse durable du niveau des prix (+1,21 % au tour 24, +1,07 % au tour 120), qui relève de la racine nominale.
+- **En volume**, la hausse des prix rogne le transfert et la richesse : 0,578 en 12 tours.
+- **Mesure à retenir pour le seuil de `jeu`** : je propose la part en volume dans la boucle pour la restitution, et la part propre au ménage pour la documentation. Le choix revient à `jeu`, puis au mainteneur.
+
+**Exemples datés en boucle conjointe.** Cas θ_H = 0,8, i_D = 3 %, lecture (c), emploi C. Les colonnes donnent l'écart au sentier du plan, du YD et du prix ; le taux d'épargne 1 − C/YD ; le ratio V d'ouverture/(12·YD du tour), qui vaut ν à l'état stationnaire ; la richesse V/V̄.
+
+| Tour | (i) G +1 %, tours 1 à 12 : plan / YD / taux d'épargne / ratio / V/V̄ / prix | (ii) transferts +1 % du YD, tours 1 à 12 : plan / YD / taux d'épargne / ratio / V/V̄ / prix |
+|---|---|---|
+| 1 | 0 / 0 / 0,03967 / 1,00000 / 1,00000 / 0 | 0 / +1,000 % / 0,04918 / 0,99010 / 1,00000 / 0 |
+| 2 | 0 / +0,081 % / 0,04045 / 0,99919 / 1,00000 / +0,010 % | +0,656 % / +1,002 % / 0,04297 / 0,99090 / 1,00083 / 0 |
+| 3 | +0,053 % / +0,148 % / 0,04058 / 0,99859 / 1,00007 / +0,038 % | +0,669 % / +1,215 % / 0,04485 / 0,98912 / 1,00114 / +0,025 % |
+| 4 | +0,098 % / +0,214 % / 0,04078 / 0,99801 / 1,00015 / +0,078 % | +0,819 % / +1,393 % / 0,04511 / 0,98785 / 1,00161 / +0,099 % |
+| 9 | +0,290 % / +0,460 % / 0,04129 / 0,99618 / 1,00076 / +0,344 % | +1,439 % / +2,160 % / 0,04644 / 0,98321 / 1,00444 / +0,792 % |
+| 13 | +0,403 % / +0,589 % / 0,04145 / 0,99552 / 1,00138 / +0,511 % | +1,825 % / +1,593 % / 0,03748 / 0,99126 / 1,00705 / +1,325 % |
+| 14 | +0,426 % / +0,589 % / 0,04123 / 0,99568 / 1,00154 / +0,532 % | +1,254 % / +1,679 % / 0,04368 / 0,99027 / 1,00690 / +1,433 % |
+| 18 | +0,400 % / +0,488 % / 0,04051 / 0,99715 / 1,00202 / +0,506 % | +1,322 % / +1,565 % / 0,04197 / 0,99261 / 1,00815 / +1,538 % |
+| 24 | +0,307 % / +0,339 % / 0,03997 / 0,99894 / 1,00233 / +0,348 % | +1,111 % / +1,185 % / 0,04038 / 0,99721 / 1,00902 / +1,208 % |
+
+**Délais**
+- Consommation : inchangés. Dépense publique au tour n, consommation au tour n + 2 ; transferts au tour n, consommation au tour n + 1.
+- Prix, ajout de la boucle :
+  - dépense publique au tour n, prix au tour n + 1 (par ξ) ;
+  - transferts au tour n, prix au tour n + 2.
+
+**5. Sur-commande (critères 8 (c) et 11 (c) ; J6)**
+
+Plan public doublé (0,2 de la demande) aux tours 1 à 12 ; borne N ≤ N^pa.
+
+| | B1/B2 (figés, emploi R) | Conjointe (c), θ_H = 0,8 | Conjointe (c), θ_H = 1 | Conjointe (a), θ_H = 0,8 |
+|---|---|---|---|---|
+| Taux de service, tours 9 à 12 | 0,869 / 0,856 / 0,853 / 0,850 | 1 | 1 | 1 |
+| Demande non servie des ménages | tours 9 à 12 | aucune | aucune | aucune |
+| Dernier tour à N = N^pa (seuil : tour 24) | 134 | **14** | **15** | 720, fin de la simulation |
+| Richesse à l'ouverture du tour 13 | +6,33 % | +5,06 % | +13,20 % | +15,66 % |
+| Prix maximal | 0 | +55,6 % (tour 16) | +87,4 % (tour 18) | oscillation (+48,2 % au tour 106) |
+| Production minimale | — | −16,65 % (tour 21) | −22,14 % (tour 25) | −24,7 % au tour 240 |
+| Chômage maximal | — | +13,99 points (tour 24) | +18,93 points (tour 27) | — |
+| Ratio V d'ouverture/(12·YD du tour) hors de ±2 % | tours 2 à 10 | 87 tours (2 à 89), dont 11 pendant le choc | 48 tours (1 à 52) | 651 tours après le tour 12 |
+
+**Attribution (J7)**
+- Avec la règle fixe de la fiche 4 (plans indexés) : prix +235 % au tour 56, aucune récession, N = N^pa jusqu'au tour 32.
+- La richesse nominale de la règle C ramène donc les prix, par un effet d'encaisses réelles, mais elle produit la récession.
+- Avec ψ_ξ = 0 : prix +33,3 %, production au plus bas à −2,9 %, N = N^pa jusqu'au tour 30. **Le seuil de 12 tours est alors dépassé** : le verdict 8 (c) dépend de ψ_ξ, qui n'a pas de source (fiche 4, réserve 4).
+
+**Chocs plus petits** (c) :
+
+| Choc sur la demande | Prix maximal | Production minimale | Tours à N^pa |
+|---|---|---|---|
+| +0,2 % (G +1 %) | +0,54 % | −0,12 % | 0 |
+| +1 % | +2,73 % | −0,59 % | 0 |
+| +5 % | +13,99 % | −2,86 % | 5 |
+
+**6. Ce qui change par rapport aux prix figés (§ 3.C-4 et § 3.L)**
+1. **Sous (c), la boucle est plus amortie** : 0,9637 contre 0,9859 (θ_H = 0,8, i_D = 3 %), soit une demi-vie de 18,8 tours contre 49,0. Les prix déprécient la richesse nominale non indexée, et le ménage la reconstitue.
+2. **La racine quasi unitaire de θ_H = 1 disparaît** : 0,9565 contre 0,9993.
+   - SN fixe U* = U^eq, et l'indétermination passe au niveau nominal (racine déclarée).
+   - La réserve 5 est levée pour la dynamique réelle dans la maquette.
+   - Elle reste ouverte pour la fermeture du niveau stationnaire (Ā, #44).
+3. **Sous (a), la boucle devient explosive.** À prix figés, π est constant et (a) coïncide avec (c) : le défaut était invisible au § 3.C-4.
+4. **Le régime de baisse de l'emploi C compte peu** sous (c) : 0,9613 contre 0,9637.
+5. **Part du transfert en 12 tours** : 1,002 (B1) contre 1,046 en u.m. et 0,578 en volume.
+6. **Sur-commande** :
+   - la borne cesse au tour 14 au lieu du tour 134 ;
+   - le prix rationne à la place du stock ;
+   - en contrepartie, une embardée prix-récession.
+7. **Délais** : inchangés pour la consommation ; les prix réagissent aux tours n + 1 et n + 2.
+
+**7. Verdict sur le critère 5 (c) complet**
+- **Exigence** (rayon < 1 à la calibration) :
+  - **tenue sous (c)**, donc sous (b) avec π^e = π̄ : 0,9637 et 0,9613 ; la règle réelle converge ;
+  - **échec sous (a)** : 1,0275 et 1,0029 ; la règle réelle diverge, à 1,0171 par tour.
+- **Mesure** (×0,5 et ×2) : publiée ci-dessus.
+- **Conséquence.** Je retire la recommandation (a) de la Q10 et je recommande (c), sous l'avis de `monnaie`.
+- **Coût de (c)** : elle n'est exacte que si π̄ = π* (C2).
+  - Hors cible, le ratio dévie et dépend de λ_V : le critère 4 échoue hors cible.
+  - Exemple, π stationnaire de 3 % pour une cible de 2 % : −2,27 % à λ_V = 0,4 ; −4,36 % à ×0,5 ; −1,19 % à ×2.
+  - Forme exacte : V/(n_a·YD) = [1 − (Γ^e/Γ)(1 − νλ_V)]/[n_a(γ − γ^e) + λ_V], contrôlée par simulation (V/(n_a·YD) = ν·Γ à la clôture).
+  - La formule du tableau du § 3.N-3, (γ^e + λ_V/n_a)/(γ + λ_V/n_a), est approchée : elle omet Γ^e/Γ dans YD^e. Elle donne −2,18 % au lieu de −2,27 % dans le même cas.
+- **Variante non recommandée sans `monnaie`** : π^lu = h·π_{t−1} + (1 − h)π̄.
+  - Stable pour h < 0,604 ; exacte sur la trajectoire de référence.
+  - Écart hors cible environ multiplié par (1 − h) : −1,15 % à h = 0,5.
+  - Un paramètre de plus, sans source.
+- **(b) avec une loi adaptative de π^e** : non mesurée. La fiche 8 vérifiera 5 (c) avec sa loi.
+
 ### 3.R Option R — référence « sans retard »
 
 Deux sens sont instruits :
@@ -597,19 +827,24 @@ Deux sens sont instruits :
 
 ### 3.L Restitution et exemples datés (critère 12)
 
-Maquette B1 : prix figés, emploi R, θ_H = 0,8, i_D = 3 %, ν = 1, λ_V = 0,4. Écarts au sentier ; ratio = V/(12·YD) ; taux d'épargne stationnaire 0,03967.
+Maquette B1 : prix figés, emploi R, θ_H = 0,8, i_D = 3 %, ν = 1, λ_V = 0,4. Écarts au sentier.
+- **Ratio** = V d'ouverture/(12·YD du tour) : c'est la définition du § 3.C, qui vaut ν exactement à l'état stationnaire.
+- **V/V̄** : richesse rapportée à son sentier.
+- Taux d'épargne stationnaire : 0,03967.
 
-| Tour | (i) G +1 %, tours 1 à 12 : plan / YD / taux d'épargne / ratio | (ii) transferts +1 % de YD, tours 1 à 12 : plan / YD / taux d'épargne / ratio |
+| Tour | (i) G +1 %, tours 1 à 12 : plan / YD / taux d'épargne / ratio / V/V̄ | (ii) transferts +1 % de YD, tours 1 à 12 : plan / YD / taux d'épargne / ratio / V/V̄ |
 |---|---|---|
-| 1 | 0 / 0 / 0,03967 / 1,00000 | 0 / +1,000 % / 0,04918 / 1,00000 |
-| 2 | 0 / +0,081 % / 0,04045 / 1,00000 | +0,656 % / +1,002 % / 0,04297 / 1,00083 |
-| 3 | +0,053 % / +0,138 % / 0,04048 / 1,00007 | +0,669 % / +1,215 % / 0,04485 / 1,00114 |
-| 4 | +0,091 % / +0,194 % / 0,04066 / 1,00014 | +0,819 % / +1,368 % / 0,04487 / 1,00161 |
-| 9 | +0,257 % / +0,405 % / 0,04109 / 1,00068 | +1,360 % / +2,034 % / 0,04602 / 1,00427 |
-| 13 | +0,350 % / +0,509 % / 0,04119 / 1,00121 | +1,705 % / +1,410 % / 0,03687 / 1,00669 |
-| 14 | +0,369 % / +0,447 % / 0,04042 / 1,00135 | +1,124 % / +1,483 % / 0,04307 / 1,00648 |
-| 18 | +0,264 % / +0,292 % / 0,03994 / 1,00158 | +0,992 % / +1,068 % / 0,04040 / 1,00718 |
-| 24 | +0,159 % / +0,137 % / 0,03947 / 1,00161 | +0,715 % / +0,651 % / 0,03907 / 1,00726 |
+| 1 | 0 / 0 / 0,03967 / 1,00000 / 1,00000 | 0 / +1,000 % / 0,04918 / 0,99010 / 1,00000 |
+| 2 | 0 / +0,081 % / 0,04045 / 0,99919 / 1,00000 | +0,656 % / +1,002 % / 0,04297 / 0,99090 / 1,00083 |
+| 3 | +0,053 % / +0,138 % / 0,04048 / 0,99869 / 1,00007 | +0,669 % / +1,215 % / 0,04485 / 0,98912 / 1,00114 |
+| 4 | +0,091 % / +0,194 % / 0,04066 / 0,99820 / 1,00014 | +0,819 % / +1,368 % / 0,04487 / 0,98809 / 1,00161 |
+| 9 | +0,257 % / +0,405 % / 0,04109 / 0,99664 / 1,00068 | +1,360 % / +2,034 % / 0,04602 / 0,98425 / 1,00427 |
+| 13 | +0,350 % / +0,509 % / 0,04119 / 0,99614 / 1,00121 | +1,705 % / +1,410 % / 0,03687 / 0,99270 / 1,00669 |
+| 14 | +0,369 % / +0,447 % / 0,04042 / 0,99690 / 1,00135 | +1,124 % / +1,483 % / 0,04307 / 0,99177 / 1,00648 |
+| 18 | +0,264 % / +0,292 % / 0,03994 / 0,99867 / 1,00158 | +0,992 % / +1,068 % / 0,04040 / 0,99654 / 1,00718 |
+| 24 | +0,159 % / +0,137 % / 0,03947 / 1,00024 / 1,00161 | +0,715 % / +0,651 % / 0,03907 / 1,00074 / 1,00726 |
+
+Le ratio baisse au tour du transfert : le revenu du tour monte avant la richesse. Restitué sur 12 tours (V de clôture/somme des 12 derniers YD), il a un niveau normal de 12ν(Γ − 1)/(1 − Γ^{−12}) = 1,0216 an, et vaut 1,0151 au tour 9 et 1,0183 au tour 24 sous (ii). Le choix de la mesure restituée revient à `jeu`.
 
 - C égale le plan : la demande des ménages est entièrement servie.
 - Délais : G au tour n, consommation au tour n + 2 ; transferts au tour n, consommation au tour n + 1.
@@ -619,7 +854,7 @@ Maquette B1 : prix figés, emploi R, θ_H = 0,8, i_D = 3 %, ν = 1, λ_V = 0,4. 
 - taux de service de 1 jusqu'au tour 8, puis 0,869 / 0,856 / 0,853 / 0,850 aux tours 9 à 12 ;
 - **demande non servie des ménages nulle dès le tour 13** : seuil de 12 tours tenu ;
 - épargne forcée : richesse +6,33 % au tour 13, soit 0,79 mois de consommation ;
-- ratio de richesse au plus à +0,99 % de ν, donc dans la bande de ±2 % ;
+- Ratio de richesse V d'ouverture/(12·YD du tour) : **0,9514 au tour 2, hors de la bande de ±2 % aux tours 2 à 10**. Le revenu du tour bondit avec la production au plafond, et la richesse suit avec un tour de retard. Il vaut 1,0099 au tour 13, puis reste dans la bande. Dans la lecture « V de clôture/somme des 12 derniers YD », rapportée à son niveau normal de 1,0216 an, l'écart reste dans ±2 % à tous les tours (0,9832 au tour 8, 1,0153 au tour 12).
 - **en revanche, la production reste au plafond N^pa (+5,26 %) au moins jusqu'au tour 120.** Elle est revenue à +0,77 % au tour 240 et à +0,03 % au tour 480. Sans rappel des prix ni de la politique, la borne d'emploi reste active plus de 100 tours après le choc : le critère 8 (c) n'est pas évaluable dans cette maquette. C'est le même constat que la maquette C8 de la fiche 3.
 
 ### Statut des faits de la première tentative (critère 17)
@@ -702,12 +937,17 @@ R2 reste la référence non mesurée.
 **Réserves**, avec leurs critères écrits avant l'essai (J3) :
 1. Un pas sans choc depuis l'état résolu laisse V_H/(n_a·YD) = ν et YD_{t−1} sur leur sentier à 1e−10 près en relatif.
 2. Critère 4 : écart au plus de 1e−6 après 720 pas entre λ_V ×0,5 et ×2.
-3. **Boucle conjointe SN, C, M et ménages (critère 5 (c) complet) : non mesurée.** Rayon < 1 exigé à la calibration ; publication aux vitesses ×0,5 et ×2.
+3. **Boucle conjointe SN, C, M et ménages (critère 5 (c) complet)** : mesurée au § 3.C-10 (03/10/2026). La contre-épreuve en niveaux concorde au 4e chiffre.
+   - **Lecture (c)**, à la calibration (θ_H = 0,8, i_D = 3 %) : rayon 0,9637 (régime H) et 0,9613 (régime B), racine réelle, demi-vie de 18,8 et 17,6 tours. Sur la grille 3^6 des six vitesses : de 0,8805 à 0,9903, aucune combinaison instable à θ_H = 0,8. À θ_H = 1, 10 combinaisons du régime B sont instables seules, mais la règle réelle converge.
+   - **Lecture (a)**, explosive : 1,0275 et 1,0029, période de 17 à 19 tours, enveloppe +1,71 % par tour. L'exigence n'est pas tenue, d'où la révision de la Q10 vers (c).
+   - **Au J3**, critère écrit avant l'essai : rayon < 1 à la calibration retenue, régimes H et B, recalculé avec la loi de π^e de la fiche 8. Condition transmise à la fiche 8 : sa loi ne doit pas réintroduire la boucle du § 3.C-10, point 3.
 4. **m_H de long terme supérieur à 0,8 si θ_H = 1** : réserve 3 de la fiche 2, à trancher avec la fiche 6 (distribution des dividendes) et la fiche 9 (impôts).
 5. **Racine quasi unitaire sans fuite** (θ_H = 1 : 0,9993) : le niveau d'activité n'est fermé que par les fiches 6, 8 et 9 (#44). Le calcul conjoint avec la fiche 6 est à faire avant M27-M28 ; il n'est pas fait ici.
 6. Condition de domaine νλ_V < 1, déclarée et contrôlée au chargement.
 7. Calibration de λ_V et de ν sur des sources lues (richesse liquide, gains de loterie, comptes financiers) : **à instruire**.
-8. Sur-commande : seuil du critère 11 (c) tenu dans la maquette, mais la borne N ≤ N^pa reste active plus de 100 tours sans rappel des prix ni de la politique. Mesure au J3 ou au J4 avec les fiches 4 et 8.
+8. Sur-commande en boucle conjointe (c) : borne active jusqu'au tour 14 (seuil tenu). Demande des ménages entièrement servie. Mais prix +55,6 %, chômage +14 points au tour 24, et ratio hors bande pendant 87 tours. Avec ψ_ξ = 0, la borne reste active jusqu'au tour 30 : le seuil n'est pas tenu.
+
+*Additif du 03/10/2026 (§ 3.C-10)* : la recommandation de la Q10 passe de (a) à **(c)** (cible π̄), la lecture (a) étant explosive en boucle conjointe (rayon 1,0275 et 1,0029) et échouant à l'exigence du critère 5 (c) ; (c) n'est exacte que sous C2 (π̄ = π*). La variante π^lu = h·π_{t−1} + (1 − h)π̄ (stable pour h < 0,604) n'est pas recommandée sans l'avis de `monnaie`. La question de `monnaie` sur l'assiette de la cible (nominale ou Haig-Simons, § 6.1, Q2, point 3) n'a pas encore reçu de réponse de `macro`.
 
 **Lectures soumises au mainteneur** :
 - (a) Q10 : π^lu = glissement mesuré, π^e ou π̄ ;
@@ -1184,3 +1424,4 @@ Non instruit.
 | 03/10/2026 | Instruction déposée (§ 3 à 5), partielle (boucle conjointe avec SN, C et M et état conjoint avec la fiche 6 non mesurés ; une relance ciblée après la limite de tours) : options A, B, S, C, R, D ; recommandation C (cible de richesse avec terme de tendance, B_H ≡ 0) ; § 1.1 aligné sur l'ADR 0008 | `macro` ; session principale |
 | 03/10/2026 | Avis de `jeu` (§ 7) : préférence C ; seuil du critère 12 (d) proposé (part d'un transfert dépensée en 12 tours entre 0,50 et 0,85, en équilibre partiel ; 0,628 à la calibration) ; double dimension de la sur-commande (G ×2 pendant 12 et 24 tours) ; conditions de restitution ; trois constats chiffrés transmis à `macro` | `jeu` |
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à C avec B_H ≡ 0, lecture (a), classement des taux confirmé, double restitution du taux d'épargne ; constat de non-superneutralité de la cible nominale et proposition d'une cible sur le revenu de Haig-Simons (deux positions si `macro` maintient la sienne) ; structure d'équilibre général du canal rentier ; conditions C14 à C25 pour les fiches 7, 8 et 9 | `monnaie` |
+| 03/10/2026 | Additif de `macro` (§ 3.C-10) : boucle conjointe SN, C, M et ménages mesurée, contre-épreuve en niveaux ; critère 5 (c) tenu sous (c) (0,9637 / 0,9613), explosif sous (a) (1,0275 / 1,0029), d'où la recommandation de la Q10 révisée vers (c) ; instabilité nouvelle mesurée ; § 3.L, sur-commande et § 3.N-9 corrigés après les constats de `jeu` ; réserves 3 et 8 remplacées | `macro` ; session principale |
