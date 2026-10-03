@@ -92,4 +92,19 @@ date: 2026-09-30
 - **Ce que l'ADR ne règle pas** : le contenu économique des blocs ; les règles de refinancement, de taux et de placement de la dette (fiches 7 à 9) ; les barrières entre pays et le reste du monde (J5) ; les actifs hors socle et les crises (J6) ; les valeurs numériques de l'état stationnaire (J3).
 - **Conditions de réouverture** : une nouvelle décision M-m citant M22, si une fiche (J3, J6) établit **par un fait mesuré** qu'un mécanisme exige une dynamique infra-mensuelle (ruée bancaire, crise de change en jours) que le pas mensuel ne représente pas ; ou si le test J2 de l'identité cumulée est violé sur la fenêtre longue (alors c'est un défaut à corriger, jamais un motif d'élargir ε_V). Une contradiction avec un invariant de l'ADR 0002 passe par un nouvel ADR qui le cite.
 
-Issues : #15, #16, #17 (décision), #18 (spécification), #19 (script des matrices).
+## Annotation du 03/10/2026
+
+Rédigée par `architect-approfondi` sur les décisions M25, lecture (b), et M26, question 1, du mainteneur (03/10/2026 ; fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847`). Ces décisions citent M22 et sont consignées dans l'**ADR 0008** (proposé à la date de l'annotation). **La décision M22 est inchangée pour ce qu'elle tranche** ; trois points et deux phrases du § Conséquences se lisent désormais ainsi :
+
+- **Point 4.** La règle linéaire reste celle des taux d'intérêt, des flux annuels et des vitesses d'ajustement, mais elle n'est plus « unique ». Les taux de croissance et d'inflation, que M22 ne classait pas (`sec:cadre-calendrier`, l. 195) et que M24 (f) convertissait linéairement, sont désormais convertis géométriquement, (1 + x)^{1/n_a} par pas (ADR 0008, partie I).
+  - Le § Conséquences, « `eq:moteur-conversion-taux` est la seule conversion », se lit « la seule conversion des taux de flux et des vitesses ».
+  - L'option écartée « conversion composée pour les taux » n'est pas rouverte : elle visait les taux d'intérêt.
+  - La mesure du Contexte, « 14,2857 pour tout n en linéaire », suppose une croissance convertie linéairement. Sous l'ADR 0008, K/(n_a I) vaut 14,3228 à n_a = 12 et dépend légèrement de n_a : dépendance déclarée (ADR 0008, pt I.6).
+- **Point 16.** L'indice des prix n'est plus révisé en phase 1 : c'est le prix du tour, écrit en phase 5 et lu au tour suivant (ADR 0008, partie II). Le registre tient 13 niveaux (P_{t−1}, …, P_{t−13}) et l'empreinte calendaire compte 14 variables, forme proposée par l'ADR 0008 (pt II.3) et soumise à son acceptation.
+  - Le § Conséquences, « le schéma porte t et le registre de 12 valeurs », se lit « de 13 valeurs ».
+  - Le point 15 (neuf phases) est inchangé : la phase 9 tient déjà la mise à jour du registre.
+- **Point 17.** Le facteur entre les deux ratios s'écrit avec (1 + g)^{1/n_a} au lieu de 1 + g/n_a. Il vaut **1,0108** pour g = 2 % au lieu de 1,0109. Remesure d'`architect` le 03/10/2026 (`uv run python -`) : 1,010768 sous la conversion géométrique, 1,010866 sous la conversion linéaire.
+
+Si l'ADR 0008 n'était pas accepté, ou s'il l'était sans son point II.3, cette annotation serait corrigée par une nouvelle annotation datée.
+
+Issues : #15, #16, #17 (décision), #18 (spécification), #19 (script des matrices) ; #24, #39 et #40 (annotation du 03/10/2026, ADR 0008).
