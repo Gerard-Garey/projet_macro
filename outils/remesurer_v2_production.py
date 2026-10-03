@@ -43,9 +43,10 @@ après le pas, est exclue et décomptée) :
   `_diag_cu['Y']`, actif sous `wsps2`), Ŷ production planifiée (`_dbgL[2]`,
   l. 660).
 
-Un rapport de dénominateur nul ou négatif, ou non fini, et une indicatrice
-dont un opérande n'est pas fini, sont omis de la moyenne ; le nombre de valeurs retenues et omises est publié par grandeur,
-secteur et année (`effectifs`) ; une année sans valeur donne `null`.
+Un rapport de dénominateur nul, négatif ou non fini, un rapport non fini, et
+une indicatrice dont un opérande n'est pas fini, sont omis de la moyenne ; le
+nombre de valeurs retenues et omises est publié par grandeur, secteur et année
+(`effectifs`) ; une année sans valeur donne `null`.
 
 **Critères, écrits avant l'essai** (fiche § 9.7 ; verdicts publiés quel que
 soit le résultat) :
@@ -64,7 +65,10 @@ soit le résultat) :
 - **critère (ii)** : pour chaque vitesse, écart relatif
   |r(× 2) − r(× 0,5)|/|r(× 0,5)| > 1e−6, avec r = Sinv/Q sur la même
   fenêtre, dans chacun des deux secteurs ; le verdict global exige les deux
-  vitesses ;
+  vitesses. r étant un rapport stock sur ventes, non négatif : r(× 0,5) =
+  r(× 2) = 0 donne un écart nul (« non satisfait ») ; r(× 0,5) = 0 seul rend
+  l'écart indéfini, et la vitesse « non évaluable » (restitution propre au
+  script, décision du mainteneur du 03/10/2026) ;
 - **statut du fait** : « remesuré le <date>, profil par défaut, non D1 ».
   Une fenêtre que la simulation ne couvre pas, ou une branche non remesurée
   (« non remesurable »), donne le verdict « non évaluable ».
@@ -134,11 +138,14 @@ MENTION = "remesuré le {date}, profil par défaut, non D1"
 PROFIL = "valeurs par défaut de Params (prototype v2.0), sans le profil D1"
 
 
-
 def rapport(num, den) -> list[float | None]:
     """Rapports terme à terme ; `None` (omis et compté) si le dénominateur est
-    nul ou négatif, ou si le rapport n'est pas fini. Recopiée dans le pilote."""
-    valeurs = [float(a) / float(b) if float(b) > 0 else None for a, b in zip(num, den)]
+    nul, négatif ou non fini, ou si le rapport n'est pas fini. Recopiée dans le
+    pilote."""
+    valeurs = [
+        float(a) / float(b) if float(b) > 0 and math.isfinite(float(b)) else None
+        for a, b in zip(num, den)
+    ]
     return [v if v is not None and math.isfinite(v) else None for v in valeurs]
 
 
@@ -412,9 +419,13 @@ def verdict_i(branches: dict, fenetre=FENETRE) -> dict:
                 semaines_exclues=exclues, effondrement_dans_fenetre=_effondrement(exclues))
 
 
-def ecart_relatif(a: float, b: float) -> float:
-    """|b − a| / |a|, `a` étant la branche ×0,5."""
-    return abs(b - a) / abs(a) if a != 0 else math.inf
+def ecart_relatif(a: float, b: float) -> float | None:
+    """|b − a| / |a|, `a` étant la branche ×0,5 ; 0 si a = b = 0, `None`
+    (écart indéfini, secteur « non évaluable ») si seul `a` est nul. r = Sinv/Q
+    est un rapport stock sur ventes, non négatif."""
+    if a == 0:
+        return 0.0 if b == 0 else None
+    return abs(b - a) / abs(a)
 
 
 def verdict_ii(branches: dict, fenetre=FENETRE) -> dict:
@@ -438,6 +449,9 @@ def verdict_ii(branches: dict, fenetre=FENETRE) -> dict:
                 continue
             ecart = ecart_relatif(r_m, r_d)
             valeurs[secteur] = dict(x0_5=r_m, x2=r_d, ecart_relatif=ecart)
+            if ecart is None:
+                evaluable = False
+                continue
             satisfait &= ecart > SEUIL_ECART_RELATIF
         verdict = ("satisfait" if satisfait else "non satisfait") if evaluable else "non évaluable"
         exclues = {
