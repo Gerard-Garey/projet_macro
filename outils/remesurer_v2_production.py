@@ -325,7 +325,7 @@ def lancer_branche(
 
 def _moyenne(valeurs: list[float | None]) -> tuple[float | None, int, int]:
     """Moyenne des valeurs finies, nombre de valeurs retenues et omises
-    (`None` : dénominateur nul ou négatif, ou rapport non fini)."""
+    (`None` : dénominateur nul, négatif ou non fini, ou rapport non fini)."""
     presentes = [v for v in valeurs if v is not None and math.isfinite(v)]
     moyenne = math.fsum(presentes) / len(presentes) if presentes else None
     return moyenne, len(presentes), len(valeurs) - len(presentes)
