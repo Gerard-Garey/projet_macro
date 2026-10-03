@@ -278,7 +278,31 @@ def test_annee_sans_semaine_valide_non_evaluable(remesure):
 
 def test_ecart_relatif(remesure):
     assert remesure.ecart_relatif(4.0, 2.0) == 0.5
-    assert remesure.ecart_relatif(0.0, 1.0) == float("inf")
+    # r = Sinv/Q non négatif : deux zéros, écart nul ; zéro seul, indéfini.
+    assert remesure.ecart_relatif(0.0, 0.0) == 0.0
+    assert remesure.ecart_relatif(0.0, 1.0) is None
+
+
+def _branches_vitesses(remesure, moitie, double):
+    reference = branche(annees_constantes(remesure, 1, valeur=moitie))
+    autre = branche(annees_constantes(remesure, 1, valeur=double))
+    return {"mu_x0.5": reference, "mu_x2": autre, "lam_x0.5": reference, "lam_x2": autre}
+
+
+def test_verdict_ii_deux_zeros_non_satisfait(remesure):
+    # r(× 0,5) = r(× 2) = 0 : écart nul, pas un faux « satisfait ».
+    resultat = remesure.verdict_ii(_branches_vitesses(remesure, 0.0, 0.0), (1, 1))
+    assert resultat["vitesses"]["mu_ema"]["valeurs"]["equipement"]["ecart_relatif"] == 0.0
+    assert resultat["vitesses"]["mu_ema"]["verdict"] == "non satisfait"
+    assert resultat["verdict"] == "non satisfait"
+
+
+def test_verdict_ii_zero_seul_non_evaluable(remesure):
+    # r(× 0,5) = 0 et r(× 2) > 0 : écart indéfini, publié `null`.
+    resultat = remesure.verdict_ii(_branches_vitesses(remesure, 0.0, 3.0), (1, 1))
+    assert resultat["vitesses"]["mu_ema"]["valeurs"]["equipement"]["ecart_relatif"] is None
+    assert resultat["vitesses"]["mu_ema"]["verdict"] == "non évaluable"
+    assert resultat["verdict"] == "non évaluable"
 
 
 # --- Rédaction du JSON ------------------------------------------------------
@@ -323,6 +347,17 @@ def test_rapport_omet_denominateur_nul_et_non_fini(remesure):
     assert remesure.rapport([4.0, 1.0, 1.0, nan, 1.0], [2.0, 0.0, -1.0, 1.0, nan]) == [
         2.0, None, None, None, None,
     ]
+
+
+def test_rapport_omet_denominateur_infini(remesure):
+    inf = float("inf")
+    assert remesure.rapport([1.0, 1.0, 1.0], [inf, -inf, 2.0]) == [None, None, 0.5]
+    # Omis de la moyenne et compté, pas retenu comme 0.
+    releve = semaine(1.0)
+    releve["sinv_sur_q"] = remesure.rapport([1.0] * 4, [inf, 1.0, 1.0, 1.0])
+    annee = remesure.agreger([releve] + [semaine(2.0)] * (SEMAINES - 1))[0]
+    assert annee["secteurs"]["alimentation"]["sinv_sur_q"] == 2.0
+    assert annee["effectifs"]["alimentation"]["sinv_sur_q"] == {"retenues": SEMAINES - 1, "omises": 1}
 
 
 def test_echec_du_prototype_consigne(remesure, tmp_path):
