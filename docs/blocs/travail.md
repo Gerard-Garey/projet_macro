@@ -653,7 +653,194 @@ Non instruit (`monnaie`, frontière inflation, au jalon 2).
 
 ## 7. Avis de `jeu`
 
-Non instruit.
+*`jeu`, 03/10/2026 (issue #39, jalon 2), sur la fiche à l'état `e7873e6` (branche `claude/j1-economie-reelle`, PR #43). Réponses aux questions 1 à 10 de `macro`, dont la question 10 ajoutée en cours d'instruction.*
+
+**Chiffres.** Aucun moteur n'existe encore (`src/nations/blocs/` ne contient que `__init__.py`). J'ai écrit une maquette indépendante, qui n'importe pas les scripts de `macro`. Elle comprend :
+- le socle N1 à N7 de la fiche 2 ;
+- la règle d'emploi R ou C ;
+- le salaire SN, sous H-p1 ou H-p2.
+
+Hypothèses : g = 0, pr = 1, anticipation constante, et les valeurs du § 3.0 (λ_v = 3, λ_IN = 1,5, σ = 1,4 mois, U* = 5 %, λ_w = 1, β = 2, part de G 20 %).
+
+Exécution le 03/10/2026, scripts hors dépôt : `uv run --no-project python jeu_travail.py`, `variantes.py`, `jeu2.py` et `jeu3.py`.
+
+- **Contrôle de la maquette.** Elle reproduit le § 3.L au millième près pour la production, l'emploi R et C, le chômage R et C, la productivité apparente C et la colonne H-p2.
+- **Écart sur la colonne « W (R), H-p1 »** (constat transmis à `macro`, sans effet sur mon verdict). Les valeurs publiées sont +0,142, +0,188, +0,195, +0,127 et +0,027 % aux tours 9, 13, 14, 18 et 24. Ce sont exactement celles de **λ_w = 2 et β = 1**. Avec λ_w = 1 et β = 2, les valeurs du § 3.0 et du § 3.N-7 (valeur propre 0,91667), on obtient +0,172, +0,258, +0,274, +0,234 et +0,121 %. Les tours 3 et 4, et la colonne H-p2, ne dépendent que du produit λ_w·β = 2, ce qui explique qu'ils concordent. La question 9 (« +0,19 % au tour 13 ») vient de cette colonne.
+- **Ampleurs sous R, H-p1.**
+
+  | Choc | m | Chômage au plus bas | Glissement salarial sur 12 tours, au tour 13 | Pic du salaire |
+  |---|---|---|---|---|
+  | G +1 % | 0 | −0,23 point (tour 10) | +0,26 point | tour 15 |
+  | G +1 % | 0,6 | −0,55 point (tour 13) | +0,45 point | tour 19 |
+  | G +5 % | 0 | −1,17 point | +1,29 point | tour 15 |
+  | G +5 % | 0,6 | −2,75 point (chômage à 2,25 %) | +2,25 points | tour 19 |
+  | G +10 % | 0,6 | **chômage à 0 au tour 12** ; production visée non réalisée 0,52 % | +4,45 points | tour 19 |
+
+- **Récession, G −5 % aux tours 1 à 12, m = 0,6.** Creux de production de −2,89 % au tour 13 dans tous les cas.
+
+  | Règle | Pic du chômage | Chômage au tour 4 | Sureffectif maximal |
+  |---|---|---|---|
+  | R | +2,75 points au tour 13 | +0,97 point | 0 |
+  | C, demi-vie 2 tours | +2,38 points au tour 14 | +0,48 point | 0,60 % |
+  | C, demi-vie 3 tours | +2,19 points au tour 15 | +0,36 point | 0,84 % |
+  | C, demi-vie 4 tours | +2,02 points au tour 16 | +0,29 point | 1,05 % |
+  | C, demi-vie 6 tours | +1,74 point au tour 17 | +0,21 point | 1,36 % |
+
+  Le sureffectif est nul au tour 24 dans tous les cas.
+- **Scénario adverse : demande pulsée.** G suit un créneau de ±a, de moyenne nulle, en demi-périodes de h tours ; m = 0,6 ; moyennes des tours 13 à 252.
+
+  | Règle | a = 5 %, h = 3 | a = 5 %, h = 6 | a = 5 %, h = 12 | a = 10 %, h = 6 |
+  |---|---|---|---|---|
+  | R | +0,002 | +0,005 | +0,013 | +0,009 |
+  | C, demi-vie 2 tours | −0,23 | −0,29 | −0,35 | −0,58 |
+  | C, demi-vie 3 tours | −0,29 | −0,39 | −0,52 | −0,79 |
+  | C, demi-vie 4 tours | — | −0,48 | −0,65 | — |
+  | C, demi-vie 6 tours | −0,39 | −0,59 | −0,86 | −1,17 |
+
+  Écarts du chômage moyen, en points. La production moyenne est identique sous R et sous C (−0,002 à −0,014 %). Sous C, la contrepartie est un sureffectif moyen de 0,24 à 1,23 % de l'emploi, payé par les profits, et un salaire plus élevé de 0,5 à 2,4 % sous H-p1.
+- **Question 10.** Sous (L), la cible affichée π et le glissement effectif s'écartent ainsi :
+
+  | Cible affichée | Glissement effectif | Anticipation stationnaire |
+  |---|---|---|
+  | 2 % | 2,0184 % | 1,9819 % |
+  | 10 % | 10,4713 % | 9,5690 % |
+  | 50 % | 63,2094 % | 41,2393 % |
+
+  Formules : (1 + π/12)^12 − 1 pour le glissement, et 12[(1 + π)^{1/12} − 1] pour l'anticipation.
+
+**Question ludique de la fiche.** Le bloc n'ouvre aucun levier. Il fixe ce que le joueur voit de **son indicateur le plus politique**, le chômage, et du **coût différé** de ses relances, le salaire. La question est donc : le chômage a-t-il un délai, une contrepartie et un signal avant-coureur que le joueur peut relier à ses décisions, sans devenir un bouton réglable au tour près ?
+
+### 7.A et 7.B Options A et B (brièvement)
+
+Verdict : **à revoir**. Elles révisent M24 et ne résolvent pas leur état stationnaire (critères 3 et 4), si bien que le chômage dérive avant toute décision du joueur. B ajoute des bornes à seuil libre et un état caché, qui rendent une hausse de salaire inexplicable (clip 0,9 et 2,0, baisse de 20 %). Je n'ajoute rien au § 5.
+
+### 7.R Option R — sans retard
+
+- **Ce que voit le joueur.**
+  - Une relance au tour n se lit dans les stocks au tour n, dans la production et le chômage au tour n + 1, dans le salaire au tour n + 2.
+  - Le chômage reproduit la production au tour près, avec un coefficient de −0,95.
+  - Le salaire culmine 2 à 6 tours après le creux du chômage (tour 15 ou 19 pour un chômage au plus bas au tour 10 ou 13). Le coût arrive après le bénéfice : c'est la bonne structure de tentation (relance aujourd'hui, inflation salariale demain).
+- **Leviers.** Aucun propre. Le tableau levier → délai du § 3.L est net.
+- **Stratégies.** Le point (i) du 7.C de la fiche 2 subsiste entièrement : **le chômage est l'écart de production, réglable au tour suivant par la dépense**, dans les deux sens. Son coût n'est que salarial, puis relève des prix (fiche 4) et de la dette (fiche 9).
+- **Risques.**
+  - Aucun signal avant-coureur côté emploi d'une récession : le chômage monte le tour même où la production baisse. Le seul signal reste celui des stocks (fiche 2).
+  - Le chômage atteint 0 avec un levier ordinaire (question 6).
+- **Verdict : lisible.** R ne fait rien de faux. Elle ne donne au joueur ni signal d'alerte côté emploi, ni inertie du chômage.
+
+### 7.C Option C — rétention asymétrique
+
+- **Ce que voit le joueur.**
+  - **En hausse**, tout est identique à R : l'embauche est immédiate.
+  - **En baisse**, le chômage ne monte pas au tour du choc. Le sureffectif apparaît d'abord (0,84 % de l'emploi au tour 8 pour G −5 %, demi-vie de 3 tours), les licenciements suivent, et le chômage culmine au tour 15, **deux tours après le creux de production**. Le joueur vit le dilemme classique « la reprise est là, mais le chômage monte encore ».
+  - **Après une relance**, le chômage tarde à remonter : −0,105 point au tour 18 contre +0,003 sous R. Le sureffectif est alors la gueule de bois de la relance, visible dans les profits.
+  - **Ce que C ne produit pas** : la « reprise sans emplois » de mon avis à la fiche 2 (7, question 7 (b)). Seule D la produirait, et D échoue au critère 5 (c).
+- **Leviers.** Aucun propre. La production est identique à celle de R, donc le cycle des stocks déjà commenté à la fiche 2 ne change pas : c'est un bon point de lisibilité.
+- **Stratégies.** Le réglage du chômage au tour près disparaît **à la baisse** : une austérité ne fait pas monter le chômage tout de suite. Il reste **à la hausse**. D'où le risque ci-dessous.
+- **Risques.**
+  - **Demande pulsée** (mesure ci-dessus). Alterner relance et rigueur abaisse durablement le chômage moyen, de −0,23 à −0,86 point selon la demi-vie et le rythme, à production moyenne inchangée. Ce n'est pas gratuit : le sureffectif est payé par les profits, ce qui réduit l'investissement si la fiche 6 le lit, et le salaire monte, puis les prix (fiche 4) et la réaction de la banque centrale (fiche 8). La maquette ne mesure pas ces coûts, faute de prix endogènes. **À tester au J4** (condition 4). L'ampleur croît avec la demi-vie, d'où ma borne haute.
+  - *Réponse imperceptible* pour les petits chocs. À G +1 %, l'écart entre R et C sur le chômage est d'au plus 0,07 point (tour 14 : −0,145 contre −0,214). Le retard ne se voit que pour des chocs d'un point de demande ou plus.
+  - *Comportement contre-intuitif* : aucun. La productivité apparente ne dépasse jamais sa tendance. C'est une demi-procyclicité, mais elle ne choque pas le joueur, qui ne voit qu'un « sureffectif » nul ou positif.
+- **Verdict : lisible**, sous les conditions 1 à 4.
+
+### 7.D Option D — ajustement partiel symétrique
+
+- **Ce que voit le joueur.** Une pénurie en reprise alors que 5 % de la population active est au chômage : « des chômeurs, et des entreprises qui ne peuvent pas produire faute de bras ». C'est inexplicable dans un modèle sans appariement.
+- **Verdict : à revoir.** Ce n'est pas ce que je demandais à la fiche 2 : je voulais un signal avant-coureur et de l'inertie, non une pénurie de main-d'œuvre fictive. Ma condition 5 de la fiche 2 (« ajustement partiel ») est remplie dans son intention par C.
+
+### Réponses aux dix questions de `macro`
+
+1. **R ou C.**
+   - **Ma préférence ludique est C.** Elle apporte le signal avant-coureur (sureffectif avant licenciements) et l'inertie du chômage en sortie de crise, sans toucher au cycle de production.
+   - Le critère 10 (b) est une exigence à deux branches. La branche « mécanisme perçu », qui relève de moi, est **satisfaite** pour les chocs d'un point de demande ou plus (pic du chômage décalé de 2 tours et réduit de 20 % à demi-vie de 3 tours ; sureffectif de 0,8 %). Elle ne l'est **pas** pour les chocs de 0,2 point.
+   - La branche « fait établi » n'est pas remplie : 3.N-11 ne s'appuie que sur des extraits. **Je ne conteste donc pas que R prévale tant que les sources ne sont pas lues.**
+   - **Fourchette proposée** : demi-vie de **2 à 4 tours**, soit λ_N de 1,91 à 3,51 par an, avec une valeur centrale de **3 tours** (λ_N = 2,48). La valeur de `macro`, λ_N = 2,4 (3,11 tours), est dans la fourchette. Le seuil est développé plus bas.
+2. **Productivité apparente et masse salariale excédentaire sous C.**
+   - Ce sont **la même information** : W(N − y/pr)/(W·N) = 1 − (y/N)/pr. Vérifié au tour 18 : sureffectif de 0,113 %, productivité apparente de −0,113 %. 3.N-9 donne aussi 1,961 % = 1 − 1/1,02.
+   - Afficher les deux, c'est afficher deux fois la même chose sous deux noms. Je demande **un seul indicateur**, le **sureffectif** : « emplois conservés sans production correspondante », en personnes et en % de l'emploi. La productivité apparente sert de définition. Le montant en u.m. ne figure que dans le compte des entreprises, comme charge réduisant le résultat courant.
+   - Sous cette forme, l'indicateur est **lisible** : « les entreprises paient 0,8 % de leurs salariés à ne rien produire ».
+   - Je révise ma condition de la fiche 2 (« productivité apparente rapportée à sa tendance ») en ce sens.
+   - Sous R, l'indicateur disparaît. Le signal avant-coureur reste alors celui des stocks au-dessus de leur niveau normal (fiche 2).
+3. **Coefficient d'Okun de −0,95.**
+   - **Acceptable au socle et au J3 comme limite déclarée, à traiter avant le J7.**
+   - Conséquence ludique mesurée : avec m = 0,6, une relance de G +10 %, soit 2 points de demande pendant 12 tours, **amène le chômage à 0 au tour 12**. Une relance de cet ordre n'a rien d'extrême dans une partie. Le chômage devient un indicateur trop sensible, et c'est probablement l'indicateur le plus pondéré par le joueur, puis par le score et le soutien politique (J7).
+   - Le choix du mécanisme relève de `macro` : participation endogène (« travailleurs découragés », lisible et dans l'esprit de Victoria 3 au prix d'un indicateur de plus, le taux d'activité) ou marge des heures. Ma préférence ludique va à un mécanisme plutôt qu'à un plancher (question 6).
+   - Je propose de décider au J4, sur la fréquence d'un chômage inférieur à 1 % dans les scénarios du catalogue (issue proposée).
+4. **Pente de 2 points par point de chômage et par an.**
+   - **Perceptible** : à G +5 % et m = 0,6, le glissement salarial passe de 4,06 % à environ 6,3 % au tour 13.
+   - **Pas trop forte pour le jeu**, puisqu'elle fait apparaître le coût de la relance dans l'année. Le pic du salaire 6 tours après le creux du chômage donne au joueur le temps de céder à la tentation, ce qui est voulu.
+   - Je ne peux pas dire si elle est trop forte en fidélité (pente non trouvée en 3.N-11), ni dans la boucle salaires – prix (critère 5 (d), avec la fiche 4).
+   - Réserve : l'Okun doublé double aussi la réponse salariale par point de production (environ 1,9 point par an et par point d'écart de production). La question 3 commande donc aussi celle-ci.
+5. **Délai anticipation → salaire : 1 tour (lecture (a)).**
+   - La grammaire des délais reste uniforme : une décision du tour n agit sur le secteur privé au tour n + 1 au plus tôt.
+   - Sous (b), toute annonce de la banque centrale qui déplace π^e le tour même (fiche 8) agirait sur les salaires sans délai, sans contrepartie visible au tour. Ce serait un levier instantané par la communication. Accord avec `macro`.
+6. **Chômage à 0 en surchauffe.**
+   - Un « 0,0 % » affiché est **contre-intuitif** : personne ne cherche d'emploi, pas même entre deux postes.
+   - Affichage demandé quand la borne N ≤ N^pa est active : le chômage avec la mention « **plein emploi : main-d'œuvre épuisée** », et, à côté, la production visée non réalisée (condition 3 de la fiche 2), qui en est la contrepartie.
+   - Signal avant-coureur : le chômage sous la moitié de U^eq, signalé comme « tension sur le marché du travail ».
+   - Je **ne demande pas de plancher frictionnel** : ce serait une borne à paramètre, contraire à la lecture (ii) de #38 décidée le 03/10/2026.
+   - **Question pour `macro`** (choix de fond, non tranché ici) : une courbe des salaires convexe, dont la semi-élasticité croît quand U tend vers 0, éloignerait le chômage de 0 par un mécanisme.
+7. **Levier institutionnel au J4 : préférence pour une entrée par la norme ω* (lecture (w2)).**
+   - Avec un seul type de travailleur, un W^min borné ne mord jamais, ou fixe d'un coup tout le salaire. C'est un interrupteur sans gradation, et une borne qui rappelle l'instabilité 15.
+   - Par ω*, le levier « pouvoir de négociation, droit du travail » agit progressivement (demi-vie de 8 tours de SN). Il a un arbitrage lisible : une part salariale plus haute contre un chômage d'équilibre plus haut (U* = U^eq + ln(ω*(1 + μ̄))/β), avec des gagnants (salariés en place) et des perdants (profits, chômeurs).
+   - **Condition** : abaisser ω* doit avoir un coût perceptible, par la consommation des ménages (fiche 5) ou par le soutien politique (J7). Sinon, réduire le chômage d'équilibre par la loi est une stratégie dominante.
+   - Le salaire minimum proprement dit attend une hétérogénéité des travailleurs (J ≥ 2, hors socle).
+8. **Salaire réel sous marge instantanée (H-p2) : à clarifier.**
+   - Le joueur voit un salaire nominal en hausse durable (+0,43 % au tour 24) et un pouvoir d'achat inchangé : « les hausses de salaire sont mangées par les prix ». C'est lisible et pédagogique, **à condition** d'afficher côte à côte W, W/P et la part salariale.
+   - Le défaut est ailleurs : la relance n'a aucun effet de répartition entre salaires et profits, et ses seuls gagnants sont les nouveaux embauchés. O2 demande des gagnants et des perdants. Une marge qui répond à la tension rendrait le salaire réel parlant. C'est l'affaire de la fiche 4 (instabilité 14), que je commenterai à son avis.
+9. **Ampleurs de l'exemple daté.**
+   - −0,23 point de chômage est **à la limite du perceptible** : 5,0 → 4,8 % à une décimale.
+   - Le salaire, remesuré sous la calibration déclarée, monte de +0,26 % au tour 13, et non de +0,19 % (constat ci-dessus). Le glissement passe de 4,06 à 4,32 % : **perceptible** à une décimale.
+   - Avec m = 0,6 : −0,55 point et +0,45 point, nettement perceptibles.
+   - Je maintiens le test O2 à +1 % et à +5 % (condition 6 de la fiche 2).
+10. **Lecture des taux annuels : (G) préférée.**
+    - À 2 %, l'écart de (L) est invisible à une décimale (2,0184 %, 1,9819 %). Il n'en reste pas moins un défaut ludique, pour trois raisons :
+      - (a) le **levier** est une cible fixée par le joueur (fiche 8), et sous (L) elle n'est jamais atteinte, ce qui contredit « ce que je fixe est ce que je vois » ;
+      - (b) l'écart entre la cible et l'anticipation stationnaire (2 % contre 1,98 %) se lirait comme un **défaut de crédibilité** qui n'en est pas un, alors que c'est précisément le signal que la fiche 8 doit rendre lisible ;
+      - (c) l'écart croît avec l'inflation (10 % → 10,47 % et 9,57 % ; 50 % → 63,2 % et 41,2 %), c'est-à-dire **dans les crises** (O3), là où le joueur lit les chiffres de plus près.
+    - (G) est en outre une condition de SN au critère 4 (3.N-4).
+    - Si (L) était retenue, la restitution devrait afficher le taux effectif à côté du paramètre, comme pour la croissance tendancielle à la fiche 2 (2,0184 %).
+
+### Indicateurs du tour (critère 11 (a))
+
+| Indicateur | Verdict | Motif ou point à clarifier |
+|---|---|---|
+| Taux de chômage (au tour ; moyenne sur 12 tours) | **lisible** | Afficher U^eq comme niveau normal. Mention « plein emploi : main-d'œuvre épuisée » quand la borne est active (question 6) |
+| Emploi (personnes) | **lisible** | — |
+| Salaire nominal (glissement sur 12 tours) | **lisible** | Niveau normal dans la définition exacte : 4,0588 % à π̄ = 2 % (g_pr linéaire, M24 (f)), et non 4 % |
+| Salaire réel W/P | **à clarifier** | Indice de base 100, avec son glissement normal (2,0184 %) ; toujours affiché à côté du nominal (question 8) |
+| Part salariale (ΣWB/ΣVA sur 12 tours) | **à clarifier** | Niveau normal dans **la même définition** que l'indicateur : l'écart entre ω̄ et WB/VA sur 12 tours, publié selon l'amendement, ne doit pas apparaître comme une dérive (même principe que les stocks à 1,4152 mois, fiche 2) |
+| Productivité apparente et masse salariale excédentaire (C) | **à revoir comme deux lignes** | Grandeur unique ; restituer le **sureffectif** en personnes et en % de l'emploi, et le montant en u.m. dans le compte des entreprises seulement (question 2) |
+
+### Préférence motivée
+
+- **Ma préférence va à C**, `macro` recommandant R et préférant C si un retard est retenu. Nous ne divergeons pas sur la procédure : sans fait établi, le critère 10 (b) impose R, et je ne le conteste pas. Je retiens C parce que le chômage y acquiert un **délai, un signal avant-coureur et une inertie de sortie de crise** que le joueur peut relier à ses décisions, sans changer la production.
+- **Suggestion au mainteneur** : faire lire les sources primaires avant M25 plutôt qu'adopter R pour passer à C plus tard. Le passage serait peu coûteux (production identique), mais il changerait le chômage restitué, donc demanderait un visa.
+- **Classement** : C > R > D > B > A. R est lisible mais n'offre ni signal avant-coureur ni inertie. D crée une pénurie inexplicable.
+- **Accords et réserves sur les lectures du § 5** :
+  - (a) lecture à l'ouverture : accord (question 5) ;
+  - (b) conversion géométrique : accord, et (G) pour la lecture unique (question 10) ;
+  - (c) (w1) au socle, (w2) au J4 comme interface du levier : accord, sous la condition de coût de la question 7 ;
+  - (d) et (e) : sans enjeu ludique ;
+  - (f) aucun levier propre : accord.
+
+### Conditions demandées au § 9 (restitution et essais)
+
+1. **Sureffectif** (sous C), indicateur unique en personnes et en % de l'emploi, qui remplace la productivité apparente et la masse salariale excédentaire comme lignes distinctes. Le montant en u.m. figure dans le compte des entreprises, comme charge du pas.
+2. **Niveaux normaux** dans la définition exacte de chaque indicateur, publiés par le script d'état stationnaire : U^eq ; glissement salarial nominal (4,0588 % à π̄ = 2 %) ; glissement du salaire réel (2,0184 %) ; part salariale dans la définition sur 12 tours.
+3. **Chômage nul** : mention « plein emploi : main-d'œuvre épuisée » et production visée non réalisée à côté. Signal de tension sous U^eq/2. Aucun plancher frictionnel.
+4. **Scénario adverse O2 au J4, à écrire avant l'essai.** Dépense publique en créneau de ±5 %, de moyenne nulle, en demi-périodes de 6 et de 12 tours, contre une dépense constante, avec prix et politique monétaire endogènes. On publie l'écart du chômage moyen, le sureffectif, les profits, le glissement salarial et l'inflation. Le critère de verdict (coût jugé suffisant ou non) est à fixer par le mainteneur avant l'essai.
+5. **W, W/P et la part salariale toujours affichés ensemble.**
+6. **Fourchette de demi-vie** de la condition 5 de la fiche 2, ramenée à 2 à 4 tours (seuil ci-dessous) si C est retenue.
+
+### Seuil proposé au mainteneur (critère 11 (d)), si C est retenue
+
+- **Grandeur** : demi-vie de l'écart d'emploi en régime de baisse, ln 2 / (−ln(1 − λ_N/12)), en tours.
+- **Seuil** : de 2 à 4 tours, bornes comprises, soit λ_N de 1,91 à 3,51 par an. Valeur centrale proposée : 3 tours (λ_N = 2,48). La valeur 2,4 de `macro` (3,11 tours) est dans la fourchette.
+- **Calibration visée** : la calibration proposée. Aux vitesses ×0,5 et ×2, les valeurs sont publiées sans être exigées, comme pour la bande du critère 5 (c).
+- **Motifs** :
+  - **Borne basse.** À 2 tours, le retard reste perceptible pour un choc d'un point de demande : chômage au tour 4 de +0,48 point contre +0,97 sous R, pic décalé d'un tour, sureffectif maximal de 0,60 %. Je n'ai pas mesuré en deçà : la borne reprend ma condition de la fiche 2.
+  - **Borne haute.** Au-delà de 4 tours, la demande pulsée rapporte plus de 0,6 point de chômage moyen pour un créneau de ±5 % (−0,65 à 4 tours, −0,86 à 6 tours, pour h = 12). Et le pic de chômage d'une récession est amorti de plus d'un quart (−27 % à 4 tours, −37 % à 6 tours) : la crise se lit alors dans les profits plutôt que dans le chômage.
+  - **Indication non établie.** L'extrait d'Okun (« un à deux trimestres », 3.N-11) suggère une demi-vie d'environ 3 tours. Ce n'est pas un fait établi.
 
 ## 8. Décision du mainteneur
 
@@ -672,3 +859,4 @@ Non instruit.
 | 03/10/2026 | Amendement pris avec les critères de la fiche 4 (part salariale sur W/(p·pr), bande commune, lecture unique de #24), avant la fin de l'instruction | mainteneur |
 | 03/10/2026 | Instruction déposée (§ 3 à 5) : options A, B, socle 3.N, R, C, D ; recommandation R (salaire SN, lectures (a) à (f)), C en alternative conditionnelle ; A, B, D et SP écartées ; remesure T1 proposée | `macro` |
 | 03/10/2026 | Additif de `macro` après la décision du mainteneur sur la part salariale et la lecture unique des taux annuels : § 3.N-4 remplacé (lectures communes (L) et (G), préférence (G) avec révision de M24 (f)), condition 3 (d) sur W/(p·pr) avec écart publié (C13), § 4 et § 5 mis à jour | `macro` ; session principale |
+| 03/10/2026 | Avis de `jeu` (§ 7) : préférence C > R > D > B > A, R imposée par le critère 10 (b) tant que les sources ne sont pas lues ; seuil de demi-vie de 2 à 4 tours proposé ; lecture (G) préférée ; écart relevé dans la colonne « W (R), H-p1 » du § 3.L | `jeu` |
