@@ -577,7 +577,7 @@ Aucune remesure V n'est proposée. Les échecs au critère 6 sont établis par f
   - t̄u = 0,8, d'où κ = x·t̄u ;
   - μ̄ = 0,25 ;
   - lv\* = 0,4 ; ν_F = 1/6 an (2 mois de ventes) ;
-  - i_L = i_D = 3 % dans la boucle conjointe, r = 1 % dans les formes fermées ;
+  - i_L = i_D = 3 % dans la boucle conjointe, r = 1 % dans les formes fermées, soit i = (1 + r)(1 + π̄) − 1 = 3,02 % à π̄ = 2 % et 11,1 % à π̄ = 10 % (taux nominal retenu aussi pour la ligne π̄ = 10 % de la boucle conjointe) ;
   - η_r = 2 par unité de taux ;
   - T_F = 0.
 
@@ -630,6 +630,8 @@ h (indice réservé), ℓ et ε (tolérance du cadre) sont évités.
   | Levier sur p K^vol, avec cible sur v^e | **1,0530** (période 109 tours) | vérifié |
   | Ajustement partiel de D_F (λ_D = 0,5 à 2) avec levier sur p K^vol | 1,07 à 1,16 | vérifié |
   | Levier comptable avec cible sur v^e (F retenue) | 0,9971 | vérifié |
+
+  *Précision après contre-épreuve indépendante (03/10/2026)* : les rayons de ce tableau sont mesurés sur l'option S à vitesse ×2 (λ_ti = 0,04) ; à la base, F retenue vaut 0,9980 (§ 3.B7). La variante « levier sur p K^vol » s'écrit L^cible = lv\*·p̂_t·K^vol_t d'ouverture ; selon l'écriture (prix p̂ ou p_{t−1}, capital d'ouverture ou capital après investissement), le rayon de S va de 1,0528 à 1,0538, toujours explosif.
 
   - **Mécanisme du levier sur p K^vol** : une hausse du niveau des prix réévalue le capital, donc relève la cible de crédit. Le crédit nouveau est versé en dividendes, d'où de la demande et des prix. C'est une réévaluation du capital qui alimente des flux, parente des instabilités 10 et 11. **Fait nouveau ; hypothèse sur le mécanisme.**
   - **Conséquence** : la cible de levier se pose sur K comptable. Elle n'est pas posée sur p K^vol, ce qui ne contredit pas l'acquis 2, qui portait sur les rentabilités.
@@ -706,7 +708,7 @@ h (indice réservé), ℓ et ε (tolérance du cadre) sont évités.
 | C | 0,9964 / 0,9985 / 0,9893 | 0,9967 / 0,9987 / 0,9928 | 0,9975 / 0,9992 / **1,0108** |
 
 - **A et B avec les stocks** : l'échec de la partie 1 est **confirmé** (vérifié).
-- **Condition nécessaire, écrite en forme fermée** : la part de demande autonome A = 1 − m/(1 + γ) − (n_aγ + δ)x doit être positive. C'est la condition du supermultiplicateur.
+- **Condition nécessaire, écrite en forme fermée** : la part de demande autonome, rapportée à y, A = v/y − m/(1 + γ) − (n_aγ + δ)x, avec v/y = 1/(1 + n_aσγ), doit être positive (*Précision après contre-épreuve indépendante (03/10/2026)* : écrite d'abord avec 1 au lieu de v/y, ce qui donnait −0,0081 au lieu de −0,0104 à x = 3, m = 0,8 ; signe et verdict inchangés). C'est la condition du supermultiplicateur.
   - Le gain de basse fréquence ∂I/∂y d'une règle qui ancre x vaut exactement (n_aγ + δ)x : **0,2095 à x = 3** et 0,1396 à x = 2.
   - **À x = 3, m = 0,8 est hors du domaine (A = −0,0104)** : les cas m = 0,8 de la partie 1 avaient eux aussi A < 0. Ce constat est **nouveau ; il ne change pas le verdict de A et B**.
 - **Condition de vitesse** : seuils mesurés.
@@ -722,7 +724,7 @@ Rayon hors racine nominale, en régimes H et B (identiques au 4e chiffre). Chaqu
 
 | Lecture du revenu | Ā (part de G) | S (λ_ti = 0,02) | C (λ_K = 0,05) |
 |---|---|---|---|
-| F (dividende résiduel) | +0,0040 | 0,9980 / 0,9992 / 0,9971 (P 2 296) | 0,9961 / 0,9979 / 0,9964 |
+| F (dividende résiduel) | +0,0040 | 0,9980 / 0,9992 / 0,9971 (P 2 287 à 2 296 selon la maquette) | 0,9961 / 0,9979 / 0,9964 |
 | θ_H = 0,8 (salaires seuls) | +0,0660 | 0,9978 / 0,9992 / 0,9972 | 0,9959 / 0,9980 / 0,9926 |
 | θ_H = 1 | **−0,1320** (hors du domaine) | 0,9978 / 0,9992 / 0,9972 | 0,9959 / 0,9980 / 0,9926 |
 | F, π̄ = 10 % | — | 0,9979 / 0,9992 / 0,9971 | 0,9958 / 0,9979 / 0,9921 |
@@ -752,7 +754,7 @@ Rayon hors racine nominale, en régimes H et B (identiques au 4e chiffre). Chaqu
 | FU/V_F par pas | Γ − 1 | 0,33059 % | idem | 0,964 % | — |
 | Distribution Div/(Div + FU) | (R − FU)/R | 0,56853 | **−0,07314** | 0,39995 | 0,56791 / 0,56876 |
 
-- **Contrôle de la forme fermée** : Div/ventes vaut 0,06262 en forme fermée comme dans la maquette conjointe (0,0626) ; l'écart entre la forme du résultat et la forme de caisse est nul.
+- **Contrôle de la forme fermée** : Div/ventes vaut 0,06262 en forme fermée comme dans la maquette conjointe (0,0626), à i = 3 % ; à i = 3,02 %, taux du tableau, 0,06252 ; l'écart entre la forme du résultat et la forme de caisse est nul.
 - **Indépendance envers n_a** (critère 5 (b)) :
   - x et lv n'en dépendent pas ;
   - ti, I/PIB et la distribution en dépendent par n_aγ, à l'ordre 1e−4 en relatif (ADR 0008, I.6) ;
@@ -1017,3 +1019,4 @@ Non instruit.
 | 03/10/2026 | Jalon 2, partie 1 : § 3.0, options A (v1.5) et B (v2.0), statut des faits, acquis pour la suite ; A et B échouent au critère 6 (exigence) et, sur maquette sans stocks, au critère 7 (c) ; amendement de notation sous (G) proposé, en attente du visa | `macro` ; session principale |
 | 03/10/2026 | Jalon 2, partie 2 : socle F, options S, C, R et PI, boucles avec N1 à N7 et boucle conjointe, état stationnaire conjoint, voies (i)/(ii) de #36 (sortie de `verifier_matrices.py` avant et sur copie), cas à la main, Q2, Q3, Q5, Q11, Q12, exemple daté ; § 4 et § 5 (recommandation S + F, lecture (a), voie (i), amendement prospectif du critère 6 proposé) | `macro` ; session principale |
 | 03/10/2026 | Décisions du mainteneur : visa de l'amendement de notation sous (G) ; amendement prospectif du critère 6 (2 160 pas) ; lecture annuelle des taux de la v1.5 et T_K en dépendance déclarée | mainteneur ; session principale |
+| 03/10/2026 | Contre-épreuve indépendante de la partie 2 (formes fermées du § 3.E, cas à la main, boucle réduite avec N1 à N7, boucle conjointe) : concordance au 4e chiffre ; précisions d'écriture (taux nominal des formes fermées, configuration du tableau des variantes de F, condition A avec v/y, Div/ventes, période) | session principale |
