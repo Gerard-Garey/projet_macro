@@ -3,7 +3,7 @@ bloc: Investissement et financement des entreprises
 module: src/nations/blocs/investissement.py
 expert pilote: macro
 experts consultés: monnaie (demande de crédit face à l'offre bancaire : frontière crédit) ; jeu
-statut: en instruction (critères validés le 03/10/2026)
+statut: avis rendus (03/10/2026 ; désaccord `macro` / `monnaie` sur le canal permanent du taux)
 décision: —
 issue: #42
 ---
@@ -996,7 +996,235 @@ Calibration indicative (hypothèse) : t̄u = 0,8, x = 2, λ_ti = 0,02 par an, η
 
 ## 6. Avis de l'expert consulté
 
-Non instruit (`monnaie`, frontière crédit, au jalon 2).
+*Rédigé par `monnaie` (expert consulté sur la frontière crédit) le 03/10/2026. Avis porté sur la fiche à l'état `0586a92` (branche `claude/j1-economie-reelle`, PR #43). Il est cohérent avec mes avis sur les fiches 3, 4 et 5 (conditions C1 à C26). Les conditions nouvelles sont numérotées C27 à C36 (§ 6.3).*
+
+*Sources lues :*
+- *fiche 6 : § 1.1, § 1.5, critères 3, 7 (d) (e), 11 et 15, § 3.0, § 3.X, § 3.N, § 3.S, § 3.C, § 3.B7, § 3.E, § 3.F, § 3.L, § 4 et § 5 ;*
+- *fiche 5 : § 5 et § 6 (dont § 6.5, C26) ;*
+- *fiche 3 : § 6.1 (Q5) et § 6.3 (C1 à C8) ; fiche 4 : § 6.3 (C9 à C13) ;*
+- *issue #44 ;*
+- *`nations_et_marches.tex` : l. 252 et 253 (taux des instruments), l. 460 (intérêts), l. 504 à 509 (`tab:phases`), l. 521 et 523 ;*
+- *`archive/v1.5/Nations_et_Marches_v1_5.tex` : l. 571 et 582 ; `archive/v2.0/prototype/model.py` : l. 896 et 897, l. 1972 à 1974 ;*
+- *`archive/faits_mesures_G_K.md` : § 6 et § 8 ;*
+- *scripts de `macro` `conj6.py` (l. 8 et 40) et `sim2.py` (l. 17 et 18), lus pour savoir où le choc de taux entre.*
+
+*Calculs : six scripts du scratchpad, dans `monnaie6/` (commandes et sorties au Retour). Une contre-épreuve recoupe le cas à la main de `macro` : K_{t+1} = 2 348,9871, L/K = 0,400000 avec le crédit accordé et 0,399341 avec le crédit refusé de moitié, ΔL^d = 3,0959 (`macro` : 3,0960).*
+
+*Statut des références :*
+- *lu : texte primaire ;*
+- *par reproduction : modèle GROWTH de Godley et Lavoie (2007, chap. 11) relu dans la reproduction sfcr `gl8-growth.Rmd`, téléchargée le 03/10/2026 ; l'ouvrage n'est pas lu ;*
+- *extrait : notice ou résumé ;*
+- *existence vérifiée, non lu.*
+
+*Les sorties de maquette sont des résultats de modèle, sans statut de fait.*
+
+### 6.1 Réponses aux cinq questions de `macro`
+
+**Q1 — Lecture (a) de la phase 3 et facteur de disponibilité du crédit. La lecture (a) convient à la fiche 7. Je déconseille un facteur de disponibilité dans le plan au socle.**
+
+1. **La lecture (a) est la forme standard de la monnaie endogène** : la banque affiche son prix, et la quantité suit la demande des emprunteurs solvables.
+   - Moore (1988), *Horizontalists and Verticalists*, Cambridge University Press : existence vérifiée, non lu.
+   - Godley et Lavoie, modèle GROWTH, par reproduction :
+     - « Loans to firms supplied on demand », `Lfs ~ Lfd` (éq. 11.88, `gl8-growth.Rmd` l. 185) ;
+     - taux du crédit `Rl ~ Rm + ADDl` (éq. 11.98, l. 203).
+   - Statut : vérifié pour la forme de Godley et Lavoie (par reproduction) ; non lu pour Moore.
+2. **Au socle, je recommande à la fiche 7 une offre accommodante au taux affiché, sans plafond** : la ligne 18 vaut ΔL^d. Le refus partiel du crédit reste un **scénario adverse déclaré** (critère 9 (c)), non une règle à seuil. C'est l'hypothèse (i) du critère 11 (c), qui devient le cas de base (C27).
+3. **Pourquoi pas de facteur de disponibilité.**
+   - Sous J = 1, la ligne 3 est interne aux entreprises : l'investissement agrégé ne se paie pas en dépôts.
+   - Le crédit finance la masse salariale et les distributions. Un refus de crédit retombe donc sur Div, puis sur D_F (F3), jamais sur l'investissement. Ce n'est pas une omission de F : c'est la conséquence de l'agrégation.
+   - Ordres de grandeur, recalculés sur le cas à la main de `macro` :
+     - un refus **total** du crédit nouveau laisse Div = 4,7309 > 0 ;
+     - pour épuiser Div puis D_F, il faudrait exiger un remboursement de 258,65 u.m. dans le tour, soit 27,6 % de L ou 2,58 mois de masse salariale ;
+     - le remboursement volontaire maximal de F1 (plan nul) vaut lv\*·δK/n_a = 3,90 u.m. par tour, soit 1,56 % de D_F.
+
+     Au socle, la contrainte D_F ≥ 0 ne peut donc s'activer que sous un rappel massif des crédits, qui relève de J6. Statut : vérifié (`m6_calc.py` et contrôle en ligne).
+   - Un facteur de disponibilité serait un comportement, non une identité. Il coûterait au moins un paramètre, et en pratique un seuil (instabilité 15), sans donnée au socle. Sous une offre accommodante, il serait de plus inactif.
+   - Le canal de prix (η_r sur ϱ_L) porte déjà la même information sous forme continue.
+4. **Interface notée pour J6.** Le facteur entrerait comme facteur multiplicatif du plan, au même titre que e^{−η_r(·)}, sur la condition publiée à l'ouverture : aucun ordre interne nouveau. Sous S, il serait absorbé par ti à long terme.
+5. **Fidélité.** Le canal « resserrement du crédit → investissement » (canal du crédit bancaire) est absent du socle : c'est un coût déclaré.
+
+**Q2 (Q8) — Date de i_L. Je recommande i_L lu à l'ouverture**, comme variable d'état du bloc 7 écrite en fin de tour (phase 8 (c), ou clôture) à partir du i_CB du tour. Délai entre la décision et le plan : 1 tour.
+
+1. **C'est la datation de Godley et Lavoie** (par reproduction) : les intérêts du pas portent le taux fixé au pas précédent sur l'encours d'ouverture, `Rl[-1]*(Lfd[-1] - IN[-1])` (éq. 11.38, l. 99), avec `Rl ~ Rm + ADDl` (l. 203). C'est aussi celle de la l. 460 : intérêts « assis sur [l']encours brut d'ouverture ».
+2. **`tab:phases` est inchangée.** L'ajout du bloc banque à la phase 1 demanderait un ordre interne « banque centrale, puis banque », donc une issue sensible (amendement Q8).
+3. **Un tour est le plus court délai du modèle**, et il reste bien plus court que les délais mesurés : chez Romer et Romer (2003, NBER w9866, lu pour la fiche 5, PDF p. 6), l'effet maximal sur la production industrielle survient après 22 mois. Un délai nul (phase 1) ferait agir la décision sur la demande au tour même.
+4. **Coût, déclaré à la fiche 7 (C29)** : pendant le tour d'une décision, i_CB et i_res s'appliquent dès la phase 8 (a) (l. 460), alors que i_L et i_D ne changent qu'au tour suivant. La marge de la banque est donc comprimée, ou gonflée, pendant un tour.
+5. **Délais qui en découlent (C35)** :
+   - décision du tour n → plan d'investissement du tour n + 1 ;
+   - décision du tour n → intérêts des lignes 9 et 10 au tour n + 1 → plan des ménages du tour n + 2, si i_D est aussi daté à l'ouverture.
+6. **Point de forme pour `docwriter`.** La colonne « Lisent » de `tab:phases` omet « ouverture » pour les phases 2 et 3 (l. 505 et 506), mais la donne pour les phases 6 et 7 (l. 509). Sous la lecture (a), la phase 3 lit les conditions publiées à l'ouverture. Il faut dire si « ouverture » est implicite partout, ou l'ajouter. Ce n'est pas une décision de fond.
+
+Statut : vérifié pour les sources et les lignes ; le choix est une recommandation.
+
+**Q3 — ϱ_L lu sur π\* et cohérence avec C26. C'est cohérent, sous trois conditions (C32 et C33).**
+
+1. **Une seule lecture de l'inflation dans l'économie.** Le bloc 6 doit lire la même π^lu que le bloc 5. Toute réouverture par C26 vaut donc pour les deux fiches, par une décision citant M27 et M28. Les conditions (ii) et (iii) de C26 incluent le canal de l'investissement, avec ϱ_L lu sur π^e. Sinon, ménages et entreprises liraient deux inflations différentes.
+2. **Propriété utile.** Sous (c), on a exactement ϱ_L − ϱ̄_L = (i_L − ī_L)/(1 + π\*) : toute hausse du taux nominal est une hausse du taux réel perçu. Le canal de l'investissement n'exige donc pas le principe de Taylor, contrairement à une lecture sur π^e adaptative. Statut : vérifié (algèbre).
+3. **Effet d'un changement de cible, à déclarer.** À i_L donné, une baisse d'un point de π\* fait passer ϱ_L de 0,9804 % à 1,9802 % et le plan de −1,98 %.
+   - C'est de signe opposé à l'effet chez les ménages (+0,55 %, § 6.5 de la fiche 5).
+   - Effet net sur la demande à l'impact : +0,085 point de PIB si G pèse 20 % du PIB, +0,193 point si G pèse 0,4 % comme dans la maquette conjointe. L'annonce d'une désinflation est donc légèrement expansionniste au tour même, à i_L donné.
+   - Statut : vérifié pour le chiffre (`m6_calc.py`) ; parts de C et de I : hypothèses.
+4. **Hors cible durable, ϱ_L surestime le taux réel de π̄ − π\*.** Exemple : π\* = 2 %, inflation stationnaire de 10 %, i_L de Fisher à r = 1 %. Alors i_L = 11,10 %, ϱ_L = 8,92 % contre ϱ̄_L = 1,00 %, et le plan est multiplié par 0,854 jusqu'à ce que ti l'absorbe. Sous C2, l'écart à la cible est transitoire. Dans les régimes B, D et E, sans cible propre, la π\* lue reste à définir (fiche 8 et J5, comme pour la fiche 5). Statut : vérifié (`m6_calc.py`).
+
+**Q4 — Sous S, le taux n'a aucun effet permanent sur I/PIB. Conclusion : il ne faut pas préférer la fermeture kaleckienne, mais S ne suffit pas à la fiche 8.** C'est le point principal de cet avis.
+
+1. **Constat structurel.** Sous S, le gain statique (à fréquence nulle) de l'investissement au taux est nul par construction : ti absorbe le facteur e^{−η_r(ϱ−ϱ̄)}. Avec une règle à action intégrale sans fuite (C2), le gain statique de la demande au taux vaut donc la somme de deux termes :
+   - le canal rentier, de signe positif ou nul (fiche 5, § 6.1, Q3) ;
+   - la règle budgétaire (fiche 9).
+
+   Un intégrateur sur un système de gain statique nul a une racine unitaire. Sur un gain positif, il est explosif.
+2. **Maquette** (`m6_dc.py`). Hypothèses :
+   - S et la règle F réduite, sans stocks ;
+   - Phillips accélérationniste sur l'écart de production (φ = 0,5) ;
+   - π^e adaptative (λ_e = 1 par an) ;
+   - règle i = r\* + π^e + 0,5(π_{t−1} − π\*), r\* intégrant π − π\* (k_I = 0,2 par an) ;
+   - m = 0,6, x = 2, t̄u = 0,8, λ_ti = 0,02, η_r = 2 ;
+   - c_R : terme rentier direct, en fraction de y\* par unité de taux.
+
+   Modules dominants, puis délai de doublement ou demi-vie :
+
+   | c_R | Module dominant | Délai |
+   |---|---|---|
+   | 0 | **1,000000** (puis 0,994379) | racine unitaire |
+   | +0,02 | 1,000103 | doublement en 6 760 tours |
+   | +0,05 | 1,000278 | doublement en 2 490 tours |
+   | +0,10 | 1,000649 | doublement en 1 068 tours |
+   | −0,02 | 0,999907 | demi-vie de 7 474 tours |
+   | −0,10 | 0,999611 | demi-vie de 1 780 tours |
+
+   Statut : vérifié (maquette).
+3. **Continuum du taux réel, qui dépend des vitesses** (c_R = 0, `m6_dc2.py`).
+   - Après un choc de demande autonome de +5 % pendant 12 tours, r\* se fixe au-dessus de r̄ de +3,77, +7,54 et +15,08 points de base pour λ_ti = 0,01, 0,02 et 0,04, et de +15,03, +7,54 et +3,79 points de base pour η_r = 1, 2 et 4. Le résultat est quasi indépendant de λ_e (7,53 à 7,55 points de base).
+   - ti suit le même écart (ti/ti_0 = 1,00148 à la base).
+   - **Le taux réel d'arrivée dépend de λ_ti/η_r et du chemin parcouru.** C'est le critère 6 appliqué à l'état monétaire, et c'est une structure parente de l'instabilité 4 (estimateur de r\* sans ancre ; R). Statut : vérifié pour la mesure ; parenté avec l'instabilité 4 : hypothèse.
+4. **Choc budgétaire permanent : aucun état stationnaire** (`m6_dc3.py` et `m6_dc4.py` ; demande autonome +1 %, permanente ; c_R = 0).
+   - **S avec C2** : l'écart de production se referme, mais i monte sans fin (4,05 % au tour 120 ; 13,03 % au tour 7 200). L'inflation garde un biais de +0,078 point à λ_ti = 0,02 (+0,039 et +0,155 point à λ_ti = 0,01 et 0,04), et tu se fixe à 0,8152 ≠ t̄u. La rampe du taux est le seul canal permanent : il faut tu − t̄u = η_r ϱ̇/λ_ti.
+   - **S avec une règle à fuite vers r̄** (1 par an) : π part en rampe (2,59 % au tour 120 ; 7,80 % au tour 7 200).
+   - **C avec canal du taux** (η_C = 2(n_aγ + δ), même effet d'impact) : π̄ = 2,000 % exactement et tu = 0,8152 pour toute λ_K. **Mais r̄ dépend de λ_K** : 1,347 %, 1,694 % et 2,388 % pour λ_K = 0,025, 0,05 et 0,10. Le module dominant est 0,994411 ; la racine 1 de la maquette est l'état ti, inutilisé dans C (vecteur propre pur sur ti, vérifié).
+   - Statut : vérifié (maquette).
+5. **Précision sur le verdict de C au § 3.C.** Il est exact à taux exogène. Avec une règle endogène qui ferme U = U^eq, tu est fixé par la fermeture de la demande et ne dépend pas de λ_K ; la dépendance à la vitesse passe sur r̄. **C reste donc écartée**, mais pour ce motif : le taux naturel serait fixé par une vitesse. Statut : vérifié (maquette).
+6. **Ce que je propose : S avec un terme de niveau, « S-ζ »** (`m6_dc5.py`).
+   - Forme : ti_{t+1} = ti_t·exp[(λ_ti/n_a)(tu_t − t̄u·e^{ζ(ϱ_{L,t} − ϱ̄_L)})]. Le taux d'utilisation visé croît avec le taux réel anticipé : c'est un capital désiré, x\* = κ/tu\*, qui décroît avec le coût réel du crédit.
+   - ζ est une **élasticité de niveau, non une vitesse**.
+   - M24 (e) et (f) restent intacts : le capital ne contraint toujours pas la production.
+   - Mesures :
+
+     | ζ | Module dominant | Demi-vie |
+     |---|---|---|
+     | 1 | 0,999333 | 1 038 tours |
+     | 2 | 0,998665 | 519 tours |
+     | 5 | 0,996648 | 206 tours |
+
+   - Choc permanent de +1 % à ζ = 2 : r̄ = 1,9599 %, π̄ = 2,0000 % et tu = 0,81520 **à l'identique pour λ_ti = 0,01, 0,02 et 0,04**.
+   - On retrouve ainsi la fermeture wicksellienne du niveau d'activité par le taux (acquis R « bouclage wicksellien », faits § 8) : r̄ est déterminé par G, ν, F et ζ, indépendamment des vitesses. C'est ce que supposaient C2 et C3.
+   - Sous un taux exogène égal à ϱ̄_L (essais de la fiche 6), S-ζ se confond avec S : les formes fermées du § 3.E et le critère 6 du bloc sont inchangés.
+   - Statut : vérifié (maquette).
+7. **Coût de S-ζ.**
+   - Un paramètre de plus. Sa source est l'élasticité du capital au coût d'usage, **contestée**. Chirinko, Fazzari et Meyer (1999), *Journal of Public Economics* 74(1), 53-80 : existence vérifiée, valeur non lue. Chirinko (1993) : candidat de `macro`, non lu.
+   - Si la variante T de la fiche 4 est retenue, elle doit lire tu\*, et non t̄u, sous peine de surdétermination.
+   - À l'état résolu, deux lectures sont possibles (#44) :
+     - ϱ̄_L = r̄ est un paramètre et G_0 est résolu ;
+     - r̄ est résolu à G/PIB donné, et seul t̄u·e^{−ζϱ̄_L} est identifié.
+8. **Alternatives au même rôle**, dans mon ordre de recours de C14 (fiche 5, § 6.1, Q3, point 4) :
+   - le coût du capital de la fiche 6 : c'est S-ζ ;
+   - une règle budgétaire (fiche 9) ;
+   - une cible de richesse ν(r) (fiche 5, M27).
+
+   Sans aucun canal, il ne reste que la fermeture budgétaire de U, que j'ai déconseillée pour le pays joué (fiche 3, § 6.1, Q5) : décision du mainteneur.
+9. **Interface pour le critère 7 (e) de la fiche 6.**
+   - Élasticité d'impact : −1,98 % du plan par point (η_r = 2), délai d'un tour.
+   - Élasticité de long terme : nulle sous S, et −ζ sur tu\* sous S-ζ.
+   - La mesure de C10 et de C14 doit déplacer ensemble ϱ_L dans le plan, i_L et i_D dans les lignes 9 et 10, et Div_Bk. Or, dans `conj6.py` (l. 40), le choc `dr` n'entre que dans le plan (C34).
+
+**Q5 — Levier sur K comptable : conséquences pour la prime et l'accélérateur financier de l'offre. Je recommande aucune prime sur le levier de l'emprunteur au socle (C28).**
+
+1. **Une prime sur L/K comptable serait inerte sous F**, puisque lv = lv\* à chaque pas servi. L'écart vaut −1,5e−6 pour une surprise de prix de 0,05 % dans le pas, et −3,0e−5 pour 1 % ; il est corrigé au pas suivant, la cible portant sur un niveau. Le mot « exact » du § 3.N (F1) se lit donc « exact quand p_t = p̂_t et que le plan est servi ». Sous rationnement, lv baisse et la prime baisserait, à contresens d'une crise. La forme continue centrée sur ℓ\* proposée par la v1.5 (l. 582, R) serait donc sans effet. Statut : vérifié (`m6_calc.py`).
+2. **Une prime sur L/(p K^vol) aurait deux défauts.**
+   - Sa valeur stationnaire dépend de π̄ : 0,311 à 2 % et 0,169 à 10 % (§ 3.N). L'écart i_L − i_CB dépendrait donc de π̄, contre C15 (superneutralité).
+   - Elle formerait une boucle de réévaluation : niveau des prix en hausse → levier de marché en baisse → prime en baisse → investissement et demande en hausse → prix en hausse. C'est le parent, par les prix, du mécanisme explosif du levier sur p K^vol que `macro` a mesuré (1,49 ; 1,05), et des instabilités 10 et 11. Statut : hypothèse, non mesurée.
+3. **La forme de la v2.0**, i_L = i_CB + mL + ρ1·max(ℓ − ℓ̄, 0) avec ℓ sur p_K·K (`model.py` l. 1972 à 1974), est une borne à seuil libre : instabilité 15. Elle ne se reprend pas.
+4. **Recommandation.** Au socle, l'écart i_L − i_CB dépend au plus de l'état propre de la banque : fonds propres rapportés à L, deux stocks nominaux, donc superneutre. C'est la forme de Godley et Lavoie, `ADDl` réglé sur un objectif de fonds propres et de profit (éq. 11.99 à 11.106, l. 203 à 214, par reproduction). L'accélérateur de Bernanke, Gertler et Gilchrist (1999 ; cité par la v1.5, l. 571 ; non lu) attend J6, où la valeur nette des emprunteurs sera définie avec les actions et les prix d'actifs.
+5. **Conséquence bancaire du levier comptable, à déclarer (C30)**, recalculée sur le tableau du § 3.E :
+
+   | Grandeur | π̄ = 2 % | π̄ = 10 % |
+   |---|---|---|
+   | L/(12 PIB) | 0,622 | 0,334 |
+   | (L − D_F)/(12 PIB) | 0,456 | 0,169 |
+
+   - À V_H/PIB donné, la dette publique et la part de titres détenue par la banque portent l'écart, soit +0,287 année de PIB à 10 %. Statut : vérifié (arithmétique sur les valeurs de `macro`).
+   - Le sens est conforme à un fait établi : la profondeur financière décroît avec l'inflation, selon une relation inverse et non linéaire (Boyd, Levine et Smith, 2001, *Journal of Monetary Economics* 47(2), 221-248 ; résumé extrait). Le mécanisme du modèle, la valeur comptable sans réévaluation, n'est pas celui de l'article.
+   - Pour C15 : si le canal rentier n'est pas neutralisé, une dette publique plus forte à 10 % relève le revenu des ménages et casse la superneutralité des allocations réelles. Hypothèse, non mesurée.
+
+### 6.2 Avis général, côté monnaie
+
+**Favorable à S avec F, lecture (a), i_L à l'ouverture, ϱ_L sur π\*, voie (i) et aucun levier d'offre**, sous une réserve de fond : **le canal permanent du taux** (Q4).
+
+- **Règle F.**
+  - F1 :
+    - L ≥ 0 tient par la forme ;
+    - le remboursement volontaire maximal reste faible (1,56 % de D_F par tour) ;
+    - lv est exact à 3e−5 près sous une surprise de prix de 1 %.
+  - F2 : cible de dépôts sur v^e, stable.
+  - F3 : dividende résiduel. **Le canal de trésorerie de la politique monétaire sur les entreprises devient un canal de distribution vers les ménages.** Une hausse d'un point de i_L retire 0,780 u.m. par tour à Div_F, soit −9,97 % ; i_D sur D_F en rend 0,208, soit +2,66 %. L'effet passe à Div_Bk en équilibre général.
+  - Le signe contre-intuitif du § 3.L (Div +3,24 % au tour 4) est mesuré **sans** les flux d'intérêts (`conj6.py` l. 40). Avec eux, Div_F baisserait probablement : environ −4 %, en additionnant ces ordres de grandeur. Hypothèse, à mesurer avec C34.
+  - Différence avec le modèle GROWTH de Godley et Lavoie (par reproduction) : dividendes sur le profit retardé (11.36), rétention visée ψ_U·INV[−1] (11.35), crédit résiduel (11.39). F inverse les rôles, crédit visé et dividende résiduel. Les deux structures sont stock-flux cohérentes ; F est retenue par `macro` pour sa stabilité mesurée. Je n'y oppose rien.
+- **Lecture (a) de Q7** : favorable (Q1).
+- **Date de i_L** : à l'ouverture (Q2).
+- **ϱ_L sur π\*** : favorable, sous C32 et C33 (Q3).
+- **Fermeture S = I et #44.**
+  - L'égalité de l'épargne et de l'investissement se ferme par le niveau d'activité (supermultiplicateur), et tu → t̄u. J'en suis d'accord pour le côté réel.
+  - **Côté monétaire, S seule laisse la fiche 8 sans gain statique de la demande au taux.** L'action intégrale C2 y a alors soit une racine unitaire (continuum de r̄ et de ti, fonction de λ_ti/η_r), soit une racine lentement explosive (canal rentier positif). Sous un choc budgétaire permanent, elle n'a aucun état stationnaire : le taux part en rampe, et le biais d'inflation dépend de λ_ti.
+  - Sur un horizon de partie (≤ 120 tours), ces effets restent faibles. Mais ils interdisent l'état stationnaire exigé par C2 et C3, et ils reproduisent la structure de l'instabilité 4.
+  - **Je recommande S-ζ**, ou un canal de même rôle dans la fiche 5 ou la fiche 9, décidé à M27-M28. **Je ne recommande pas la fermeture kaleckienne** : r̄ y dépend de λ_K.
+- **Accélérateur financier dans l'offre** : aucun au socle (Q5).
+  - La place déclarée au critère 11 (c) est l'offre du bloc 7, par i_L.
+  - Il ne s'appuie sur aucune grandeur du levier de l'emprunteur tant que la valeur nette n'est pas définie (J6).
+  - S'il revient, il passe par ϱ_L et η_r, sans paramètre nouveau dans le bloc 6.
+
+**Désaccord avec `macro`, à trancher par le mainteneur (M28, avec M27)** :
+- *`macro`* : S sans canal permanent du taux ; la fermeture de U (#44) relève de la fiche 9 ou d'un canal hors du bloc 6 ; C est écartée par le critère 6.
+- *`monnaie`* : S-ζ (tu visé fonction de niveau de ϱ_L) ou un canal de même rôle en fiche 5 ou 9, décidé à M27-M28. Sans lui, l'action intégrale C2 n'a pas d'état stationnaire sous un choc budgétaire permanent. C reste écartée, parce que r̄ y dépend de λ_K.
+
+Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptable, voie (i), aucun levier d'offre.
+
+### 6.3 Conditions transmises
+
+**Fiche 7 (banque commerciale)** :
+- **C27 — Offre au socle.** Prix affiché et quantité à la demande (lecture (a)). i_L et i_D sont des variables d'état du bloc 7, lues à l'ouverture et écrites en fin de tour à partir du i_CB du tour. Pas de plafond au socle. Le refus partiel est un scénario déclaré (critère 9 (c) de la fiche 6), jamais une règle à seuil. La ligne 18 négative (remboursement) est acceptée.
+- **C28 — Écart i_L − i_CB.** Aucune prime sur le levier de l'emprunteur au socle :
+  - sur L/K comptable, elle serait inerte sous F ;
+  - sur L/(p K^vol), elle ne serait pas superneutre et créerait une boucle de réévaluation.
+
+  Un mécanisme d'écart, s'il existe, lit l'état propre de la banque (fonds propres sur L), est superneutre et déclaré. L'accélérateur de Bernanke, Gertler et Gilchrist attend J6.
+- **C29 — Marge pendant le tour d'une décision.** i_CB et i_res s'appliquent dès la phase 8 (a) du tour (l. 460) ; i_L et i_D au tour suivant. L'effet sur Π^Bk et Div_Bk est déclaré, et i_L et i_D portent la même date.
+- **C30 — Bilans fonction de π̄.** L/(12 PIB) passe de 0,622 à 0,334, et (L − D_F)/(12 PIB) de 0,456 à 0,169 entre π̄ = 2 % et 10 %. La composition de l'actif bancaire (B_Bk) et B/PIB portent l'écart (+0,287 année de PIB). C'est déclaré et testé avec C15 ; c'est aussi un renvoi à la fiche 9.
+- **C31 — Robustesse du bloc 6.** Le cas de base de la fiche 6 est C27. Le scénario « refus de la moitié du crédit pendant 12 tours » se mesure avec F3 ; Div ≥ 0 et D_F ≥ 0 doivent y rester inactives (marges du § 6.1, Q1).
+
+**Fiche 8 (banque centrale et anticipations)**, en complément de C1 à C26 :
+- **C32 — Une seule lecture de l'inflation.** ϱ_L lit la même π^lu que le bloc 5. Une réouverture par C26 vaut pour les fiches 5 et 6, par une décision citant M27 et M28. Les boucles de C26 (ii) et (iii) incluent le canal de l'investissement.
+- **C33 — Changement de cible.** Effets à déclarer :
+  - −1,98 % du plan d'investissement par point de baisse de π\* à i_L donné, contre +0,55 % pour le plan des ménages ;
+  - effet net à l'impact de +0,085 à +0,193 point de PIB ;
+  - hors cible durable, ϱ_L surestime le taux réel de π̄ − π\* (facteur 0,854 à 10 %).
+- **C34 — Mesure de C10 et C14.** Les canaux du taux sont déplacés ensemble : ϱ_L dans le plan, i_L et i_D dans les lignes 9 et 10, Div_Bk. L'effet du plan seul ne suffit pas.
+- **C35 — Délais.** Décision du tour n → i_L et i_D à l'ouverture du tour n + 1 → plan d'investissement du tour n + 1 → plan des ménages du tour n + 2. C16 est mise à jour en conséquence.
+- **C36 — Gain statique et stationnarité de l'action intégrale**, critère écrit avant l'essai :
+  - (i) le gain statique (fréquence nulle) de la demande totale au taux réel est strictement négatif, tous canaux réunis (fiches 5, 6 et 9) ;
+  - (ii) après un choc budgétaire permanent de +1 %, π̄ = π\* à 1e−6 près et r̄ est identique à 1e−6 près en relatif dans les branches ×0,5 et ×2 de toutes les vitesses ;
+  - (iii) aucune rampe du taux sur 7 200 tours.
+
+  Si (i) échoue sous S sans ζ, C2 n'est pas admissible, et la fermeture revient à la décision du mainteneur : S-ζ, ν(r) ou fermeture budgétaire. C36 précise C14 et le fait nouveau qu'exige C2 contre l'instabilité 4.
+
+### 6.4 Points signalés à `jeu` (non tranchés)
+
+- « Resserrement du crédit → investissement » : absent au socle. Un refus de crédit touche les dividendes, donc la consommation au tour suivant.
+- Le signe « taux en hausse → dividendes en hausse » vient d'un essai où seul le plan bouge. Avec les flux d'intérêts, les dividendes des entreprises baisseraient probablement, et le revenu passerait par la banque. À remesurer (C34) avant toute restitution.
+- Délai d'un tour entre la décision de taux et l'investissement, et de deux tours pour la consommation.
+- Changer la cible d'inflation agit au tour même, en sens opposé sur l'investissement et la consommation (C33).
+- Sous S sans ζ, le « taux neutre » change avec l'histoire de la partie. Comme référence affichée, il serait illisible.
+- Le crédit aux entreprises rapporté au PIB baisse de moitié entre 2 % et 10 % d'inflation stationnaire.
+
+**Commentaire proposé par `monnaie` sur #44** (soumis au mainteneur ; texte dans le compte rendu de la session, PR #43).
 
 ## 7. Avis de `jeu`
 
@@ -1301,3 +1529,4 @@ Non instruit.
 | 03/10/2026 | Décisions du mainteneur : visa de l'amendement de notation sous (G) ; amendement prospectif du critère 6 (2 160 pas) ; lecture annuelle des taux de la v1.5 et T_K en dépendance déclarée | mainteneur ; session principale |
 | 03/10/2026 | Contre-épreuve indépendante de la partie 2 (formes fermées du § 3.E, cas à la main, boucle réduite avec N1 à N7, boucle conjointe) : concordance au 4e chiffre ; précisions d'écriture (taux nominal des formes fermées, configuration du tableau des variantes de F, condition A avec v/y, Div/ventes, période) | session principale |
 | 03/10/2026 | Avis de `jeu` (§ 7) : S + F lisible sous onze conditions ; C, A et B à revoir ; taux d'utilisation hors du tableau du tour, variante T non recommandée ; seuils (d1) à (d3) du critère 12 (d) proposés ; signe net d'une hausse de taux non établi (maquette de `macro` étendue, non indépendante) ; deux issues proposées | `jeu` ; session principale |
+| 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à S + F, lecture (a), i_L à l'ouverture, ϱ_L sur π\*, voie (i), aucune prime sur le levier au socle ; conditions C27 à C36 ; **désaccord avec `macro`** : S-ζ (canal permanent du taux par le niveau de tu visé) contre S seule. Statut « avis rendus » | `monnaie` ; session principale |
