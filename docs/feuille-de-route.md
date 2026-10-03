@@ -111,6 +111,10 @@ Au 03/10/2026, après la fusion de la PR #35 (`3021eaa`), **douze issues ouverte
 | #53 | J4 : scénario de surchauffe publique en boucle conjointe (sur-commande, forme O3) | scénarios (J4) ; fiche 5 § 3.C-10 et § 7 | J4, avec #52 | `needs-triage` ; rédigée par `jeu`, création approuvée le 03/10/2026. Critères écrits avant l'essai ; seuils 8 (c) et 11 (c) de la fiche 5 inchangés ; ψ_ξ ∈ {0 ; 0,5}. |
 | #54 | Fiche 8 : essai d'aller-retour de la cible π* (pas de stimulant gratuit à l'impact) | fiche 8 ; fiche 5 § 6.5 et § 7 | n° 4 (fiche 8) | `needs-triage` ; rédigée par `jeu`, création approuvée le 03/10/2026. Critères écrits avant l'essai, validés par `monnaie`. |
 | #55 | Calibration de la fiche 6 : distribution positive, condition entre μ̄ et K^vol/(n_a y) | fiche 6 § 3.N et § 5 (réserve 3) ; calibration | J3 (calibration) | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. x_max = 2,933 ans à μ̄ = 0,25. |
+| #56 | Signe net d'une hausse de taux sur la production et les prix : essai conjoint des fiches 5 à 9 avant l'ouverture du levier de taux | fiches 5 à 9 ; J4 | n° 4 (fiches 7 à 9), essai au J4 | `needs-triage` ; rédigée par `jeu`, création approuvée le 03/10/2026. Propriété attendue écrite avant l'essai par `monnaie` et `macro`. |
+| #57 | J6 : crises de crédit et dette des entreprises, sous la règle F, ne touchent pas l'investissement | fiche 7 ; J6 | n° 4 (fiche 7), puis J6 | `needs-triage` ; rédigée par `jeu`, création approuvée le 03/10/2026. Limite déclarée au catalogue des leviers et dans `sec:investissement`. |
+| #58 | Instabilité mesurée : correction d'inflation complète des ménages sur le glissement mesuré | `tab:instabilites` ; fiche 5 § 3.C-10 | branche n° 3b (`docwriter`) ou n° 4 | `needs-triage` ; proposée par `macro`, texte reconstitué par la session, création approuvée le 03/10/2026. |
+| #59 | Fiche 5, critère 4 (ii) : coquille de signe | fiche 5 § 2 | branche n° 3b | `needs-triage` ; proposée par `macro`, création approuvée le 03/10/2026 ; correction prospective sur décision du mainteneur. |
 
 ## 4. Décisions du mainteneur
 
@@ -176,7 +180,8 @@ Décisions prises **en cours de branche**, le 03/10/2026 (PR #43), sans numéro 
 - **#44 rattachée à la branche n° 4 sans `Closes`** ; elle se ferme au J3 avec le script d'état stationnaire (§ 2 et § 3).
 - **Création de #49 à #52** (§ 3).
 - **Fiche 6** (après le dépôt de l'instruction) : visa de l'amendement de notation des critères sous (G) ; amendement prospectif du critère 6 (écart ≤ 1e−6 mesuré après 2 160 pas, et non 720) ; lecture annuelle des taux de la v1.5, T_K en dépendance déclarée (`docs/blocs/investissement.md` § 2, amendements).
-- **Création de #53, #54 et #55** (proposées par `jeu` et `macro`, fiches 5 et 6) et d'un commentaire de `macro` sur #44 (§ 3).
+- **Création de #53 à #59** (proposées par `jeu` et `macro`, fiches 5 et 6, et propositions de la passation) et de commentaires sur #44 (`macro` : fermeture sous S et extension du script d'état stationnaire ; `monnaie` : S-ζ et C36 ; `jeu` : persistance d'une impulsion) (§ 3).
+- **Désaccord `macro` / `monnaie` sur la fiche 6 (S ou S-ζ)** : s'il persiste après la remesure de `macro`, une consultation Fable précède M28 (`docs/agents/routage.md` § 4.1, point 2 ; accord du mainteneur du 03/10/2026).
 
 ### Décisions du point d'étape du 03/10/2026
 
