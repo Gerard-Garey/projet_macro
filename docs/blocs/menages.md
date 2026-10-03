@@ -1988,6 +1988,15 @@ Création sur accord du mainteneur ; corps au compte rendu de `macro` du 03/10/2
 3. « Fiche 5 : calibration de ν_H et de λ_H sur des sources lues, dans le seuil du critère 12 (d) » ;
 4. « J4 — restitution du bloc ménages : revenu par source, trois taux d'épargne, richesse en années de revenu, décomposition, épargne forcée » (ou extension de #52).
 
+### 9.10 Décisions du mainteneur sur les conséquences (03/10/2026)
+
+*Prises après le dépôt des § 9 des fiches 5 et 6, sur les lectures soumises par `macro`, l'avis de `monnaie` et celui d'`architect`. Elles s'imposent au passage de `docwriter` ; le texte des § 9.1 à 9.9 reste celui de `macro`, à lire avec les corrections ci-dessous.*
+
+- **Date de lecture de π\*** (décision citant M27 et M28 ; recommandation concordante de `macro` et `monnaie`) : les blocs 5 et 6 lisent la cible **en vigueur à l'ouverture** (délai d'un tour, même date que i_L, C27). Le facteur **Γ^e = [(1 + g)(1 + π\*)]^{1/n_a}** est une grandeur du moteur, calculée une seule fois (`eq:moteur-croissance-nominale-attendue` proposé) ; le symbole Γ̂ de la fiche 6 disparaît. Au J3, π\* est un paramètre typé à source unique de `moteur/` qui initialise une variable d'état « cible en vigueur » ; à la fiche 8, cette variable est écrite par le levier du bloc 8. Issue #61.
+- **Phase des variables d'état retardées assises sur des flux de la phase 6** (M29, contrat partagé `tab:phases`) : lecture (i) d'`architect`, acceptée sur le fond ; l'ADR 0009 est déposé après relecture Fable. Le bloc 6 retient T_{F,t} et le bloc 5 calcule YD_t (H7) **en phase 9**, après les identités du noyau et avant le passage au pas suivant, sans flux ; les ménages sortent des écrivains de la phase 7 au socle (B_H ≡ 0).
+- **Lectures de la fiche 5 retenues** : renommages ν → ν_H, λ_V → λ_H, π_s → π^{∗,pas} (critère 15) ; plafond du budget sur les dépôts d'ouverture D_{H,t}, sans paramètre ; plancher max{0, ·} du plan (inactif à l'état stationnaire, à déclarer selon `CONVENTIONS.md` § 2.4) ; seuil du critère 12 (d) de 0,50 à 0,85 sur la part propre d'un transfert dépensée en 12 tours ; **#58 rattachée à la branche** (sans `Closes`) : l'instabilité de la lecture (a) est versée à `tab:instabilites`.
+- **Issues créées** : #60 (J3, `menages.py`), #61 (π\* et Γ^e), #62 (calibration de ν_H et λ_H), #63 (restitution du bloc ménages au J4).
+
 ## 10. Historique de la fiche
 
 | Date | Événement | Auteur |
@@ -2005,3 +2014,4 @@ Création sur accord du mainteneur ; corps au compte rendu de `macro` du 03/10/2
 | 03/10/2026 | Second additif de `jeu` (§ 7) : effet d'un changement de π\* « à clarifier » (déclaré par les cases existantes ; essai d'aller-retour demandé à la fiche 8) ; deux taux d'épargne lisibles sous deux libellés. Statut « avis rendus » : avis de `macro`, `monnaie` et `jeu` rendus, aucun désaccord résiduel | `jeu` ; session principale |
 | 03/10/2026 | Décision M27 : option C, lecture (c) sur π\*, cible de Haig-Simons, lectures (b) à (e) du § 5 ; correction prospective du critère 4 (ii) (#59) | mainteneur |
 | 03/10/2026 | Conséquences de M27 (§ 9) rédigées par `macro` : labels (au J3), notation, paramètres, interfaces, conditions de `jeu`, tests, chiffres remesurés, contrats partagés et surface de `sec:menages`, quatre issues proposées ; lectures soumises au mainteneur | `macro` ; session principale |
+| 03/10/2026 | Décisions du mainteneur sur les conséquences (§ 9.10) : date de π\* (délai 1), Γ^e au moteur, M29 (YD en phase 9), lectures de la fiche 5 retenues, #58 rattachée, issues #60 à #63 | mainteneur ; session principale |

@@ -115,6 +115,11 @@ Au 03/10/2026, après la fusion de la PR #35 (`3021eaa`), **douze issues ouverte
 | #57 | J6 : crises de crédit et dette des entreprises, sous la règle F, ne touchent pas l'investissement | fiche 7 ; J6 | n° 4 (fiche 7), puis J6 | `needs-triage` ; rédigée par `jeu`, création approuvée le 03/10/2026. Limite déclarée au catalogue des leviers et dans `sec:investissement`. |
 | #58 | Instabilité mesurée : correction d'inflation complète des ménages sur le glissement mesuré | `tab:instabilites` ; fiche 5 § 3.C-10 | branche n° 3b (`docwriter`) ou n° 4 | `needs-triage` ; proposée par `macro`, texte reconstitué par la session, création approuvée le 03/10/2026. |
 | #59 | Fiche 5, critère 4 (ii) : coquille de signe | fiche 5 § 2 | branche n° 3b | `needs-triage` ; proposée par `macro`, création approuvée le 03/10/2026 ; correction prospective sur décision du mainteneur. |
+| #60 | J3 : `src/nations/blocs/menages.py` et ses tests (fiche 5, § 9.6) | `src/`, `tests/` | J3, après #50 et #51 | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. |
+| #61 | Cible π\* et facteur Γ^e : source unique et propriétaire (blocs 5 et 6) | `moteur/`, `etat/` ; fiche 8 | J2/J3, puis n° 4 | `needs-triage` ; décision du 03/10/2026 consignée dans l'issue (délai 1, Γ^e au moteur). |
+| #62 | Calibration de ν_H et λ_H sur des sources lues | fiche 5 ; calibration | J3, avec O1 | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. |
+| #63 | J4 : restitution du bloc ménages | restitution (J4) | J4, avec #52 (fusion possible) | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. |
+| #64 | S-ζ hors cible durable : l'allocation réelle dépend de π̄ − π\* | fiche 8 ; fiche 6 § 9.7 | n° 4 (fiche 8) | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. |
 
 ## 4. Décisions du mainteneur
 
@@ -184,6 +189,7 @@ Décisions prises **en cours de branche**, le 03/10/2026 (PR #43), sans numéro 
 - **Fiche 6** (après le dépôt de l'instruction) : visa de l'amendement de notation des critères sous (G) ; amendement prospectif du critère 6 (écart ≤ 1e−6 mesuré après 2 160 pas, et non 720) ; lecture annuelle des taux de la v1.5, T_K en dépendance déclarée (`docs/blocs/investissement.md` § 2, amendements).
 - **Création de #53 à #59** (proposées par `jeu` et `macro`, fiches 5 et 6, et propositions de la passation) et de commentaires sur #44 (`macro` : fermeture sous S et extension du script d'état stationnaire ; `monnaie` : S-ζ et C36 ; `jeu` : persistance d'une impulsion) (§ 3).
 - **Désaccord `macro` / `monnaie` sur la fiche 6 (S ou S-ζ)** : s'il persiste après la remesure de `macro`, une consultation Fable précède M28 (`docs/agents/routage.md` § 4.1, point 2 ; accord du mainteneur du 03/10/2026).
+- **Après M27 et M28** (§ 9 des fiches 5 et 6) : π\* en vigueur lue à l'ouverture (délai 1) par les blocs 5 et 6, Γ^e grandeur du moteur, π\* paramètre au J3 initialisant une variable d'état « cible en vigueur » ; lectures de la fiche 5 retenues (renommages ν_H, λ_H, π^{∗,pas} ; plafond sur D_H ; plancher du plan ; seuil 12 (d) de 0,50 à 0,85) ; **#58 rattachée à la branche sans `Closes`** ; **M29 acceptée sur le fond** (lecture (i) d'`architect` : variables d'état retardées écrites en phase 9 ; ADR 0009 déposé après relecture Fable, consultation 1 sur 3) ; création de #60 à #64 et de commentaires sur #55 et #57 (fiches 5 et 6, § 9.10).
 
 ### Décisions du point d'étape du 03/10/2026
 

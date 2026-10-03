@@ -2307,6 +2307,20 @@ Postes :
 
 Commentaires proposés sur #55 (seuils de Div ≥ 0 en fonction de ζ) et sur #57 (ligne nommée de part non payée).
 
+### 9.10 Décisions du mainteneur sur les conséquences (03/10/2026)
+
+*Prises après le dépôt des § 9 des fiches 5 et 6, sur les lectures soumises par `macro`, l'avis de `monnaie` et celui d'`architect`. Elles s'imposent au passage de `docwriter` ; le texte des § 9.1 à 9.9 reste celui de `macro`, à lire avec les corrections ci-dessous.*
+
+- **Date de lecture de π\*** (décision citant M27 et M28 ; recommandation concordante de `macro` et `monnaie`) : les blocs 5 et 6 lisent la cible **en vigueur à l'ouverture** (délai d'un tour, même date que i_L, C27). Le facteur **Γ^e = [(1 + g)(1 + π\*)]^{1/n_a}** est une grandeur du moteur, calculée une seule fois (`eq:moteur-croissance-nominale-attendue` proposé) ; le symbole Γ̂ de la fiche 6 disparaît. Au J3, π\* est un paramètre typé à source unique de `moteur/` qui initialise une variable d'état « cible en vigueur » ; à la fiche 8, cette variable est écrite par le levier du bloc 8. Issue #61.
+- **Phase des variables d'état retardées assises sur des flux de la phase 6** (M29, contrat partagé `tab:phases`) : lecture (i) d'`architect`, acceptée sur le fond ; l'ADR 0009 est déposé après relecture Fable. Le bloc 6 retient T_{F,t} et le bloc 5 calcule YD_t (H7) **en phase 9**, après les identités du noyau et avant le passage au pas suivant, sans flux ; les ménages sortent des écrivains de la phase 7 au socle (B_H ≡ 0).
+- **Corrections de la fiche 6 sous le délai d'un tour** (avis de `monnaie` ci-dessous) : § 9.4, phases 2 et 6, « phase 1 : π\* » se lit « ouverture : π\* » ; tableau des leviers, « Cible d'inflation » : délai 1 ; § 9.6, test « Délais » : « π\* au tour n : plan inchangé au tour n, modifié au tour n + 1 » ; C35 : « décision du tour n (taux ou cible) → i_L, i_D et π\* lus à l'ouverture du tour n + 1 → plans d'investissement et des ménages du tour n + 1 ; intérêts des lignes 9 et 10 au tour n + 1 → plan des ménages au tour n + 2 ». F4 (impôt anticipé) : T_{F,t−1} est écrit en phase 9 (dernière ligne du tableau du § 9.4).
+- **Issues créées et commentaires** : #64 (S-ζ hors cible durable) ; commentaires de `macro` sur #55 et #57. L'issue proposée n° 1 du § 9.9 (phase d'écriture des variables d'état retardées) n'est pas créée : M29 et l'ADR 0009 y répondent.
+
+**Avis de `monnaie` du 03/10/2026 sur les § 9** (fiche de base ; extrait) :
+- **Date de π\*** : délai 1, pour la cohérence interne de ϱ_L = (1 + i_L)/(1 + π\*) − 1 (numérateur et dénominateur à la même date ; sous le délai 0, un changement de cible sans changement de taux produirait un faux saut du taux réel perçu d'un tour) et pour un délai uniforme des deux leviers de la banque centrale. π\* devient une variable d'état « cible en vigueur ». Statut : vérifié (algèbre de S1 et date de C27).
+- **Γ^e** : grandeur du moteur, une équation, un symbole ; distinct du facteur réalisé Γ = [(1 + g)(1 + π̄)]^{1/n_a} hors cible (écart T̂_F/T_F = 0,99373 au § 9.7 (a)).
+- **Précision (b) de `macro` sur le levier sous N6** : accord ; le chiffre « −3,0e−5 pour 1 % » du § 6.1, Q5, point 1, est retiré (il supposait un plan servi en volume, contraire à N6). Mesure : L_{t+1}/K_{t+1} − lv\* = 5,6e−17 pour une surprise de prix de 0, +1 % et −5 %. Rédaction : « exact quand le plan nominal est servi ». Sous rationnement des biens (90 % du plan servi), le levier monte de +4,8e−4, à l'inverse du rationnement du crédit ; l'écart se corrige au pas suivant. Statut : vérifié (arithmétique) ; effet sur la boucle non mesuré.
+
 ## 10. Historique de la fiche
 
 | Date | Événement | Auteur |
@@ -2323,3 +2337,4 @@ Commentaires proposés sur #55 (seuils de Div ≥ 0 en fonction de ζ) et sur #5
 | 03/10/2026 | Relance ciblée de `monnaie` (§ 6.6) : mesures de `macro` reproduites ; ζ = 2 retiré, ralliement à S-ζ avec ζ calibré au J3 ; C37 (fiche 9 : reprise du surcroît d'intérêts publics) ; fait nouveau : une règle de Bohn ou une cible intégrale de dette ne remplace pas la reprise ; désaccord résiduel sur la rédaction prospective de C36 seulement | `monnaie` ; session principale |
 | 03/10/2026 | Décision M28 : S-ζ + F, lecture (a), i_L à l'ouverture, voie (i), aucun levier d'offre, Div ≥ 0 en contrainte de domaine ; C36 dans la rédaction de `monnaie` ; seuils (d1) à (d3) du critère 12 (d) | mainteneur |
 | 03/10/2026 | Conséquences de M28 (§ 9) rédigées par `macro` : onze labels prévus au J3 (S1 à S7, F1 à F4), paramètres, interfaces avec les blocs 2, 4, 5, 7, 8 et 9, conditions de `jeu`, tests du J3 et du J4 ; faits nouveaux (écart durable à la cible sous S-ζ, effet d'un taux maintenu croissant, levier exact sous N6, date de l'impôt) ; constat sur `tab:phases` (écriture de T_F après la phase 6) | `macro` ; session principale |
+| 03/10/2026 | Décisions du mainteneur sur les conséquences (§ 9.10) : date de π\* (délai 1), Γ^e au moteur, M29 (T_F retenu en phase 9) ; corrections du § 9.4, § 9.6 et de C35 ; avis de `monnaie` sur les § 9 ; issue #64, commentaires sur #55 et #57 | mainteneur ; `monnaie` ; session principale |
