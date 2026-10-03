@@ -970,3 +970,4 @@ Non instruit.
 | 03/10/2026 | Correction de l'exemple daté du § 3.L (constat de `jeu`) : la règle de salaire du script soustrayait deux fois l'écart de salaire, ce qui revenait à λ_w = 2 et β = 1 au lieu de λ_w = 1 et β = 2 ; colonnes « W, H-p1 » de R et de C remesurées ; colonne H-p2, valeur propre et verdicts inchangés | `macro` ; `jeu` |
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à R + SN, lectures (a) et (G), indexation complète, aucun désaccord de fond ; huit conditions transmises à la fiche 8 (C1 à C8) | `monnaie` |
 | 03/10/2026 | Statut « avis rendus » | session principale |
+| 03/10/2026 | `jeu` corrige sa réponse à la question 7 du § 7 (levier sur la norme ω*, lecture (w2)) : sous une règle de prix qui ancre μ̄, ω* ne déplace pas la part salariale et le conflit devient une inflation permanente ; correction consignée au § 7 de la fiche 4 (`docs/blocs/prix.md`) | `jeu` ; session principale |

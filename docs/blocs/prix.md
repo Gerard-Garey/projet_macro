@@ -811,7 +811,210 @@ Non instruit (`monnaie`, frontière inflation et volet « prix » de #24, au jal
 
 ## 7. Avis de `jeu`
 
-Non instruit.
+*`jeu`, 03/10/2026 (issue #40, jalon 2), sur la fiche à l'état `ff3f97d` (branche `claude/j1-economie-reelle`, PR #43). Réponses aux huit questions de `macro`.*
+
+**Chiffres.** Aucun moteur n'existe encore. J'ai prolongé ma maquette de la fiche 3 ; elle n'importe aucun script `p4_*`.
+- **Ce qu'elle contient** : le socle N1 à N7 en niveaux, l'emploi R, le salaire SN (λ_w = 1, β = 2, terme de niveau sur W_{t−1}/p_{t−1}), les règles R, C, M, T et D, et un prix administré optionnel. Les plans de demande sont en u.m. au prix p_{t−1}, et le volume servi vaut plan/p_t.
+- **Hypothèses** : g = 0, π̄ = 0 (grandeurs rapportées au sentier), pr = 1, et les valeurs du § 3.0.
+- **Exécution** le 03/10/2026, hors dépôt, par `uv run --no-project python jeu_prix1.py` à `jeu_prix9.py`.
+
+- **Contrôle de la maquette.** Elle reproduit l'exemple daté de M (§ 3.L) à la troisième décimale, sur les neuf tours, pour la production, U, W, p, la variation du prix sur le tour, la marge, W/(p·pr) et ξ. Elle reproduit de même :
+  - la comparaison R, C, T, D (prix et marge) ;
+  - le pic de marge de M : +0,12 et +0,60 point à m = 0 ; +0,23 et +1,13 point à m = 0,6 ;
+  - le creux de part salariale : −0,15 et −0,71 point ;
+  - la marge de D : −0,126 point au tour 16.
+- **Convention à déclarer au § 3.L, sans erreur.** Les colonnes de glissement et le tableau des ampleurs sont mesurés à π̄ = 2 %. L'écart de glissement y vaut donc (1 + π̄) fois l'écart du niveau des prix sur 12 tours. Ma maquette, à π̄ = 0, donne exactement les valeurs publiées divisées par 1,02. Exemples : 0,257 contre 0,262 au tour 9 ; pic de M de 0,48 / 2,41 et 0,84 / 4,26 point contre 0,49 / 2,46 et 0,86 / 4,34. C'est sans effet sur les verdicts.
+- **Constat complémentaire 1 : C alterne déjà à la calibration.**
+  - Après une impulsion de demande d'un seul tour (G +1 %), la variation mensuelle du prix sous C change de signe 7 fois (m = 0) et 11 fois (m = 0,6) entre les tours 2 et 13 : +0,096, −0,061, +0,050, −0,030, +0,026 point.
+  - Sous M, D, T et R, elle change de signe au plus une fois.
+  - L'écart de **niveau** du prix ne change de signe sous aucune règle. Le test de la réserve 3 du § 5, écrit sur l'écart du prix, ne détecterait donc pas cette alternance.
+  - Pour un choc de G +5 % aux tours 1 à 12 (m = 0,6), le rythme mensuel annualisé sous C passe de 5,9 % à 2,1 %, puis 5,2 % et 3,3 %, sans aucune décision du joueur.
+- **Constat complémentaire 2 : le prix administré, tel que noté en Q10, domine dans la maquette.**
+  - Scénario : M, relance de G +5 % aux tours 1 à 18, m = 0,6, prix gelé sur son sentier aux tours 1 à 18, puis levé.
+  - Avec gel : niveau des prix au tour 120 de −0,08 % contre +5,19 % sans gel ; production cumulée sur les tours 1 à 120 de +45,1 contre +32,1 %·tour ; pic du glissement lu de 2,74 contre 4,98 points.
+  - Même sens sous R (3,58 contre 5,21 % ; 36,1 contre 32,1) et sous D (1,19 contre 3,35 % ; 42,0 contre 36,6).
+  - Le seul coût visible est une marge comprimée de 4,3 points, sans conséquence tant que les fiches 5, 6, 8 et 9 ne sont pas branchées.
+- **Constat complémentaire 3 : correction de mon avis sur la fiche 3 (question 7).** Voir plus bas, « Correction de mon avis sur la fiche 3 ».
+
+**Question ludique de la fiche.** Le bloc n'ouvre aucun levier. Il fixe ce que le joueur paie pour ses relances (l'inflation) et qui y gagne (le partage entre salaires et profits). La question est donc la suivante : le coût d'une relance arrive-t-il avec un délai, une ampleur et une explication que le joueur peut relier à sa décision, avec des gagnants et des perdants (O2), et sans prix qui « vibrent » ?
+
+### 7.A et 7.B Options A et B (brièvement)
+
+Verdict : **à revoir**. Leur état stationnaire dépend des vitesses (critère 4). Le joueur verrait donc la marge dériver avant toute décision, et l'indicateur z serait non nul en régime normal, donc illisible. B y ajoute des bornes à seuil libre, un état caché et des prix qui montent en récession. Je n'ajoute rien au § 5.
+
+### 7.R Option R — référence sans retard
+
+- **Ce que voit le joueur.** L'inflation ne vient que des salaires : le glissement lu culmine au tour 16 (+0,36 point pour G +1 %, m = 0, maquette). La marge et la part salariale ne bougent jamais.
+- **Risque.** C'est le défaut que j'ai relevé à la fiche 3 (question 8) : une relance n'a aucun effet de répartition. La demande n'atteint le prix que par les salaires, avec 2 tours de délai.
+- **Verdict : lisible, mais pauvre.** R reste la bonne référence (`docs/exigences.md` § 2.7).
+
+### 7.C Option C — marge instantanée
+
+- **Ce que voit le joueur.** La marge saute dès le tour 2 (+0,12 point). La réponse du glissement est la plus rapide (≥ 0,1 point au tour 4 pour G +1 %).
+- **Risques.**
+  - *Comportement contre-intuitif non explicable.* La variation mensuelle alterne d'un tour sur l'autre, même à la calibration (constat 1). Aux vitesses de la fiche 2 × 2, l'alternance devient explosive : ±1,7 à 2,4 points par mois aux tours 24 à 27 et prix +12,3 % au tour 60, à partir d'une impulsion de G +1 % sur un tour. À ψ × 2 : ±12 à 19 points par mois et prix +143 %.
+  - La robustesse exige ψ ≤ 0,26, et C perd alors l'effet de demande qui la justifiait.
+- **Verdict : à revoir** (question 7).
+
+### 7.M Option M — marge à ajustement partiel vers une cible sensible aux stocks
+
+- **Ce que voit le joueur**, pour une relance au tour n :
+  - les stocks baissent au tour n (fiche 2), puis la marge monte dès le tour n + 1 ;
+  - les salaires suivent quelques tours plus tard, et le prix les répercute le tour même ;
+  - la marge se replie ensuite, sous son niveau normal, pendant que le coût unitaire porte encore l'inflation.
+- **La décomposition de l'inflation** sur 12 tours (G +5 %, m = 0,6, contributions en points) raconte cette histoire :
+
+  | Tour | Coût unitaire | Marge | Glissement |
+  |---|---|---|---|
+  | 6 | +0,56 | +0,40 | 0,97 |
+  | 13 | +2,81 | +0,90 | 3,77 |
+  | 18 | +3,67 | +0,18 | 3,92 |
+  | 24 | +2,36 | −0,87 | 1,50 |
+  | 30 | +0,44 | −0,93 | −0,49 |
+
+  « D'abord les profits, puis les salaires » : il y a des gagnants et des perdants qui se succèdent dans le temps (O2), et une matière directe pour le soutien politique (J7).
+- **Délai de perception** (premier tour où l'écart du glissement lu atteint 0,1 ou 0,2 point) : tours 6 et 8 pour G +1 % ; tours 4 et 5 pour G +5 %. Le glissement culmine aux tours 15 à 17, **après la fin de la relance** : le coût arrive après le bénéfice, ce qui est la bonne structure de tentation.
+- **Signal précurseur.** Le rythme mensuel annualisé culmine au tour 13 (+5,16 points pour G +5 %, m = 0,6) et devient négatif au tour 21, quand le glissement sur 12 tours vaut encore +2,88 points. Il annonce le retournement de 4 à 8 tours, à condition d'être affiché (conditions de restitution, point 2).
+- **Risques.**
+  - *Réponse imperceptible pour les petits chocs* : pour G +1 %, la marge passe de 25,0 à 25,1 % à une décimale. Elle est nette pour G +5 % (25,0 → 25,6 %).
+  - Aucune alternance : au plus un changement de signe de la variation mensuelle après une impulsion, même aux vitesses × 2.
+- **Verdict : lisible**, sous les conditions de restitution 1 à 9.
+
+### 7.T Option T — variante en taux d'utilisation
+
+- **Ce que voit le joueur.** Même dynamique que M, un peu plus faible : pic de +0,43 point pour G +1 %, et marge au plus +0,07 point.
+- **Intérêt.** C'est la seule voie, dans cette fiche, vers un coût du sous-investissement perçu dans les prix (condition 7 de la fiche 2, #37).
+- **Risque.** Si tu ne revient pas vers t̄u, la marge et U* se déplacent de façon permanente (+1,25 point de U* pour Δtu = +0,05). Ce serait un coût lisible, mais qui dépend d'une règle d'investissement qui n'existe pas encore (fiche 6).
+- **Verdict : à clarifier** à la fiche 6 (question 5).
+
+### 7.D Option D — prix lents indexés sur l'anticipation
+
+- **Ce que voit le joueur.** Une inflation plus lente et plus lisse : pic de +0,24 point pour G +1 % (m = 0), seuil de 0,2 point atteint seulement au tour 13. La marge baisse en expansion (−0,13 point) : la relance profite d'abord aux salariés. Les gagnants et les perdants sont inversés par rapport à M, ce qui est lisible aussi.
+- **Risques.**
+  - Le prix réagit à π^e. Si la fiche 8 permettait qu'une annonce déplace π^e le tour même, ce serait le levier instantané par la communication que j'ai écarté à la fiche 3 (question 5). La lecture (a) de l'anticipation (un tour) le neutralise.
+  - Sous (L), l'état stationnaire dépend des vitesses.
+- **Verdict : lisible sous (G)** et sous la lecture (a) de l'anticipation. C'est une alternative acceptable.
+
+### Réponses aux huit questions de `macro`
+
+1. **Règle de marge : M.**
+   - M est la seule règle qui donne à la fois un coût salarial répercuté le tour même (la marge ne bouge pas sous un pur choc de salaire) et une marge qui répond progressivement à la tension, sans alternance.
+   - Elle remplit le souhait que j'avais formulé à la fiche 3 (question 8) : le salaire réel devient parlant (−0,15 / −0,71 point de part salariale au plus bas, m = 0,6).
+   - C saute et vibre (question 7). D lisse mais inverse la cyclicité, et la cyclicité de la marge est un fait contesté que je ne juge pas. R fige le partage.
+2. **Délais : ils conviennent.**
+   - Salaire → prix en 0 tour : la contrepartie (marge inchangée) est visible le tour même, et le salaire n'est pas un levier du joueur.
+   - Demande → prix en 1 tour, par ξ à l'ouverture : c'est la grammaire uniforme de la fiche 3, une décision du tour n agit sur le secteur privé au tour n + 1 au plus tôt.
+   - Prix → règle de taux en 1 tour sous (c) : voir la question 3.
+   - Je distingue le **délai mécanique** (1 tour) du **délai perçu** (4 à 8 tours avant 0,1 à 0,2 point de glissement) ; le second doit figurer dans la documentation des leviers au J4.
+3. **Indice décalé : (c) préférée, (a) acceptable sous conditions, (b) déconseillée.**
+   - (a) et (c) donnent la même trajectoire (constat 1 de 3.N-1). La différence est **uniquement ce que voit le joueur**.
+   - Sous (a), l'« indice du tour n » est le prix du tour n − 1. La marge, la part salariale, la décomposition et la dépense exécutée p·G^vol (fiche 2) sont pourtant calculées sur p_n. Le joueur aurait alors deux séries de prix décalées d'un tour pour un bien unique, et une décomposition dont la somme ne serait pas la variation de l'indice affiché.
+   - Sous (c), tout ce qui est affiché porte le prix du tour, et le décalage n'apparaît que dans la lecture par les règles, où il est déclaré.
+   - Argument décisif contre (b) : la règle de taux lirait π_n au tour n, une information que le joueur n'avait pas quand il a décidé pour ce tour. Une règle automatique serait alors mieux informée qu'un joueur qui fixe le taux lui-même, par construction et non par mérite économique : c'est une stratégie dominante de délégation. Sous (c), la règle et le joueur voient la même chose.
+   - Si (a) est retenue : la série principale affichée est p_n, et l'indice porte la mention « indice publié, prix du tour précédent, lu par la banque centrale et les salaires ».
+4. **Indicateurs : garder la marge, une seule part salariale, la décomposition et ξ ; ne pas afficher W/(p·pr) séparément.**
+   - Sous J = 1, W/(p·pr) = UC/p = 1/(1 + marge) par définition. C'est la même information que la marge, comme le sureffectif et la productivité apparente à la fiche 3 (question 2).
+   - Je garde la part salariale ΣWB/ΣVA sur 12 tours, avec son niveau normal dans **la même définition** (0,7989 à π̄ = 2 %, et non 0,8), comme le demande ma condition 2 de la fiche 3. L'écart entre W/(p·pr) et WB/VA reste publié dans la documentation, pas au tableau de bord.
+   - ξ et les stocks en mois de ventes (fiche 2) disent presque la même chose, avec des signes opposés : au tour 12, −2,42 % pour les stocks, +2,56 % pour ξ ; le signe est cohérent à tous les tours sauf aux deux tours de bascule (16 et 62). Je garde ξ, puisque c'est la variable que lit la règle, sous le nom « tension sur les stocks » (positive quand les stocks sont sous leur niveau visé), affichée à côté de la marge. Sa définition dit son lien aux stocks en mois.
+5. **Taux d'utilisation : décider à la fiche 6.**
+   - T n'est pas prête : son ancrage dépend de la fiche 6, et le coût du sous-investissement peut aussi venir de la capacité elle-même (#37).
+   - D'ici M28, tu ne figure pas dans le panneau des prix.
+   - Au socle, tu et ξ bougent ensemble dans un choc de demande, si bien que tu n'induit pas le joueur en erreur. Il le ferait dans un choc d'offre.
+   - Si M28 ne lui donne aucune conséquence, tu sort de la restitution (condition 4 de la fiche 2, inchangée).
+6. **Seuil du critère 10 (d)** : **0,2 point pour G +1 %, 1,0 point pour G +5 %**. Le détail est plus bas.
+7. **Alternance de C : rédhibitoire.**
+   - Explosive, elle casse la partie en moins de 60 tours.
+   - Amortie, elle reste inexplicable : aucun récit économique ne justifie qu'un bien unique monte, baisse et remonte d'un mois sur l'autre. Elle trompe aussi le joueur (ou une règle) qui lit le rythme mensuel.
+   - Elle existe à la calibration (constat 1).
+   - Je propose d'étendre la réserve 3 du § 5 : « après une impulsion de demande de 1 % sur un tour, **la variation mensuelle du prix** ne change pas de signe plus de deux fois en 12 tours », en plus de l'écart du prix. M tient (0 ou 1), C échoue (7 et 11).
+8. **Levée d'un prix administré : lisible sous M, à condition de restituer la marge comprimée et que le gel ne soit pas gratuit.**
+   - Mesure : M, gel aux tours 1 à 18 pendant une relance de G +5 %, levée au tour 19.
+     - Inflation corrective de +0,75, +0,66, +0,48, +0,35 et +0,24 point par mois aux tours 19 à 23, sans saut.
+     - L'écart de marge **au cas sans gel** se résorbe avec une demi-vie de 7 tours, contre 6,58 tours en théorie : l'affirmation du § 3.L tient, mesurée contre ce contrefactuel.
+   - Contre μ̄, ce que le joueur voit en réalité, la marge reste à −2,13 points 12 tours après la levée quand la relance s'arrête au même moment : la fin de la relance accumule des stocks (ξ < 0). La décomposition doit l'expliquer.
+   - Sous R, la levée fait un saut de 3,83 points en un mois. Sous C, +5,58 points puis une alternance (−2,42, +1,77, −1,27…).
+   - La marge comprimée pendant le gel (−4,3 points) est un **bon signal précurseur** de l'inflation corrective (inflation réprimée de la v1.5).
+   - Mais le gel domine dans la maquette (constat 2) : moins d'inflation, un niveau des prix durablement plus bas et plus de production, sans coût visible. Le levier ne doit pas s'ouvrir avant que la marge comprimée ait un coût, par les profits distribués (fiche 5), l'investissement (fiche 6) ou le rationnement. C'est une condition pour Q10 (J4, J7), non un défaut de M.
+
+### Indicateurs du tour (critère 10 (a))
+
+| Indicateur | Verdict | Motif ou point à clarifier |
+|---|---|---|
+| Prix du tour, indice base 100 | **lisible** sous (c) ; **à clarifier** sous (a) | Sous (a), p_n reste la série principale, et l'indice décalé porte la mention « publié, prix du tour précédent » (question 3) |
+| Glissement annuel (12 tours) | **lisible** | Niveau normal dans la définition exacte : π̄ sous (G), le taux effectif publié sous (L) |
+| Variation du prix sur le tour | **à clarifier** | L'afficher aussi en rythme annualisé, (1 + x)^12 − 1, comme grandeur de restitution qu'aucune règle ne lit. C'est le signal précurseur du retournement (7.M) ; brute, 0,04 point par mois ne se compare pas à 2 % par an |
+| Marge (au tour ; moyenne sur 12 tours) | **lisible** | Niveau normal μ̄ affiché |
+| Part salariale W/(p·pr) | **à revoir comme ligne distincte** | Égale à 1/(1 + marge) sous J = 1 : même information que la marge |
+| Part salariale ΣWB/ΣVA (12 tours) | **à clarifier** | Niveau normal dans la même définition (0,7989 à π̄ = 2 %), comme à la fiche 3 |
+| Décomposition de l'inflation (12 tours) | **à clarifier** | Contributions exactement additives au glissement affiché : parts des logarithmes appliquées au glissement, l'écart croissant avec l'inflation. C'est l'indicateur qui dit qui gagne |
+| ξ, « tension sur les stocks » | **à clarifier** | Positive quand les stocks sont sous le niveau visé ; sa définition dit son lien aux stocks en mois (fiche 2), de signe opposé et d'ampleur voisine |
+| Taux d'utilisation | **hors du panneau des prix** | Décision à M28 (question 5) |
+
+### Seuil proposé au mainteneur (critère 10 (d))
+
+- **Grandeur** : pic, sur les tours 1 à 36, de l'écart du glissement annuel de l'indice (P_t/P_{t−12} − 1, fenêtre de 12 tours) **lu par la règle de taux**, par rapport au sentier sans choc. Unité : point de pourcentage ; π̄ du scénario déclaré, l'écart étant multiplié par 1 + π̄.
+- **Scénario** : dépense publique +1 % et +5 % du flux mensuel aux tours 1 à 12, part de G de 20 % (hypothèse), π^e = π̄ exogène, depuis l'état initial résolu.
+- **Seuil** : **au moins 0,2 point pour +1 %**, **au moins 1,0 point pour +5 %**.
+- **Calibration visée** : la calibration proposée. Au stade de la fiche, avec m = 0, le cas prudent ; au J3 et au J4, avec le m effectif des fiches 5 et 9. Aux vitesses × 0,5 et × 2, les valeurs sont publiées sans être exigées.
+- **Motifs** :
+  - le glissement est affiché à une décimale : 0,2 point en fait deux crans, une hausse que le joueur voit (2,0 → 2,2 %) ;
+  - 0,2 point est aussi la bande du test zéro pour le glissement (critère 6), si bien qu'une relance de 1 % se distingue de la dérive tolérée de la référence ;
+  - la réponse est quasi linéaire : 1,0 point est le même seuil rapporté au choc de +5 %, et il fait passer le chiffre des unités (2 → 3 %).
+- **Transparence.** Je propose ce seuil après avoir lu les ampleurs du § 3.L. Il est fondé sur l'affichage et sur le test zéro, non sur le classement des options. Il ne départage d'ailleurs pas les options nouvelles à m = 0 :
+
+  | Option | +1 % | +5 % |
+  |---|---|---|
+  | M | 0,49 | 2,46 |
+  | R | 0,37 | 1,85 |
+  | C | 0,54 | 2,71 |
+  | T | 0,44 | 2,20 |
+  | D | 0,25 | 1,24 |
+
+  Son rôle est de protéger contre une calibration du J3 qui rendrait la relance muette.
+- **Robustesse sous M** (+1 %, m = 0, maquette à π̄ = 0) : 0,30 à λ_w × 0,5, 0,42 à ψ × 0,5, 0,77 à λ_w × 2. L'ampleur dépend d'abord de λ_w, donc de la fiche 3 : le critère porte sur la paire des fiches 3 et 4.
+- **À surveiller au J4, sans seuil haut proposé.** Avec m = 0,6 et λ_w × 2, une relance de +5 % porte le glissement à +6,5 points. La réaction de la banque centrale (fiche 8) n'est pas encore modélisée.
+
+### Préférence motivée
+
+- **Ma préférence va à M**, comme celle de `macro`.
+  - **Mes motifs propres** :
+    - une histoire de l'inflation en deux temps (profits, puis salaires), restituée par la décomposition ;
+    - une contrepartie visible le tour même (stocks, puis marge) ;
+    - un signal précurseur (rythme mensuel) ;
+    - aucune alternance.
+  - **Les motifs de `macro`**, que je ne juge pas : critères 3, 4 et 5, et aucune borne.
+- **Classement** : M > D > R > C > B > A. T est hors classement, comme variante de M à décider à la fiche 6. Je place R au-dessus de C : l'alternance de C est rédhibitoire, alors que R n'est que pauvre.
+- **Accords et réserves sur les lectures soumises au § 5** :
+  - (a) Q1 : (c) préférée, (a) acceptable sous la mention de la question 3, (b) déconseillée (asymétrie d'information entre la règle et le joueur) ;
+  - (b) M plutôt que C : accord ;
+  - (c) M ou D : M, D restant acceptable sous (G) et sous la lecture (a) de l'anticipation. Le signe de la cyclicité est un fait contesté qui relève de `macro` ;
+  - (d) T à la fiche 6 : accord ;
+  - (e) (w1) au socle : accord ; (w2) au J4 : **à réexaminer** (correction ci-dessous) ;
+  - lecture des taux annuels : (G), comme à la fiche 3 (question 10).
+- **Coût en fidélité** : je ne demande aucun écart à la littérature. Le rythme mensuel annualisé et l'extension du test d'alternance sont des choix de restitution et d'essai.
+
+### Correction de mon avis sur la fiche 3 (question 7)
+
+- À la fiche 3, j'ai écrit qu'un levier sur la norme ω* (lecture (w2)) offrait « une part salariale plus haute contre un chômage d'équilibre plus haut ». **C'est faux sous toute règle de prix où le bloc 4 ancre μ̄** (R, C, M, T).
+- Mesure : ω* passe de 0,80 à 0,81 dès le tour 1, avec m = 0,6 et sans banque centrale.
+  - Sous M et sous R, W/(p·pr) vaut 0,8000 au tour 240 : le salaire est répercuté le tour même.
+  - Le conflit devient une inflation supplémentaire permanente de 0,894 point par an. Prévision par λ_w(ln(ω*/ω̄) − β(U − U^eq)) : 0,890 point.
+  - U finit à 5,176 % ; si la banque centrale tenait la demande, il irait vers U* = 5,621 % (3.N-8).
+  - Sous D, la part salariale gagne 0,35 point, mais seulement parce que la marge traîne derrière une inflation supérieure à π^e.
+- **Conséquence pour le J4.** Sous M, le levier ω* n'a pas de gagnant durable : il est dominé. Un levier de répartition devrait agir sur μ̄ (politique de la concurrence, marges réglementées). Une baisse de μ̄ abaisserait alors U* sous (w2) : il lui faut un coût perceptible (profits, puis investissement à la fiche 6), sinon elle devient dominante. C'est une question de fond pour `macro` et le mainteneur au J4.
+
+### Conditions demandées au § 9 (restitution et essais)
+
+1. **Lecture (c)** : l'indice restitué est le prix du tour. Sous (a), p_n reste la série principale, et l'indice porte la mention « publié, prix du tour précédent, lu par la banque centrale et les salaires ».
+2. **Variation du prix sur le tour**, brute et en rythme annualisé ((1 + x)^12 − 1), comme grandeur de restitution qu'aucune règle ne lit.
+3. **Une seule part salariale au tableau de bord**, ΣWB/ΣVA sur 12 tours, avec son niveau normal dans la même définition. W/(p·pr) n'apparaît pas comme ligne distincte de la marge.
+4. **Marge** (au tour et en moyenne sur 12 tours), avec μ̄ ; **décomposition de l'inflation** en contributions additives au glissement affiché.
+5. **ξ** restitué sous le nom « tension sur les stocks », à côté de la marge ; sa définition dit son lien aux stocks en mois.
+6. **Niveaux normaux** publiés par le script d'état stationnaire, dans la définition exacte de chaque indicateur : μ̄, part salariale sur 12 tours, π̄ ou le taux effectif.
+7. **Test d'alternance** (réserve 3 du § 5, étendue) : après une impulsion de demande de 1 % sur un tour, ni l'écart du prix ni sa variation mensuelle ne changent de signe plus de deux fois en 12 tours.
+8. **Scénario O2 au J4** avec le seuil du critère 10 (d) ci-dessus. On publie aussi le délai perçu (premier tour à 0,1 et à 0,2 point) et la décomposition.
+9. **Prix administré (Q10, J4 et J7)** : avant d'ouvrir le levier, un scénario apparié gel contre sans gel, écrit avant l'essai, montre un coût perceptible du gel (profits, investissement, rationnement). Sinon le levier n'est pas ouvert. La marge comprimée est restituée pendant le gel comme signal de l'inflation corrective.
+10. **Taux d'utilisation** : hors du panneau des prix jusqu'à M28 ; condition 4 de la fiche 2 inchangée.
 
 ## 8. Décision du mainteneur
 
@@ -828,3 +1031,4 @@ Non instruit.
 | 03/10/2026 | Ouverture (issue #40) ; § 1 et § 2 proposés | `macro` ; session principale |
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, critère 5 (e) en exigence, part salariale sur W/(p·pr), trois lectures de P_t, terme de demande, variante en tu, lecture unique de #24, Q10 ; issue #40) | mainteneur |
 | 03/10/2026 | Instruction déposée (§ 3 à 5) : options A, B, socle 3.N, options nouvelles ; recommandation M (marge à rappel vers μ̄ avec terme de stocks), P_t en lecture (c) ; mesures conjointes avec la fiche 3 (critères 3 (d) et 5 (e)) ; remesure proposée | `macro` |
+| 03/10/2026 | Avis de `jeu` (§ 7) : préférence M > D > R > C > B > A, C jugée rédhibitoire (alternance dès la calibration) ; lecture (c) de P_t préférée ; seuil du critère 10 (d) proposé (0,2 point pour +1 %, 1,0 point pour +5 %) ; conditions sur le prix administré et le levier de répartition au J4 ; correction de son avis sur la fiche 3 (question 7) | `jeu` |
