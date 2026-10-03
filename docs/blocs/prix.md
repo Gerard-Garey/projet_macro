@@ -3,8 +3,8 @@ bloc: Prix
 module: src/nations/blocs/prix.py
 expert pilote: macro
 experts consultés: monnaie (indexation des prix sur les anticipations, indice et glissement lus par la règle de taux : frontière inflation) ; jeu
-statut: avis rendus (03/10/2026)
-décision: —
+statut: décidée (M26, 03/10/2026)
+décision: M26 (03/10/2026)
 issue: #40
 ---
 
@@ -1185,7 +1185,22 @@ Verdict : **à revoir**. Leur état stationnaire dépend des vitesses (critère 
 
 ## 8. Décision du mainteneur
 
-Non instruit (M26, décidée avec la fiche 3).
+- **Numéro** : M26 (reporté dans `docs/feuille-de-route.md`, § 4), prise le même jour que M25 (fiche 3), décisions par paires.
+- **Date** : 03/10/2026.
+- **Option retenue** : **M**, prix égal au coût unitaire UC majoré d'une marge rappelée vers la marge normale μ̄ avec un terme de stocks ξ. Choix du § 5 :
+  - base de coût UC (Q3) ; UC écrit par le bloc 2 **en phase 2** (Q2) ;
+  - terme de demande ξ (Q4) ; aucune anticipation consommée (Q6) ;
+  - partage ancré par μ̄, avec (w1) à la fiche 3 (Q9) ;
+  - aucun terme en taux d'utilisation à M26 : la variante T est transmise à la fiche 6, à décider au plus tard à M28 (Q5, #37) ;
+  - prix administrés renvoyés au J4 et au J7 (Q10), sous la condition de `jeu` (§ 7, condition 9).
+- **Phase de P_t (Q1, #24)** : lecture **(c)**, l'indice est le prix du tour et les règles le lisent au tour suivant. Décision citant M22 et l'ADR 0005, pt 16, consignée par ADR ; la forme (registre de 13 niveaux ou glissement porté en variable d'état) est fixée dans l'ADR. **Clause de réouverture** (avis de `monnaie`, § 6.1, Q1, point 4) : la Q1 est rouverte vers (b) si l'analyse de stabilité de la fiche 8 (condition C10) montre que le délai d'un tour est déterminant à la calibration retenue ; décision citant M26, M24 et M22.
+- **Lecture commune des taux annuels** : (G), décidée avec M25 ; la règle M y est neutre.
+- **Bande commune du test zéro sur la part salariale** : centrée sur la valeur résolue de ΣWB/ΣVA sur 12 tours (décision commune avec M25).
+- **Motifs** : recommandation concordante de `macro` (§ 5), `monnaie` (§ 6) et `jeu` (§ 7). Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : les réserves du § 5 avec leurs seuils écrits avant l'essai, dont le test d'alternance **étendu à la variation mensuelle du prix** (`jeu`, § 7, condition 7) ; les conditions de restitution de `jeu` (§ 7) ; les conditions C9 à C13 transmises à la fiche 8 (§ 6.4) ; seuil du critère 10 (d) proposé par `jeu` (0,2 point pour +1 %, 1,0 point pour +5 %), à confirmer avant le J4.
+- **Ce qui est écarté et pourquoi** : A et B (critères 4, 7 et 11 ; B viole λ ≤ n_a et a un état caché) ; C, stable à la calibration mais à variation mensuelle alternée et explosive dès que les vitesses doublent ; D, alternative acceptable mais sensible à un défaut des anticipations (C1) et à marge contracyclique (fait contesté) ; R, gardée comme référence ; coût complet et marge sur cm (critère 3 (d)) ; lectures (a) et (b) de P_t.
+- **Remesure P1** : proposée (§ 5), non lancée ; elle ne change pas la décision.
+- **Issues liées**, créées sur accord du mainteneur : prix administrés et coût de la marge comprimée ; levier de répartition au J4.
 
 ## 9. Conséquences de la décision
 
@@ -1201,3 +1216,4 @@ Non instruit.
 | 03/10/2026 | Avis de `jeu` (§ 7) : préférence M > D > R > C > B > A, C jugée rédhibitoire (alternance dès la calibration) ; lecture (c) de P_t préférée ; seuil du critère 10 (d) proposé (0,2 point pour +1 %, 1,0 point pour +5 %) ; conditions sur le prix administré et le levier de répartition au J4 ; correction de son avis sur la fiche 3 (question 7) | `jeu` |
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à M avec la lecture (c) de P_t ; clause de réouverture de la Q1 proposée ; T2 sous (a) à éliminer ; précision à son avis sur la fiche 3 (retour du niveau des prix sous C2) ; conditions C9 à C13 transmises à la fiche 8 | `monnaie` |
 | 03/10/2026 | Statut « avis rendus » | session principale |
+| 03/10/2026 | Décision M26 : option M, UC en phase 2, terme ξ, lecture (c) de P_t avec clause de réouverture, (G) commune, T transmise à la fiche 6 | mainteneur |

@@ -3,8 +3,8 @@ bloc: Travail et salaires
 module: src/nations/blocs/travail.py
 expert pilote: macro
 experts consultés: monnaie (indexation des salaires sur les anticipations : frontière inflation) ; jeu
-statut: avis rendus (03/10/2026)
-décision: —
+statut: décidée (M25, 03/10/2026)
+décision: M25 (03/10/2026)
 issue: #39
 ---
 
@@ -1038,7 +1038,21 @@ Verdict : **à revoir**. Elles révisent M24 et ne résolvent pas leur état sta
 
 ## 8. Décision du mainteneur
 
-Non instruit (M25, décidée avec la fiche 4).
+- **Numéro** : M25 (reporté dans `docs/feuille-de-route.md`, § 4), prise le même jour que M26 (fiche 4), décisions par paires.
+- **Date** : 03/10/2026.
+- **Option retenue** : **C**, rétention asymétrique avec terme de tendance, salaire **SN** (avec niveau), sous la **lecture (i)** du critère 10 (b) : le retard d'emploi est établi (§ 3.N-11 et § 3.N-12 : demi-vie de 1,9 à 2,2 tours aux États-Unis) ; la forme asymétrique, non établie et inverse de McKay et Reis aux points de retournement, est déclarée comme une approximation imposée par la technique de M24, dans les `\limites` (réserve 9 du § 5). Calibration proposée : **λ_N = 3,5 par an** (demi-vie de 2,01 tours), dans la fourchette de 2 à 4 tours proposée par `jeu`. Lectures du § 5 :
+  - (a) Q3 : anticipation lue **à l'ouverture** (formée au pas précédent) ;
+  - (b) Q4 : lecture commune des taux annuels **(G), géométrique**, pour les fiches 3, 4 et 8 : révision de M24 (f) et de `sec:cadre-calendrier`, décision citant M22 et M24, consignée par ADR ;
+  - (c) norme ω* = 1/(1 + μ̄), lecture **(w1)** ; (w2) renvoyée au J4 avec le levier institutionnel ;
+  - (d) population active en tendance exogène, **tenue par le bloc 3** (Q2) ;
+  - (e) Q4 de la fiche 2 **confirmée** : l'emploi est au bloc 3 ;
+  - (f) aucun levier propre.
+- **Bande commune du test zéro sur la part salariale** (critère 6, fiches 3 et 4) : centrée sur la **valeur résolue de la mesure restituée ΣWB/ΣVA sur 12 tours** (0,7989 à π̄ = 2 %), comme le demande `jeu` pour que l'indicateur et son niveau normal aient la même définition.
+- **Motifs** : le mainteneur a retenu la recommandation de `macro` sous la lecture (i), conforme à la préférence de `jeu` (§ 7) et sans objection de `monnaie` (§ 6). Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : les neuf réserves du § 5, avec leurs seuils écrits avant l'essai ; les conditions de restitution de `jeu` (§ 7 : sureffectif comme indicateur unique, mention « plein emploi : main-d'œuvre épuisée », scénario adverse de demande pulsée au J4) ; les conditions C1 à C8 transmises à la fiche 8 (§ 6.3) ; la règle de salaire lit le **dernier prix connu** (constat T2 de la fiche 4, § 6.1, Q6).
+- **Ce qui est écarté et pourquoi** : A (v1.5) et B (v2.0), qui révisent M24 et laissent la vitesse déterminer l'état d'arrivée (critères 4 et 5 (b)) ; D, qui échoue au critère 5 (c) ; la règle de salaire sans niveau SP, qui échoue au critère 5 (b) ; R, qui reste la référence sans retard mais est contredite par le retard établi (F3, F7).
+- **Remesure T1** : proposée (§ 5), non lancée ; elle ne change pas la décision.
+- **Issues liées**, créées sur accord du mainteneur : fermeture du niveau d'activité ; calibration de λ_w ; sensibilité du chômage à la production.
 
 ## 9. Conséquences de la décision
 
@@ -1059,3 +1073,4 @@ Non instruit.
 | 03/10/2026 | Statut « avis rendus » | session principale |
 | 03/10/2026 | `jeu` corrige sa réponse à la question 7 du § 7 (levier sur la norme ω*, lecture (w2)) : sous une règle de prix qui ancre μ̄, ω* ne déplace pas la part salariale et le conflit devient une inflation permanente ; correction consignée au § 7 de la fiche 4 (`docs/blocs/prix.md`) | `jeu` ; session principale |
 | 03/10/2026 | Additif de `macro` : sources primaires lues (BLL 2013, Abraham et Houseman 1993, Hamermesh 1988, McKay et Reis 2006, Galí et van Rens 2021, Blanchflower et Oswald 2005, Blanchard et Katz 1999, Galí 2010) ; § 3.N-11 remplacé, § 3.N-12 ajouté ; retard établi, forme asymétrique non établie ; deux lectures du critère 10 (b) soumises au mainteneur ; λ_N = 3,5 proposé sous la lecture (i) ; réserve sur λ_w | `macro` |
+| 03/10/2026 | Décision M25 : option C (λ_N = 3,5), salaire SN, lecture (i) du critère 10 (b), lectures (a) à (f), (G) commune, population active au bloc 3, bande de part salariale centrée sur ΣWB/ΣVA résolue | mainteneur |
