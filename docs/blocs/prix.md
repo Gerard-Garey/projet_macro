@@ -1204,7 +1204,205 @@ Verdict : **à revoir**. Leur état stationnaire dépend des vitesses (critère 
 
 ## 9. Conséquences de la décision
 
-Non instruit.
+*Rédigé par `macro` (expert pilote), 03/10/2026, d'après M26 (§ 8), M25 (fiche 3, § 8) et la lecture commune (G). La règle M ne contient aucun taux annuel : (G) y est neutre (§ 3.N-6), et les chiffres du § 3, instruits sous (G), restent valables.*
+
+### 9.1 Labels d'équation
+
+**Au jalon J1, aucun label** (#40, jalon 4) : encadrés `proposee` citant M26. **Labels à créer au J3**, avec `src/nations/blocs/prix.py` (radical `prix`).
+
+| Label | Ce que l'équation détermine | Équation | Statut | Provenance | Couche |
+|---|---|---|---|---|---|
+| `eq:prix-tension-stocks` | tension sur les stocks ξ_t, phase 5 | ξ_t = 1 − IN^vol_t/IN^vol*_t, où IN^vol*_t est lu dans N2 (phase 2, bloc 2) **sans être recalculé** (localité) | définition | M26, Q4 ; § 3.N-4 | `blocs/` |
+| `eq:prix-marge` | marge en logarithme μ̃_t, phase 5 | μ̃_t = (1 − λ_μ/n_a) ln(p_{t−1}/UC_{t−1}) + (λ_μ/n_a)[ln(1 + μ̄) + ψ_ξ ξ_t] | approchée (ajustement partiel) ; choix de conception (cible) | M26, option M ; construction du projet, sans source lue pour cette forme exacte | `blocs/` |
+| `eq:prix-prix-du-pas` | prix du pas p_t, phase 5, premier bloc | ln p_t = ln UC_t + μ̃_t | dérivée | M26, Q3 (base UC) | `blocs/` |
+| `eq:prix-indice` | indice des prix P_t | P_t ≡ p_t (J = 1), arrêté en phase 5 et lu en phase 1 du pas suivant | choix de conception | M26, lecture (c) de la Q1 ; ADR | `blocs/` ou `moteur/` |
+| `eq:prix-glissement` | glissement annuel π_t | π_t = P_t/P_{t−n_a} − 1, mesuré, jamais converti | dérivée | M22 ; M26, lecture (c) | `blocs/` ou `moteur/` |
+
+- **Radical et propriétaire de `eq:prix-indice` et `eq:prix-glissement`** : à fixer par l'ADR de la lecture (c).
+  - Sous un registre de 13 niveaux tenu par le moteur, le radical serait `moteur` et π serait calculé par une fonction unique, lue par les blocs 3 et 8.
+  - Sous un glissement porté en variable d'état, le bloc 4 l'écrirait en phase 5 avec le radical `prix`.
+  - L'équation `equation*` π_t = P_t/P_{t−n_a} − 1 de `sec:cadre-calendrier` (l. 201) devient alors un renvoi.
+- **Option d'implémentation** (avec la fiche 3, § 9.1) : porter μ̃_t en variable d'état du bloc 4. La marge d'ouverture μ̃_{t−1} est alors lue par le bloc 4 et par le bloc 3 (ω_{t−1} = exp(−μ̃_{t−1})), sans recalculer pr_{t−1}. Une variable d'état de plus, trajectoires identiques. Choix de `coder`, visa de `macro`.
+- La marge restituée, la part salariale, la décomposition et la variation annualisée relèvent de la couche `observation/` : sans label.
+
+### 9.2 Paramètres
+
+| Symbole | Nom proposé | Valeur | Unité | Source | Équation |
+|---|---|---|---|---|---|
+| μ̄ | `marge_normale` | 0,25 (hypothèse de l'instruction ; calée au J3 sur la part salariale, avec O1) | fraction de UC | M26 ; choix de conception | `eq:prix-marge` ; lue par le bloc 3 (w1) |
+| λ_μ | `vitesse_marge` | 1,2 (indicative ; non sourcée, réserve 4) | par an, λ_μ ≤ n_a | M26 ; ordre de grandeur de la fréquence de révision des prix (Nakamura et Steinsson, extrait, non établi pour une marge) | `eq:prix-marge` |
+| ψ_ξ | `sensibilite_marge_stocks` | 0,5 (indicative ; non sourcée, réserve 4) | sans dimension | M26 ; signe procyclique après un choc de demande (Nekarda et Ramey, extrait ; fait contesté) | `eq:prix-marge` |
+
+**Conditions déclarées, jamais écrêtées** :
+- λ_μ ≤ n_a ;
+- IN^vol*_t > 0, vraie si v^e > 0 (d > 0 ou λ_v < n_a) ;
+- ψ_ξ ≥ 0.
+
+Domaine de stabilité : le § 3.N-9 ne trouve d'instabilité de M qu'à ψ_ξ ≥ 10 à la calibration et à ψ_ξ ≥ 4,875 aux vitesses de la fiche 2 × 2. Il se revérifie au J3 (réserve 3).
+
+**Ce qui n'est pas un paramètre** : π^e (aucune anticipation consommée, C13) ; t̄u (variante T, M28) ; la marge stationnaire (égale à μ̄).
+
+### 9.3 Ce qui reste paramétrable après la décision
+
+**Sans rouvrir M26** : μ̄, λ_μ et ψ_ξ, sur des sources lues (réserve 4).
+
+**Par une décision M-m citant M26** :
+- **variante T** : terme ψ_tu(tu − t̄u) dans la cible, t̄u lu à source unique dans la fiche 6, au plus tard à M28 (#37) ;
+- **clause de réouverture** de la Q1 vers (b) si l'analyse C10 de la fiche 8 montre que le délai d'un tour est déterminant à la calibration retenue : décision citant M26, M24 et M22. Sous M, ce serait un réordonnancement seul, p_n ne lisant que l'ouverture ;
+- prix administrés (J4, J7), sous la condition 9 de `jeu` ;
+- une vitesse modulée par l'inflation (J6) ;
+- un canal de coût (intérêt dans la base, NHUC) ou un canal direct π^e → p (C13) ;
+- un levier de répartition agissant sur μ̄ (J4 ; correction de `jeu`).
+
+### 9.4 Interfaces
+
+| Phase | Le bloc 4 lit | Le bloc 4 écrit |
+|---|---|---|
+| 1 | rien | rien (lecture (c)) |
+| 2 | — | — (UC_t = W_t/pr_t écrit par le bloc 2 en phase 2, M26, Q2) |
+| 5, premier bloc | ouverture : p_{t−1} (registre), W_{t−1} (bloc 3), pr_t (bloc 2 ; pr_{t−1} = pr_t(1 + g_pr)^{−1/n_a}), IN^vol_t ; phase 2 : UC_t, IN^vol*_t | p_t ; puis l'indice et le glissement, selon la forme fixée par l'ADR |
+
+- Aucune lecture de v_t, de d_t, ni des plans. La matrice est triangulaire.
+- Aucune ligne de flux proposée : les acheteurs appliquent p_t aux volumes servis (lignes 1 à 3), et le bloc 2 valorise la ligne 4.
+- **Délais** (lecture (c)) :
+  - salaire → prix : 0 tour ;
+  - demande → prix : 1 tour (ξ d'ouverture) ;
+  - prix → règle de taux et prix → salaire : 1 tour ;
+  - taux → règle par la marge : au moins 2 tours (`monnaie`, Q5).
+- **Leviers qui transitent par le bloc** :
+  - dépense publique : stocks au tour n, marge et prix au tour n + 1, glissement lu au tour n + 2 ;
+  - impôts : un tour de plus ;
+  - taux : par les plans des fiches 5 et 6 ;
+  - anticipations : par les salaires (W_t), répercutées le tour même.
+
+**Grandeurs restituées au tour** (couche `observation/`) :
+
+| Grandeur | Définition | Unité | Dénominateur | Fenêtre | Niveau normal |
+|---|---|---|---|---|---|
+| Indice des prix | 100·p_t/p_1 (prix du tour) | indice | prix du tour 1 | le tour | — |
+| Glissement annuel | P_t/P_{t−12} − 1 | par an | P_{t−12} | 12 tours | π̄ |
+| Variation du prix sur le tour | p_t/p_{t−1} − 1, et (1 + x)^{12} − 1 ; aucune règle ne la lit | par tour ; par an | p_{t−1} | 1 tour | (1 + π̄)^{1/12} − 1 ; π̄ |
+| Marge | p/UC − 1 | fraction | UC du tour | le tour ; moyenne sur 12 tours | μ̄ |
+| Part salariale | ΣWB/ΣVA, commune avec la fiche 3 | fraction | VA sur 12 tours | 12 tours | 0,798903 (μ̄ = 0,25, π̄ = 2 %, n_a = 12) |
+| Décomposition de l'inflation | contributions π_t·Δ₁₂ln UC/Δ₁₂ln p et π_t·Δ₁₂ln(1 + μ)/Δ₁₂ln p, exactement additives au glissement ; « sans objet » si \|Δ₁₂ln p\| ≤ 1e−12 | par an | glissement | 12 tours | — |
+| Tension sur les stocks | ξ, positive quand les stocks sont sous leur niveau visé ; la définition dit son lien aux stocks en mois (fiche 2) | fraction | IN^vol* | le tour | 0 |
+
+W/(p·pr) n'est pas une ligne du tableau de bord (= 1/(1 + marge) sous J = 1). Le taux d'utilisation reste hors du panneau des prix jusqu'à M28.
+
+### 9.5 Conditions de `jeu` (§ 7, reprises telles quelles) et mise en œuvre
+
+1. **Lecture (c)** : l'indice restitué est le prix du tour.
+   *Mise en œuvre* : retenue par M26 ; aucune mention d'indice décalé.
+2. **Variation du prix sur le tour**, brute et annualisée ((1 + x)^12 − 1), qu'aucune règle ne lit.
+   *Mise en œuvre* : tableau du § 9.4 ; annualisation géométrique (`monnaie`, Q4).
+3. **Une seule part salariale**, ΣWB/ΣVA sur 12 tours, avec son niveau normal dans la même définition ; W/(p·pr) n'apparaît pas comme ligne distincte.
+   *Mise en œuvre* : § 9.4 ; centre de la bande commune (M26).
+4. **Marge** (au tour et sur 12 tours) avec μ̄ ; **décomposition** en contributions additives.
+   *Mise en œuvre* : § 9.4. La décomposition est définie « sans objet » à glissement nul : la définition manquait.
+5. **ξ** restitué comme « tension sur les stocks », à côté de la marge.
+   *Mise en œuvre* : § 9.4.
+6. **Niveaux normaux** publiés par le script d'état stationnaire : μ̄, part salariale sur 12 tours, π̄ ou le taux effectif.
+   *Mise en œuvre* : sous (G), π̄ lui-même ; § 9.6.
+7. **Test d'alternance étendu** à la variation mensuelle.
+   *Mise en œuvre* : § 9.6 (seuil et pré-validation).
+8. **Scénario O2 au J4** avec le seuil du critère 10 (d), avec le délai perçu (premier tour à 0,1 et à 0,2 point) et la décomposition.
+   *Mise en œuvre* : § 9.6.
+9. **Prix administré (J4, J7)** : scénario apparié gel contre sans gel, écrit avant l'essai, avec un coût perceptible du gel ; sinon, le levier n'est pas ouvert. Marge comprimée restituée pendant le gel.
+   *Mise en œuvre* : issue liée de M26 ; § 9.6 (J4).
+10. **Taux d'utilisation** hors du panneau des prix jusqu'à M28.
+    *Mise en œuvre* : condition transmise à la fiche 6.
+
+**Seuil du critère 10 (d)** (proposé par `jeu`, à confirmer avant le J4, M26) : au moins 0,2 point pour +1 % et au moins 1,0 point pour +5 %.
+
+### 9.6 Tests attendus
+
+| Jalon | Test | Propriété | Seuil |
+|---|---|---|---|
+| J3 | État stationnaire (réserve 1) | Un pas sans choc depuis l'état résolu : μ̃ = ln(1 + μ̄) ; p croît de (1 + π̄)^{1/n_a} ; ξ = 0 | 1e−10 relatif (ξ : 1e−10 absolu) |
+| J3 | T2 | Test commun avec la fiche 3 (§ 9.6) : règle M, π̄ ∈ {0 ; 2 % ; 10 %}, n_a ∈ {4 ; 12 ; 52} | idem |
+| J3 | Vitesses (réserve 2) | λ_μ × 0,5 et × 2, G +1 % pendant 12 tours : écart de la marge, de ΣWB/ΣVA et de ξ | ≤ 1e−6 après 720 pas |
+| J3 | Boucle propre (5 (d)) | 1 − λ_μ/n_a = 0,9 (× 0,5 : 0,95 ; × 2 : 0,8) | module < 1 |
+| J3 | Boucle salaires – prix (5 (e), exigence ; réserve 3) | π^e = π̄ exogène, m effectif : une racine unitaire, de vecteur propre nominal ; toutes les autres de module < 1 | \|λ − 1\| ≤ 1e−8 pour la racine nominale ; rayon de la partie réelle < 1 à la calibration ; publié aux variantes |
+| J3 | Boucle prix – stocks – demande (5 (f)) | m effectif | rayon < 1 à la calibration ; publié aux vitesses × 0,5 et × 2 |
+| J3 | **Alternance étendue** (réserve 3 ; condition 7) | Depuis l'état résolu, G +1 % (part de 20 %, demande +0,2 %) au seul tour 1. Sur les tours 2 à 13 : (a) écart de ln p au sentier sans choc ; (b) écart de la variation mensuelle Δln p. Changements de signe comptés en ignorant \|x\| ≤ 1e−12. Pré-validation (`g6_alternance.py`) : sous M, (a) 0 et (b) au plus 1, sur m ∈ {0 ; 0,6 ; 0,8}, aux vitesses de la fiche 2 × 2 et à ψ × 2. Sous C, (b) 7 à 11 dès la calibration, alors que (a) vaut 0 : le test sur le niveau seul ne détectait pas l'alternance | ≤ 2 changements pour (a) et pour (b), à la calibration et au m effectif (exigence) ; publié aux variantes |
+| J3 | Positivité | Appel direct avec ξ = 1 (stock nul) et ξ = −9 (stock à 10 fois la cible) : p > 0 et fini, par la forme exponentielle | exact |
+| J3 | Phases | Le bloc 4 ne lit ni v_t, ni d_t, ni un plan ; il est le premier de la phase 5 ; ξ lit IN^vol* de N2 | aucune lecture hors ordre |
+| J3 | Identité (critère 1) | Cas P15 : deux prix distants de 1 % ; somme des soldes financiers nulle ; valeur nette des entreprises égale par les flux et par les stocks | 1e−12 × S |
+| J3 | Empreinte | Aucune variable d'état propre (une seule si μ̃ est porté, § 9.1) ; registre selon l'ADR | décompte exact |
+| J3 | Coût | `test_budget.py` | ≤ 0,48 ms par pays-pas |
+| J4 | O2 et seuil 10 (d) | Pic, sur les tours 1 à 36, de l'écart du glissement lu par la règle (× (1 + π̄)) : m = 0 au stade de la fiche, m effectif au J3 et au J4 ; délai perçu à 0,1 et 0,2 point et décomposition publiés | ≥ 0,2 pt (+1 %) ; ≥ 1,0 pt (+5 %) ; publié à × 0,5 et × 2 |
+| J4 | Restitution | Niveaux normaux égaux à ceux du script : μ̄ ; ΣWB/ΣVA résolue ; π̄ | 1e−9 relatif |
+| J4 et J7 | Prix administré | Scénario apparié gel contre sans gel, critères écrits avant l'essai | levier ouvert seulement si le coût est perceptible |
+| — | Remesure P1 | Proposée, non lancée ; sans effet sur M26 | — |
+
+### 9.7 Contrats partagés touchés, surface de spécification
+
+**Contrats partagés** :
+1. **Phase de P_t, lecture (c)** (décision citant M22 et l'ADR 0005, pt 16 ; ADR par `architect`, avec la forme et la clause de réouverture) :
+   - `sec:cadre-calendrier` l. 182 : « l'indice des prix et son glissement… révisés en phase 1 » devient « arrêtés en phase 5 et lus en phase 1 du pas suivant » ;
+   - l. 199 à 203 : l'empreinte calendaire passe de 13 à 14 variables (t et 13 niveaux, ou t, 12 niveaux et π) ;
+   - `tab:phases` :
+     - ligne 1 : retirer « indice des prix et glissement annuel (registre) » du contenu, et « prix » des blocs qui écrivent ; ordre libre entre travail et banque centrale ;
+     - ligne 5 : ajouter « indice et glissement » si le bloc 4 les écrit ;
+     - ligne 9 : mise à jour du registre ;
+   - `CONTEXT.md` l. 32 (« Date de décision ») et l. 59 (« Registre de l'indice des prix ») : `architect` ;
+   - ADR 0005, pt 16 : annotation.
+2. **Phase de UC = 2** (choix laissé à la fiche 4 par M24, sans décision citant M22) : `tab:production-equations` l. 569 (N8 : « 2 ou 4 (fiche prix) » → « 2 ») ; `sec:production-phases` l. 694 ; `tab:production-phases` l. 712 et 713 (UC en phase 2 seulement) ; fiche 2, § 9.1 (ligne N8) et § 9.4.
+3. **Lecture (G)** : fiche 3, § 9.8, point 1 ; neutre pour M.
+4. Matrices inchangées.
+
+**Surface de spécification** (#40, jalon 4, `docwriter` ; encadrés `proposee` citant M26) :
+- **`sec:prix`** :
+  - encadré de décision ;
+  - tableau des équations ;
+  - base UC (coût à productivité normale) ;
+  - ξ ;
+  - M (variables, sens, hypothèses, `\limites`) ;
+  - aucune anticipation consommée, ni canal direct π^e → p, ni canal de coût (C13) ;
+  - indice et glissement (c) ;
+  - phases (§ 9.4) ;
+  - état stationnaire : p/UC = 1 + μ̄, ξ̄ = 0, variation de 0,16516 % par pas à 2 %, WB/VA = 0,798903 (2 %) et 0,793445 (10 %) contre 1/(1 + μ̄) = 0,8, avec sa dépendance à n_a ;
+  - boucles (valeurs du § 3.N-9) ;
+  - aucune borne, conditions déclarées ;
+  - grandeurs restituées ;
+  - encadré `joueur` ;
+  - encadré `portee` : J = 1 ; aucun terme en tu avant M28 ; aucune vitesse modulée par l'inflation ; aucune « énigme des prix » ; marge procyclique contestée ; forme M sans source lue ; prix administrés au J4 et au J7.
+- **`tab:calibration`** : μ̄, λ_μ, ψ_ξ.
+- **`tab:symboles`** : μ̄, μ_t, μ̃_t, ξ_t, ψ_ξ, λ_μ ; définition de P_t.
+- **`sec:ecartees`**, « Prix (décision M26) » : A ; B ; R (référence, critère 5 (b)) ; C (alternance) ; D (dépend de C1, marge contracyclique) ; T (renvoyée à M28) ; coût complet au prix courant et à la valeur comptable ; marge sur cm ; coût retardé ; NHUC (noté) ; lectures (a) et (b) de P_t.
+- **Texte de `tab:instabilites`** :
+  - la 14 est traitée par ξ : terme de demande gardé, et non « écartée par construction » ;
+  - les 10 et 11 sont sans objet pour le bloc 4 (aucun amortissement dans la base), mais restent des risques de la fiche 6.
+- **`sec:changements-v3x`** : une ligne « prix (M26) ».
+
+### 9.8 Constats transmis
+
+- **Fiche 3** : T2 sur le dernier prix connu (déjà repris) ; μ̄ lu à source unique (w1) ; l'option « μ̃ en variable d'état » est commune.
+- **Fiche 5** :
+  - déclarer la base nominale des plans : l'instruction supposait p_{t−1}(1 + π^e)^{1/n_a}, forme (G) ; les boucles 5 (e) et 5 (f) sont à remesurer avec le m effectif ;
+  - signe du canal taux → demande : un canal rentier dominant ferait amplifier un effet pervers par la marge ;
+  - la marge alimente les profits distribués, qui sont un coût possible du gel (condition 9).
+- **Fiche 6** :
+  - T au plus tard à M28 (#37) ; t̄u comme paramètre à source unique ;
+  - la marge comprimée réduit les profits non distribués, puis l'investissement ;
+  - ρ̄_K = 0,7786 sous (G) (partie C) ;
+  - un intérêt sur le fonds de roulement n'entre pas dans la base du prix sans réviser M26.
+- **Fiche 8** :
+  - C9 à C13, en plus de C1 à C8 ;
+  - délai de lecture de 1 tour sous (c) ; π_{n−1} lu dans le registre ; ordre de la phase 1 libre ;
+  - clause de réouverture attachée à C10 ;
+  - « taux indiqué par la règle » restitué (C9) ;
+  - retour du niveau des prix (C11) ;
+  - point r = i − π sous (G) (fiche 3, § 9.8).
+- **Fiche 9** :
+  - une fiscalité indirecte éventuelle pose la question de la base du prix : décision citant M26 ;
+  - dépense en u.m. ;
+  - le rationnement est un coût possible du gel.
+- **`architect`** : ADR de la lecture (c) (forme, empreinte, clause de réouverture) ; `CONTEXT.md` : « marge normale », « tension sur les stocks », « indice des prix (lecture (c)) ».
+
+### 9.9 Issues proposées
+
+Issues liées de M26, à créer sur accord du mainteneur : prix administrés et coût de la marge comprimée ; levier de répartition au J4. Autres propositions : partie E du compte rendu de `macro` du 03/10/2026.
 
 ## 10. Historique de la fiche
 
@@ -1217,3 +1415,4 @@ Non instruit.
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à M avec la lecture (c) de P_t ; clause de réouverture de la Q1 proposée ; T2 sous (a) à éliminer ; précision à son avis sur la fiche 3 (retour du niveau des prix sous C2) ; conditions C9 à C13 transmises à la fiche 8 | `monnaie` |
 | 03/10/2026 | Statut « avis rendus » | session principale |
 | 03/10/2026 | Décision M26 : option M, UC en phase 2, terme ξ, lecture (c) de P_t avec clause de réouverture, (G) commune, T transmise à la fiche 6 | mainteneur |
+| 03/10/2026 | Conséquences de M26 (§ 9) rédigées par `macro` : labels, paramètres, interfaces, conditions de `jeu`, tests attendus, contrats partagés et surface de spécification, constats transmis | `macro` ; session principale |

@@ -1056,7 +1056,277 @@ Verdict : **à revoir**. Elles révisent M24 et ne résolvent pas leur état sta
 
 ## 9. Conséquences de la décision
 
-Non instruit.
+*Rédigé par `macro` (expert pilote), 03/10/2026, d'après M25 (§ 8), M26 (fiche 4, § 8) et la lecture commune (G) des taux annuels (M25 (b), décision citant M22 et M24, consignée par ADR). « Tk » désigne l'équation k des § 3.N et 3.C ; « Nk », l'équation k de la fiche 2. Tous les taux de croissance et d'inflation sont convertis géométriquement, (1 + x)^{1/n_a} par pas ; les taux d'intérêt, flux et vitesses restent linéaires (M22, lecture (a)). Chiffres recalculés le 03/10/2026 (§ 9.7).*
+
+### 9.1 Labels d'équation
+
+**Au jalon J1, aucun label** (#39, jalon 4) : `sec:travail` est écrite sans `\label{eq:…}`, chaque mécanisme dans un encadré `proposee` citant M25, en `equation*` (`CONVENTIONS.md` § 4.1). **Labels à créer au J3**, avec `src/nations/blocs/travail.py` (radical `travail`) ; `coder` pose une balise par label, `docwriter` retire l'encadré et pose le label dans le même passage.
+
+| Label | Ce que l'équation détermine | Équation | Statut | Provenance | Couche |
+|---|---|---|---|---|---|
+| `eq:travail-salaire-relatif` | salaire réel rapporté à la productivité, lu par la règle de salaire, phase 1 | ω_{t−1} = W_{t−1}/(p_{t−1}·pr_{t−1}), pr_{t−1} = pr_t (1 + g_pr)^{−1/n_a}, p_{t−1} : **dernier prix connu** (dernière entrée du registre sous la lecture (c) de M26) | définition | T2 ; constat T2 de la fiche 4 (§ 3.N-1) ; avis de `monnaie` (fiche 4, § 6.1, Q6) | `blocs/` |
+| `eq:travail-salaire` | salaire nominal W_t, phase 1 | ln W_t = ln W_{t−1} + (1/n_a)[ln(1 + g_pr) + ln(1 + π^e_t)] + (λ_w/n_a)[ln(ω*/ω_{t−1}) − β(U_{t−1} − U^eq)], avec ω* = 1/(1 + μ̄) | approchée | T3-SN ; M25 (c), lecture (w1) ; forme WS-PS (acquis R) ; β : Blanchflower et Oswald, NBER WP 11338 (2005) ; correction d'erreur : Blanchard et Katz, NBER WP 6924 (1999) | `blocs/` |
+| `eq:travail-emploi` | emploi effectif N_t, phase 4, avant le bloc 2 | N_t = min{N^pa_t, max{N*_t, (1 + g_N)^{1/n_a}(1 − λ_N/n_a) N_{t−1} + (λ_N/n_a) N*_t}} | approchée ; la forme asymétrique est une approximation imposée par la technique de M24 (lecture (i)) ; N ≤ N^pa est une contrainte de conservation | T4-C ; M25 ; BLL, NBER WP 18668, tableau 2 ; Abraham et Houseman, NBER WP 4390, tableau 3A ; Oi (1962), cité par BLL p. 5 | `blocs/` |
+| `eq:travail-chomage` | taux de chômage U_t, phase 4 | U_t = 1 − N_t/N^pa_t | dérivée (définition) | M25 | `blocs/` |
+| `eq:travail-masse-salariale` | masse salariale, ligne 5, phase 4 | WB_t = W_t·N_t | dérivée (ligne 5 du cadre) | M22 ; M25 | `blocs/` |
+| `eq:travail-population-active` | population active du pas suivant, phase 4 | N^pa_{t+1} = N^pa_t (1 + g_N)^{1/n_a} | choix de conception | T1 ; M25 (d) ; lecture (G) | `blocs/` |
+
+Les six labels respectent l'expression régulière de `CONVENTIONS.md` § 2.1 (contrôle au § 9.7). Le sureffectif, les niveaux normaux et le glissement salarial sont des grandeurs de la couche `observation/`, sans label tant que son radical n'est pas fixé (fiche 1, § 9.8, n° 7).
+
+**Implémentation (au choix de `coder`, trajectoires identiques)** : ω_{t−1} = UC_{t−1}/p_{t−1} = exp(−μ̃_{t−1}) sous J = 1. Elle peut se calculer de deux façons :
+- (i) recalculer pr_{t−1} = pr_t(1 + g_pr)^{−1/n_a}, ce qui n'est exact que tant que pr suit sa tendance exogène ;
+- (ii) lire la marge d'ouverture μ̃_{t−1}, si le bloc 4 la porte en variable d'état. Cette forme écarte par construction le défaut T2 et reste valable sous un choc de niveau de productivité (J5).
+
+Le choix revient à `coder`, sous visa de `macro`, avec la fiche 4 (§ 9.1).
+
+### 9.2 Paramètres
+
+À porter dans `tab:calibration` au J1, sans `\code{}` avant le code. Les noms sont des propositions.
+
+| Symbole | Nom proposé | Valeur | Unité | Source | Équation |
+|---|---|---|---|---|---|
+| λ_w | `vitesse_salaire` | 1 (indicative ; hors des ordres de grandeur sourcés, réserve 7 : recalibrée au J3 avec la mesure 5 (d) et la condition C7) | par an, λ_w ≤ n_a | M25 ; valeur de la v2.0 (`model.py` l. 138) ; F15 à F17 (§ 3.N-11) | `eq:travail-salaire` |
+| β | `semi_elasticite_salaire_chomage` | 2 | par unité de taux de chômage | Blanchflower et Oswald (2005), élasticité −0,1 à U = 5 % (1,4 avec −0,07, après correction du biais de publication) | `eq:travail-salaire` |
+| U^eq | `chomage_equilibre` | 0,05 (hypothèse, fixée au J3 avec O1) | fraction de la population active | M25 ; lue à source unique par le bloc 8 (C6) | `eq:travail-salaire` |
+| λ_N | `vitesse_reduction_emploi` | 3,5 | par an (demi-vie de 2,01 tours) | M25 ; F3 (BLL, tableau 2) et F7 (Abraham et Houseman, États-Unis 1973-1990) : demi-vie de 1,9 à 2,2 tours | `eq:travail-emploi` |
+| g_N | `croissance_population_active` | 0,005 (hypothèse de l'instruction, fixée au J3 avec O1) | par an, conversion géométrique | M25 (d) ; lecture (G) | `eq:travail-population-active` |
+
+**Conditions déclarées, contrôlées au chargement, jamais par écrêtage** : λ_w ≤ n_a ; λ_N ≤ n_a ; π^e > −1 (condition de domaine, vraie par construction si le bloc 8 porte ln(1 + π^e), C4).
+
+**Ce qui n'est pas un paramètre** :
+- ω* = 1/(1 + μ̄) est lue dans le bloc 4 (w1) ;
+- U* est une grandeur stationnaire, égale à U^eq ;
+- N^pa_0 et W_0 sont des valeurs de l'état initial résolu ;
+- π^e est une variable d'état du bloc 8 ;
+- g est dérivé, g = (1 + g_pr)(1 + g_N) − 1.
+
+**Seuil de calibration de `jeu`** (critère 11 (d), § 7) : demi-vie de 2 à 4 tours, soit 1,9092 ≤ λ_N ≤ 3,5147. λ_N = 3,5 n'est qu'à 0,015 sous la borne haute : toute recalibration à la hausse sort du seuil.
+
+### 9.3 Ce qui reste paramétrable après la décision
+
+**Sans rouvrir M25** (calibration au J3, visa de l'expert pilote) :
+- les valeurs de λ_w, β, U^eq, g_N, dans leurs conditions ;
+- λ_N, dans le seuil de 2 à 4 tours ;
+- la loi de formation de π^e (fiche 8), sous C1.
+
+**Par une décision M-m citant M25** :
+- la lecture (w2), ω* paramètre du bloc 3, comme levier institutionnel au J4. Sous M (M26), elle est sans gagnant durable (correction de `jeu`, fiche 4, § 7) ;
+- le passage à R (lecture (ii) du critère 10 (b)), ou une forme symétrique ;
+- une indexation inférieure à 1, ou sur l'inflation passée (levier « indexation légale », J4 : verticale si la somme des coefficients vaut 1 et si C1 tient) ;
+- une participation endogène ou une marge d'heures, en réponse au coefficient d'Okun de −0,95 (issue liée de M25) : T1 changerait ;
+- une courbe des salaires convexe (question 6 de `jeu`) ;
+- des archétypes « continentaux » à demi-vie longue (réserve 8, J5).
+
+**Aucun drapeau de mode** (ADR 0002).
+
+### 9.4 Interfaces
+
+**Phases, lectures et écritures du bloc 3** (lecture (c) de M26 ; lecture (a) de la Q3) :
+
+| Phase | Lit | Écrit, ou propose au noyau |
+|---|---|---|
+| 1 | ouverture : W_{t−1}, U_{t−1}, pr_t (bloc 2), π^e_t (variable d'état d'ouverture du bloc 8, formée au pas précédent), p_{t−1} (registre) ; paramètre μ̄ (bloc 4) | W_t |
+| 4, avant le bloc 2 | N*_t (phase 2) ; W_t ; ouverture : N^pa_t, N_{t−1} | N_t, U_t ; **ligne 5**, WB_t = W_t N_t ; N^pa_{t+1} |
+
+- **Ordre de la phase 1** : libre entre travail et banque centrale. Le bloc 3 lit π^e à l'ouverture ; le bloc 8 ne lit jamais W_t (C5) et lit U_{t−1} à l'ouverture. Sous la lecture (c), le bloc prix n'écrit plus en phase 1.
+- Aucune lecture de y_t, de y^cap ni de tu. La matrice des lectures est triangulaire.
+- **Q4 de la fiche 2 confirmée** (M25 (e)) : l'emploi est au bloc 3, avant le bloc 2 en phase 4 (ADR 0007).
+- **Variables d'état** : W, U, N et N^pa (4, chacune avec sa valeur stationnaire, § 9.7) ; aucun registre propre, aucun tirage.
+- **Lignes de flux** : la ligne 5 seule. `tab:matrice-flux` et `tab:portes-monnaie` sont inchangées. Le sureffectif W(N − y/pr) est une charge du pas dans la sous-colonne courante des entreprises, sans ligne propre.
+
+**Leviers qui transitent par le bloc** (aucun levier propre, M25 (f)) :
+
+| Levier | Indicateur | Délai (tours entiers) | Contrepartie visible le même tour |
+|---|---|---|---|
+| Dépense publique | chômage, emploi, sureffectif ; puis salaire | en hausse : emploi au tour n + 1, salaire au tour n + 2 ; en baisse : emploi réduit dès le tour n + 1, à la demi-vie de 2,01 tours | stocks au tour n (fiche 2) ; sureffectif |
+| Impôts sur les ménages | idem | emploi au tour n + 2, salaire au tour n + 3 | stocks au tour n + 1 |
+| Taux, par la demande | idem | fixés par les fiches 5, 6 et 8 | — |
+| Cible ou annonce de la banque centrale, par π^e | salaire | 1 tour (jamais 0, lecture (a)) | π^e affichée au tour de l'annonce (C12) |
+
+**Grandeurs restituées au tour** (couche `observation/` ; conditions de `jeu` reprises au § 9.5) :
+
+| Grandeur | Définition | Unité | Dénominateur | Fenêtre |
+|---|---|---|---|---|
+| Taux de chômage | U = 1 − N/N^pa ; mention « plein emploi : main-d'œuvre épuisée » si N = N^pa ; « tension sur le marché du travail » si U < U^eq/2 | fraction | population active du tour | le tour ; moyenne sur 12 tours |
+| Emploi | N | personnes | — | le tour |
+| Salaire nominal | W, et glissement W_t/W_{t−12} − 1 | u.m. par personne et par tour ; par an | W_{t−12} | le tour ; 12 tours |
+| Salaire réel | 100·(W_t/p_t)/(W_1/p_1), et son glissement | indice ; par an | prix et salaire du tour 1 | le tour ; 12 tours |
+| Part salariale | ΣWB/ΣVA, avec VA = p·v + ΔIN | fraction | valeur ajoutée sur 12 tours | 12 tours |
+| Sureffectif | N − y/pr, en personnes et en fraction de N (= 1 − (y/N)/pr) ; le montant W(N − y/pr) figure au compte des entreprises seulement | personnes ; fraction | emploi du tour | le tour |
+
+W, W/p et la part salariale s'affichent toujours ensemble. W/(p·pr) n'est pas une ligne du tableau de bord ; son écart à la part salariale est publié dans la documentation (§ 9.7).
+
+### 9.5 Conditions de `jeu` (§ 7, reprises telles quelles) et mise en œuvre
+
+1. **Sureffectif** (sous C), indicateur unique en personnes et en % de l'emploi, qui remplace la productivité apparente et la masse salariale excédentaire comme lignes distinctes ; le montant en u.m. figure dans le compte des entreprises, comme charge du pas.
+   *Mise en œuvre* : tableau du § 9.4 ; calculé en phase 4, après le bloc 2, sans variable d'état.
+2. **Niveaux normaux** dans la définition exacte de chaque indicateur, publiés par le script d'état stationnaire : U^eq ; glissement salarial nominal (4,0588 % à π̄ = 2 %) ; glissement du salaire réel (2,0184 %) ; part salariale dans la définition sur 12 tours.
+   *Mise en œuvre, sous (G)* : U^eq ; glissement nominal (1 + g_pr)(1 + π̄) − 1 = **4,0400 %** (g_pr = π̄ = 2 %, pour tout n_a) ; glissement réel **g_pr = 2,0000 %** ; part salariale ΣWB/ΣVA résolue, **0,798903** (μ̄ = 0,25, π̄ = 2 %, σ = 1,4 mois, g = 2 %, n_a = 12), qui est aussi le centre de la bande commune du test zéro (M25). Les valeurs 4,0588 % et 2,0184 % de la condition sont celles de la lecture (L), écartée.
+3. **Chômage nul** : mention « plein emploi : main-d'œuvre épuisée » et production visée non réalisée à côté. Signal de tension sous U^eq/2. Aucun plancher frictionnel.
+   *Mise en œuvre* : tableau du § 9.4. La borne N ≤ N^pa reste une contrainte de conservation sans paramètre (lecture (ii) de #38).
+4. **Scénario adverse O2 au J4, à écrire avant l'essai** : dépense publique en créneau de ±5 %, de moyenne nulle, en demi-périodes de 6 et de 12 tours, contre une dépense constante, avec prix et politique monétaire endogènes ; on publie l'écart du chômage moyen, le sureffectif, les profits, le glissement salarial et l'inflation. Le critère de verdict est fixé par le mainteneur avant l'essai.
+   *Mise en œuvre* : § 9.6, ligne « Demande pulsée » (J4).
+5. **W, W/P et la part salariale toujours affichés ensemble.**
+   *Mise en œuvre* : § 9.4.
+6. **Fourchette de demi-vie** de la condition 5 de la fiche 2 ramenée à 2 à 4 tours, si C est retenue.
+   *Mise en œuvre* : λ_N = 3,5, soit 2,01 tours (§ 9.2). La condition 5 de la fiche 2 (§ 9.5) est mise à jour en ce sens.
+
+### 9.6 Tests attendus
+
+Chaque test énonce une propriété, avec un seuil écrit avant l'essai (réserves 1 à 9 du § 5).
+
+| Jalon | Test | Propriété | Seuil |
+|---|---|---|---|
+| J3 | État stationnaire (critère 3) | Un pas sans choc depuis l'état résolu laisse W (facteur [(1 + g_pr)(1 + π̄)]^{1/n_a}), N et N^pa (facteur (1 + g_N)^{1/n_a}) et U = U^eq sur leur trajectoire. Sous C, N = N* | 1e−10 relatif |
+| J3 | **T2** (constat de la fiche 4 ; `monnaie`, Q6) | (a) Script d'état stationnaire, règles SN et M : U* = U^eq. (b) Moteur, blocs 2 à 4 depuis l'état résolu, plans nominaux exogènes sur le sentier : après un pas, W et p sont sur leur sentier ; après 60 ans, U = U^eq. Les deux pour π̄ ∈ {0 ; 2 % ; 10 %} et n_a ∈ {4 ; 12 ; 52}. Le cas π̄ = 0 ne discrimine pas : les deux lectures y coïncident. Pré-validation (maquette `g5_T2.py`, § 9.7) : en lecture correcte, l'écart à U^eq est ≤ 1,4e−14 sur 60 ans ; en lecture fautive (p_{t−2}), U* − U^eq = −ln(1 + π̄)/(n_a β), soit −0,0825 point (2 %, n_a = 12) et −1,1914 point (10 %, n_a = 4), et l'écart de W au premier pas vaut −(λ_w/n_a²) ln(1 + π̄) (−1,375e−4) | (a) \|U* − U^eq\|/U^eq ≤ 1e−10 ; (b) écarts relatifs de W et p ≤ 1e−10 après un pas, et \|U − U^eq\|/U^eq ≤ 1e−10 après 720 pas |
+| J3 | Cohérence des conversions (lecture (G)) | Même test d'état stationnaire, avec g_N > 0. Une forme mixte (tendance linéaire 1 + g_N/n_a dans T4-C avec N* géométrique) laisse un sureffectif stationnaire dépendant de λ_N : jusqu'à 2,3e−6 à n_a = 12 (`g8_C.py`) | \|N/N* − 1\| ≤ 1e−10 |
+| J3 | Vitesses (critère 4) | G +1 % pendant 12 tours ; branches λ_w et λ_N × 0,5 et × 2 : écart de U, N/N*, ω et ΣWB/ΣVA | ≤ 1e−6 relatif après 720 pas |
+| J3 | Boucle propre (5 (b)) | Prix et demande exogènes : valeurs propres 1 − λ_w/n_a = 0,91667 (×0,5 : 0,95833 ; ×2 : 0,83333) et 1 − λ_N/n_a = 0,70833 (×0,5 : 0,85417 ; ×2 : 0,41667) ; demi-vies de l'emploi de 2,01 / 4,40 / 0,79 tours | module < 1 aux trois calibrations ; demi-vie dans [2 ; 4] tours à la calibration seule |
+| J3 | Boucle combinée (5 (c)) | Production identique à R (C ne change que N) ; rayon et période pour m effectif (fiches 5 et 9). Sous (G), à g = 2 % : 0,9279 à 0,9762, 68,9 à 95,8 tours (95,84 à m = 0,8 : marge de 0,16 tour ; réserve 5) | rayon < 1 partout ; période dans 36 à 96 tours à la calibration ; publiée aux vitesses ×0,5 et ×2 |
+| J3 | Boucle salaires – prix (5 (d)) | Test commun avec la fiche 4 (5 (e)), avec m effectif | voir la fiche 4, § 9.6 |
+| J3 | Borne N ≤ N^pa (critère 7 ; #38, lecture (ii)) | (a) Inactive à l'état résolu, marge de U^eq. (b) Appel direct avec N* = 1,02 N^pa : N = N^pa, U = 0, production visée non réalisée de 1,96 % (fiche 2) | (a) exact ; (b) égalités à 1e−12 relatif |
+| J3 ou J4 | Instabilité 15 (7 (c)) | G dimensionnée pour activer la borne pendant 12 tours, prix et politique monétaire endogènes | inactive au plus tard 12 tours après la fin du choc ; aucune réactivation sans nouveau choc |
+| J3 | Rétention (critère 8) | Un pas avec N = 1,02 N* : WB − UC·y = W(N − y/pr), soit 1,961 % de WB, sans effet sur ΔIN ; le résultat courant baisse d'autant | 1e−12 relatif |
+| J3 | Asymétrie de C (structure) | Appel direct de T4-C : si N*_t ≥ (1 + g_N)^{1/n_a} N_{t−1}, alors N_t = N*_t ; sinon N*_t < N_t < (1 + g_N)^{1/n_a} N_{t−1} | exact |
+| J3 | Délais | G au tour n : emploi au tour n + 1 (en hausse), salaire au tour n + 2. Choc de π^e à l'ouverture du tour n + 1 : W modifié au tour n + 1, pas avant | signe et date exacts |
+| J3 | Phases | En phase 1, le bloc 3 ne lit que l'ouverture et le registre ; en phase 4, rien d'écrit après lui ; aucune lecture de y_t | aucune lecture hors ordre |
+| J3 | Empreinte | W, U, N, N^pa ; aucun registre propre ; aucun tirage | décompte exact |
+| J3 | Coût | Part du bloc dans `tests/invariants/test_budget.py` | ≤ 0,48 ms par pays-pas |
+| J4 | O2 | G +1 % et +5 % du flux mensuel : signes et dates attendus sur U, N, W, sureffectif | signe et date exacts |
+| J4 | Demande pulsée (condition 4) | Scénario écrit avant l'essai | critère du mainteneur, fixé avant l'essai |
+| J4 | Restitution | Niveaux normaux égaux à ceux du script : U^eq ; 4,0400 % ; 2,0000 % ; ΣWB/ΣVA résolue | 1e−9 relatif |
+| — | Remesure T1 | Proposée, non lancée ; sans effet sur M25. Ses critères seront écrits ici avant l'essai si le mainteneur la lance | — |
+
+**Réserves du § 5, où elles sont tenues** :
+- 1 : constat de bouclage (§ 9.8) ;
+- 2 et 7 : recalibration de λ_w au J3, avec C7 et 5 (d) ;
+- 3 : levée par la décision sur la bande commune (centre ΣWB/ΣVA résolu) ;
+- 4 : `\limites` de `eq:travail-emploi` ;
+- 5 : boucle combinée ;
+- 6 : instabilité 15 ;
+- 8 : J5 ;
+- 9 : `\limites` et restitution.
+
+### 9.7 Lecture commune (G) : chiffres de la fiche recalculés
+
+Commandes : `uv run --no-project python g1_formes.py` (formes fermées sous (L) et (G)), `g3_simul.py` (contre-épreuve par simulation depuis un état décalé), `g4_boucle.py` (boucle combinée), `g5_T2.py` et `g5b.py` (T2), `g8_C.py` (règle C) ; sorties dans le compte rendu de `macro` du 03/10/2026. Sous (L), les scripts reproduisent les chiffres publiés au § 3 (validation).
+
+**Remplace le tableau du § 3.N-6** :
+
+| | n_a = 4 | n_a = 12 | n_a = 52 |
+|---|---|---|---|
+| Salaire nominal par pas, π̄ = 2 % | 0,99505 % | 0,33059 % | 0,07619 % |
+| Glissement annuel nominal, π̄ = 2 % | 4,0400 % | 4,0400 % | 4,0400 % |
+| Glissement annuel nominal, π̄ = 10 % | 12,2000 % | 12,2000 % | 12,2000 % |
+| Salaire réel annuel | 2,0000 % | 2,0000 % | 2,0000 % |
+
+**Avant / après** (une ligne par grandeur ; toutes expliquées par la révision de M24 (f), sauf mention) :
+
+| Grandeur | Avant (L) | Après (G) | Écart | Explication |
+|---|---|---|---|---|
+| Salaire nominal par pas, π̄ = 2 % (n_a = 4 / 12 / 52) | 0,99877 / 0,33210 / 0,07657 % | 0,99505 / 0,33059 / 0,07619 % | −0,00372 / −0,00151 / −0,00038 pt | g_pr converti en (1 + g_pr)^{1/n_a} |
+| Glissement nominal, π̄ = 2 % | 4,0554 / 4,0588 / 4,0601 % | 4,0400 % | −0,0154 à −0,0201 pt | idem ; la dépendance à n_a disparaît |
+| Glissement nominal, π̄ = 10 % | 12,2166 / 12,2203 / 12,2217 % | 12,2000 % | −0,0166 à −0,0217 pt | idem |
+| Salaire réel annuel | 2,0151 / 2,0184 / 2,0197 % | 2,0000 % | −0,0151 à −0,0197 pt | idem ; critère 3 (b) entièrement tenu |
+| Écart W/(p·pr) − ΣWB/ΣVA, n_a = 12 (§ 3.N-6, condition 3 (d)) | −0,109 pt (2 %) ; −0,655 pt (10 %) | −0,110 pt (−0,1097) ; −0,656 pt (−0,6555) | −0,0004 / −0,0003 pt | y/v et ρ̄_IN suivent la croissance géométrique (fiche 2) |
+| Dépendance de ΣWB/ΣVA à n_a, π̄ = 2 % | 0,798909 / 0,798907 / 0,798906 | 0,798906 / 0,798903 / 0,798902 | ≤ 0,0004 pt d'un n_a à l'autre (0,0075 pt à 10 %) | idem ; déclarée |
+| Boucle combinée, vitesses × 0,5, m = 0,5 (§ 3.R) | 141,8 tours | 141,9 tours (141,855 contre 141,848) | +0,007 tour | γ = 0,16516 % au lieu de 0,16667 % par pas ; toutes les autres valeurs du § 3.R sont inchangées à l'affichage |
+| Niveaux normaux de `jeu` (§ 7, condition 2 ; § 3.L) | 4,0588 % ; 2,0184 % | 4,0400 % ; 2,0000 % | — | idem |
+| Centre de la bande commune (ΣWB/ΣVA, 2 %, n_a = 12) | 0,798907 | 0,798903 | −4e−6 | idem ; 0,7989 inchangé à 4 décimales |
+
+**Inchangés** :
+- U* = U^eq ; ω̄ = 1/(1 + μ̄) ; N = N* ;
+- demi-vies de λ_N (2,01 / 4,40 / 0,79 tours) ;
+- l'exemple daté du § 3.L et les mesures de `jeu`, calculés à g = 0 ;
+- le tableau du § 3.D (option écartée) n'est pas recalculé. Hypothèse : l'écart (L)/(G), au plus 0,007 tour sur R, ne peut déplacer le verdict de D (98,6 tours contre 96).
+
+**Lignes de la fiche à mettre à jour** (révision citant M25 (b), mention datée) :
+- § 3.N-1 : T1 → (1 + g_N)^{1/n_a} ; « (1 + g/n_a)/(1 + g_pr/n_a) = 1 + g_N/n_a » → (1 + g_N)^{1/n_a} ;
+- § 3.N-2 : T2 → pr_t(1 + g_pr)^{−1/n_a} ; T3-SN et T3-SP → (1/n_a) ln(1 + g_pr) ;
+- § 3.N-6 : tableau ci-dessus ; la puce « Dépendance déclarée à n_a » est remplacée par celle de ΣWB/ΣVA ; N_{−1} = N_0(1 + g_N)^{−1/n_a} ; l'écart publié est remplacé ; la phrase « laquelle des deux est la valeur centrale… » est remplacée par la décision M25 ;
+- § 3.C (T4-C) et § 3.D (T4-D) : (1 + g_N)^{1/n_a} ;
+- § 3.L : « 4,0588 % » → 4,0400 %.
+
+Le § 3.N-4, les § 4 à 7 et le § 3.N-7 (tableau à λ_N = 2,4) restent la trace de l'instruction. Les valeurs à λ_N = 3,5 figurent au § 9.6.
+
+**Valeurs stationnaires des variables d'état** (état initial résolu, sous (G)) :
+- U_0 = U^eq ;
+- N_0 = y_0/pr_0 ; N^pa_0 = N_0/(1 − U^eq) ;
+- N_{−1} = N_0(1 + g_N)^{−1/n_a} ;
+- W_0 tel que W_0/(p_0 pr_0) = 1/(1 + μ̄) ;
+- registre : p_{−u} = p_0(1 + π̄)^{−u/n_a}.
+
+### 9.8 Contrats partagés touchés, surface de spécification, constats transmis
+
+**Contrats partagés** (`docs/agents/routage.md` § 4.2) :
+1. **Lecture commune (G)** (M25 (b), décision citant M22 et M24 ; ADR en cours, `architect`) :
+   - `sec:cadre-calendrier` : nouveau paragraphe « conversion géométrique des taux de croissance et d'inflation » ;
+     - l. 188 : « C'est la seule conversion du moteur » et « pourvu que les taux de croissance soient… linéaire » deviennent faux ;
+     - l. 195 : le paragraphe est à réécrire ;
+     - l. 205 à 209 : le facteur de restitution devient n_a·γ(1 + g)/g avec γ = (1 + g)^{1/n_a} − 1, soit **1,0108** (1,0107678) au lieu de 1,0109 ;
+   - `CONVENTIONS.md` § 5.2 (« Taux ») et § 6 (2e puce) ;
+   - un label `eq:moteur-conversion-croissance` à poser au J2 avec `eq:moteur-conversion-taux` (proposition) ;
+   - annotations de l'ADR 0005, pts 4 et 17. **Constat** : le pt 17 écrit « 0,9 % pour g = 2 % » alors que la spécification écrit 1,0109 (+1,09 %). Sous (G), ce sera +1,08 %.
+   - **`sec:ecartees`, cadre (l. 1012)** : l'argument « contre 14,29 pour tout pas sous la règle linéaire » devient inexact sous (G). K^vol/I^vol vaut 14,3160 / 14,3228 / 14,3253 à n_a = 4 / 12 / 52, comme l'a calculé `monnaie`, et je le recalcule. L'argument principal (intérêts versés exacts) tient.
+2. **Population active au bloc 3** (M25 (d)) : `tab:symboles` (g_N, propriétaire « travail ») ; `sec:production` l. 616, « (blocs travail et ménages) » → « (bloc travail) ».
+3. **Phase 1** : aucun ordre interne requis pour le bloc 3 (lecture (a)). `tab:phases`, ligne 1 : voir la fiche 4, § 9.8.
+4. **U^eq à source unique**, lue par le bloc 8 (C6) : interface avec la fiche 8.
+5. **Rien d'autre** : ligne 5 seule. `verifier_matrices.py --strict` garde ses décomptes.
+
+**Surface de spécification** (#39, jalon 4, `docwriter` ; encadrés `proposee` citant M25, sans label) :
+- **`sec:travail`** :
+  - encadré de décision (M25 : C, SN, lecture (i)) ;
+  - tableau des équations (identifiants T1 à T4, labels prévus au J3) ;
+  - population active (T1) ;
+  - salaire (T2, T3-SN) : (w1) ; indexation de coefficient 1 sur π^e, ni max(π^e, π) ni inflation passée ; condition C1, à savoir qu'une erreur d'anticipation stationnaire déplace U* d'un montant dépendant de λ_w ; dernier prix connu ;
+  - emploi (T4-C), avec les `\limites` : borne N ≤ N^pa (conservation, inactive, marge de U^eq) ; forme asymétrique non établie, inverse de McKay et Reis (2006) aux points de retournement ; « le chômage monte encore pendant la reprise » n'est pas un fait (réserve 9) ; Okun de −0,95 contre −0,41 (réserve 4) ;
+  - chômage, masse salariale (ligne 5), sureffectif comme charge du pas ;
+  - anticipation consommée (lecture (a)) ;
+  - phases (tableau du § 9.4) ;
+  - état stationnaire (§ 9.7, avec l'écart W/(p·pr) − ΣWB/ΣVA et sa dépendance à n_a) ;
+  - constat de bouclage ;
+  - conditions et critères du J3 ;
+  - grandeurs restituées et niveaux normaux ;
+  - encadré `joueur` (délais du § 9.4) ;
+  - encadré `portee` : ni heures ni effort ; population active exogène ; un seul type de travailleur ; aucun levier ; ni emploi public, ni migration, ni allocations ou cotisations au bloc 3.
+- **`sec:calibration`, `tab:calibration`** : les cinq paramètres du § 9.2.
+- **`tab:symboles`** : U (ou \mathit{ch}, au jugement de `docwriter`, voisinage de UC), U^eq, N^pa, ω, ω*, λ_w, β, λ_N, π^e (symbole fixé avec la fiche 8), sureffectif.
+- **`sec:ecartees`**, « Travail et salaires (décision M25) » : A ; B ; R (référence, lecture (ii)) ; D (critère 5 (c)) ; SP (critère 5 (b)) ; cliquet max(π^e, π) ; hystérèse du chômage naturel ; demande de travail au produit marginal ; W^min borné ; indexation sur l'inflation passée ; (w2) au socle ; lecture (b) de la Q3.
+- **Texte de `tab:instabilites`** :
+  - 7 sans objet (pas de produit marginal) ;
+  - 15 : borne inactive, test 7 (c) au J3 ou au J4 ;
+  - cliquet G-W écarté.
+- **`sec:changements-v3x`** : une ligne « travail et salaires (M25) ».
+
+**Constats transmis** :
+- **Fiche 5** :
+  - la population active est au bloc 3 ; la ligne 5 est le revenu des ménages ;
+  - fournir le m effectif au J3 (5 (c), 5 (d)) ;
+  - une participation endogène (issue liée, Okun) toucherait le bloc 5 si le taux d'activité dépend des ménages ;
+  - un rapport de patrimoine au revenu annuel sous (G) dépend légèrement de n_a, à déclarer comme à la fiche 2 ;
+  - la constante de taux réel (r = i − π) est à voir avec la fiche 8 (ci-dessous).
+- **Fiche 6** :
+  - le sureffectif W(N − y/pr) réduit les profits non distribués (sous-colonne courante, #36), de façon transitoire, donc la demande de crédit (fiches 6 et 7) ;
+  - Q4 confirmée pour l'emploi.
+- **Fiche 8** :
+  - C1 à C8 ; U^eq à source unique (C6) ; π^e variable d'état d'ouverture (C5) ; (G), avec la cible comparée au glissement (C4) ;
+  - fermeture du niveau d'activité : résoudre r̄ dans l'état initial (C3) ;
+  - calibration conjointe λ_w·β et λ_e (C7) ;
+  - **extension du test T2** : le taux réel stationnaire de la règle est indépendant de π̄ (dates de i et π appariées).
+  - **Point frontière, non tranché** : sous (G), r = i − π (cadre, l. 197) s'écarte du rendement réel exact par pas d'un encours, n_a ln(1 + i/n_a) − ln(1 + π̄). L'écart vaut +0,0131 point (i = 4 %, π̄ = 2 %) et **+0,4094 point** (i = 12 %, π̄ = 10 %, n_a = 12) (`g9_reel.py`). Une règle ou un comportement écrit en r = i − π ne serait donc pas superneutre à forte inflation. À instruire par `monnaie` (fiche 8) avec la fiche 5.
+- **Fiche 9** :
+  - allocations (ligne 6) et cotisations (ligne 7) hors du bloc 3 ; emploi public absent du socle ;
+  - la fermeture budgétaire est déconseillée pour le pays joué (`monnaie`) ;
+  - sous (G), la dynamique de la dette s'écrit avec la croissance nominale par pas [(1 + g)(1 + π̄)]^{1/n_a} − 1 et des intérêts linéaires i/n_a : le ratio de dette stationnaire dépend légèrement de n_a, à déclarer.
+- **`architect`** :
+  - ADR (G), avec les annotations de l'ADR 0005, pts 4 et 17 (constat ci-dessus) ;
+  - `CONTEXT.md` : « sureffectif », « population active », « chômage d'équilibre », « norme de part salariale (w1) » ;
+  - statut de l'inventaire ;
+  - forme de la révision d'une fiche décidée (partie C du compte rendu).
+
+### 9.9 Issues proposées
+
+Issues liées de M25, à créer sur accord du mainteneur : fermeture du niveau d'activité ; calibration de λ_w ; sensibilité du chômage à la production. Autres propositions : partie E du compte rendu de `macro` du 03/10/2026.
 
 ## 10. Historique de la fiche
 
@@ -1074,3 +1344,4 @@ Non instruit.
 | 03/10/2026 | `jeu` corrige sa réponse à la question 7 du § 7 (levier sur la norme ω*, lecture (w2)) : sous une règle de prix qui ancre μ̄, ω* ne déplace pas la part salariale et le conflit devient une inflation permanente ; correction consignée au § 7 de la fiche 4 (`docs/blocs/prix.md`) | `jeu` ; session principale |
 | 03/10/2026 | Additif de `macro` : sources primaires lues (BLL 2013, Abraham et Houseman 1993, Hamermesh 1988, McKay et Reis 2006, Galí et van Rens 2021, Blanchflower et Oswald 2005, Blanchard et Katz 1999, Galí 2010) ; § 3.N-11 remplacé, § 3.N-12 ajouté ; retard établi, forme asymétrique non établie ; deux lectures du critère 10 (b) soumises au mainteneur ; λ_N = 3,5 proposé sous la lecture (i) ; réserve sur λ_w | `macro` |
 | 03/10/2026 | Décision M25 : option C (λ_N = 3,5), salaire SN, lecture (i) du critère 10 (b), lectures (a) à (f), (G) commune, population active au bloc 3, bande de part salariale centrée sur ΣWB/ΣVA résolue | mainteneur |
+| 03/10/2026 | Conséquences de M25 (§ 9) rédigées par `macro` : labels, paramètres, interfaces, conditions de `jeu`, tests attendus, contrats partagés et surface de spécification, constats transmis | `macro` ; session principale |
