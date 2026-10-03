@@ -306,7 +306,7 @@ Ces valeurs reproduisent exactement celles mesurées par la session principale (
 
 ## 3. Options
 
-*Partie 1 sur 2 (options A et B), instruite par `macro` le 03/10/2026 sur la fiche à l'état `cb8e5d9`. La partie 2 (options nouvelles, variante sans retard, voies (i) et (ii) de #36, état conjoint avec la fiche 5, cas à la main du critère 1, boucle investissement – demande avec N1 à N7) reste à instruire.*
+*Partie 1 sur 2 (options A et B), instruite par `macro` le 03/10/2026 sur la fiche à l'état `cb8e5d9`. Partie 2 (options nouvelles S et C, variante sans retard R, variante PI écartée, socle de financement F, voies (i) et (ii), état conjoint, cas à la main, boucles avec N1 à N7), instruite par `macro` le 03/10/2026 sur la fiche à l'état `d80bfe7`. Chiffres de la partie 2 non encore contre-éprouvés de façon indépendante.*
 
 ### 3.0 Conventions de l'instruction
 
@@ -565,13 +565,429 @@ Aucune remesure V n'est proposée. Les échecs au critère 6 sont établis par f
 9. **État conjoint** : dans A et B, x est fixé par le coût du capital et ι, donc t̄u = κ/x n'est pas libre. La fermeture kaleckienne par tu est exclue, et l'égalité de l'épargne et de l'investissement doit se fermer ailleurs (taux réel, propension ou niveau d'activité), avec la fiche 5. Point **contesté**.
 10. **Lecture (a) de la phase 3** : réalisée dans la v2.0 (conditions connues, refus porté par D_F).
 
+### 3.N Socle commun des options nouvelles (S, C, R) et règle de financement F
+
+**Conventions.** Ce sont celles du § 3.0, lecture (G).
+- Statut : les sorties des maquettes sont des résultats v3 de maquette, sans statut de fait.
+- **Hypothèses de calcul** (ce ne sont pas des calibrations) :
+  - x = K^vol/(n_a y) = 2 ans en base, 3 ans en variante ;
+  - t̄u = 0,8, d'où κ = x·t̄u ;
+  - μ̄ = 0,25 ;
+  - lv\* = 0,4 ; ν_F = 1/6 an (2 mois de ventes) ;
+  - i_L = i_D = 3 % dans la boucle conjointe, r = 1 % dans les formes fermées ;
+  - η_r = 2 par unité de taux ;
+  - T_F = 0.
+
+**Notation proposée** (critère 15). Contrôle par `grep -c -F` sur la spécification (commande au Retour). Les motifs `\varrho`, `\mathit{lv}`, `\mathit{ti}`, `\eta`, `\nu` et `\mathit{FU}` sortent à 0.
+
+| Symbole | Sens | Unité |
+|---|---|---|
+| ti_t | part d'investissement visée, I^vol visé / ŷ_t. Elle se distingue du taux d'investissement restitué, I/PIB sur 12 tours | fraction |
+| ŷ_t = (1 + γ) y_{t−1} | production attendue | u.v. par pas |
+| ϱ_{L,t} = (1 + i_{L,t})/(1 + π\*) − 1 | taux réel du crédit anticipé, lu sur la cible π\* (lecture (c), comme la fiche 5) ; distinct de r = i − π | par an |
+| ϱ̄_L | sa valeur à l'état résolu ; ce n'est pas une ancre des ratios réels | par an |
+| η_r | semi-élasticité du plan au taux réel anticipé | sans dimension, par unité de taux |
+| λ_ti, λ_K | vitesses (λ du cadre avec indice) | par an |
+| lv_t = L_t/K_t, lv\* | levier sur K comptable, et sa cible | fraction |
+| ν_F | dépôts visés, en années de ventes | an |
+| FU | profits non distribués (fiche 2, symbole confirmé) | u.m. par pas |
+
+h (indice réservé), ℓ et ε (tolérance du cadre) sont évités.
+
+**Règle de financement F** (commune à S, C et R).
+- **(F1) Demande de crédit, phase 3.**
+  - Formule : ΔL^d_t = lv\*·[(1 − δ/n_a)K_t + p̂_t I^vol,plan_t] − L_t, avec p̂_t = p_{t−1}(1 + π\*)^{1/n_a}.
+  - Elle ne lit que l'ouverture et le plan de la phase 2.
+  - **Lecture (a) de Q7** :
+    - la banque publie à l'ouverture, ou en phase 1, i_L et une condition d'octroi (plafond ou taux de service) ;
+    - le bloc 6 propose la ligne 18, soit min(ΔL^d, plafond) ;
+    - aucun ordre interne n'est nécessaire ;
+    - le plan servi en phase 5 est celui de la phase 2 : `tab:phases` est inchangée.
+  - L ≥ 0 tient par la forme : lv\*·K ≥ 0.
+  - Le levier sur K comptable est exact à chaque pas où le plan est servi : L_{t+1}/K_{t+1} = lv\*, sans indice de prix ni vitesse.
+- **(F2) Cible de dépôts.**
+  - Formule : D\*_{t+1} = ν_F·n_a·p_{t−1}(1 + π\*)^{2/n_a}·v^e_{t+1}.
+  - v^e_{t+1} est écrite en phase 5 par le bloc 2 et lue en phase 6.
+- **(F3) Dividende, phase 6, résiduel de caisse.**
+  - Formule : Div_{F,t} = max{0, D_{F,t} + ΔL_t + C_t + G_t − WB_t − i_L L_t/n_a + i_D D_{F,t}/n_a − T̂_{F,t} − D\*_{t+1}}.
+  - T̂_{F,t} = Γ̂·T_{F,t−1} est une variable d'état, avec Γ̂ = [(1 + g)(1 + π\*)]^{1/n_a}.
+  - Les intérêts sont assis sur les encours d'ouverture et les taux d'ouverture.
+  - Le bloc ne lit en phase 6 ni T_F ni les intérêts écrits par les blocs 9 et 7 : critère 3 (d) tenu.
+  - L'écart T_F − T̂_F est porté par D_F et résorbé au pas suivant.
+- **Priorité des paiements** (critère 1 (d)) : WB (phase 4), puis intérêts et impôts (phase 6), puis Div_F en dernier.
+  - L'investissement ne sort pas de dépôts au niveau du secteur, car la ligne 3 est interne aux entreprises sous J = 1.
+  - Le crédit refusé cède d'abord sur les dividendes, puis sur D_F. Il ne cède jamais sur l'investissement.
+  - La demande non satisfaite (ΔL^d − ΔL) est publiée.
+- **Variantes de F écartées, mesurées dans la boucle conjointe** (`conj6_b.py`, `conj6_c.py`) :
+
+  | Variante | Rayon | Statut |
+  |---|---|---|
+  | Levier sur p K^vol, avec cible de dépôts sur p v du pas | **1,4925** | vérifié |
+  | Cible de dépôts sur p v du pas, levier comptable | **1,4991** | vérifié |
+  | Levier sur p K^vol, avec cible sur v^e | **1,0530** (période 109 tours) | vérifié |
+  | Ajustement partiel de D_F (λ_D = 0,5 à 2) avec levier sur p K^vol | 1,07 à 1,16 | vérifié |
+  | Levier comptable avec cible sur v^e (F retenue) | 0,9971 | vérifié |
+
+  - **Mécanisme du levier sur p K^vol** : une hausse du niveau des prix réévalue le capital, donc relève la cible de crédit. Le crédit nouveau est versé en dividendes, d'où de la demande et des prix. C'est une réévaluation du capital qui alimente des flux, parente des instabilités 10 et 11. **Fait nouveau ; hypothèse sur le mécanisme.**
+  - **Conséquence** : la cible de levier se pose sur K comptable. Elle n'est pas posée sur p K^vol, ce qui ne contredit pas l'acquis 2, qui portait sur les rentabilités.
+  - Contrepartie : L/(p K^vol) = lv\*·ρ̄_K dépend de π̄. Il vaut 0,3114 à π̄ = 2 % et 0,1686 à π̄ = 10 % (`stat.py`). Cette dépendance est déclarée.
+
+### 3.S Option S — part d'investissement visée (supermultiplicateur), nouvelle
+
+1. **Source.** Forme inspirée du supermultiplicateur sraffien :
+   - Freitas et Serrano (2015), *Review of Political Economy* 27(3), 258-281 ;
+   - Lavoie (2016), *Metroeconomica* 67(1), 172-201.
+
+   Existence vérifiée par recherche ; **articles non lus**, l'accès au texte étant bloqué par le proxy. L'écriture ci-dessous est la mienne : elle n'est pas attribuée à ces auteurs.
+2. **Équations.**
+   - Plan, phase 2 : I^vol,plan_t = ti_t·ŷ_t·exp[−η_r(ϱ_{L,t} − ϱ̄_L)]. Le plan nominal vaut p̂_t·I^vol,plan.
+   - État, mis à jour en phase 5 après tu_t (phase 4) : ti_{t+1} = ti_t·exp[(λ_ti/n_a)(tu_t − t̄u)].
+   - Financement : F.
+3. **Verdicts.**
+
+| Critère | Verdict | Mesure ou motif |
+|---|---|---|
+| 1 | **Conforme** | Lignes 3, 8, 14 et 18 ; aucun poste ajouté. Cas à la main ci-dessous : V_F par le stock et par les flux, écart de −5,2e−13 sur 1 800 u.m. (vérifié, `cas1.py`) |
+| 2 | Compatible avec les deux voies | Distribution stationnaire en forme fermée ci-dessous |
+| 3 | **Conforme** | Phase 2 : ti_t, y_{t−1}, i_L d'ouverture, π\* (paramètre). Phase 3 : lecture (a). Phase 5 : ti_{t+1} lit tu_t (phase 4). Phase 6 : F3. Matrice des lectures triangulaire, vérifiée à la main |
+| 4 | **Conforme** | Ancre unique t̄u, paramètre lu par la fiche 4. x = κ/t̄u. Aucune bande de filtre |
+| 5 | **Forme fermée** | Tableau du § 3.E. Aucune vitesse n'y entre (vérifié) |
+| 6 (a), (b) | **Conforme, formes fermées** | λ_ti, η_r et ϱ̄ sont absents des ratios. Le facteur de taux est absorbé par ti : hors de ϱ̄, seul ti stationnaire change (vérifié par construction). L et D_F ont une ancre exacte sans vitesse (F1, F2) |
+| 6, essai du J3 | **Échec mécanique**, par lenteur et non par continuum | Après G +1 % aux tours 1 à 12, écart entre les branches ×0,5 et ×2 : 3,9e−6 (K/Y et tu) et 7,6e−6 (I/ventes) à 720 pas ; 3,0e−6 à 1 440 pas ; **1,6e−7 à 2 160 pas**. L'écart décroît : c'est la transition, non un continuum (vérifié, `sim2.py`). Voir l'amendement proposé |
+| 7 (b) | **Conforme** | Boucle propre : le couple (K^vol, ti) donne une paire de module √[(1 − δ/n_a)/(1 + γ)] = 0,99709 quand les racines sont complexes (hypothèse issue d'un système réduit 2×2 ; mesuré 0,9970 à 0,9972) |
+| 7 (c) | **Tenu à la calibration pour m ≤ 0,7 ; échec à ×2 pour m = 0,7 (x = 3) et m = 0,8 (x = 2)** ; boucle conjointe stable | Tableaux du § 3.B7 |
+| 7 (d) | **Conforme** | lv = lv\* à chaque pas. D_F/(12 PIB) = 0,16605 à i_L et à i_L + 2 points. La distribution passe de 0,5685 à 0,5133 (`stat.py`) |
+| 9 | **Aucune borne à seuil libre** | I^vol ≥ 0 tient par la forme (exponentielle et ŷ ≥ 0) : c'est un mécanisme. Contraintes : L ≥ 0, par la forme ; D_F ≥ 0, inactive (D_F = 2 mois de ventes contre des paiements mensuels) ; Div ≥ 0 (pas d'actions au socle), inactive à la base (Div/ventes = 6,26 %), mais active si x > x_max (2,933 ans à μ̄ = 0,25 et lv\* = 0,4 ; 4,927 à μ̄ = 0,5 ; 2,853 à π̄ = 10 %). Scénarios adverses (G −5 %, crédit refusé de moitié pendant 12 tours) : **non mesurés** (J3) |
+| 10 (b) | **tu lu** | Signe + sur ti. Niveau normal t̄u, ancre unique : la condition 4 de `jeu` a une conséquence déclarée, mais lente (§ 3.L) |
+| 11 | **Conforme**, lecture (a) | Tableau de l'interface au § 3.F |
+| 13 | Décompte | 7 paramètres libres (t̄u, κ, λ_ti, η_r, lv\*, ν_F, δ) ; ϱ̄ est résolu. 3 variables d'état (ti, y_{t−1}, T̂_F). 0 borne à seuil libre, 3 contraintes. Lignes 3, 8, 14, 18 ; aucun drapeau, aucun tirage |
+| 14 | Conforme | Deux exponentielles et une vingtaine d'opérations par pas, sans itération. **Coût non mesuré** |
+| 15 | Conforme | Symboles du tableau ci-dessus |
+
+### 3.C Option C — ajustement du stock de capital avec terme de tendance (forme harrodienne), nouvelle
+
+- **Équation** : I^vol,plan_t = (γ + δ/n_a)K^vol_t + (λ_K/n_a)(n_a x ŷ_t − K^vol_t). C'est équivalent à I/K^vol = (n_aγ + δ)/n_a + (λ_K/n_a)(t̂u_t/t̄u − 1), avec t̂u = n_a κ ŷ/K^vol.
+- C'est la fonction d'accumulation dite harrodienne, g_K = g + γ_u(u − u_n), avec terme de tendance. La forme est la mienne : Skott (2012) n'a pas été lu.
+- Financement : F.
+- **Forme fermée identique à S.** Aucune vitesse n'y entre sur la trajectoire de référence (vérifié). I^vol ≥ 0 tient par la forme si λ_K < n_aγ + δ = 0,0698 par an (vérifié à la main).
+- **Défaut au critère 6 avec un canal du taux.** Un terme −(η_r/n_a)(ϱ − ϱ̄) laisse t̂u/t̄u = 1 + (η_r/λ_K)(ϱ − ϱ̄) à l'état stationnaire. À η_r = 2, λ_K = 0,05 et un point d'écart : tu/t̄u = **1,4**, puis 1,8 et 1,2 aux vitesses ×0,5 et ×2 (calcul à la main). L'état d'arrivée dépend de la vitesse dès que ϱ ≠ ϱ̄ : c'est une fermeture kaleckienne par tu, et t̄u n'est plus une ancre. **Sans canal du taux**, C ne transmet le levier du taux que par la demande.
+- **Critère 7 (c)** : § 3.B7.
+
+### 3.R Variante sans retard (référence, `docs/exigences.md` § 2.7)
+
+- Le capital visé est atteint dans le pas : C avec λ_K = n_a.
+- **État stationnaire identique à S et C** (x = κ/t̄u ; I^vol/K^vol = (n_aγ + δ)/n_a). Les formes fermées de S et C n'ont donc aucun écart dû au retard (vérifié).
+- Boucle investissement – demande : **4,02 à 4,04** pour m = 0,5 à 0,8. C'est l'accélérateur plein ; la variante sert de référence pour l'état stationnaire seulement.
+
+### 3.P Variante PI (S + terme proportionnel de C), écartée
+
+- Forme : I = ti·ŷ + (λ_K/n_a)(n_a x ŷ − K).
+- **Plus lente** que S et C dans la boucle conjointe : 0,9985 à λ_K = 0,1 et λ_ti = 0,05. Elle est **instable** dans la boucle réduite dès m = 0,6 : 1,0019 ; 1,0199 à ×2 pour m = 0,5 (`conj6_pi.py`, `n_table.py`).
+- Elle est écartée par le principe de simplicité et par le critère 7 (c).
+
+### 3.B7 Boucles investissement – demande (critère 7 (c))
+
+**(1) Boucle réduite avec N1 à N7** (`n_table.py`) : d = A + m·y_{t−1} + I^plan, prix exogènes, λ_v = 3, λ_IN = 1,5, σ = 1,4 mois. Chaque case donne le rayon à la base, puis aux vitesses du bloc 6 ×0,5 et ×2 (pour A et B, ι). La lettre P donne la période en tours.
+
+| x = 3 | m = 0,5 | m = 0,6 | m = 0,7 | m = 0,8 (A < 0) |
+|---|---|---|---|---|
+| A | **1,1629** / 0,9849 / **1,2653** | **1,1948** / **1,0016** / **1,2915** | **1,2236** / **1,0199** / **1,3163** | **1,2505** / **1,0748** / **1,3401** |
+| B | **1,1082** / 0,9816 / **1,1805** | **1,1403** / 0,9925 / **1,2066** | **1,1684** / **1,0101** / **1,2312** | **1,1946** / **1,0516** / **1,2547** |
+| S (λ_ti = 0,02) | 0,9976 (P 4 562) / 0,9991 / 0,9981 | 0,9978 / 0,9991 / 0,9986 | 0,9987 / 0,9987 / **1,0003** | **1,0280** / **1,0252** / **1,0324** |
+| C (λ_K = 0,05) | 0,9965 / 0,9986 / 0,9881 | 0,9968 / 0,9988 / 0,9939 (P 127) | 0,9975 / 0,9992 / **1,0121** | **1,0009** / **1,0002** / **1,0643** |
+| R | **4,0245** | **4,0288** | **4,0331** | **4,0374** |
+
+| x = 2 | m = 0,6 | m = 0,7 | m = 0,8 |
+|---|---|---|---|
+| S | 0,9975 / 0,9992 / 0,9978 | 0,9977 / 0,9991 / 0,9983 | 0,9986 / 0,9987 / **1,0003** |
+| C | 0,9964 / 0,9985 / 0,9893 | 0,9967 / 0,9987 / 0,9928 | 0,9975 / 0,9992 / **1,0108** |
+
+- **A et B avec les stocks** : l'échec de la partie 1 est **confirmé** (vérifié).
+- **Condition nécessaire, écrite en forme fermée** : la part de demande autonome A = 1 − m/(1 + γ) − (n_aγ + δ)x doit être positive. C'est la condition du supermultiplicateur.
+  - Le gain de basse fréquence ∂I/∂y d'une règle qui ancre x vaut exactement (n_aγ + δ)x : **0,2095 à x = 3** et 0,1396 à x = 2.
+  - **À x = 3, m = 0,8 est hors du domaine (A = −0,0104)** : les cas m = 0,8 de la partie 1 avaient eux aussi A < 0. Ce constat est **nouveau ; il ne change pas le verdict de A et B**.
+- **Condition de vitesse** : seuils mesurés.
+  - S est instable dès λ_ti ≥ 0,05 à m = 0,7, et dès 0,1 à m = 0,6.
+  - C est instable dès λ_K ≥ 0,1 à m = 0,7, et à 0,25 pour tout m (`n_scan.py`).
+
+**(2) Boucle conjointe avec les fiches 3, 4 et 5** (`final_conj.py`). Système :
+- la fiche 5 du § 3.C-10 : cible de Haig-Simons, lecture (c) ;
+- le bloc 6 avec F ;
+- x = 2, η_r = 2.
+
+Rayon hors racine nominale, en régimes H et B (identiques au 4e chiffre). Chaque case donne la base, puis ×0,5 et ×2 sur la vitesse du bloc 6.
+
+| Lecture du revenu | Ā (part de G) | S (λ_ti = 0,02) | C (λ_K = 0,05) |
+|---|---|---|---|
+| F (dividende résiduel) | +0,0040 | 0,9980 / 0,9992 / 0,9971 (P 2 296) | 0,9961 / 0,9979 / 0,9964 |
+| θ_H = 0,8 (salaires seuls) | +0,0660 | 0,9978 / 0,9992 / 0,9972 | 0,9959 / 0,9980 / 0,9926 |
+| θ_H = 1 | **−0,1320** (hors du domaine) | 0,9978 / 0,9992 / 0,9972 | 0,9959 / 0,9980 / 0,9926 |
+| F, π̄ = 10 % | — | 0,9979 / 0,9992 / 0,9971 | 0,9958 / 0,9979 / 0,9921 |
+| F, toutes vitesses des blocs 2 à 6 ×0,5 et ×2 | — | 0,9992 / 0,9971 | 0,9979 / 0,9965 |
+
+- **Stable partout** (vérifié). Demi-vies de 180 à 900 tours.
+- La racine dominante de C et de S à ×2 est celle de **la valeur comptable du capital et du crédit** (vecteur propre : K, L et niveau des prix ; `ident.py`). Sans levier (lv\* = 0), elle vaut (1 − δ/n_a)/[(1 + γ)(1 + π̄)^{1/n_a}], soit, mesuré, **0,9926**.
+  - C'est la contrepartie de la règle « K sans réévaluation » (l. 521). Elle est commune à toute option.
+  - Statut : vérifié pour la mesure, hypothèse pour l'interprétation.
+- **θ_H = 1 est hors du domaine** si I/PIB ≈ 14 % et sans impôts : l'épargne des ménages (environ 4 % du revenu) ne finance pas l'investissement sans rétention des entreprises. Cela répond à la **réserve 4 de la fiche 5** : sous F, la part du revenu versée aux ménages, (WB + Div)/PIB = 0,861 à la base, est un **résultat** (vérifié à partir des sorties de `cas1.py`).
+
+### 3.E État stationnaire conjoint (critère 5, Q9, #44)
+
+**Formes fermées** sous S, C ou R, avec F. Commande `stat.py`.
+
+| Grandeur | Forme | x = 2 | x = 3 | π̄ = 10 % | n_a = 4 / 52 |
+|---|---|---|---|---|---|
+| K^vol/(n_a y) (iii) | κ/t̄u | 2 | 3 | 2 | 2 |
+| ti | (n_aγ + δ)x | 0,13964 | 0,20946 | 0,13964 | 0,13970 / 0,13961 |
+| Taux d'investissement, I/PIB | p·ti·y/(p v + ΔIN) | 0,13945 | 0,20917 | 0,13849 | 0,13951 / 0,13942 |
+| p K^vol/(12 PIB) (ii) | x·p y/PIB_pas | 1,99726 | 2,99589 | 1,98361 | 1,99727 / 1,99726 |
+| K/(12 PIB) (i) | ρ̄_K × (ii) | 1,55510 | 2,33264 | 0,83598 | 1,55356 / 1,55569 |
+| L/K | lv\* | 0,4 | 0,4 | 0,4 | 0,4 |
+| L/(p K^vol) | lv\*·ρ̄_K | 0,31145 | 0,31145 | 0,16858 | — |
+| D_F/(12 PIB) | ν_F·p v/PIB_pas | 0,16605 | 0,16605 | 0,16492 | 0,16605 |
+| V_F/(12 PIB) | (K + IN + D_F − L)/(12 PIB) | 1,19174 | 1,65826 | 0,75713 | 1,19051 / 1,19221 |
+| FU/V_F par pas | Γ − 1 | 0,33059 % | idem | 0,964 % | — |
+| Distribution Div/(Div + FU) | (R − FU)/R | 0,56853 | **−0,07314** | 0,39995 | 0,56791 / 0,56876 |
+
+- **Contrôle de la forme fermée** : Div/ventes vaut 0,06262 en forme fermée comme dans la maquette conjointe (0,0626) ; l'écart entre la forme du résultat et la forme de caisse est nul.
+- **Indépendance envers n_a** (critère 5 (b)) :
+  - x et lv n'en dépendent pas ;
+  - ti, I/PIB et la distribution en dépendent par n_aγ, à l'ordre 1e−4 en relatif (ADR 0008, I.6) ;
+  - K/Y (i) et L/(p K^vol) en dépendent par ρ̄_K ;
+  - toutes ces dépendances sont déclarées.
+- **État initial résolu** :
+  - K^vol_0 = n_a κ y_0/t̄u ;
+  - ti_0 = (n_aγ + δ)x ;
+  - K_0 = ρ̄_K p_0 K^vol_0 ;
+  - L_0 = lv\*·K_0 ;
+  - D_{F,0} = ν_F n_a p v ;
+  - y_{−1} = y_0/(1 + γ) ;
+  - T̂_F,0 = T̄_F/Γ.
+
+**Quelle variable ferme S = I (critère 5 (c), Q9)** :
+- **Sous S, C et R, tu ne ferme pas** : il tend vers t̄u, l'ancre unique, et il n'y a pas de surdétermination.
+- **L'égalité se ferme par le niveau d'activité rapporté à la demande autonome**, par le supermultiplicateur à stocks et flux cohérents. La forme fermée vaut PIB = G/(1 − c̄·θ̄ − ι̂ − ι_N), avec :
+  - c̄ = C/YD, fixé par ν (fiche 5) ;
+  - θ̄ = YD/PIB, résultat de F ;
+  - ι̂ = I/PIB ;
+  - ι_N = ΔIN/PIB.
+- **En ratios** :
+  - les ménages fixent V_H = ν n_a YD^HS ;
+  - les entreprises fixent L − D_F ;
+  - l'État porte le solde : B/PIB = [ν n_a YD^HS − (L − D_F)]/(12 PIB), avec B_H ≡ 0 et une banque sans fonds propres.
+- **Condition transmise à la fiche 9** : si la règle budgétaire vise B/PIB, le taux d'impôt est son résultat, sans surdétermination. Viser à la fois le taux et B/PIB surdétermine l'état stationnaire.
+- **#44 (emploi)** : le niveau d'activité est déterminé par la demande. Sous S (λ_ti > 0), le taux n'a **aucun effet permanent** sur I/PIB : ti absorbe le facteur de taux. Le canal du taux sur la consommation est « à l'envers » (rentier, fiche 5).
+  - **Le bloc 6 ne ferme donc pas U = U^eq.** La fermeture relève de la fiche 9 (règle budgétaire) ou d'un canal permanent du taux : fiche 5, lecture (d), ou fermeture kaleckienne, c'est-à-dire C avec canal du taux, qui fait dépendre tu de la vitesse.
+  - **Point contesté**, trois fermetures en présence :
+    - supermultiplicateur (Freitas et Serrano 2015 ; Lavoie 2016, non lus) ;
+    - kaleckienne ;
+    - wicksellienne (acquis R).
+  - Fiches 8 et 9, mainteneur.
+
+### 3.V Sous-colonnes des entreprises (#36, critère 2)
+
+- **Voie (i)** : `tab:matrice-flux`, la clause de la l. 292 et la légende sont inchangées. FU est la somme de la sous-colonne courante.
+  - Sortie de `verifier_matrices.py --strict`, identique avant et sous la voie (i) (`cmp`) : « tab:matrice-bilans : 9 lignes, 6 colonnes, 44 termes ; tab:matrice-flux : 28 lignes, 6 colonnes, 62 termes ; tab:portes-monnaie : 28 lignes, 3 colonnes, 31 termes ; Aucun écart. »
+- **Voie (ii)**, sur une copie de la spécification : la ligne « 23 Profits non distribués » s'ajoute en fin de table, sans renumérotation des lignes 3, 8, 14, 17 et 18 citées.
+  - Dans `tab:matrice-flux` : `& & $-\mathit{FU}$ & $+\mathit{FU}$ & & &`.
+  - Dans `tab:portes-monnaie` : `$+\mathit{FU}$ & 0 & 0`.
+  - Elle est proposée par le bloc 6 en phase 6, en dernier, comme ligne de lecture sans mouvement d'instrument.
+  - Sortie : « tab:matrice-flux : **29** lignes, 6 colonnes, **64** termes ; tab:portes-monnaie : **29** lignes, 3 colonnes, **32** termes ; Aucun écart ». Le `diff` se limite à ces deux lignes : **changement conforme à l'attendu**.
+  - À reprendre : la clause de la l. 292 (« chaque sous-colonne des entreprises somme aussi à zéro »), la l. 296 et la légende (l. 304).
+- **Ce que la voie (ii) rend vérifiable** : chaque sous-colonne est nulle, et FU se lit dans une ligne.
+  - **Mais `verifier_matrices.py` ne contrôle pas les colonnes de la matrice des flux au-delà du placement des postes** (docstring, l. 12 à 16, sous-colonnes réunies). Le gain demanderait d'étendre le script, ou que le noyau exécute la ligne.
+  - Coût : une ligne non monétaire et un ADR.
+- **Recommandation : voie (i).** L'information est la même (FU = somme de la sous-colonne courante, contrôlée par l'identité de V_F par le stock et par les flux, critère 1). C'est le principe de simplicité.
+- **Distribution stationnaire en forme fermée, identique dans les deux voies** : Div/(Div + FU) = 1 − (Γ − 1)V_F/R, soit 0,56853.
+
+### 3.F Interface crédit (critère 11) et cas à la main (critère 1)
+
+| Sens | Grandeur | Phase | Ligne |
+|---|---|---|---|
+| Bloc 7 → bloc 6 | i_L et condition d'octroi (plafond ou taux de service), publiés à l'ouverture ou en phase 1 | ouverture ou phase 1 | — |
+| Bloc 6 → bloc 7 | ΔL^d (F1) ; la proposition de ligne 18 vaut min(ΔL^d, plafond) | 3 | 18 |
+| Publication | demande non satisfaite ΔL^d − ΔL, et sa fraction | 3 | — |
+| Bloc 6 | intérêts i_L L_t/n_a, i_D D_{F,t}/n_a (propriétaire de la ligne 9 à fixer avec la fiche 7) ; Div (F3) | 6 | 9, 10, 14 |
+
+**Robustesse (critère 11 (c))** :
+- (i) Offre accommodante : c'est le cas de base.
+- (ii) Rationnement partiel : sous J = 1, il ne réduit pas l'investissement. Il réduit les dividendes, donc le revenu des ménages. L'état stationnaire n'est pas affecté : le rationnement est un choc transitoire.
+- **Accélérateur financier** : il est placé dans l'offre du bloc 7. Un facteur de disponibilité du crédit dans le plan (par exemple, le taux de service publié) est une question pour `monnaie`. Il n'est **pas** dans S au socle.
+
+**Cas à la main** (`cas1.py`, pas stationnaire) : v = 100 u.v., p = 1,25, UC = 1, x = 2, lv\* = 0,4, i = 3 %.
+- **Ouverture** : K = 2 341,2472 ; K^vol = 2 405,5493 ; L = 936,4989 ; D_F = 250 ; IN = 139,4480 ; V_F = 1 794,1963.
+- **Flux** :
+  - lignes 1 et 2 : C + G = 107,5049 ;
+  - ligne 3 : I = 17,4951 (I^vol = 13,9961) ;
+  - ligne 4 : ΔIN = 0,4610 ;
+  - ligne 5 : WB = 100,2312 ;
+  - ligne 8 : 9,7552 ;
+  - ligne 9 : 2,3412 ;
+  - ligne 10 : 0,6250.
+
+| | Crédit accordé | Crédit refusé de moitié |
+|---|---|---|
+| Ligne 18, demande / accordé / non satisfait | 3,0960 / 3,0960 / 0 | 3,0960 / 1,5480 / 1,5480 |
+| Ligne 14, Div | 7,8269 | **6,2789** (cède en premier) |
+| Ligne 17, ΔD_F | 0,8265 | 0,8265 (D_F à sa cible, 250,8265) |
+| L de clôture ; L/K | 939,5948 ; 0,400000 | 938,0469 ; 0,399341 |
+| FU | 5,9314 | 7,4794 |
+| V_F par le stock / par les flux | 1 800,1277 / 1 800,1277 (écart −5,2e−13) | 1 801,6757 / 1 801,6757 (écart −5,2e−13) |
+| ΔD_F − ΔL = FU − (I − δK/n_a) − ΔIN | −2,2695 = −2,2695 | −0,7215 = −0,7215 |
+
+Statut : vérifié.
+
+### 3.Q Q2, Q3, Q5 (#37), Q11, Q12
+
+- **Q2, définition de K/Y.**
+  - O1 et la calibration sur (ii), p K^vol rapporté à 12 × PIB du pas : c'est le coût de remplacement courant, comparable à la comptabilité nationale (OCDE 2009, *Measuring Capital*, **non lu**).
+  - Restitution : (ii) au joueur ; (i), comptable, dans le bilan, avec sa dépendance à π̄ (1,5551 à 2 % ; 0,8360 à 10 %).
+  - Le rapport (iii) = x est l'ancre technique. La relation (ii)/(iii) = p y/PIB_pas vaut 0,99863 (vérifié).
+- **Q3, κ, t̄u et x.**
+  - t̄u est un **paramètre**, l'ancre unique lue par la fiche 4.
+  - κ est un paramètre de technique.
+  - x = κ/t̄u est un **résultat**.
+  - À la calibration : x sur K/Y (ii), t̄u sur un taux d'utilisation établi (Federal Reserve G.17, **non lu**), d'où κ = x·t̄u.
+- **Q11, δ.**
+  - Un seul δ, par an, pour N10 et la ligne 8.
+  - 5 % reste une **hypothèse**. La source est à lire au J3 (OCDE 2009, non lu). Aucune source n'est vérifiée à ce jalon.
+- **Q5, #37, variantes d'offre.**
+  - **(0) Aucun levier d'offre au socle**, déclaré (recommandé) : l'investissement agit sur la demande et sur tu (indicateur), pas sur la production possible (Leontief en travail, M24 (e) et (f)).
+  - (1) Capacité qui contraint : révise M24 (e). Instabilité 15 (plafond, cycle) ; écartée sans fait nouveau.
+  - (2) Productivité liée à l'accumulation (Arrow 1962, non lu) : révise M24 (f). L'état stationnaire en ratios est inchangé (g_K = g), mais le niveau de pr dépend du chemin (hystérèse, continuum de niveaux à déclarer). Stabilité **non mesurée**. Candidat au J5.
+  - (3) Capital public : interface avec la fiche 9 seulement. Un stock public qui relève pr en niveau.
+  - (4) Choc de niveau : J5, renvoi.
+  - **Réponse à #37** : l'issue **reste ouverte jusqu'au J7**, sans `Closes`. Énoncé pour le catalogue des leviers (J4) et l'encadré de `sec:investissement` : « Au socle, l'investissement n'accroît pas la production possible : il crée de la demande et de la capacité normale, indicateur sans plafond. Un canal d'offre relève d'une décision citant M24. »
+- **Q12** : renvoi au catalogue des leviers (J4) et au mode planifié (J7).
+  - Interface : un crédit d'impôt ou un levier d'investissement entrerait comme facteur multiplicatif du plan, au même titre que e^{−η_r(·)}.
+  - Il est absorbé par ti à très long terme ; son effet est donc durable à l'échelle d'une partie, mais non permanent.
+
+### 3.L Exemple daté (critère 12) et interface du taux (7 (e))
+
+Commande `sim2.py`. Boucle conjointe, option S, F, x = 2.
+- **Choc** : dépense publique +1 % aux tours 1 à 12, part de G 20 % (**hypothèse**), soit +0,2 % de la demande. La part endogène de G dans la maquette sans impôts est de 0,4 % : le choc est donc imposé en volume.
+- **Lecture du tableau** : chaque colonne donne l'écart au sentier, sauf K^vol/(n_a y), tu et L/K, qui sont des niveaux. Le levier est exactement de 0,40000 à tous les tours.
+
+| Tour | I (u.m.) | K^vol/(n_a y) | tu | Crédit nouveau | Div | y | p |
+|---|---|---|---|---|---|---|---|
+| 1 | 0 | 2,00000 | 0,80000 | 0 | +1,59 % | 0 | 0 |
+| 2 | 0 | 1,99833 | 0,80067 | 0 | +1,50 % | +0,084 % | +0,010 % |
+| 3 | +0,093 % | 1,99672 | 0,80132 | +0,21 % | +0,93 % | +0,164 % | +0,041 % |
+| 4 | +0,206 % | 1,99543 | 0,80183 | +0,46 % | −0,02 % | +0,229 % | +0,091 % |
+| 9 | +0,596 % | 1,99588 | 0,80165 | +1,33 % | −0,59 % | +0,212 % | +0,399 % |
+| 13 | +0,635 % | 1,99766 | 0,80094 | +1,39 % | −0,22 % | +0,126 % | +0,517 % |
+| 14 | +0,647 % | 1,99939 | 0,80025 | +1,41 % | +0,04 % | +0,040 % | +0,527 % |
+| 18 | +0,312 % | 2,00305 | 0,79878 | +0,64 % | +2,66 % | −0,142 % | +0,398 % |
+| 24 | +0,252 % | 2,00017 | 0,79993 | +0,49 % | +0,20 % | −0,001 % | +0,263 % |
+
+**Taux réel du crédit +1 point aux tours 1 à 12** (canal de l'investissement seul, η_r = 2) :
+
+| Tour | I | Crédit nouveau | Div | y | p |
+|---|---|---|---|---|---|
+| 1 | **−1,98 %** | −4,48 % | +0,45 % | 0 | 0 |
+| 4 | −2,21 % | −4,94 % | +3,24 % | −0,230 % | −0,104 % |
+| 9 | −2,48 % | −5,44 % | +2,96 % | −0,149 % | −0,358 % |
+| 13 | −0,50 % | −0,88 % | +0,97 % | −0,080 % | −0,425 % |
+| 24 | −0,14 % | −0,06 % | +0,35 % | +0,005 % | −0,153 % |
+
+- **Délais en tours entiers** :
+  - taux → plan : 1 tour si i_L est lu à l'ouverture (Q8) ;
+  - investissement → demande : le même tour ;
+  - investissement → capacité : le tour suivant ;
+  - crédit → dépôts et dividendes : le même tour.
+- **Signe contre-intuitif déclaré** : quand le taux monte, les dividendes montent (+3,2 % au tour 4). Moins d'investissement abaisse les ventes anticipées v^e, donc la cible de dépôts, et la trésorerie libérée est distribuée.
+- Le mécanisme est vérifié par la mesure ; son interprétation est une hypothèse.
+
 ## 4. Tableau comparatif
 
-Non instruit.
+| Critère | A (v1.5) | B (v2.0) | S (nouvelle) | C (nouvelle) | R (sans retard) |
+|---|---|---|---|---|---|
+| 1 Stock-flux | Écart (double amortissement) | Écart (évaluation au prix courant) | Conforme (cas à la main) | Conforme | Conforme |
+| 2 #36 | voie (i) | voie (i) | (i) ou (ii) ; distribution 0,5685 | idem S | idem S |
+| 3 Phases | Écart transposable | Écart transposable | Conforme, lecture (a) | Conforme | Conforme |
+| 4 Ancrage | t̄u résultat, dépendant de ι ; filtre | idem | **t̄u ancre unique** | t̄u ancre unique | idem |
+| 5 Forme fermée | Existe, dépendances | idem | **Sans vitesse** | Sans vitesse ; dépend de λ_K avec le taux | Sans vitesse |
+| 6 Vitesses | **Échec** | **Échec** | Formes fermées conformes ; essai du J3 : 3,9e−6 à 720 pas, par lenteur | Idem sans le taux ; **échec avec le taux** | — |
+| 7 (b) | 0,9718 | 0,9718 | 0,9971 | ≈ 1 − λ_K/n_a | — |
+| 7 (c), boucle réduite avec stocks | **Instable** (1,11 à 1,34) | **Instable** | Stable pour m ≤ 0,7 sauf ×2 à m = 0,7 (x = 3) | Stable pour m ≤ 0,6 ; ×2 instable à m = 0,7 | **4,02** |
+| 7 (c), boucle conjointe | non mesurée | non mesurée | **Stable** (0,9971 à 0,9992) | **Stable** (0,9926 à 0,9980) | — |
+| 9 Bornes à seuil libre | 7 (dont une saturée) | environ 9, coudes actifs | **0** | 0 | 0 |
+| 11 Crédit | Faillite | Lecture (a) | Lecture (a), rationnement sur Div | idem | idem |
+| 13 Paramètres / état | 15 / 4 | environ 19 / 7 | 7 / 3 | 6 / 2 | 5 / 1 |
+| 12 Lisibilité | q/q\* | ℓ\* | Investissement ∝ activité ; taux −2 % par point | Accélérateur sur tu | — |
 
 ## 5. Avis de l'expert pilote
 
-Non instruit.
+*`macro`, 03/10/2026.*
+
+**Recommandation : option S** (part d'investissement visée, ajustée sur tu − t̄u), avec la règle de financement F :
+- levier visé sur **K comptable** ;
+- cible de dépôts sur v^e_{t+1} ;
+- dividende résiduel en dernier en phase 6 ;
+- **lecture (a)** de Q7 ;
+- i_L lu à **l'ouverture** (Q8, `tab:phases` inchangée) ;
+- ϱ_L lu sur **π\*** (comme la fiche 5) ;
+- **voie (i)** de #36 ;
+- **aucun levier d'offre** au socle (#37 ouverte jusqu'au J7).
+
+Calibration indicative (hypothèse) : t̄u = 0,8, x = 2, λ_ti = 0,02 par an, η_r = 2, lv\* = 0,4, ν_F = 2 mois, δ = 5 %.
+
+**Motifs** :
+- ancre unique t̄u ;
+- formes fermées sans vitesse ;
+- le facteur de taux est absorbé par ti, si bien qu'aucun continuum n'apparaît hors de ϱ̄, ce que C ne tient pas ;
+- I^vol ≥ 0 par la forme ;
+- aucune borne à seuil libre ;
+- stable dans la boucle conjointe à la base et à ×0,5 et ×2 ;
+- pas d'accélérateur (R vaut 4,02).
+
+**Écartées** :
+- A et B : critères 6 et 7 (c), confirmés avec les stocks ;
+- C : critère 6 dès qu'un canal du taux existe ;
+- PI : 7 (c) ;
+- R : référence d'état stationnaire seulement ;
+- levier sur p K^vol et cible sur les ventes du pas : explosifs (1,05 ; 1,49).
+
+**Lectures soumises au mainteneur** :
+- (a) **Fermeture de S = I** : supermultiplicateur (recommandé ; tu → t̄u), kaleckienne (C avec taux ; tu résultat, dépendant de la vitesse) ou wicksellienne (substitution, révise M24). Point **contesté**, avec `monnaie` et les fiches 8 et 9.
+- (b) Q7 : lecture (a), recommandée, ou (b), ordre interne nouveau de la phase 3.
+- (c) #36 : voie (i), recommandée, ou (ii), qui exige un ADR.
+- (d) Base du levier : K comptable (recommandé) ou p K^vol (explosif sous ajustement complet).
+- (e) Div ≥ 0 : contrainte de domaine de la ligne 14 sans actions (proposé), ou borne à seuil libre. À trancher avec I^vol ≥ 0 à M28 ; sous S, I^vol ≥ 0 tient par la forme.
+- (f) **Amendement prospectif du critère 6** (voir plus bas).
+
+**Réserves, avec leurs critères écrits avant l'essai (J3)** :
+1. Un pas sans choc depuis l'état résolu laisse ti, y_{t−1}, lv, D_F/(n_a p v) et x sur leur sentier à 1e−10 près en relatif.
+2. Rayon de la boucle conjointe < 1 en régimes H et B, à la calibration retenue et à ×0,5 et ×2 sur toutes les vitesses, avec la loi de π^e de la fiche 8 et la règle de la fiche 9.
+3. Calibration : Div ≥ 0 stationnaire avec une marge déclarée. La condition x < x_max(μ̄, lv\*, π̄) vaut 2,933 à μ̄ = 0,25 : **x = 3 avec μ̄ = 0,25 est hors du domaine** (distribution de −0,073).
+4. Scénarios adverses (G −5 %, crédit refusé de moitié pendant 12 tours) : Div ≥ 0 et D_F ≥ 0 cessent d'être actifs au plus tard 12 tours après le choc. **Non mesurés.**
+5. A > 0 : m effectif + (n_aγ + δ)x < 1, contrôlé au chargement.
+6. Lenteur : demi-vies de 240 à 900 tours sur tu et K/Y. tu s'écarte durablement de t̄u après un choc (fait pour `jeu`).
+
+**Amendement prospectif proposé (critère 6, essai du J3)** :
+- **Constat** : le seuil de 1e−6 après 720 pas est inatteignable par lenteur, et non par dépendance à la vitesse. Mesures de S : 3,9e−6 à 720 pas, 3,0e−6 à 1 440, 1,6e−7 à 2 160 ; C : 3,2e−6 à 720 pas. Toute option qui garde K sans réévaluation a une racine d'au moins 0,9926.
+- **Proposition** : écart ≤ 1e−6 **après 2 160 pas**, ou écart rapporté à l'écart initial ≤ 1e−3 après 720 pas, ce dernier seuil restant à fixer par le mainteneur.
+- Le verdict antérieur reste publié.
+
+**Coût en fidélité** :
+- le taux n'a pas d'effet permanent sur I/PIB ;
+- le rationnement du crédit ne touche pas l'investissement sous J = 1 ;
+- aucun choix de technique.
+
+### Questions pour `jeu`
+
+1. Est-ce perceptible ? Une hausse d'un point du taux donne −2 % d'investissement au tour 1 et −0,23 % de production au tour 4. Le choc G +1 % donne +0,65 % d'investissement au tour 14. Quel seuil proposer pour le critère 12 (d) ?
+2. tu revient vers t̄u avec une demi-vie de 240 à 900 tours. Faut-il le garder comme indicateur avec son niveau normal (condition 4), ou sous une forme qualitative du type « capacités tendues » ?
+3. Signe contre-intuitif : les dividendes montent quand le taux monte (+3,2 % au tour 4), et ils absorbent le crédit refusé. Faut-il le restituer, et comment ?
+4. K/Y (ii) au joueur, et (i) dans le bilan : est-ce lisible ?
+
+### Questions pour `monnaie` (frontière crédit, critère 11)
+
+1. La lecture (a) convient-elle à la fiche 7 (conditions publiées à l'ouverture ou en phase 1, ligne 18 = min(ΔL^d, plafond)) ? Faut-il un facteur de disponibilité du crédit dans le plan, puisque, sous J = 1, le rationnement ne touche que les dividendes ?
+2. i_L à l'ouverture, donc un tour de délai, ou en phase 1, ce qui ajoute le bloc banque à la phase 1 (issue sensible) ?
+3. ϱ_L sur π\* : est-ce cohérent avec la clause C26 ?
+4. Sous S, le taux n'a aucun effet permanent sur la demande d'investissement, et le canal de la consommation est rentier. Qu'en conclure pour la boucle 7 (e) et pour #44 ? Faut-il préférer la fermeture kaleckienne ?
+5. Levier sur K comptable : L/(p K^vol) passe de 0,311 à 0,169 entre π̄ = 2 % et 10 %. Quelle conséquence pour la prime et l'accélérateur financier de l'offre ?
 
 ## 6. Avis de l'expert consulté
 
@@ -596,3 +1012,4 @@ Non instruit.
 | 03/10/2026 | Ouverture (issue #42) ; § 1 et § 2 proposés | `macro` ; session principale |
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, lecture d'O1, période publiée, deux voies de #36, contrats sensibles des phases 3 et 6, variantes révisant M24, I^vol ≥ 0 tranché à M28, ligne 14 ; issue #42) | mainteneur |
 | 03/10/2026 | Jalon 2, partie 1 : § 3.0, options A (v1.5) et B (v2.0), statut des faits, acquis pour la suite ; A et B échouent au critère 6 (exigence) et, sur maquette sans stocks, au critère 7 (c) ; amendement de notation sous (G) proposé, en attente du visa | `macro` ; session principale |
+| 03/10/2026 | Jalon 2, partie 2 : socle F, options S, C, R et PI, boucles avec N1 à N7 et boucle conjointe, état stationnaire conjoint, voies (i)/(ii) de #36 (sortie de `verifier_matrices.py` avant et sur copie), cas à la main, Q2, Q3, Q5, Q11, Q12, exemple daté ; § 4 et § 5 (recommandation S + F, lecture (a), voie (i), amendement prospectif du critère 6 proposé) | `macro` ; session principale |
