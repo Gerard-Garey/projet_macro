@@ -3,7 +3,7 @@ bloc: Production et stocks
 module: src/nations/blocs/production.py
 expert pilote: macro
 experts consultés: jeu (lisibilité de la production, des stocks et du délai entre demande et production ; nombre de secteurs vu du joueur) ; monnaie non consulté (docs/blocs/README.md § 1)
-statut: décidée (M24, 02/10/2026)
+statut: spécifiée (03/10/2026)
 décision: M24 (02/10/2026)
 issue: #34
 ---
