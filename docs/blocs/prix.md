@@ -230,15 +230,580 @@ Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les ques
 
 ## 3. Options
 
-Non instruit (jalon 2 de l'issue #40, après validation des critères).
+*Rédigé par `macro` (expert pilote), 03/10/2026, sur la fiche à l'état `981046b` (critères validés le 03/10/2026, avec leurs amendements) et la fiche 3 au même état (statut « avis rendus »). Branche `claude/j1-economie-reelle`, PR #43.*
+
+### 3.0 Conventions de l'instruction
+
+**Découpage par question** (gabarit, § 3). Les options nouvelles partagent un socle commun (§ 3.N : phase de P_t, phase de UC, base de coût, terme de demande, anticipation, lecture des taux, phases, état stationnaire conjoint, boucles, bornes). Elles ne diffèrent que par la règle de marge. Les options A et B sont instruites en entier.
+
+**Notation provisoire** (critère 13), fixée à la décision :
+- μ̄ : marge normale ;
+- μ_t = p_t/UC_t − 1 : marge effective ;
+- μ̃_t = ln(1 + μ_t) : marge en logarithme ;
+- ξ_t = (IN^vol*_t − IN^vol_t)/IN^vol*_t : écart relatif du stock d'ouverture à sa cible, avec IN^vol*_t = n_a σ v^e_t ;
+- ψ_ξ, ψ_tu : sensibilités de la marge visée au stock et au taux d'utilisation ;
+- λ_μ, λ_p : vitesses annuelles de la marge et du prix ;
+- π^e : anticipation, symbole fixé avec la fiche 8.
+
+Contrôle par `grep -c -F` sur `nations_et_marches.tex` : 0 occurrence pour `\xi`, `\psi`, `\theta`, `\lambda_p`, `\lambda_e`, `\pi^e` et `\omega` ; `\mu` compte 5 occurrences, toutes dans des `\multicolumn`. Il n'y a donc aucune collision. `\Pi` est pris (7 occurrences, Π^CB) et n'est pas employé ici. φ est laissé à la fiche 3 (pente de Phillips, règle SP).
+
+**Hypothèses de calcul** (ce ne sont pas des calibrations) :
+- μ̄ = 0,25 ; g = 2 % ; π̄ = 2 % et 10 % ; σ = 1,4 mois ;
+- fiche 2 : λ_v = 3 et λ_IN = 1,5 par an ;
+- fiche 3, règle SN : λ_w = 1, β = 2, U^eq = 5 %, lecture (w1) ;
+- ψ_ξ = ψ_tu = 0,5 ; λ_μ = λ_p = 1,2 par an ; t̄u = 0,8 ;
+- propension m de 0,5 à 0,8 ;
+- plans de demande en u.m. fixés en phase 2 au prix p_{t−1}(1 + π^e)^{1/n_a}.
+
+**Lecture des taux annuels** : la fiche est instruite sous (G), et ce qui change sous (L) est indiqué à chaque fois (§ 3.N-6).
+
+**Calculs** (03/10/2026). Commande : `uv run --no-project [--with numpy] python <script>` dans le scratchpad, sortie citée au Retour.
+
+| N° | Script | Objet |
+|---|---|---|
+| P1 | `p4_s1_partVA.py` | W/(p·pr) contre WB/VA sur 12 tours : forme fermée, et simulation de la comptabilité M24 depuis un état décalé |
+| P2 | `p4_s2_stat.py` | états stationnaires de A et de B transposées, de D, du coût complet et de la marge sur cm ; contre-épreuve par récurrence simulée |
+| P3 | `p4_s3_modele.py`, `p4_s3_valid.py` | maquette détendue (N1 à N7, emploi R, règle SN, règle de prix, plans en u.m.) et validation contre la fiche 2 |
+| P4 | `p4_s4_reduit.py` | système réel réduit, écrit séparément (contre-épreuve) |
+| P5 à P8 | `p4_s5_tables.py`, `p4_s6_frontiere.py`, `p4_s7_M.py`, `p4_s8_tables2.py` | boucles 5 (e) et 5 (f) ; frontière de stabilité de C ; option M |
+| P9, P10 | `p4_s9_adapt.py`, `p4_s10_adapt_reduit.py` | anticipation adaptative hypothétique : modèle complet, puis formulation en taux de croissance |
+| P11 | `p4_s11_exemple.py` | exemple daté |
+| P12 | `p4_s12_impulsion.py`, `p4_s12b.py` | impulsions non linéaires ; boucles propres de A et de B |
+| P13 | `p4_s13_cout.py` | coût |
+| P14 | `p4_s14_ampleur.py` | ampleurs pour `jeu` |
+| P15 | `p4_s15_cas_main.py` | cas à la main du critère 1 |
+
+**Validations et contre-épreuves** :
+- P3, prix et salaires figés, reproduit exactement la fiche 2 :
+  - rayon 0,9459 et période 73,0 tours à g = 0 et m = 0,6 ;
+  - 0,9452 et 72,9 tours à g = 2 % ;
+  - 0,9681 et 146,9 tours aux vitesses × 0,5 ; 0,9209 et 37,6 tours à × 2 ;
+  - l'exemple daté de la fiche 2 : +0,084 / +0,142 / +0,183 / +0,246 / +0,239 / +0,153 / −0,003 / −0,030 %.
+- P4, système réduit, contre P8, système complet : rayons identiques à 5,1e−9 près.
+- P10 contre P9 (fermeture ancrée) : identiques au 4e chiffre.
+- Impulsions non linéaires (P12) : facteur d'amortissement de l'enveloppe 0,9619 contre 0,9618 pour la valeur propre (M, coûts exogènes), 0,9069 contre 0,9068, 0,9287 contre 0,9286. En régime linéaire (ε = 1e−9), les cas explosifs donnent 1,2729 et 1,1295, égaux aux valeurs propres.
+- P1 reproduit les −0,109 et −0,655 point de la fiche 3 (C13).
+
+**Corrections apportées en cours de calcul** (déclarées, sans effet sur les verdicts publiés) :
+1. P1 et P2 avaient deux erreurs d'affichage : ρ_IN simulé rapporté à un mauvais UC, et τ affiché pour la variante × 2.
+2. Dans P3, pour m > 0, le choc multipliait la demande autonome A au lieu de s'ajouter à la demande. C'est corrigé avant P14. L'exemple daté (m = 0) et les jacobiens (calculés sans choc) ne sont pas touchés.
+3. Sous la fermeture neutre, la racine unitaire double (niveau et rythme) est mal conditionnée en niveaux. P9 est remplacé par P10, en taux de croissance, où la racine du rythme est simple.
+
+**Intégrité des sources** : `sha256sum` de `model.py` (e1505b7e…) et de `Nations_et_Marches_v1_5.tex` (097d023f…) identiques à `tests/invariants/archive_sha256.txt`. Les lignes citées ont été vérifiées le 03/10/2026.
+
+**Littérature cherchée** : la lecture directe est refusée par le proxy, donc rien n'a été lu en source primaire.
+
+| Source | Ce qui est établi | Statut |
+|---|---|---|
+| Godley et Lavoie (2007) | ch. 8 « Time, Inventories, Profits and Pricing » (p. 250-283) ; ch. 9 « A Model with Private Bank Money, Inventories and Inflation » | titres vérifiés par extrait ; la forme NHUC = (1 − σ)UC + (1 + r)σUC_{−1} est citée de mémoire, non vérifiée |
+| Coutts, Godley et Nordhaus (1978), CUP, DAE monograph 26 | existence | définition du « coût normal » citée de mémoire |
+| Nakamura et Steinsson (2008), *QJE* 123(4), 1415-1464 | fréquence médiane des changements de prix hors soldes de 9 à 12 % par mois ; la fréquence des hausses covarie avec l'inflation | extrait de recherche |
+| Nekarda et Ramey (2020), *JMCB* 52(S2), 319-353 | la marge monte après un choc de demande positif ; sa cyclicité inconditionnelle dépend de la mesure | extrait |
+| Blinder, Canetti, Lebow et Rudd (1998), Russell Sage | prix typiquement révisés environ une fois par an ; 71 % des firmes jugent qu'une hausse après une hausse de coût est tolérée par les clients, 64 % qu'une hausse après une hausse de demande ne l'est pas | extrait |
+| Rowthorn (1977), *CJE* 1(3), 215-239 | existence ; vue « conflictuelle » de l'inflation | extrait |
+
+**La littérature ne permet pas de conclure** sur la vitesse de la marge ni sur la sensibilité de la marge à la demande. La cyclicité de la marge est un **fait contesté**.
+
+### 3.A Option A — v1.5
+
+1. **Source** : `archive/v1.5/Nations_et_Marches_v1_5.tex`.
+   - `eq:price` (l. 754 à 760) et `eq:cpi` (l. 679) ;
+   - table de calibration : l. 2258 (κ_j = 0,10, κ̄ = 0,05 par semaine), l. 2259 (ϖ = 0,5 par tick sur π^e/52), l. 2314 (μ_c = 0,05 par semaine, m_j) ;
+   - ρ_E = 2 % (l. 575) ;
+   - λ_S : **sans valeur** (l. 2376, « fixé en dur ») ;
+   - terme monétaire `eq:monterm` (l. 1419), hors socle.
+
+   **Équations jamais garanties exécutées.**
+
+2. **Équations**, transposées au pas mensuel sous M24 :
+   - p_t = p_{t−1}·clip(1 + τ + [1 + z]^+ ϖ π^e/n_a + (μ_c/n_a)·clip(UC_t(1 + m)/p_{t−1} − 1, ±½), bornes [0,7 ; 1,19] par semaine) ;
+   - τ = clip((κ/n_a) f z, ±(κ̄/n_a) f), avec f = 1 + 5[π^e]^+ ;
+   - m = (r* + ρ_E) p K^vol/(UC·y).
+
+   En base annuelle linéaire : μ_c = 2,6, κ = 5,2, κ̄ = 2,6 par an ; ϖ = 0,5 est un degré annuel d'indexation.
+
+   **Choix de transposition déclarés** :
+   - z est celui du pas précédent (variable d'état), puisque d_t = plan/p_t supposerait p_t (critère 2 (a)) ;
+   - UC est celui du pas ;
+   - S = y + λ_S IN^vol.
+
+   Statut : choix de conception (tâtonnement), approchée (indexation).
+
+3. **État stationnaire** (P2) :
+   - sous M24 en croissance, z̄ = (1 − S/v)/(1 + S/v) ≠ 0 ;
+   - avec λ_S = 0 : z̄ = −0,001165, τ̄ = −0,667 % par an et écart de rappel x = +0,00634 (π̄ = 2 %) ;
+   - p/[UC(1 + m)] = 0,987854, 0,995336 et 0,999120 aux vitesses × 0,5, × 1 et × 2 (π̄ = 2 %) ; 0,952811, 0,987154 et 1,005271 à π̄ = 10 %. L'écart relatif entre × 0,5 et × 2 vaut 1,14e−2 : **la vitesse détermine l'état d'arrivée (échec du critère 4)** ;
+   - avec λ_S = 0,5 (valeur de la v2.0 hors `wsps2`, l. 947) : z̄ = −0,2599. Il faudrait x = 0,577 (2 %) ou 0,802 (10 %), au-delà du rappel écrêté à ½ : **aucun état stationnaire**, et le prix simulé tend vers 0 relativement au coût ;
+   - la marge normale m est un point fixe sous J = 1, m = a/(1 − a) avec a = (r* + ρ_E)k : 0,1364 pour r* = 2 % et k = 3 ans. La marge dépend de r*, une variable du bloc 8.
+
+4. **Comportement** : non mesuré. Les affirmations de la l. 767 (« ce que le prototype a montré ») sont rapportées par la v1.5 et invérifiables.
+
+5. **Coût** : quelques opérations, sans itération (non mesuré).
+
+6. **Défauts** :
+   - critère 4 (ci-dessus) ;
+   - la valeur stationnaire dépend de λ_S, qui n'a pas de valeur ;
+   - cinq bornes à seuil libre (critère 7) : [0,7 ; 1,19], ±κ̄f, ±½, [1 + z]^+ et [π^e]^+ ;
+   - double consommation de π^e (indexation et f) ;
+   - aucune instabilité connue réintroduite telle quelle, mais le tâtonnement de prix est l'un des « stabilisateurs cachés de la v1 » (acquis R).
+
+7. **Identités** : aucune ligne de flux ; les lignes 1 à 4 sont inchangées.
+
+8. **Ce que percevrait le joueur** : un prix qui dérive autour du coût selon des vitesses illisibles ; un indicateur z qui n'est pas nul en régime normal.
+
+9. **Empreinte** : p_{t−1} et z_{t−1}, soit 2 variables d'état ; environ 9 paramètres (κ, κ̄, ϖ, μ_c, le coefficient 5 de f, les deux bornes, λ_S, ρ_E).
+
+### 3.B Option B — v2.0
+
+1. **Source** : `archive/v2.0/prototype/model.py`, branche `wsps2`. Statut L, branche active vérifiée :
+   - `wsps2 = True` (l. 129) ; `price_mode = 'markup'` (l. 145, et dans D1) ; `pricing_cost_mode = 'legacy'` (l. 74, et dans D1), donc l. 1111 à 1119 **inactives** ; `price_basis = 'average'` (l. 128), donc l. 1077 inactive ;
+   - z (l. 1072), avec un seuil de 1e−3·Q̄ ;
+   - cu = (wages + intrants + δ/52·p_K^repl·K)/Y (l. 1076), `_pK_repl` par `getattr` (l. 1075 : **état caché**) ;
+   - `flex` = 1 + 5·max(π^e, 0) (l. 1090) ;
+   - marge (l. 1100) et cible (l. 1101) ; rappel `mu_fast` (l. 1120) ; R3 (l. 1121 et 1122) ; bornes (l. 1128) ;
+   - `normal_average` : `workplan.py` l. 28 à 43 (coûts engagés, amortissement compris, répartis sur max(Y, 0,8·capacité)).
+   - Coefficients effectifs du profil D1 (faits § 1.1) : `mu_fast` = 0,15 et R3 actif (κ_p = 0,10, κ̄ = 0,05). Valeurs non établies dans D1 : `markup_inv` et `markup_live` (défaut inactif), `valuation_smoothing` (défaut 0), `equipment_supply_response` (sans objet sous J = 1).
+
+2. **Équations**, transposées mensuellement (taux hebdomadaires × 52/12) :
+   - μ_t = clip(μ_{t−1}[1 + flex(κ_μz z + κ_μs·écart de stocks)/n_a] + (λ_μn/n_a)(μ_n − μ_{t−1}), 0, 2), avec κ_μz = 2,6, κ_μs = 0,52 et λ_μn = 0,26 par an ;
+   - p_t = p_{t−1}·clip(1 + (μ_fast/n_a)·clip((1 + μ_t)cu_t/p_{t−1} − 1, ±½) + clip((κ_p/n_a)·flex·z, ±κ̄·flex/n_a)) ;
+   - cu_t = UC_t + (δ/n_a)·p_{t−1}·K^vol/y (amortissement au prix courant, p_K = p).
+
+3. **État stationnaire** (P2 ; μ_n = 0,25, δ = 5 %, K^vol/(n_a y) = 3 ans) :
+   - sous M24, z̄ = (1 − y/v)/(1 + y/v) = −0,001165 et l'écart de stocks est nul ;
+   - μ̄/μ_n = λ_μn/(λ_μn − flex·κ_μz·z̄) = 0,987344 (π̄ = 2 %) et 0,982821 (10 %). Ce rapport dépend du **rapport de deux vitesses** et de π̄ par `flex` ;
+   - p/UC = 1,525068, 1,529815 et 1,532199 à × 0,5, × 1 et × 2 (π̄ = 2 %, écart relatif 4,68e−3) ; 1,496865, 1,519082 et 1,530439 à 10 % ;
+   - **échec du critère 4** ;
+   - λ ≤ n_a : `mu_fast` vaut 7,8 par an dans D1, mais 13 par an à sa valeur par défaut (0,25 par semaine, au-delà de n_a = 12) et 15,6 par an à × 2. **La condition de M22 est violée.**
+   - Condition d'existence (critère 5 (c)) : (1 + μ)δk = 0,187 < 1 à t̄u.
+   - Gain stationnaire de R3 avec rappel : d ln p/dz = κ_p·flex/μ_fast = 0,733 (D1, π^e = 2 %).
+
+4. **Comportement** (faits de la première tentative) :
+   - G1, branche « R3 désactivé » (S+O) : inflation moyenne 4,839 % contre 4,048 % ; PIB final −13,803 % ; chômage final 16,438 %. G1b (S+O) : prix de l'équipement +65,86 % ;
+   - G-P (O) : la croissance du prix égale celle du coût unitaire à 0,04 point par an près ;
+   - D1 sur 60 ans (R) : inflation 4,07 %, dérive de la part salariale 0,147 point ;
+   - instabilité 9 (R) : `normal_average` seul, prix de l'équipement × 4,8 en 60 ans. Le commentaire de la l. 83 le confirme (L : « piste fermée ») ;
+   - aucun de ces faits n'est remesurable (D1 non versé). La remesure P1 est proposée plus bas.
+
+5. **Coût** : sans itération ; non mesuré.
+
+6. **Défauts** :
+   - critère 4 ;
+   - λ > n_a au défaut ;
+   - environ 7 bornes à seuil libre : clip(1 + adj, 0,7, 1,19) (l. 1128, 303), ±0,5 (l. 1120), marge dans [0, 2] (l. 1100), R3 dans ±min(κ̄·flex, 0,5) (l. 1122), écart de stocks dans ±1, max(π^e, 0), seuil 1e−3·Q̄ (l. 1072) ;
+   - état caché (l. 1075) ;
+   - neuf drapeaux : `wsps2`, `price_mode`, `pricing_cost_mode`, `price_basis`, `markup_live`, `markup_inv`, `equipment_price_mode`, `equipment_supply_response`, `price_demand_feedback` ;
+   - amortissement au prix courant dans le coût : point fixe scalaire (instabilités 10 et 11 si lissé ou indexé).
+
+7. **Identités** : aucune ligne ; l'amortissement du coût n'est pas la ligne 8.
+
+8. **Ce que percevrait le joueur** : une marge qui dérive avec z, illisible ; des prix qui montent en récession par l'amortissement par unité.
+
+9. **Empreinte** : p_{t−1}, μ_{t−1} et z_{t−1} (plus `_pK_repl` caché) ; environ 10 paramètres.
+
+### 3.N Socle commun des options nouvelles (R, C, M, T, D)
+
+#### 3.N-1 Phase de P_t (Q1, #24 ; critère 2 (c))
+
+| | (a) P_t ≡ p_{t−1}, arrêté en phase 1 | (b) p_t fixé en phase 1, P_t ≡ p_t | (c) P_t ≡ p_t et π_t arrêtés en phase 5, lus en phase 1 du pas suivant |
+|---|---|---|---|
+| Ce que lisent les règles en phase 1 du tour n | π = p_{n−1}/p_{n−13} − 1 | π_n = p_n/p_{n−12} − 1 | π_{n−1} = p_{n−1}/p_{n−13} − 1 |
+| Empreinte | registre de 12 valeurs (p_{t−2} à p_{t−13}), plus p_{t−1} en état du bloc 4 : **13** | registre de 12 valeurs (p_{t−1} à p_{t−12}) : **12** | registre de 12 valeurs (p_{t−1} à p_{t−12}), plus π_t en état : **13** |
+| Valeur stationnaire | P_{t−u} = P_t(1 + π̄)^{−u/n_a} ; p_{t−1} = P_t | idem | idem ; π_t = π̄ |
+| Délai prix → règle de taux | 1 tour | 0 tour | 1 tour |
+| Délai prix → salaire (terme de niveau de SN) | 1 | 1 | 1 |
+| Délai prix → anticipation → salaire (loi adaptative, lecture Q3 (a)) | 2 | 1 | 2 |
+| Indice restitué au tour n | prix du tour n − 1 | prix du tour n | prix du tour n |
+| Contrats révisés | aucun texte | M24 (p_t en phase 5), `tab:phases`, phase de UC (phase 1), `sec:production-phases` : décision citant M22, M24 et ADR | ADR 0005, pt 16 (une variable de plus), `sec:cadre-calendrier`, `tab:phases` (indice en phase 5) : décision citant M22 et ADR |
+| Règles admises | toutes | aucune lecture des phases 2 à 4 (T exclue, sauf avec tu_{t−1} en état) | toutes |
+
+- **Constat 1** : (a) et (c) donnent **des trajectoires identiques**, puisque les règles lisent la même chose. Elles ne diffèrent que par l'étiquette de l'indice et par sa restitution. (a) n'économise aucune variable : le prix p_{t−1} doit être tenu en état.
+- **Constat 2, transmis à la fiche 3** : sous (a), T2 doit lire P_t (= p_{t−1}) et non P_{t−1} (= p_{t−2}). Sinon ω̄ = ω*(1 + π̄)^{1/n_a} et U* se déplace de −ln(1 + π̄)/(n_a β) : −0,0825 point (π̄ = 2 %, n_a = 12), −0,397 point (10 %), −0,2475 et −1,191 point à n_a = 4. Ce déplacement dépend de n_a. Sous (b) et (c), T2 lit bien la dernière entrée du registre, p_{t−1}.
+- **Ordre interne de la phase 1** (critère 2 (d)) :
+  - (c) : le bloc 4 n'écrit pas en phase 1 ; travail et banque centrale dans un ordre libre ;
+  - (a) : prix (indice), puis banque centrale ; travail libre s'il lit p_{t−1} dans l'état ;
+  - (b) : travail, puis prix, puis banque centrale.
+
+  Les trois ordres sont triangulaires.
+
+#### 3.N-2 Phase de UC (Q2)
+
+- **Phase 2** sous (a) et (c). UC_t = W_t/pr_t ne dépend que de la phase 1 et de l'ouverture. La phase 2 est la première phase où agit le bloc 2 ; la phase 4 n'apporte aucune information de plus. Au socle, aucun bloc ne lit UC avant la phase 5 ; la phase 2 le rend disponible pour les plans de la phase 3 si une fiche ultérieure en a besoin.
+- Sous (b), UC est requis en phase 1 : le bloc 2 y écrirait (révision de `tab:production-phases`).
+
+#### 3.N-3 Base de coût (Q3)
+
+- **Retenue pour R, C, M, T et D : UC = W/pr de M24.** Sous M24, pr est la productivité tendancielle : **UC est déjà un coût normal** au sens « coût à productivité normale » (Coutts, Godley et Nordhaus, définition citée de mémoire). La marge couvre l'amortissement et la rémunération du capital. Aucun lien à la ligne 8 et aucun double compte.
+- **Coût complet au prix courant** : p/UC = (1 + μ)/(1 − (1 + μ)δk), soit 1,538462 (part salariale 0,650). C'est un point fixe en forme fermée ; il existe tant que tu > (1 + μ)δκ = 0,15. En transition, le prix est contracyclique (il monte quand tu baisse). Non retenu.
+- **Coût complet à la valeur comptable** : p/UC = (1 + μ)/(1 − (1 + μ)δρ̄_K k), soit 1,538462 à π̄ = 0, 1,463826 à 2 % et 1,357424 à 10 % (part 0,650, 0,683 et 0,737). **La part salariale dépend de π̄**, contre le critère 3 (d). Écarté.
+- **Marge sur cm** : p/UC = 1,247128 (2 %) et 1,236339 (10 %). Sous SN (w1), U* se déplace de −0,115 et −0,550 point, avec une dépendance à n_a (−0,1148 / −0,1150 / −0,1151 à n_a = 4 / 12 / 52). Écarté (critère 3 (c) et (d)). La forme NHUC de Godley et Lavoie (coût historique avec financement des stocks), citée de mémoire, ferait en outre dépendre la part salariale du taux d'intérêt. Notée, non instruite.
+- **Coût retardé** (UC_{t−1}) : exact seulement avec un coefficient 1 sur π^e. Aucun gain sur UC_t. Non retenu.
+
+#### 3.N-4 Terme de demande (Q4 ; critères 4 (b) et 5 (b))
+
+- **Retenu : ξ_t**, le stock d'ouverture rapporté à sa cible.
+  - Lu à l'ouverture (IN^vol_t, v^e_t) ; disponible dès la phase 1.
+  - Signe + : un stock bas relève la marge.
+  - Forme logarithmique sur la marge.
+  - **Valeur stationnaire nulle exactement**, quelles que soient les vitesses (N3 et N7 donnent IN^vol = n_a σ v^e).
+  - Condition déclarée : v^e_t > 0, vraie si d > 0 ou si λ_v < n_a.
+- **z de la v1.5 et de la v2.0** : non nul en croissance (−0,001165), donc fait dépendre l'état des vitesses (3.A-3, 3.B-3).
+- **Production visée non réalisée** et **demande non servie** : nulles hors contrainte d'emploi ou rationnement ; trop rares pour servir de signal de demande général. Non retenues.
+- **tu** : option T.
+
+#### 3.N-5 Anticipation consommée (Q6 ; critère 9)
+
+- R, C, M et T : **aucune**. C'est le coefficient 0 sur une base courante (règle de `monnaie`, fiche 3, § 6.1, Q4). Aucune indexation des prix : pas de double compte avec les salaires indexés (v2.0, l. 1120, commentaire).
+- D consomme π^e avec le coefficient 1 − λ_p/n_a : 0 sur base courante (λ_p = n_a), vers 1 sur base retardée (λ_p → 0). C'est la règle de `monnaie` généralisée, à confirmer par `monnaie`.
+- Indice produit (9 (c)) : P_t ≡ p_t sous (b) et (c), p_{t−1} sous (a) ; restitution en base 100 au tour 1. Pondérations laissées ouvertes à J ≥ 2 (Laspeyres, v1.5, l. 679). π_t est mesuré, jamais converti.
+
+#### 3.N-6 Lecture des taux annuels (Q7, #24)
+
+- R, C, M et T **ne contiennent aucun taux annuel** : leur état stationnaire est identique sous (L) et sous (G). Le glissement stationnaire vaut π̄ exactement (mesuré).
+- Seule D dépend de la lecture. Sous (G), p/[(1 + μ̄)UC] = 1 exactement. Sous (L) avec un π^e en glissement : 1,000136 (π̄ = 2 %, n_a = 12, λ_p = 1,2), 1,003212 (10 %), et 1,000286 / 1,000060 à λ_p × 0,5 / × 2 (écart relatif 2,26e−4, **échec du critère 4**). Sous (L) avec un π^e en taux linéaire annualisé, D est exacte.
+- La lecture commune se décide donc sur les fiches 3 et 8 et sur M24 (f). La fiche 4, sous M, ne la contraint pas. Je maintiens la préférence (G) pour la cohérence de la restitution (fiche 3, § 3.N-4).
+
+#### 3.N-7 Phases et lectures (critère 2), sous (c)
+
+| Phase | Le bloc 4 lit | Le bloc 4 écrit |
+|---|---|---|
+| 1 | rien | rien |
+| 2 | — | — (UC écrit par le bloc 2) |
+| 5, premier bloc | ouverture : p_{t−1} (registre), W_{t−1}, pr_{t−1}, IN^vol_t, v^e_t ; phase 1 : W_t ; phase 2 : UC_t ; phase 4 : tu_t (T seulement) | p_t ; puis P_t ≡ p_t et π_t = p_t/P_{t−12} − 1 |
+
+Aucune lecture de v_t ni de d_t. Matrice triangulaire. Indexation par j (critère 2 (f)) : p_{j,t} = UC_{j,t}·exp(μ̃_{j,t}). Au J5, le terme d'intrants Σ a_kj p_k du même pas ferait un système linéaire de prix (résolution en forme fermée, ou prix d'intrants retardés pour garder la triangularité). Signalé, non résolu.
+
+#### 3.N-8 État stationnaire, conjoint avec la fiche 3 (critère 3)
+
+Sous SN (w1) et M, C, T, D (sous (G)) ou R :
+- p/UC = 1 + μ̄ exactement ; μ_t = μ̄ ; ξ̄ = 0 ;
+- W/(p·pr) = ω̄ = 1/(1 + μ̄) = ω*, donc U* = U^eq ;
+- variation du prix (1 + π̄)^{1/n_a} − 1 par pas (0,16516 % à 2 %) ; glissement π̄ ;
+- aucune vitesse, ni n_a, ni la lecture (L) ou (G) n'y entre (sauf D sous (L)).
+
+**WB/VA sur 12 tours** (P1, μ̄ = 0,25, g = 2 %, σ = 1,4 mois) :
+
+| | π̄ = 2 % | π̄ = 10 % |
+|---|---|---|
+| (G), n_a = 12 | 0,798903 (−0,1097 point) | 0,793445 (−0,6555 point) |
+| (L), n_a = 12 | 0,798907 (−0,1093 point) | 0,793448 (−0,6552 point) |
+
+- Sous (L) à 2 % : 0,798909 / 0,798907 / 0,798906 à n_a = 4 / 12 / 52, soit moins de 0,0003 point d'écart.
+- Simulation et forme fermée concordent à 4,4e−16.
+
+**Qui ancre le partage (Q9)** : le bloc 4, par μ̄. Sous (w1), le bloc 3 lit μ̄ par ω* : un seul paramètre, et des prétentions compatibles par construction. Sous (w2), les deux blocs portent une cible, et U* = U^eq + ln(ω*(1 + μ̄))/β. Sous C1 et C2 (`monnaie`), **π̄ ne dépend pas de l'écart** : le conflit est absorbé par le chômage d'équilibre. π̄ en dépendrait seulement si la demande maintenait U ≠ U*. À π^e fixé, l'écart vaudrait π − π^e ≈ λ_w ln(ω*(1 + μ̄)) ; il dépendrait alors de λ_w (critère 4), et le point est soumis au mainteneur. Rowthorn (1977) : existence vérifiée, non lu.
+
+**Ce que le bloc ne fixe pas** (critère 4 (d)) : le niveau des prix (racine unitaire, 3.N-9) et le rythme (fiche 8).
+
+#### 3.N-9 Boucles (critère 5 (d) à (f))
+
+- **5 (d), boucle propre** (coûts et ξ exogènes) :
+
+  | Option | Valeur propre | Demi-vie |
+  |---|---|---|
+  | M | 1 − λ_μ/n_a = 0,9 | 6,58 tours |
+  | M, × 0,5 | 0,95 | 13,5 tours |
+  | M, × 2 | 0,8 | 3,11 tours |
+  | D | identique à M avec λ_p | |
+  | R, C, T instantanée | sans objet : aucune variable d'état | |
+  | A | 0,7823 (× 0,5 : 0,8903 ; × 2 : 0,5663) | |
+  | B | 0,4702 et 0,9781 (demi-vie de la marge 31,3 tours) ; × 0,5 : 0,7343 et 0,9890 ; × 2 : −0,0579 et 0,9561 | |
+
+- **5 (f), boucle prix – stocks – demande** (coûts exogènes, plans en u.m.) : rayon (période en tours) pour m = 0,5 / 0,6 / 0,7 / 0,8.
+
+  | Option | Calibration | Vitesses de la fiche 2 × 0,5 | Vitesses de la fiche 2 × 2 | ψ × 2 |
+  |---|---|---|---|---|
+  | R (prix figé) | 0,9279 / 0,9452 / 0,9612 / 0,9762 (69 à 96) | — | — | — |
+  | C | 0,9490 / 0,9605 / 0,9717 / 0,9824 (76 à 111) | 0,9700 à 0,9886 | **1,1808 à 1,3028, racine réelle négative (alternance d'un tour sur l'autre)** | **1,2545 à 1,3090, alternance** |
+  | M | 0,9420 / 0,9535 / 0,9658 / 0,9783 (94 à 115) | 0,9700 à 0,9878 (169 à 218) | 0,8791 à 0,9647 (43 à 60) | 0,9534 à 0,9813 |
+  | T | 0,9233 / 0,9405 / 0,9566 / 0,9716 (76 à 101) | 0,9589 à 0,9837 | 0,9033 à 0,9571 | 0,9202 à 0,9674 |
+  | D | identique à M (coûts exogènes) | | | |
+
+  - M aux vitesses du bloc × 0,5 : 0,9400 à 0,9733 ; × 2 : 0,9477 à 0,9808.
+  - Frontière de C (P6) : ψ_ξ ≤ 0,257 pour tenir toutes les combinaisons (vitesses de la fiche 2 × 2, m = 0,8) ; ψ_ξ ≤ 0,684 à la calibration.
+  - Frontière de M : ψ_ξ ≥ 10 à la calibration, 4,875 aux vitesses × 2.
+  - La variante T instantanée, sans mémoire, est explosive aux vitesses de la fiche 2 × 2 avec m = 0,8 (−1,0345).
+  - M ≡ C quand λ_μ = n_a (vérifié).
+
+- **5 (e), boucle salaires – prix, exigence** (SN + prix, π^e = π̄ exogène, partie réelle). Rayon pour m = 0,5 / 0,6 / 0,7 / 0,8.
+
+  | Option | Calibration | Tout × 0,5 | Tout × 2 | Autres variantes |
+  |---|---|---|---|---|
+  | R | 0,8975 / 0,9172 / 0,9353 / 0,9520 | 0,9507 à 0,9779 | 0,7631 à 0,8857 | |
+  | C | 0,9157 / 0,9286 / 0,9410 / 0,9529 | | **1,0264 à 1,1219 pour m ≥ 0,6** | vitesses de la fiche 2 × 2 : **1,0833 à 1,2161** ; ψ × 2 : **1,1859 à 1,2439**, toujours en alternance |
+  | **M** | **0,8969 / 0,9068 / 0,9225 / 0,9385** | 0,9479 à 0,9714 | 0,8070 à 0,8583 | λ_w × 2 : 0,9322 à 0,9351 ; ψ × 2 : 0,9163 à 0,9346 |
+  | T | 0,8990 / 0,9106 / 0,9290 / 0,9459 | 0,9498 à 0,9763 | 0,7922 à 0,8636 | |
+  | D | 0,9118 / 0,9290 / 0,9452 / 0,9605 | 0,9555 à 0,9794 | 0,8263 à 0,9224 | |
+
+  **Racine unitaire attendue et déclarée** : le niveau nominal. On a |λ − 1| ≤ 7,5e−10, et le vecteur propre est nominal (composantes réelles ≤ 2,6e−8, p/w = 1,25). Avec M, la boucle salaires – prix est plus amortie que sans terme de demande (0,9068 contre 0,9172 pour R à m = 0,6).
+
+- **5 (e), mesure** (anticipation adaptative hypothétique, λ_e ∈ {0,5 ; 1 ; 2}, glissement sur 12 tours ; P10, m = 0,6) :
+  - **Fermeture neutre** (plans indexés sur π^e) : la partie réelle **ne dépend pas de λ_e**. Rayons à λ_w = 1 : R 0,9172, C 0,9286, M 0,9068, T 0,9106, D 0,9290 ; à λ_w = 2 : 0,8851 / 0,8927 / 0,9329 / 0,9034 / 0,9100. Il y a **une racine unitaire du rythme d'inflation** : dichotomie, aucun rythme n'est ancré par les blocs 3 et 4. Résultats identiques sous (b) et sous (c).
+  - **Fermeture ancrée hypothétique** (plans indexés sur π̄, substitut de la fiche 8) : stable partout. Pour M, λ_w = 1 : 0,9909 / 0,9856 / 0,9803 (demi-vies 75,8 / 47,8 / 34,8 tours) ; λ_w = 2 : 0,9860 à 0,9731. Pour D : 0,9939 à 0,9821. Les racines sont réelles positives, sans oscillation.
+  - La stabilité du rythme relève donc de la règle de la fiche 8 (C2). Le rapport « λ_w = 2 instable » de la v2.0 n'est pas reproduit dans cette maquette ; ce n'est pas une remesure de la v2.0.
+
+#### 3.N-10 Bornes (critère 7)
+
+- M, C, T, D et R : **aucune borne**.
+- Positivité de p et de 1 + μ par la forme exponentielle.
+- ξ ≤ 1 découle de IN ≥ 0 (conservation).
+- Conditions déclarées, sans écrêtage : λ_μ, λ_p ≤ n_a ; v^e > 0.
+- 7 (c) : rien à désactiver dans le bloc 4.
+
+#### 3.N-11 Cohérence stock-flux (critère 1 ; P15)
+
+Cas : UC = 1, y = 100, IN^vol = IN = 140, plans de 100 (ménages), 20 (État) et 5 (investissement) en u.m.
+
+| p | Volumes C / G / I | Lignes 1 à 3 | Ligne 4 | Résultat courant | ΔV_F (flux = stock) | Somme des ΔV |
+|---|---|---|---|---|---|---|
+| 1,25 | 80 / 16 / 4 | 100 / 20 / 5 | 0 | 25,0000 | 25,0000 | 5,0000 = I + ligne 4 |
+| 1,2625 | 79,2079 / 15,8416 / 3,9604 | 100 / 20 / 5 | +0,9901 | 25,9901 | 25,9901 | 5,9901 = I + ligne 4 |
+
+Le prix ne crée aucune valeur nette financière : la somme des soldes financiers est nulle dans les deux cas. Il répartit les volumes ; l'invendu reste en stock au coût. Aucune ligne ajoutée.
+
+#### 3.N-12 Faits et calibration (critère 14)
+
+- μ̄ : à caler au J3 sur la part salariale. La fiche 3 cite 0,52 (Penn World Table, extrait).
+- ψ_ξ et λ_μ : **aucune source ne les fixe**.
+  - Signe de ψ : marge procyclique après un choc de demande (Nekarda et Ramey, extrait), mais **fait contesté**.
+  - Faible sensibilité à la demande (Blinder et al., extrait ; Coutts, Godley et Nordhaus, non lu).
+  - λ_μ = 1,2 par an : ordre de grandeur de 10 % de révision mensuelle (Nakamura et Steinsson, extrait). Ce n'est pas un fait établi pour une marge.
+
+#### 3.N-13 Coût, empreinte, notation (critères 11 à 13)
+
+- Coût de M (P13) : 0,402 µs par pas, soit 0,084 % de 0,48 ms. Machine de la session (x86_64, 4 cœurs, Python 3.11.15), **qui n'est pas la plateforme de l'ADR 0003**. Aucune itération.
+- Empreinte : aucune variable d'état propre à M (μ̃_{t−1} se lit sur p_{t−1}, W_{t−1} et pr_{t−1}). Sous (c), l'empreinte calendaire gagne π_t.
+
+### 3.R Option R — référence sans retard
+
+1. p_{j,t} = (1 + μ̄_j)UC_{j,t}. Choix de conception.
+2. État stationnaire exact.
+3. 5 (e) : 0,8975 à 0,9520.
+4. **Échec du critère 5 (b)** : pas de terme de demande. Démonstration partielle : le mécanisme de l'instabilité 14 mesuré en v2.0 (prix de l'équipement dans son propre coût) n'a pas d'objet, puisque UC ne contient pas p. Mais la transposition de G1b à J = 1 n'est pas établie. **Je ne la soumets pas comme fait nouveau.**
+5. Délais : salaire → prix 0 tour, demande → prix seulement par les salaires (2 tours).
+6. Joueur : salaire réel figé, aucun effet de répartition (fiche 3, § 7, question 8).
+7. Empreinte : 1 paramètre, 0 état, 0 borne.
+8. Coût négligeable.
+9. Rôle de référence (`docs/exigences.md` § 2.7).
+
+### 3.C Option C — prix au coût normal majoré, marge instantanée sensible aux stocks (nouvelle)
+
+1. **Source** : tarification au coût normal (Coutts, Godley et Nordhaus, 1978, non lu) et marge sensible aux stocks, attribuée à Godley et Lavoie, ch. 8, par le commentaire de la v2.0 (l. 1086, L ; non vérifié dans la source).
+2. **Équation** : p_{j,t} = (1 + μ̄_j)·exp(ψ_ξ ξ_{j,t})·UC_{j,t}. Approchée.
+3. **État stationnaire** exact (3.N-8).
+4. **Comportement** : stable à la calibration. **Explosive en alternance d'un tour sur l'autre** aux vitesses de la fiche 2 × 2 ou à ψ × 2 (3.N-9). Simulation non linéaire : écart de prix de 65 % au tour 60 depuis 1e−6.
+5. **Coût** : négligeable.
+6. **Défauts** : toile d'araignée prix – plan nominal. ψ ≤ 0,26 pour être robuste, ce qui ne laisse presque plus d'effet de demande. Confrontée à R3 : terme de niveau sur ξ, nul à l'état stationnaire, au lieu d'un terme de taux sur z, non nul en croissance.
+7. **Identités** : aucune ligne.
+8. **Joueur** : marge qui saute dès le tour suivant le choc (+0,121 point au tour 2) ; risque de prix alternés.
+9. **Empreinte** : 2 paramètres, 0 état, 0 borne.
+
+### 3.M Option M — coût normal majoré, marge à ajustement partiel vers une cible sensible aux stocks (nouvelle)
+
+1. **Source** : construction du projet. Elle combine le coût normal (3.N-3), une marge visée sensible aux stocks (comme en C) et un ajustement partiel ancré. Lecture appuyée par l'extrait de Blinder et al. : coûts répercutés, hausses liées à la demande mal tolérées. **Aucune source lue ne donne cette forme exacte.**
+2. **Équations** :
+   - ln p_{j,t} = ln UC_{j,t} + μ̃_{j,t} ;
+   - μ̃_{j,t} = (1 − λ_μ/n_a)·ln(p_{j,t−1}/UC_{j,t−1}) + (λ_μ/n_a)·[ln(1 + μ̄_j) + ψ_ξ ξ_{j,t}].
+
+   Variables : p et UC en u.m. par u.v. ; ξ sans dimension ; λ_μ par an, avec λ_μ ≤ n_a ; ψ_ξ sans dimension. Statut : approchée (ajustement partiel), choix de conception (cible).
+3. **État stationnaire** : μ̃ = ln(1 + μ̄) exactement, sans terme de tendance puisque la marge est un rapport. Il est indépendant de λ_μ, de n_a, de π̄ et de la lecture des taux.
+4. **Comportement** :
+   - 5 (d) : 0,9 ;
+   - 5 (e) : 0,8969 à 0,9385, robuste à toutes les variantes ;
+   - 5 (f) : 0,9420 à 0,9783 ;
+   - marge procyclique ;
+   - exemple au § 3.L.
+5. **Coût** : 0,402 µs par pas.
+6. **Défauts** :
+   - période de la boucle prix – stocks plus longue qu'à prix figé (94 contre 73 tours à m = 0,6) ;
+   - vitesse de la marge non sourcée ;
+   - pas de vitesse modulée par l'inflation (`flex`), qui serait neutre à l'état stationnaire (elle multiplierait un écart nul) : piste possible pour l'hyperinflation au J6.
+7. **Identités** : aucune ligne.
+8. **Joueur** : coût salarial répercuté le tour même ; marge qui monte progressivement en tension (+0,12 point au pic pour G +1 %, +0,60 point pour +5 %, m = 0) ; part salariale qui baisse en expansion puis se redresse : des gagnants et des perdants.
+9. **Empreinte** : 3 paramètres (μ̄, ψ_ξ, λ_μ), 0 état propre, 0 borne.
+
+### 3.T Option T — variante en taux d'utilisation (nouvelle ; critère 8)
+
+1. Cible ln(1 + μ̄) + ψ_tu(tu_{j,t} − t̄u_j), même forme que M. tu est lu en phase 4.
+2. **État stationnaire** exact **si tu → t̄u**, ce qui relève de la fiche 6. Sinon, la marge est déplacée de façon permanente et, sous SN (w1), U* = U^eq + ψ_tu Δtu/β. Par exemple, Δtu = +0,05 donne +1,25 point : **second ancrage**.
+3. 5 (e) : 0,8990 à 0,9459 ; 5 (f) : 0,9233 à 0,9716.
+4. Incompatible avec (b) sans tu_{t−1} en état.
+5. t̄u doit être un paramètre de la fiche 6 lu à source unique, comme U^eq (C6 de `monnaie`).
+6. Joueur : un coût du sous-investissement sous forme d'inflation en capacité tendue (8 (c)).
+7. Empreinte : 3 paramètres, 0 état.
+8. Coût : négligeable.
+9. Décision au plus tard à la fiche 6 (#37).
+
+### 3.D Option D — prix à ajustement partiel indexé sur l'anticipation (type Calvo, nouvelle)
+
+1. ln p_t = (1 − λ_p/n_a)[ln p_{t−1} + (1/n_a)ln(1 + π^e_t)] + (λ_p/n_a)[ln((1 + μ̄)UC_t) + ψ_ξ ξ_t]. Approchée. Fréquence de Nakamura et Steinsson, extrait.
+2. **État stationnaire** exact sous (G), ou sous (L) avec un π^e en taux linéaire. Sous (L) avec un π^e en glissement, échec du critère 4 (3.N-6).
+3. 5 (e) : 0,9118 à 0,9605 ; 5 (f) : identique à M.
+4. Consomme π^e (coefficient 1 − λ_p/n_a).
+5. Marge **contracyclique** en expansion (−0,13 point pour G +1 %) : c'est la transmission NK que l'extrait de Nekarda et Ramey conteste.
+6. Délai salaire → prix fractionné : 10 % le tour même.
+7. Empreinte : 3 paramètres, 0 état (p_{t−1} vient du registre).
+8. Coût : négligeable.
+9. Joueur : inflation plus lente et plus lisse (pic +0,25 point pour G +1 %).
+
+### 3.L Restitution et exemple daté (critère 10)
+
+**Exemple** (P11) : dépense publique +1 % aux tours 1 à 12, part de G de 20 % (hypothèse), m = 0, g = 0, π^e exogène, lecture (c). Écarts au sentier pour M :
+
+| Tour | Production % | U (pt) | W % | p % | Variation du prix sur le tour (pt) | Glissement lu par la BC (c) (pt) | Idem sous (b) (pt) | Marge (pt) | W/(p·pr) (pt) | ξ % |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 | 0,000 |
+| 2 | +0,084 | −0,080 | 0,000 | +0,010 | +0,010 | 0,000 | +0,010 | +0,012 | −0,008 | +0,193 |
+| 3 | +0,138 | −0,131 | +0,014 | +0,038 | +0,028 | +0,010 | +0,039 | +0,030 | −0,019 | +0,304 |
+| 4 | +0,168 | −0,160 | +0,038 | +0,077 | +0,039 | +0,039 | +0,078 | +0,049 | −0,031 | +0,349 |
+| 9 | +0,193 | −0,184 | +0,211 | +0,300 | +0,043 | +0,262 | +0,306 | +0,111 | −0,071 | +0,282 |
+| 13 | +0,189 | −0,179 | +0,364 | +0,461 | +0,038 | +0,431 | +0,471 | +0,121 | −0,077 | +0,197 |
+| 14 | +0,104 | −0,099 | +0,402 | +0,489 | +0,028 | +0,471 | +0,489 | +0,108 | −0,069 | −0,013 |
+| 18 | −0,007 | +0,006 | +0,450 | +0,472 | −0,012 | +0,370 | +0,312 | +0,028 | −0,018 | −0,225 |
+| 24 | −0,011 | +0,010 | +0,438 | +0,407 | −0,009 | +0,034 | −0,016 | −0,037 | +0,024 | −0,147 |
+
+**Comparaison**, prix % et marge (pt) aux tours 2 / 9 / 13 / 18 / 24 :
+
+| Option | Prix % | Marge (pt) |
+|---|---|---|
+| R | 0 / +0,194 / +0,325 / +0,384 / +0,362 | 0 |
+| C | +0,096 / +0,393 / +0,528 / +0,401 / +0,356 | +0,121 / +0,187 / +0,142 / −0,112 / −0,108 |
+| T | +0,003 / +0,243 / +0,397 / +0,454 / +0,425 | +0,004 / +0,052 / +0,068 / +0,044 / +0,018 |
+| D | +0,010 / +0,156 / +0,242 / +0,251 / +0,227 | +0,012 / −0,047 / −0,091 / −0,120 / −0,077 |
+
+**Contrôles à la main** :
+- M au tour 2 : 0,1 × 0,5 × 0,193 % = +0,0097 % ;
+- C au tour 2 : 0,5 × 0,193 % = +0,0965 % ;
+- R au tour 3 : (1/12) × 2 × 0,080 point = +0,0133 %.
+
+Le niveau des prix reste durablement plus haut (+0,41 % au tour 24) : c'est la racine unitaire nominale.
+
+**Ampleurs** (P14 ; pic de l'écart du glissement lu sous (c), G +1 % / +5 % aux tours 1 à 12) :
+
+| Option | m = 0 | m = 0,6 |
+|---|---|---|
+| M | +0,49 / +2,46 point (tour 15) | +0,86 / +4,34 point (tour 17) |
+| R | +0,37 / +1,85 | +0,69 / +3,51 |
+| C | +0,54 / +2,71 | +0,89 / +4,50 |
+| T | +0,44 / +2,20 | +0,80 / +4,07 |
+| D | +0,25 / +1,24 | +0,47 / +2,36 |
+
+Pour M avec m = 0,6 : marge au plus +0,23 / +1,13 point ; part salariale au plus bas −0,15 / −0,71 point.
+
+**Délais en tours entiers** (M, lecture (c)) :
+- salaire → prix : 0 tour ;
+- demande → prix : 1 tour (ξ d'ouverture) ;
+- prix → règle de taux : 1 tour, 0 sous (b) ;
+- prix → salaire : 1 tour ;
+- contrepartie au tour du choc : les stocks (fiche 2), puis la marge.
+
+**Leviers** : la dépense publique agit sur les stocks au tour n et sur le prix au tour n + 1. Les impôts et le taux agissent par les fiches 5, 6, 8 et 9, avec 1 tour de plus que leur effet sur la demande.
+
+**Indicateurs au tour** :
+- indice (base 100) ; glissement sur 12 tours ; variation sur le tour ;
+- marge (au tour et en moyenne sur 12 tours) ;
+- part salariale W/(p·pr) et WB/VA sur 12 tours, avec leur écart stationnaire publié ;
+- décomposition de l'inflation (coût unitaire, marge) ;
+- écart de stocks ξ ;
+- niveaux normaux : μ̄, ω̄, π̄.
+
+**Q10, prix administrés** (renvoyés au J4 et au J7). Interface notée : un levier remplacerait p_t en phase 5 ; la marge devient résiduelle ; le rationnement passe par N6. Sous M, à la levée du levier, la marge rejoint μ̄ à la vitesse λ_μ, sans saut : une inflation corrective lisible.
+
+### Statut des faits de la première tentative (critère 15)
+
+| Fait | Statut |
+|---|---|
+| G1 et G1b (R3 désactivé) | S+O |
+| G-P | O |
+| D1 sur 60 ans (4,07 %, 0,147 point) | R |
+| Instabilités 9 à 13 et 15 | R |
+| Instabilité 14 | S+O (G1b) et R |
+| Instabilité 16 | S+O |
+| Acquis R3 et « stabilisateurs cachés » | R |
+| Réfutée 9 | S+O |
+| Lignes de la v2.0 et de `workplan.py` citées | L, vérifiées le 03/10/2026 |
+| Commentaires l. 83 et l. 1086 | L (commentaire), contenu non mesuré |
+| Résultats de la v1.5 (l. 767) | rapportés, invérifiables |
+| Instabilités 12 (« N6, correction de marge par le gain ») et 13 (« R1, élasticité à référence mobile ») | contenu non documenté dans la synthèse ; M ne corrige pas la marge par un gain, et la référence de ξ est la cible de M24, ancrée. **À confirmer si leur contenu est retrouvé** |
+
+Aucun fait D1 n'a été remesuré.
 
 ## 4. Tableau comparatif
 
-Non instruit.
+| Critère | A (v1.5) | B (v2.0) | R | C | M | T | D |
+|---|---|---|---|---|---|---|---|
+| 1 Flux | aucune ligne (3.A-7) | idem (3.B-7) | 3.N-11 | idem | idem | idem | idem |
+| 2 Phases | z retardé, état (3.A-2) | idem ; λ > n_a au défaut (3.B-3) | 3.N-7 | 3.N-7 | 3.N-7 | phase 4 ; exclue sous (b) (3.T-4) | 3.N-7 |
+| 2 (c) P_t | — | — | 3.N-1 | 3.N-1 | 3.N-1 | 3.N-1 | 3.N-1 |
+| 3 Forme fermée | dépend de λ_S ; aucun état stationnaire si λ_S = 0,5 (3.A-3) | dépend des vitesses (3.B-3) | exacte | exacte | exacte | exacte si tu → t̄u | exacte sous (G) |
+| 3 (d) avec la fiche 3 | — | — | U* = U^eq (3.N-8) | idem | idem | second ancrage possible | idem |
+| 4 Vitesses | **échec** (1,14e−2) | **échec** (4,68e−3) | oui | oui | oui | oui sous condition | (G) oui ; (L) **échec** (2,26e−4) |
+| 5 (a) | tâtonnement | instabilités 9 à 11 | 14 (3.R-4) | rien | rien | rien | rien |
+| 5 (b) Demande | z | z, R3 | **échec** | ξ | ξ | tu | ξ |
+| 5 (d) | 0,7823 | 0,9781 | sans objet | sans objet | 0,9 | 0,9 | 0,9 |
+| 5 (e) exigence | non calculé | non calculé | 0,8975 à 0,9520 | 0,9157 à 0,9529 ; **> 1 aux variantes** | **0,8969 à 0,9385** | 0,8990 à 0,9459 | 0,9118 à 0,9605 |
+| 5 (e) adaptative | — | — | dichotomie ; ancrée < 1 | idem | idem | idem | idem |
+| 5 (f) | — | — | 0,9279 à 0,9762 | **alternance à × 2** | 0,9420 à 0,9783 | 0,9233 à 0,9716 | = M |
+| 6 Préalable | non | non | oui | oui | oui | sous condition | oui sous (G) |
+| 7 Bornes | 5 | environ 7 | 0 | 0 | 0 | 0 | 0 |
+| 8 tu | — | — | non | non | non, renvoi à la fiche 6 | oui | non |
+| 9 Anticipation consommée | π^e (×2) | π^e (`flex`) | aucune | aucune | aucune | aucune | π^e |
+| 10 Délais | — | — | 0 / 2 | 0 / 1 | 0 / 1 | 0 / 1 | partiel / 1 (3.L) |
+| 11 Empreinte | 2 états, environ 9 paramètres | 3 états (1 caché), environ 10 paramètres, 9 drapeaux | 0 état, 1 paramètre | 0 état, 2 paramètres | 0 état, 3 paramètres | 0 état, 3 paramètres | 0 état, 3 paramètres |
+| 12 Coût | non mesuré | non mesuré | négligeable | négligeable | 0,402 µs | négligeable | négligeable |
+| 13 Notation | collisions ϖ, m | κ | 3.0 | 3.0 | 3.0 | 3.0 | 3.0 |
+| 14 Calibration | — | — | 3.N-12 | 3.N-12 | 3.N-12 | 3.N-12 | 3.N-12 |
+| 15 Faits | statuts | statuts | — | — | — | — | — |
+
+Dans la ligne 10, le premier chiffre est le délai salaire → prix et le second le délai demande → prix, en tours.
 
 ## 5. Avis de l'expert pilote
 
-Non instruit.
+*`macro`, 03/10/2026.*
+
+**Recommandation : option M**, avec les choix suivants :
+- base UC (Q3) ;
+- UC écrit en phase 2 (Q2) ;
+- terme de demande ξ (Q4) ;
+- aucune anticipation consommée (Q6) ;
+- règle neutre entre (L) et (G) (Q7 ; préférence (G) maintenue pour les fiches 3 et 8) ;
+- partage ancré par μ̄ avec (w1) (Q9) ;
+- aucun terme en tu à M26 : T est transmise à la fiche 6, à décider au plus tard à M28 (Q5, #37) ;
+- prix administrés renvoyés au J4 et au J7 (Q10).
+
+**Phase de P_t (Q1)** : lecture (c), avec une variable d'état de plus (π_t). Décision citant M22 et l'ADR 0005, pt 16 : issue sensible. Repli : (a), mêmes trajectoires, aucun texte changé, mais un indice décalé d'un tour sur son prix. (b) seulement si `monnaie` tient à un délai nul, au prix d'une révision de M24.
+
+**Motifs** :
+- état stationnaire exact et indépendant des vitesses, de n_a et de la lecture des taux (critères 3 et 4) ;
+- seule option nouvelle avec terme de demande qui reste stable sur toute la grille (5 (b), (e) et (f)) ;
+- aucune borne ;
+- aucune anticipation consommée ;
+- coût salarial répercuté le tour même ;
+- marge qui répond à la tension, comme le demande `jeu` (fiche 3, § 7, question 8).
+
+**Écartées** :
+- A et B : critères 4, 7 et 11 ; B viole aussi λ ≤ n_a à ses valeurs par défaut et a un état caché ;
+- R : critère 5 (b), gardée comme référence ;
+- coût complet et marge sur cm : critère 3 (d).
+- C n'échoue à aucune exigence à la calibration. Je la déconseille pour sa fragilité : alternance explosive dès que les vitesses de la fiche 2 ou ψ doublent.
+- D est une alternative acceptable sous (G). Elle consomme π^e et sa marge est contracyclique, un fait contesté.
+
+**Réserves**, avec leurs critères écrits avant l'essai (J3) :
+1. Un pas sans choc depuis l'état initial résolu laisse μ̃ à ln(1 + μ̄) à 1e−10 près.
+2. Critère 4 : écart ≤ 1e−6 après 720 pas entre λ_μ × 0,5 et × 2.
+3. 5 (e) et 5 (f) remesurés avec le m effectif des fiches 5 et 9, rayon < 1. Test de propriété : après une impulsion de demande de 1 % sur un tour, l'écart du prix ne change pas de signe plus de deux fois en 12 tours (pas d'alternance).
+4. Calibration de ψ_ξ et de λ_μ sur des sources lues.
+5. Constat T2 sous (a), transmis à la fiche 3.
+6. Valeur centrale de la bande de part salariale : W/(p·pr) ou WB/VA (−0,110 point à 2 %, −0,656 point à 10 %), à trancher par le mainteneur.
+
+**Lectures possibles, soumises au mainteneur** :
+- (a) Q1 : (c), (a) ou (b) ;
+- (b) M ou C (marge à mémoire ou instantanée) ;
+- (c) M ou D (cyclicité de la marge, contestée) ;
+- (d) terme en tu maintenant (T) ou à la fiche 6 ;
+- (e) (w1) au socle, (w2) au J4.
+
+**Coût en fidélité** : la forme exacte de M n'a pas de source lue. La marge procyclique est contestée. Aucune fréquence de prix dépendante de l'inflation (`flex`). Godley et Lavoie, NHUC (financement des stocks) n'est pas repris.
 
 ## 6. Avis de l'expert consulté
 
@@ -262,3 +827,4 @@ Non instruit.
 |---|---|---|
 | 03/10/2026 | Ouverture (issue #40) ; § 1 et § 2 proposés | `macro` ; session principale |
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, critère 5 (e) en exigence, part salariale sur W/(p·pr), trois lectures de P_t, terme de demande, variante en tu, lecture unique de #24, Q10 ; issue #40) | mainteneur |
+| 03/10/2026 | Instruction déposée (§ 3 à 5) : options A, B, socle 3.N, options nouvelles ; recommandation M (marge à rappel vers μ̄ avec terme de stocks), P_t en lecture (c) ; mesures conjointes avec la fiche 3 (critères 3 (d) et 5 (e)) ; remesure proposée | `macro` |
