@@ -3,7 +3,7 @@ bloc: Ménages
 module: src/nations/blocs/menages.py
 expert pilote: macro
 experts consultés: monnaie (dépôts et détention de titres publics : frontière dette publique) ; jeu
-statut: en instruction (critères proposés le 03/10/2026)
+statut: en instruction (critères validés le 03/10/2026)
 décision: —
 issue: #41
 ---
@@ -155,7 +155,7 @@ Les symboles **ne sont pas fixés** : ils le seront à l'instruction, sous le cr
 
 ## 2. Critères d'évaluation, écrits avant l'instruction
 
-**Statut** : proposés par `macro` le 03/10/2026, **à valider par le mainteneur** (jalon 1 de #41). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
+**Statut** : proposés par `macro` le 03/10/2026, **validés par le mainteneur le 03/10/2026, avec les amendements ci-dessous** (jalon 1 de #41). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
 
 Correspondance avec le gabarit :
 
@@ -194,6 +194,23 @@ Sont des **mesures** (elles décrivent sans écarter) : 3 (d), 5 (c) aux vitesse
 | 16 | Calibrabilité et faits établis (`macro`) — **mesure** | Les paramètres se calibrent sur des ordres de grandeur établis, chacun avec sa source retrouvée et sa date : taux d'épargne des ménages, richesse rapportée au revenu, propension à consommer un revenu transitoire, part des ménages contraints, composition du patrimoine financier. Les faits contestés sont séparés. Sources candidates, **non lues à ce jalon**, existence vérifiée : Jappelli et Pistaferri (2010), *Annual Review of Economics* 2, 479-506 ; Galí, López-Salido et Vallés (2007), *Journal of the European Economic Association* 5(1), 227-270 ; Carroll (1997), *Quarterly Journal of Economics* 112(1), 1-55 (buffer-stock ; instabilité 8). Les chap. 3 (modèle SIM) et 4 (modèle PC) de Godley et Lavoie (2007), dont l'existence et le contenu sont établis par des reproductions, sont à retrouver dans l'ouvrage. Les sources statistiques (comptes nationaux) sont à retrouver. Un résultat de la v1.5 ou de la v2.0 n'est pas un fait établi ; une source introuvable est déclarée | Sources citées ; « non trouvée » le cas échéant | `macro` | fiche ; J3 (calibration) |
 | 17 | Remesure des faits de la première tentative (décision P1 du 03/10/2026 ; `CONTEXT.md` ; `macro`) — **exigence** de procédure | (a) Chaque fait cité porte son statut (S+O, O, R, L, V, V+O). Les faits établis sur D1 ne sont pas remesurables, D1 n'étant pas versé ; ils sont cités avec leur statut d'origine. (b) Toute remesure (statut V) passe par un script d'`outils/` qui exécute le prototype **dans un processus séparé, jamais par import** (invariant 4), revu par `audit` (circuit 3, `coder` → `audit`). Ses critères sont écrits dans la fiche **avant l'essai**, sur le modèle de la remesure S1 (fiche 2 § 9.7) : grandeur, définition, unité, fenêtre, seuil. Son verdict est publié même défavorable. Le statut V+O n'est donné que si le vérificateur réexécute le script. (c) Un fait V sur le prototype v2.0 reste un fait de la première tentative, jamais un résultat v3. (d) Les lectures de code (L) citent fichier et ligne, vérifiés à la date de la fiche, **avec la branche active et les coefficients effectifs du profil** : `portfolio_mode='joint_equity'` dans D1 (faits § 1.1), qui exige `wiu_epsilon` > 0 (`model.py` l. 828) ; la valeur de `wiu_epsilon` dans D1 n'est pas établie par la synthèse des faits | Liste des faits et statuts ; commande, sortie et commit de chaque script | `macro` ; `coder` ; `audit` | fiche (jalon 2) |
 
+### Amendements adoptés
+
+Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les questions de `macro` :
+
+- **Critères** : les dix-sept critères sont validés tels quels, avec leur nature (exigence ou mesure).
+- **Seuils reconduits des fiches 2 à 4**, adoptés : 1e−10 en relatif (critère 3) ; écart ≤ 1e−6 après 720 pas (critère 4) ; 0,48 ms par pays-pas (critère 14) ; 12 tours pour la désactivation d'une borne (critère 8 (c)) et pour la fin de la demande non servie après une sur-commande (critère 11 (c)).
+- **Bandes du test zéro** (critère 7), adoptées, à confirmer avec O1 avant l'essai (M19) : ratio de richesse ±2 % en relatif ; taux d'épargne ±0,5 point ; B_H/V_H ±1 point, bande commune avec la fiche 9.
+- **Critère 3 (e), bouclage** : l'état stationnaire conjoint est calculé avec la fiche 6 avant M27-M28, puis avec la fiche 9 à la branche n° 4 ; M27 peut être prise sans la fermeture de la fiche 9, au risque assumé d'une révision M-m.
+- **Critère 5 (c)** : rayon spectral < 1 exigé à la calibration proposée ; période et demi-vie publiées aux vitesses ×0,5 et ×2 ; aucune bande de période exigée (règle de l'amendement de la fiche 3).
+- **Critère 6** : m_H fourni comme propension d'impact et de long terme ; m total consolidé au J3, après la fiche 9.
+- **Critère 11 (c)** : la dimension du scénario adverse de sur-commande est fixée avec `jeu`.
+- **Critère 3 (d)** : la dépendance à π̄ reste une mesure.
+- **Q4** : l'option B_H ≡ 0 au socle est admise à l'instruction, sans retrait des lignes (un retrait demanderait une décision citant M22).
+- **Q6** : un ménage représentatif est instruit comme référence, avec une variante à deux types.
+- **Q10 et critère 2 (e)** : `monnaie` est consulté sur la frontière inflation (anticipation consommée par un terme de tendance nominal), en plus de la frontière dette publique.
+- **Q11** : les leviers ciblés sur les ménages sont renvoyés au catalogue des leviers (J4) ; la fiche en note l'interface.
+
 ## 3. Options
 
 Non instruit (jalon 2 de l'issue #41, après validation des critères).
@@ -227,3 +244,4 @@ Non instruit.
 | Date | Événement | Auteur |
 |---|---|---|
 | 03/10/2026 | Ouverture (issue #41) ; § 1 et § 2 proposés | `macro` ; session principale |
+| 03/10/2026 | Critères validés avec amendements (seuils et bandes, bouclage avec la fiche 9 en risque assumé, B_H ≡ 0 admise, ménage représentatif et variante à deux types, `monnaie` consulté aussi sur l'inflation, Q11 au J4 ; issue #41) | mainteneur |

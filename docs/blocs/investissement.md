@@ -3,7 +3,7 @@ bloc: Investissement et financement des entreprises
 module: src/nations/blocs/investissement.py
 expert pilote: macro
 experts consultés: monnaie (demande de crédit face à l'offre bancaire : frontière crédit) ; jeu
-statut: en instruction (critères proposés le 03/10/2026)
+statut: en instruction (critères validés le 03/10/2026)
 décision: —
 issue: #42
 ---
@@ -211,7 +211,7 @@ Les symboles **ne sont pas fixés** : ils le seront à l'instruction, sous le cr
 
 ## 2. Critères d'évaluation, écrits avant l'instruction
 
-**Statut** : proposés par `macro` le 03/10/2026, à valider par le mainteneur (jalon 1 de #42). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
+**Statut** : proposés par `macro` le 03/10/2026, validés par le mainteneur le 03/10/2026, avec les amendements ci-dessous (jalon 1 de #42). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
 
 Correspondance avec le gabarit :
 
@@ -267,7 +267,18 @@ Sont des **mesures** (elles décrivent sans écarter) :
 
 ### Amendements adoptés
 
-Aucun à ce jour (critères proposés le 03/10/2026, en attente de validation).
+Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les questions de `macro` :
+
+- **Critères** : les dix-sept critères sont validés tels quels, avec leur nature (exigence ou mesure).
+- **Seuils reconduits des fiches 2 à 4**, adoptés : 1e−10 en relatif (critère 5) ; écart ≤ 1e−6 après 720 pas entre les branches ×0,5 et ×2 (critère 6) ; 0,48 ms par pays-pas (critère 14) ; désactivation d'une borne au plus tard 12 tours après la fin du choc (critère 9 (c)).
+- **Bandes du test zéro** (critère 8), adoptées, à confirmer avec O1 avant l'essai (M19) : K/Y ±10 % en relatif ; taux d'utilisation ±0,02, bande commune avec la fiche 2 ; taux d'investissement ±1 point ; levier ±10 % en relatif ; D_F/PIB ±10 % en relatif.
+- **Critère 4 (a)** : le critère « capital/PIB à ±10 % » d'O1 se lit sur la définition de K/Y retenue par la fiche 6.
+- **Critère 7 (c)** : la stabilité de la boucle investissement – demande est exigée à la calibration ; sa période est publiée, sans bande exigée.
+- **Critère 2 (#36)** : les deux voies sont instruites ; si la voie (ii) est recommandée, l'ADR peut appeler une consultation Fable (`docs/agents/routage.md` § 4.1, point 3).
+- **Critère 3 (b), Q7 et Q8** : les deux lectures de la phase 3 sont instruites ; tout ordre interne nouveau en phase 3 ou 6, ou l'ajout du bloc banque à la phase 1, est une issue sensible (décision citant M22 et ADR).
+- **Critère 10 (#37)** : une variante qui révise M24 (e) ou (f) entre dans le périmètre de l'instruction ; la décision qui la retiendrait citerait M24.
+- **Critère 9 (a)** : le classement de I^vol ≥ 0 (contrainte technique si l'irréversibilité est déclarée, ou borne à seuil libre) est proposé par la fiche et tranché par le mainteneur à M28.
+- **Q6** : le bloc 6 est instruit comme propriétaire de la ligne 14 (règle de distribution) ; le propriétaire de la ligne 9 est fixé avec la fiche 7.
 
 ## 3. Options
 
@@ -302,3 +313,4 @@ Non instruit.
 | Date | Événement | Auteur |
 |---|---|---|
 | 03/10/2026 | Ouverture (issue #42) ; § 1 et § 2 proposés | `macro` ; session principale |
+| 03/10/2026 | Critères validés avec amendements (seuils et bandes, lecture d'O1, période publiée, deux voies de #36, contrats sensibles des phases 3 et 6, variantes révisant M24, I^vol ≥ 0 tranché à M28, ligne 14 ; issue #42) | mainteneur |
