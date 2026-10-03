@@ -1475,6 +1475,45 @@ Elle est identique à C au niveau agrégé. Sa valeur ludique n'apparaît qu'ave
 - **Transparence.** Je propose ce seuil après avoir mesuré les parts. Il ne départage pas les options : seule C a une forme fermée tenue. Il contraint la calibration du J3 (νλ_V), et son rôle est d'empêcher une calibration qui rendrait le transfert muet dans l'année ou identique à G.
 - **Vérification au J3** : appel direct de la fonction du bloc en équilibre partiel, sans le programme entier (`CLAUDE.md`, « Règles des tests »).
 
+### Additif de `jeu` (03/10/2026) : boucle conjointe, ratio de richesse, part du transfert
+
+*Sur le § 3.C-10, les réserves 3 et 8 du § 5 et la cible de Haig-Simons (§ 3.C-10, point 8). Maquette indépendante de la règle C en équilibre partiel du bloc (`pe_hs.py`, `norm.py`, `horscible.py`, `decomp.py` ; γ^e et π_s lus sur la cible ; ν = 1, λ_V = 0,4, i_D = 3 %, g = π̄ = 2 %). Contrôles : dérive sans choc ≤ 4,4e−16 ; reproduit 0,98057, 0,91267, −2,27 % hors cible et la part de 0,628. Pas de maquette de la boucle conjointe : les chiffres de la question 1 sont ceux de `macro`, non remesurés par `jeu`.*
+
+**0. Révision du § 7**
+- **Q10 : accord à (a) retiré, ralliement à (c).** Sous (a), une oscillation de 17 à 19 tours croît de 1,71 % par tour, sans cause donnée par le joueur ni sortie possible : la partie serait injouable. Le reste de l'accord tient (une annonce ne déplace pas l'épargne le tour même).
+- Conditions 2, 3 et 4 du § 7 révisées (Q2 ci-dessous) ; acceptation par le mainteneur au § 9.
+
+**Q1. Embardée de la sur-commande en boucle conjointe — à clarifier** (mécanisme lisible ; ampleur et attribution non établies)
+- **Récit en une phrase** : la capacité saturée fait passer la demande publique dans les prix ; la flambée ampute la richesse réelle ; les ménages freinent pour la reconstituer, d'où la récession. La cause se voit le tour suivant (prix au tour n + 1 par ξ).
+- **Risque d'attribution** : après la fin du choc, le prix culmine 4 tours plus tard (tour 16), la production 9 (tour 21), le chômage 12 (tour 24). Le joueur imputera la récession à l'arrêt de G. Or, avec plans indexés (J7), il n'y a pas de récession : elle vient de l'effet d'encaisses réelles. La restitution doit montrer cette cause (décomposition, Q2).
+- **Falaise non linéaire** (effet par point de choc, prix / production) : +1 % : 2,7 / 0,59 ; +5 % : 2,8 / 0,57 ; +10 % : 5,6 / 1,67. La rupture coïncide avec la saturation de N^pa ; elle n'est lisible que si la saturation est affichée comme signal précurseur (« plein emploi : main-d'œuvre épuisée », #52).
+- **Proportionnalité** : une décision d'un an produit −16,65 % de production et +13,99 points de chômage, sans réponse de politique (π^e exogène, aucune banque centrale). Si cette ampleur subsistait au J4 avec politique endogène, doubler G serait un piège plutôt qu'un choix. Crédibilité économique : `macro` et `monnaie` ; verdict ludique reporté au J4, avec la fiche 8.
+- **Signal précurseur** : le terme de reconstitution. Ordre de grandeur (hypothèse non mesurée) : un frein de 15 à 18 points de revenu, compatible avec le creux. Non vérifié : qu'il apparaisse avant le tour 21.
+- **ψ_ξ, critère 8 (c) à rebours du jeu** : ψ_ξ = 0 échoue au seuil (borne jusqu'au tour 30) mais donne l'épisode le plus doux (+33,3 %, −2,9 %) ; ψ_ξ = 0,5 tient le seuil et donne la dépression. Le seuil ne se lit pas seul : publier l'ampleur à côté. Pas de modification du critère demandée.
+- **Critère 11 (c)** non éprouvé en boucle conjointe : aucune demande non servie, les prix rationnent.
+- **87 tours hors ±2 %** : ±2 % est la bande du test zéro, pas un seuil d'alerte ; ne pas afficher le ratio en anomalie ; afficher la demi-vie (18,8 tours dans la boucle).
+- **Dimension maintenue** : G ×2 pendant 12 et 24 tours, critères écrits avant l'essai, au J4. Ajouts : G ×1,5 pendant 12 tours ; ψ_ξ ∈ {0 ; 0,5} tant que ψ_ξ n'a pas de source ; sortie progressive (G ramené en 12 tours) sous la forme O3.
+- **Mesures publiées par scénario** : pic des prix et son tour ; creux de production et son tour ; pic de chômage ; durée de la borne d'emploi ; demande non servie ; terme de reconstitution maximal et son tour ; perte cumulée des tours 13 à 60 rapportée au gain des tours 1 à 12. Aucune exigence nouvelle.
+
+**Q2. Ratio de richesse restitué — lisible, à deux conditions** (définition au tour ; mention « à la cible »)
+- **D'abord le ratio de Haig-Simons**, V d'ouverture / (12 × YD^HS du tour). Niveau normal **1 an (ν) exactement**, à π̄ = 2 % comme à 10 % (mesuré : 1,00000). C'est la variable que lit la règle.
+- **Lecture (e) de la condition 3 retirée** (1,0216 an) : sous la cible de Haig-Simons, elle donnerait 1,0216 à 2 % et 1,0638 à 10 %, une norme qui dépend de la cible.
+- **Libellé** : « Richesse des ménages, en années de revenu » ; définition : « dépôts d'ouverture ÷ [12 × (revenu disponible du tour − érosion des dépôts au rythme de la cible d'inflation)] ; niveau normal 1 an ; exact quand l'inflation est à la cible ». La mention « à la cible » est obligatoire : pendant une embardée, YD^HS ne retranche que la cible, et « corrigé de l'inflation » serait faux.
+- **Revenu par source (condition 1)** : ligne « érosion des dépôts (inflation cible) » = −π_s·V.
+- **Ratio nominal en second**, « en années de revenu nominal » ; niveaux normaux 0,981 an à 2 %, 0,913 an à 10 %.
+- **Hors cible, écart permanent** (cible 2 %, mesuré) : inflation 3 % : −2,27 % (−0,27 mois de consommation) ; 5 % : −6,44 % (−0,78 mois) ; 10 % : −15,16 % (−1,90 mois). Lisible comme un niveau (« surpris par l'inflation, les ménages restent sous leur épargne visée »), s'il est déclaré dans la définition ; il ne disparaît que si π^e s'adapte (fiche 8).
+- **Condition 4 révisée** : (V − V\*)/C est remplacé par la **décomposition additive exacte du taux d'épargne du tour** (résidu mesuré 2e−16) : entretien γ^e·V/YD ; reconstitution (λ_V/n_a)(V\* − V)/YD ; revenu imprévu (YD − YD^e)/YD ; épargne forcée (C^plan − C)/YD. Exemple, transferts aux tours 1 à 12 : tour 1, revenu imprévu +0,99 point ; tour 2, reconstitution +0,36 ; tour 13, revenu imprévu −1,00 ; tour 14, reconstitution −0,12. La phrase du § 7 « dit le sens de la consommation à venir » est corrigée : le terme mesure le frein actuel.
+- **Condition 2 révisée** : sous (c), le niveau normal du taux d'épargne se lit à la cible. À 2 % / 10 % : taux nominal 3,890 % / 10,557 %, dont maintien face à l'inflation 1,943 / 8,733 et épargne réelle 1,947 / 1,823 ; taux de Haig-Simons 1,985 % / 1,998 %.
+
+**Q3. Part d'un transfert dépensée — lisible ; le seuil tient**
+- **Critère 12 (d) et documentation : part propre au ménage**, en équilibre partiel (passer à la part dans la boucle déplacerait le critère après observation) : 0,627 (`macro`) ; 0,628 (cible nominale), 0,629 (Haig-Simons, 2 %), 0,621 (Haig-Simons, 10 %) dans la maquette de `jeu`. **Le seuil de 0,50 à 0,85 tient.**
+- **Restitution (fiche du levier, J4) : les deux, sous deux noms** : « part dépensée par les ménages en 12 tours : 0,63 » ; « effet sur la consommation en volume, toutes rétroactions : 0,58 en 12 tours, 0,46 en 24 tours ». **Jamais la part en u.m.** (1,046) sous le nom « part dépensée ».
+- **L'inflation rogne le transfert** : part en volume 0,578 / 0,464 / 0,484 (12, 24, 120 tours) ; à θ_H = 1 : 0,695 / 0,311 / 0,116, presque sans effet réel à 120 tours (point à joindre à #44).
+
+**Décisions non résolues relevées par `jeu`** : lecture de π_s (exactitude de l'étiquette ; `jeu` suit la lecture stable) ; calibration de ψ_ξ (fiche 4, réserve 4) ; acceptation des conditions 2 à 4 révisées au § 9.
+
+**Issue proposée** (création soumise au mainteneur) : « J4 — scénario de surchauffe publique en boucle conjointe (sur-commande, forme O3) », corps dans le compte rendu de la session (PR #43).
+
 ## 8. Décision du mainteneur
 
 Non instruit (M27, décidée avec la fiche 6).
@@ -1495,3 +1534,4 @@ Non instruit.
 | 03/10/2026 | Additif de `macro` (§ 3.C-10) : boucle conjointe SN, C, M et ménages mesurée, contre-épreuve en niveaux ; critère 5 (c) tenu sous (c) (0,9637 / 0,9613), explosif sous (a) (1,0275 / 1,0029), d'où la recommandation de la Q10 révisée vers (c) ; instabilité nouvelle mesurée ; § 3.L, sur-commande et § 3.N-9 corrigés après les constats de `jeu` ; réserves 3 et 8 remplacées | `macro` ; session principale |
 | 03/10/2026 | Réponse de `macro` sur la cible de Haig-Simons (§ 3.C-10, point 8 ; § 5 : second additif, réserve 3, lecture (f)), versée après contre-épreuve indépendante concordante au 4e chiffre | `macro` ; session principale |
 | 03/10/2026 | Additif de `monnaie` (§ 6.5) : retrait de (a), ralliement à (c) en lisant π\* pour γ^e et π_s, cible de Haig-Simons, variante h refusée, clause C26, C16 et C18 mises à jour ; aucun désaccord résiduel avec `macro` | `monnaie` ; session principale |
+| 03/10/2026 | Additif de `jeu` (§ 7) : ralliement à (c) ; embardée de sur-commande « à clarifier » (attribution, falaise, ψ_ξ), dimension maintenue et trois variantes ; ratio de Haig-Simons affiché d'abord (niveau normal 1 an), lecture (e) retirée ; conditions 2 et 4 révisées ; part propre au ménage pour le critère 12 (d), seuil tenu | `jeu` ; session principale |
