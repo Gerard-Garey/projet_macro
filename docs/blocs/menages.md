@@ -435,6 +435,8 @@ Trois lectures de π^lu :
 
 Je recommande **(a)**, sous l'avis de `monnaie`.
 
+*Additif du 03/10/2026 (§ 5 mis à jour, § 6.5)* : recommandation révisée en **(c)**, lue sur la **cible déclarée π\*** (paramètre ou levier de la fiche 8), jamais sur π̄ (inflation stationnaire, un résultat) ; dans le tableau, la ligne (c) se lit « π\* (cible) », exacte si π̄ = π\* (C2). (a) est explosive en boucle conjointe (§ 3.C-10). (b) relève de la clause C26 (fiche 8).
+
 Q3, avec ν = 1 et n_a = 12 (F3) :
 
 | | π̄ = 2 % | π̄ = 10 % |
@@ -464,6 +466,9 @@ Les deux sont renvoyées à la fiche 9 ou à J6, avec l'avis de `monnaie`.
 |---|---|---|
 | 1 | — | — |
 | 2 | ouverture : D_H, B_H, YD_{t−1}, registre (π_{t−1}) ; paramètres g, ν, λ_V | C^plan_t |
+
+*Additif du 03/10/2026 (§ 5 mis à jour, § 6.5)* : sous la lecture (c), le bloc 5 lit en phase 2 la cible π\* et non plus le registre (π_{t−1}).
+
 | 5, après les blocs 4 et 2 | p_t, v_{H,t} | ligne 1, C_t = p_t·v_{H,t} |
 | 6 | lignes 5 à 15 reçues | YD_t (variable d'état pour t + 1) |
 | 7 | sans objet sous B_H ≡ 0 | — |
@@ -519,6 +524,8 @@ Les deux sont renvoyées à la fiche 9 ou à J6, avec l'avis de `monnaie`.
    - V*_t = ν·n_a·YD^e_t ;
    - YD^e_t = Γ^e_t·YD_{t−1} ;
    - γ^e_t = [(1 + g)(1 + π_{t−1})]^{1/n_a} − 1.
+
+   *Additif du 03/10/2026 (§ 5 mis à jour, § 6.5)* : sous la recommandation finale, γ^e = [(1 + g)(1 + π\*)]^{1/n_a} − 1 et la cible de richesse s'écrit sur le revenu de Haig-Simons, V\*_t = ν·n_a·(YD^e_t − π_s·V_{H,t}), π_s = (1 + π\*)^{1/n_a} − 1 (§ 3.C-10, point 8). Forme réduite : C = α_Y·YD^e + (λ_V/n_a − γ^e + νλ_V·π_s)·V ; α_Y = 1 − νλ_V et la condition νλ_V < 1 sont inchangées.
 
    Lecture : les ménages dépensent le revenu attendu, moins l'épargne d'entretien (pour que la richesse suive la croissance nominale : correction de Haig-Simons plus croissance réelle), moins une fraction λ_V/n_a de l'écart à la richesse visée.
 
@@ -579,7 +586,7 @@ Les deux sont renvoyées à la fiche 9 ou à J6, avec l'avis de `monnaie`.
 
 8. **Joueur.** Taux d'épargne, ratio de richesse et niveau normal ν lisibles ; épargne forcée visible sous rationnement. Voir les exemples du § 3.L.
 
-9. **Empreinte.** 2 paramètres (ν, λ_V) ; 1 variable d'état (YD_{t−1}, u.m., valeur stationnaire YD_t/Γ) ; lecture du registre de l'ADR 0008, sans état ajouté.
+9. **Empreinte.** 2 paramètres (ν, λ_V) ; 1 variable d'état (YD_{t−1}, u.m., valeur stationnaire YD_t/Γ) ; lecture du registre de l'ADR 0008, sans état ajouté. *Additif du 03/10/2026 (§ 5 mis à jour, § 6.5)* : sous la lecture (c), le bloc ne lit plus le registre ; il lit π\*.
 
 #### 3.C-10 Boucle conjointe (critère 5 (c) complet ; réserve 3 du § 5)
 
@@ -926,12 +933,14 @@ Le ratio baisse au tour du transfert : le revenu du tour monte avant la richesse
 
 ## 5. Avis de l'expert pilote
 
-*`macro`, 03/10/2026.*
+*`macro`, 03/10/2026 ; mis à jour le 03/10/2026 après l'additif de `monnaie` (§ 6.5).*
 
 **Recommandation : option C** (cible de richesse avec terme de tendance), ménage représentatif, avec les choix suivants :
 - revenu lu : YD_{t−1} avec tendance (Q2 (i)) ;
-- inflation de la tendance : glissement mesuré π_{t−1} (Q10 (a)) ;
-- revenu corrigé de Haig-Simons implicite, taux d'épargne restitué nominal et corrigé (Q3) ;
+- **inflation lue (Q10) : lecture (c), cible déclarée π\*** (paramètre ou levier de la fiche 8), jamais π̄ (résultat) ; γ^e = [(1 + g)(1 + π\*)]^{1/n_a} − 1 ;
+- **cible de richesse sur le revenu de Haig-Simons** : V\* = ν·n_a·(YD^e − π_s·V_H), avec π_s = (1 + π\*)^{1/n_a} − 1, une seule lecture de l'inflation pour γ^e et π_s ;
+- le bloc 5 ne lit plus le registre de l'ADR 0008 (§ 3.N-5 et § 3.C, point 9, à reprendre) ;
+- taux d'épargne restitué nominal et corrigé (Q3), sous deux libellés distincts (§ 6.5) ;
 - **B_H ≡ 0** au socle (Q4) ;
 - plafond du plan à D_{H,t} d'ouverture, lecture (a) du § 3.N-6 ;
 - la variante D notée pour le J4 (Q6, Q11).
@@ -939,50 +948,55 @@ Le ratio baisse au tour du transfert : le revenu du tour monte avant la richesse
 Calibration indicative : ν = 1 an, λ_V = 0,4 par an (α_Y = 0,6).
 
 **Motifs** :
-- seule option qui tient le critère 4 (ν exact, F2) ;
+- seule option qui tient le critère 4 sous C2 (ν exact sur YD^HS) ;
 - forme fermée ;
 - aucune borne à seuil libre hors 3.N-6 (a) ;
 - deux paramètres et une variable d'état ;
-- rayon < 1 sur toute la grille (B1) ;
+- boucle conjointe stable à la calibration (0,9640 / 0,9617), là où (a) est explosive (1,0275 / 1,0029) ;
+- superneutralité sous C2 : V/(n_a·Y_o) = 1,010286 à 2 % et 1,014518 à 10 % (résidu : #49) ;
 - D est équivalente au niveau agrégé sans levier ciblé (principe de simplicité).
 
 **Écartées** :
 - A : critère 4 et strates qui touchent M22 ;
 - B : critère 14 pour la branche active, critère 4 pour la règle de revenu, plafond ;
 - S, écrite avec α libres : critère 4 ;
-- R1 : hors domaine.
+- R1 : hors domaine ;
+- Q10 (a), glissement mesuré : explosive en boucle conjointe (§ 3.C-10) ;
+- π_s sur π_{t−1} : explosive à θ_H = 1 (1,0223 / 1,0218) ;
+- variante h : h < 0,604 est une frontière de stabilité, pas une calibration sourcée.
 
 R2 reste la référence non mesurée.
 
 **Réserves**, avec leurs critères écrits avant l'essai (J3) :
-1. Un pas sans choc depuis l'état résolu laisse V_H/(n_a·YD) = ν et YD_{t−1} sur leur sentier à 1e−10 près en relatif.
-2. Critère 4 : écart au plus de 1e−6 après 720 pas entre λ_V ×0,5 et ×2.
-3. **Boucle conjointe SN, C, M et ménages (critère 5 (c) complet)** : mesurée au § 3.C-10 (03/10/2026). La contre-épreuve en niveaux concorde au 4e chiffre.
-   - **Lecture (c)**, à la calibration (θ_H = 0,8, i_D = 3 %) : rayon 0,9637 (régime H) et 0,9613 (régime B), racine réelle, demi-vie de 18,8 et 17,6 tours. Sur la grille 3^6 des six vitesses : de 0,8805 à 0,9903, aucune combinaison instable à θ_H = 0,8. À θ_H = 1, 10 combinaisons du régime B sont instables seules, mais la règle réelle converge.
-   - **Sous la cible de Haig-Simons avec π_s = π̄** (§ 3.C-10, point 8) : 0,9640 / 0,9617 ; 0,9564 / 0,9537 à θ_H = 1.
-   - **Lecture (a)**, explosive : 1,0275 et 1,0029, période de 17 à 19 tours, enveloppe +1,71 % par tour. L'exigence n'est pas tenue, d'où la révision de la Q10 vers (c).
-   - **Au J3**, critère écrit avant l'essai : rayon < 1 à la calibration retenue, régimes H et B, recalculé avec la loi de π^e de la fiche 8. Condition transmise à la fiche 8 : sa loi ne doit pas réintroduire la boucle du § 3.C-10, point 3.
-4. **m_H de long terme supérieur à 0,8 si θ_H = 1** : réserve 3 de la fiche 2, à trancher avec la fiche 6 (distribution des dividendes) et la fiche 9 (impôts).
-5. **Racine quasi unitaire sans fuite** (θ_H = 1 : 0,9993) : le niveau d'activité n'est fermé que par les fiches 6, 8 et 9 (#44). Le calcul conjoint avec la fiche 6 est à faire avant M27-M28 ; il n'est pas fait ici.
+1. Un pas sans choc depuis l'état résolu laisse V_H/(n_a·YD^HS) = ν et YD_{t−1} sur leur sentier à 1e−10 près en relatif.
+2. Critère 4 : écart au plus de 1e−6 après 720 pas entre λ_V ×0,5 et ×2, **sous C2**. Hors C2, λ_V fixe l'état d'arrivée (continuum déclaré) : à 3 % stationnaire pour π\* = 2 %, V/(n_a·YD) s'écarte de −3,35 % / −1,29 % / −0,22 % pour λ_V = 0,2 / 0,4 / 0,8 ; à 10 %, de −19,76 % / −8,58 % / −1,56 %. C2 (intégrale, sans fuite) est donc aussi une condition de la fiche 5.
+3. **Boucle conjointe SN, C, M et ménages (critère 5 (c) complet)**, mesurée au § 3.C-10 :
+   - lecture (c), cible de Haig-Simons, π_s sur π\* : 0,9640 / 0,9617 (θ_H = 0,8) ; 0,9564 / 0,9537 (θ_H = 1) ;
+   - lecture (c), cible nominale : 0,9637 / 0,9613 ; grille 3^6 de 0,8805 à 0,9903 à θ_H = 0,8 ;
+   - au J3 : rayon < 1 à la calibration retenue, régimes H et B, recalculé avec la loi de π^e de la fiche 8 ;
+   - condition transmise : la loi de π^e ne réintroduit pas la boucle du § 3.C-10, point 3 (C26).
+4. **m_H de long terme supérieur à 0,8 si θ_H = 1** : réserve 3 de la fiche 2, à trancher avec les fiches 6 et 9.
+5. **Racine quasi unitaire sans fuite** (θ_H = 1, prix figés : 0,9993) : elle disparaît en boucle conjointe pour la dynamique réelle ; la fermeture du niveau stationnaire reste à faire (fiches 6, 8 et 9, #44), conjointement avec la fiche 6 avant M27-M28.
 6. Condition de domaine νλ_V < 1, déclarée et contrôlée au chargement.
-7. Calibration de λ_V et de ν sur des sources lues (richesse liquide, gains de loterie, comptes financiers) : **à instruire**.
-8. Sur-commande en boucle conjointe (c) : borne active jusqu'au tour 14 (seuil tenu). Demande des ménages entièrement servie. Mais prix +55,6 %, chômage +14 points au tour 24, et ratio hors bande pendant 87 tours. Avec ψ_ξ = 0, la borne reste active jusqu'au tour 30 : le seuil n'est pas tenu.
-
-*Additif du 03/10/2026 (§ 3.C-10)* : la recommandation de la Q10 passe de (a) à **(c)** (cible π̄), la lecture (a) étant explosive en boucle conjointe (rayon 1,0275 et 1,0029) et échouant à l'exigence du critère 5 (c) ; (c) n'est exacte que sous C2 (π̄ = π*). La variante π^lu = h·π_{t−1} + (1 − h)π̄ (stable pour h < 0,604) n'est pas recommandée sans l'avis de `monnaie`. *Second additif du 03/10/2026 (§ 3.C-10, point 8)* : **cible de richesse écrite sur le revenu de Haig-Simons, π_s lu sur π̄ comme γ^e**, en réponse à la question de `monnaie` (§ 6.1, Q2, point 3) ; sous cette cible, la boucle conjointe vaut 0,9640 / 0,9617 (réserve 3) ; π_s lu sur π_{t−1} la rend explosive à θ_H = 1 (1,0223 / 1,0218).
+7. Calibration de λ_V et de ν sur des sources lues : **à instruire**.
+8. Sur-commande en boucle conjointe (c), mesurée sous la cible nominale : borne active jusqu'au tour 14 (seuil tenu) ; prix +55,6 %, chômage +14 points au tour 24, ratio hors bande pendant 87 tours ; avec ψ_ξ = 0, borne jusqu'au tour 30 (seuil non tenu). Non remesuré sous la cible de Haig-Simons.
+9. **Effet d'un changement de cible, à déclarer** : une baisse d'un point de π\*, états d'ouverture fixés, relève le plan de +0,55 % au tour même (+0,98 % sous la cible nominale). C'est la contrepartie de la correction de Haig-Simons ; sous (c), il ne passe pas par la crédibilité. L'effet net sur plusieurs tours (baisse de i_D, C20) n'est pas mesuré. Signalé à `jeu` et à la fiche 8.
+10. Régimes B, D et E : la π\* lue par les ménages reste à définir (fiche 8, J5).
 
 **Lectures soumises au mainteneur** :
-- (a) Q10 : π^lu = glissement mesuré, π^e ou π̄ ;
+- (a) Q10 : **(c), π\*** (`macro` et `monnaie` d'accord) ; (b) avec la loi de π^e de la fiche 8, seulement par la clause **C26** (C1 tient, boucle complète de rayon < 1 sur la grille, contrôle de séparation), décision citant M27 ; (a) et la variante h retirées ;
 - (b) § 3.N-6 : plafond en phase 2 (seuil libre déclaré) ou en phase 5 (révision de M24) ;
 - (c) Q4 : B_H ≡ 0 ou demande de Tobin ;
 - (d) canal du taux : rentier seul, ou variante PCEX2 α_1(r). Cette dernière demande un fait nouveau contre l'hypothèse réfutée 3 ;
-- (e) restitution du taux d'épargne : nominal, corrigé, ou les deux.
-- (f) lecture de π_s dans la cible de Haig-Simons : π̄ (`macro`) ou π_{t−1} (`monnaie`) ; décision à M27.
+- (e) restitution du taux d'épargne : nominal, corrigé, ou les deux (recommandé : les deux, libellés distincts) ;
+- (f) cible de richesse : Haig-Simons avec π_s sur π\* (`macro` et `monnaie` d'accord) ou nominale ; les deux positions antérieures sur π_s sont caduques.
 
 **Coût en fidélité** :
 - aucun canal de substitution : le taux agit sur la consommation à l'envers ;
 - effet richesse plus fort que celui que mesure la littérature lue (richesse peu liquide) ;
 - aucune hétérogénéité au socle ;
-- la forme C n'est pas écrite telle quelle par Godley et Lavoie : c'est leur α_3 cible, rendue exacte sous croissance.
+- hors cible, la richesse visée ne fuit pas devant l'inflation (pas de dynamique de Cagan ; C18, J6) ;
+- la forme C n'est pas écrite telle quelle par Godley et Lavoie : c'est leur α_3 cible, rendue exacte sous croissance et corrigée de Haig-Simons.
 
 ## 6. Avis de l'expert consulté
 
@@ -1535,3 +1549,4 @@ Non instruit.
 | 03/10/2026 | Réponse de `macro` sur la cible de Haig-Simons (§ 3.C-10, point 8 ; § 5 : second additif, réserve 3, lecture (f)), versée après contre-épreuve indépendante concordante au 4e chiffre | `macro` ; session principale |
 | 03/10/2026 | Additif de `monnaie` (§ 6.5) : retrait de (a), ralliement à (c) en lisant π\* pour γ^e et π_s, cible de Haig-Simons, variante h refusée, clause C26, C16 et C18 mises à jour ; aucun désaccord résiduel avec `macro` | `monnaie` ; session principale |
 | 03/10/2026 | Additif de `jeu` (§ 7) : ralliement à (c) ; embardée de sur-commande « à clarifier » (attribution, falaise, ψ_ξ), dimension maintenue et trois variantes ; ratio de Haig-Simons affiché d'abord (niveau normal 1 an), lecture (e) retirée ; conditions 2 et 4 révisées ; part propre au ménage pour le critère 12 (d), seuil tenu | `jeu` ; session principale |
+| 03/10/2026 | Avis de `macro` sur l'additif de `monnaie` : accord sur π\*, C26, effet d'un changement de cible (+0,5543 % / +0,9776 %, remesurés) et continuum hors C2 ; § 5 réécrit (version antérieure : `3b31b6e`), recommandation (c) sur π\* et cible de Haig-Simons ; additifs datés aux § 3.N-3, 3.N-5 et 3.C (points 1 et 9) | `macro` ; session principale |
