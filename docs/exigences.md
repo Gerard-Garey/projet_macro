@@ -102,7 +102,7 @@ Toutes ces valeurs s'entendent **par blocs de cinq ans**.
 ### 2.7 Budget de complexité
 
 - **Raffiner plutôt qu'ajouter** : chercher d'abord si un mécanisme manquant peut sortir d'une équation existante.
-- Chaque équation, borne ou seuil a un paramètre déclaré et figure dans au moins un test.
+- Chaque équation figure dans au moins un test, et chacun de ses paramètres est déclaré. Chaque borne ou seuil à valeur libre a un paramètre déclaré et figure dans au moins un test. Une contrainte de conservation ou de technique, sans valeur libre (non-négativité d'une quantité physique, disponibilité d'un stock, technique à coefficients fixes, emploi au plus égal à la population active), n'a pas de paramètre : elle est déclarée dans les limites de l'équation bornée, avec son activité à l'état stationnaire, et figure dans au moins un test (décision du mainteneur du 03/10/2026, issue #38 ; `docs/specification/CONVENTIONS.md` § 2.4).
 - **Préférer un mécanisme à une borne**, et une correction sans retard à une correction avec retard. Toute borne est déclarée.
 - Une vitesse d'ajustement ne doit pas déterminer l'état d'arrivée ; si elle le fait, le continuum d'équilibres est documenté.
 
