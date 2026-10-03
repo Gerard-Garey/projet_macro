@@ -3,7 +3,7 @@ bloc: Travail et salaires
 module: src/nations/blocs/travail.py
 expert pilote: macro
 experts consultés: monnaie (indexation des salaires sur les anticipations : frontière inflation) ; jeu
-statut: en instruction (critères validés le 03/10/2026)
+statut: avis rendus (03/10/2026)
 décision: —
 issue: #39
 ---
@@ -649,7 +649,114 @@ Aucun fait D1 n'a été remesuré.
 
 ## 6. Avis de l'expert consulté
 
-Non instruit (`monnaie`, frontière inflation, au jalon 2).
+*Rédigé par `monnaie` (expert consulté, frontière inflation), le 03/10/2026, sur la fiche à l'état `e7873e6` (branche `claude/j1-economie-reelle`, PR #43). La question 3 est traitée dans sa version remplacée du 03/10/2026 : une seule lecture des taux annuels pour les fiches 3, 4 et 8, la forme mixte du § 3.N-4 étant exclue. Sources lues : fiche 4 § 1 et § 2 ; issue #24 ; `sec:cadre-calendrier` (l. 174 à 215) ; `CONVENTIONS.md` § 5.2 et § 6 ; `archive/faits_mesures_G_K.md` § 3, 4, 6 à 8 ; `archive/v2.0/prototype/model.py` l. 224 à 229, 289 à 300, 1289 à 1310, 1364 à 1375 ; `archive/v2.0/prototype/policies.py` l. 54 à 71. Lectures du code : statut L, vérifiées le 03/10/2026.*
+
+### 6.1 Réponses aux questions de `macro`
+
+**Q1 — Variable consommée.** La définition du § 3.N-3 me convient : π^e_t est le glissement annuel anticipé de P sur les 12 tours à venir, en fraction par an, avec la valeur stationnaire requise π̄ (sous la lecture (G), voir Q3). Mais l'égalité π^e = π̄ à l'état stationnaire **n'est pas automatique sous une règle de crédibilité**. C'est une condition que la fiche 8 doit remplir.
+- Contre-exemple, la loi de la v2.0 (`model.py` l. 1300, L) : π^e += [λ(π − π^e) + cred·(π* − π^e) + ups·(g_M − g_Y − π^e)]/13. Dès que cred > 0 et π̄ ≠ π*, sa valeur stationnaire est une moyenne pondérée de π̄ et de π*, donc différente de π̄.
+- Conséquence sous SN, lecture (w1), marge à sa norme : λ_w·β·(U − U^eq) = ln(1 + π^e) − ln(1 + π̄). Une erreur d'anticipation permanente déplace le chômage stationnaire, et ce déplacement dépend de λ_w, ce qui fait **échouer le critère 4**. Exemple calculé (commande au Retour), avec la loi de la v2.0, π̄ = 3 %, π* = 2 %, λ = 0,2, cred = 0,8, d'où π^e = 2,200 % : U − U^eq = −0,780, −0,390 et −0,195 point pour λ_w = 0,5, 1 et 2.
+- **Condition transmise à la fiche 8 (C1)** : aucune erreur d'anticipation à l'état stationnaire, π^e = π̄ dans tout état stationnaire. Deux voies la remplissent :
+  - une loi d'apprentissage pure, comme l'apprentissage à gain constant d'Evans et Honkapohja (2001), cité de mémoire : dans un état stationnaire déterministe, l'estimateur de la moyenne converge vers π̄ ;
+  - un terme d'ancrage vers π* combiné à une règle de taux qui garantit π̄ = π* dans tout état stationnaire (Q5) : l'ancrage agit alors en transition et s'annule à l'arrivée.
+
+  La crédibilité reste donc possible comme mécanisme de jeu, à condition de ne pas créer d'erreur stationnaire.
+
+**Q2 — Lecture de π^e (Q3 de la fiche).** Je recommande la **lecture (a), à l'ouverture**, comme `macro`. Trois motifs :
+1. **Calendrier de Barro et Gordon (1983)** : les anticipations sont fixées avant la décision de politique de la période. C'est ce calendrier qui donne un sens à l'opposition entre surprise et annonce, et au biais d'inflation (lecture de mémoire ; existence de l'article vérifiée, contenu non relu). Sous (a), une décision du joueur au tour n ne peut pas être déjà intégrée dans les salaires du tour n.
+2. **Découplage de la phase 1.** Sous (a), la position du bloc 8 dans la phase 1 ne contraint pas le bloc 3. La Q1 de la fiche 4 reste ouverte. Si elle retient P_t ≡ p_t avec p_t en phase 1 (lecture (b) de la fiche 4), le bloc 8 doit venir après le bloc prix pour lire π_t. L'ordre « travail, prix, banque centrale » reste alors triangulaire, ce que la lecture (b) de la Q3 aurait interdit.
+3. **Aucun mécanisme d'annonce n'exige une transmission aux salaires dans le tour même.** Le délai d'un tour (un mois) est court devant la durée d'un contrat salarial. Une annonce faite au tour n peut afficher dès ce tour l'anticipation π^e_{n+1} qu'elle produit, la contrepartie visible étant l'anticipation elle-même. Les salaires réagissent au tour n + 1.
+
+Le bloc 8 ne lit W_t en aucun cas : d'accord. Sous (a), la question ne se pose même pas.
+
+À noter pour la fiche 8 : sous (a), π^e est une variable d'état d'ouverture du bloc 8. La phase où elle est formée (phase 1 après les leviers du tour n − 1, ou phase 9 après le prix du tour n − 1) relève de la fiche 8. Le délai prix → anticipation → salaire dépend aussi de la Q1 de la fiche 4 : jusqu'à 2 tours sous P_t ≡ p_{t−1}.
+
+**Q3 (remplacée) — Lecture commune des taux annuels.** Je préfère **(G)**, comme `macro`. Le motif monétaire est décisif à mes yeux. Sous (G), les trois grandeurs d'inflation que le joueur lit et que la règle compare (glissement mesuré π_t, anticipation π^e, cible π*) sont **sur la même échelle, sans aucune conversion dans le bloc 8**. La cible se compare directement au glissement : c'est la lecture (ii) de #24, et aucune conversion de la cible n'est nécessaire, sauf pour une règle qui lirait une inflation par pas. C'est aussi la pratique des banques centrales :
+- Réserve fédérale : « 2 percent, as measured by the annual change in the price index for personal consumption expenditures » (déclaration de 2012, réaffirmée ; formulation vérifiée par extrait de recherche, document non lu) ;
+- BCE : cible symétrique de 2 % à moyen terme sur l'IPCH (stratégie du 08/07/2021, extrait de recherche) ; la formulation en glissement annuel est citée de mémoire.
+
+Sous (L), réponse à la question posée : oui, la loi de la fiche 8 peut produire un taux linéaire annualisé, mais par l'une de deux voies, toutes deux coûteuses.
+- **Apprendre sur n_a[(1 + π_t)^{1/n_a} − 1].** Il faut alors une conversion géométrique du glissement, qui est « mesuré, jamais converti » (`sec:cadre-calendrier`). (L) ne supprime donc pas la formule géométrique : il la déplace dans le bloc 8.
+- **Apprendre sur la variation mensuelle annualisée n_a(P_t/P_{t−1} − 1).** Cette mesure est bruitée dès J ≥ 2 ou en présence de chocs.
+
+Dans les deux cas, le joueur voit deux inflations. Et toute loi de crédibilité qui compare le glissement à une cible linéaire pénalise un écart permanent : 2,0184 % contre 2 % ; 10,4713 % contre 10 % pour une cible de 10 % (n_a = 12), soit 0,47 point, que la règle K1a de la v2.0 aurait sanctionné indéfiniment. Valeurs de π^e sous (L), commande au Retour : 1,9852 %, 1,9819 % et 1,9806 % pour π̄ = 2 % à n_a = 4, 12 et 52.
+
+**Coût de (G), à déclarer.** Les taux d'intérêt, les flux et les vitesses restent linéaires (M22 (a) inchangée). Un ratio stationnaire qui combine un taux linéaire et une croissance géométrique dépend alors légèrement de n_a. Exemple : K/I = 1/(n_a[(1 + g)^{1/n_a} − 1] + δ) vaut 14,3160, 14,3228 et 14,3253 à n_a = 4, 12 et 52 (g = 2 %, δ = 5 %), contre 14,2857 sous (L). Conséquences :
+- la phrase de `sec:cadre-calendrier` « un ratio stationnaire […] ne dépend pas de n_a pourvu que les taux de croissance soient […] linéaire[s] » devient fausse ;
+- « C'est la seule conversion du moteur » aussi ;
+- `CONVENTIONS.md` § 5.2 et § 6 sont touchés ;
+- les formes de la fiche 2 (ρ̄_IN, ρ̄_K = 0,7791) sont à recalculer par `macro`.
+
+Il faut donc une décision citant M22 et M24 (f), comme le dit `macro`, avec une annotation de l'ADR 0005 par `architect`. Comme n_a est fixé à 12 par M22, cette dépendance est déclarée et non une dérive.
+
+**Suggestion de mise en œuvre** (non tranchée) : porter les taux de croissance et d'inflation en logarithme, ℓ = ln(1 + x). La conversion géométrique devient alors linéaire, ℓ/n_a par pas, et la condition de domaine π^e > −1 est satisfaite par construction. La règle SN est déjà écrite ainsi.
+
+**Q4 — Indexation.** D'accord avec une indexation complète sur π^e, sans max(π^e, π) (le cliquet G-W, O, est écarté) et sans inflation passée.
+- Si la fiche 8 retient une loi adaptative, l'inflation passée entre déjà par π^e. Une indexation directe sur π_{t−1} compterait deux fois la persistance.
+- Le coefficient 1 donne la verticalité de long terme. Avec C1, il garantit que la politique monétaire agit sur π̄ et non sur U*, conformément à l'intention du mainteneur, « une création monétaire durable se traduit par une inflation durable ».
+- **Double compte avec la Q6 de la fiche 4**, à préciser. Si le prix est une marge sur UC_t du même tour, le coût contient déjà le salaire indexé. Une indexation supplémentaire du prix sur π^e ajouterait π^e une seconde fois à la hausse du prix au tour du choc : gain de 2 sur π^e à l'impact, et marge stationnaire fonction de λ_p et de π̄ (échec du critère 4 (a) de la fiche 4). Règle proposée à la fiche 4 : le coefficient de π^e dans le prix est celui qui rend p/UC indépendant de π̄. Il vaut 0 sur une base de coût courante et 1 sur une base retardée d'un pas (UC_{t−1}), où il **remplace** le facteur (1 + π̄)^{1/n_a} du critère 3 (c) au lieu de s'ajouter.
+- Même vigilance pour une vitesse modulée par π^e (v2.0, `flex`, l. 1090) : elle ne doit pas apparaître dans les formes stationnaires.
+- Pour le J4 (levier « indexation légale ») : une indexation mêlant π^e et l'inflation passée reste verticale si la somme des coefficients vaut 1 et si C1 tient.
+
+**Q5 — Bouclage.** La piste de `macro` est la bonne, et l'algèbre est exacte sous la forme du cadre r = i − π. Avec la règle i = r* + π^e + a_π(π − π*) + terme d'activité, à l'état stationnaire π^e = π̄ et U = U^eq. Le taux réel requis par la fermeture de la demande, r̄ (fiches 5, 6 et 9), impose alors :
+
+  **π̄ − π* = (r̄ − r*)/a_π**, exactement (non une approximation).
+
+La forme de Taylor (1993), i = π + r* + 0,5(π − π*) + 0,5·écart de production, donne le même biais avec a_π = 0,5, donc doublé (dérivation de l'auteur ; la forme de la règle est citée de mémoire, l'existence de l'article est vérifiée). Un a_π fort réduit le biais sans l'annuler.
+
+**Lecture des faits de la première tentative.** Elle est compatible avec cette piste, sans l'établir.
+- G-T (S+O) : r* estimé 2,417 ; anticipation 4,007 ; contribution d'inflation 2,953 = 1,5 × 1,969 point d'écart ; activité −0,153. Le taux réel exigé vaut donc 9,225 − 4,007 = 5,218 %, soit le « taux réel directeur à 5 % » de la v2.0.
+- J1a (S+O) : biais de 1,965 et 1,989 point pour des cibles de 3 % et 2 %. Le biais ne dépend pas de la cible, comme le prédit la formule.
+- K1 et K1a (S+O, L) : une crédibilité fixée à 1 ne referme pas l'écart. C'est cohérent avec un biais stationnaire indépendant de l'ancrage des anticipations.
+- Mécanisme lu (L), `policies.py` l. 62 : en mode `anchored`, l'estimateur de r* rappelle vers l'ancre (`rstar_reversion` = 1 par an, l. 293) et intègre l'écart d'inflation (`lam_rstar` = 0,02 par décision, l. 289), dans une bande de ±1 point (l. 292). C'est un **intégrateur à fuite**. À l'état stationnaire, r* − ancre = k·écart, avec k = 0,02/(1 − e^{−1/13}) = 0,270, et π̄ − π* = (r̄ − ancre)/(a_π + k).
+  - Prévu, aux valeurs par défaut : r* − ancre = 0,53 point ; écart = 1,91 point. Observé : 0,42 point et 1,97 point. L'ordre de grandeur est compatible ; l'écart n'est pas expliqué (valeurs de D1 non vérifiables, D1 non versé, transition).
+  - Ce biais dépend du rapport de deux vitesses : la v2.0 violait aussi `docs/exigences.md` § 2.7.
+
+  Ce n'est pas un fait établi : aucun essai n'a fait varier l'ancre. Statut : calcul sur L et S+O.
+
+**Mécanisme recommandé pour la fiche 8 (C2)** : une action intégrale sans fuite sur l'écart d'inflation. Deux formes sont équivalentes en algèbre : un r* estimé qui intègre π − π*, ou un terme de niveau des prix dans la règle. Elle donne π̄ = π* dans tout état stationnaire, quel que soit r̄, donc quelles que soient les décisions budgétaires du joueur, et quelle que soit sa vitesse.
+- **Réserve forte** : l'instabilité 4 (« estimateur de r* sans ancre ni bande », R, faits § 6) interdit de reprendre cet intégrateur sans fait nouveau. Le fait nouveau exigible est l'analyse de stabilité en forme fermée de la boucle conjointe : intégrateur du bloc 8, SN, règle de prix, demande. Il faut un rayon spectral < 1 à la calibration et aux vitesses ×0,5 et ×2, avec un plancher de taux déclaré.
+- **Fermeture budgétaire** : je la déconseille pour le pays joué. Elle retirerait au joueur son levier budgétaire, et elle ferait dépendre π̄ d'une règle cachée. Elle ne se discute que pour un pays non joué, ou si la fiche 9 a de toute façon une règle budgétaire.
+- **r* fixe** : exact à la référence si r* = r̄ résolu. Mais tout choix budgétaire permanent du joueur déplace π̄ de (Δr̄)/a_π : c'est la reproduction du régime à 4 %.
+
+**État initial résolu** :
+- le script impose π̄ = π* et U = U^eq, et résout r̄ par la fermeture des fiches 5, 6 et 9 ;
+- les états du bloc 8 prennent r*_0 = r̄, π^e_0 = π̄, i_0 = r̄ + π̄ (unités de la règle), et la crédibilité sa valeur stationnaire explicite à écart nul ;
+- le registre se déduit de π̄.
+
+Condition d'existence à déclarer : r̄ + π* ≥ plancher du taux. Sinon, aucun état stationnaire à π̄ = π* n'existe, et la résolution échoue de façon visible, sans préparation cachée.
+
+**Précision de forme au § 3.N-6** : « π dérive jusqu'à ce que la politique de la fiche 8 ajuste la demande » vaut sous une règle intégrale ou sous un taux fixé. Sous une règle de Taylor sans action intégrale, π ne dérive pas : il se fixe à l'écart permanent ci-dessus. Il dérive (processus cumulatif de Wicksell) si le taux est maintenu sous r̄ + π* avec des anticipations adaptatives, ou si a_π ≤ 0. C'est par ce canal que la politique monétaire a un effet durable sur l'inflation dans un socle à monnaie endogène.
+
+**Q6 — Terme d'activité.** Confirmé : s'il existe, il lit U_{t−1} à l'ouverture contre U^eq, le paramètre du bloc 3, lu à cette source unique et non dupliqué dans le bloc 8. Il ne lit jamais un chômage hystérétique (hypothèse réfutée 7 ; la v2.0 l'écartait déjà, l. 1368). Deux précisions :
+- Écrire le terme directement en U, a_U(U^eq − U_{t−1}), plutôt qu'en écart de production converti par un coefficient d'Okun. La v2.0 prenait `okun` = 2 (l. 224), alors que la technique de M24 donne dU/d ln y = −0,95 (§ 3.N-11), soit un facteur 1/0,95 ≈ 1,05. Une constante d'Okun importée serait incohérente avec le modèle.
+- Sous C2, un U^ref du bloc 8 différent de U^eq serait absorbé par r* sans effet sur π̄, mais il laisserait un terme d'activité non nul à l'état stationnaire, illisible pour le joueur. D'où la source unique.
+
+**Q7 — Pente de court terme.** λ_w·β = 2 points de hausse salariale par point d'écart de chômage et par an.
+- Approximation (marge instantanée, anticipation adaptative de gain λ_e, temps continu) : le ratio de sacrifice vaut environ **1/(λ_e·λ_w·β)** point-année de chômage par point de désinflation. Cela donne 2,50 à λ_e = 0,2 (`lam0` de la v2.0, l. 228), 1,00 à 0,5, 0,50 à 1 et 0,25 à 2 (commande au Retour). Le coût de désinflation est donc fixé **conjointement** par la pente et par la loi de la fiche 8 ; une crédibilité qui fait sauter π^e vers la cible le réduit encore. Calibrer λ_w·β seul n'a pas de sens.
+- **Aucune source de calibration lue.** Candidats :
+  - Ball (1994), « What Determines the Sacrifice Ratio? », dans Mankiw (dir.), *Monetary Policy*, University of Chicago Press, 155-182. Existence vérifiée. Résultat lu dans un extrait de recherche, chiffres non lus : le ratio est plus faible quand la désinflation est rapide et les salaires flexibles.
+  - Galí (2011), « The Return of the Wage Phillips Curve », *JEEA*. Cité de mémoire, existence non vérifiée dans la session.
+- Je propose une calibration conjointe (λ_w·β, λ_e) au J3, sur une cible de ratio de sacrifice sourcée. Le rapport « λ_w = 2 instable » de la v2.0 (l. 138, L) relève de la mesure 5 (e) de la fiche 4, sur la grille λ_e ∈ {0,5 ; 1 ; 2}.
+
+### 6.2 Avis général sur R + SN, côté monnaie
+
+**Favorable**, sous les conditions C1 à C8 transmises à la fiche 8.
+- La règle SN avec un coefficient 1 sur π^e donne une courbe de long terme verticale, et laisse au bloc 8 seul l'ancre nominale. La racine unité nominale signalée au § 3.L (H-p2) est attendue : le niveau des prix n'est pas ancré, sauf si la fiche 8 retient un terme de niveau des prix.
+- Les lectures (a) pour la Q3 et (G) pour la Q4 sont concordantes avec `macro`. **Aucun désaccord de fond** n'est à soumettre en deux positions. Seule précision : la forme de la phrase du § 3.N-6 (Q5).
+- Sur le choix entre R et C, je suis neutre : il relève de `macro` et de `jeu`. C modifie WB et les profits non distribués, donc la demande de crédit (fiches 6 et 7), de façon transitoire seulement.
+- Pour `jeu` : sous SN et C2, une cible relevée relève π̄ point pour point sans gain d'emploi durable ; une désinflation coûte de l'ordre de 0,25 à 2,5 points-années de chômage par point, selon la crédibilité. Ce sont deux coûts perceptibles à l'échelle d'une partie.
+
+### 6.3 Conditions transmises à la fiche 8 (banque centrale et anticipations)
+
+- **C1** — Aucune erreur d'anticipation à l'état stationnaire : π^e = π̄ dans tout état stationnaire. Un terme d'ancrage vers π* ne s'admet que si C2 garantit π̄ = π*.
+- **C2** — Action intégrale sans fuite sur l'écart d'inflation (r* estimé ou terme de niveau des prix), donnant π̄ = π* indépendamment de r̄ et des vitesses. Exige un fait nouveau contre l'instabilité 4 : stabilité en forme fermée de la boucle conjointe, aux vitesses ×0,5 et ×2. L'ancre avec bande et rappel de la v2.0 forme un intégrateur à fuite (`policies.py` l. 62) : écart stationnaire (r̄ − ancre)/(a_π + k), fonction des vitesses. À ne pas reprendre.
+- **C3** — État initial résolu : r*_0 = r̄ (fermeture des fiches 5, 6 et 9), π^e_0 = π̄ = π*, i_0 = r̄ + π̄, crédibilité à sa valeur stationnaire explicite à écart nul. Condition d'existence déclarée : r̄ + π* ≥ plancher du taux.
+- **C4** — Lecture commune (G) des taux annuels : cible comparée au glissement (lecture (ii) de #24), π^e en glissement anticipé. Stocker ln(1 + π^e) est suggéré (domaine π^e > −1 par construction).
+- **C5** — π^e est une variable d'état d'ouverture du bloc 8, lue par les blocs 3 (et 4) sous la lecture (a). Le bloc 8 ne lit jamais W_t. Sa position en phase 1 reste libre, et s'ordonne avec la Q1 de la fiche 4.
+- **C6** — Terme d'activité éventuel : a_U(U^eq − U_{t−1}), U^eq lu dans le bloc 3, aucun coefficient d'Okun importé, aucune hystérèse.
+- **C7** — Calibration conjointe du gain d'apprentissage λ_e et de la pente λ_w·β sur un ratio de sacrifice sourcé (J3). Le ratio de sacrifice est restitué au joueur ou dans le scénario O2 (avis de `jeu`).
+- **C8** — La crédibilité a une valeur stationnaire explicite, indépendante des vitesses. Une loi à seuil comme K1a (bonus seulement si l'écart est inférieur à 1 point, `model.py` l. 1305) n'est pas reprise sans fait nouveau. Il faut aussi reconfirmer l'intention du mainteneur du 17/09/2026 : effet de long terme de la politique monétaire sur l'inflation, par la cible et le taux, la monnaie étant endogène.
 
 ## 7. Avis de `jeu`
 
@@ -861,3 +968,5 @@ Non instruit.
 | 03/10/2026 | Additif de `macro` après la décision du mainteneur sur la part salariale et la lecture unique des taux annuels : § 3.N-4 remplacé (lectures communes (L) et (G), préférence (G) avec révision de M24 (f)), condition 3 (d) sur W/(p·pr) avec écart publié (C13), § 4 et § 5 mis à jour | `macro` ; session principale |
 | 03/10/2026 | Avis de `jeu` (§ 7) : préférence C > R > D > B > A, R imposée par le critère 10 (b) tant que les sources ne sont pas lues ; seuil de demi-vie de 2 à 4 tours proposé ; lecture (G) préférée ; écart relevé dans la colonne « W (R), H-p1 » du § 3.L | `jeu` |
 | 03/10/2026 | Correction de l'exemple daté du § 3.L (constat de `jeu`) : la règle de salaire du script soustrayait deux fois l'écart de salaire, ce qui revenait à λ_w = 2 et β = 1 au lieu de λ_w = 1 et β = 2 ; colonnes « W, H-p1 » de R et de C remesurées ; colonne H-p2, valeur propre et verdicts inchangés | `macro` ; `jeu` |
+| 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à R + SN, lectures (a) et (G), indexation complète, aucun désaccord de fond ; huit conditions transmises à la fiche 8 (C1 à C8) | `monnaie` |
+| 03/10/2026 | Statut « avis rendus » | session principale |
