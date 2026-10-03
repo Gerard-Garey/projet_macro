@@ -37,7 +37,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
     - #39 et #40 : jalons 1 à 3 faits, § 9 des deux fiches en `eec62da` ; jalon 4 à venir (sections `sec:travail` et `sec:prix`, par `docwriter`) ;
     - #41 : jalon 1 fait ; instruction en cours, avec **une relance ciblée** après la limite de tours (à noter dans la PR, `docs/agents/routage.md` § 7) ;
     - #42 : jalon 1 fait ;
-    - **ADR 0008 accepté** le 03/10/2026, avec son point II.3 ; chiffres de la fiche 2 recalculés sous (G) **visés** par le mainteneur le même jour (§ 4, décisions prises en cours de branche) ; la fiche 2 (§ 3.N et § 9) est corrigée par la session principale, mention « révisé par M25 (b) » ;
+    - **ADR 0008 accepté** le 03/10/2026, avec son point II.3 ; chiffres de la fiche 2 recalculés sous (G) **visés** par le mainteneur le même jour (§ 4, décisions prises en cours de branche) ; la fiche 2 (§ 3.N et § 9) a été corrigée par la session principale, mention « révisé par M25 (b) » (`9b50d58` ; chiffres remesurés ; la valeur propre des stocks à vitesses ×0,5, 0,9359 → 0,9360, découle de la même révision) ;
     - prochaines étapes : sections `sec:travail` et `sec:prix` (jalons 4), qui reportent aussi les retouches de `sec:cadre-calendrier`, `tab:phases`, `sec:production` et `CONVENTIONS.md` § 5.2 et § 6 listées par l'ADR 0008, avec les chiffres visés de la fiche 2 ; puis jalons 2 de #41 et #42 ;
     - remesures T1 (fiche 3) et P1 (fiche 4) proposées, non lancées : elles ne changent pas les décisions ;
     - consultations Fable : **0 sur 3**. L'ADR 0008, ADR d'architecture, a été rédigé par `architect-approfondi` sur Opus, sur choix de la session.
