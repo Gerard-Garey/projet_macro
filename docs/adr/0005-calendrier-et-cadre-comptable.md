@@ -94,17 +94,18 @@ date: 2026-09-30
 
 ## Annotation du 03/10/2026
 
-Rédigée par `architect-approfondi` sur les décisions M25, lecture (b), et M26, question 1, du mainteneur (03/10/2026 ; fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847`). Ces décisions citent M22 et sont consignées dans l'**ADR 0008** (proposé à la date de l'annotation). **La décision M22 est inchangée pour ce qu'elle tranche** ; trois points et deux phrases du § Conséquences se lisent désormais ainsi :
+Rédigée par `architect-approfondi` sur les décisions M25, lecture (b), et M26, question 1, du mainteneur (03/10/2026 ; fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847`). Ces décisions citent M22 et sont consignées dans l'**ADR 0008** (proposé à la rédaction de l'annotation, **accepté par le mainteneur le 03/10/2026 avec son point II.3**). **La décision M22 est inchangée pour ce qu'elle tranche** ; trois points et deux phrases du § Conséquences se lisent désormais ainsi :
 
 - **Point 4.** La règle linéaire reste celle des taux d'intérêt, des flux annuels et des vitesses d'ajustement, mais elle n'est plus « unique ». Les taux de croissance et d'inflation, que M22 ne classait pas (`sec:cadre-calendrier`, l. 195) et que M24 (f) convertissait linéairement, sont désormais convertis géométriquement, (1 + x)^{1/n_a} par pas (ADR 0008, partie I).
   - Le § Conséquences, « `eq:moteur-conversion-taux` est la seule conversion », se lit « la seule conversion des taux de flux et des vitesses ».
   - L'option écartée « conversion composée pour les taux » n'est pas rouverte : elle visait les taux d'intérêt.
   - La mesure du Contexte, « 14,2857 pour tout n en linéaire », suppose une croissance convertie linéairement. Sous l'ADR 0008, K/(n_a I) vaut 14,3228 à n_a = 12 et dépend légèrement de n_a : dépendance déclarée (ADR 0008, pt I.6).
-- **Point 16.** L'indice des prix n'est plus révisé en phase 1 : c'est le prix du tour, écrit en phase 5 et lu au tour suivant (ADR 0008, partie II). Le registre tient 13 niveaux (P_{t−1}, …, P_{t−13}) et l'empreinte calendaire compte 14 variables, forme proposée par l'ADR 0008 (pt II.3) et soumise à son acceptation.
+- **Point 16.** L'indice des prix n'est plus révisé en phase 1 : c'est le prix du tour, écrit en phase 5 et lu au tour suivant (ADR 0008, partie II). Le registre tient 13 niveaux (P_{t−1}, …, P_{t−13}) et l'empreinte calendaire compte 14 variables, forme proposée par l'ADR 0008 (pt II.3) et retenue par le mainteneur à son acceptation (03/10/2026).
   - Le § Conséquences, « le schéma porte t et le registre de 12 valeurs », se lit « de 13 valeurs ».
   - Le point 15 (neuf phases) est inchangé : la phase 9 tient déjà la mise à jour du registre.
 - **Point 17.** Le facteur entre les deux ratios s'écrit avec (1 + g)^{1/n_a} au lieu de 1 + g/n_a. Il vaut **1,0108** pour g = 2 % au lieu de 1,0109. Remesure d'`architect` le 03/10/2026 (`uv run python -`) : 1,010768 sous la conversion géométrique, 1,010866 sous la conversion linéaire.
+  - *Incohérence préexistante, relevée par `macro` le 03/10/2026.* Le texte du point 17 écrit encore « 0,9 % pour g = 2 % », là où la spécification écrit 1,0109 (+1,09 %, `sec:cadre-calendrier`) ; l'annotation du 02/10/2026 l'avait corrigé en marge sans que le point se lise sans elle. Sous l'ADR 0008, « (0,9 % pour g = 2 %) » se lit donc « **1,0108, soit +1,08 %**, pour g = 2 % (δ = 5 %, 12 pas par an), le ratio restitué dépassant celui du test zéro ». Valeur visée par le mainteneur le 03/10/2026 avec les chiffres de la fiche 2 recalculés sous (G).
 
-Si l'ADR 0008 n'était pas accepté, ou s'il l'était sans son point II.3, cette annotation serait corrigée par une nouvelle annotation datée.
+*Complément du 03/10/2026, à l'acceptation de l'ADR 0008.* L'ADR 0008 a été accepté avec son point II.3 : la lecture des points 4, 16 et 17 ci-dessus vaut telle quelle, sans nouvelle annotation.
 
 Issues : #15, #16, #17 (décision), #18 (spécification), #19 (script des matrices) ; #24, #39 et #40 (annotation du 03/10/2026, ADR 0008).

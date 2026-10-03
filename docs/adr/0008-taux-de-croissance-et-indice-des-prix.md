@@ -1,11 +1,11 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-03
 ---
 
 # Taux de croissance et d'inflation convertis géométriquement ; indice des prix égal au prix du tour, lu au tour suivant, dans un registre de 13 niveaux
 
-> Statut « proposé » : rédigé par `architect-approfondi` (Opus, effort `high` ; aucune consultation Fable) le 03/10/2026, sur les décisions M25, lecture (b), et M26, question 1, du mainteneur (fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847` ; issues #39, #40 et #24). Il passe à « accepté » sur accord du mainteneur, à la date de cet accord.
+> Statut « accepté » : rédigé par `architect-approfondi` (Opus, effort `high` ; aucune consultation Fable) le 03/10/2026, sur les décisions M25, lecture (b), et M26, question 1, du mainteneur (fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847` ; issues #39, #40 et #24). **Accepté par le mainteneur le 03/10/2026, avec le point II.3** (registre de 13 niveaux) : la forme « 12 niveaux plus π_t en état » reste écartée (§ Options écartées, partie II).
 >
 > Il **révise partiellement l'ADR 0005** (points 4, 16 et 17, et § Conséquences) sans réécrire sa décision ; l'ADR 0005 reçoit une annotation datée qui renvoie ici. Il porte les deux contrats partagés que touchent M25 et M26, et eux seuls : la conversion des taux annuels (partie I) et la phase de l'indice des prix (partie II). Les choix d'option (C et SN pour la fiche 3, M pour la fiche 4) et les autres lectures ne touchent aucun contrat partagé ; ils restent consignés dans les fiches.
 >
@@ -53,7 +53,7 @@ date: 2026-10-03
 
 ## Décision
 
-**M25, lecture (b), et M26, question 1, arrêtées par le mainteneur le 03/10/2026** (fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847`). Ce sont des décisions citant M22 et M24. La **forme** du point II.3 (registre de 13 niveaux) est proposée par `architect` ; elle prend effet avec l'acceptation de cet ADR. Statut de tous les points : **choix de conception**.
+**M25, lecture (b), et M26, question 1, arrêtées par le mainteneur le 03/10/2026** (fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847`). Ce sont des décisions citant M22 et M24. La **forme** du point II.3 (registre de 13 niveaux) est proposée par `architect` ; elle prend effet avec l'acceptation de cet ADR, et le mainteneur l'a retenue en l'acceptant le 03/10/2026. Statut de tous les points : **choix de conception**.
 
 ### Partie I — Conversion des taux de croissance et d'inflation (lecture (G), commune aux fiches 3, 4 et 8)
 
@@ -157,7 +157,7 @@ date: 2026-10-03
   - *Une contrainte d'ordre qui fuit.* Elle impose un ordre dans la clôture : calculer π_t avant d'avancer le registre. Cette contrainte d'indexation sort du registre ; c'est précisément la classe d'erreur d'un tour que décrit T2. Sous II.3, la lecture du glissement est une fonction du registre, écrite en un seul endroit (localité).
   - *Une mesure figée.* L'analyse C10 de la fiche 8 peut retenir une autre mesure que le glissement de 12 tours : la variation sur le tour annualisée stabilise des cas où le glissement explose (fiche 4, § 6.1, Q1, point 4). Le registre de 13 niveaux fournit toute mesure de fenêtre ≤ n_a sans variable d'état nouvelle ; la forme à π_t stocké demanderait de la remplacer.
 
-  `monnaie` a exprimé une préférence faible pour le registre de 13 niveaux ; `macro` n'a pas motivé la forme à π_t contre elle, il la décrit comme l'empreinte de (c). Le désaccord porte sur la forme, non sur le fond, puisque les trajectoires sont les mêmes. Le mainteneur peut retenir π_t en état en refusant le point II.3 lors de l'acceptation.
+  `monnaie` a exprimé une préférence faible pour le registre de 13 niveaux ; `macro` n'a pas motivé la forme à π_t contre elle, il la décrit comme l'empreinte de (c). Le désaccord porte sur la forme, non sur le fond, puisque les trajectoires sont les mêmes. Le mainteneur pouvait retenir π_t en état en refusant le point II.3 lors de l'acceptation ; il a retenu le point II.3 (03/10/2026).
 
 ## Conséquences
 
