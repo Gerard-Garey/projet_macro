@@ -212,6 +212,7 @@ Contrôle C12 : `grep -c -F` sur `docs/specification/nations_et_marches.tex` pou
 | C10 | `t10_formes.py` | formes fermées ; critère 8 ; coefficient d'Okun |
 | C11 | `t11_q4.py` | conversion de l'anticipation (forme multiplicative, R, C, D) |
 | C12 | `grep` | notation |
+| C13 | `t12_partVA.py` | écart entre W/(p·pr) et WB/VA sur 12 tours |
 
 **Validation C3.** Avec g = 0, la construction reproduit exactement la fiche 2, § 3.N-8 :
 - 0,9459 et 73,0 mois (m = 0,6) ; 0,9770 et 95,9 (m = 0,8) ;
@@ -330,7 +331,7 @@ Avec g = 2 %, on trouve 0,9452 et 72,9 ; 0,9762 et 95,8. **Observation transmise
 - **(T3-SP) Phillips sans niveau** : ln W_t = ln W_{t−1} + ln(1 + g_pr/n_a) + (1/n_a)·ln(1 + π^e_t) − (φ/n_a)(U_{t−1} − U^eq). Elle est instruite pour comparaison.
 - **Verdict sur SP.** À prix exogènes, la valeur propre du salaire vaut **1** : **échec du critère 5 (b)**. Le salaire réel n'a pas d'ancre propre, ce qui est un continuum au sens du critère 4 (b), documenté. Sous une marge instantanée, SN se réduit à SP avec φ = λ_w·β et U^eq = U* : SN n'apporte que la correction de l'écart de marge (fiche 4, terme de demande, instabilité 14), et c'est elle qui ancre le salaire réel du bloc. **SP est écartée.**
 - **Paramétrage de la norme**, en deux lectures :
-  - **(w1)** ω* = 1/(1 + μ̄), lu dans la fiche 4. U* = U^eq exactement. Trois paramètres : λ_w, β, U^eq. Une variation de μ̄ ne déplace pas U*.
+  - **(w1)** ω* = 1/(1 + μ̄), lu dans la fiche 4. U* = U^eq exactement. Trois paramètres : λ_w, β, U^eq. Une variation de μ̄ ne déplace pas U*. La variable de la règle est W/(p·pr), celle de la condition 3 (d).
   - **(w2)** ω* est un paramètre du bloc 3. U* = U^eq + ln(ω*(1 + μ̄))/β : une marge plus forte relève le chômage d'équilibre. Mais seul ln ω* + βU^eq est identifié, et l'un des deux devient une constante de calibration.
   - (w2) est l'interface naturelle d'un levier institutionnel (Q7, J4).
 - **Indexation** : coefficient 1 sur π^e. Ni max(π^e, π), puisque le cliquet G-W est écarté, ni indexation sur l'inflation passée, pour éviter un double compte avec la loi adaptative de la fiche 8 et la Q6 de la fiche 4. La productivité entre par sa tendance g_pr, non par la productivité apparente (v1.5 ĝ^prod, v2.0 g_A), qui importerait le cycle de rétention.
@@ -342,26 +343,39 @@ Avec g = 2 %, on trouve 0,9452 et 72,9 ; 0,9762 et 95,8. **Observation transmise
 - **Lecture (b), après le bloc 8 dans la phase 1** : ordre « banque centrale, puis travail », engagement de la fiche 8 (amendement Q3). Délai : 0 tour. La lecture reste triangulaire si le bloc 8 ne lit pas W_t (il lit U_{t−1} à l'ouverture).
 - Les états stationnaires sont identiques. Seule la dynamique diffère, d'un tour.
 
-#### 3.N-4 Conversion (Q4 ; critères 3 (b), 4 et 9 (c))
+#### 3.N-4 Lecture commune des taux annuels (Q4, #24 ; critères 3 (b), 4 et 9 (c))
 
-- **Productivité** : ln(1 + g_pr/n_a), exact par rapport à N9 (M24 (f)).
-- **Vitesse** : λ_w/n_a, linéaire (M22).
-- **Anticipation**, en deux lectures :
-  - **géométrique**, (1/n_a)·ln(1 + π^e) : **exacte**. U* ne dépend ni de n_a ni de λ_w.
-  - **linéaire**, ln(1 + π^e/n_a). L'écart stationnaire de U, mesuré par C11, est donné ci-dessous.
+La lecture est **commune** aux fiches 3, 4 et 8 (décision du 03/10/2026). La forme mixte instruite plus haut, productivité linéaire et anticipation géométrique, est **exclue** par cette décision. Pour la cohérence de T1 avec N*, j'inclus g_N dans la lecture commune : N^pa doit croître exactement comme N* = y*/pr. Deux lectures sont instruites.
 
-  | π̄ | n_a | Écart par pas | SN : U − U* (λ_w = 0,5 / 1 / 2) | Écart relatif entre ×0,5 et ×2 (sur U = 5 %) | SP (φ = 2) |
-  |---|---|---|---|---|---|
-  | 2 % | 4 | 3,688e−5 | 0,0148 / 0,0074 / 0,0037 point | 2,21e−3 | 0,0074 point |
-  | 2 % | 12 | 1,506e−5 | 0,0181 / 0,0090 / 0,0045 point | 2,71e−3 | 0,0090 point |
-  | 2 % | 52 | 3,722e−6 | 0,0194 / 0,0097 / 0,0048 point | 2,90e−3 | 0,0097 point |
-  | 10 % | 4 | 8,651e−4 | 0,346 / 0,173 / 0,087 point | 5,19e−2 | 0,173 point |
-  | 10 % | 12 | 3,563e−4 | 0,428 / 0,214 / 0,107 point | 6,41e−2 | 0,214 point |
-  | 10 % | 52 | 8,834e−5 | 0,459 / 0,230 / 0,115 point | 6,89e−2 | 0,230 point |
+**Lecture (L), linéaire pour tous les taux** (x/n_a par pas, conforme à M22 et à M24 (f)) :
+- Productivité ln(1 + g_pr/n_a) et population (1 + g_N/n_a) : exactes par construction.
+- Anticipation ln(1 + π^e/n_a) : exacte seulement si π^e est un **taux annualisé linéaire**, c'est-à-dire n_a fois la hausse par pas anticipée.
+  - Sa valeur stationnaire vaut alors n_a[(1 + π̄)^{1/n_a} − 1] : 1,9852 / 1,9819 / 1,9806 % pour π̄ = 2 % et n_a = 4 / 12 / 52 ; 9,6455 / 9,5690 / 9,5398 % pour π̄ = 10 %.
+  - Ce n'est pas π̄. Le critère 9 (a) (« égale à π̄ ») ne serait tenu qu'à cette transposition près : **correction prospective du critère, à décider par le mainteneur**.
+- Si au contraire la fiche 8 forme π^e sur le glissement mesuré (valeur stationnaire π̄), SN échoue au critère 4. Le tableau C11 reste valable : écart relatif de 2,71e−3 entre ×0,5 et ×2 à π̄ = 2 % et n_a = 12 ; U − U* de +0,009 point (2 %) et +0,214 point (10 %) à λ_w = 1.
+- Cible : une cible de 2 % convertie linéairement donne un glissement effectif de 2,0151 / 2,0184 / 2,0197 % (n_a = 4 / 12 / 52) ; 10,3813 / 10,4713 / 10,5065 % pour 10 % (`sec:cadre-calendrier` le signale déjà).
+- Croissance du salaire réel : 2,0151 / 2,0184 / 2,0197 %. Dépendance à n_a déclarée (critère 3 (b)).
 
-- **Sous conversion linéaire, SN échoue au critère 4** (seuil 1e−6 ; ici 2,7e−3 à π̄ = 2 %). **La conversion géométrique est donc une condition de SN.**
-- `sec:cadre-calendrier` dit qu'un taux d'inflation n'est aucune des trois natures de M22 et en renvoie le traitement aux fiches 4 et 8. Mais `CONVENTIONS.md` § 5.2 exige que toute conversion soit donnée une fois dans `sec:cadre`. **Contrat partagé** : ajout d'une conversion de taux d'inflation dans `sec:cadre`, à décider avec les fiches 4 et 8. Le mainteneur dit si cela exige une décision citant M22.
-- Forme additive de A et B (C1) : à π = 2 % et n_a = 12, l'écart vaut 1,48e−4 par an ; à π = 10 %, 4,15e−3 par an.
+**Lecture (G), géométrique pour tous les taux** ((1 + x)^{1/n_a} par pas, ou ln(1 + x)/n_a) :
+- SN est exacte avec π^e défini comme glissement, de valeur stationnaire π̄ : le critère 9 (a) est tenu tel qu'il est écrit.
+- U* et ω̄ ne dépendent ni de n_a ni de λ_w.
+- La croissance du salaire réel vaut exactement g_pr pour tout n_a : le critère 3 (b) est entièrement satisfait. La cible donne exactement son glissement.
+- Coût :
+  - **révision de M24 (f)** (N9 : pr_{t+1} = pr_t(1 + g_pr)^{1/n_a} ; g = (1 + g_pr)(1 + g_N) − 1 ; `sec:production` l. 616 et 741 ; publication de 2,0184 % retirée) ;
+  - une conversion des taux de croissance et d'inflation ajoutée à `sec:cadre-calendrier` (`CONVENTIONS.md` § 5.2) : **contrat partagé, décision citant M22 et M24**.
+- Les taux d'intérêt, flux et vitesses restent linéaires (M22, lecture (a)), puisqu'un taux de croissance ou d'inflation n'est aucune des trois natures de M22.
+
+**Ce que chaque lecture exige de la fiche 3** :
+- (L) : l'anticipation consommée par SN doit être un taux linéaire annualisé (engagement de la fiche 8) et le critère 9 (a) doit être transposé.
+- (G) : rien de plus. M24 (f) doit être révisée.
+- Sous l'une ou l'autre lecture, SN reste exacte et indépendante des vitesses. **Seule la forme mixte, désormais exclue, et (L) avec une anticipation en glissement font échouer le critère 4.**
+
+**Avis de `macro` sur la lecture commune.** Je préfère (G).
+- C'est la seule qui tienne les critères 3 (b) et 9 (a) tels qu'ils sont écrits.
+- Elle fait coïncider la cible, l'anticipation et le glissement restitué au joueur : « 2 % » veut dire 2 %.
+- Le prix est la révision de M24 (f) : une ligne de N9, la forme de g, et le retrait d'un chiffre publié.
+
+(L) est viable à deux conditions : la fiche 8 forme une anticipation en taux linéaire, et le critère 9 (a) est transposé. Le joueur verrait alors un glissement de 2,0184 % pour une cible de 2 %. Le choix revient au mainteneur, à M25-M26.
 
 #### 3.N-5 Phases et lectures (critère 2)
 
@@ -398,7 +412,10 @@ Croissance du salaire (C10) :
   - U_0 = U^eq ;
   - N^pa_0 = N_0/(1 − U^eq), avec N_0 = y_0/pr_0 ;
   - N_{−1} = N_0/(1 + g_N/n_a) pour C.
-- **Condition 3 (d) sur la fiche 4** : le rapport stationnaire p/UC vaut exactement 1 + μ̄, sur la même base de coût que ω. Une marge sur cm, coût moyen pondéré en retard, introduirait un facteur d'ordre (1 + π̄)^{1/n_a}, donc une dépendance de U* à n_a.
+- **Condition 3 (d)** (décision du 03/10/2026), écrite sur **W/(p·pr)**. La valeur stationnaire de W/(p·pr) que donne la règle de prix doit égaler la norme ω* de SN : avec (w1), ω* = 1/(1 + μ̄), et la fiche 4 doit donner exactement p/UC = 1 + μ̄ à l'état stationnaire.
+  - Si la fiche 4 marquait sur une autre base, par exemple le coût moyen pondéré, la condition se lirait sur la même variable W/(p·pr). U* se déplacerait de ln(ω*·p/UC)/β, qui dépend de n_a.
+  - **Écart publié** entre W/(p·pr) et WB/VA sur 12 tours : −0,109 point à π̄ = 2 % et −0,655 point à 10 % (μ = 0,25, remesure C13). Il vient de la variation des stocks valorisée au coût dans la valeur ajoutée. Il croît avec π̄ et ne dépend d'aucune vitesse.
+  - La bande du test zéro de ±1 point est commune aux fiches 3 et 4 et porte sur une seule définition. À π̄ = 10 %, l'écart consomme les deux tiers de la bande si celle-ci est centrée sur W/(p·pr) plutôt que sur la valeur résolue de WB/VA. **Laquelle des deux est la valeur centrale de la bande reste à préciser par le mainteneur.**
 - **Constat de bouclage.** U* est vertical, fixé par le bloc 3. L'état stationnaire exige que la demande soit cohérente avec y = pr(1 − U^eq)N^pa. Si elle ne l'est pas, π dérive jusqu'à ce que la politique de la fiche 8 ajuste la demande. L'état initial résolu doit donc résoudre une variable de fermeture : le taux réel neutre (fiche 8) ou la position budgétaire (fiche 9). C'est la « fermeture du niveau d'activité » de l'acquis R (faits § 8) et la question ouverte au terme de K (faits § 7).
 
 #### 3.N-7 Stabilité propre (critère 5 (a) et (b))
@@ -546,7 +563,7 @@ Statut : **extraits de recherche du 03/10/2026, sources primaires non lues** (le
 **Indicateurs au tour** :
 - U (au tour, et moyenne sur 12 tours) et N ;
 - W (glissement sur 12 tours) ; W/P ;
-- part salariale (ΣWB/ΣVA sur 12 tours) ;
+- part salariale, mesure restituée ΣWB/ΣVA sur 12 tours, publiée avec la variable des règles W/(p·pr) et leur écart stationnaire ;
 - sous C seulement : (y/N)/pr et masse salariale excédentaire en fraction de WB ;
 - niveaux normaux : U^eq, ω̄, glissement salarial stationnaire (4,0588 % à π̄ = 2 %).
 
@@ -579,8 +596,8 @@ Aucun fait D1 n'a été remesuré.
 | 1 Matrices | ligne 5 ; τ_S vers la ligne 7 (fiche 9) | ligne 5 ; τ_S ; emploi public | ligne 5 seule | idem R | idem R |
 | 2 Phases et M24 | **révise M24** (produit marginal) | **révise M24** ; lit prix et trésorerie | conforme ; Q4 confirmée | conforme | conforme |
 | 3 Forme fermée | partielle ; unités du salaire ambiguës | non (N/N* et stock dépendent de λ) | oui : U* = U^eq, N = N*, ω̄ = 1/(1+μ̄) | oui | oui |
-| 3 (b) n_a | — | — | salaire réel 2,0151 / 2,0184 / 2,0197 % (M24 (f), déclaré) | idem | idem |
-| 4 Vitesses | **non** : λ_L = 13 > n_a ; terme φ_v v | **non** : stock −1,12 % (g_N = 0,5 %) | oui, sous conversion géométrique (linéaire : 2,7e−3, échec) | idem R | idem R |
+| 3 (b) n_a | — | — | lecture commune (L) : salaire réel 2,0151 / 2,0184 / 2,0197 % ; (G) : exactement g_pr | idem | idem |
+| 4 Vitesses | **non** : λ_L = 13 > n_a ; terme φ_v v | **non** : stock −1,12 % (g_N = 0,5 %) | oui sous (G), ou sous (L) avec une anticipation en taux linéaire ; échec sous (L) avec une anticipation en glissement (2,7e−3) | idem R | idem R |
 | 5 (a) | cliquet G-W | instabilité 7, cliquet | rien de réintroduit | idem | idem |
 | 5 (b) | −0,083 ; ×2 : −1,167 ; salaire = 1 : **échec** | < 1 (u_n 0,99667) | 0,9167 | 0,9167 et 0,8 | idem C |
 | 5 (c) bande | sans objet (λ > n_a) | pas d'état exact | 68,9 à 95,8 tours, dans la bande | idem R ; demi-vie 3,1 tours | **98,6 et 121,2 tours : échec** |
@@ -600,7 +617,7 @@ Aucun fait D1 n'a été remesuré.
 
 **Recommandation : option R** (N = min{N*, N^pa}, salaire SN), avec les lectures suivantes.
 - (a) Q3 : anticipation lue à l'ouverture, sous réserve de l'avis de `monnaie`.
-- (b) Q4 : conversion géométrique de l'anticipation, déclarée dans `sec:cadre` avec les fiches 4 et 8. C'est une **condition de SN** (critère 4). Elle forme un contrat partagé ; le mainteneur dit si elle exige une décision citant M22.
+- (b) **Lecture commune des taux annuels (Q4, #24 ; fiches 3, 4 et 8)** : (G), géométrique, avec révision de M24 (f) et décision citant M22 et M24. À défaut, (L) avec une anticipation en taux linéaire annualisé (engagement de la fiche 8) et une transposition prospective du critère 9 (a). Choix du mainteneur à M25-M26.
 - (c) Norme ω* = 1/(1 + μ̄), lecture (w1). La lecture (w2) est renvoyée au J4 avec le levier institutionnel.
 - (d) Population active en tendance exogène, propriétaire le bloc 3.
 - (e) Q4 de la fiche 2 confirmée.
@@ -625,7 +642,7 @@ Aucun fait D1 n'a été remesuré.
 **Réserves, avec seuils écrits avant l'essai.**
 1. Bouclage du niveau d'activité : constat transmis aux fiches 8 et 9 et au script d'état stationnaire.
 2. Critère 5 (d), boucle salaires – prix : à mesurer avec la fiche 4. Le rapport « λ_w = 2 instable » de la v2.0 reste à instruire (remesure T1).
-3. Condition 3 (d) sur la fiche 4.
+3. Condition 3 (d) sur W/(p·pr) ; écart publié de −0,109 et −0,655 point avec WB/VA ; valeur centrale de la bande commune à préciser.
 4. Coefficient d'Okun de −0,95 : limite déclarée.
 5. Bande à m = 0,8 tenue à 0,1 ou 0,2 tour près : toute recalibration de la fiche 2 au J3 la revérifie.
 6. Critère 7 (c) mesuré au J3 ou au J4. La maquette dépasse 12 tours sans rétroaction des prix.
@@ -654,3 +671,4 @@ Non instruit.
 | 03/10/2026 | Critères validés avec amendements (seuils, bande du critère 5 (c), lecture (ii) de #38 au critère 7, Q2, Q3, Q7 ; issue #39) | mainteneur |
 | 03/10/2026 | Amendement pris avec les critères de la fiche 4 (part salariale sur W/(p·pr), bande commune, lecture unique de #24), avant la fin de l'instruction | mainteneur |
 | 03/10/2026 | Instruction déposée (§ 3 à 5) : options A, B, socle 3.N, R, C, D ; recommandation R (salaire SN, lectures (a) à (f)), C en alternative conditionnelle ; A, B, D et SP écartées ; remesure T1 proposée | `macro` |
+| 03/10/2026 | Additif de `macro` après la décision du mainteneur sur la part salariale et la lecture unique des taux annuels : § 3.N-4 remplacé (lectures communes (L) et (G), préférence (G) avec révision de M24 (f)), condition 3 (d) sur W/(p·pr) avec écart publié (C13), § 4 et § 5 mis à jour | `macro` ; session principale |
