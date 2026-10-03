@@ -724,7 +724,229 @@ R2 reste la référence non mesurée.
 
 ## 6. Avis de l'expert consulté
 
-Non instruit (`monnaie`, frontière dette publique : détention de dépôts et de titres publics, au jalon 2).
+*Rédigé par `monnaie` (expert consulté sur deux frontières : la dette publique, puis l'inflation par décision du mainteneur du 03/10/2026) le 03/10/2026. Avis porté sur la fiche à l'état `d88a47e` (branche `claude/j1-economie-reelle`, PR #43). Il reste cohérent avec mes avis sur les fiches 3 et 4 (`travail.md` § 6, conditions C1 à C8 ; `prix.md` § 6, conditions C9 à C13). Les conditions nouvelles sont numérotées à leur suite (C14 à C25, § 6.3).*
+
+*Sources lues dans le dépôt :*
+- *fiche 5, § 1 à 5 ;*
+- *fiches 3 et 4, § 6 ;*
+- *ADR 0008 (accepté), parties I et II ;*
+- *issues #44 et #49 ;*
+- *`nations_et_marches.tex` : l. 232 (bilans), l. 254 (titres), l. 294 et 338 à 342 (lignes 19a et 19b), l. 354 à 356 et 407 à 411 (portes de la monnaie), l. 460 (intérêts), l. 477 à 479 (émission, placement raté), l. 510 (`tab:phases`, phase 7), l. 521 et 523 (aucune réévaluation, aucune dette à taux fixe), l. 902 à 905 (dates d'effet des leviers) ;*
+- *`archive/faits_mesures_G_K.md`, § 3, 6, 7 et 8.*
+
+*Calculs : cinq scripts du scratchpad (commandes et sorties au Retour). Deux contrôles valident ma maquette contre celle de `macro` : ma boucle propre redonne ses valeurs propres F5 (0,96678 et 0,96772), et mes taux d'épargne corrigés redonnent F3 (2,025 % et 2,209 %).*
+
+*Pour chaque référence, j'indique son statut :*
+- *lu : texte primaire ;*
+- *extrait : résumé ou notice ;*
+- *par reproduction : modèle de Godley et Lavoie relu dans les reproductions sfcr (`gl2-pc.Rmd`, `gl6-dis.Rmd`, `gl7-insout.Rmd`), l'ouvrage n'étant pas lu ;*
+- *de mémoire.*
+
+### 6.1 Réponses aux cinq questions de `macro`
+
+**Q1 — Dette publique. Je suis favorable à B_H ≡ 0 au socle**, avec les lignes 11a, 19a-ménages et 19b-ménages maintenues à montant nul (amendement Q4). J'ai cinq motifs et trois conditions.
+
+1. **Les titres du socle sont, en pratique, des bons courts renouvelés à chaque pas.**
+   - Ils portent le taux de la dernière date de décision (l. 254 et 460).
+   - Aucune dette n'est à taux fixe (l. 523) et aucun actif n'est réévalué (l. 521).
+   - Pour un ménage, B_H et D_H ne diffèrent donc que par l'écart i_B − i_D et par la liquidité.
+   - Une demande de Tobin n'ajouterait qu'une sensibilité de la composition à cet écart (λ_1 de PC). Elle n'aurait aucun effet de prix ni de durée.
+2. **La composition ne change pas la taille agrégée du canal rentier.** Il suffit de consolider la banque et la banque centrale (l. 232).
+   - Les créances nettes porteuses d'intérêt du secteur privé sur le secteur public valent NPD = B_H + B_Bk + Res − L^CB = B − M^G − E^CB.
+   - Hypothèses : la banque et les entreprises distribuent tout leur résultat dans le pas, et la transmission est complète (i_D = i_B = i_res = i_CB).
+   - Sous ces hypothèses, le revenu de capital des ménages vaut i·NPD/n_a, **qu'ils détiennent ou non les titres**. Sous B_H ≡ 0, il leur parvient par i_D·D_H et Div_Bk.
+   - C'est le résultat de consolidation d'Auclert (2017), document de travail NBER w23451, **lu**, p. 18 et § 3.4, p. 21 : « the net nominal positions and the unhedged interest rate exposure of the combined household and government sectors are zero […] provided firms are correctly consolidated as part of the household sector ».
+   - Contre-épreuve sur le modèle PC, reproduit d'après `gl2-pc.Rmd` l. 67 à 96 (script `m5_pc.py`, **résultat de modèle**). Quand r passe de 2,5 % à 3,5 %, Y\* passe de 106,49 à 110,09. Si tous les titres sont tenus par la banque centrale, dont le résultat revient à l'État, Y\* reste à 100,00.
+   - Ce qui porte le canal rentier, ce sont donc les titres détenus **hors de la banque centrale**, non les titres détenus **par les ménages**.
+   - B_H ≡ 0 ne supprime aucun canal agrégé. Il en reporte le calendrier sur les règles de la banque (fiche 7 : transmission à i_D, versement de Div_Bk).
+3. **Une demande de Tobin exige une clôture de la phase 7** qu'aucune fiche n'a encore instruite :
+   - le souscripteur du reliquat ;
+   - le signe de ce reliquat ;
+   - le rationnement d'une demande supérieure à l'émission ;
+   - trois paramètres, λ_0, λ_1 et λ_2.
+
+   Sous une cible ν fixe, le terme λ_2·YD/V est une constante qui ne fait que déplacer λ_0. Le principe de simplicité joue donc contre Tobin au socle.
+4. **Le seul effet de jeu qu'apporterait Tobin ne serait pas durable au socle.** Il s'agit de la création de monnaie au sens large par des achats de la banque centrale aux ménages : la ligne 19b-ménages fait varier M, la ligne 19b-banque ne le fait pas (`tab:portes-monnaie`, l. 410 et 411).
+   - Hypothèses : demande de Tobin en stock, bons courts, banque souscriptrice du reliquat.
+   - Sous ces hypothèses, un achat 19b-ménages ne change ni V ni les taux. Les ménages resouscrivent donc le même encours à la phase 7 suivante, et la souscription de la banque baisse d'autant.
+   - L'achat équivaut ainsi, au plus tard un tour après, à un achat à la banque : échange de réserves contre titres, M inchangé.
+   - Démonstration algébrique sous ces hypothèses, **non mesurée**.
+5. **Sous B_H ≡ 0, M = D_H + D_F suit la richesse nominale.** La demande de monnaie n'a aucune élasticité au taux ; c'est la monnaie endogène pure.
+   - Un excès de monnaie qui provient d'une création nette de richesse (déficit) est dépensé à la vitesse λ_V − n_aγ. Un échange d'actifs (achat de titres à la banque) est sans effet.
+   - Pour la reconfirmation demandée par C8, j'en tire ceci : une création monétaire durable se traduit par de l'inflation durable **quand elle accroît la richesse nette des ménages au-delà de ν** et que la demande excède la capacité. Ce n'est pas le cas quand elle se réduit à un échange d'actifs.
+   - À soumettre au mainteneur.
+
+Les trois conditions de B_H ≡ 0 sont transmises à la fiche 7 (§ 6.3, C19 à C21) :
+- la banque devient la seule détentrice privée de la dette ;
+- sa souscription (19a-banque) est le **reliquat déclaré de l'équation d'émission** (l. 477) après la souscription décidée de la banque centrale (19a-BC), et jamais un solde du bilan bancaire. C'est le défaut v2.0 des réserves et du refinancement calculés par différence ;
+- sa règle de taux des dépôts n'est disciplinée par aucun actif concurrent.
+
+**Second cas, si Tobin était retenu (J6 ou décision contraire) : qui achète quand la demande baisse ?**
+- **Ce doit être une souscription primaire négative des ménages (19a-ménages < 0), c'est-à-dire un non-renouvellement à l'échéance**, conforme à la nature de bons courts des titres du socle.
+- Sa contrepartie est la hausse de la souscription de la banque (19a-banque) dans la même équation d'émission, dont la somme reste égale au besoin.
+- Effets : M monte et H monte par la ligne 19a-ménages négative, H baisse par la ligne 19a-banque. Au net, H est inchangée et M monte : la banque a acheté les titres des ménages contre des dépôts nouveaux.
+- **Jamais par la ligne 19b**, pour deux raisons :
+  - `tab:phases` (l. 510) la réserve aux « achats décidés de la banque centrale » ;
+  - la clôture de PC, `Bcb ~ Bs - Bh` (`gl2-pc.Rmd` l. 80, par reproduction), fait de la banque centrale l'acheteur résiduel dans un modèle **sans banque**. Transposée au socle, elle ferait varier M, H et le bilan de la banque centrale sans décision, ce qui serait une monétisation implicite, illisible et indiscernable d'un assouplissement quantitatif décidé.
+- Si la banque atteint une limite de détention déclarée, l'État ne renouvelle pas tout ; c'est le « placement raté » du cadre (M^G < M^G\*, l. 479). Le risque de renouvellement relève de J6.
+
+**Q2 (Q10) — Inflation dans le terme de tendance. Je retiens la lecture (a), le glissement mesuré π_{t−1} lu dans le registre**, converti géométriquement ((1 + π_{t−1})^{1/n_a}, ADR 0008, I.1). Le canal « inflation → épargne d'entretien » est acceptable. J'y ajoute un constat de non-superneutralité de la cible, avec une proposition.
+
+1. **Motifs de (a)** :
+   - **Exacte quelle que soit la fiche 8**, donc robuste à un échec de C1. J'avais déjà préféré M à D à la fiche 4 pour cette raison.
+   - **Une seule entrée des anticipations, par les salaires** (fiche 4, § 6.2, et C13).
+     - Sous (b), π^e entrerait une seconde fois, par la demande.
+     - Une annonce crédible de désinflation baisserait alors π^e, donc l'épargne d'entretien, et **relèverait la consommation le tour même**, à contre-courant de la désinflation.
+     - Ordre de grandeur, ν = 1 : +0,55 % à +0,97 % du plan par point de baisse de π^e (chiffres de la ligne suivante, transposés).
+   - **Même information que le joueur** (C9 ; ADR 0008, II.2) : les ménages lisent le glissement restitué.
+   - (c) est à écarter. π̄ n'est pas une variable d'état, mais un résultat stationnaire. Lire π\* ferait d'un changement de cible un choc de demande direct.
+2. **Le canal est acceptable**, comme effet d'encaisses réelles en forme stock-flux.
+   - Godley et Lavoie écrivent la consommation sur le revenu réel corrigé de la perte d'inflation : `gl6-dis.Rmd` l. 73 à 76 et `gl7-insout.Rmd` l. 270 à 279, par reproduction.
+   - Son signe est stabilisant : une inflation plus forte réduit le plan.
+   - Mesure (`m5_calc2.py`) : +1 point de π_{t−1}, états d'ouverture fixés, donne −0,97 % du plan sous la cible nominale de `macro` et −0,55 % sous la cible corrigée proposée au point 3.
+   - Aucune source empirique n'est lue sur l'effet de l'inflation sur l'épargne mesurée.
+3. **Constat : la cible V\* = ν·n_a·YD^e, écrite sur le revenu nominal, n'est pas superneutre dès que i_D suit l'inflation.**
+   - Le revenu nominal contient la compensation d'inflation des intérêts. Les ménages visent donc une richesse réelle croissante avec π̄.
+   - Mesure (`m5_calc.py` ; forme fermée et simulation égales à 1e−6) : Fisher i_D = r + π, r = 1 %, g = 2 %, ν = 1, λ_V = 0,4, n_a = 12. La richesse en années de revenu hors intérêts, V/(n_a·Y_o), vaut :
+
+     | Cible | π̄ = 2 % | π̄ = 3 % | π̄ = 10 % |
+     |---|---|---|---|
+     | Nominale (`macro`) | 1,030928 | 1,041667 | **1,123596 (+9,0 %)** |
+     | Haig-Simons (proposée) | 1,010286 | 1,010514 | 1,014518 (+0,42 %) |
+     | Haig-Simons, Fisher géométrique par pas | 1,010071 | — | 1,010136 (+0,006 %) |
+
+     C/Y_o vaut 0,990030 → 0,993633 sous la cible nominale, et 0,990230 → 0,994251 sous la cible corrigée (Fisher linéaire).
+   - Conséquence monétaire.
+     - La demande stationnaire d'actifs des ménages dépend de la cible d'inflation. La fermeture du niveau d'activité (#44) et le r̄ résolu (C3) en dépendent donc aussi.
+     - Changer de cible achèterait un effet réel permanent : c'est un arbitrage exploitable, de même nature que le constat T2 de la fiche 4.
+     - Le contrôle que j'ai demandé à la fiche 4 (§ 6.1, Q6 : « le taux réel stationnaire de la règle doit être indépendant de π̄ ») échouerait.
+     - Ce n'est pas un échec d'exigence de la fiche 5 (critère 3 (d), mesure par amendement). C'est une condition de la fiche 8.
+   - **Proposition : écrire la cible sur le revenu de Haig-Simons**, avec la même lecture de l'inflation :
+     - V\*_t = ν·n_a·(YD^e_t − π^lu_s·V_{H,t}), avec π^lu_s = (1 + π_{t−1})^{1/n_a} − 1 ;
+     - le reste de la règle C est inchangé.
+   - Coût et propriétés (`m5_calc4.py`, `m5_calc2.py`) :
+     - aucun paramètre, aucune variable d'état ; α_Y = 1 − νλ_V et la condition de domaine sont inchangés ;
+     - V_H = ν·n_a·YD^HS **exactement**, indépendamment de λ_V (λ_V = 0,2 / 0,4 / 0,8 donnent des ratios identiques à 1e−11). Le critère 4 tient ;
+     - le ratio restitué V_H/(n_a·YD) devient ν/(1 + ν·n_a·π_s) : 0,98057 à π̄ = 2 %, 0,91267 à π̄ = 10 %, n_a = 12. Sa dépendance à n_a est déclarée (ADR 0008, I.6) : 0,980535 / 0,980566 / 0,980578 à n_a = 4 / 12 / 52 ;
+     - boucle propre : 0,96612 / 0,96706 / 0,96727 (i = 0, 3 %, 11 %), contre 0,96678 / 0,96772 / 0,97045 sous la cible nominale. Elle est plus amortie et moins sensible à π̄. Je n'ai pas recalculé la boucle B1 avec la fiche 2 ;
+     - avec des dépôts non rémunérés, la richesse réelle diminue avec l'impôt d'inflation net (semi-élasticité de l'ordre de −ν). C'est le sens de Cagan (1956), cité de mémoire, mais d'une ampleur sans rapport avec une hyperinflation (C18).
+   - Le résidu (+0,42 %) est l'écart de #49 entre r = i − π, linéaire moins géométrique, et le rendement réel exact. Il se ferme par la définition de la relation de Fisher retenue à la fiche 8. Une forme exacte existe, avec un revenu corrigé déflaté par (1 + π_s) : C/Y_o = 0,99003630 pour π̄ = 0, 2 et 10 %. Je ne la demande pas au socle.
+   - **Deux positions, si `macro` maintient la cible nominale** :
+     - *`macro`* (§ 3.N-3 et § 5) : cible sur le revenu nominal, correction de Haig-Simons implicite dans le seul terme de tendance. ν est exact sur le ratio restitué. C'est plus simple à lire, et sans conséquence tant que i_D ne suit pas l'inflation.
+     - *`monnaie`* : cible sur le revenu de Haig-Simons. Elle est superneutre à #49 près, conforme à Godley et Lavoie (consommation sur le revenu réel corrigé), de même empreinte. Le ratio restitué vaut ν/(1 + ν·n_a·π_s), et la bande du test zéro se centre sur la valeur résolue (critère 7).
+
+**Q3 — Signe du canal du taux. Je transmets à C10 une structure, non un nombre unique. Je ne demande pas d'instruire PCEX2 maintenant.**
+
+1. **Le +0,6 % de `macro` est un effet partiel.** Ma mesure donne +0,62 % du plan au tour n + 1 par point de i_D, avec ν = 1 et i_D = 3 %, sous la cible nominale (+0,61 % sous la cible corrigée).
+   - Cette mesure omet la baisse simultanée de Div_Bk et de Div_F qui finance la hausse des intérêts versés.
+   - En équilibre général, avec distribution complète dans le pas (point 2 de la Q1), l'effet passe :
+     - à l'impact, à environ α_Y·b par point ;
+     - à long terme et à dette donnée, à d ln C/di = b/(1 + i·b).
+   - Ici, b = NPD/(n_a·Y_o), soit la dette publique nette détenue hors banque centrale, en années de revenu hors intérêts. On a b = ν − (L − D_F − E^Bk)/(n_a·Y_o), d'où b < ν si les entreprises sont emprunteuses nettes.
+   - Illustration (`m5_calc3.py`, b hypothétique) :
+
+     | b | Impact | Long terme |
+     |---|---|---|
+     | 0,25 | +0,15 % | +0,25 % |
+     | 0,5 | +0,30 % | +0,49 % |
+     | 1 | +0,60 % | +0,97 % |
+
+   - À l'échelle du ménage, le signe est **positif sur le taux nominal** et **négatif sur l'inflation lue** (Q2) : le bloc 5 répond positivement au taux réel, sans substitution.
+2. **À long terme, le canal rentier est un canal budgétaire.** Son signe dépend de la règle de la fiche 9.
+   - Sous une règle qui stabilise la dette par l'impôt sur les ménages, la charge d'intérêts reçue est reprise en impôt, et l'effet de long terme est voisin de 0.
+   - Auclert (2017), **lu**, p. 17 : « the consequences […] between households and the government depend crucially on the fiscal rule ».
+   - Sa vitesse découle de l'absence de dette à taux fixe (l. 523). Une part à taux fixe l'étalerait (C24).
+3. **Ce que la littérature établit, et ce qui reste contesté.**
+   - *Établi (résultats empiriques, sources lues ou extraites)* : un resserrement monétaire réduit l'activité. Romer et Romer (2003), document de travail NBER w9866, **lu**, PDF p. 6 : « A 100-basis-point shock to the funds rate is associated with a reduction in industrial production of 4.8% after 22 months ». Publication dans l'AER (2004), citée de mémoire.
+   - *Contesté* : l'élasticité de substitution intertemporelle.
+     - Hall (1988), *JPE* 96(2), 339-357, résumé **extrait** : « no strong evidence that the elasticity of intertemporal substitution is positive ».
+     - Havranek (2015), *JEEA* 13(6), 1180-1204, résumé **extrait** : moyenne corrigée nulle sur données macroéconomiques, « around 0.3–0.4 » sur données individuelles pour les détenteurs d'actifs.
+     - Auclert (2017) conclut que la redistribution **amplifie** l'effet de la politique monétaire, parce que les perdants d'une baisse de taux ont une propension plus faible (résumé, **lu**). Le socle n'a ni ménage emprunteur ni dette longue : il n'a donc pas ce mécanisme.
+   - *Résultat de modèle, non un fait* : l'acquis « la politique monétaire peut agir à l'envers » (R).
+4. **PCEX2 et l'hypothèse réfutée 3.**
+   - L'hypothèse réfutée porte sur le **niveau** du chômage v2.0 : 9,02 % → 8,88 % pour η de 0 à 2 (faits § 7, R). Elle ne dit rien du **signe** de ∂demande/∂r, qui conditionne la stabilité de C2.
+   - Le fait nouveau qui justifierait d'y revenir est donc la mesure de C10 elle-même. J'en propose le critère, à écrire dans la fiche 8 avant l'essai (C14) : la boucle conjointe de C2 a un rayon spectral ≥ 1 à la calibration, ou ∂(demande totale)/∂r ≥ 0. La demande totale comprend :
+     - le canal rentier et l'épargne d'entretien des ménages ;
+     - l'investissement de la fiche 6 ;
+     - la règle budgétaire de la fiche 9.
+   - Si le critère est déclenché, je recommande d'instruire dans cet ordre :
+     - le coût du capital de la fiche 6, qui est déjà prévu ;
+     - la réaction budgétaire à la charge d'intérêts et une part de dette à taux fixe (fiche 9) ;
+     - le calendrier de transmission et de distribution de la banque (fiche 7) ;
+     - en dernier, une substitution chez les ménages.
+   - Si une substitution est retenue, sa transposition propre à l'option C est une **cible de richesse fonction du taux réel**, ν(i_D − π_{t−1}), plutôt que α_1(r).
+     - PCEX2 revient d'ailleurs à cela : la cible implicite (1 − α_1)/α_2 croît de ι/α_2 = 10 ans par unité de r (calcul à la main).
+     - Le critère 4 tient, puisque ν reste un niveau.
+     - La valeur ι = 4 de PCEX2 (`gl2-pc.Rmd` l. 339 à 344, par reproduction) donnerait environ −4 % du revenu par point à l'impact (Δα_1 = −0,04 ; calcul à la main). Elle n'a aucune source de calibration et ne se reprend pas.
+
+**Q4 — Taux de flux. Le classement est confirmé.**
+- i_D et i_B s'appliquent à un encours d'ouverture pour produire un flux du pas (l. 328 et 460) : ce sont des taux de flux, convertis linéairement (ADR 0008, I.2). λ_V est une vitesse, linéaire. ν est un niveau. g, π_{t−1} et π_s, y compris dans la correction de Haig-Simons, sont géométriques.
+- Deux précisions :
+  - **#49 est la seule source de non-superneutralité qui subsiste sous la cible corrigée** : +0,42 % de V/(n_a·Y_o) entre 2 % et 10 % sous Fisher linéaire, +0,006 % sous Fisher géométrique. La tolérance du test de superneutralité se fixe avec #49 (C15) ;
+  - restituer un « rendement annuel effectif » des dépôts, (1 + i/12)^12 − 1, soit 3,04 % pour i = 3 %, exigerait l'annualisation géométrique de l'ADR 0008 (I.4) et afficherait deux taux. Je recommande de restituer le taux contractuel i_D et le rendement réel i_D − π, cohérent avec le r = i − π du cadre.
+
+**Q5 — Taux d'épargne corrigé. La restitution convient**, sous quatre précisions.
+1. **Définition ex post**, sur une fenêtre de 12 tours :
+   - perte d'inflation du tour = V_{H,t}·(P_t/P_{t−1} − 1), calculée depuis le registre et P_t, connue dès la phase 5 ;
+   - taux corrigé = 1 − ΣC / Σ(YD − perte).
+2. **« Impôt d'inflation » désigne la perte nette (π − i_D)·D_H**, non la perte brute π·D_H, que les intérêts compensent en partie ou en totalité. Je propose trois indicateurs : taux d'épargne nominal, taux d'épargne corrigé, rendement réel des dépôts i_D − π (glissement). Sous B_H ≡ 0, la perte d'inflation sur la richesse est entièrement une perte sur les dépôts.
+3. **Valeurs** (`m5_calc3.py`, Fisher, ν = 1, n_a = 12) :
+
+   | Cible | Taux | π̄ = 2 % | π̄ = 10 % |
+   |---|---|---|---|
+   | Nominale | nominal | 3,967 % | 11,567 % |
+   | Nominale | corrigé | 2,025 % | 2,209 % |
+   | Haig-Simons | nominal | 3,890 % | 10,557 % |
+   | Haig-Simons | corrigé | 1,985 % | 1,998 % |
+
+   Sous la cible corrigée, le taux corrigé ne dépend presque plus de l'inflation et se lit comme l'épargne réelle, environ g·ν.
+4. Qui profite de l'impôt d'inflation net : les émetteurs de passifs nominaux, l'État et les entreprises emprunteuses, par l'intermédiaire de la banque. Point signalé à la fiche 9 et à `jeu`.
+
+### 6.2 Avis général, côté monnaie
+
+**Favorable à l'option C**, avec :
+- B_H ≡ 0 (Q1) ;
+- la lecture (a) du terme de tendance (Q2) ;
+- le classement des taux de l'ADR 0008 (Q4) ;
+- la double restitution du taux d'épargne (Q5).
+
+Deux précisions conditionnent mon accord :
+- **la cible sur le revenu de Haig-Simons** (Q2, point 3) : superneutralité de la règle, au résidu de #49 près ;
+- **la structure d'équilibre général du canal rentier** (Q3), transmise à C10 à la place du seul effet partiel.
+
+**Désaccord éventuel avec `macro`** : la seule question est l'assiette de la cible, nominale ou corrigée, décrite en deux positions au point 3 de la Q2. Je n'ai pas consulté `macro` sur ce constat. Il n'y a aucun désaccord sur B_H ≡ 0, sur la lecture (a), sur le classement des taux, ni sur le refus de reprendre PCEX2 sans fait nouveau.
+
+**Risque monétaire principal, à garder visible jusqu'à la fiche 8.** Le bloc 5 répond **positivement** au taux réel. Le contrôle de l'inflation par C2 exige donc que la somme des autres canaux le compense (C14). Sinon, une règle intégrale qui relève le taux quand l'inflation monte entretient l'écart au lieu de le refermer. Ce serait un processus cumulatif à l'envers, contraire à l'intention du mainteneur.
+
+### 6.3 Conditions transmises
+
+**Fiche 8 (banque centrale et anticipations)**, en complément de C1 à C13 :
+- **C14 — Condition de signe**, à écrire avant l'essai et à mesurer avec C10 : ∂(demande totale)/∂r < 0 à la calibration et rayon de la boucle C2 < 1. Son déclenchement constitue le fait nouveau qui rouvre la question de la substitution (Q3, point 4, ordre de recours).
+- **C15 — Superneutralité.** Le r̄ résolu et les allocations réelles (C/Y_o, V/Y_o) sont indépendants de π̄ pour π̄ ∈ {0 ; 2 % ; 10 %}. La tolérance se fixe avec #49. C'est l'extension du contrôle T2 de la fiche 4.
+- **C16 — Élasticités des ménages transmises.** Elles figurent dans la Q2 (inflation lue) et dans la Q3 (taux : effet partiel et effet d'équilibre général). Leurs délais :
+  - taux du tour n → ligne 10 en phase 6 du tour n → plan du tour n + 1 ;
+  - glissement du tour n − 1 → plan du tour n.
+- **C17 — Assouplissement quantitatif au socle.** Sous B_H ≡ 0, les achats se font à la banque seule (19b-banque) : échange de réserves contre titres, M inchangé (l. 410 et 411). Ce point est à déclarer à `jeu`. Sous une demande de Tobin en stock, un achat 19b-ménages s'annulerait en un tour (Q1, point 4).
+- **C18 — Haute inflation (J6).** Avec ν fixe, il n'y a pas de fuite hors des dépôts : la cible corrigée ne donne qu'une semi-élasticité de l'ordre de −ν. Une dynamique de type Cagan demande un actif de fuite (billets, devises, biens) ou une cible fonction de i_D − π^e, à J6.
+
+**Fiche 7 (banque commerciale)** :
+- **C19 — Placement.** Sous B_H ≡ 0, 19a-banque = besoin − 19a-BC, reliquat déclaré de l'équation d'émission. Res s'obtient par les flux et L^CB par la règle de la phase 8 (c). Aucun poste n'est obtenu par différence du bilan bancaire (défaut v2.0).
+- **C20 — Taux des dépôts.** Les ménages n'ont aucun actif concurrent. La règle de transmission (écart, délai en tours) est donc déclarée, et la marge est réglée par un mécanisme, non par une borne. Elle fixe le rendement réel des dépôts et l'impôt d'inflation net.
+- **C21 — Distribution (ligne 15).** Le délai de versement de Div_Bk fixe la compensation, en équilibre général, du canal rentier (Q3, point 1). Il est déclaré.
+- **C22 — Limite de détention de titres**, si elle existe : elle est déclarée, et son activation est le placement raté (l. 479). Le risque de renouvellement relève de J6.
+
+**Fiche 9 (État et dette)** :
+- **C23 — Règle budgétaire face à la charge d'intérêts.** Elle est déclarée : elle fixe le signe de long terme du canal rentier (Auclert, 2017, p. 17).
+- **C24 — Durée de la dette.** Toute part à taux fixe, qui étalerait le canal rentier, est une décision citant M22 (l. 523).
+- **C25 — Ordre de la phase 7 sous B_H ≡ 0** : besoin de l'État, puis souscription et achats décidés de la banque centrale, puis reliquat de la banque. La Q5 est sans objet. Variante de Tobin (J6) : non-renouvellement par la ligne 19a-ménages négative, la banque en reliquat, jamais la ligne 19b en acheteur passif.
+
+### 6.4 Points signalés à `jeu` (non tranchés)
+
+- « Hausse de taux → consommation des ménages en hausse au tour suivant » (canal rentier) : un signe contre-intuitif, à déclarer. L'effet net dépend de l'investissement et de la règle budgétaire (C14, C23).
+- « L'inflation ronge l'épargne, les ménages la reconstituent » : effet lisible et stabilisant.
+- Trois indicateurs : taux d'épargne nominal, taux d'épargne corrigé, rendement réel des dépôts. Le mot « impôt d'inflation » est réservé à la perte nette.
+- Assouplissement quantitatif sans effet sur la masse monétaire au socle (C17).
+- Sous la cible nominale, relever la cible d'inflation aurait un effet réel permanent, exploitable. Sous la cible corrigée, l'effet est négligeable.
 
 ## 7. Avis de `jeu`
 
@@ -961,3 +1183,4 @@ Non instruit.
 | 03/10/2026 | Critères validés avec amendements (seuils et bandes, bouclage avec la fiche 9 en risque assumé, B_H ≡ 0 admise, ménage représentatif et variante à deux types, `monnaie` consulté aussi sur l'inflation, Q11 au J4 ; issue #41) | mainteneur |
 | 03/10/2026 | Instruction déposée (§ 3 à 5), partielle (boucle conjointe avec SN, C et M et état conjoint avec la fiche 6 non mesurés ; une relance ciblée après la limite de tours) : options A, B, S, C, R, D ; recommandation C (cible de richesse avec terme de tendance, B_H ≡ 0) ; § 1.1 aligné sur l'ADR 0008 | `macro` ; session principale |
 | 03/10/2026 | Avis de `jeu` (§ 7) : préférence C ; seuil du critère 12 (d) proposé (part d'un transfert dépensée en 12 tours entre 0,50 et 0,85, en équilibre partiel ; 0,628 à la calibration) ; double dimension de la sur-commande (G ×2 pendant 12 et 24 tours) ; conditions de restitution ; trois constats chiffrés transmis à `macro` | `jeu` |
+| 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à C avec B_H ≡ 0, lecture (a), classement des taux confirmé, double restitution du taux d'épargne ; constat de non-superneutralité de la cible nominale et proposition d'une cible sur le revenu de Haig-Simons (deux positions si `macro` maintient la sienne) ; structure d'équilibre général du canal rentier ; conditions C14 à C25 pour les fiches 7, 8 et 9 | `monnaie` |
