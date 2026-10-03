@@ -3,14 +3,14 @@ bloc: Prix
 module: src/nations/blocs/prix.py
 expert pilote: macro
 experts consultés: monnaie (indexation des prix sur les anticipations, indice et glissement lus par la règle de taux : frontière inflation) ; jeu
-statut: en instruction (critères proposés le 03/10/2026)
+statut: en instruction (critères validés le 03/10/2026)
 décision: —
 issue: #40
 ---
 
 # Fiche comparative — Prix
 
-> Fiche ouverte à partir du gabarit `0000-gabarit.md` (validé à l'usage, M20), sur le modèle de forme de la fiche 2 « production et stocks » (M24). Jalon 1 de l'issue #40 : § 1 et § 2 seuls ; les rubriques suivantes portent « non instruit » jusqu'au jalon 2. Décidée avec la fiche 3 « travail et salaires » (décision du mainteneur du 03/10/2026 : décisions par paires).
+> Fiche ouverte à partir du gabarit `0000-gabarit.md` (validé à l'usage, M20), sur le modèle de forme de la fiche 3 « travail et salaires ». Jalon 1 de l'issue #40 : § 1 et § 2 seuls ; les rubriques suivantes portent « non instruit » jusqu'au jalon 2. Décidée avec la fiche 3 « travail et salaires » (décision du mainteneur du 03/10/2026 : décisions par paires).
 
 Une fiche comparative instruit **l'origine de l'approche** d'un bloc (`docs/exigences.md` § 2.3) : la spécification v1.5, le moteur v2.0, ou une approche nouvelle. Elle est **instruite par l'expert pilote**, commentée par `jeu` et par l'expert consulté que désigne `README.md`, et **décidée par le mainteneur** (décision M-n, reportée dans `docs/feuille-de-route.md`). Aucune approche n'entre dans le moteur ni dans la spécification sans cette décision. Les agents n'écrivent pas la fiche dans le dépôt : elle figure dans leur compte rendu et la session principale la commite. Un **bloc-cadre** (temps et comptabilité) n'est pas un module de `blocs/` : sa fiche instruit ce que le cadre **définit** (conventions, matrices, règles), non des flux proposés ; les adaptations que cela impose sont signalées rubrique par rubrique.
 
@@ -176,7 +176,7 @@ Les symboles **ne sont pas fixés** : ils le seront à l'instruction, sous le cr
 
 ## 2. Critères d'évaluation, écrits avant l'instruction
 
-**Statut** : proposés par `macro` le 03/10/2026, **à valider par le mainteneur** (jalon 1 de #40). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
+**Statut** : proposés par `macro` le 03/10/2026, **validés par le mainteneur le 03/10/2026** (jalon 1 de #40), avec les amendements ci-dessous. La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
 
 Correspondance avec le gabarit :
 
@@ -215,7 +215,18 @@ Sont des **mesures** (elles décrivent sans écarter) : 5 (e) sous anticipation 
 
 ### Amendements adoptés
 
-Aucun à la date de la proposition.
+Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les questions de `macro` :
+
+- **Critères** : les quinze critères sont validés tels quels, avec leur nature (exigence ou mesure).
+- **Seuils reconduits des fiches 2 et 3**, adoptés : 1e−10 en relatif (critère 3) ; écart ≤ 1e−6 après 720 pas (critère 4) ; 0,48 ms par pays-pas (critère 12) ; désactivation d'une borne au plus tard 12 tours après la fin du choc (critère 7 (c)).
+- **Bandes du test zéro** (critère 6), adoptées, à confirmer avec O1 avant l'essai (M19) : marge ±0,5 point ; glissement annuel ±0,2 point autour de π̄ ; part salariale ±1 point, bande commune avec la fiche 3, sur une seule définition.
+- **Critère 5 (e)** : la stabilité de la boucle salaires – prix est une **exigence** pour la partie réelle sous anticipation exogène ; elle lie la paire des fiches 3 et 4 (le critère 5 (d) de la fiche 3 reste une mesure de son côté).
+- **Part salariale de la condition de compatibilité** (critère 3 (d), ici et à la fiche 3) : la condition s'écrit sur W/(p·pr) ; l'écart avec WB/VA sur 12 tours est publié.
+- **Q1 (#24)** : les trois lectures (a), (b) et (c) de la phase de P_t sont instruites ; une révision de contrat ne se décide qu'à M26 (décision citant M22, M24 et ADR).
+- **Critère 5 (b)** : le terme de demande est gardé par défaut ; une démonstration en forme fermée que le mécanisme de l'instabilité 14 n'existe pas sous M24 peut être soumise au mainteneur comme fait nouveau.
+- **Critère 8 (#37)** : au moins une variante où le prix réagit au taux d'utilisation est instruite ; la conclusion « aucune conséquence » reste possible.
+- **Q7 (#24)** : une seule lecture des taux annuels pour les fiches 3, 4 et 8 ; le choix se fait à M25-M26, puis à la fiche 8.
+- **Q10** : les prix administrés sont renvoyés au catalogue des leviers (J4) et au mode planifié (J7) ; la fiche en note l'interface.
 
 ## 3. Options
 
@@ -250,3 +261,4 @@ Non instruit.
 | Date | Événement | Auteur |
 |---|---|---|
 | 03/10/2026 | Ouverture (issue #40) ; § 1 et § 2 proposés | `macro` ; session principale |
+| 03/10/2026 | Critères validés avec amendements (seuils et bandes, critère 5 (e) en exigence, part salariale sur W/(p·pr), trois lectures de P_t, terme de demande, variante en tu, lecture unique de #24, Q10 ; issue #40) | mainteneur |

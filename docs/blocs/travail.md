@@ -167,6 +167,7 @@ Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les ques
 - **Q2** : la fiche instruit la population active comme tendance exogène du socle ; son propriétaire (bloc 3 ou 5) est fixé à M25.
 - **Q3** : les deux lectures de l'anticipation en phase 1 sont instruites ; si la lecture « après le bloc 8 » est retenue, l'ordre « banque centrale, puis travail » est reporté dans l'inventaire comme engagement de la fiche 8.
 - **Q7** : le levier institutionnel (salaire minimum, indexation légale) est renvoyé au catalogue des leviers (J4) ; la fiche en note l'interface.
+- **Amendement du 03/10/2026, pris avec la validation des critères de la fiche 4** : la condition de compatibilité de la part salariale (critère 3 (d)) s'écrit sur W/(p·pr), l'écart avec WB/VA sur 12 tours étant publié ; la bande du test zéro sur la part salariale (critère 6) est commune aux fiches 3 et 4, sur une seule définition ; une seule lecture des taux annuels (#24) vaut pour les fiches 3, 4 et 8 (Q4), choisie à M25-M26.
 
 ## 3. Options
 
@@ -202,3 +203,4 @@ Non instruit.
 |---|---|---|
 | 03/10/2026 | Ouverture (issue #39) ; § 1 et § 2 proposés | `macro` ; session principale |
 | 03/10/2026 | Critères validés avec amendements (seuils, bande du critère 5 (c), lecture (ii) de #38 au critère 7, Q2, Q3, Q7 ; issue #39) | mainteneur |
+| 03/10/2026 | Amendement pris avec les critères de la fiche 4 (part salariale sur W/(p·pr), bande commune, lecture unique de #24), avant la fin de l'instruction | mainteneur |
