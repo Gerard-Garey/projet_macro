@@ -74,7 +74,7 @@
 \maketitle
 
 \begin{abstract}
-\noindent Ce document est la spécification du moteur v3 de \emph{Nations \& Marchés}, simulateur macroéconomique multi-pays à cohérence stock-flux destiné à devenir un jeu tour par tour mensuel où chaque joueur incarne l'État d'un pays. Il décrit le moteur exécuté : toute équation numérotée y est exécutée par le moteur, et toute équation exécutée y est numérotée. La version 3.0-socle est un squelette : elle fixe le plan du document, les règles de lecture des équations et les tables qui accueilleront la spécification du socle (économie fermée à un pays). Elle spécifie, en sections proposées, le cadre commun (temps, entités, comptabilité), retenu par la décision M22 du mainteneur, le bloc « production et stocks », retenu par la décision M24, et le bloc « travail et salaires », retenu par la décision M25, qui a aussi fixé la conversion des taux de croissance et d'inflation : aucun code ne les exécute encore. Aucun bloc n'est encore exécuté ; le document ne contient donc aucune équation numérotée. La spécification v1.5 et le moteur v2.0 de la première tentative sont des sources historiques, instruites bloc par bloc sur fiche comparative ; ils ne font pas référence.
+\noindent Ce document est la spécification du moteur v3 de \emph{Nations \& Marchés}, simulateur macroéconomique multi-pays à cohérence stock-flux destiné à devenir un jeu tour par tour mensuel où chaque joueur incarne l'État d'un pays. Il décrit le moteur exécuté : toute équation numérotée y est exécutée par le moteur, et toute équation exécutée y est numérotée. La version 3.0-socle est un squelette : elle fixe le plan du document, les règles de lecture des équations et les tables qui accueilleront la spécification du socle (économie fermée à un pays). Elle spécifie, en sections proposées, le cadre commun (temps, entités, comptabilité), retenu par la décision M22 du mainteneur, le bloc « production et stocks », retenu par la décision M24, le bloc « travail et salaires », retenu par la décision M25, qui a aussi fixé la conversion des taux de croissance et d'inflation, et le bloc « prix », retenu par la décision M26, qui a aussi fixé la phase de l'indice des prix : aucun code ne les exécute encore. Aucun bloc n'est encore exécuté ; le document ne contient donc aucune équation numérotée. La spécification v1.5 et le moteur v2.0 de la première tentative sont des sources historiques, instruites bloc par bloc sur fiche comparative ; ils ne font pas référence.
 \end{abstract}
 
 \tableofcontents
@@ -88,7 +88,7 @@
 Chaque version de la spécification v3 ajoute ici sa table, la plus récente en tête ; les tables des versions antérieures sont conservées à la suite. Chaque ligne donne la modification, la section touchée et ce que le moteur ou l'audit a révélé.
 
 \subsection*{Version 3.0-socle (brouillon)}
-Version initiale : squelette du document (plan, conventions de lecture, tables vides), complété par la section du cadre et par les sections des blocs « production et stocks » et « travail et salaires », proposées.
+Version initiale : squelette du document (plan, conventions de lecture, tables vides), complété par la section du cadre et par les sections des blocs « production et stocks », « travail et salaires » et « prix », proposées.
 
 \begin{center}\small
 \begin{longtable}{p{0.5cm}>{\raggedright\arraybackslash}p{6.3cm}>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{5.8cm}}
@@ -108,6 +108,7 @@ Version initiale : squelette du document (plan, conventions de lecture, tables v
 6 & Production et stocks (décision M24), proposée : technique à coefficients fixes en travail, productivité tendancielle et capacité normale sans plafond ; ventes anticipées, stock cible, production visée, demande de travail, production, ventes et rationnement proportionnel, stocks en volume, valorisation au coût moyen pondéré (ligne 4), volume du capital ; phases ; état stationnaire en forme fermée ; conditions et critères du jalon J3 ; grandeurs restituées. Dans le cadre, ordre interne de la phase 4, « travail, puis production » (décision M24, ADR 0007). Paramètres du bloc, symboles et exposant $\mathrm{vol}$ des volumes ; pistes écartées ; précision sur les instabilités 1, 9, 10, 11, 14 et 15. Aucune table de flux ni de bilans ne change. & \S\ref{sec:production}, \S\ref{sec:cadre-phases}, \S\ref{sec:calibration}, \S\ref{sec:ecartees}, \S\ref{sec:chantiers}, \S\ref{sec:glossaire} & Aucun code n'exécute le bloc avant le jalon J3. La remesure du moteur v2.0 (\S\ref{sec:ecartees}) a confirmé que ses vitesses d'ajustement y déplacent le ratio stationnaire des stocks aux ventes, défaut que la forme retenue corrige.\\
 7 & Conversion géométrique des taux de croissance et d'inflation, $(1 + x)^{1/n_a}$ par pas, à côté de la règle linéaire, limitée aux taux d'intérêt, aux flux et aux vitesses (décision M25, lecture (b), citant M22 et M24 ; ADR 0008, partie I) ; troisième grandeur dépendant de $n_a$ déclarée, les ratios stationnaires mixtes ; facteur entre les deux ratios au PIB annuel ramené de 1,0109 à 1,0108 ; paragraphe sur les taux de croissance non classés retiré, avec la croissance effective de 2,0184\,\%. Bloc production et stocks révisé en conséquence (lecture (f) de M24 remplacée) : productivité, ventes anticipées, production visée et croissance $g$ en conversion géométrique ; $\bar\rho_K$, $y/v$, variation des stocks, valeur propre des stocks et niveau normal des stocks restitués recalculés ; $y/v$ dépend désormais de $n_a$. Coût unitaire écrit en phase 2 (décision M26). & \S\ref{sec:cadre-calendrier}, \S\ref{sec:production}, \S\ref{sec:calibration}, \S\ref{sec:ecartees}, \S\ref{sec:glossaire} & Aucun code n'exécute ces sections. Les chiffres recalculés (fiche « production et stocks », \S~9) ont été visés par le mainteneur le 03/10/2026 ; ils changent à la quatrième décimale au plus.\\
 8 & Travail et salaires (décision M25), proposé : population active en tendance exogène, salaire nominal à correction d'erreur ancré sur la norme de part salariale, emploi à rétention asymétrique avec terme de tendance, taux de chômage, masse salariale (ligne 5), sureffectif ; phases ; état stationnaire en forme fermée ; conditions et critères du jalon J3 ; grandeurs restituées. Paramètres du bloc, symboles, pistes écartées ; précision sur les instabilités 7 et 15. Aucune table de flux ni de bilans ne change. & \S\ref{sec:travail}, \S\ref{sec:calibration}, \S\ref{sec:ecartees}, \S\ref{sec:chantiers}, \S\ref{sec:glossaire} & Aucun code n'exécute le bloc avant le jalon J3.\\
+9 & Prix (décision M26), proposé : prix égal au coût unitaire majoré d'une marge, marge à ajustement partiel vers la marge normale corrigée par la tension sur les stocks, aucune anticipation consommée, indice des prix égal au prix du tour ; phases ; état stationnaire en forme fermée ; conditions et critères des jalons J3 et J4 ; grandeurs restituées. Dans le cadre (décision M26, citant M22 ; ADR 0008, partie II) : l'indice des prix n'est plus révisé en phase 1 ; il est écrit en phase 5 et lu au tour suivant ; registre de $n_a + 1$ niveaux au lieu de $n_a$, empreinte calendaire de 14 variables au lieu de 13 ; tableau des phases revu (lignes 1, 2 et 5). Paramètres du bloc, symboles, marge normale rattachée au bloc prix ; pistes écartées ; précision sur les instabilités 9 à 15. Renvois des blocs production et travail au bloc prix précisés (marge stationnaire, bornes, taux d'utilisation). Le texte d'attente de la section banque centrale et anticipations est corrigé : le bloc prix ne lit aucune anticipation. Aucune table de flux ni de bilans ne change. & \S\ref{sec:prix}, \S\ref{sec:cadre-calendrier}, \S\ref{sec:cadre-phases}, \S\ref{sec:production}, \S\ref{sec:travail-stationnaire}, \S\ref{sec:banque_centrale}, \S\ref{sec:calibration}, \S\ref{sec:ecartees}, \S\ref{sec:chantiers}, \S\ref{sec:glossaire} & Aucun code n'exécute le bloc avant le jalon J3. Les rayons spectraux des boucles publiés par la fiche ont été remesurés sur une reconstruction indépendante de sa maquette, à la quatrième décimale ; la frontière de stabilité en $\psi_\xi$ aux vitesses indicatives y est d'environ 13,0.\\
 \bottomrule
 \end{longtable}
 \end{center}
@@ -157,9 +158,9 @@ Chaque affirmation factuelle distingue ce que le \emph{modèle produit}, qui se 
 Cette section fixe le cadre commun à tous les blocs : entités et indices ; convention calendaire et règle de conversion ; instruments, matrice des bilans et matrice des flux de transactions ; portes de la monnaie ; identités comptables et leurs tolérances ; règles de caisse ; ordre des phases d'un pas. Le cadre n'est pas un bloc de comportement : c'est ce que le noyau comptable et l'ordonnanceur mettent en œuvre, et dans quoi chaque bloc exprime ses vitesses, ses fenêtres et ses flux.
 
 \begin{proposee}[cadre du socle, décision M22]
-Le cadre a été retenu par la décision M22 du mainteneur (30/09/2026), consignée dans l'ADR 0005 (\nolinkurl{docs/adr/0005-calendrier-et-cadre-comptable.md}), sur la fiche comparative « temps et comptabilité » (\nolinkurl{docs/blocs/temps_comptabilite.md} : option C, pas mensuel unique, combinée au socle commun du \S~3.N ; expert pilote \texttt{macro}, \texttt{monnaie} consulté). La conversion des taux de croissance et d'inflation y a été ajoutée par la décision M25, lecture (b), du 03/10/2026, décision citant M22 et M24, consignée dans l'ADR 0008, partie I (\nolinkurl{docs/adr/0008-taux-de-croissance-et-indice-des-prix.md}). Aucun code ne l'exécute encore : il sera réalisé au jalon J2 (noyau comptable, ordonnanceur, schéma d'état), par des issues qui restent à ouvrir. D'ici là, aucune équation de cette section n'est numérotée : les équations écrites sont des rappels non numérotés. Les labels prévus au J2, de radical \texttt{moteur} pour le calendrier et les deux conversions (dont \texttt{eq:moteur-conversion-taux} et \texttt{eq:moteur-conversion-croissance}, ce dernier proposé par l'ADR 0008) et \texttt{noyau} pour les identités, ne seront posés qu'avec leur balise dans le code.
+Le cadre a été retenu par la décision M22 du mainteneur (30/09/2026), consignée dans l'ADR 0005 (\nolinkurl{docs/adr/0005-calendrier-et-cadre-comptable.md}), sur la fiche comparative « temps et comptabilité » (\nolinkurl{docs/blocs/temps_comptabilite.md} : option C, pas mensuel unique, combinée au socle commun du \S~3.N ; expert pilote \texttt{macro}, \texttt{monnaie} consulté). La conversion des taux de croissance et d'inflation y a été ajoutée par la décision M25, lecture (b), du 03/10/2026, décision citant M22 et M24, consignée dans l'ADR 0008, partie I (\nolinkurl{docs/adr/0008-taux-de-croissance-et-indice-des-prix.md}). La phase de l'indice des prix y a été fixée par la décision M26, lecture (c) de la question Q1 de la fiche « prix », du 03/10/2026, décision citant M22, consignée dans le même ADR, partie II : l'indice est le prix du tour, écrit en phase 5 et lu au tour suivant, dans un registre de $n_a + 1$ niveaux. Aucun code ne l'exécute encore : il sera réalisé au jalon J2 (noyau comptable, ordonnanceur, schéma d'état), par des issues qui restent à ouvrir. D'ici là, aucune équation de cette section n'est numérotée : les équations écrites sont des rappels non numérotés. Les labels prévus au J2, de radical \texttt{moteur} pour le calendrier et les deux conversions (dont \texttt{eq:moteur-conversion-taux} et \texttt{eq:moteur-conversion-croissance}, ce dernier proposé par l'ADR 0008) et \texttt{noyau} pour les identités, ne seront posés qu'avec leur balise dans le code.
 
-\textbf{Statut.} Choix de conception pour le calendrier, les règles de conversion, la liste des instruments, les tolérances, les règles de caisse et l'ordre des phases ; dérivées pour les identités comptables, qui découlent des deux matrices. \textbf{Provenance.} Nouvelle ; décision M22 ; ADR 0005 ; conversion des taux de croissance et d'inflation : décision M25, lecture (b) ; ADR 0008.
+\textbf{Statut.} Choix de conception pour le calendrier, les règles de conversion, la liste des instruments, les tolérances, les règles de caisse et l'ordre des phases ; dérivées pour les identités comptables, qui découlent des deux matrices. \textbf{Provenance.} Nouvelle ; décision M22 ; ADR 0005 ; conversion des taux de croissance et d'inflation : décision M25, lecture (b) ; ADR 0008, partie I ; phase de l'indice des prix : décision M26 ; ADR 0008, partie II.
 \end{proposee}
 
 \subsection{Entités et indices}
@@ -174,14 +175,14 @@ Le cadre a été retenu par la décision M22 du mainteneur (30/09/2026), consign
 
 \subsection{Calendrier et règle de conversion}
 \label{sec:cadre-calendrier}
-\begin{proposee}[calendrier, conversions et empreinte calendaire de l'état, décisions M22 et M25]
+\begin{proposee}[calendrier, conversions et empreinte calendaire de l'état, décisions M22, M25 et M26]
 \textbf{Pas mensuel unique.} Le pas est un mois simulé : $n_a = 12$ pas par an, $n_m = 1$ pas par tour. Un pas est un tour : le tour $n$ est le pas $t = n - 1$, et le joueur lit une date (année, mois), jamais un numéro de pas :
 \begin{equation*}
 t = n - 1, \qquad \text{mois} = (t \bmod n_a) + 1, \qquad \text{année} = \lfloor t / n_a \rfloor + 1 .
 \end{equation*}
 Le tour 13 est le mois 1 de l'année 2. La frontière de tour coïncide avec une frontière de pas : l'état de clôture d'un tour est complet, et une sauvegarde prise à cette frontière, rechargée, reproduit la trajectoire à l'identique, y compris quand des décisions différentes sont saisies après la reprise ; la trajectoire ne diverge alors qu'à partir de la phase 1.
 
-\textbf{Date de décision.} Tout pas est une date de décision ; le prédicat se déduit de l'indice $t$ seul, sans compteur. Les leviers du joueur, les salaires, les anticipations, l'indice des prix et son glissement, et la règle de taux sont révisés en phase 1, avant tout flux du pas (\S\ref{sec:cadre-phases}) ; l'ordre de saisie des décisions est sans effet.
+\textbf{Date de décision.} Tout pas est une date de décision ; le prédicat se déduit de l'indice $t$ seul, sans compteur. Les leviers du joueur, les salaires, les anticipations et la règle de taux sont révisés en phase 1, avant tout flux du pas (\S\ref{sec:cadre-phases}) ; l'ordre de saisie des décisions est sans effet. Les règles y lisent l'état d'ouverture, dont le dernier prix connu $P_{t-1}$ et le glissement annuel du tour précédent, $\pi_{t-1}$. L'indice des prix n'est pas révisé en phase 1 : l'indice d'un tour est le prix de ce tour, écrit en phase 5 (\S\ref{sec:prix-indice} ; décision M26, lecture (c) de la question Q1 de la fiche « prix » ; ADR 0008, partie II). Le délai entre un mouvement du prix et sa lecture par une règle est donc d'un tour, et une règle dispose, au moment de décider, de la même information que le joueur.
 
 \textbf{Deux conversions, selon la nature du taux.} Toute grandeur exprimée en base annuelle, $x^{\mathrm{an}}$, a un équivalent par pas, $x^{\mathrm{pas}}$, donné par l'une de deux conversions ; la nature d'un taux, donc sa conversion, est portée par son unité déclarée (« par an, taux de flux » ou « par an, taux de croissance »), jamais choisie là où le taux est employé (ADR 0008, point I.3).
 
@@ -209,11 +210,11 @@ La troisième touche l'état d'arrivée, par la durée du pas et jamais par une 
 
 \textbf{Conditions déclarées.} Toute vitesse d'ajustement respecte $\lambda \le n_a$, soit au plus 1 par pas, condition d'un ajustement monotone ; elle se contrôle au chargement de la table de calibration, jamais par un écrêtage. Une vitesse de 1 par an ou plus est admise : la règle linéaire est la seule qui l'admette. Le taux réel annuel restitué et testé est $r = i_X - \pi$, où $\pi$ est l'inflation annuelle (glissement annuel de l'indice des prix) : c'est la forme que le moteur calculera, non la relation de Fisher exacte.
 
-\textbf{Empreinte calendaire de l'état.} Le calendrier impose deux variables d'état et aucune autre : l'indice de pas $t$, et le registre de l'indice des prix, qui tient les $n_a$ dernières valeurs $P_{t-1}, \dots, P_{t-n_a}$ aux dates de décision ; soit $1 + 12 = 13$ variables. Le registre est une variable d'état retardée de longueur fixe, jamais un historique ; il sert au glissement annuel lu par la règle de taux,
+\textbf{Empreinte calendaire de l'état.} Le calendrier impose deux variables d'état et aucune autre : l'indice de pas $t$, et le registre de l'indice des prix, qui tient à l'ouverture du pas $t$ les $n_a + 1$ derniers niveaux de l'indice, $P_{t-1}, \dots, P_{t-n_a-1}$ ; soit $1 + (n_a + 1) = 14$ variables (décision M26 ; ADR 0008, points II.3 et II.4 ; le registre tenait $n_a$ valeurs sous la seule décision M22). L'indice d'un tour est le prix de ce tour : sous $J = 1$, $P_t \equiv p_{j,t}$, écrit en phase 5 par le bloc prix (\S\ref{sec:prix-indice}). Le registre est avancé en phase 9, par le moteur : $P_t$ y entre, $P_{t-n_a-1}$ en sort. C'est une variable d'état retardée de longueur fixe, jamais un historique. Le glissement annuel
 \begin{equation*}
 \pi_t = \frac{P_t}{P_{t-n_a}} - 1 ,
 \end{equation*}
-et sa valeur stationnaire est explicite, $P_{t-u} = P_t\,(1 + \bar\pi)^{-u/n_a}$ pour $u = 1, \dots, n_a$, où $\bar\pi$ est le glissement annuel stationnaire : le glissement est lisible dès le premier tour. Le résultat de la banque centrale étant versé à chaque pas (\S\ref{sec:cadre-caisse}), aucune variable « résultat cumulé » n'est nécessaire.
+la variation de l'indice sur le tour et toute mesure de l'inflation sur une fenêtre d'au plus $n_a$ tours sont des fonctions du registre, calculées à la lecture ; aucune n'est une variable d'état. En phase 1 du pas $t$, les règles lisent le dernier prix connu $P_{t-1}$, première entrée du registre, et le glissement du tour précédent, $\pi_{t-1} = P_{t-1}/P_{t-1-n_a} - 1$, qui emploie sa dernière entrée ; d'où ses $n_a + 1$ niveaux. Le glissement du tour $t$ est calculable dès la phase 5 du pas $t$, pour la restitution. La valeur stationnaire du registre est explicite, $P_{t-u} = P_t\,(1 + \bar\pi)^{-u/n_a}$ pour $u = 1, \dots, n_a + 1$, où $\bar\pi$ est le glissement annuel stationnaire : le glissement est lisible dès le premier tour. Le résultat de la banque centrale étant versé à chaque pas (\S\ref{sec:cadre-caisse}), aucune variable « résultat cumulé » n'est nécessaire.
 
 \textbf{Ratio stationnaire au PIB annuel.} Pour le test zéro, un ratio de stock au PIB annuel est le stock d'ouverture rapporté à $n_a$ fois le flux du pas ; pour la restitution au tour, c'est le stock de clôture rapporté à la somme des flux des 12 derniers tours (décision M22, lecture (e)). Sur une trajectoire où stocks et flux croissent au taux annuel $g$, soit $(1 + g)^{1/n_a} - 1$ par pas, le second ratio vaut le premier multiplié par
 \begin{equation*}
@@ -223,7 +224,7 @@ soit 1,0108 pour $g = 2\,\%$ par an et $n_a = 12$ : le ratio restitué dépasse 
 
 \textbf{Budget de calcul.} Le budget reste d'au plus 1\,ms par pays-semaine (décision M13), soit 52\,ms par pays-an ; avec un pas mensuel, il se lit $52/12 \approx 4{,}333$\,ms par pays-pas, seuil que prendra le test de budget (\nolinkurl{tests/invariants/test_budget.py}, avec 52/12 semaines par pas). Un tour d'un monde à 10 pays coûte au plus $10 \times 52/12 \approx 43{,}3$\,ms de moteur, hors barrières entre pays et hors IA. La fenêtre longue de 60 ans compte 720 pas.
 
-\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (points 1 à 5, 16 et 17 de l'ADR 0005) ; conversion géométrique, troisième grandeur dépendant de $n_a$ et facteur du ratio restitué : décision M25, lecture (b), citant M22 et M24 (ADR 0008, partie I, points I.1 à I.6).
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (points 1 à 5, 16 et 17 de l'ADR 0005) ; conversion géométrique, troisième grandeur dépendant de $n_a$ et facteur du ratio restitué : décision M25, lecture (b), citant M22 et M24 (ADR 0008, partie I, points I.1 à I.6) ; indice des prix égal au prix du tour et lu au tour suivant, registre de $n_a + 1$ niveaux et empreinte de 14 variables : décision M26, lecture (c) de la question Q1 de la fiche « prix », citant M22 (ADR 0008, partie II, points II.1 à II.6).
 \end{proposee}
 
 \subsection{Instruments et matrice des bilans}
@@ -499,7 +500,7 @@ de sorte que le compte du Trésor clôt à l'encaisse stationnaire $M^{G*}$. Cel
 \begin{proposee}[ordre des phases, décision M22]
 Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'ouverture, notée phase 0 (tableau~\ref{tab:phases}) ; l'ordonnanceur les exécute dans cet ordre. Chaque flux s'exécute dans une phase et une seule ; un bloc ne lit que l'état d'ouverture, des variables produites dans une phase antérieure du même pas ou, dans sa propre phase, des variables produites avant lui dans l'ordre d'exécution déclaré de cette phase (sous-phases (a), (b), (c) de la phase 8 ; ordre des blocs des phases 1, 4, 5 et 7, fixé par leurs fiches ; phase 4 : travail, puis production, décision M24, ADR 0007) ; la matrice de dépendance est donc triangulaire et aucune résolution simultanée n'est nécessaire. Les identités par pas sont vérifiées à la fin de chaque phase. Tous les règlements du pas précèdent la phase 8, où la banque centrale exécute ses opérations : aucune ligne touchant les réserves n'est exécutée après le refinancement de la phase 8\,(c), et les intérêts publics (phase 6) le précèdent. Les lignes 17, 20 et 22 sont les contreparties de règlement, appliquées par le noyau dans chaque phase.
 
-\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (point 15 de l'ADR 0005) ; ordre interne de la phase 4 : décision M24, citant M22 (ADR 0007).
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (point 15 de l'ADR 0005) ; ordre interne de la phase 4 : décision M24, citant M22 (ADR 0007) ; indice des prix lu en phase 1 et écrit en phase 5, coût unitaire en phase 2 : décision M26, citant M22 (ADR 0008, point II.5).
 \end{proposee}
 
 \begin{center}\small
@@ -514,11 +515,11 @@ Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'o
 \midrule
 \endhead
 0 Ouverture & indice $t$ ; prédicat de date de décision, tiré de $t$ seul & moteur & clôture du pas précédent & aucune\\
-1 Décision & lecture des leviers ; salaires ; anticipations ; indice des prix et glissement annuel (registre) ; règle de taux ; résultat de la banque centrale du pas, $\Pi^{\mathit{CB}}$ (versé en 8\,(b)) & moteur (leviers), travail, prix, banque centrale & ouverture, registre & aucune\\
-2 Plans & production visée, demande de travail, budget de consommation, investissement visé, dépense publique du pas & production, ménages, investissement, État & phase 1 & aucune\\
+1 Décision & lecture des leviers ; salaires ; anticipations ; règle de taux ; résultat de la banque centrale du pas, $\Pi^{\mathit{CB}}$ (versé en 8\,(b)) ; l'indice des prix n'y est pas révisé : les règles lisent le registre (dernier prix connu, glissement du tour précédent) & moteur (leviers), travail, banque centrale & ouverture, dont le registre & aucune\\
+2 Plans & production visée, demande de travail, coût unitaire, budget de consommation, investissement visé, dépense publique du pas & production, ménages, investissement, État & phase 1 & aucune\\
 3 Crédit & demande et offre de crédit & investissement, banque & phase 2 & 18\\
 4 Production et travail & emploi, production, stocks ; salaires versés & travail, puis production & phases 2 et 3 ; dans la phase, le bloc production lit l'emploi écrit par le bloc travail & 5\\
-5 Marché des biens & ventes (consommation, dépense publique, investissement) ; prix du pas ; variation des stocks & prix, puis production, puis ménages, investissement, État & phases 2 et 4 & 1 à 4\\
+5 Marché des biens & prix du pas, qui est l'indice des prix du tour ; ventes (consommation, dépense publique, investissement) ; variation des stocks & prix, puis production, puis ménages, investissement, État & ouverture, phases 2 et 4 & 1 à 4\\
 6 Revenus et impôts & intérêts sur crédits, dépôts et titres ; impôts ; transferts ; dividendes ; amortissement & État, banque, investissement & ouverture, phases 1 et 5 & 6 à 10, 11a à 11c, 14, 15\\
 7 Titres publics & émission ou rachat ; souscriptions ; achats décidés de la banque centrale & État, ménages, banque, banque centrale & ouverture, phases 1, 5 et 6 & 19a, 19b\\
 8 Monnaie centrale & (a) intérêts sur réserves et refinancement ; (b) versement du résultat de la banque centrale ; (c) position de réserves après tous les règlements, puis refinancement décidé & banque centrale (a, b), banque (c) & tout ce qui précède & 12, 13, puis 16, puis 21\\
@@ -602,7 +603,7 @@ y^{\mathrm{cap}}_{j,t} = \frac{K^{\mathrm{vol}}_{j,t}}{n_a\,\kappa_j}, \qquad \m
 \variables $\mathit{pr}_{j,t}$ : productivité du travail du secteur $j$, valeur d'ouverture du pas $t$, en u.v. par personne et par pas ; $g_{\mathit{pr}}$ : croissance annuelle tendancielle de la productivité, par an ; $y^{\mathrm{cap}}_{j,t}$ : capacité normale, en u.v. par pas ; $K^{\mathrm{vol}}_{j,t}$ : volume du capital à l'ouverture, en u.v. (\S\ref{sec:production-capital}) ; $\kappa_j$ : rapport du capital à la production annuelle à capacité normale, en années ; $y_{j,t}$ : production du pas (\S\ref{sec:production-ventes}) ; $\mathit{tu}_{j,t}$ : taux d'utilisation, fraction de dénominateur $y^{\mathrm{cap}}_{j,t}$, fenêtre le pas.
 \sens La productivité du travail croît à un rythme fixe. La capacité normale est la production que le capital permet à son utilisation normale ; le taux d'utilisation compare la production du pas à cette capacité.
 \hyp Rendements constants ; aucune substitution entre capital et travail. Croissance de la productivité exogène au socle ; $g_{\mathit{pr}}$ est un taux de croissance, converti géométriquement (\S\ref{sec:cadre-calendrier} ; décision M25, lecture (b), qui remplace la conversion linéaire de la décision M24, lecture (f)) : la productivité croît exactement de $g_{\mathit{pr}}$ en $n_a$ pas.
-\limites Aucun plafond : $\mathit{tu}$ peut dépasser 1 (heures supplémentaires) ; la seule contrainte physique porte sur l'emploi, au plus égal à la population active, borne du bloc travail inactive à l'état stationnaire. Ce que le taux d'utilisation déclenche (prix, investissement) relève des blocs prix et investissement (issue \#37) ; s'ils ne lui donnent aucun effet, il sort de la restitution (\S\ref{sec:production-restitution}). Sans produit marginal, le partage de la valeur ajoutée n'est pas ancré par la technique : il relève de la marge (\S\ref{sec:prix}). Un choc de niveau de productivité (jalon J5) modifiera $\mathit{pr}$ sans réécrire N9.
+\limites Aucun plafond : $\mathit{tu}$ peut dépasser 1 (heures supplémentaires) ; la seule contrainte physique porte sur l'emploi, au plus égal à la population active, borne du bloc travail inactive à l'état stationnaire. Ce que le taux d'utilisation déclenche (prix, investissement) relève des blocs prix et investissement (issue \#37) ; le bloc prix ne lui donne aucun effet (\S\ref{sec:prix}, décision M26) ; si le bloc investissement ne lui en donne pas non plus, il sort de la restitution (\S\ref{sec:production-restitution}). Sans produit marginal, le partage de la valeur ajoutée n'est pas ancré par la technique : il relève de la marge (\S\ref{sec:prix}). Un choc de niveau de productivité (jalon J5) modifiera $\mathit{pr}$ sans réécrire N9.
 
 \textbf{Statut.} Technique à coefficients fixes, N9 et N11 : choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-1), sur la forme du modèle DIS ($N = y/\mathit{pr}$) ; décision M24, lectures (e) et (f), cette dernière révisée par la décision M25, lecture (b) (ADR 0008, point I.5).
 \end{proposee}
@@ -732,7 +733,7 @@ La matrice des lectures reste triangulaire : aucune résolution simultanée. Le 
 \subsection{État stationnaire en forme fermée}
 \label{sec:production-stationnaire}
 \begin{proposee}[état stationnaire du bloc, décision M24]
-Sur une trajectoire où les volumes croissent au taux annuel $g$, soit $(1 + g)^{1/n_a} - 1$ par pas, où les prix et le coût unitaire croissent au même rythme, de $(1 + \bar\pi)^{1/n_a} - 1$ par pas ($\bar\pi$ : glissement annuel stationnaire de l'indice des prix, \S\ref{sec:cadre-calendrier} ; marge constante, hypothèse du bloc prix), et où la demande est servie, les règles du bloc donnent, sans simulation :
+Sur une trajectoire où les volumes croissent au taux annuel $g$, soit $(1 + g)^{1/n_a} - 1$ par pas, où les prix et le coût unitaire croissent au même rythme, de $(1 + \bar\pi)^{1/n_a} - 1$ par pas ($\bar\pi$ : glissement annuel stationnaire de l'indice des prix, \S\ref{sec:cadre-calendrier} ; marge constante, $p/\mathit{UC} = 1 + \bar\mu$, que donne la règle du bloc prix à l'état stationnaire, \S\ref{sec:prix-stationnaire}), et où la demande est servie, les règles du bloc donnent, sans simulation :
 \begin{itemize}
 \item ventes anticipées égales aux ventes : $v^e = v = d$ ;
 \item stock d'ouverture rapporté aux ventes du pas : $\mathit{IN}^{\mathrm{vol}}_{j,t}/v_{j,t} = n_a \sigma_j$, en pas de ventes, soit 1,4 pour $\sigma_j = 1{,}4/12$ an ($\sigma_j$ années de ventes) ;
@@ -767,7 +768,7 @@ Ces chiffres se recalculent à la main depuis les formes ci-dessus et les valeur
 \begin{proposee}[conditions et critères écrits avant l'essai, décision M24]
 \textbf{Vitesses.} $0 < \lambda_v \le n_a$ et $0 < \lambda_{\mathit{IN}} \le n_a$, contrôlées au chargement de la table de calibration, jamais par un écrêtage (\S\ref{sec:cadre-calendrier}).
 
-\textbf{Bornes.} Trois contraintes de conservation ou de technique, sans valeur libre, donc sans paramètre ; seule une borne à seuil libre en exigerait un (décision du mainteneur du 03/10/2026, issue \#38) : le plancher $y^{\ast} \ge 0$ et la disponibilité $v \le \mathit{IN}^{\mathrm{vol}} + y$, inactifs à l'état stationnaire ; la technique $y \le \mathit{pr}\,N$, dont les deux termes sont égaux à l'état stationnaire, sans rationnement. Chacune est déclarée dans la rubrique « Limites » de son encadré, avec son activité à l'état stationnaire ; son test est déclaré dans la fiche comparative du bloc (\S~9.6) et sera cité ici quand il existera, au jalon J3. Aucun plafond de capacité. Les autres bornes du socle relèvent d'autres blocs : l'emploi au plus égal à la population active (bloc travail), les bornes de prix éventuelles (bloc prix).
+\textbf{Bornes.} Trois contraintes de conservation ou de technique, sans valeur libre, donc sans paramètre ; seule une borne à seuil libre en exigerait un (décision du mainteneur du 03/10/2026, issue \#38) : le plancher $y^{\ast} \ge 0$ et la disponibilité $v \le \mathit{IN}^{\mathrm{vol}} + y$, inactifs à l'état stationnaire ; la technique $y \le \mathit{pr}\,N$, dont les deux termes sont égaux à l'état stationnaire, sans rationnement. Chacune est déclarée dans la rubrique « Limites » de son encadré, avec son activité à l'état stationnaire ; son test est déclaré dans la fiche comparative du bloc (\S~9.6) et sera cité ici quand il existera, au jalon J3. Aucun plafond de capacité. Les autres bornes du socle relèvent d'autres blocs : l'emploi au plus égal à la population active (bloc travail) ; le bloc prix n'en a aucune (\S\ref{sec:prix-conditions}).
 
 \textbf{Boucle propre du bloc.} À demande constante (en écart à la tendance) et emploi égal à la demande de travail, la récurrence de N1 à N7 est triangulaire ; ses valeurs propres sont
 \begin{equation*}
@@ -843,7 +844,7 @@ Le bloc n'ouvre aucun levier : le joueur ne produit pas, sauf en mode planifié 
 \begin{itemize}
 \item Un seul bien ($J = 1$), consommé, investi et acheté par l'État : aucun prix relatif ; le PIB en volume est la production $y$. D'autres secteurs (jalons J5 à J7) s'ajouteront par l'indice $j$, sans réécrire N1 à N11, par une décision citant M24.
 \item Aucun intrant ni stock d'intrants : le coût unitaire est le seul coût salarial (terme d'intrants au jalon J5).
-\item Aucun levier n'agit sur l'offre au socle (issue \#37, à instruire par les fiches « prix » et « investissement » avant le jalon J7).
+\item Aucun levier n'agit sur l'offre au socle (issue \#37) ; le bloc prix ne lit pas le taux d'utilisation (\S\ref{sec:prix}, décision M26), et la réponse du bloc investissement relève de sa section (\S\ref{sec:investissement}).
 \item Aucun plafond de capacité : la capacité normale est un indicateur.
 \item Le bloc ne tient pas l'emploi : contrainte d'offre de travail, rétention de main-d'œuvre et ajustement de l'emploi relèvent du bloc travail (\S\ref{sec:travail} ; ADR 0007).
 \item Le volume du capital est tenu par ce bloc ; la décision d'investissement et les lignes 3 et 8, par le bloc investissement (\S\ref{sec:investissement}), à confirmer par sa fiche.
@@ -989,7 +990,7 @@ La matrice des lectures reste triangulaire. Le sureffectif, qui lit $y_{j,t}$, e
 \subsection{État stationnaire en forme fermée}
 \label{sec:travail-stationnaire}
 \begin{proposee}[état stationnaire du bloc, décision M25]
-Sur la trajectoire de référence du bloc production (\S\ref{sec:production-stationnaire}) : volumes en croissance annuelle $g$, prix en hausse de $(1 + \bar\pi)^{1/n_a} - 1$ par pas, population active en croissance $g_N$, marge à sa norme ($p/\mathit{UC} = 1 + \bar\mu$, condition imposée au bloc prix) et anticipation égale au glissement ($\pi^e = \bar\pi$), les règles du bloc donnent, sans simulation :
+Sur la trajectoire de référence du bloc production (\S\ref{sec:production-stationnaire}) : volumes en croissance annuelle $g$, prix en hausse de $(1 + \bar\pi)^{1/n_a} - 1$ par pas, population active en croissance $g_N$, marge à sa norme ($p/\mathit{UC} = 1 + \bar\mu$, condition imposée au bloc prix et remplie par sa règle, \S\ref{sec:prix-stationnaire}) et anticipation égale au glissement ($\pi^e = \bar\pi$), les règles du bloc donnent, sans simulation :
 \begin{itemize}
 \item chômage : $\bar U = U^{\mathrm{eq}}$ ; emploi égal à la demande de travail, $N = N^{\ast}$, productivité apparente égale à la tendance, $(y/N)/\mathit{pr} = 1$, sureffectif nul ;
 \item salaire relatif : $\bar\omega = 1/(1 + \bar\mu)$ ;
@@ -1097,7 +1098,231 @@ Le bloc n'ouvre aucun levier (décision M25, lecture (f)) ; un levier institutio
 \section{Prix}
 \label{sec:prix}
 %=====================================================================
-Ce bloc portera la formation des prix : coût unitaire, marge et indexation. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/prix.md} (expert pilote : \texttt{macro} ; \texttt{monnaie} consulté sur l'indexation des prix aux anticipations). Aucune équation n'est encore spécifiée.
+Ce bloc porte la formation du prix du bien du socle et de l'indice des prix : tension sur les stocks, marge, prix du pas, indice. Il lit l'état d'ouverture (le dernier prix connu, première entrée du registre de l'indice des prix ; le salaire nominal du pas précédent, tenu par le bloc travail, \S\ref{sec:travail} ; la productivité et le stock en volume, tenus par le bloc production et stocks, \S\ref{sec:production}) et, en phase 2, le coût unitaire $\mathit{UC}_{j,t} = W_t/\mathit{pr}_{j,t}$ et le stock cible écrits par le bloc production. Il écrit le prix du pas $p_{j,t}$ en phase 5, premier bloc de la phase ; ce prix est l'indice des prix du tour, que le moteur fait entrer au registre en phase 9 et que les règles de la phase 1 lisent au tour suivant (\S\ref{sec:cadre-calendrier}). Il ne propose aucune ligne de flux : les blocs acheteurs, ménages (\S\ref{sec:menages}), investissement (\S\ref{sec:investissement}) et État (\S\ref{sec:finances_publiques}), appliquent $p_{j,t}$ aux volumes servis (lignes 1 à 3), et le bloc production valorise la ligne 4 au coût moyen pondéré. Par la marge, il fixe le partage de la valeur ajoutée entre salaires et profits ; sa marge normale $\bar\mu$ est lue par le bloc travail comme norme de part salariale (\S\ref{sec:travail-salaire}). Il ne consomme aucune anticipation d'inflation : le rythme d'inflation est ancré par le bloc banque centrale et anticipations (\S\ref{sec:banque_centrale}).
+
+\begin{proposee}[prix, décision M26]
+Le bloc a été retenu par la décision M26 du mainteneur (03/10/2026), prise le même jour que la décision M25 (bloc travail), sur la fiche comparative « prix » (\nolinkurl{docs/blocs/prix.md}, \S~8 : option M ; expert pilote \texttt{macro}, avis de \texttt{monnaie} et de \texttt{jeu}). Il combine :
+\begin{enumerate}[label=(\alph*)]
+\item un prix égal au coût unitaire du pas majoré d'une marge, sur la base du coût unitaire $\mathit{UC} = W/\mathit{pr}$ du bloc production (question Q3 de la fiche) : la productivité étant tendancielle, ce coût est un coût à productivité normale, et la marge couvre l'amortissement et la rémunération du capital (\S\ref{sec:prix-marge}) ;
+\item une marge à ajustement partiel vers une marge visée, la marge normale $\bar\mu$ corrigée par la tension sur les stocks, terme de demande de la question Q4 (\S\ref{sec:prix-marge}) ;
+\item un indice des prix égal au prix du tour, lu au tour suivant : lecture (c) de la question Q1, décision citant M22, consignée dans l'ADR 0008, partie II, avec une clause de réouverture (\S\ref{sec:prix-indice}).
+\end{enumerate}
+Lectures de la décision : coût unitaire écrit par le bloc production en phase 2 (question Q2) ; aucune anticipation consommée (question Q6) ; règle sans taux annuel de croissance ni d'inflation, donc neutre entre les deux conversions du cadre, la conversion géométrique étant décidée avec la décision M25 (question Q7) ; partage ancré par $\bar\mu$, lue par le bloc travail sous la lecture (w1) (question Q9) ; aucun terme en taux d'utilisation, la variante qui en porte un étant transmise au bloc investissement (question Q5, issue \#37) ; prix administrés renvoyés au catalogue des leviers (jalon J4) et au mode planifié (jalon J7) (question Q10).
+
+Aucun code ne l'exécute encore : le module \nolinkurl{src/nations/blocs/prix.py} sera écrit au jalon J3 (issue \#51). D'ici là, aucune équation de cette section n'est numérotée : chaque mécanisme est écrit dans un encadré proposé, en forme non numérotée, repéré par un identifiant P1 à P4 ajouté ici (la fiche n'en donne pas ; ses scripts de calcul, numérotés P1 à P15, sont sans rapport), et commenté selon les quatre rubriques de lecture. Les labels du tableau~\ref{tab:prix-equations} ne seront posés qu'avec leur balise dans le code ; les identifiants disparaîtront alors.
+
+Sous $J = 1$ (décision M24), le bien est unique : un seul prix $p_{j,t}$, le même pour tous les acheteurs, et l'indice des prix est ce prix.
+
+\textbf{Statut.} Donné mécanisme par mécanisme. \textbf{Provenance.} Nouvelle ; décision M26.
+\end{proposee}
+
+\begin{center}\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.8cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{1.4cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{4.5cm}}
+\caption{Équations du bloc prix (proposées, décision M26) : ce que chacune détermine, phase où elle s'exécute, statut, label prévu avec sa balise.}\label{tab:prix-equations}\\
+\toprule
+\textbf{Id.} & \textbf{Ce que l'équation détermine} & \textbf{Phase} & \textbf{Statut} & \textbf{Label prévu}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Id.} & \textbf{Ce que l'équation détermine} & \textbf{Phase} & \textbf{Statut} & \textbf{Label prévu}\\
+\midrule
+\endhead
+P1 & tension sur les stocks, $\xi_{j,t}$ & 5 & dérivée (définition) & \texttt{eq:prix-\allowbreak tension-stocks} (J3)\\
+P2 & marge en logarithme, $\tilde\mu_{j,t}$ & 5 & approchée (ajustement partiel) ; choix de conception (marge visée) & \texttt{eq:prix-\allowbreak marge} (J3)\\
+P3 & prix du pas, $p_{j,t}$ & 5, premier bloc & dérivée (définition de la marge sur la base $\mathit{UC}$) & \texttt{eq:prix-\allowbreak prix-du-pas} (J3)\\
+P4 & indice des prix du tour, $P_t$ & 5 ; lu en phase 1 du pas suivant & choix de conception & \texttt{eq:prix-\allowbreak indice} ou radical \texttt{moteur}, fixé au jalon J2 avec le registre\\
+--- & glissement annuel, $\pi_t$, défini au cadre (\S\ref{sec:cadre-calendrier}), fonction du registre & à la lecture & dérivée (définition) & \texttt{eq:prix-\allowbreak glissement} ou radical \texttt{moteur}, fixé au jalon J2 avec le registre\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Tension sur les stocks, marge et prix du pas}
+\label{sec:prix-marge}
+\begin{proposee}[tension sur les stocks, marge et prix du pas, décision M26]
+Le prix du pas est formé en phase 5, avant tout autre bloc de la phase, sur l'état d'ouverture et sur les plans de la phase 2. La tension sur les stocks (P1) corrige la marge visée ; la marge en logarithme se rapproche de cette marge visée à une vitesse déclarée (P2) ; le prix est le coût unitaire du pas majoré de la marge (P3) :
+\begin{equation*}
+\xi_{j,t} = 1 - \frac{\mathit{IN}^{\mathrm{vol}}_{j,t}}{\mathit{IN}^{\mathrm{vol}\ast}_{j,t}}, \tag{P1}
+\end{equation*}
+\begin{equation*}
+\tilde\mu_{j,t} = \Bigl(1 - \frac{\lambda_\mu}{n_a}\Bigr) \ln\frac{p_{j,t-1}}{\mathit{UC}_{j,t-1}} + \frac{\lambda_\mu}{n_a}\bigl[\ln(1 + \bar\mu) + \psi_\xi\,\xi_{j,t}\bigr], \qquad \mathit{UC}_{j,t-1} = \frac{W_{t-1}}{\mathit{pr}_{j,t-1}}, \tag{P2}
+\end{equation*}
+\begin{equation*}
+\ln p_{j,t} = \ln \mathit{UC}_{j,t} + \tilde\mu_{j,t}, \qquad\text{soit}\qquad p_{j,t} = (1 + \mu_{j,t})\,\mathit{UC}_{j,t}, \quad \mu_{j,t} = e^{\tilde\mu_{j,t}} - 1 . \tag{P3}
+\end{equation*}
+
+\variables $\xi_{j,t}$ : tension sur les stocks du secteur $j$, écart relatif du stock d'ouverture à sa cible, sans dimension, fraction du stock cible du pas, positive quand le stock est sous sa cible ; $\mathit{IN}^{\mathrm{vol}}_{j,t}$ : stock de produits finis en volume, ouverture, en u.v. (\S\ref{sec:production-ventes}) ; $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$ : stock cible du pas, en u.v., écrit par le bloc production en phase 2 (N2, \S\ref{sec:production-visee}) et lu sans être recalculé ; $\tilde\mu_{j,t}$ : marge du pas en logarithme, $\ln(p_{j,t}/\mathit{UC}_{j,t})$, sans dimension ; $\mu_{j,t}$ : marge effective, $p_{j,t}/\mathit{UC}_{j,t} - 1$, fraction du coût unitaire du pas ; $\bar\mu$ : marge normale, fraction du coût unitaire, paramètre ; $\lambda_\mu$ : vitesse annuelle d'ajustement de la marge, par an, vitesse ; $\psi_\xi$ : sensibilité de la marge visée à la tension sur les stocks, sans dimension ; $p_{j,t}$, $p_{j,t-1}$ : prix du bien, du pas et du pas précédent, en u.m. par u.v. ; sous $J = 1$, $p_{j,t-1} = P_{t-1}$, première entrée du registre (\S\ref{sec:cadre-calendrier}) ; $\mathit{UC}_{j,t}$ : coût unitaire du pas, en u.m. par u.v., écrit par le bloc production en phase 2 (N8, \S\ref{sec:production-valorisation}) ; $\mathit{UC}_{j,t-1}$ : coût unitaire du pas précédent, formé sur des valeurs d'ouverture, le salaire nominal $W_{t-1}$ du bloc travail (\S\ref{sec:travail-salaire}) et la productivité du pas précédent $\mathit{pr}_{j,t-1} = \mathit{pr}_{j,t}\,(1 + g_{\mathit{pr}})^{-1/n_a}$, comme dans T2.
+\sens Le prix répercute entièrement, et le tour même, le coût salarial unitaire du pas. La marge se rapproche chaque mois d'une fraction $\lambda_\mu/n_a$ de l'écart à sa cible : la marge normale, relevée quand les stocks sont sous leur niveau visé, abaissée quand ils le dépassent. Quand la demande vide les stocks, la marge monte progressivement ; elle redescend quand les stocks se reconstituent.
+\hyp Tarification au coût majoré, sur la base $\mathit{UC}$, coût à productivité tendancielle ; elle ne contient ni amortissement ni intérêt et n'est pas la ligne 8, si bien qu'aucun flux n'est compté deux fois. Ce choix s'apparente à la tarification au coût normal, dont la référence relevée par la fiche, K.~Coutts, W.~Godley et W.~Nordhaus (\emph{Industrial Pricing in the United Kingdom}, Cambridge University Press, 1978), existe mais n'a pas été lue : le rapprochement n'est pas établi par une source lue. Le terme de demande est lu sur des valeurs disponibles avant les ventes (stock d'ouverture, stock cible de la phase 2) : la règle ne lit ni les ventes, ni la demande adressée, qui supposeraient $p_{j,t}$. Aucune anticipation n'est consommée : le coefficient de l'anticipation est nul sur une base de coût courante, puisque $\mathit{UC}_{j,t}$ contient déjà le salaire du pas, indexé sur l'anticipation (\S\ref{sec:travail-salaire}) ; une indexation du prix s'y ajoutant compterait l'anticipation deux fois. La marge étant un rapport, son ajustement partiel n'appelle aucun terme de tendance (\S\ref{sec:prix-stationnaire}), contrairement aux ventes anticipées et à l'emploi. $\lambda_\mu$, vitesse, se convertit linéairement, avec $\lambda_\mu \le n_a$ ; la règle ne contient aucun taux annuel de croissance ou d'inflation.
+\limites \emph{Bornes.} Aucune : $p_{j,t} > 0$ et $1 + \mu_{j,t} > 0$ découlent de la forme exponentielle, sans plancher. $\xi_{j,t} \le 1$ découle de la non-négativité du stock, garantie par la contrainte de disponibilité du bloc production (\S\ref{sec:production-conditions}) ; $\xi_{j,t} = 1$ pour un stock nul ; $\xi_{j,t}$ n'a pas de borne inférieure quand le stock dépasse sa cible, et le prix reste positif. La règle exige $\mathit{IN}^{\mathrm{vol}\ast}_{j,t} > 0$, vraie dès que $v^e_{j,t} > 0$, donc si la demande adressée est positive ou si $\lambda_v < n_a$ ; pour $\lambda_\mu = 0$, la marge resterait à sa valeur d'ouverture, sans ancre. \emph{Sources.} La forme exacte de P2 est une construction du projet, sans source lue. La valeur indicative $\lambda_\mu = 1{,}2$ par an résorbe 10\,\% de l'écart par mois, ordre de grandeur de la fréquence médiane des changements de prix hors soldes, 9 à 12\,\% par mois pour les prix à la consommation aux États-Unis (E.~Nakamura et J.~Steinsson, « Five Facts about Prices: A Reevaluation of Menu Cost Models », \emph{Quarterly Journal of Economics}, vol.~123, n\textsuperscript{o}~4, 2008, résumé lu) ; c'est une fréquence de révision du prix, non la vitesse d'une marge : le rapprochement n'est pas établi. Le signe de $\psi_\xi$, une marge qui monte quand la demande vide les stocks, va dans le sens de C.~J. Nekarda et V.~A. Ramey (« The Cyclical Behavior of the Price-Cost Markup », NBER Working Paper 19099, 2013, résumé lu : marges « either procyclical or acyclical conditional on demand shocks » ; \emph{Journal of Money, Credit and Banking}, vol.~52, n\textsuperscript{o}~S2, 2020) ; la cyclicité de la marge est un fait contesté, et aucune source lue ne fixe la valeur de $\psi_\xi$. \emph{Localité.} $\mathit{UC}_{j,t-1}$ se recalcule sur l'état d'ouverture par la forme de N8 ; porter $\tilde\mu$ en variable d'état éviterait ce second calcul (\S\ref{sec:prix-phases}). \emph{Plusieurs secteurs.} Au jalon J5, le terme d'intrants du coût unitaire, assis sur des prix du même pas, ferait des prix un système à résoudre ; sa forme reste à fixer à ce jalon.
+
+\textbf{Statut.} P1 : dérivée (définition) ; P2 : approchée (ajustement partiel), choix de conception (marge visée) ; P3 : dérivée (définition de la marge sur la base $\mathit{UC}$). \textbf{Provenance.} Nouvelle (fiche, \S~3.M, \S~3.N-3 et \S~3.N-4) : construction du projet, qui combine une base de coût à productivité normale, une marge visée sensible aux stocks et un ajustement partiel ancré ; décision M26, questions Q3, Q4 et Q6.
+\end{proposee}
+
+\subsection{Indice des prix et glissement}
+\label{sec:prix-indice}
+\begin{proposee}[indice des prix, décision M26]
+Sous $J = 1$, l'indice des prix du tour est le prix du tour (P4) :
+\begin{equation*}
+P_t \equiv p_{j,t} . \tag{P4}
+\end{equation*}
+
+\variables $P_t$ : indice des prix du tour $t$, en u.m. par u.v. sous $J = 1$, restitué en base 100 au tour 1 (\S\ref{sec:prix-restitution}) ; $p_{j,t}$ : prix du pas (P3).
+\sens L'indice des prix d'un tour est le prix de ce tour. Il est connu dès la phase 5 ; les règles de la phase 1 (salaire, règle de taux) le lisent au tour suivant dans le registre, comme le joueur, qui décide au vu du tour écoulé.
+\hyp Le bloc prix n'écrit rien en phase 1 ; il écrit $p_{j,t}$ en phase 5, et le moteur, qui tient le registre, y fait entrer $P_t$ en phase 9 (\S\ref{sec:cadre-calendrier}). Le glissement annuel $\pi_t = P_t/P_{t-n_a} - 1$ est défini une seule fois, au cadre, comme fonction du registre ; il est mesuré, jamais converti. En phase 1 du pas $t$, les règles lisent le dernier prix connu $P_{t-1}$ et le glissement du tour précédent $\pi_{t-1}$ ; une règle qui lirait $P_{t-2}$ comme dernier prix connu commettrait le défaut relevé au bloc travail (\S\ref{sec:travail-salaire} ; ADR 0008, point II.6). La variation du prix sur le tour, $p_{j,t}/p_{j,t-1} - 1$, est restituée ; aucune règle ne la lit.
+\limites À $J \ge 2$, $P_t$ sera un agrégat des $p_{j,t}$, dont la définition reste à fixer ; elle ne changera pas la phase. Le délai d'un tour entre un mouvement du prix et sa lecture par la règle de taux peut compter pour la stabilité de cette règle, qui relève du bloc banque centrale et anticipations ; d'où une \emph{clause de réouverture} : la question Q1 est rouverte vers un prix fixé en phase 1 et lu le tour même (lecture (b)) si l'analyse de stabilité de la fiche « banque centrale et anticipations » (condition C10) montre que ce délai est déterminant à la calibration retenue, le critère étant écrit dans cette fiche avant l'essai. Ce serait une décision citant M26, M24 et M22, avec un nouvel ADR remplaçant la partie II de l'ADR 0008 : le prix et le coût unitaire passeraient en phase 1, et le registre reviendrait à $n_a$ niveaux. Les entrées de P1 à P3 se déduisant de l'ouverture et du salaire du pas, ce passage ne serait qu'un réordonnancement.
+
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-1) ; décision M26, lecture (c) de la question Q1, citant M22 (issue \#24, volet « prix ») ; ADR 0008, partie II, points II.1, II.2, II.6 et II.7.
+\end{proposee}
+
+\subsection{Phases et lignes de flux}
+\label{sec:prix-phases}
+\begin{proposee}[phases du bloc prix, décision M26]
+Le bloc s'exécute dans la seule phase 5 du cadre (tableau~\ref{tab:phases}), en premier (« prix, puis production, puis les acheteurs », \S\ref{sec:production-phases}) ; ses lectures et écritures sont données au tableau~\ref{tab:prix-phases}.
+\begin{itemize}
+\item \textbf{Phase 1.} Le bloc n'écrit rien (lecture (c) de la question Q1) : au titre de l'indice, il ne contraint pas l'ordre interne de la phase 1, où les blocs travail et banque centrale et anticipations lisent le registre à l'ouverture.
+\item \textbf{Phase 2.} Le bloc ne siège pas ; le bloc production y écrit $\mathit{UC}_{j,t}$ et $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$, que le bloc prix lit en phase 5 (décision M26, question Q2).
+\item \textbf{Phase 5, premier bloc.} Le bloc lit l'ouverture et la phase 2 et écrit $\xi_{j,t}$, $\tilde\mu_{j,t}$ et $p_{j,t}$ ; il ne lit ni les ventes $v_{j,t}$, ni la demande adressée $d_{j,t}$, ni les plans de dépense.
+\end{itemize}
+La matrice des lectures reste triangulaire, sans résolution simultanée.
+
+\textbf{Lignes de flux.} Le bloc n'en propose aucune : les acheteurs appliquent $p_{j,t}$ aux volumes servis (lignes 1 à 3), le bloc production valorise la ligne 4. Le prix ne crée ni ne détruit de valeur nette : il répartit la valeur entre les acheteurs et les entreprises. La matrice des flux (tableau~\ref{tab:matrice-flux}) et les portes de la monnaie (tableau~\ref{tab:portes-monnaie}) sont inchangées.
+
+\textbf{Délais, en tours entiers.} Salaire $\to$ prix : 0 tour ($W_t$ en phase 1, $\mathit{UC}_{j,t}$ en phase 2, $p_{j,t}$ en phase 5). Demande $\to$ prix : 1 tour (la demande du tour $n$ vide les stocks au tour $n$ ; la tension sur les stocks d'ouverture du tour $n + 1$ relève la marge). Prix $\to$ règles de la phase 1 (salaire, règle de taux) : 1 tour. Taux $\to$ entrée de la règle de taux par la marge : au moins 2 tours.
+
+\textbf{Variables d'état du bloc.} Aucune : la marge d'ouverture se lit sur $p_{j,t-1}$ (registre), $W_{t-1}$ (bloc travail) et $\mathit{pr}_{j,t}$ (bloc production). Porter $\tilde\mu$ en variable d'état du bloc, lue aussi par le bloc travail ($\omega_{t-1} = e^{-\tilde\mu_{j,t-1}}$ sous $J = 1$, \S\ref{sec:travail-salaire}), est une option de mise en œuvre, à trajectoires identiques, laissée au jalon J3 (fiche, \S~9.1) ; aucun tirage, aucun historique.
+
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-7 et \S~9.4) ; ordre de la phase 5 : décision M24 ; décision M26, questions Q1 et Q2.
+\end{proposee}
+
+\begin{center}\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{6.9cm}>{\raggedright\arraybackslash}p{6.4cm}}
+\caption{Lectures et écritures du bloc prix, par phase (proposées, décision M26).}\label{tab:prix-phases}\\
+\toprule
+\textbf{Phase} & \textbf{Le bloc lit} & \textbf{Le bloc écrit}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Phase} & \textbf{Le bloc lit} & \textbf{Le bloc écrit}\\
+\midrule
+\endhead
+1 & rien & rien (lecture (c) de la question Q1)\\
+2 & --- & --- ; $\mathit{UC}_{j,t}$ et $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$ sont écrits par le bloc production\\
+5, premier bloc & ouverture : $p_{j,t-1} = P_{t-1}$ (registre), $W_{t-1}$ (bloc travail), $\mathit{pr}_{j,t}$ et $\mathit{IN}^{\mathrm{vol}}_{j,t}$ (bloc production) ; phase 2 : $\mathit{UC}_{j,t}$ et $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$ (bloc production) ; paramètres $\bar\mu$, $\lambda_\mu$, $\psi_\xi$ & $\xi_{j,t}$, $\tilde\mu_{j,t}$ ; $p_{j,t}$ (vers le bloc production et les acheteurs), qui est l'indice $P_t$ du tour, entré au registre par le moteur en phase 9\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{État stationnaire en forme fermée}
+\label{sec:prix-stationnaire}
+\begin{proposee}[état stationnaire du bloc, décision M26]
+Sur la trajectoire de référence des blocs production et travail (\S\ref{sec:production-stationnaire}, \S\ref{sec:travail-stationnaire}) : volumes en croissance annuelle $g$, salaire nominal en hausse de $\bigl[(1 + g_{\mathit{pr}})(1 + \bar\pi)\bigr]^{1/n_a} - 1$ par pas, donc coût unitaire en hausse de $(1 + \bar\pi)^{1/n_a} - 1$ par pas, et stock d'ouverture égal à sa cible, les règles du bloc donnent, sans simulation :
+\begin{itemize}
+\item tension sur les stocks : $\bar\xi = 0$ exactement, puisque $\mathit{IN}^{\mathrm{vol}} = n_a\sigma_j\,v^e = \mathit{IN}^{\mathrm{vol}\ast}$ quelles que soient les vitesses (\S\ref{sec:production-visee}) ;
+\item marge : avec $\xi = 0$, P2 et P3 donnent $\tilde\mu_{j,t} = (1 - \lambda_\mu/n_a)\,\tilde\mu_{j,t-1} + (\lambda_\mu/n_a)\ln(1 + \bar\mu)$, dont le seul point fixe, pour $\lambda_\mu > 0$, est $\tilde\mu = \ln(1 + \bar\mu)$ ; d'où $p/\mathit{UC} = 1 + \bar\mu$, sans terme de tendance, la marge étant un rapport ;
+\item prix : hausse de $(1 + \bar\pi)^{1/n_a} - 1$ par pas, soit 0,16516\,\% pour $\bar\pi = 2\,\%$ et 0,79741\,\% pour $\bar\pi = 10\,\%$ à $n_a = 12$ ; glissement annuel égal à $\bar\pi$ exactement, pour tout $n_a$ ;
+\item salaire relatif : $W/(p\,\mathit{pr}) = \mathit{UC}/p = 1/(1 + \bar\mu) = \omega^{\ast}$, si bien que, sous la lecture (w1), le chômage stationnaire est $U^{\mathrm{eq}}$ (\S\ref{sec:travail-stationnaire}) ;
+\item part salariale restituée, somme des salaires sur somme de la valeur ajoutée sur 12 tours (forme au \S\ref{sec:travail-stationnaire}) : 0,798903 pour $\bar\mu = 0{,}25$, $\bar\pi = g = 2\,\%$, $\sigma_j = 1{,}4/12$ an et $n_a = 12$, et 0,793445 pour $\bar\pi = 10\,\%$, contre $1/(1 + \bar\mu) = 0{,}8$ : la variation des stocks, valorisée au coût, entre dans la valeur ajoutée.
+\end{itemize}
+Ni $\lambda_\mu$, ni $\psi_\xi$ n'entrent dans ces formes. \textbf{Dépendance déclarée à $n_a$} : la marge, le glissement et le salaire relatif n'en dépendent pas ; la part salariale restituée en dépend par $y/v$ et $\bar\rho_{\mathit{IN}}$ (\S\ref{sec:production-stationnaire}) : 0,798906, 0,798903 et 0,798902 pour $n_a = 4$, 12 et 52 à $\bar\pi = 2\,\%$ ; 0,793499, 0,793445 et 0,793424 à $\bar\pi = 10\,\%$. La règle ne contenant aucun taux annuel de croissance ou d'inflation, son état stationnaire est le même sous une conversion linéaire ou géométrique de ces taux (\S\ref{sec:cadre-calendrier}).
+
+\textbf{Ce que le bloc ne fixe pas.} Ni le rythme d'inflation $\bar\pi$, ancré par le bloc banque centrale et anticipations (\S\ref{sec:banque_centrale}), ni le niveau des prix : la boucle salaires -- prix a une racine unitaire nominale (\S\ref{sec:prix-conditions}). Le taux d'utilisation stationnaire relève du bloc investissement.
+
+\textbf{État initial résolu, sans préparation.} Le bloc n'a aucune variable d'état propre : il suffit que le registre de l'indice des prix et le salaire d'ouverture soient à leur valeur stationnaire (\S\ref{sec:cadre-calendrier}, \S\ref{sec:travail-stationnaire}) et que le stock d'ouverture soit à sa cible (\S\ref{sec:production-stationnaire}) ; la marge d'ouverture vaut alors $\ln(1 + \bar\mu)$, et $\xi = 0$. Ces valeurs seront calculées et publiées par le script d'état stationnaire (jalon J3).
+
+Ces chiffres se recalculent à la main depuis les formes ci-dessus et les valeurs indicatives de la table de calibration (tableau~\ref{tab:calibration}) ; ce ne sont pas des résultats du moteur.
+
+\textbf{Statut.} Dérivé des règles du bloc. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-8 et \S~9.7) ; décision M26 ; centre de la bande commune de part salariale : décisions M25 et M26.
+\end{proposee}
+
+\subsection{Conditions déclarées et stabilité}
+\label{sec:prix-conditions}
+\begin{proposee}[conditions et critères écrits avant l'essai, décision M26]
+\textbf{Conditions.} $\lambda_\mu \le n_a$, contrôlée au chargement de la table de calibration, jamais par un écrêtage (\S\ref{sec:cadre-calendrier}) ; $\psi_\xi \ge 0$ ; $\mathit{IN}^{\mathrm{vol}\ast}_{j,t} > 0$ (\S\ref{sec:prix-marge}).
+
+\textbf{Bornes.} Aucune, ni à seuil libre, ni de conservation propre au bloc : ni plancher du prix, ni bornes de la marge, ni écrêtage de la tension sur les stocks (\S\ref{sec:prix-marge}). Le test de positivité est déclaré dans la fiche (\S~9.6) et sera cité ici au jalon J3. Sans borne, le bloc ne réintroduit pas l'instabilité 15 (tableau~\ref{tab:instabilites}).
+
+\textbf{Boucle propre du bloc.} À coûts et tension sur les stocks exogènes, la marge suit une récurrence d'ordre un, de valeur propre $1 - \lambda_\mu/n_a$, réelle et dans $[0, 1[$ pour $0 < \lambda_\mu \le n_a$ : 0,9 à la valeur indicative (demi-vie de 6,58 tours), 0,95 (13,51 tours) pour $\lambda_\mu$ divisée par 2, 0,8 (3,11 tours) pour $\lambda_\mu$ multipliée par 2. Le bloc n'a pas de cycle propre.
+
+\textbf{Boucle prix -- stocks -- demande.} Sur une maquette de la fiche (\S~3.N-9) : règles N1 à N7 du bloc production, emploi égal à la demande de travail, coût unitaire exogène, règle P1 à P3, plans de dépense en u.m. au prix du pas précédent et demande induite $d_t = A + m\,y_{t-1}$ (hypothèse, à remplacer au jalon J3 par la propension effective des blocs ménages et État), $g = 2\,\%$. Le rayon spectral vaut 0,9420, 0,9535, 0,9658 et 0,9783, et la période 93,8, 94,3, 100,4 et 115,5 tours, pour $m = 0{,}5$, 0,6, 0,7 et 0,8, contre 0,9279 à 0,9762 et 68,9 à 95,8 tours à prix figé (\S\ref{sec:travail-conditions}) : la règle reste stable mais allonge le cycle des stocks, dont la période dépasse 96 tours dès $m = 0{,}7$. Aux vitesses du bloc production divisées par 2, le rayon va de 0,9700 à 0,9878 (périodes de 169 à 218 tours) ; multipliées par 2, de 0,8791 à 0,9647 (43 à 60 tours) ; pour $\psi_\xi$ doublée, de 0,9534 à 0,9813 ; pour $\lambda_\mu$ divisée par 2, de 0,9400 à 0,9733 ; multipliée par 2, de 0,9477 à 0,9808. Sur cette maquette, la boucle reste stable jusqu'à $\psi_\xi \approx 13{,}0$ aux vitesses indicatives et jusqu'à $\psi_\xi \approx 4{,}875$ aux vitesses du bloc production doublées, la frontière étant atteinte à $m = 0{,}8$ dans les deux cas : au plus bas, près de dix fois la valeur indicative de $\psi_\xi$.
+
+\textbf{Boucle salaires -- prix.} Sur la même maquette, règles de salaire (T2, T3) et de prix réunies, anticipation exogène égale à $\bar\pi$, le rayon spectral de la partie réelle vaut 0,8969, 0,9068, 0,9225 et 0,9385 pour $m = 0{,}5$ à 0,8 ; de 0,9479 à 0,9714 pour toutes les vitesses divisées par 2 ; de 0,8070 à 0,8583 pour toutes les vitesses multipliées par 2 ; de 0,9322 à 0,9351 pour $\lambda_w$ doublée ; de 0,9163 à 0,9346 pour $\psi_\xi$ doublée. La boucle est plus amortie qu'à marge constante (0,9068 contre 0,9172 à $m = 0{,}6$). Une valeur propre vaut 1, à $3 \cdot 10^{-10}$ près : une multiplication uniforme des salaires, des prix et des plans nominaux laisse les grandeurs réelles inchangées, et le niveau des prix n'est pas ancré par les blocs travail et prix, ce qui est attendu. Si les plans nominaux sont indexés sur l'anticipation et que celle-ci est adaptative, le rythme d'inflation a de même une racine unitaire : un écart uniforme et permanent de l'inflation effective et anticipée est encore une trajectoire des deux blocs, qui ne contiennent aucune ancre du rythme. La stabilité du rythme relève du bloc banque centrale et anticipations (règle de taux, loi d'anticipation, canal du taux vers la demande).
+
+\textbf{Critères du jalon J3, écrits avant l'essai} (fiche, \S~9.6).
+\begin{itemize}
+\item État stationnaire : un pas sans choc depuis l'état initial résolu laisse $\tilde\mu = \ln(1 + \bar\mu)$, une hausse du prix de $(1 + \bar\pi)^{1/n_a} - 1$ et $\xi = 0$, à $10^{-10}$ près en relatif ($10^{-10}$ en absolu pour $\xi$).
+\item Dernier prix connu : test commun avec le bloc travail (\S\ref{sec:travail-conditions}), sous P1 à P3, pour $\bar\pi \in \{0 ; 2\,\% ; 10\,\%\}$ et $n_a \in \{4 ; 12 ; 52\}$.
+\item Vitesses : après une hausse de la dépense publique de 1\,\% pendant 12 tours, l'écart relatif de la marge, de la part salariale et de $\xi$ entre les branches où $\lambda_\mu$ est divisée et multipliée par 2 est d'au plus $10^{-6}$ après 720 pas.
+\item Boucle propre : module $1 - \lambda_\mu/n_a$ inférieur à 1 aux trois calibrations.
+\item Boucle salaires -- prix (exigence), anticipation exogène, propension effective : une racine de vecteur propre nominal, avec $|\lambda - 1| \le 10^{-8}$, et toutes les autres de module inférieur à 1 à la calibration ; publiées aux variantes. Boucle prix -- stocks -- demande : rayon spectral inférieur à 1 à la calibration, publié aux vitesses divisées et multipliées par 2.
+\item Alternance : depuis l'état résolu, dépense publique de $+1\,\%$ (demande de $+0{,}2\,\%$ pour une part publique de 20\,\%, hypothèse) au seul tour 1 ; sur les tours 2 à 13, l'écart de $\ln p$ au sentier sans choc et l'écart de la variation mensuelle $\Delta\ln p$ changent chacun de signe au plus deux fois, les valeurs $|x| \le 10^{-12}$ étant ignorées, à la calibration et à la propension effective (exigence) ; publié aux variantes.
+\item Positivité : par appel direct, avec $\xi = 1$ (stock nul) et $\xi = -9$ (stock à dix fois sa cible), le prix est positif et fini.
+\item Phases : le bloc ne lit ni $v_{j,t}$, ni $d_{j,t}$, ni un plan ; il est le premier de la phase 5 ; $\xi$ lit le stock cible de N2.
+\item Identités : deux prix distants de 1\,\% sur un même pas laissent nulle la somme des soldes financiers, et égales, à $10^{-12}\,S$ près, les valeurs nettes des entreprises calculées par les flux et par le stock.
+\item Empreinte : aucune variable d'état propre (une si $\tilde\mu$ est portée) ; registre selon l'ADR 0008. Coût : part du bloc d'au plus 0,48\,ms par pays-pas (\nolinkurl{tests/invariants/test_budget.py}).
+\end{itemize}
+
+\textbf{Critère du jalon J4, à confirmer avant l'essai.} Après une dépense publique de $+1\,\%$, puis de $+5\,\%$, pendant 12 tours, le pic de l'écart du glissement lu par la règle de taux sur les tours 1 à 36 atteint au moins 0,2 point, puis 1,0 point (seuil proposé par \texttt{jeu}, retenu par la décision M26 sous réserve de confirmation avant le jalon J4) ; le délai perçu et la décomposition de l'inflation sont publiés.
+
+\textbf{Statut.} Choix de conception (conditions, critères) ; dérivé pour les valeurs propres. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-9, \S~3.N-10, \S~5, réserves 1 à 4, et \S~9.6) ; décision M26.
+\end{proposee}
+
+\subsection{Grandeurs restituées}
+\label{sec:prix-restitution}
+\begin{proposee}[grandeurs restituées au tour, décision M26]
+Les grandeurs du tableau~\ref{tab:prix-restitution} sont restituées au joueur à chaque tour ; ce sont des grandeurs de la couche d'observation, ni flux ni variables d'état. Elles ne portent pas de label. L'indice restitué est le prix du tour, sans décalage. La part salariale est celle du bloc travail (tableau~\ref{tab:travail-restitution}), une seule définition ; le salaire relatif $W/(p\,\mathit{pr})$, égal à $1/(1 + \mu)$ sous $J = 1$, n'est pas une ligne du tableau de bord. Le taux d'utilisation n'apparaît pas parmi les grandeurs du bloc prix, qu'il n'influence pas.
+
+\textbf{Niveaux normaux}, chacun dans la définition exacte de l'indicateur, publiés par le script d'état stationnaire : glissement annuel $\bar\pi$ ; variation du prix sur le tour $(1 + \bar\pi)^{1/12} - 1$, soit 0,16516\,\% pour $\bar\pi = 2\,\%$, et $\bar\pi$ une fois annualisée ; marge $\bar\mu$ ; tension sur les stocks 0 ; part salariale restituée, 0,798903 dans les hypothèses du \S\ref{sec:prix-stationnaire}.
+
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~9.4 et \S~9.5, conditions 1 à 6 de \texttt{jeu}) ; décision M26.
+\end{proposee}
+
+\begin{center}\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{5.3cm}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.8cm}}
+\caption{Grandeurs restituées du bloc prix (proposées, décision M26).}\label{tab:prix-restitution}\\
+\toprule
+\textbf{Grandeur} & \textbf{Définition} & \textbf{Unité} & \textbf{Dénominateur} & \textbf{Fenêtre}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Grandeur} & \textbf{Définition} & \textbf{Unité} & \textbf{Dénominateur} & \textbf{Fenêtre}\\
+\midrule
+\endhead
+Indice des prix & $100\,P_t/P_0$, le prix du tour & indice & prix du tour 1 (pas 0) & le tour\\
+Glissement annuel & $\pi_t = P_t/P_{t-12} - 1$ & par an & $P_{t-12}$ & 12 tours\\
+Variation du prix sur le tour & $p_{j,t}/p_{j,t-1} - 1$, et son annualisation géométrique $(1 + x)^{12} - 1$ ; aucune règle ne la lit & par tour ; par an & $p_{j,t-1}$ & le tour\\
+Marge & $\mu_{j,t} = p_{j,t}/\mathit{UC}_{j,t} - 1$ & fraction & coût unitaire du tour & le tour ; moyenne sur 12 tours\\
+Décomposition de l'inflation & contributions du coût unitaire et de la marge, $\pi_t\,\Delta_{12}\ln\mathit{UC}/\Delta_{12}\ln p$ et $\pi_t\,\Delta_{12}\tilde\mu/\Delta_{12}\ln p$, de somme $\pi_t$ exactement ; « sans objet » si $|\Delta_{12}\ln p| \le 10^{-12}$ & par an & glissement annuel & 12 tours\\
+Tension sur les stocks & $\xi_{j,t}$, positive quand les stocks sont sous leur niveau visé & fraction & stock cible du tour & le tour\\
+\bottomrule
+\end{longtable}
+\end{center}
+Dans le tableau, $\Delta_{12}x_t = x_t - x_{t-12}$ ; l'additivité exacte de la décomposition découle de P3, $\ln p = \ln\mathit{UC} + \tilde\mu$.
+
+\textbf{Paramètres du bloc.} Ils figurent dans la table de calibration (tableau~\ref{tab:calibration}) : $\bar\mu$, $\lambda_\mu$, $\psi_\xi$.
+
+\begin{joueur}[prix]
+Le bloc n'ouvre aucun levier (décision M26). Les prix administrés sont renvoyés au catalogue des leviers du jalon J4 et au mode planifié du jalon J7 : le levier ne sera ouvert que si un scénario apparié, gel contre sans gel, écrit avant l'essai, montre un coût perceptible du gel (issue \#47). Un levier de répartition agissant sur la marge normale est renvoyé au jalon J4 (issue \#48). Des leviers du socle transitent par le bloc ; les délais sont en tours entiers, comptés depuis la lecture du levier en phase 1 du tour $n$.
+\begin{itemize}
+\item \textbf{Dépense publique} : stocks en baisse au tour $n$ ; tension sur les stocks, marge et prix en hausse au tour $n + 1$ ; glissement lu par les règles au tour $n + 2$. Contrepartie visible : les stocks au tour $n$ (\S\ref{sec:production}), puis la marge.
+\item \textbf{Impôts sur les ménages} : un tour de plus que la dépense publique, si le budget de consommation lit les revenus du tour précédent (bloc ménages).
+\item \textbf{Taux} : par les plans de dépense des blocs ménages et investissement ; au moins deux tours entre une décision de taux et son entrée dans la règle de taux par la marge.
+\item \textbf{Cible ou annonce de la banque centrale, par l'anticipation} : par les salaires, répercutés sur le prix le tour où le salaire change (\S\ref{sec:travail}).
+\end{itemize}
+\end{joueur}
+
+\begin{portee}[prix]
+\begin{itemize}
+\item Un seul bien ($J = 1$) : aucun prix relatif, aucun intrant ; le terme d'intrants du coût unitaire et la résolution des prix d'un même pas relèvent du jalon J5.
+\item Aucune anticipation consommée, aucune indexation des prix, aucun canal direct de l'anticipation vers le prix : l'anticipation n'atteint le prix que par le salaire, avec un gain de 1 le tour même.
+\item Aucun canal de coût du taux d'intérêt : le coût unitaire ne contient aucun intérêt, si bien qu'une hausse de taux ne relève jamais les prix par les coûts ; le modèle ne reproduit pas l'« énigme des prix » (\emph{price puzzle}). Un coût historique avec financement des stocks, forme que la fiche attribue de mémoire à Godley et Lavoie sans l'avoir vérifiée dans le livre, n'est pas repris ; un intérêt sur le fonds de roulement n'entrerait dans la base du prix que par une décision citant M26.
+\item Aucun terme en taux d'utilisation : la variante qui en porte un, transmise par la décision M26 au bloc investissement, n'a pas été retenue avec la décision M28 (fiche « investissement et financement », \S~7, condition 3, et \S~9.3) ; rouverte par une décision citant M26, elle lirait le taux d'utilisation visé du bloc investissement, non sa valeur stationnaire, sous peine de surdéterminer l'état stationnaire.
+\item Aucune vitesse d'ajustement modulée par l'inflation : en haute inflation, la répercussion porte sur le coût unitaire entier à chaque tour, et la marge seule est lente ; une modulation, neutre à l'état stationnaire, est une piste du jalon J6.
+\item La marge procyclique après un choc de demande est un fait contesté (\S\ref{sec:prix-marge}) ; la forme exacte de la règle n'a pas de source lue, et $\lambda_\mu$ comme $\psi_\xi$ sont des valeurs indicatives, à caler au jalon J3 sur des sources lues.
+\item Le bloc ne fixe ni le rythme d'inflation ni le niveau des prix ; il n'a ni borne, ni variable d'état propre, ni tirage aléatoire, ni historique.
+\end{itemize}
+\end{portee}
 
 %=====================================================================
 \section{Ménages}
@@ -1121,7 +1346,7 @@ Ce bloc portera l'offre de crédit, les dépôts, les fonds propres, les réserv
 \section{Banque centrale et anticipations}
 \label{sec:banque_centrale}
 %=====================================================================
-Ce bloc portera la règle de taux, le bilan de la banque centrale, la formation des anticipations et la crédibilité ; les blocs des salaires (\S\ref{sec:travail}) et des prix (\S\ref{sec:prix}) lisent les anticipations qu'il forme. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/banque_centrale.md} (expert pilote : \texttt{monnaie} ; \texttt{macro} consulté sur les prix et les salaires). Aucune équation n'est encore spécifiée.
+Ce bloc portera la règle de taux, le bilan de la banque centrale, la formation des anticipations et la crédibilité ; le bloc des salaires (\S\ref{sec:travail}) lit les anticipations qu'il forme, et le bloc prix n'en lit aucune (\S\ref{sec:prix}, décision M26). Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/banque_centrale.md} (expert pilote : \texttt{monnaie} ; \texttt{macro} consulté sur les prix et les salaires). Aucune équation n'est encore spécifiée.
 
 %=====================================================================
 \section{État et dette}
@@ -1183,7 +1408,7 @@ Transferts (\S\ref{sec:finances_publiques}) & transferts (ligne 6, phase 6) & 0 
 Cette section tiendra la table de calibration, où chaque paramètre figure une seule fois, l'état stationnaire résolu (état initial calculé comme équilibre des règles en vigueur, recalculable à la main depuis la table) et le test zéro : 60 ans de simulation sans choc depuis l'état stationnaire résolu, dont les bandes de ratios de stocks sont écrites avant l'essai. La table s'ouvre au jalon J1 avec les premières équations ; l'état stationnaire et le test zéro, au jalon J3.
 
 \begin{proposee}[paramètres du cadre, décision M22]
-Le cadre (\S\ref{sec:cadre}) introduit les paramètres ci-dessous, et aucune borne. Ils n'ont pas encore de nom dans le code, fixé au jalon J2, et les équations qui les emploieront n'ont pas encore de label. Ce ne sont pas des drapeaux de mode : le moteur n'a qu'un calendrier et qu'une règle de conversion par nature de taux (\S\ref{sec:cadre-calendrier}), et $n_a$, $n_m$ sont des paramètres parce que toute fenêtre et toute conversion s'écrivent en fonction d'eux. Changer $n_a$ ou $n_m$, ou élargir $\varepsilon$ ou $\varepsilon_V$, est une décision du mainteneur citant M22, jamais un réglage ; un resserrement de $\varepsilon$ ou de $\varepsilon_V$ ne demande que le visa de l'expert pilote. Ne sont pas des paramètres : la longueur du registre de l'indice des prix (égale à $n_a$), le facteur entre les deux ratios au PIB annuel et l'encaisse stationnaire du Trésor $M^{G*}$, variable de l'état initial résolu.
+Le cadre (\S\ref{sec:cadre}) introduit les paramètres ci-dessous, et aucune borne. Ils n'ont pas encore de nom dans le code, fixé au jalon J2, et les équations qui les emploieront n'ont pas encore de label. Ce ne sont pas des drapeaux de mode : le moteur n'a qu'un calendrier et qu'une règle de conversion par nature de taux (\S\ref{sec:cadre-calendrier}), et $n_a$, $n_m$ sont des paramètres parce que toute fenêtre et toute conversion s'écrivent en fonction d'eux. Changer $n_a$ ou $n_m$, ou élargir $\varepsilon$ ou $\varepsilon_V$, est une décision du mainteneur citant M22, jamais un réglage ; un resserrement de $\varepsilon$ ou de $\varepsilon_V$ ne demande que le visa de l'expert pilote. Ne sont pas des paramètres : la longueur du registre de l'indice des prix (égale à $n_a + 1$, décision M26 ; ADR 0008, point II.3), le facteur entre les deux ratios au PIB annuel et l'encaisse stationnaire du Trésor $M^{G*}$, variable de l'état initial résolu.
 \end{proposee}
 
 \begin{proposee}[paramètres du bloc production et stocks, décision M24]
@@ -1192,6 +1417,10 @@ Le bloc production et stocks (\S\ref{sec:production}) introduit les paramètres 
 
 \begin{proposee}[paramètres du bloc travail et salaires, décision M25]
 Le bloc travail et salaires (\S\ref{sec:travail}) introduit les paramètres ci-dessous. Ils n'ont pas encore de nom dans le code, fixé au jalon J3 avec le module du bloc, et les équations qui les emploient n'ont pas encore de label : la dernière colonne renvoie à leur identifiant dans la section du bloc. Leurs valeurs sont indicatives et seront fixées au jalon J3, sur visa de l'expert pilote, dans leurs conditions déclarées : $\lambda_w \le n_a$ et $\lambda_N \le n_a$, contrôlées au chargement, jamais par un écrêtage ; $\lambda_N$ dans le seuil de demi-vie de 2 à 4 tours (\S\ref{sec:travail-conditions}). Le bloc n'introduit aucune borne à seuil libre. Ne sont pas des paramètres : la norme $\omega^{\ast} = 1/(1 + \bar\mu)$, lue dans le bloc prix ; le chômage stationnaire $\bar U$, égal à $U^{\mathrm{eq}}$ ; $N^{\mathrm{pa}}_0$ et $W_0$, valeurs de l'état initial résolu ; l'anticipation $\pi^e$, variable d'état du bloc banque centrale et anticipations ; la croissance $g$, dérivée.
+\end{proposee}
+
+\begin{proposee}[paramètres du bloc prix, décision M26]
+Le bloc prix (\S\ref{sec:prix}) introduit les paramètres ci-dessous. Ils n'ont pas encore de nom dans le code, fixé au jalon J3 avec le module du bloc, et les équations qui les emploient n'ont pas encore de label : la dernière colonne renvoie à leur identifiant dans la section du bloc. Leurs valeurs sont indicatives et seront fixées au jalon J3, sur visa de l'expert pilote et sur des sources lues, dans leurs conditions déclarées : $\lambda_\mu \le n_a$, contrôlée au chargement, jamais par un écrêtage, et $\psi_\xi \ge 0$ (\S\ref{sec:prix-conditions}). Le bloc n'introduit aucune borne. Ne sont pas des paramètres : la marge stationnaire, égale à $\bar\mu$ ; l'anticipation d'inflation, que le bloc ne lit pas ; le taux d'utilisation normal, que le bloc ne lit pas ; la tension sur les stocks stationnaire, nulle.
 \end{proposee}
 
 \begin{center}\small
@@ -1219,6 +1448,9 @@ $\beta$ & non encore créé (J3) & 2 (indicative) & par unité de taux de chôma
 $U^{\mathrm{eq}}$ & non encore créé (J3) & 0,05 (hypothèse) & fraction de la population active & décision M25 ; hypothèse de l'instruction, fixée au jalon J3 ; lue à source unique par le bloc banque centrale et anticipations & salaire, T3 (\S\ref{sec:travail-salaire})\\
 $\lambda_N$ & non encore créé (J3) & 3,5 & par an, vitesse ; demi-vie de 2,01 tours & décision M25 ; retard de l'emploi établi (Ball, Leigh et Loungani, 2013 ; Abraham et Houseman, 1993 : demi-vie de 2,17 tours aux États-Unis) ; seuil de jouabilité de 2 à 4 tours & emploi, T4 (\S\ref{sec:travail-emploi})\\
 $g_N$ & non encore créé (J3) & 0,005 (hypothèse) & par an, taux de croissance, conversion géométrique & décision M25, lectures (b) et (d) ; hypothèse de l'instruction, fixée au jalon J3 & population active, T1 (\S\ref{sec:travail-population})\\
+$\bar\mu$ & non encore créé (J3) & 0,25 (hypothèse) & fraction du coût unitaire & décision M26 ; choix de conception ; hypothèse de l'instruction, calée au jalon J3 sur la part salariale, avec l'objectif d'économie de référence fiable ; lue à source unique par le bloc travail (norme $\omega^{\ast}$) & marge, P2 (\S\ref{sec:prix-marge}) ; salaire, T3 (\S\ref{sec:travail-salaire})\\
+$\lambda_\mu$ & non encore créé (J3) & 1,2 (indicative) & par an, vitesse ; $\lambda_\mu \le n_a$ & décision M26 ; non sourcée : ordre de grandeur de la fréquence médiane des changements de prix, 9 à 12\,\% par mois (Nakamura et Steinsson, 2008), non établi pour une marge ; à caler au jalon J3 & marge, P2 (\S\ref{sec:prix-marge})\\
+$\psi_\xi$ & non encore créé (J3) & 0,5 (indicative) & sans dimension ; $\psi_\xi \ge 0$ & décision M26 ; non sourcée : signe d'une marge qui monte après un choc de demande, fait contesté (Nekarda et Ramey, 2013) ; à caler au jalon J3 & marge, P2 (\S\ref{sec:prix-marge})\\
 \bottomrule
 \end{longtable}
 \end{center}
@@ -1311,6 +1543,22 @@ Pistes écartées par la décision M25 (fiche \nolinkurl{docs/blocs/travail.md},
 \item \textbf{Anticipation lue après le bloc banque centrale dans la phase 1} (lecture (b) de la question Q3) : un délai nul entre une annonce et les salaires, levier instantané sans contrepartie visible ; la lecture à l'ouverture garde la phase 1 sans ordre interne.
 \end{itemize}
 
+\subsection*{Prix (décision M26)}
+Pistes écartées par la décision M26 (fiche \nolinkurl{docs/blocs/prix.md}, \S~8 ; ADR 0008, partie II, pour la phase de l'indice des prix), au regard des critères écrits avant l'instruction et du principe de simplicité.
+\begin{itemize}
+\item \textbf{Règle de la v1.5} (équation \texttt{eq:price} de \nolinkurl{archive/v1.5/Nations_et_Marches_v1_5.tex}) : tâtonnement du prix sur un indicateur de demande, indexation sur l'anticipation et rappel vers le coût majoré ; transposée au pas mensuel, la valeur stationnaire du rapport du prix au coût majoré dépend des vitesses d'ajustement, et d'un paramètre sans valeur dans le texte ; cinq bornes à seuil libre ; l'anticipation consommée deux fois, par l'indexation et par la flexibilité du prix (fiche, \S~3.A).
+\item \textbf{Règle du moteur v2.0} (\texttt{archive/v2.0/prototype/model.py}, branche \texttt{wsps2}) : la marge stationnaire dépend du rapport de deux vitesses et de l'inflation ; la vitesse du prix vers le coût majoré vaut par défaut 0,25 par semaine, soit 13 par an, au-delà de $n_a$ ; un état caché (prix de remplacement lu par \texttt{getattr}) ; des drapeaux de mode ; un amortissement au prix courant dans le coût, point fixe que les variantes lissée et indexée rendaient instable (instabilités 10 et 11, tableau~\ref{tab:instabilites}).
+\item \textbf{Prix égal au coût majoré, sans terme de demande} (option R) : gardé comme référence d'état stationnaire ; sans terme de demande, il reprendrait la forme de l'instabilité 14, dont la transposition au bien unique n'est pas établie, et le salaire réel serait figé, sans effet de répartition visible du joueur.
+\item \textbf{Marge instantanée sensible aux stocks} (option C) : stable aux vitesses indicatives (rayon de la boucle prix -- stocks -- demande de 0,9490 à 0,9824 pour $m = 0{,}5$ à 0,8), mais explosive avec alternance d'un tour sur l'autre dès que les vitesses du bloc production doublent (rayon de 1,1808 à 1,3028, racine dominante réelle négative) ; la boucle salaires -- prix y dépasse 1 dès $m = 0{,}6$ quand toutes les vitesses doublent (1,0264 à 1,1219). Une règle de taux qui lirait une inflation alternée amplifierait l'alternance (avis de \texttt{monnaie}, fiche, \S~6.2).
+\item \textbf{Prix à ajustement partiel indexé sur l'anticipation} (option D, de type Calvo) : acceptable sous la conversion géométrique, mais il consomme l'anticipation, si bien que sa marge stationnaire dépend de l'écart permanent de l'anticipation au glissement, que le bloc banque centrale et anticipations doit exclure (condition C1) ; sa marge baisse en expansion, transmission dont la cyclicité est contestée (\S\ref{sec:prix-marge}).
+\item \textbf{Marge sensible au taux d'utilisation} (option T) : si le taux d'utilisation ne revient pas à sa valeur stationnaire, la marge, donc le chômage stationnaire, sont déplacés durablement, second ancrage ; transmise au bloc investissement par la décision M26, non retenue avec la décision M28 (\S\ref{sec:prix}, encadré de portée).
+\item \textbf{Coût complet avec amortissement} : au prix courant, un point fixe du prix sur lui-même, à prix contracyclique en transition ; à la valeur comptable, une part salariale qui dépend de l'inflation stationnaire par $\bar\rho_K$ (\S\ref{sec:production-capital}). \textbf{Marge sur le coût moyen pondéré des stocks} : part salariale et chômage stationnaires déplacés avec l'inflation et avec $n_a$. \textbf{Coût retardé d'un pas} : exact seulement avec une indexation complète sur l'anticipation, sans gain sur le coût du pas. Un coût historique avec financement des stocks est noté sans être instruit : il ferait dépendre la part salariale du taux d'intérêt.
+\item \textbf{Indicateurs de demande de la première tentative} (écart relatif de l'offre à la demande, v1.5 et moteur v2.0) : non nuls sur une trajectoire de croissance, ils font dépendre l'état stationnaire des vitesses ; la production visée non réalisée et la demande non servie, nulles hors pénurie, sont trop rares pour servir de signal de demande.
+\item \textbf{Indice des prix arrêté en phase 1 sur le prix du tour précédent} (lecture (a) de la question Q1) : trajectoires identiques à celles de la lecture retenue, mais un indice restitué décalé d'un tour sur son prix, sans économie de variable d'état, et un piège pour la règle de salaire, qui devrait lire l'indice du tour et non le précédent sous peine de déplacer le chômage stationnaire (\S\ref{sec:travail-salaire}).
+\item \textbf{Prix fixé en phase 1, indice lu le tour même} (lecture (b)) : délai nul pour la règle de taux, mais une révision de la décision M24 (prix en phase 5), de l'ordre des phases et de la phase du coût unitaire ; une règle automatique qui lirait une inflation que le joueur ne voit pas avant de décider, asymétrie exploitable en multijoueur par un pays non joué ; aucune règle de prix ne pourrait lire les phases 2 à 4. Elle reste la destination de la clause de réouverture (\S\ref{sec:prix-indice}).
+\item \textbf{Glissement porté en variable d'état} à côté d'un registre de $n_a$ niveaux : même empreinte et mêmes trajectoires que le registre de $n_a + 1$ niveaux, mais une grandeur dérivée qu'aucune sauvegarde ne permet de recontrôler, une contrainte d'ordre dans la clôture et une mesure de l'inflation figée (ADR 0008, options écartées de la partie II).
+\end{itemize}
+
 %=====================================================================
 \section{État des chantiers ouverts}
 \label{sec:chantiers}
@@ -1373,13 +1621,15 @@ Le bloc production et stocks proposé (\S\ref{sec:production}, décision M24, bi
 
 Le bloc travail et salaires proposé (\S\ref{sec:travail}, décision M25) ôte son objet à l'instabilité 7 : sans produit marginal du travail (technique à coefficients fixes de la décision M24), aucun ancrage salarial sur la productivité marginale n'est possible. Sa seule borne, l'emploi au plus égal à la population active, est une contrainte de conservation inactive à l'état stationnaire ; qu'elle ne produise pas de cycle une fois activée (instabilité 15) sera vérifié au jalon J3 ou J4, par un critère écrit avant l'essai (\S\ref{sec:travail-conditions}). Il ne reprend ni l'indexation sur le maximum de l'anticipation et de l'inflation passée, qui faisait cliquet à la baisse sur le moteur v2.0, ni le chômage d'équilibre hystérétique (\S\ref{sec:ecartees}). Ce sont des propriétés de la spécification ; le moteur ne les exécutera qu'au jalon J3.
 
+Le bloc prix proposé (\S\ref{sec:prix}, décision M26) garde un terme de demande, la tension sur les stocks : il ne reprend pas la règle sans terme de demande de l'instabilité 14, sans établir pour autant que le mécanisme mesuré sur le moteur v2.0, la spirale du prix de l'équipement dans son propre coût, existerait sous un bien unique. Sa base de coût ne contient aucun amortissement : les instabilités 10 et 11 sont sans objet pour lui et restent des risques du bloc investissement (\S\ref{sec:investissement}). Il n'a aucune borne (instabilité 15) et ne reprend pas le mode de prix \texttt{normal\_average} (instabilité 9). Le contenu des instabilités 12 et 13 n'est pas documenté au-delà de leur intitulé dans la synthèse des faits : la règle retenue ne corrige pas la marge par un gain, et la référence de sa tension sur les stocks est le stock cible du bloc production, ancré ; le rapprochement reste à confirmer si leur contenu est retrouvé. Ce sont des propriétés de la spécification ; le moteur ne les exécutera qu'au jalon J3.
+
 \appendix
 
 %=====================================================================
 \section{Correspondance équations \texorpdfstring{$\leftrightarrow$}{<->} code}
 \label{sec:correspondance}
 %=====================================================================
-Cette annexe associe à chaque label d'équation le module et la fonction du moteur qui portent sa balise ; elle est générée ou vérifiée par le script de concordance. Elle s'ouvre au jalon J1. En version 3.0-socle, la spécification ne porte aucun label d'équation et le moteur aucune balise : la concordance est vide des deux côtés. Les labels prévus des blocs production et stocks et travail et salaires, posés au jalon J3 avec leur balise, sont listés aux tableaux~\ref{tab:production-equations} et~\ref{tab:travail-equations}.
+Cette annexe associe à chaque label d'équation le module et la fonction du moteur qui portent sa balise ; elle est générée ou vérifiée par le script de concordance. Elle s'ouvre au jalon J1. En version 3.0-socle, la spécification ne porte aucun label d'équation et le moteur aucune balise : la concordance est vide des deux côtés. Les labels prévus des blocs production et stocks, travail et salaires et prix, posés avec leur balise, sont listés aux tableaux~\ref{tab:production-equations}, \ref{tab:travail-equations} et~\ref{tab:prix-equations}.
 
 \begin{center}\small
 \begin{longtable}{p{5.0cm}p{6.6cm}p{3.2cm}}
@@ -1401,7 +1651,7 @@ Cette annexe associe à chaque label d'équation le module et la fonction du mot
 \section{Glossaire de la notation}
 \label{sec:glossaire}
 %=====================================================================
-Cette annexe est le registre des symboles : tout symbole employé dans une équation y figure, avec sa définition, son unité, son bloc et le label de l'équation qui le définit ; tout symbole qui y figure est employé. Un symbole a un seul sens dans tout le document. Elle s'ouvre au jalon J1. Les symboles du cadre (\S\ref{sec:cadre}) et des blocs production et stocks (\S\ref{sec:production}) et travail et salaires (\S\ref{sec:travail}), proposés, renvoient à la sous-section qui les définit : ils n'ont pas encore de label d'équation.
+Cette annexe est le registre des symboles : tout symbole employé dans une équation y figure, avec sa définition, son unité, son bloc et le label de l'équation qui le définit ; tout symbole qui y figure est employé. Un symbole a un seul sens dans tout le document. Elle s'ouvre au jalon J1. Les symboles du cadre (\S\ref{sec:cadre}) et des blocs production et stocks (\S\ref{sec:production}), travail et salaires (\S\ref{sec:travail}) et prix (\S\ref{sec:prix}), proposés, renvoient à la sous-section qui les définit : ils n'ont pas encore de label d'équation.
 
 Indices réservés : pays $c$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Une variable $x_t$ est la valeur d'ouverture du pas $t$, $x_{t+1}$ sa valeur de clôture, sauf mention contraire. Une variable anticipée porte l'exposant $e$, une cible l'exposant $\ast$, une valeur de long terme ou stationnaire une barre. Le volume d'une grandeur nominale du cadre tenue en u.m. porte l'exposant $\mathrm{vol}$ ($\mathit{IN}^{\mathrm{vol}}$, $K^{\mathrm{vol}}$, $C^{\mathrm{vol}}$, $G^{\mathrm{vol}}$, $I^{\mathrm{vol}}$), en unités de volume du bien (u.v.) : c'est une variable du bloc qui le lit, jamais un poste des matrices ; il se cumule avec la marque de cible ($\mathit{IN}^{\mathrm{vol}\ast}$). La convention « minuscule = volume » n'est pas employée : $c$, $k$ et $s$ sont des indices réservés, $g$ et $i$ des taux.
 
@@ -1424,10 +1674,10 @@ $x^{\mathrm{an}}$, $x^{\mathrm{pas}}$ & grandeur exprimée en base annuelle ; so
 $\lambda$ & vitesse d'ajustement annuelle & par an & cadre & \S\ref{sec:cadre-calendrier}, proposée\\
 $i_X$ & taux nominal annuel de l'instrument $X$ : $i_D$ (dépôts), $i_L$ (crédits), $i_B$ (titres publics), $i_{\mathit{res}}$ (réserves), $i_{\mathit{CB}}$ (refinancement) & par an & cadre & \S\ref{sec:cadre-bilans}, proposée\\
 $r$ & taux réel annuel, $r = i_X - \pi$ & par an & cadre & \S\ref{sec:cadre-calendrier}, proposée\\
-$P_t$ & indice des prix du pas $t$ ; le registre en tient les $n_a$ valeurs précédentes & indice & cadre & \S\ref{sec:cadre-calendrier}, proposée\\
+$P_t$ & indice des prix du tour $t$ ; sous $J = 1$, le prix du tour, $P_t \equiv p_{j,t}$, écrit en phase 5 et lu au tour suivant ; le registre en tient, à l'ouverture du pas $t$, les $n_a + 1$ valeurs précédentes, $P_{t-1}, \dots, P_{t-n_a-1}$ & indice & cadre ; prix & \S\ref{sec:cadre-calendrier}, \S\ref{sec:prix-indice}, proposées\\
 $\pi_t$, $\bar\pi$ & glissement annuel de l'indice des prix, $P_t/P_{t-n_a} - 1$ ; sa valeur stationnaire & par an & cadre & \S\ref{sec:cadre-calendrier}, proposée\\
 $g$ & taux de croissance annuel d'une trajectoire stationnaire ; au socle, $(1 + g_{\mathit{pr}})(1 + g_N) - 1$ & par an, taux de croissance & cadre & \S\ref{sec:cadre-calendrier}, proposée\\
-$s$, $\ell$, $u$ & indices : secteur institutionnel, ligne de la matrice des flux, retard dans le registre & sans objet & cadre & \S\ref{sec:cadre-identites}, proposée\\
+$s$, $\ell$, $u$ & indices : secteur institutionnel, ligne de la matrice des flux, retard dans le registre ($u = 1, \dots, n_a + 1$) & sans objet & cadre & \S\ref{sec:cadre-identites}, \S\ref{sec:cadre-calendrier}, proposées\\
 $H$, $F$, $\mathit{Bk}$, $\mathit{CB}$, $G$ (indice ou exposant) & marques de secteur : ménages, entreprises, banque, banque centrale, État ; pas des grandeurs & sans objet & cadre & \S\ref{sec:cadre-entites}, proposée\\
 $D_H$, $D_F$ & dépôts détenus par les ménages, par les entreprises ; émis par la banque & u.m., ouverture & cadre & \S\ref{sec:cadre-bilans}, proposée\\
 $L$ & crédits aux entreprises, détenus par la banque & u.m., ouverture & cadre & \S\ref{sec:cadre-bilans}, proposée\\
@@ -1475,9 +1725,13 @@ $\omega_{t-1}$, $\omega^{\ast}$, $\bar\omega$ & salaire relatif (salaire réel r
 $\lambda_w$, $\lambda_N$ & vitesses annuelles de correction du salaire, de réduction d'un effectif excédentaire & par an & travail & \S\ref{sec:travail-salaire}, \S\ref{sec:travail-emploi}, proposées\\
 $\beta$ & semi-élasticité du salaire visé au taux de chômage & par unité de taux de chômage & travail & \S\ref{sec:travail-salaire}, proposée\\
 $\pi^e_t$ & anticipation d'inflation : glissement annuel anticipé de l'indice des prix sur les 12 tours à venir, ouverture & par an, taux d'inflation & banque centrale et anticipations & \S\ref{sec:travail-salaire}, proposée (lecture)\\
-$\bar\mu$ & marge normale du prix sur le coût unitaire & sans dimension & prix & \S\ref{sec:travail-salaire}, proposée (lecture)\\
+$\bar\mu$ & marge normale du prix sur le coût unitaire (paramètre) ; lue par le bloc travail, norme $\omega^{\ast} = 1/(1 + \bar\mu)$ & fraction du coût unitaire & prix & \S\ref{sec:prix-marge}, proposée\\
 $W_t$ & salaire nominal par personne employée (écrit par le bloc travail en phase 1) & u.m. par personne et par pas & travail & \S\ref{sec:travail-salaire}, proposée\\
-$p_{j,t}$ & prix du bien $j$ au pas $t$ (écrit par le bloc prix en phase 5) & u.m. par u.v. & prix & \S\ref{sec:production-ventes}, proposée\\
+$p_{j,t}$ & prix du bien $j$ au pas $t$ (écrit par le bloc prix en phase 5) & u.m. par u.v. & prix & \S\ref{sec:prix-marge}, proposée\\
+$\mu_{j,t}$, $\tilde\mu_{j,t}$ & marge effective, $p_{j,t}/\mathit{UC}_{j,t} - 1$ ; marge en logarithme, $\ln(1 + \mu_{j,t})$ & fraction du coût unitaire ; sans dimension & prix & \S\ref{sec:prix-marge}, proposée\\
+$\xi_{j,t}$, $\bar\xi$ & tension sur les stocks, $1 - \mathit{IN}^{\mathrm{vol}}_{j,t}/\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$ ; sa valeur stationnaire (nulle) & fraction du stock cible & prix & \S\ref{sec:prix-marge}, \S\ref{sec:prix-stationnaire}, proposées\\
+$\lambda_\mu$ & vitesse annuelle d'ajustement de la marge & par an & prix & \S\ref{sec:prix-marge}, proposée\\
+$\psi_\xi$ & sensibilité de la marge visée à la tension sur les stocks & sans dimension & prix & \S\ref{sec:prix-marge}, proposée\\
 $\mathit{UC}_{j,t}$, $\mathit{cm}_{j,t}$ & coût unitaire des entrées en stock ; coût moyen pondéré du stock disponible & u.m. par u.v. & production & \S\ref{sec:production-valorisation}, proposée\\
 $K^{\mathrm{vol}}_{j,t}$ & volume du capital & u.v., ouverture & production & \S\ref{sec:production-capital}, proposée\\
 $\kappa_j$ & rapport du capital à la production annuelle à capacité normale & années & production & \S\ref{sec:production-technique}, proposée\\
