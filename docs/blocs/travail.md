@@ -3,7 +3,7 @@ bloc: Travail et salaires
 module: src/nations/blocs/travail.py
 expert pilote: macro
 experts consultés: monnaie (indexation des salaires sur les anticipations : frontière inflation) ; jeu
-statut: en instruction
+statut: en instruction (critères validés le 03/10/2026)
 décision: —
 issue: #39
 ---
@@ -115,7 +115,7 @@ Les symboles **ne sont pas fixés** : ils le seront à l'instruction, sous le cr
 
 ## 2. Critères d'évaluation, écrits avant l'instruction
 
-**Statut** : proposés par `macro` le 03/10/2026, **à valider par le mainteneur avant toute instruction** (jalon 1 de #39). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
+**Statut** : proposés par `macro` le 03/10/2026, **validés par le mainteneur le 03/10/2026**, avec les amendements ci-dessous (jalon 1 de #39). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
 
 Correspondance avec le gabarit :
 
@@ -155,7 +155,18 @@ Sont des **mesures** (elles décrivent sans écarter) : 5 (c) aux vitesses ×0,5
 
 ### Amendements adoptés
 
-Aucun à la date de la proposition.
+Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les questions de `macro` :
+
+- **Critères** : les seize critères sont validés tels quels, avec leur nature (exigence ou mesure).
+- **Seuils reconduits de la fiche 2**, adoptés : critère 3, 1e−10 en relatif au J3 ; critère 4, écart ≤ 1e−6 après 720 pas entre les branches ×0,5 et ×2 ; critère 13, 0,48 ms par pays-pas.
+- **Seuils proposés**, adoptés : bandes du test zéro du critère 6 (chômage ±0,5 point, part salariale ±1 point, croissance annuelle du salaire réel ±0,1 point), à confirmer avec O1 avant l'essai (M19) ; critère 7 (c), la borne d'offre de travail cesse d'être active au plus tard 12 tours après la fin du choc.
+- **Critère 5 (c)** : la bande de 36 à 96 tours n'est exigée que pour la calibration proposée ; aux vitesses ×0,5 et ×2, la stabilité est exigée, la période et la demi-vie sont publiées.
+- **Critère 7 et #38** : lecture (ii) retenue (décision du 03/10/2026, `CONVENTIONS.md` § 2.4) ; l'emploi au plus égal à la population active est une contrainte de conservation, sans paramètre, déclarée dans les `\limites` avec son activité à l'état stationnaire et un test.
+- **Critère 9 (b)** : la pente de long terme de la relation salaires – chômage reste une mesure.
+- **Critère 10 (b)** : règle de `macro` adoptée ; un retard d'emploi n'est retenu que s'il est soutenu par un fait établi et sourcé et par un mécanisme perçu ; la variante sans retard est toujours instruite comme référence.
+- **Q2** : la fiche instruit la population active comme tendance exogène du socle ; son propriétaire (bloc 3 ou 5) est fixé à M25.
+- **Q3** : les deux lectures de l'anticipation en phase 1 sont instruites ; si la lecture « après le bloc 8 » est retenue, l'ordre « banque centrale, puis travail » est reporté dans l'inventaire comme engagement de la fiche 8.
+- **Q7** : le levier institutionnel (salaire minimum, indexation légale) est renvoyé au catalogue des leviers (J4) ; la fiche en note l'interface.
 
 ## 3. Options
 
@@ -190,3 +201,4 @@ Non instruit.
 | Date | Événement | Auteur |
 |---|---|---|
 | 03/10/2026 | Ouverture (issue #39) ; § 1 et § 2 proposés | `macro` ; session principale |
+| 03/10/2026 | Critères validés avec amendements (seuils, bande du critère 5 (c), lecture (ii) de #38 au critère 7, Q2, Q3, Q7 ; issue #39) | mainteneur |
