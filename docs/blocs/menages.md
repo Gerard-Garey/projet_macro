@@ -3,7 +3,7 @@ bloc: Ménages
 module: src/nations/blocs/menages.py
 expert pilote: macro
 experts consultés: monnaie (dépôts et détention de titres publics : frontière dette publique) ; jeu
-statut: en instruction (critères validés le 03/10/2026)
+statut: avis rendus (03/10/2026)
 décision: —
 issue: #41
 ---
@@ -1528,6 +1528,44 @@ Elle est identique à C au niveau agrégé. Sa valeur ludique n'apparaît qu'ave
 
 **Issue proposée** (création soumise au mainteneur) : « J4 — scénario de surchauffe publique en boucle conjointe (sur-commande, forme O3) », corps dans le compte rendu de la session (PR #43).
 
+### Second additif de `jeu` (03/10/2026) : changement de cible et deux taux d'épargne
+
+*Sources lues : § 6.5 (additif de `monnaie`), § 6.1 Q5 (définition du taux corrigé) et additif de `jeu` du § 7. Aucun scénario exécuté. Les chiffres +0,5543 % et +0,9776 % sont ceux de `monnaie` et `macro` ; `jeu` ne les a pas remesurés.*
+
+**1. Un changement de π\* déplace la demande au tour même. Verdict : à clarifier pour la fiche 5, à revoir pour la fiche 8 si π\* devient un levier sans coût.**
+- **Ce que voit le joueur.** Il annonce une désinflation, et la consommation monte de 0,55 % le tour même. C'est l'inverse de ce qu'il attend : une baisse de cible se lit comme un resserrement. Sans explication, le joueur ne peut pas comprendre ce comportement.
+- **L'ampleur n'est pas le problème.** Elle reste modeste : environ la moitié de l'effet d'un transfert de 1 % du revenu disponible sur 12 tours. Le risque est que l'effet soit **gratuit et répétable**. Rien ne paie l'impulsion d'impact. Tant que l'effet net sur plusieurs tours n'est pas mesuré, rien n'exclut un aller-retour rentable : baisser π\* pour relancer, puis la remonter quand le frein de Fisher arrive (−1 % du revenu disponible par point au tour suivant). Ce serait une remise à zéro gratuite, contraire au principe « plusieurs approches viables ».
+- **La fiche 5 déclare l'effet** (troisième ajout de `monnaie`). Le décrire de façon à le relier aux cases déjà affichées :
+  - le niveau du ratio de richesse ne bouge pas : sa norme reste 1 an ;
+  - l'impact passe par le terme d'entretien de la décomposition du taux d'épargne (γ^e·V/YD), qui baisse ;
+  - la ligne « érosion des dépôts (inflation cible) » du revenu par source baisse elle aussi.
+  
+  Le joueur voit ainsi la cause (« les ménages prévoient de moins compenser l'érosion ») dans des cases qui existent déjà.
+- **Essai demandé pour la fiche 8**, critères à écrire avant l'essai et à juger par `monnaie` :
+  - (i) **marche** : π\* −1 point, avec la règle de taux endogène. Trajectoires de C, Y, π et i_D aux tours 1, 3, 12, 24 et 60. Publier l'effet cumulé sur C et Y aux tours 12 et 24, et le tour où il change de signe.
+  - (ii) **aller-retour** : π\* −1 point au tour t, puis +1 point à t + k, pour k = 1, 3 et 12. La propriété attendue, à faire valider par `monnaie` : le gain cumulé de production ou de consommation sur 24 tours n'est pas significativement positif par rapport à la trajectoire sans changement. Sinon, il y a une stratégie dominante.
+  - (iii) **même essai sous cible nominale** (+0,98 %), pour publier ce que coûte le choix de Haig-Simons.
+- **Si l'aller-retour est rentable : options de conception pour la fiche 8.** Ce sont des choix de conception, à chiffrer en fidélité par `monnaie`, sans préférence de `jeu` à ce stade :
+  - délai d'entrée en vigueur entre l'annonce et π\* effectif ;
+  - fréquence de révision limitée, par exemple annuelle ;
+  - coût de crédibilité à chaque révision, qui renverrait à la lecture (b) et à la clause C26.
+- **J4, fiche du levier π\*.** Le signe et l'ampleur à l'impact, puis l'effet net à 12 tours, sont affichés **avant** la validation de l'annonce. Une annonce de désinflation ne doit jamais être présentée comme restrictive à l'impact.
+- **Régimes B, D et E.** Tant que la π\* lue par les ménages n'est pas définie, la fiche du levier n'existe pas dans ces régimes. Le levier n'y est pas proposé.
+
+**2. Les deux taux d'épargne. Verdict : lisible avec deux noms distincts. Le mot « taux d'épargne » n'est jamais affiché seul.**
+- **« Taux d'épargne visé (à la cible) »** : il dit ce que les ménages cherchent à faire (comportement).
+  - Définition affichée : « 1 − consommation du tour ÷ (revenu disponible du tour − érosion des dépôts au rythme de la cible d'inflation) ; fenêtre : le tour ; niveau normal environ 2 % (croissance × 1 an de richesse) ; exact quand l'inflation est à la cible ».
+  - Il partage son dénominateur YD^HS avec le ratio « Richesse des ménages, en années de revenu ».
+  - Valeurs de référence : 1,985 % à 2 %, 1,998 % à 10 % (§ 6.1, Q5).
+  - Le détail de la décomposition additive (entretien, reconstitution, revenu imprévu, épargne forcée) s'ouvre sous ce taux.
+- **« Taux d'épargne constaté, net de l'inflation »** : il dit ce qu'elle a effectivement fait (constat).
+  - Définition affichée : « 1 − consommation sur 12 tours ÷ (revenu disponible sur 12 tours − perte réelle des dépôts due à la hausse des prix mesurée) ; fenêtre : 12 tours glissants » (§ 6.1, Q5, point 1).
+- **Raccord des deux, pour rendre l'écart explicable.** Ajouter au revenu par source une ligne « érosion imprévue des dépôts (inflation au-dessus de la cible) », égale à −(π mesurée − π_s)·V, sous la ligne « érosion des dépôts (inflation cible) ». À fenêtre égale, l'écart entre les deux taux se lit dans cette ligne. Message du tour, hors cible : « l'inflation dépasse la cible : les ménages épargnent moins qu'ils ne le croient ».
+- **Fenêtres différentes** (le tour contre 12 tours) : à déclarer dans les deux définitions. Variante plus simple, à arbitrer par `app-review` au J4 : afficher les deux taux sur 12 tours dans le tableau principal, et le taux visé du tour dans la décomposition seulement.
+- **Ordre d'affichage** : le taux visé, puis le taux constaté, puis le taux nominal (« taux d'épargne nominal, sans correction de l'inflation »), puis le rendement réel des dépôts i_D − π. Cet ordre est cohérent avec le ratio de richesse, Haig-Simons d'abord.
+
+**Issue proposée** (création soumise au mainteneur) : « Fiche 8 — essai d'aller-retour de la cible π\* (pas de stimulant gratuit à l'impact) », corps dans le compte rendu de la session (PR #43).
+
 ## 8. Décision du mainteneur
 
 Non instruit (M27, décidée avec la fiche 6).
@@ -1550,3 +1588,4 @@ Non instruit.
 | 03/10/2026 | Additif de `monnaie` (§ 6.5) : retrait de (a), ralliement à (c) en lisant π\* pour γ^e et π_s, cible de Haig-Simons, variante h refusée, clause C26, C16 et C18 mises à jour ; aucun désaccord résiduel avec `macro` | `monnaie` ; session principale |
 | 03/10/2026 | Additif de `jeu` (§ 7) : ralliement à (c) ; embardée de sur-commande « à clarifier » (attribution, falaise, ψ_ξ), dimension maintenue et trois variantes ; ratio de Haig-Simons affiché d'abord (niveau normal 1 an), lecture (e) retirée ; conditions 2 et 4 révisées ; part propre au ménage pour le critère 12 (d), seuil tenu | `jeu` ; session principale |
 | 03/10/2026 | Avis de `macro` sur l'additif de `monnaie` : accord sur π\*, C26, effet d'un changement de cible (+0,5543 % / +0,9776 %, remesurés) et continuum hors C2 ; § 5 réécrit (version antérieure : `3b31b6e`), recommandation (c) sur π\* et cible de Haig-Simons ; additifs datés aux § 3.N-3, 3.N-5 et 3.C (points 1 et 9) | `macro` ; session principale |
+| 03/10/2026 | Second additif de `jeu` (§ 7) : effet d'un changement de π\* « à clarifier » (déclaré par les cases existantes ; essai d'aller-retour demandé à la fiche 8) ; deux taux d'épargne lisibles sous deux libellés. Statut « avis rendus » : avis de `macro`, `monnaie` et `jeu` rendus, aucun désaccord résiduel | `jeu` ; session principale |
