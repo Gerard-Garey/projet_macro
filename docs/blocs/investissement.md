@@ -869,39 +869,88 @@ Statut : vérifié.
 
 ### 3.L Exemple daté (critère 12) et interface du taux (7 (e))
 
-Commande `sim2.py`. Boucle conjointe, option S, F, x = 2.
-- **Choc** : dépense publique +1 % aux tours 1 à 12, part de G 20 % (**hypothèse**), soit +0,2 % de la demande. La part endogène de G dans la maquette sans impôts est de 0,4 % : le choc est donc imposé en volume.
-- **Lecture du tableau** : chaque colonne donne l'écart au sentier, sauf K^vol/(n_a y), tu et L/K, qui sont des niveaux. Le levier est exactement de 0,40000 à tous les tours.
+*Remesuré le 03/10/2026 après les avis de `monnaie` (C34) et de `jeu` (§ 7). La version précédente ne déplaçait que le plan d'investissement.*
 
-| Tour | I (u.m.) | K^vol/(n_a y) | tu | Crédit nouveau | Div | y | p |
-|---|---|---|---|---|---|---|---|
-| 1 | 0 | 2,00000 | 0,80000 | 0 | +1,59 % | 0 | 0 |
-| 2 | 0 | 1,99833 | 0,80067 | 0 | +1,50 % | +0,084 % | +0,010 % |
-| 3 | +0,093 % | 1,99672 | 0,80132 | +0,21 % | +0,93 % | +0,164 % | +0,041 % |
-| 4 | +0,206 % | 1,99543 | 0,80183 | +0,46 % | −0,02 % | +0,229 % | +0,091 % |
-| 9 | +0,596 % | 1,99588 | 0,80165 | +1,33 % | −0,59 % | +0,212 % | +0,399 % |
-| 13 | +0,635 % | 1,99766 | 0,80094 | +1,39 % | −0,22 % | +0,126 % | +0,517 % |
-| 14 | +0,647 % | 1,99939 | 0,80025 | +1,41 % | +0,04 % | +0,040 % | +0,527 % |
-| 18 | +0,312 % | 2,00305 | 0,79878 | +0,64 % | +2,66 % | −0,142 % | +0,398 % |
-| 24 | +0,252 % | 2,00017 | 0,79993 | +0,49 % | +0,20 % | −0,001 % | +0,263 % |
+Commande `l1.py` (maquette `regle6.py` : boucle conjointe de `conj6.py`, option S, F, x = 2, η_r = 2, λ_ti = 0,02 par an, régime H, taux exogène).
+- **Contrôle** : avec le seul canal du plan et Δi = 1,02 point (Δϱ_L = 1 point), la maquette reproduit l'ancien tableau à tous les tours publiés. Valeurs reproduites :
+  - I : −1,98 % au tour 1, −2,21 % au tour 4, −0,50 % au tour 13 ;
+  - Div : +3,24 % au tour 4 ;
+  - y : −0,230 % au tour 4 ;
+  - p : −0,425 % au tour 13.
+- **Conventions** :
+  - I^vol = I/p_t est le volume livré, celui qui entre dans K^vol (N10) ;
+  - chaque colonne donne l'écart au sentier sans choc, sauf K^vol/(n_a y) et tu, qui sont des niveaux ;
+  - le levier L/K vaut exactement 0,40000 à tous les tours.
+- **Hypothèses de la maquette** :
+  - pas d'impôts ;
+  - G exogène en volume, à 0,40 % de la demande ; le choc est imposé en volume ;
+  - π^e = π\* (pas de fiche 8) ;
+  - banque sans fonds propres et i_L = i_D, d'où Div_Bk ≡ 0 ;
+  - les intérêts de la dette publique implicite (B = V + D_F − L) sont financés par le déficit, sauf dans la ligne T9.
 
-**Taux réel du crédit +1 point aux tours 1 à 12** (canal de l'investissement seul, η_r = 2) :
+**(a) Dépense publique +1 % aux tours 1 à 12** (part de G de 20 %, **hypothèse**, soit +0,2 % de la demande ; taux inchangé)
 
-| Tour | I | Crédit nouveau | Div | y | p |
+| Tour | I (u.m.) | I^vol | K^vol/(n_a y) | tu | Crédit nouveau | Div | y | p |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 0 | 0 | 2,00000 | 0,80000 | 0 | +1,59 % | 0 | 0 |
+| 2 | 0 | −0,010 % | 1,99833 | 0,80067 | 0 | +1,50 % | +0,084 % | +0,010 % |
+| 3 | +0,093 % | +0,052 % | 1,99672 | 0,80132 | +0,21 % | +0,93 % | +0,164 % | +0,041 % |
+| 4 | +0,206 % | +0,115 % | 1,99543 | 0,80183 | +0,46 % | −0,02 % | +0,229 % | +0,091 % |
+| 9 | +0,596 % | +0,197 % | 1,99588 | 0,80165 | +1,33 % | −0,59 % | +0,212 % | +0,399 % |
+| 13 | +0,635 % | +0,117 % | 1,99766 | 0,80094 | +1,39 % | −0,22 % | +0,126 % | +0,517 % |
+| 14 | +0,647 % | +0,120 % | 1,99939 | 0,80025 | +1,41 % | +0,04 % | +0,040 % | +0,527 % |
+| 18 | +0,312 % | −0,086 % | 2,00305 | 0,79878 | +0,64 % | +2,66 % | −0,142 % | +0,398 % |
+| 24 | +0,252 % | −0,011 % | 2,00017 | 0,79993 | +0,49 % | +0,20 % | −0,001 % | +0,263 % |
+
+- Au tour 14, l'investissement monte de +0,647 % en u.m., mais de **+0,120 % en volume**. Plus des quatre cinquièmes du mouvement nominal sont donc du prix (p +0,527 %). Le pic en volume est de +0,197 %, au tour 9 (`jeu` : +0,20 %, recoupé).
+
+**(b) Taux du crédit et des dépôts +1 point aux tours 1 à 12, tous canaux (C34)**
+- i_L et i_D sont lus à l'ouverture.
+- ϱ_L monte de 0,980 point dans le plan.
+- Les lignes 9 et 10 (sur L, D_F et les dépôts des ménages) passent au même taux.
+
+| Tour | I (u.m.) | I^vol | Crédit nouveau | Div | YD | C^vol | y | p |
+|---|---|---|---|---|---|---|---|---|
+| 1 | −1,94 % | −1,94 % | −4,39 % | −6,87 % | +0,498 % | 0 | 0 | 0 |
+| 2 | −1,94 % | −1,93 % | −4,37 % | −3,82 % | +0,611 % | +0,340 % | −0,114 % | −0,013 % |
+| 4 | −2,05 % | −2,00 % | −4,57 % | −2,83 % | +0,749 % | +0,508 % | −0,008 % | −0,048 % |
+| 6 | −1,92 % | −1,91 % | −4,25 % | −4,26 % | +0,778 % | +0,549 % | +0,127 % | −0,016 % |
+| 9 | −1,67 % | −1,79 % | −3,64 % | −5,80 % | +0,821 % | +0,451 % | +0,206 % | +0,124 % |
+| 12 | −1,55 % | −1,80 % | −3,32 % | −4,97 % | +0,942 % | +0,405 % | +0,161 % | +0,256 % |
+| 13 | +0,42 % | +0,13 % | +1,15 % | +2,34 % | +0,488 % | +0,411 % | +0,144 % | +0,289 % |
+| 24 | +0,33 % | 0,00 % | +0,88 % | +1,51 % | +0,434 % | +0,067 % | +0,003 % | +0,333 % |
+| 36 | +0,38 % | +0,02 % | +0,95 % | +0,58 % | +0,406 % | +0,024 % | +0,016 % | +0,360 % |
+
+**Par canal** (même choc ; y en écart cumulé)
+
+| Canaux | y, tours 1 à 12 | y, tours 1 à 36 | y, tour 4 | p, tour 12 | Div, tours 1 / 4 |
 |---|---|---|---|---|---|
-| 1 | **−1,98 %** | −4,48 % | +0,45 % | 0 | 0 |
-| 4 | −2,21 % | −4,94 % | +3,24 % | −0,230 % | −0,104 % |
-| 9 | −2,48 % | −5,44 % | +2,96 % | −0,149 % | −0,358 % |
-| 13 | −0,50 % | −0,88 % | +0,97 % | −0,080 % | −0,425 % |
-| 24 | −0,14 % | −0,06 % | +0,35 % | +0,005 % | −0,153 % |
+| Plan seul (ancien tableau, Δϱ_L = 1 point) | −0,157 % | −0,025 % | −0,230 % | −0,414 % | +0,45 % / +3,24 % |
+| Plan et ligne 9 (i_L sur L) | −0,524 % | −0,145 % | −0,553 % | −1,396 % | −9,53 % / −8,73 % |
+| Tous canaux, intérêts publics financés par le déficit | **+0,093 %** | +0,057 % | −0,008 % | +0,256 % | −6,87 % / −2,83 % |
+| Tous canaux + T9 | −0,154 % | −0,024 % | −0,226 % | −0,406 % | −6,87 % / −4,13 % |
 
-- **Délais en tours entiers** :
-  - taux → plan : 1 tour si i_L est lu à l'ouverture (Q8) ;
+T9 est une hypothèse de fiche 9, déclarée : le surcroît d'intérêts sur B est repris aux ménages par un prélèvement forfaitaire, dans le tour même.
+
+- **Investissement** : −1,94 % au tour 1 pour +0,98 point de ϱ_L. En volume, il reste entre −1,79 % et −2,00 % sur les tours 1 à 12. Le « −2 % par point » tient en volume à 10 % près.
+- **Dividendes (correction de la version précédente)**.
+  - Le « signe contre-intuitif » (+3,2 % au tour 4) venait de l'isolement du plan. Avec tous les canaux, les dividendes **baissent** : −6,87 % au tour 1, −2,83 % au tour 4, −4,97 % au tour 12. La mention est retirée.
+  - Décomposition au tour 1 :
+    - intérêts sur L : −9,97 % (`monnaie`) ;
+    - intérêts reçus sur D_F : +2,66 % ;
+    - trésorerie libérée par l'investissement non fait : +0,45 %.
+  - Le mécanisme de trésorerie libérée subsiste : il atténue la baisse, sans l'inverser.
+- **Signe net sur la production** : il ne dépend pas du bloc 6.
+  - Tous canaux, le canal rentier l'emporte dès le tour 6 (y +0,127 %). Le cumul sur 12 tours est de +0,093 % (`jeu` : +0,090 % pour +1 point de ϱ_L, recoupé).
+  - Avec T9, le revenu des ménages ne bouge plus (YD −0,025 % au tour 4, contre +0,749 %). Le signe redevient alors celui du plan (−0,154 %).
+  - Le signe du principal levier monétaire dépend donc de la fiche 9, qui décide qui paie le surcroît d'intérêts publics (condition 9 de `jeu`).
+- **Délais en tours entiers (C35)** :
+  - décision du tour n → i_L et i_D à l'ouverture du tour n + 1 → plan d'investissement et lignes 9 et 10 au tour n + 1 ;
   - investissement → demande : le même tour ;
+  - revenus du tour n + 1 → plan des ménages du tour n + 2 (C^vol : 0 au tour 1, +0,340 % au tour 2) ;
   - investissement → capacité : le tour suivant ;
   - crédit → dépôts et dividendes : le même tour.
-- **Signe contre-intuitif déclaré** : quand le taux monte, les dividendes montent (+3,2 % au tour 4). Moins d'investissement abaisse les ventes anticipées v^e, donc la cible de dépôts, et la trésorerie libérée est distribuée.
-- Le mécanisme est vérifié par la mesure ; son interprétation est une hypothèse.
+- **Statut** : les mesures sont vérifiées ; ce sont des résultats de maquette, sans statut de fait. L'interprétation des mécanismes est une hypothèse.
 
 ## 4. Tableau comparatif
 
@@ -978,6 +1027,152 @@ Calibration indicative (hypothèse) : t̄u = 0,8, x = 2, λ_ti = 0,02 par an, η
 - le taux n'a pas d'effet permanent sur I/PIB ;
 - le rationnement du crédit ne touche pas l'investissement sous J = 1 ;
 - aucun choix de technique.
+
+**Additif de `macro` (03/10/2026), après les avis de `monnaie` (§ 6) et de `jeu` (§ 7).**
+
+**1. S ou S-ζ (§ 6.1, Q4 ; C36).**
+
+*Maquette* (`regle6.py`) : la boucle conjointe du § 3.B7 (2) (fiches 2 à 6, N1 à N7, S, F, x = 2, η_r = 2, λ_ti = 0,02, régime H), à laquelle s'ajoute une règle de taux simple à action intégrale, déclarée.
+- **Règle** :
+  - inflation lue : π¹²_t = ln(p_t/p_{t−12}), en unités détendues, soit l'écart annuel à π\* ;
+  - r\*_{t+1} = r\*_t + (k_I/n_a)·π¹²_t, avec k_I = 0,2 par an : action intégrale sans fuite (C2) ;
+  - i_{t+1} = r\*_{t+1} + π\* + a_π·π¹²_t, avec a_π = 0,5 ;
+  - i_L = i_D = i, lus à l'ouverture (C27).
+- **Canaux du taux** : ϱ_L dans le plan ; lignes 9 et 10 ; Div_Bk ≡ 0.
+- **Pas de π^e (fiche 8)** : le salaire se réfère à π\*. Tant que U ≠ U^eq, l'inflation dévie durablement, sans accélérer. C'est la différence avec la maquette de `monnaie`, qui a une courbe de Phillips accélérationniste, mais ni stocks ni dette publique.
+- **Deux réglages budgétaires** :
+  - sans impôts : G = 0,40 % de la demande ;
+  - impôt proportionnel τ = 0,25 sur le revenu des ménages : G = 22,3 % de la demande.
+
+  Chacun est mesuré avec ou sans T9 (reprise forfaitaire de (1 − τ)·Δi·B).
+- **Choc** : G +1 % permanent.
+
+*Modules dominants hors racine nominale (`r3.py`, `r7.py`)*
+
+| Réglage | S | S-ζ, ζ = 2 |
+|---|---|---|
+| τ = 0, T9 | **1,000000** (racine unitaire) | 0,999688 (demi-vie de 2 221 tours) |
+| τ = 0, sans T9 | **1,009238** (doublement en 75 tours) | **1,008902** |
+| τ = 0,25, T9 | **1,000000** (racine double) | 0,998904 (demi-vie de 632 tours) |
+| τ = 0,25, sans T9 | **1,002206** | **1,001229** |
+
+*État d'arrivée après G +1 % permanent, avec T9 (`r5.py`, `r7.py`, `r8.py`)*
+
+| | λ_ti ×0,5 | ×1 | ×2 |
+|---|---|---|---|
+| τ = 0, S (24 000 tours, sans arrivée) : r = i − π ; π ; tu | 2,932 % ; 2,0048 % ; 0,80190 | 3,440 % ; 2,0062 % ; 0,80121 | 3,831 % ; 2,0072 % ; 0,80070 |
+| τ = 0, S-ζ (120 000 tours) : r̄ ; π̄ ; tu | 1,27985 % ; 2,00000 % ; 0,80440 | idem | idem (écart 2,7e−12) |
+| τ = 0,25, S (7 200 tours, sans arrivée) | 13,27 % ; 2,092 % ; 0,8359 | 19,68 % ; 2,151 % ; 0,8297 | 27,90 % ; 2,226 % ; 0,8222 |
+| τ = 0,25, S-ζ (120 000 tours) | 3,83265 % ; 2,00000 % ; 0,84569 | idem | idem (écart 1,5e−12) |
+
+Sous S-ζ (τ = 0,25, T9), r̄, π̄ et tu sont aussi identiques au 8e chiffre dans les branches ×0,5 et ×2 de k_I, de a_π, de η_r et des vitesses des blocs 2 à 5.
+
+**Constats.**
+- (a) **Le constat de `monnaie` est confirmé dans la boucle conjointe, sous T9.** Sous S :
+  - la racine est unitaire ;
+  - le taux part en rampe ;
+  - l'inflation garde un biais, et tu reste hors de t̄u ; tous deux dépendent de λ_ti.
+
+  Vérifié (maquette).
+- (b) **Fait nouveau : sans T9, le gain statique est positif.**
+  - **Effet** : l'action intégrale explose avec S, avec S-ζ et avec ν(r) (fiche 5, ζ_H = 2 : 1,006095 à τ = 0 ; 1,001426 à τ = 0,25). La racine augmente avec ζ_H (1,0324 à ζ_H = 5, τ = 0). La seule partie proportionnelle (a_π = 1,5, k_I = 0) donne déjà 1,0020 (τ = 0).
+  - **Seuils de ζ** :
+    - à τ = 0, il faut ζ ≈ 40 pour approcher la stabilité locale (1,001056 à ζ = 40) ;
+    - à τ = 0,25, la stabilité est locale dès ζ = 4 (0,999145). Mais il n'y a pas d'arrivée : à ζ = 4 et 6, le système diverge même pour un choc G +0,1 %. À ζ = 10 et 17, les branches ×1 et ×2 convergent (r̄ = 2,2934 % et 1,4651 %), mais la branche ×0,5 diverge.
+  - **Conséquence** : sans reprise budgétaire, l'existence de l'état stationnaire dépend d'une vitesse. Aucun ζ testé (2 à 17) ne tient C36.
+
+  Vérifié (`r2.py`, `r6.py`, `r11.py` à `r13.py`).
+- (c) **Sous T9, S-ζ tient C36 (i) et (ii), mais seulement à l'horizon asymptotique.**
+  - À 7 200 tours, l'écart relatif de r entre les branches λ_ti ×0,5 et ×2 vaut encore 5,4e−4 (τ = 0) et 1,6e−3 (τ = 0,25).
+  - À τ = 0, r monte encore de 1,248 % à 1,280 % entre 7 200 et 120 000 tours. C'est une convergence, non une rampe : C36 (iii) ne les distingue pas.
+- (d) **L'allocation d'arrivée ne dépend pas de ζ ; seul r̄ en dépend.** À τ = 0,25, avec T9 :
+  - tu = 0,84569 et x = 1,8919 pour ζ = 2, 4, 5, 10 et 17 ;
+  - r̄ − ϱ̄ vaut +2,833, +1,416, +1,133, +0,567 et +0,333 point, soit ∝ 1/ζ.
+  - Sous S-ζ (ζ = 2), G +0,223 point des ventes a pour contrepartie I^vol −0,756 point et C +0,533 point.
+  - Sous ν(r) (ζ_H = 2), tu = t̄u exactement, C baisse de 0,223 point, et r̄ monte de 9,26 points (`r14.py`).
+  - **Le canal choisi décide donc quelle composante est évincée à long terme** : l'investissement (ζ), la consommation (ν(r)), ou la dépense et l'impôt (règle de la fiche 9). L'élasticité ne fixe que le taux nécessaire. Statut : vérifié pour la mesure ; le mécanisme de la hausse de C est une hypothèse.
+- (e) **Ordre de grandeur.**
+  - Dans le modèle (τ = 0,25, T9), r̄ monte de 72 points de base par point de B/PIB à ζ = 2, de 36 à ζ = 4, de 14,5 à ζ = 10 et de 8,5 à ζ = 17 (`r9.py`, `r10.py`).
+  - **Fait établi** : Laubach, *New Evidence on the Interest Rate Effects of Budget Deficits and Debt*, FEDS 2003-12, version de mai 2007 (résumé, lu). Il estime « about 25 basis points per percentage point increase in the projected deficit/GDP ratio, and 3 to 4 basis points for the debt/GDP ratio », sur des taux à terme longs du Trésor américain.
+  - Les concepts diffèrent (taux nominaux à terme d'un côté, taux réel du crédit stationnaire de l'autre). La comparaison est donc une **hypothèse** d'ordre de grandeur. Elle suffit à dire qu'à ζ = 2, le modèle est environ vingt fois plus sensible.
+- (f) **Calibration de ζ (hypothèse, sans source lue).**
+  - Par l'élasticité σ de K/Y au coût d'usage : ζ ≈ σ/(ϱ̄_L + δ). Pour σ de 0,25 à 1 et ϱ̄_L + δ ≈ 6 %, ζ va de 4 à 17.
+  - σ est **contestée**. Chirinko, Fazzari et Meyer (1999), *Journal of Public Economics* 74(1), 53-80 : existence vérifiée, valeur non lue.
+  - À ζ = 17, la contrainte Div ≥ 0 devient atteignable : x > x_max = 2,933 dès que Δϱ < −ln(2,933/2)/ζ = −2,25 points. À ζ = 2, il faudrait −19 points (calcul à la main).
+
+**Formes fermées de S-ζ (critère 5)**, avec Δϱ = ϱ_L − ϱ̄_L stationnaire :
+- tu = t̄u·e^{ζΔϱ} ;
+- x = (κ/t̄u)·e^{−ζΔϱ} ;
+- ti = (n_aγ + δ)(κ/t̄u)·e^{(η_r − ζ)Δϱ} ;
+- I/PIB, K/Y (i) et (ii), V_F et la distribution : celles du § 3.E, avec ce x ;
+- L/K = lv\* ; D_F inchangé.
+
+À Δϱ = 0, elles sont identiques à S. **Vérification** (`z1.py`, taux exogène, Δϱ = +1 point permanent) :
+- tu → 0,816161 et x → 1,960397, conformes à la forme, dans les branches λ_ti ×0,5, ×1 et ×2 ;
+- écart de 2,3e−11 à 24 000 pas, de 7,3e−4 à 2 160 pas (S : 5,2e−3 à 2 160 pas).
+
+**Critère 6.** ζ n'est pas une vitesse : l'arrivée ne dépend ni de λ_ti, ni de k_I, ni de a_π, ni de η_r, ni des vitesses des blocs 2 à 5 (mesuré ci-dessus). C'est une élasticité de niveau, comme ν. Le protocole du critère 6 (G +1 % aux tours 1 à 12, taux exogène) donne les mêmes résultats que S, puisque Δϱ = 0 : 3,9e−6 à 720 pas et 1,6e−7 à 2 160 pas.
+
+**Critère 7 (c), taux exogène** (`z1.py`, fonction `rayon` de `final_conj.py`) : S-ζ ≡ S par construction. Rayons à la base, à ×0,5 et à ×2 :
+- régime H : 0,9980 / 0,9992 / 0,9971 (P 2 296) ;
+- régime B : identiques (P 2 297).
+
+**Autres critères.**
+- Critère 3 : ti_{t+1} lit tu_t (phase 4) et ϱ_{L,t} (ouverture) : conforme.
+- Critère 4 : t̄u devient « le niveau normal à ϱ̄_L ». tu stationnaire vaut t̄u·e^{ζΔϱ} (0,8457 après G +1 %, τ = 0,25, T9). L'ancre est conditionnelle, et cela se déclare.
+- Critère 9 : aucune borne nouvelle.
+- Critère 13 : 8 paramètres libres.
+- **Joueur** : aucun effet dans une partie. Au tour 120, i vaut 3,0112 % sous S et 3,0110 % sous S-ζ (τ = 0, T9).
+
+**Position de `macro`.**
+- **Accord sur le constat** de `monnaie`.
+- **Accord sur la forme S-ζ** :
+  - elle lève un coût de fidélité que j'avais déclaré (sans elle, le taux n'a pas d'effet permanent sur I/PIB) ;
+  - ses formes fermées sont sans vitesse ;
+  - elle est invisible dans une partie.
+- **Désaccord sur sa portée.**
+  - (1) Sans reprise budgétaire du surcroît d'intérêts publics, aucun ζ testé ne tient C36. La condition première relève donc de la fiche 9.
+  - (2) Avec cette reprise, ζ = 2 rend r̄ environ vingt fois trop sensible à la dette.
+  - (3) Le vrai choix est celui de la composante évincée (investissement, consommation ou budget). Il se fait à M27-M28 au vu de la fiche 9.
+- **Je propose** :
+  - retenir à M28 la forme S-ζ, avec ζ déclaré et à calibrer au J3 (ordre de grandeur de 4 à 17, hypothèse) ;
+  - mesurer C36 avec la règle de la fiche 9 ;
+  - si une autre fermeture est retenue, faire sortir le terme ζ de la spécification, par une décision citant M28. Un coefficient nul ne reste pas dans le texte.
+
+**Désaccord résiduel, à trancher par le mainteneur (M28, avec M27 et la fiche 9)** :
+- *`macro`* : la forme S-ζ est acceptable, mais elle ne garantit pas C36. Sans reprise budgétaire des intérêts publics, aucun ζ testé (2 à 17) n'y suffit ; avec elle, ζ = 2 rend r̄ environ vingt fois trop sensible à la dette. ζ se calibre au J3, et C36 se juge avec la règle de la fiche 9.
+- *`monnaie`* (avis du § 6, antérieur à ces mesures) : S-ζ avec ζ = 2 à M28, pour donner à l'action intégrale C2 un état stationnaire ; à défaut, ν(r) ou la fiche 9.
+
+**Condition transmise à la fiche 9** : la règle budgétaire dit qui paie le surcroît d'intérêts sur la dette publique. Sous déficit pur, le gain statique de la demande au taux est positif dans les deux réglages mesurés. Aucun canal du bloc 6 ne le compense alors sans faire dépendre l'arrivée d'une vitesse.
+
+**Précision proposée pour C36** (prospective ; condition de `monnaie`) :
+- (ii) s'évalue à un horizon d'au moins dix demi-vies de la racine dominante mesurée, ou avec un seuil de 1e−3 à 7 200 tours ;
+- (iii) « aucune rampe » se lit : module dominant < 1 hors racine nominale, au point fixe.
+
+**2. Réserve 6, remplacée** :
+
+6. **Lenteur, après un choc permanent seulement.**
+   - Les demi-vies de 240 à 900 tours sur tu et K/Y ne valent que pour les chocs permanents (nuance de `jeu`, § 7, question 2, confirmée par remesure, `t1.py`).
+   - **Après un choc temporaire** (G +5 % aux tours 1 à 12) :
+     - tu revient près de t̄u en 24 tours : 0,8112 au tour 6, 0,7939 au tour 18, 0,7997 au tour 24, 0,7999 au tour 120 ;
+     - les trois branches de λ_ti sont identiques au 4e chiffre jusqu'au tour 24 ;
+     - le reste, au plus 3e−4, s'efface à la vitesse lente.
+   - **Après un choc permanent**, tu s'écarte durablement (G +5 % maintenu) : 0,8048 au tour 24, 0,8035 au tour 120, 0,8006 au tour 480.
+   - Sous S-ζ avec action intégrale, tu se fixe à t̄u·e^{ζΔϱ} après un choc permanent.
+
+**3. Lectures soumises au mainteneur, mises à jour** :
+- (a) **Fermeture de S = I.**
+  - Côté réel : le supermultiplicateur. `monnaie` et `jeu` sont d'accord.
+  - Côté monétaire : C36 se juge avec la fiche 9. Les canaux de niveau candidats sont S-ζ (l'investissement est évincé), ν(r) (la consommation) et une règle budgétaire.
+  - La fermeture kaleckienne est écartée : r̄ y dépend de λ_K (`monnaie`), et tu de la vitesse à taux exogène.
+  - Point **contesté**.
+- (b) à (f) : inchangées.
+- (g) **S ou S-ζ** : le désaccord résiduel ci-dessus.
+- (h) **Précision prospective de C36**, ci-dessus.
+- **Coût en fidélité, mis à jour** :
+  - sous S, le taux n'a pas d'effet permanent sur I/PIB ;
+  - sous S-ζ, l'effet est de −ζ en log de x par unité de ϱ, à taux exogène.
+- **Question 3 pour `jeu`** (dividendes qui montent avec le taux) : elle est sans objet avec tous les canaux (§ 3.L).
 
 ### Questions pour `jeu`
 
@@ -1530,3 +1725,4 @@ Non instruit.
 | 03/10/2026 | Contre-épreuve indépendante de la partie 2 (formes fermées du § 3.E, cas à la main, boucle réduite avec N1 à N7, boucle conjointe) : concordance au 4e chiffre ; précisions d'écriture (taux nominal des formes fermées, configuration du tableau des variantes de F, condition A avec v/y, Div/ventes, période) | session principale |
 | 03/10/2026 | Avis de `jeu` (§ 7) : S + F lisible sous onze conditions ; C, A et B à revoir ; taux d'utilisation hors du tableau du tour, variante T non recommandée ; seuils (d1) à (d3) du critère 12 (d) proposés ; signe net d'une hausse de taux non établi (maquette de `macro` étendue, non indépendante) ; deux issues proposées | `jeu` ; session principale |
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à S + F, lecture (a), i_L à l'ouverture, ϱ_L sur π\*, voie (i), aucune prime sur le levier au socle ; conditions C27 à C36 ; **désaccord avec `macro`** : S-ζ (canal permanent du taux par le niveau de tu visé) contre S seule. Statut « avis rendus » | `monnaie` ; session principale |
+| 03/10/2026 | Additif de `macro` (§ 5) : S et S-ζ mesurées avec une règle à action intégrale dans la boucle conjointe (constat de `monnaie` confirmé sous reprise budgétaire des intérêts ; fait nouveau sans elle : gain statique positif, aucun ζ testé ne tient C36) ; § 3.L remesuré avec tous les canaux du taux (C34) et l'investissement en volume (signe des dividendes corrigé) ; réserve 6 nuancée | `macro` ; session principale |
