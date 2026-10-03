@@ -1210,6 +1210,52 @@ Deux précisions conditionnent mon accord :
 - Assouplissement quantitatif sans effet sur la masse monétaire au socle (C17).
 - Sous la cible nominale, relever la cible d'inflation aurait un effet réel permanent, exploitable. Sous la cible corrigée, l'effet est négligeable.
 
+### 6.5 Additif de `monnaie` (03/10/2026) : Q10 et π_s
+
+*Réponse au § 3.C-10 et à la réponse de `macro` sur la cible de Haig-Simons (point 8). Sources lues : fiche 5, § 3.C, § 3.C-10, § 5 et § 6 ; réponse de `macro` ; ADR 0008, partie I ; fiche 3, § 6.3 (C1 à C3). Calculs : `m6_ratios.py` et `m6_cible.py` (bloc 5 seul, forme fermée et simulation). La boucle conjointe n'a pas été refaite par `monnaie` ; ses rayons ont été confirmés au 4e chiffre par la contre-épreuve indépendante du § 3.C-10, point 8, ce qui lève la condition posée au retrait de (a).*
+
+**Q10 — Inflation lue dans le terme de tendance**
+- **Je retire la lecture (a).**
+  - Fait nouveau : l'explosivité de (a) en boucle conjointe (1,0275 en régime H, 1,0029 en régime B, enveloppe de 1,0171 par tour ; § 3.C-10), confirmée par la contre-épreuve indépendante.
+  - Mon motif pour (a), son exactitude quelle que soit la fiche 8, reste vrai mais ne pèse pas contre un échec de l'exigence 5 (c). Une instabilité mesurée ne se réintroduit pas.
+- **Le défaut tient au gain, non à la fenêtre du glissement** : la variation sur un tour et sur 3 tours restent explosives ; frontières ν < 0,586 et h < 0,604 (mesures de `macro`). Statut : hypothèse d'interprétation, cohérente avec ces mesures.
+- **Je recommande (c)**, avec quatre précisions :
+  1. **La règle lit la cible déclarée π\*, jamais π̄.** π\* est un paramètre ou un levier de la fiche 8 ; π̄ est l'inflation stationnaire, un résultat. La notation « (c) = π̄ » du § 3.C-10 est à écrire π\* dans la spécification. Jusqu'à la fiche 8, π^e = π\* est exogène : (b) et (c) coïncident. Statut : vérifié contre C1 et C2 (fiche 3, § 6.3).
+  2. **Sous C2, (c) ne coûte rien à l'état stationnaire** : V/(n_a·Y_o) = 1,010286 à 2 % et 1,014518 à 10 %, comme sous (a) ; le résidu tient à #49. Statut : vérifié (`m6_ratios.py`).
+  3. **Un changement de cible devient un choc de demande direct, le tour même** : une baisse d'un point de π\*, états d'ouverture fixés, relève le plan de +0,55 % sous la cible de Haig-Simons (+0,98 % sous la cible nominale). Une désinflation annoncée relève donc la consommation au tour même, à contre-courant. Statut : vérifié (`m6_cible.py`). Signalé à `jeu` et à la fiche 8.
+  4. **Les régimes B, D et E n'ont pas de cible propre** : la π\* lue par les ménages y reste à définir (cible de l'union ou inflation de l'ancre). Renvoi à la fiche 8 et au J5. Statut : non instruit.
+- **Variante h** (π^lu = h·π_{t−1} + (1 − h)·π\*) : **non recommandée**. h < 0,604 est une frontière de stabilité, non une calibration : ce paramètre sans source masquerait une instabilité. Sa marge n'est mesurée qu'à la calibration.
+- **(b) avec la loi de π^e de la fiche 8** : candidate à une réouverture, pas au socle. Avantages : exacte hors C2 si C1 tient ; un changement de cible n'entre que par la crédibilité. Risque : une loi qui suit le glissement avec un fort poids d'impact réintroduit la boucle du § 3.C-10, point 3. Une loi à gain faible devrait atténuer l'oscillation de 17 à 19 tours, au prix d'un retard (hypothèse, non vérifiée).
+- **C26 (fiche 8) — clause de réouverture de la Q10 vers (b)**, écrite avant l'essai. Trois conditions :
+  - (i) C1 tient ;
+  - (ii) la boucle conjointe complète (SN, C, M, ménages avec π^lu = π_s = π^e, règle de taux, loi de π^e) a un rayon < 1, régimes H et B, θ_H = 0,8 et 1, à la calibration et sur la grille ×0,5 / ×2, gain de la loi de π^e compris ;
+  - (iii) contrôle de séparation : la même boucle avec π^lu = π\*, pour attribuer une instabilité aux ménages ou aux salaires.
+  Si une condition échoue, (c) reste. Une réouverture est une décision citant M27.
+- **C16 mise à jour** : sous (c), l'élasticité du plan au glissement est nulle à l'impact ; l'effet d'encaisses réelles passe par le revenu nominal, qui croît plus vite que V (0,9637 contre 0,9859 à prix figés, § 3.C-10, point 6.1). L'élasticité transmise devient celle du plan à π\*.
+
+**Q2, point 3 — π_s dans la cible de Haig-Simons**
+- **Je ne maintiens pas π_{t−1}**, pour deux motifs :
+  - (i) π_s mesuré est explosif à θ_H = 1 (1,0223 / 1,0218, même avec γ^e sur π\*), et θ_H = 1 est dans le domaine des fiches 6 et 9 ;
+  - (ii) la règle C doit avoir une seule lecture de l'inflation : γ^e et π_s lisent la même π^lu. La lecture mixte est aussi la pire hors cible (tableau ci-dessous).
+- **Mécanisme** : π_s mesuré fait de la richesse réelle visée une fonction décroissante de l'inflation mesurée, comme la demande d'encaisses de Cagan (1956, cité de mémoire), d'où une rétroaction positive lente. Statut : hypothèse ; condition de stabilité de Cagan non vérifiée.
+- **Ralliement** à V\* = ν·n_a·(YD^e − π_s·V_H), avec π_s = (1 + π\*)^{1/n_a} − 1, et au point 8 du § 3.C-10.
+- **Ce que l'on perd hors C2** (cible 2 %, i_D = 1 % + π stationnaire, ν = 1, n_a = 12 ; la relation de Fisher hors C2 est une hypothèse de `monnaie`). Statut : vérifié, forme fermée et simulation concordantes à 5 chiffres.
+
+  | π stationnaire | V/(n_a·Y_o), lecture exacte (π_{t−1} partout) | (c) partout, λ_V = 0,4 | (c), λ_V de 0,2 à 0,8 | mixte, γ^e sur π\* et π_s mesuré |
+  |---|---|---|---|---|
+  | 2 % | 1,01029 | 1,01029 | 1,01029 | 1,01029 |
+  | 3 % | 1,01051 | 0,99698 (−1,34 %) | 0,97531 à 1,00822 | 0,98737 (−2,29 %) |
+  | 10 % | 1,01452 | 0,91867 (−9,45 %) | 0,79647 à 0,99694 | 0,85933 (−15,30 %) |
+
+  Sur V/(n_a·YD), (c) donne −1,29 % à 3 % (0,95875 contre 0,97126) et −8,58 % à 10 % (0,83435 contre 0,91267).
+- **Hors C2, λ_V fixe l'état d'arrivée** : le critère 4 échoue, c'est un continuum d'équilibres, à déclarer. Sous C2, la perte stationnaire est nulle. C2, intégrale et sans fuite, devient donc aussi une condition de la fiche 5 : un point d'écart stationnaire entre π et π\* coûte environ 1,3 % du ratio.
+- **C18 renforcée (J6)** : sous (c), la richesse visée ne fuit pas devant l'inflation. Une haute inflation durable hors cible y fait varier la richesse réelle selon λ_V, sans dynamique de Cagan ; elle demandera (b) ou un actif de fuite au J6.
+- **Restitution, point signalé à `jeu`** : deux corrections distinctes, qui divergent hors cible, demandent des libellés distincts : le niveau normal ν, sur YD^HS au taux de la cible (comportement), et le taux d'épargne corrigé de la Q5, sur la perte mesurée (constat).
+
+**Pour M27**
+- **Aucun désaccord ne subsiste avec `macro`** : cible de Haig-Simons ; γ^e et π_s lus sur la cible ; variante h refusée sans mesure. Les deux positions décrites au § 6.1 (Q2, point 3), dans la réponse de `macro` et au § 6.2 (« lecture (a) ») sont caduques.
+- **Trois ajouts de `monnaie`**, à confirmer par `macro` : lecture de π\*, non de π̄ ; clause C26 ; déclaration de l'effet d'un changement de cible.
+
 ## 7. Avis de `jeu`
 
 *`jeu`, 03/10/2026 (issue #41, jalon 2), sur la fiche à l'état `d88a47e` (branche `claude/j1-economie-reelle`, PR #43). Réponses aux six questions de `macro`.*
@@ -1448,3 +1494,4 @@ Non instruit.
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à C avec B_H ≡ 0, lecture (a), classement des taux confirmé, double restitution du taux d'épargne ; constat de non-superneutralité de la cible nominale et proposition d'une cible sur le revenu de Haig-Simons (deux positions si `macro` maintient la sienne) ; structure d'équilibre général du canal rentier ; conditions C14 à C25 pour les fiches 7, 8 et 9 | `monnaie` |
 | 03/10/2026 | Additif de `macro` (§ 3.C-10) : boucle conjointe SN, C, M et ménages mesurée, contre-épreuve en niveaux ; critère 5 (c) tenu sous (c) (0,9637 / 0,9613), explosif sous (a) (1,0275 / 1,0029), d'où la recommandation de la Q10 révisée vers (c) ; instabilité nouvelle mesurée ; § 3.L, sur-commande et § 3.N-9 corrigés après les constats de `jeu` ; réserves 3 et 8 remplacées | `macro` ; session principale |
 | 03/10/2026 | Réponse de `macro` sur la cible de Haig-Simons (§ 3.C-10, point 8 ; § 5 : second additif, réserve 3, lecture (f)), versée après contre-épreuve indépendante concordante au 4e chiffre | `macro` ; session principale |
+| 03/10/2026 | Additif de `monnaie` (§ 6.5) : retrait de (a), ralliement à (c) en lisant π\* pour γ^e et π_s, cible de Haig-Simons, variante h refusée, clause C26, C16 et C18 mises à jour ; aucun désaccord résiduel avec `macro` | `monnaie` ; session principale |
