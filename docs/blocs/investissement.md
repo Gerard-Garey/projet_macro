@@ -3,8 +3,8 @@ bloc: Investissement et financement des entreprises
 module: src/nations/blocs/investissement.py
 expert pilote: macro
 experts consultés: monnaie (demande de crédit face à l'offre bancaire : frontière crédit) ; jeu
-statut: avis rendus (03/10/2026)
-décision: —
+statut: décidée (M28, 03/10/2026)
+décision: M28 (03/10/2026)
 issue: #42
 ---
 
@@ -1833,7 +1833,22 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 
 ## 8. Décision du mainteneur
 
-Non instruit (M28, décidée avec la fiche 5).
+- **Numéro** : M28 (reporté dans `docs/feuille-de-route.md`, § 4), prise le même jour que M27 (fiche 5), décisions par paires.
+- **Date** : 03/10/2026.
+- **Option retenue** : **S-ζ**, part d'investissement visée ajustée sur tu − t̄u·e^{ζ(ϱ_L − ϱ̄_L)} (additif de `macro` au § 5 ; § 6.6), avec la règle de financement **F** (§ 3.N) :
+  - ζ, élasticité de niveau (non une vitesse), **déclaré et calibré au J3** sur l'élasticité du capital au coût d'usage (ordre de grandeur 4 à 8, hypothèse ; ζ = 2 écarté) ; si la fiche 9 retient un autre canal de niveau, le terme ζ sort de la spécification par une décision citant M28 ;
+  - F : levier visé lv\* sur **K comptable**, cible de dépôts sur v^e_{t+1}, dividende résiduel en dernier en phase 6 ;
+  - (b) Q7 : **lecture (a)** ; Q8 : **i_L lu à l'ouverture** (`tab:phases` inchangée) ; ϱ_L lu sur **π\*** (comme la fiche 5, M27) ;
+  - (c) #36 : **voie (i)** ;
+  - (e) **Div ≥ 0** : contrainte de domaine de la ligne 14 sans actions ; I^vol ≥ 0 tient par la forme ;
+  - #37 / Q5 : **aucun levier d'offre au socle**, déclaré ; #37 reste ouverte jusqu'au J7 (sans `Closes`) ;
+  - (a) fermeture de S = I : supermultiplicateur côté réel ; côté monétaire, C36 se juge avec la règle de la fiche 9 (C37).
+- **Condition C36, rédaction prospective retenue** (celle de `monnaie`, § 6.6) : (ii) r̄ et π̄ résolus par point fixe dans chaque branche à 1e−6 en relatif, et arrivée simulée après G +1 % permanent à moins de 1e−3 en au plus 20 demi-vies de la racine dominante ; (iii) « aucune rampe » : module dominant < 1 hors racine nominale et hors état inerte déclaré, **et** arrivée simulée satisfaite.
+- **Critère 12 (d), seuils de `jeu` adoptés** (§ 7) : (d1) taux réel du crédit +1 point aux tours 1 à 12 : |e_I(t)| ≥ 1,0 % à chacun des tours 1 à 12, en équilibre partiel ; (d2) même choc maintenu : e_I(120)/e_I(12) ≥ 0,5 ; (d3) dépense publique +5 % aux tours 1 à 12 : e_I ≥ +0,5 % pendant au moins 6 des tours 1 à 24, en boucle conjointe, au J4.
+- **Motifs** : le mainteneur a retenu la recommandation de `macro`, à laquelle `monnaie` (§ 6.6) et `jeu` (§ 7) se rangent. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : les réserves du § 5 et de son additif ; C27 à C37 (`monnaie`) ; les onze conditions de restitution de `jeu` (§ 7) ; l'amendement prospectif du critère 6 (2 160 pas).
+- **Ce qui est écarté et pourquoi** : A et B (critères 6 et 7 (c)) ; C (r̄ ou tu dépendant de la vitesse dès qu'un canal du taux existe) ; PI (7 (c)) ; R (référence d'état stationnaire seulement) ; S sans ζ (pas de canal permanent du taux : l'action intégrale de la règle de taux n'a pas d'état stationnaire) ; levier sur p K^vol et cible de dépôts sur les ventes du pas (explosifs) ; voie (ii) de #36 (même information, un ADR de plus).
+- **Issues liées**, créées sur accord du mainteneur : #55 (calibration, distribution positive), #56 (signe net d'une hausse de taux), #57 (crises de crédit au J6) ; commentaires sur #44.
 
 ## 9. Conséquences de la décision
 
@@ -1853,3 +1868,4 @@ Non instruit.
 | 03/10/2026 | Avis de `monnaie` (§ 6) : favorable à S + F, lecture (a), i_L à l'ouverture, ϱ_L sur π\*, voie (i), aucune prime sur le levier au socle ; conditions C27 à C36 ; **désaccord avec `macro`** : S-ζ (canal permanent du taux par le niveau de tu visé) contre S seule. Statut « avis rendus » | `monnaie` ; session principale |
 | 03/10/2026 | Additif de `macro` (§ 5) : S et S-ζ mesurées avec une règle à action intégrale dans la boucle conjointe (constat de `monnaie` confirmé sous reprise budgétaire des intérêts ; fait nouveau sans elle : gain statique positif, aucun ζ testé ne tient C36) ; § 3.L remesuré avec tous les canaux du taux (C34) et l'investissement en volume (signe des dividendes corrigé) ; réserve 6 nuancée | `macro` ; session principale |
 | 03/10/2026 | Relance ciblée de `monnaie` (§ 6.6) : mesures de `macro` reproduites ; ζ = 2 retiré, ralliement à S-ζ avec ζ calibré au J3 ; C37 (fiche 9 : reprise du surcroît d'intérêts publics) ; fait nouveau : une règle de Bohn ou une cible intégrale de dette ne remplace pas la reprise ; désaccord résiduel sur la rédaction prospective de C36 seulement | `monnaie` ; session principale |
+| 03/10/2026 | Décision M28 : S-ζ + F, lecture (a), i_L à l'ouverture, voie (i), aucun levier d'offre, Div ≥ 0 en contrainte de domaine ; C36 dans la rédaction de `monnaie` ; seuils (d1) à (d3) du critère 12 (d) | mainteneur |

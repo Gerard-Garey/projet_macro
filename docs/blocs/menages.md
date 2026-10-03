@@ -3,8 +3,8 @@ bloc: Ménages
 module: src/nations/blocs/menages.py
 expert pilote: macro
 experts consultés: monnaie (dépôts et détention de titres publics : frontière dette publique) ; jeu
-statut: avis rendus (03/10/2026)
-décision: —
+statut: décidée (M27, 03/10/2026)
+décision: M27 (03/10/2026)
 issue: #41
 ---
 
@@ -210,6 +210,10 @@ Décisions du mainteneur du 03/10/2026, prises avant l'instruction, sur les ques
 - **Q6** : un ménage représentatif est instruit comme référence, avec une variante à deux types.
 - **Q10 et critère 2 (e)** : `monnaie` est consulté sur la frontière inflation (anticipation consommée par un terme de tendance nominal), en plus de la frontière dette publique.
 - **Q11** : les leviers ciblés sur les ménages sont renvoyés au catalogue des leviers (J4) ; la fiche en note l'interface.
+
+Décision du mainteneur du 03/10/2026, prise avec M27 (issue #59) :
+
+- **Correction prospective du critère 4 (ii)** : l'illustration de la cible sans tendance se lit **C = revenu − (λ_V/n_a)(V\* − V)**, et non « + » (coquille de signe relevée par `macro` au § 3 ; les chiffres publiés correspondaient déjà à la forme corrigée). Verdicts inchangés ; l'écriture d'origine reste au tableau du § 2.
 
 ## 3. Options
 
@@ -1568,7 +1572,17 @@ Elle est identique à C au niveau agrégé. Sa valeur ludique n'apparaît qu'ave
 
 ## 8. Décision du mainteneur
 
-Non instruit (M27, décidée avec la fiche 6).
+- **Numéro** : M27 (reporté dans `docs/feuille-de-route.md`, § 4), prise le même jour que M28 (fiche 6), décisions par paires.
+- **Date** : 03/10/2026.
+- **Option retenue** : **C**, cible de richesse avec terme de tendance, ménage représentatif, avec la recommandation finale du § 5 telle quelle :
+  - (a) Q10 : **lecture (c)**, l'inflation du terme de tendance et de la cible lue sur la **cible déclarée π\*** (paramètre ou levier de la fiche 8), jamais sur π̄ ; γ^e = [(1 + g)(1 + π\*)]^{1/n_a} − 1 ; la lecture (a) et la variante h sont écartées ; une réouverture vers (b) ne passe que par la clause **C26** (fiche 8), par une décision citant M27 ;
+  - (f) **cible de richesse sur le revenu de Haig-Simons** : V\* = ν·n_a·(YD^e − π_s·V_H), π_s = (1 + π\*)^{1/n_a} − 1, une seule lecture de l'inflation pour γ^e et π_s ;
+  - (b) à (e) : les lectures recommandées au § 5 (plafond du plan en phase 2, seuil libre déclaré ; **B_H ≡ 0** au socle ; canal du taux rentier seul ; taux d'épargne restitué nominal et corrigé, sous deux libellés distincts) ;
+  - revenu lu YD_{t−1} avec tendance (Q2 (i)) ; variante D notée pour le J4.
+- **Motifs** : le mainteneur a retenu la recommandation concordante de `macro`, de `monnaie` (§ 6.5) et de `jeu` (§ 7). Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : les dix réserves du § 5, avec leurs critères écrits avant l'essai ; les conditions de `monnaie` (C14 à C26, dont C26) ; les conditions de restitution de `jeu` (§ 7 et ses deux additifs : ratio « Richesse des ménages, en années de revenu » sur YD^HS d'abord, décomposition additive du taux d'épargne, part propre au ménage pour le critère 12 (d), deux taux d'épargne nommés) ; C2 devient aussi une condition de la fiche 5 (hors cible, λ_V fixe l'état d'arrivée : continuum déclaré).
+- **Ce qui est écarté et pourquoi** : A et B (critère 4, strates, plafond) ; S à α libres (critère 4) ; R1 (hors domaine) ; Q10 (a), explosive en boucle conjointe (§ 3.C-10) ; π_s sur π_{t−1}, explosive à θ_H = 1 ; variante h (frontière de stabilité, non calibration sourcée) ; cible nominale (superneutralité moindre).
+- **Issues liées**, créées sur accord du mainteneur : #53 (surchauffe publique, J4), #54 (aller-retour de π\*, fiche 8), #58 (instabilité de la lecture (a)), #59 (coquille du critère 4 (ii), corrigée au § 2).
 
 ## 9. Conséquences de la décision
 
@@ -1589,3 +1603,4 @@ Non instruit.
 | 03/10/2026 | Additif de `jeu` (§ 7) : ralliement à (c) ; embardée de sur-commande « à clarifier » (attribution, falaise, ψ_ξ), dimension maintenue et trois variantes ; ratio de Haig-Simons affiché d'abord (niveau normal 1 an), lecture (e) retirée ; conditions 2 et 4 révisées ; part propre au ménage pour le critère 12 (d), seuil tenu | `jeu` ; session principale |
 | 03/10/2026 | Avis de `macro` sur l'additif de `monnaie` : accord sur π\*, C26, effet d'un changement de cible (+0,5543 % / +0,9776 %, remesurés) et continuum hors C2 ; § 5 réécrit (version antérieure : `3b31b6e`), recommandation (c) sur π\* et cible de Haig-Simons ; additifs datés aux § 3.N-3, 3.N-5 et 3.C (points 1 et 9) | `macro` ; session principale |
 | 03/10/2026 | Second additif de `jeu` (§ 7) : effet d'un changement de π\* « à clarifier » (déclaré par les cases existantes ; essai d'aller-retour demandé à la fiche 8) ; deux taux d'épargne lisibles sous deux libellés. Statut « avis rendus » : avis de `macro`, `monnaie` et `jeu` rendus, aucun désaccord résiduel | `jeu` ; session principale |
+| 03/10/2026 | Décision M27 : option C, lecture (c) sur π\*, cible de Haig-Simons, lectures (b) à (e) du § 5 ; correction prospective du critère 4 (ii) (#59) | mainteneur |
