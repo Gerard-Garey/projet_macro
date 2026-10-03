@@ -32,3 +32,14 @@ def matrices():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="session")
+def remesure():
+    """Module `outils/remesurer_v2_production.py`, chargé par son chemin."""
+    chemin = RACINE / "outils" / "remesurer_v2_production.py"
+    spec = importlib.util.spec_from_file_location("remesurer_v2_production", chemin)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module

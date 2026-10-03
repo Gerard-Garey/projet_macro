@@ -68,13 +68,13 @@
 \large Simulateur macroéconomique multi-pays à cohérence stock-flux\\[2pt]
 \normalsize Version 3.0-socle (brouillon) --- périmètre exécuté : aucun bloc}
 \author{}
-\date{Septembre 2026}
+\date{Octobre 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-\noindent Ce document est la spécification du moteur v3 de \emph{Nations \& Marchés}, simulateur macroéconomique multi-pays à cohérence stock-flux destiné à devenir un jeu tour par tour mensuel où chaque joueur incarne l'État d'un pays. Il décrit le moteur exécuté : toute équation numérotée y est exécutée par le moteur, et toute équation exécutée y est numérotée. La version 3.0-socle est un squelette : elle fixe le plan du document, les règles de lecture des équations et les tables qui accueilleront la spécification du socle (économie fermée à un pays). Elle spécifie le cadre commun (temps, entités, comptabilité), retenu par la décision M22 du mainteneur, en section proposée : aucun code ne l'exécute encore. Aucun bloc n'est encore spécifié ni exécuté ; le document ne contient donc aucune équation numérotée. La spécification v1.5 et le moteur v2.0 de la première tentative sont des sources historiques, instruites bloc par bloc sur fiche comparative ; ils ne font pas référence.
+\noindent Ce document est la spécification du moteur v3 de \emph{Nations \& Marchés}, simulateur macroéconomique multi-pays à cohérence stock-flux destiné à devenir un jeu tour par tour mensuel où chaque joueur incarne l'État d'un pays. Il décrit le moteur exécuté : toute équation numérotée y est exécutée par le moteur, et toute équation exécutée y est numérotée. La version 3.0-socle est un squelette : elle fixe le plan du document, les règles de lecture des équations et les tables qui accueilleront la spécification du socle (économie fermée à un pays). Elle spécifie, en sections proposées, le cadre commun (temps, entités, comptabilité), retenu par la décision M22 du mainteneur, et le bloc « production et stocks », retenu par la décision M24 : aucun code ne les exécute encore. Aucun bloc n'est encore exécuté ; le document ne contient donc aucune équation numérotée. La spécification v1.5 et le moteur v2.0 de la première tentative sont des sources historiques, instruites bloc par bloc sur fiche comparative ; ils ne font pas référence.
 \end{abstract}
 
 \tableofcontents
@@ -88,7 +88,7 @@
 Chaque version de la spécification v3 ajoute ici sa table, la plus récente en tête ; les tables des versions antérieures sont conservées à la suite. Chaque ligne donne la modification, la section touchée et ce que le moteur ou l'audit a révélé.
 
 \subsection*{Version 3.0-socle (brouillon)}
-Version initiale : squelette du document (plan, conventions de lecture, tables vides), complété par la section du cadre, proposée.
+Version initiale : squelette du document (plan, conventions de lecture, tables vides), complété par la section du cadre et par la section du bloc « production et stocks », proposées.
 
 \begin{center}\small
 \begin{longtable}{p{0.5cm}>{\raggedright\arraybackslash}p{6.3cm}>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{5.8cm}}
@@ -105,6 +105,7 @@ Version initiale : squelette du document (plan, conventions de lecture, tables v
 3 & Paramètres du cadre portés dans la table de calibration, proposés ; aucune borne. & \S\ref{sec:calibration} & Rien : aucun paramètre n'est exécuté.\\
 4 & Pistes écartées par la décision M22. & \S\ref{sec:ecartees} & Sans objet.\\
 5 & Symboles du cadre portés dans le glossaire de la notation. & \S\ref{sec:glossaire} & Sans objet.\\
+6 & Production et stocks (décision M24), proposée : technique à coefficients fixes en travail, productivité tendancielle et capacité normale sans plafond ; ventes anticipées, stock cible, production visée, demande de travail, production, ventes et rationnement proportionnel, stocks en volume, valorisation au coût moyen pondéré (ligne 4), volume du capital ; phases ; état stationnaire en forme fermée ; conditions et critères du jalon J3 ; grandeurs restituées. Dans le cadre, ordre interne de la phase 4, « travail, puis production » (décision M24, ADR 0007). Paramètres du bloc, symboles et exposant $\mathrm{vol}$ des volumes ; pistes écartées ; précision sur les instabilités 1, 9, 10, 11, 14 et 15. Aucune table de flux ni de bilans ne change. & \S\ref{sec:production}, \S\ref{sec:cadre-phases}, \S\ref{sec:calibration}, \S\ref{sec:ecartees}, \S\ref{sec:chantiers}, \S\ref{sec:glossaire} & Aucun code n'exécute le bloc avant le jalon J3. La remesure du moteur v2.0 (\S\ref{sec:ecartees}) a confirmé que ses vitesses d'ajustement y déplacent le ratio stationnaire des stocks aux ventes, défaut que la forme retenue corrige.\\
 \bottomrule
 \end{longtable}
 \end{center}
@@ -162,7 +163,7 @@ Le cadre a été retenu par la décision M22 du mainteneur (30/09/2026), consign
 \subsection{Entités et indices}
 \label{sec:cadre-entites}
 \begin{proposee}[entités et indices, décision M22]
-\textbf{Indices réservés.} Pays $i$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Le cadre du socle est écrit pour un pays : l'indice $i$ y est omis ; les barrières entre pays et l'ordre canonique des pays relèvent du jalon J5. La colonne « entreprises » est écrite pour le secteur institutionnel entier : sa division par secteur productif $j$ relève du bloc « production et stocks » (\S\ref{sec:production}), les strates $h$ du bloc « ménages » (\S\ref{sec:menages}).
+\textbf{Indices réservés.} Pays $c$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Le cadre du socle est écrit pour un pays : l'indice $c$ y est omis ; les barrières entre pays et l'ordre canonique des pays relèvent du jalon J5. La colonne « entreprises » est écrite pour le secteur institutionnel entier : sa division par secteur productif $j$ relève du bloc « production et stocks » (\S\ref{sec:production}), les strates $h$ du bloc « ménages » (\S\ref{sec:menages}).
 
 \textbf{Secteurs institutionnels.} Cinq secteurs, chacun avec son bilan : ménages, entreprises, banque commerciale, banque centrale, État. Dans les symboles, un indice ou un exposant marque le secteur détenteur ou émetteur : $H$ (ménages), $F$ (entreprises), $\mathit{Bk}$ (banque), $\mathit{CB}$ (banque centrale), $G$ (État). Ces marques ne sont pas des grandeurs : $B_H$ est l'encours de titres publics détenu par les ménages, sans rapport avec la monnaie centrale $H$ ; de même, $M^G$ est le compte du Trésor, sans rapport avec la dépense publique $G$. Dans les identités, l'indice $s \in \{H, F, \mathit{Bk}, \mathit{CB}, G\}$ parcourt les secteurs, et l'indice $\ell$ les lignes de la matrice des flux.
 
@@ -288,26 +289,11 @@ Valeur nette & $-D_H - B_H$ & $-K - \mathit{IN} - D_F + L$ & $-L - B_{\mathit{Bk
 \subsection{Matrice des flux de transactions}
 \label{sec:cadre-flux}
 \begin{proposee}[matrice des flux de transactions, décision M22]
-La matrice des flux (tableau~\ref{tab:matrice-flux}) donne, pour chaque flux du pas, le montant reçu ($+$) ou versé ($-$) par chaque secteur, les variations de postes financiers comprises : la variation d'un actif détenu compte $-$, celle d'un passif émis compte $+$. Les entreprises ont deux sous-colonnes, courant et capital. Chaque ligne somme à zéro : tout flux quitte un bilan pour entrer dans un autre. Chaque colonne somme à zéro : c'est la contrainte budgétaire du secteur. Tout flux de tout bloc du socle a sa ligne ; aucune monnaie n'est créée ni détruite hors d'une ligne.
+La matrice des flux (tableau~\ref{tab:matrice-flux}) donne, pour chaque flux du pas, le montant reçu ($+$) ou versé ($-$) par chaque secteur, les variations de postes financiers comprises : la variation d'un actif détenu compte $-$, celle d'un passif émis compte $+$. Les entreprises ont deux sous-colonnes, courant et capital. Chaque ligne somme à zéro : tout flux quitte un bilan pour entrer dans un autre. Chaque colonne de secteur somme à zéro, les deux sous-colonnes des entreprises étant réunies : c'est la contrainte budgétaire du secteur ; prise seule, une sous-colonne des entreprises n'est pas nulle en général. Tout flux de tout bloc du socle a sa ligne ; aucune monnaie n'est créée ni détruite hors d'une ligne.
 
-Chaque ligne porte une seule signature d'effet sur la masse monétaire $M$ et sur la monnaie centrale $H$ (\S\ref{sec:cadre-portes}) ; une ligne dont les parts ont des signatures différentes est scindée par contrepartie. Ainsi la ligne 11 (intérêts sur titres publics) est scindée en 11a, 11b, 11c selon le détenteur ; la ligne 19a (marché primaire : émission ou rachat par l'État, exposant $p$) selon le souscripteur ; la ligne 19b (achats ou ventes de la banque centrale sur le marché secondaire, exposant $s$) selon la contrepartie. La variation d'un encours de titres combine les deux marchés : $\Delta B_H = \Delta B_H^p - \Delta B_H^s$, $\Delta B_{\mathit{Bk}} = \Delta B_{\mathit{Bk}}^p - \Delta B_{\mathit{Bk}}^s$, $\Delta B_{\mathit{CB}} = \Delta B_{\mathit{CB}}^p + \Delta B_H^s + \Delta B_{\mathit{Bk}}^s$.
+Chaque ligne porte une seule signature d'effet sur la masse monétaire $M$ et sur la monnaie centrale $H$ (\S\ref{sec:cadre-portes}) ; une ligne dont les parts ont des signatures différentes est scindée par contrepartie. Ainsi la ligne 11 (intérêts sur titres publics) est scindée en 11a, 11b, 11c selon le détenteur ; la ligne 19a (marché primaire : émission ou rachat par l'État, exposant $\mathrm{prim}$) selon le souscripteur ; la ligne 19b (achats ou ventes de la banque centrale sur le marché secondaire, exposant $\mathrm{sec}$) selon la contrepartie. La variation d'un encours de titres combine les deux marchés : $\Delta B_H = \Delta B_H^{\mathrm{prim}} - \Delta B_H^{\mathrm{sec}}$, $\Delta B_{\mathit{Bk}} = \Delta B_{\mathit{Bk}}^{\mathrm{prim}} - \Delta B_{\mathit{Bk}}^{\mathrm{sec}}$, $\Delta B_{\mathit{CB}} = \Delta B_{\mathit{CB}}^{\mathrm{prim}} + \Delta B_H^{\mathrm{sec}} + \Delta B_{\mathit{Bk}}^{\mathrm{sec}}$.
 
-Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau. Les colonnes, résolues en ces postes, donnent les contraintes budgétaires ; colonnes des ménages et des entreprises :
-\begin{align*}
-\Delta D_H &= \mathit{WB} + \mathit{Tr} + i_D D_H/n_a + i_B B_H/n_a + \mathit{Div}_F + \mathit{Div}_{\mathit{Bk}}\\
-&\quad - C - T_H - \Delta B_H^p + \Delta B_H^s ,\\
-\Delta D_F &= C + G - \mathit{WB} - T_F - i_L L/n_a + i_D D_F/n_a - \mathit{Div}_F + \Delta L ,\\
-\intertext{colonne de la banque :}
-\Delta \mathit{Res} &= i_L L/n_a + i_B B_{\mathit{Bk}}/n_a + i_{\mathit{res}} \mathit{Res}/n_a - i_D D_H/n_a - i_D D_F/n_a - i_{\mathit{CB}} L^{\mathit{CB}}/n_a\\
-&\quad - \mathit{Div}_{\mathit{Bk}} + \Delta D_H + \Delta D_F - \Delta L - \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{Bk}}^s + \Delta L^{\mathit{CB}} ,\\
-\intertext{colonne de la banque centrale :}
-\Delta \mathit{Res} &= \Pi^{\mathit{CB}} - i_B B_{\mathit{CB}}/n_a - i_{\mathit{CB}} L^{\mathit{CB}}/n_a + i_{\mathit{res}} \mathit{Res}/n_a\\
-&\quad + \Delta B_{\mathit{CB}}^p + \Delta B_H^s + \Delta B_{\mathit{Bk}}^s + \Delta L^{\mathit{CB}} - \Delta M^G ,\\
-\intertext{colonne de l'État :}
-\Delta M^G &= T_H + T_F + \Pi^{\mathit{CB}} - G - \mathit{Tr} - i_B B_H/n_a - i_B B_{\mathit{Bk}}/n_a - i_B B_{\mathit{CB}}/n_a\\
-&\quad + \Delta B_H^p + \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{CB}}^p .
-\end{align*}
-Dans les entreprises, l'investissement, la variation des stocks et l'amortissement s'annulent entre les deux sous-colonnes. Les deux expressions de $\Delta \mathit{Res}$ coïncident terme à terme une fois $\Delta D_H$, $\Delta D_F$ et $\Delta M^G$ substitués : c'est une conséquence des lignes nulles. Un intérêt payé par la banque à la banque centrale (ligne 13) draine des réserves, un intérêt payé par la banque centrale sur les réserves (ligne 12) en crée ; un intérêt payé par l'État à la banque centrale (ligne 11c) et le versement du résultat $\Pi^{\mathit{CB}}$ (ligne 16) n'en déplacent aucune, puisque le compte du Trésor est un passif de la banque centrale.
+Les lignes 17 (dépôts), 20 (réserves) et 22 (compte du Trésor) ne sont pas des flux décidés : ce sont les contreparties de règlement des autres lignes, appliquées par le noyau. La contrainte budgétaire des entreprises est la somme de leurs deux sous-colonnes : l'investissement, la variation des stocks et l'amortissement s'y annulent. Un intérêt payé par la banque à la banque centrale (ligne 13) draine des réserves, un intérêt payé par la banque centrale sur les réserves (ligne 12) en crée ; un intérêt payé par l'État à la banque centrale (ligne 11c) et le versement du résultat $\Pi^{\mathit{CB}}$ (ligne 16) n'en déplacent aucune, puisque le compte du Trésor est un passif de la banque centrale.
 
 \textbf{Statut.} Dérivée (sommes nulles, contraintes budgétaires) ; la liste des lignes et leur découpage sont des choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (points 6, 8 et 11 à 13 de l'ADR 0005).
 \end{proposee}
@@ -315,7 +301,7 @@ Dans les entreprises, l'investissement, la variation des stocks et l'amortisseme
 \begin{center}\footnotesize
 \setlength{\tabcolsep}{2.5pt}
 \begin{longtable}{>{\raggedright\arraybackslash}p{3.3cm}*{6}{>{\raggedright\arraybackslash}p{1.92cm}}}
-\caption{Matrice des flux de transactions (proposée, décision M22). Flux du pas $t$, en u.m. par pas ; $+$ reçu, $-$ versé ; variation d'un actif détenu $-$, d'un passif émis $+$ ; intérêts et amortissement assis sur l'encours d'ouverture, taux annuels convertis par $n_a$ ; chaque ligne et chaque colonne somment à zéro.}\label{tab:matrice-flux}\\
+\caption{Matrice des flux de transactions (proposée, décision M22). Flux du pas $t$, en u.m. par pas ; $+$ reçu, $-$ versé ; variation d'un actif détenu $-$, d'un passif émis $+$ ; intérêts et amortissement assis sur l'encours d'ouverture, taux annuels convertis par $n_a$ ; chaque ligne somme à zéro, et chaque colonne de secteur aussi, les deux sous-colonnes des entreprises réunies.}\label{tab:matrice-flux}\\
 \toprule
 \textbf{Ligne} & \textbf{Ménages} & \textbf{Entr. courant} & \textbf{Entr. capital} & \textbf{Banque} & \textbf{BC} & \textbf{État}\\
 \midrule
@@ -349,11 +335,11 @@ Dans les entreprises, l'investissement, la variation des stocks et l'amortisseme
 16 Versement du résultat de la banque centrale & & & & & $-\Pi^{\mathit{CB}}$ & $+\Pi^{\mathit{CB}}$\\
 17 $\Delta$ Dépôts & $-\Delta D_H$ & & $-\Delta D_F$ & $+\Delta D_H + \Delta D_F$ & & \\
 18 $\Delta$ Crédits & & & $+\Delta L$ & $-\Delta L$ & & \\
-19a-ménages Émission primaire, ménages & $-\Delta B_H^p$ & & & & & $+\Delta B_H^p$\\
-19a-banque Émission primaire, banque & & & & $-\Delta B_{\mathit{Bk}}^p$ & & $+\Delta B_{\mathit{Bk}}^p$\\
-19a-BC Émission primaire, banque centrale & & & & & $-\Delta B_{\mathit{CB}}^p$ & $+\Delta B_{\mathit{CB}}^p$\\
-19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^s$ & & & & $-\Delta B_H^s$ & \\
-19b-banque Achats de la banque centrale à la banque & & & & $+\Delta B_{\mathit{Bk}}^s$ & $-\Delta B_{\mathit{Bk}}^s$ & \\
+19a-ménages Émission primaire, ménages & $-\Delta B_H^{\mathrm{prim}}$ & & & & & $+\Delta B_H^{\mathrm{prim}}$\\
+19a-banque Émission primaire, banque & & & & $-\Delta B_{\mathit{Bk}}^{\mathrm{prim}}$ & & $+\Delta B_{\mathit{Bk}}^{\mathrm{prim}}$\\
+19a-BC Émission primaire, banque centrale & & & & & $-\Delta B_{\mathit{CB}}^{\mathrm{prim}}$ & $+\Delta B_{\mathit{CB}}^{\mathrm{prim}}$\\
+19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^{\mathrm{sec}}$ & & & & $-\Delta B_H^{\mathrm{sec}}$ & \\
+19b-banque Achats de la banque centrale à la banque & & & & $+\Delta B_{\mathit{Bk}}^{\mathrm{sec}}$ & $-\Delta B_{\mathit{Bk}}^{\mathrm{sec}}$ & \\
 20 $\Delta$ Réserves & & & & $-\Delta \mathit{Res}$ & $+\Delta \mathit{Res}$ & \\
 21 $\Delta$ Refinancement & & & & $+\Delta L^{\mathit{CB}}$ & $-\Delta L^{\mathit{CB}}$ & \\
 22 $\Delta$ Compte du Trésor & & & & & $+\Delta M^G$ & $-\Delta M^G$\\
@@ -375,7 +361,7 @@ Les lignes 17 et 20 portent les postes de règlement eux-mêmes ($\Delta D_H + \
 \begin{enumerate}[label=(\alph*)]
 \item que chaque ligne des deux matrices est nulle ;
 \item que chaque colonne de la matrice des bilans est nulle ;
-\item que chaque colonne de secteur de la matrice des flux contient une fois son poste de règlement ($\Delta D_H$, $\Delta D_F$, $\Delta \mathit{Res}$ pour la banque et pour la banque centrale, $\Delta M^G$) et que les deux expressions de $\Delta \mathit{Res}$ coïncident ;
+\item que chaque colonne de secteur de la matrice des flux, les deux sous-colonnes des entreprises réunies, contient une fois son poste de règlement ($\Delta D_H$, $\Delta D_F$, $\Delta \mathit{Res}$ pour la banque et pour la banque centrale, $\Delta M^G$) et que l'expression de $\Delta \mathit{Res}$ tirée de la colonne de la banque, $\Delta D_H$ et $\Delta D_F$ substitués, coïncide avec celle tirée de la colonne de la banque centrale, $\Delta M^G$ substitué, ce qu'impliquent les lignes nulles du point (a) ;
 \item que $\Delta M$ et $\Delta H$ recomposés depuis les portes égalent $\Delta D_H + \Delta D_F$ et $\Delta \mathit{Res}$, et que le montant de chaque porte est la somme des termes positifs de sa ligne.
 \end{enumerate}
 Ce contrôle a déjà servi : il a révélé, dans la fiche comparative, une erreur de signe dans la contrainte budgétaire de la banque centrale, invisible aux contre-épreuves numériques parce que le terme en cause est nul sous la décision M22, lecture (d).
@@ -418,11 +404,11 @@ Ce contrôle a déjà servi : il a révélé, dans la fiche comparative, une err
 16 Versement du résultat de la banque centrale & $+\Pi^{\mathit{CB}}$ & 0 & 0\\
 17 $\Delta$ Dépôts & $+\Delta D_H + \Delta D_F$ & poste & poste\\
 18 $\Delta$ Crédits & $+\Delta L$ & $+$ & 0\\
-19a-ménages Émission primaire, ménages & $+\Delta B_H^p$ & $-$ & $-$\\
-19a-banque Émission primaire, banque & $+\Delta B_{\mathit{Bk}}^p$ & 0 & $-$\\
-19a-BC Émission primaire, banque centrale & $+\Delta B_{\mathit{CB}}^p$ & 0 & 0\\
-19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^s$ & $+$ & $+$\\
-19b-banque Achats de la banque centrale à la banque & $+\Delta B_{\mathit{Bk}}^s$ & 0 & $+$\\
+19a-ménages Émission primaire, ménages & $+\Delta B_H^{\mathrm{prim}}$ & $-$ & $-$\\
+19a-banque Émission primaire, banque & $+\Delta B_{\mathit{Bk}}^{\mathrm{prim}}$ & 0 & $-$\\
+19a-BC Émission primaire, banque centrale & $+\Delta B_{\mathit{CB}}^{\mathrm{prim}}$ & 0 & 0\\
+19b-ménages Achats de la banque centrale aux ménages & $+\Delta B_H^{\mathrm{sec}}$ & $+$ & $+$\\
+19b-banque Achats de la banque centrale à la banque & $+\Delta B_{\mathit{Bk}}^{\mathrm{sec}}$ & 0 & $+$\\
 20 $\Delta$ Réserves & $+\Delta \mathit{Res}$ & poste & poste\\
 21 $\Delta$ Refinancement & $+\Delta L^{\mathit{CB}}$ & 0 & $+$\\
 22 $\Delta$ Compte du Trésor & $+\Delta M^G$ & 0 & 0\\
@@ -432,11 +418,11 @@ Ce contrôle a déjà servi : il a révélé, dans la fiche comparative, une err
 \subsection{Identités comptables et tolérances}
 \label{sec:cadre-identites}
 \begin{proposee}[identités comptables et tolérances, décision M22]
-\textbf{Aucun solde résiduel.} Chaque instrument est tenu une seule fois par le noyau, comme position (détenteur, émetteur) : sa ligne de la matrice des bilans somme à zéro par construction, sans tolérance. Chaque poste de clôture vaut son ouverture plus la somme des lignes de flux nommées qui le touchent ; aucun poste n'est obtenu par différence des autres. En notant $\Delta x_t$ la somme des lignes de flux nommées qui touchent le poste $x$ au pas $t$, et $f_{\ell,s,t}$ le montant de la ligne $\ell$ dans la colonne du secteur $s$ :
+\textbf{Aucun solde résiduel.} Chaque instrument est tenu une seule fois par le noyau, comme position (détenteur, émetteur) : sa ligne de la matrice des bilans somme à zéro par construction, sans tolérance. Chaque poste de clôture vaut son ouverture plus la somme des lignes de flux nommées qui le touchent ; aucun poste n'est obtenu par différence des autres. En notant $\Delta x_t$ la somme des lignes de flux nommées qui touchent le poste $x$ au pas $t$, et $f_{\ell,s,t}$ le montant de la ligne $\ell$ dans la colonne du secteur $s$ (pour les entreprises, la somme de leurs deux sous-colonnes) :
 \begin{gather*}
 x_{t+1} = x_t + \Delta x_t \quad\text{pour chaque poste } x, \\
 \sum_{s} f_{\ell,s,t} = 0 \quad\text{pour chaque ligne } \ell, \qquad
-\sum_{\ell} f_{\ell,s,t} = 0 \quad\text{pour chaque colonne } s .
+\sum_{\ell} f_{\ell,s,t} = 0 \quad\text{pour chaque secteur } s .
 \end{gather*}
 En particulier, la variation du refinancement $\Delta L^{\mathit{CB}}$ n'a qu'une source, la ligne 21, flux décidé en phase 8\,(c) ; aucune règle ne corrige un solde de réserves négatif en l'ajoutant au refinancement.
 
@@ -487,7 +473,7 @@ jamais une fraction du stock $E^{\mathit{CB}}$. Ses trois termes reposent sur de
 
 \textbf{Encaisse du Trésor et émission des titres publics.} Sans avances, le compte du Trésor $M^G$ n'est jamais négatif. L'État émet ses titres après les règlements du pas, en phase 7 (décision M22, lecture (f)) : il émet le besoin réalisé du pas,
 \begin{multline*}
-\Delta B_H^p + \Delta B_{\mathit{Bk}}^p + \Delta B_{\mathit{CB}}^p = G + \mathit{Tr} + i_B B_H/n_a + i_B B_{\mathit{Bk}}/n_a + i_B B_{\mathit{CB}}/n_a\\
+\Delta B_H^{\mathrm{prim}} + \Delta B_{\mathit{Bk}}^{\mathrm{prim}} + \Delta B_{\mathit{CB}}^{\mathrm{prim}} = G + \mathit{Tr} + i_B B_H/n_a + i_B B_{\mathit{Bk}}/n_a + i_B B_{\mathit{CB}}/n_a\\
 - T_H - T_F - \Pi^{\mathit{CB}} + M^{G*} - M^G_t ,
 \end{multline*}
 de sorte que le compte du Trésor clôt à l'encaisse stationnaire $M^{G*}$. Celle-ci couvre les paiements du pas qui précèdent l'émission ; elle n'excède pas les paiements bruts d'un pas avant impôts, $G + \mathit{Tr} + i_B B/n_a$, soit environ un mois de dépenses publiques. Elle n'est pas un paramètre : c'est une variable de l'état initial résolu, calculée par le script d'état stationnaire selon la règle du bloc État et dette (\S\ref{sec:finances_publiques}), et publiée. Un placement raté laisse $M^G$ sous $M^{G*}$, et le rationnement de la dépense frappe le tour suivant : le joueur dispose d'un tour de signal. L'émission de titres n'est pas un levier du socle.
@@ -498,14 +484,14 @@ de sorte que le compte du Trésor clôt à l'encaisse stationnaire $M^{G*}$. Cel
 \subsection{Ordre des phases d'un pas}
 \label{sec:cadre-phases}
 \begin{proposee}[ordre des phases, décision M22]
-Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'ouverture, notée phase 0 (tableau~\ref{tab:phases}) ; l'ordonnanceur les exécute dans cet ordre. Chaque flux s'exécute dans une phase et une seule ; un bloc ne lit que l'état d'ouverture, des variables produites dans une phase antérieure du même pas ou, dans sa propre phase, des variables produites avant lui dans l'ordre d'exécution déclaré de cette phase (sous-phases (a), (b), (c) de la phase 8 ; ordre des blocs des phases 1, 5 et 7, fixé par leurs fiches) ; la matrice de dépendance est donc triangulaire et aucune résolution simultanée n'est nécessaire. Les identités par pas sont vérifiées à la fin de chaque phase. Tous les règlements du pas précèdent la phase 8, où la banque centrale exécute ses opérations : aucune ligne touchant les réserves n'est exécutée après le refinancement de la phase 8\,(c), et les intérêts publics (phase 6) le précèdent. Les lignes 17, 20 et 22 sont les contreparties de règlement, appliquées par le noyau dans chaque phase.
+Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'ouverture, notée phase 0 (tableau~\ref{tab:phases}) ; l'ordonnanceur les exécute dans cet ordre. Chaque flux s'exécute dans une phase et une seule ; un bloc ne lit que l'état d'ouverture, des variables produites dans une phase antérieure du même pas ou, dans sa propre phase, des variables produites avant lui dans l'ordre d'exécution déclaré de cette phase (sous-phases (a), (b), (c) de la phase 8 ; ordre des blocs des phases 1, 4, 5 et 7, fixé par leurs fiches ; phase 4 : travail, puis production, décision M24, ADR 0007) ; la matrice de dépendance est donc triangulaire et aucune résolution simultanée n'est nécessaire. Les identités par pas sont vérifiées à la fin de chaque phase. Tous les règlements du pas précèdent la phase 8, où la banque centrale exécute ses opérations : aucune ligne touchant les réserves n'est exécutée après le refinancement de la phase 8\,(c), et les intérêts publics (phase 6) le précèdent. Les lignes 17, 20 et 22 sont les contreparties de règlement, appliquées par le noyau dans chaque phase.
 
-\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (point 15 de l'ADR 0005).
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle ; décision M22 (point 15 de l'ADR 0005) ; ordre interne de la phase 4 : décision M24, citant M22 (ADR 0007).
 \end{proposee}
 
 \begin{center}\small
 \begin{longtable}{>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{4.3cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.0cm}}
-\caption{Phases d'un pas (proposées, décision M22). Blocs qui écrivent, ce qu'ils lisent, lignes de la matrice des flux exécutées.}\label{tab:phases}\\
+\caption{Phases d'un pas (proposées, décision M22). Blocs qui écrivent, ce qu'ils lisent, lignes de la matrice des flux exécutées. Dans la colonne « Écrivent », « puis » marque l'ordre d'exécution déclaré dans la phase ; des blocs séparés par une virgule ne se lisent pas entre eux dans la phase, ou leur ordre reste à fixer par leurs fiches.}\label{tab:phases}\\
 \toprule
 \textbf{Phase} & \textbf{Contenu} & \textbf{Écrivent} & \textbf{Lisent} & \textbf{Lignes}\\
 \midrule
@@ -518,8 +504,8 @@ Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'o
 1 Décision & lecture des leviers ; salaires ; anticipations ; indice des prix et glissement annuel (registre) ; règle de taux ; résultat de la banque centrale du pas, $\Pi^{\mathit{CB}}$ (versé en 8\,(b)) & moteur (leviers), travail, prix, banque centrale & ouverture, registre & aucune\\
 2 Plans & production visée, demande de travail, budget de consommation, investissement visé, dépense publique du pas & production, ménages, investissement, État & phase 1 & aucune\\
 3 Crédit & demande et offre de crédit & investissement, banque & phase 2 & 18\\
-4 Production et travail & emploi, production, stocks ; salaires versés & production, travail & phases 2 et 3 & 5\\
-5 Marché des biens & ventes (consommation, dépense publique, investissement) ; prix du pas ; variation des stocks & production, prix, ménages, investissement, État & phases 2 et 4 & 1 à 4\\
+4 Production et travail & emploi, production, stocks ; salaires versés & travail, puis production & phases 2 et 3 ; dans la phase, le bloc production lit l'emploi écrit par le bloc travail & 5\\
+5 Marché des biens & ventes (consommation, dépense publique, investissement) ; prix du pas ; variation des stocks & prix, puis production, puis ménages, investissement, État & phases 2 et 4 & 1 à 4\\
 6 Revenus et impôts & intérêts sur crédits, dépôts et titres ; impôts ; transferts ; dividendes ; amortissement & État, banque, investissement & ouverture, phases 1 et 5 & 6 à 10, 11a à 11c, 14, 15\\
 7 Titres publics & émission ou rachat ; souscriptions ; achats décidés de la banque centrale & État, ménages, banque, banque centrale & ouverture, phases 1, 5 et 6 & 19a, 19b\\
 8 Monnaie centrale & (a) intérêts sur réserves et refinancement ; (b) versement du résultat de la banque centrale ; (c) position de réserves après tous les règlements, puis refinancement décidé & banque centrale (a, b), banque (c) & tout ce qui précède & 12, 13, puis 16, puis 21\\
@@ -543,7 +529,310 @@ Un pas se déroule en neuf phases, numérotées de 1 à 9 et précédées de l'o
 \section{Production et stocks}
 \label{sec:production}
 %=====================================================================
-Ce bloc portera le côté offre : fonction de production, nombre de secteurs du socle, stocks et production visée. Il s'ouvre au jalon J1, sur décision du mainteneur après instruction de la fiche comparative \nolinkurl{docs/blocs/production.md} (expert pilote : \texttt{macro}). Aucune équation n'est encore spécifiée.
+Ce bloc porte le côté offre du socle : technique de production, ventes anticipées, production visée et production du pas, ventes et rationnement, stocks de produits finis en volume et en valeur, volume du capital et capacité normale. Il lit l'état d'ouverture, le salaire nominal et l'emploi effectif écrits par le bloc travail (\S\ref{sec:travail}), le prix du pas écrit par le bloc prix (\S\ref{sec:prix}) et les plans de demande des ménages, de l'investissement et de l'État. Il transmet la demande de travail au bloc travail et le coût unitaire au bloc prix ; il propose au noyau la ligne 4 de la matrice des flux (variation des stocks). Les lignes 1 à 3 (ventes) sont proposées par les blocs acheteurs, ménages (\S\ref{sec:menages}), investissement (\S\ref{sec:investissement}) et État (\S\ref{sec:finances_publiques}), sur les volumes que ce bloc leur sert ; la ligne 5 (salaires) relève du bloc travail, la ligne 8 (amortissement) du bloc investissement.
+
+\begin{proposee}[production et stocks, décision M24]
+Le bloc a été retenu par la décision M24 du mainteneur (02/10/2026) sur la fiche comparative « production et stocks » (\nolinkurl{docs/blocs/production.md}, \S~8 : option C ; expert pilote \texttt{macro}, avis de \texttt{jeu}) : le socle commun de la fiche (\S~3.N), à bien unique ($J = 1$), avec des équations indexées par le secteur productif $j$ dès le socle. Il reprend la forme du modèle « DIS » de W.~Godley et M.~Lavoie (\emph{Monetary Economics: An Integrated Approach to Credit, Money, Income, Production and Wealth}, Palgrave Macmillan, 2007, chap.~9, « A Model with Private Bank Money, Inventories and Inflation ») : production égale aux ventes anticipées plus une correction des stocks, emploi égal à la production divisée par la productivité, stocks valorisés au coût. Les équations de ce modèle ont été lues dans deux reproductions secondaires concordantes, non dans le livre : la vignette \nolinkurl{vignettes/articles/gl6-dis.Rmd} du paquet R \texttt{sfcr} (J.~Macalós, dépôt GitHub \nolinkurl{joaomacalos/sfcr}) et \nolinkurl{DIS.py} du dépôt GitHub \nolinkurl{RWGreber3/Monetary-Economics}. Le socle les modifie sur les points suivants, chacun motivé dans la fiche :
+\begin{enumerate}[label=(\alph*)]
+\item des ventes anticipées corrigées de la tendance et un terme de croissance du stock cible, sans lesquels le ratio stationnaire des stocks aux ventes dépend des vitesses d'ajustement sous croissance (\S\ref{sec:production-visee}) ;
+\item des anticipations assises sur la demande adressée, servie ou non, et non sur les ventes (décision M24, lecture (c)) ;
+\item des stocks valorisés au coût moyen pondéré, et non au coût unitaire courant (lecture (a), \S\ref{sec:production-valorisation}) ;
+\item une capacité normale du capital tenue comme indicateur, sans plafond (lecture (e), \S\ref{sec:production-technique}) ;
+\item l'écriture par secteur $j$, avec un nombre de secteurs $J$ déclaré (lecture (d)).
+\end{enumerate}
+Aucun code ne l'exécute encore : le module \nolinkurl{src/nations/blocs/production.py} sera écrit au jalon J3, par une issue qui reste à ouvrir. D'ici là, aucune équation de cette section n'est numérotée : chaque mécanisme est écrit dans un encadré proposé, en forme non numérotée, repéré par l'identifiant N1 à N11 de la fiche (\S~3.N), et commenté selon les quatre rubriques de lecture (variables, sens, hypothèses, limites). Les labels de radical \texttt{production} (tableau~\ref{tab:production-equations}) ne seront posés qu'avec leur balise dans le code ; les identifiants N1 à N11 disparaîtront alors.
+
+Une grandeur en volume s'exprime en unités de volume du bien (u.v.), une grandeur nominale en unités monétaires (u.m.) ; l'unité de volume est fixée par une seule normalisation de l'état initial résolu (prix initial ou productivité initiale, l'une des deux seulement), arrêtée au jalon J3 avec le script d'état stationnaire ; aucun ratio du bloc n'en dépend (\S\ref{sec:production-stationnaire}). Le volume d'une grandeur nominale du cadre porte l'exposant $\mathrm{vol}$ (glossaire, \S\ref{sec:glossaire}) : $\mathit{IN}^{\mathrm{vol}}$, $K^{\mathrm{vol}}$, $C^{\mathrm{vol}}$, $G^{\mathrm{vol}}$, $I^{\mathrm{vol}}$.
+
+\textbf{Statut.} Donné mécanisme par mécanisme. \textbf{Provenance.} Nouvelle, sur la forme du modèle DIS de Godley et Lavoie ; décision M24.
+\end{proposee}
+
+\begin{center}\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.8cm}>{\raggedright\arraybackslash}p{4.8cm}>{\raggedright\arraybackslash}p{1.0cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{4.5cm}}
+\caption{Équations du bloc production et stocks (proposées, décision M24) : ce que chacune détermine, phase où elle s'exécute, statut, label prévu au jalon J3 avec sa balise.}\label{tab:production-equations}\\
+\toprule
+\textbf{Id.} & \textbf{Ce que l'équation détermine} & \textbf{Phase} & \textbf{Statut} & \textbf{Label prévu (J3)}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Id.} & \textbf{Ce que l'équation détermine} & \textbf{Phase} & \textbf{Statut} & \textbf{Label prévu (J3)}\\
+\midrule
+\endhead
+N1 & ventes anticipées pour le pas suivant, $v^e_{j,t+1}$ & 5 & approchée & \texttt{eq:production-\allowbreak ventes-anticipees}\\
+N2 & stock cible, $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$ & 2 & choix de conception & \texttt{eq:production-\allowbreak stock-cible}\\
+N3 & production visée, $y^{\ast}_{j,t}$ & 2 & approchée & \texttt{eq:production-\allowbreak visee}\\
+N4 & demande de travail, $N^{\ast}_{j,t}$ & 2 & dérivée (technique à coefficients fixes) & \texttt{eq:production-\allowbreak demande-travail}\\
+N5 & production du pas, $y_{j,t}$ & 4 & dérivée (technique à coefficients fixes) & \texttt{eq:production-\allowbreak realisee}\\
+N6 & ventes et volumes servis par acheteur, $v_{j,t}$, $v_{s,j,t}$ & 5 & dérivée (disponibilité) ; choix de conception (rationnement proportionnel) & \texttt{eq:production-\allowbreak ventes}\\
+N7 & stock en volume, $\mathit{IN}^{\mathrm{vol}}_{j,t+1}$ & 5 & dérivée & \texttt{eq:production-\allowbreak stock-volume}\\
+N8 & coût unitaire des entrées en stock, $\mathit{UC}_{j,t}$ & 2 ou 4 (fiche prix) & choix de conception & \texttt{eq:production-\allowbreak cout-unitaire}\\
+N8 & coût moyen pondéré et variation des stocks (ligne 4), $\mathit{cm}_{j,t}$, $\Delta\mathit{IN}_{j,t}$ & 5 & choix de conception & \texttt{eq:production-\allowbreak variation-stocks}\\
+N9 & productivité du pas suivant, $\mathit{pr}_{j,t+1}$ & 5 & choix de conception & \texttt{eq:production-\allowbreak productivite}\\
+N10 & volume du capital, $K^{\mathrm{vol}}_{j,t+1}$ & 5 & dérivée & \texttt{eq:production-\allowbreak capital-volume}\\
+N11 & capacité normale et taux d'utilisation, $y^{\mathrm{cap}}_{j,t}$, $\mathit{tu}_{j,t}$ & 4 & choix de conception & \texttt{eq:production-\allowbreak capacite}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{Technique, productivité et capacité normale}
+\label{sec:production-technique}
+\begin{proposee}[technique de production, décision M24]
+\textbf{Technique à coefficients fixes en travail.} Produire $y$ unités de volume au pas $t$ requiert $y/\mathit{pr}_{j,t}$ personnes ; le capital ne contraint pas la production, il en mesure la capacité normale. La productivité suit une tendance (N9) et la capacité normale est un indicateur (N11) :
+\begin{equation*}
+\mathit{pr}_{j,t+1} = \mathit{pr}_{j,t}\Bigl(1 + \frac{g_{\mathit{pr}}}{n_a}\Bigr), \tag{N9}
+\end{equation*}
+\begin{equation*}
+y^{\mathrm{cap}}_{j,t} = \frac{K^{\mathrm{vol}}_{j,t}}{n_a\,\kappa_j}, \qquad \mathit{tu}_{j,t} = \frac{y_{j,t}}{y^{\mathrm{cap}}_{j,t}} . \tag{N11}
+\end{equation*}
+
+\variables $\mathit{pr}_{j,t}$ : productivité du travail du secteur $j$, valeur d'ouverture du pas $t$, en u.v. par personne et par pas ; $g_{\mathit{pr}}$ : croissance annuelle tendancielle de la productivité, par an ; $y^{\mathrm{cap}}_{j,t}$ : capacité normale, en u.v. par pas ; $K^{\mathrm{vol}}_{j,t}$ : volume du capital à l'ouverture, en u.v. (\S\ref{sec:production-capital}) ; $\kappa_j$ : rapport du capital à la production annuelle à capacité normale, en années ; $y_{j,t}$ : production du pas (\S\ref{sec:production-ventes}) ; $\mathit{tu}_{j,t}$ : taux d'utilisation, fraction de dénominateur $y^{\mathrm{cap}}_{j,t}$, fenêtre le pas.
+\sens La productivité du travail croît à un rythme fixe. La capacité normale est la production que le capital permet à son utilisation normale ; le taux d'utilisation compare la production du pas à cette capacité.
+\hyp Rendements constants ; aucune substitution entre capital et travail. Croissance de la productivité exogène au socle, convertie par la règle linéaire (décision M24, lecture (f)) : $g_{\mathit{pr}}/n_a$ par pas, soit une croissance annuelle effective de $(1 + g_{\mathit{pr}}/n_a)^{n_a} - 1$, 2,0184\,\% pour $g_{\mathit{pr}} = 2\,\%$ par an, publiée avec l'état stationnaire (\S\ref{sec:cadre-calendrier}).
+\limites Aucun plafond : $\mathit{tu}$ peut dépasser 1 (heures supplémentaires) ; la seule contrainte physique porte sur l'emploi, au plus égal à la population active, borne du bloc travail inactive à l'état stationnaire. Ce que le taux d'utilisation déclenche (prix, investissement) relève des blocs prix et investissement (issue \#37) ; s'ils ne lui donnent aucun effet, il sort de la restitution (\S\ref{sec:production-restitution}). Sans produit marginal, le partage de la valeur ajoutée n'est pas ancré par la technique : il relève de la marge (\S\ref{sec:prix}). Un choc de niveau de productivité (jalon J5) modifiera $\mathit{pr}$ sans réécrire N9.
+
+\textbf{Statut.} Technique à coefficients fixes, N9 et N11 : choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-1), sur la forme du modèle DIS ($N = y/\mathit{pr}$) ; décision M24, lectures (e) et (f).
+\end{proposee}
+
+\subsection{Ventes anticipées, stock cible et production visée}
+\label{sec:production-visee}
+\begin{proposee}[ventes anticipées, stock cible, production visée et demande de travail, décision M24]
+Les ventes anticipées sont formées en phase 5 et tenues à la clôture (N1) ; le stock cible, la production visée et la demande de travail sont des plans de la phase 2 (N2 à N4) :
+\begin{equation*}
+v^e_{j,t+1} = \Bigl(1 + \frac{g}{n_a}\Bigr)\Bigl[\Bigl(1 - \frac{\lambda_v}{n_a}\Bigr) v^e_{j,t} + \frac{\lambda_v}{n_a}\, d_{j,t}\Bigr], \tag{N1}
+\end{equation*}
+\begin{equation*}
+\mathit{IN}^{\mathrm{vol}\ast}_{j,t} = n_a\,\sigma_j\, v^e_{j,t}, \tag{N2}
+\end{equation*}
+\begin{equation*}
+y^{\ast}_{j,t} = \max\Bigl\{0,\; v^e_{j,t} + \frac{g}{n_a}\,\mathit{IN}^{\mathrm{vol}\ast}_{j,t} + \frac{\lambda_{\mathit{IN}}}{n_a}\bigl(\mathit{IN}^{\mathrm{vol}\ast}_{j,t} - \mathit{IN}^{\mathrm{vol}}_{j,t}\bigr)\Bigr\}, \tag{N3}
+\end{equation*}
+\begin{equation*}
+N^{\ast}_{j,t} = \frac{y^{\ast}_{j,t}}{\mathit{pr}_{j,t}} . \tag{N4}
+\end{equation*}
+
+\variables $v^e_{j,t}$ : ventes anticipées pour le pas $t$, formées en phase 5 du pas $t-1$, en u.v. par pas ; $d_{j,t}$ : demande adressée au secteur $j$ au pas $t$, servie ou non (\S\ref{sec:production-ventes}), en u.v. par pas ; $\lambda_v$, $\lambda_{\mathit{IN}}$ : vitesses annuelles d'ajustement des ventes anticipées et des stocks, par an ; $\sigma_j$ : stock cible, en années de ventes (restitué en mois : $12\sigma_j$) ; $g$ : croissance annuelle stationnaire de la production, par an ; $\mathit{IN}^{\mathrm{vol}}_{j,t}$ : stock de produits finis en volume, ouverture, en u.v. ; $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$ : stock cible, en u.v. ; $y^{\ast}_{j,t}$ : production visée, en u.v. par pas ; $N^{\ast}_{j,t}$ : demande de travail, en personnes, transmise au bloc travail ; $\mathit{pr}_{j,t}$ : productivité (\S\ref{sec:production-technique}).
+\sens Les entreprises anticipent des ventes qui suivent la demande avec retard, autour de la tendance. Elles visent un stock proportionnel aux ventes anticipées et produisent ces ventes, plus ce qu'il faut pour que le stock cible croisse avec la tendance, plus une fraction de l'écart entre le stock cible et le stock d'ouverture. La demande de travail est l'emploi que requiert la production visée.
+\hyp Anticipation adaptative autour d'une tendance connue ; $g$ n'est pas un paramètre libre mais une grandeur dérivée, $g = n_a\bigl[(1 + g_{\mathit{pr}}/n_a)(1 + g_N/n_a) - 1\bigr]$, où $g_N$ est la croissance annuelle de la population active (blocs travail et ménages) ; $g = g_{\mathit{pr}}$ si la population active est constante. L'anticipation lit la demande adressée et non les ventes : un rationnement ne déprime pas les ventes anticipées, si bien qu'une pénurie ne s'entretient pas d'elle-même ; l'état stationnaire est le même dans les deux cas. Vitesses déclarées : $0 < \lambda_v \le n_a$, $0 < \lambda_{\mathit{IN}} \le n_a$ (\S\ref{sec:production-conditions}).
+\limites \emph{Vitesses et état d'arrivée.} Sur une trajectoire où la demande croît de $g/n_a$ par pas, N1 a pour point fixe $v^e = v$ quel que soit $\lambda_v$ : si $v^e_{j,t} = \chi\, d_{j,t}$ ($\chi$ et, plus bas, $x$ sont des grandeurs locales de la dérivation) avec $d_{j,t+1} = (1 + g/n_a)\, d_{j,t}$, N1 impose $\chi = (1 - \lambda_v/n_a)\chi + \lambda_v/n_a$, d'où $\chi = 1$ (si $\lambda_v > 0$). Avec la loi des stocks N7, N3 donne pour l'écart relatif au stock cible $x = (\mathit{IN}^{\mathrm{vol}} - \mathit{IN}^{\mathrm{vol}\ast})/\mathit{IN}^{\mathrm{vol}\ast}$ la récurrence $x_{t+1}(1 + g/n_a) = (1 - \lambda_{\mathit{IN}}/n_a)\,x_t$, dont le seul point fixe est $x = 0$ : $\mathit{IN}^{\mathrm{vol}} = n_a \sigma_j v$ exactement, quel que soit $\lambda_{\mathit{IN}}$. Ni les vitesses ni la durée du pas ne déterminent donc l'état d'arrivée ; sans les deux termes en $g$, elles le détermineraient (\S\ref{sec:ecartees}). \emph{Borne.} Le plancher $y^{\ast} \ge 0$ est physique, sans paramètre ; il ne joue qu'après un effondrement de la demande, quand le stock dépasse la cible d'environ $n_a/\lambda_{\mathit{IN}}$ pas de ventes anticipées (8 pour $\lambda_{\mathit{IN}} = 1{,}5$ par an) ; il est inactif à l'état stationnaire. La demande de travail n'est pas l'emploi : le bloc travail peut en servir moins (contrainte d'offre de travail) ou en tenir davantage (rétention de main-d'œuvre).
+
+\textbf{Statut.} N1 et N3 : approchées ; N2 : choix de conception ; N4 : dérivée de la technique à coefficients fixes. \textbf{Provenance.} Nouvelle : forme du modèle DIS de Godley et Lavoie (2007, chap.~9), modifiée par la tendance des ventes anticipées et la croissance du stock cible (fiche, \S~3.N-2) ; anticipation assise sur la demande adressée, reprise du moteur v2.0 (\texttt{archive/v2.0/prototype/model.py}, \texttt{\_step\_normal}, moyenne des commandes) ; décision M24, lecture (c).
+\end{proposee}
+
+\subsection{Production du pas, ventes et rationnement, stocks en volume}
+\label{sec:production-ventes}
+\begin{proposee}[production, ventes, rationnement et stocks en volume, décision M24]
+La production du pas s'exécute en phase 4, après l'emploi effectif écrit par le bloc travail (N5) ; les ventes, le rationnement et le stock de clôture en volume, en phase 5 (N6 et N7) :
+\begin{equation*}
+y_{j,t} = \min\bigl\{y^{\ast}_{j,t},\; \mathit{pr}_{j,t}\, N_{j,t}\bigr\}, \tag{N5}
+\end{equation*}
+\begin{equation*}
+v_{j,t} = \min\bigl\{d_{j,t},\; \mathit{IN}^{\mathrm{vol}}_{j,t} + y_{j,t}\bigr\}, \qquad d_{j,t} = \sum_{s \in \{H, F, G\}} d_{s,j,t}, \qquad v_{s,j,t} = \frac{v_{j,t}}{d_{j,t}}\, d_{s,j,t}, \tag{N6}
+\end{equation*}
+\begin{equation*}
+\mathit{IN}^{\mathrm{vol}}_{j,t+1} = \mathit{IN}^{\mathrm{vol}}_{j,t} + y_{j,t} - v_{j,t} . \tag{N7}
+\end{equation*}
+
+\variables $N_{j,t}$ : emploi effectif du pas, écrit par le bloc travail en phase 4, en personnes ; $y_{j,t}$ : production du pas, en u.v. par pas ; $d_{s,j,t}$ : demande en volume adressée au secteur $j$ par l'acheteur $s$ (ménages $H$, entreprises $F$ pour l'investissement, État $G$), égale à son plan de dépense de la phase 2, en u.m., divisé par le prix du pas $p_{j,t}$ (\S\ref{sec:prix}), en u.v. par pas ; $v_{j,t}$ : ventes du pas, en u.v. par pas ; $v_{s,j,t}$ : volume servi à l'acheteur $s$, en u.v. par pas ; $\mathit{IN}^{\mathrm{vol}}_{j,t}$, $\mathit{IN}^{\mathrm{vol}}_{j,t+1}$ : stock de produits finis en volume, ouverture et clôture, en u.v.
+\sens On produit ce qu'on a prévu, dans la limite du travail disponible. On vend la demande adressée, dans la limite du stock d'ouverture et de la production du pas ; si la demande dépasse ce disponible, chaque acheteur reçoit la même fraction de sa demande. Le stock varie de la production moins les ventes.
+\hyp Bien unique homogène ($J = 1$), vendu au même prix $p_{j,t}$ à tous les acheteurs. Les lignes 1 à 3 de la matrice des flux sont les ventes exécutées, proposées par les blocs acheteurs sur les volumes servis : $C = p_{j,t}\, C^{\mathrm{vol}}_t$, $G = p_{j,t}\, G^{\mathrm{vol}}_t$, $I = p_{j,t}\, I^{\mathrm{vol}}_t$, avec $C^{\mathrm{vol}}_t = v_{H,j,t}$, $I^{\mathrm{vol}}_t = v_{F,j,t}$ et $G^{\mathrm{vol}}_t = v_{G,j,t}$ sous $J = 1$. Rationnement proportionnel, sans paramètre ni priorité (décision M24, lecture (g)).
+\limites Bornes sans paramètre. La disponibilité, $v \le \mathit{IN}^{\mathrm{vol}} + y$, rend tout stock négatif impossible ; elle est inactive à l'état stationnaire. La technique, $y \le \mathit{pr}\, N$, déclarée comme telle, voit ses deux termes égaux à l'état stationnaire, sans rationnement. Si $d_{j,t} = 0$, ventes et volumes servis sont nuls. La demande non servie, $d_{s,j,t} - v_{s,j,t}$ par acheteur, est une grandeur restituée (\S\ref{sec:production-restitution}), ni un flux ni une variable d'état : le budget non dépensé reste en dépôts ou sur le compte du Trésor, et ce qu'en font les acheteurs au pas suivant relève de leurs blocs. Si l'emploi effectif dépasse $y^{\ast}/\mathit{pr}$ (rétention de main-d'œuvre, bloc travail), la masse salariale versée au-delà de $\mathit{UC}\cdot y$ n'est pas portée en stock : c'est une charge du pas (\S\ref{sec:production-valorisation}). Une priorité de l'État au rationnement n'existe pas au socle ; elle relèverait d'un levier éventuel du mode planifié (jalon J7).
+
+\textbf{Statut.} N5 : dérivée de la technique à coefficients fixes ; N6 : dérivée pour la disponibilité, choix de conception pour la proportionnalité ; N7 : dérivée (conservation des volumes). \textbf{Provenance.} Nouvelle (fiche, \S~3.N-3) ; rationnement proportionnel de la v1.5 (\S~« Marchés des biens et commerce international », paragraphe « Rationnement »), sans sa loi des stocks ; ordre « travail, puis production » en phase 4 : ADR 0007 ; décision M24, lectures (b) et (g).
+\end{proposee}
+
+\subsection{Valorisation des stocks au coût moyen pondéré}
+\label{sec:production-valorisation}
+\begin{proposee}[coût unitaire et variation des stocks, ligne 4, décision M24]
+Les entrées en stock sont valorisées au coût unitaire du pas, les sorties au coût moyen pondéré du stock disponible ; la ligne 4 de la matrice des flux en découle, en phase 5 (le coût unitaire est écrit en phase 2 ou en phase 4, \S\ref{sec:production-phases}) :
+\begin{equation*}
+\mathit{UC}_{j,t} = \frac{W_t}{\mathit{pr}_{j,t}}, \tag{N8}
+\end{equation*}
+\begin{equation*}
+\mathit{cm}_{j,t} = \frac{\mathit{IN}_{j,t} + \mathit{UC}_{j,t}\, y_{j,t}}{\mathit{IN}^{\mathrm{vol}}_{j,t} + y_{j,t}}, \qquad
+\Delta\mathit{IN}_{j,t} = \mathit{UC}_{j,t}\, y_{j,t} - \mathit{cm}_{j,t}\, v_{j,t}, \tag{N8}
+\end{equation*}
+avec $\Delta\mathit{IN}_{j,t} = 0$ si $\mathit{IN}^{\mathrm{vol}}_{j,t} + y_{j,t} = 0$ (alors $v_{j,t} = 0$).
+
+\variables $W_t$ : salaire nominal par personne employée, fixé par le bloc travail en phase 1, en u.m. par personne et par pas ; $\mathit{UC}_{j,t}$ : coût unitaire des entrées en stock, en u.m. par u.v. ; $\mathit{IN}_{j,t}$ : stocks en valeur, poste du cadre (\S\ref{sec:cadre-bilans}), ouverture, en u.m. (sous $J = 1$, $\mathit{IN}_{j,t} = \mathit{IN}$) ; $\mathit{cm}_{j,t}$ : coût moyen pondéré du stock disponible dans le pas, en u.m. par u.v. ; $\Delta\mathit{IN}_{j,t}$ : variation des stocks, ligne 4, en u.m. par pas.
+\sens Le stock est enregistré à ce qu'il a coûté : ce qui entre au coût du pas, ce qui sort au coût moyen du stock disponible. Une hausse des coûts n'enrichit pas le stock existant ; l'écart entre le prix de vente et le coût moyen est un gain réalisé à la vente, dans la marge.
+\hyp Coût unitaire réduit au coût salarial ($J = 1$, sans intrants). La règle découle de N8 et N7 : $\mathit{IN}_{j,t+1} = \mathit{IN}_{j,t} + \Delta\mathit{IN}_{j,t} = \mathit{cm}_{j,t}\,\mathit{IN}^{\mathrm{vol}}_{j,t+1}$ après chaque pas, si bien que $\mathit{IN}$ n'est jamais négatif. $\mathit{IN}$ ne varie que par la ligne 4, sans réévaluation, conformément à l'encadré de portée du cadre (\S\ref{sec:cadre-phases}, « Ce que le moteur ne fait pas ») ; la ligne 4 garde sa signature sans effet sur $M$ ni sur $H$ (tableau~\ref{tab:portes-monnaie}).
+\limites La valeur comptable des stocks diffère de leur valeur au coût du pas sous inflation : leur rapport stationnaire $\bar\rho_{\mathit{IN}}$ est donné au \S\ref{sec:production-stationnaire}, avec sa dépendance à $n_a$. La masse salariale versée au-delà de $\mathit{UC}\cdot y$ (rétention de main-d'œuvre) est une charge du pas, non portée en stock. Le terme d'intrants du coût unitaire, $\sum_k a_{kj}\, p_k$, s'ajoutera au jalon J5 sans réécrire N8. Le coût moyen pondéré est l'une des deux formules de coût admises par la norme comptable IAS~2 « Stocks » (\S~25, avec le premier entré, premier sorti), texte de la norme lu par extraits secondaires seulement : c'est un usage comptable, non un fondement théorique.
+
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-4) ; décision M24, lecture (a).
+\end{proposee}
+
+\subsection{Volume du capital}
+\label{sec:production-capital}
+\begin{proposee}[volume du capital, décision M24]
+Le volume du capital est tenu par ce bloc, qui exécute les livraisons d'investissement et lit le capital pour la capacité normale ; il est mis à jour en phase 5 (N10) :
+\begin{equation*}
+K^{\mathrm{vol}}_{j,t+1} = \Bigl(1 - \frac{\delta}{n_a}\Bigr) K^{\mathrm{vol}}_{j,t} + I^{\mathrm{vol}}_{j,t} . \tag{N10}
+\end{equation*}
+
+\variables $K^{\mathrm{vol}}_{j,t}$, $K^{\mathrm{vol}}_{j,t+1}$ : volume du capital, ouverture et clôture, en u.v. ; $\delta$ : taux d'amortissement annuel du cadre (ligne 8), par an ; $I^{\mathrm{vol}}_{j,t}$ : volume d'investissement livré dans le pas, après rationnement (N6), en u.v. par pas.
+\sens Le capital en volume perd chaque mois une fraction $\delta/n_a$ et s'accroît de l'équipement livré.
+\hyp Sous $J = 1$, l'équipement est le bien unique, au prix $p_{j,t}$. Le bloc investissement (\S\ref{sec:investissement}) décide l'investissement visé en phase 2, lit $K^{\mathrm{vol}}$ à l'ouverture et écrit les lignes 3 et 8 en valeur comptable ; cette répartition est à confirmer par sa fiche.
+\limites Le capital $K$ du cadre est tenu en valeur comptable (\S\ref{sec:cadre-bilans}) et la ligne 8 vaut $\delta K/n_a$ sur cette valeur. Sur une trajectoire où le volume croît de $g/n_a$ par pas et le prix de $(1 + \bar\pi)^{1/n_a} - 1$ par pas ($\bar\pi$ : glissement annuel stationnaire de l'indice des prix, \S\ref{sec:cadre-calendrier}), le rapport stationnaire de la valeur comptable à la valeur au prix courant vaut
+\begin{equation*}
+\bar\rho_K = \frac{K}{p_{j,t}\, K^{\mathrm{vol}}_{j,t}} = \frac{g + \delta}{n_a\bigl[(1 + \bar\pi)^{1/n_a}(1 + g/n_a) - 1\bigr] + \delta} ,
+\end{equation*}
+soit 1 pour $\bar\pi = 0$, 0,7791 pour $g = \bar\pi = 2\,\%$ et $\delta = 5\,\%$ par an (valeur illustrative de $\delta$, fixée par le bloc investissement), et 0,4221 pour $\bar\pi = 10\,\%$ : à 2\,\% d'inflation, l'amortissement comptable est inférieur d'environ 22\,\% à l'amortissement au prix courant. Ce constat est transmis au bloc investissement : un rapport du capital au PIB doit dire s'il est comptable ou en volume valorisé, et une correction ad hoc de l'amortissement relèverait des instabilités 10 et 11 (tableau~\ref{tab:instabilites}).
+
+\textbf{Statut.} Dérivée (accumulation du capital en volume). \textbf{Provenance.} Nouvelle (fiche, \S~3.N-5) ; décision M24 (question Q4 de la fiche : volume du capital au bloc production).
+\end{proposee}
+
+\subsection{Phases, ordre interne et lignes de flux}
+\label{sec:production-phases}
+\begin{proposee}[phases du bloc production et stocks, décision M24]
+Le bloc s'exécute dans les phases 2, 4 et 5 du cadre (tableau~\ref{tab:phases}) ; il ne lit que l'état d'ouverture, des variables d'une phase antérieure, ou des variables écrites avant lui dans l'ordre interne déclaré de sa phase (tableau~\ref{tab:production-phases}).
+\begin{itemize}
+\item \textbf{Phase 2.} Le bloc ne lit aucun autre plan de la phase 2 : cette phase n'a pas besoin d'ordre interne.
+\item \textbf{Phase 4 : travail, puis production} (décision M24, lecture (b), citant M22 ; ADR 0007). Le bloc travail écrit l'emploi effectif $N_{j,t}$ et exécute la ligne 5 sur cet emploi ; le bloc production lit $N_{j,t}$ et écrit la production, la capacité normale et le taux d'utilisation. L'ordre est une déclaration statique, indépendante des données du pas (\S\ref{sec:cadre-phases}).
+\item \textbf{Phase 5 : prix, puis production, puis les acheteurs.} Le bloc prix écrit $p_{j,t}$ sans lire les ventes du pas ; le bloc production calcule les ventes, le rationnement et la ligne 4 ; les blocs ménages, investissement et État proposent ensuite les lignes 1, 3 et 2 sur les volumes servis multipliés par $p_{j,t}$, dans un ordre indifférent, puisqu'ils ne se lisent pas les uns les autres. Cet ordre est fixé par les fiches (\S\ref{sec:cadre-phases}) et ne demande pas de décision citant M22.
+\end{itemize}
+La matrice des lectures reste triangulaire : aucune résolution simultanée. Le coût unitaire $\mathit{UC}_{j,t}$ ne dépend que de $W_t$ (phase 1) et de $\mathit{pr}_{j,t}$ (ouverture) ; le bloc l'écrit en phase 2 ou en phase 4, seules phases antérieures à la phase 5 où il s'exécute, puisque le bloc prix le lit en phase 5 avant lui ; le choix entre les deux est fixé avec la fiche « prix », qui dira aussi comment le terme d'intrants du jalon J5, assis sur des prix, garde la matrice des lectures triangulaire.
+
+\textbf{Lignes de flux.} Le bloc propose la seule ligne 4. Les lignes 1 à 3 restent proposées par les blocs acheteurs, la ligne 5 par le bloc travail, la ligne 8 par le bloc investissement. Aucune ligne n'est ajoutée : la matrice des flux (tableau~\ref{tab:matrice-flux}) et les portes de la monnaie (tableau~\ref{tab:portes-monnaie}) sont inchangées.
+
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-6 et \S~9.4) ; décision M24 ; ADR 0007 pour la phase 4.
+\end{proposee}
+
+\begin{center}\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{1.1cm}>{\raggedright\arraybackslash}p{6.9cm}>{\raggedright\arraybackslash}p{6.9cm}}
+\caption{Lectures et écritures du bloc production et stocks, par phase (proposées, décision M24).}\label{tab:production-phases}\\
+\toprule
+\textbf{Phase} & \textbf{Le bloc lit} & \textbf{Le bloc écrit, ou propose au noyau}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Phase} & \textbf{Le bloc lit} & \textbf{Le bloc écrit, ou propose au noyau}\\
+\midrule
+\endhead
+2 & ouverture : $v^e_{j,t}$, $\mathit{IN}^{\mathrm{vol}}_{j,t}$, $\mathit{pr}_{j,t}$ ; $W_t$ (phase 1), si $\mathit{UC}_{j,t}$ est écrit dans cette phase & $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$, $y^{\ast}_{j,t}$, $N^{\ast}_{j,t}$ (vers le bloc travail) ; $\mathit{UC}_{j,t}$ (vers le bloc prix), en phase 2 ou en phase 4, choix fixé avec la fiche « prix »\\
+4 & phase 2 ($y^{\ast}_{j,t}$) ; ouverture ($K^{\mathrm{vol}}_{j,t}$, $\mathit{pr}_{j,t}$) ; $N_{j,t}$, écrit avant lui par le bloc travail dans la phase ; $W_t$ (phase 1), si $\mathit{UC}_{j,t}$ est écrit dans cette phase & $y_{j,t}$, $y^{\mathrm{cap}}_{j,t}$, $\mathit{tu}_{j,t}$ ; production visée non réalisée (restituée) ; $\mathit{UC}_{j,t}$, si la fiche « prix » le place dans cette phase\\
+5 & plans de dépense des ménages, de l'investissement et de l'État, en u.m. (phase 2) ; $p_{j,t}$, écrit avant lui par le bloc prix dans la phase ; $\mathit{UC}_{j,t}$ (phase 2 ou 4) ; $y_{j,t}$ (phase 4) ; ouverture ($v^e_{j,t}$, $\mathit{IN}^{\mathrm{vol}}_{j,t}$, $\mathit{IN}_{j,t}$, $K^{\mathrm{vol}}_{j,t}$, $\mathit{pr}_{j,t}$) & $v_{j,t}$ et $v_{s,j,t}$ ; demande non servie par acheteur (restituée) ; ligne 4, $\Delta\mathit{IN}_{j,t}$ ; $\mathit{IN}^{\mathrm{vol}}_{j,t+1}$, $K^{\mathrm{vol}}_{j,t+1}$, $v^e_{j,t+1}$, $\mathit{pr}_{j,t+1}$\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection{État stationnaire en forme fermée}
+\label{sec:production-stationnaire}
+\begin{proposee}[état stationnaire du bloc, décision M24]
+Sur une trajectoire où les volumes croissent au taux annuel $g$, soit $g/n_a$ par pas, où les prix et le coût unitaire croissent au même rythme, de $(1 + \bar\pi)^{1/n_a} - 1$ par pas ($\bar\pi$ : glissement annuel stationnaire de l'indice des prix, \S\ref{sec:cadre-calendrier} ; marge constante, hypothèse du bloc prix), et où la demande est servie, les règles du bloc donnent, sans simulation :
+\begin{itemize}
+\item ventes anticipées égales aux ventes : $v^e = v = d$ ;
+\item stock d'ouverture rapporté aux ventes du pas : $\mathit{IN}^{\mathrm{vol}}_{j,t}/v_{j,t} = n_a \sigma_j$, en pas de ventes, soit 1,4 pour $\sigma_j = 1{,}4/12$ an ($\sigma_j$ années de ventes) ;
+\item production rapportée aux ventes : $y/v = 1 + g\sigma_j$, soit 1,002333 pour $g = 2\,\%$ par an ;
+\item productivité rapportée à sa tendance : 1 ;
+\item taux d'utilisation : $\overline{\mathit{tu}} = n_a \kappa_j\, y/K^{\mathrm{vol}}$, conditionnel au rapport du capital en volume à la production annuelle, fixé par le bloc investissement ; par exemple 0,8 pour $\kappa_j = 2{,}4$ ans et un capital de 3 ans de production ;
+\item rapport de la valeur comptable des stocks à leur valeur au coût du pas :
+\begin{equation*}
+\bar\rho_{\mathit{IN}} = \frac{\mathit{IN}_{j,t}}{\mathit{UC}_{j,t}\,\mathit{IN}^{\mathrm{vol}}_{j,t}} = \frac{1}{1 + \bigl[(1 + \bar\pi)^{1/n_a} - 1\bigr]\Bigl(1 + \dfrac{n_a\sigma_j}{1 + g\sigma_j}\Bigr)} ,
+\end{equation*}
+soit 0,996057 pour $\bar\pi = 2\,\%$, 0,981246 pour 10\,\% et 0,923901 pour 50\,\% par an ($g = 2\,\%$, $\sigma_j = 1{,}4/12$ an) ;
+\item variation des stocks : $\Delta\mathit{IN} = \bigl[(1 + g/n_a)(1 + \bar\pi)^{1/n_a} - 1\bigr]\,\mathit{IN}$, soit 0,33210\,\% de $\mathit{IN}$ par pas pour $g = \bar\pi = 2\,\%$ ;
+\item rapport de la valeur comptable du capital à sa valeur au prix courant : $\bar\rho_K$ (\S\ref{sec:production-capital}).
+\end{itemize}
+Ni $\lambda_v$, ni $\lambda_{\mathit{IN}}$ n'entrent dans ces formes (\S\ref{sec:production-visee}). Les ratios en base annuelle n'y dépendent pas de $n_a$ ($\sigma_j$ et $\kappa_j$ sont en années). \textbf{Dépendance déclarée à $n_a$} : seuls $\bar\rho_{\mathit{IN}}$ et $\bar\rho_K$ en dépendent, à l'ordre $\bar\pi/n_a$ ; pour $g = \bar\pi = 2\,\%$ et $\sigma_j = 1{,}4/12$ an, $\bar\rho_{\mathit{IN}}$ vaut 0,992779, 0,996057, 0,997321 et 0,997700 pour $n_a = 4$, 12, 52 et $n_a \to \infty$. Cet écart tient au coût moyen pondéré : le stock garde la trace des coûts des pas antérieurs, d'autant plus anciens que le pas est long. Il touche une valeur comptable, jamais un volume ni l'état d'arrivée des ratios du bloc ; la valorisation au coût courant, qui l'annulerait, est écartée (\S\ref{sec:ecartees}).
+
+\textbf{État initial résolu, sans préparation.} À partir des ventes $v_0$ résolues par le socle : $y_0 = v_0(1 + g\sigma_j)$, $v^e_0 = v_0$, $\mathit{IN}^{\mathrm{vol}}_0 = n_a \sigma_j v_0$, $\mathit{IN}_0 = \bar\rho_{\mathit{IN}}\,\mathit{UC}_0\,\mathit{IN}^{\mathrm{vol}}_0$, $\mathit{pr}_0 = y_0/N_0$, $N_0$ étant l'emploi de l'état initial résolu (bloc travail), les deux termes de la technique étant égaux à l'état stationnaire, $K^{\mathrm{vol}}_0 = n_a \kappa_j y_0/\overline{\mathit{tu}}$, avec $\overline{\mathit{tu}}$ fixé par le bloc investissement. Ces valeurs seront calculées et publiées par le script d'état stationnaire (\S\ref{sec:calibration}, jalon J3).
+
+\textbf{Croissance.} La croissance $g$ vient de la productivité ($g_{\mathit{pr}}$, ce bloc) et de la population active ($g_N$, blocs travail et ménages). Convertie linéairement, $g_{\mathit{pr}} = 2\,\%$ par an donne une croissance annuelle effective de 2,0184\,\% ; il faudrait $g_{\mathit{pr}} = 12\bigl[(1{,}02)^{1/12} - 1\bigr] = 1{,}9819\,\%$ pour une croissance effective de 2\,\%. Les ratios du bloc n'en dépendent pas ; seule la croissance annuelle restituée change (issue \#24).
+
+Ces chiffres se recalculent à la main depuis les formes ci-dessus et les valeurs indicatives de la table de calibration (tableau~\ref{tab:calibration}) ; ce ne sont pas des résultats du moteur.
+
+\textbf{Statut.} Dérivé des règles du bloc. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-4 et \S~3.N-11) ; décision M24.
+\end{proposee}
+
+\subsection{Conditions déclarées et stabilité}
+\label{sec:production-conditions}
+\begin{proposee}[conditions et critères écrits avant l'essai, décision M24]
+\textbf{Vitesses.} $0 < \lambda_v \le n_a$ et $0 < \lambda_{\mathit{IN}} \le n_a$, contrôlées au chargement de la table de calibration, jamais par un écrêtage (\S\ref{sec:cadre-calendrier}).
+
+\textbf{Bornes.} Toutes physiques ou techniques, sans paramètre : le plancher $y^{\ast} \ge 0$ et la disponibilité $v \le \mathit{IN}^{\mathrm{vol}} + y$, inactifs à l'état stationnaire ; la technique $y \le \mathit{pr}\,N$, dont les deux termes sont égaux à l'état stationnaire, sans rationnement. Aucun plafond de capacité. Les autres bornes du socle relèvent d'autres blocs : l'emploi au plus égal à la population active (bloc travail), les bornes de prix éventuelles (bloc prix).
+
+\textbf{Boucle propre du bloc.} À demande constante (en écart à la tendance) et emploi égal à la demande de travail, la récurrence de N1 à N7 est triangulaire ; ses valeurs propres sont
+\begin{equation*}
+1 - \frac{\lambda_v}{n_a} \qquad\text{et}\qquad \frac{1 - \lambda_{\mathit{IN}}/n_a}{1 + g/n_a} ,
+\end{equation*}
+réelles et dans $[0, 1[$ sous les conditions ci-dessus : le bloc n'a pas de cycle propre. Aux valeurs indicatives de la table de calibration ($\lambda_v = 3$ et $\lambda_{\mathit{IN}} = 1{,}5$ par an, $g = 2\,\%$), elles valent 0,75 et 0,8735, soit une demi-vie de 5,1 mois ; 0,875 et 0,9359 (10,5 mois) pour des vitesses divisées par 2 ; 0,5 et 0,7488 (2,4 mois) pour des vitesses multipliées par 2.
+
+\textbf{Boucle fermée.} Quand la demande dépend de la production par les revenus, la boucle produit un cycle des stocks amorti ; sur une maquette de la fiche (\S~3.N-8), où la demande dépend linéairement de la production du pas précédent (hypothèse, à fixer par les blocs ménages et État), elle devient explosive, avec alternance, pour des vitesses proches de $n_a$. Le domaine de stabilité se vérifie au jalon J3 sur le socle complet.
+
+\textbf{Critères du jalon J3, écrits avant l'essai.}
+\begin{itemize}
+\item État stationnaire : un pas sans choc depuis l'état initial résolu laisse $v^e$, $\mathit{IN}^{\mathrm{vol}}$, $\mathit{IN}$, $\mathit{pr}$ et $K^{\mathrm{vol}}$ sur leur trajectoire stationnaire, à $10^{-10}$ près en relatif.
+\item Vitesses : après une hausse de la dépense publique de 1\,\% pendant 12 tours, l'écart relatif du ratio des stocks aux ventes et de $y/v$ entre les branches à vitesses divisées et multipliées par 2 est d'au plus $10^{-6}$ après 720 pas.
+\item Boucle fermée : rayon spectral de la linéarisation du socle complet inférieur à 1 pour la calibration et pour les vitesses divisées et multipliées par 2 ; si la propension effective de la demande à la production dépasse 0,8, ou si $\sigma_j$ dépasse 2 mois, les vitesses sont recalibrées avant l'essai.
+\item Coût : part du bloc d'au plus 0,48\,ms par pays-pas, mesurée par le test de budget (\nolinkurl{tests/invariants/test_budget.py}) ; cette part indicative est le budget du socle, $52/12$\,ms par pays-pas, moins 0,5\,ms pour le noyau, répartie entre huit blocs de comportement.
+\end{itemize}
+
+\textbf{Statut.} Choix de conception (conditions, critères) ; dérivé pour les valeurs propres. \textbf{Provenance.} Nouvelle (fiche, \S~3.N-8, \S~3.N-9 et \S~5, réserves 1 à 4) ; décision M24.
+\end{proposee}
+
+\subsection{Grandeurs restituées}
+\label{sec:production-restitution}
+\begin{proposee}[grandeurs restituées au tour, décision M24]
+Les grandeurs du tableau~\ref{tab:production-restitution} sont restituées au joueur à chaque tour ; ce sont des grandeurs de la couche d'observation, ni flux ni variables d'état, calculées sur le tour (un tour est un pas). Elles ne portent pas de label : il sera posé quand le radical des labels de la couche d'observation sera fixé.
+
+\textbf{Niveaux normaux.} Chaque indicateur est affiché avec son niveau normal, dans sa définition exacte :
+\begin{itemize}
+\item stocks en mois de ventes : $n_a\sigma_j$ multiplié par le facteur entre le ratio du test zéro et le ratio restitué (\S\ref{sec:cadre-calendrier}), soit 1,4152 mois pour $\sigma_j = 1{,}4/12$ an et $g = 2\,\%$, contre 1,4 dans la définition du test zéro ;
+\item taux d'utilisation : $\overline{\mathit{tu}}$ ;
+\item production : glissement annuel stationnaire de 2,0184\,\% pour $g = 2\,\%$.
+\end{itemize}
+Ils sont publiés par le script d'état stationnaire (jalon J3) et affichés au jalon J4.
+
+\textbf{Statut.} Choix de conception. \textbf{Provenance.} Nouvelle (fiche, \S~9.4 et \S~9.5, conditions 1 à 4 de \texttt{jeu}) ; décision M24.
+\end{proposee}
+
+\begin{center}\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.6cm}}
+\caption{Grandeurs restituées du bloc production et stocks (proposées, décision M24).}\label{tab:production-restitution}\\
+\toprule
+\textbf{Grandeur} & \textbf{Définition} & \textbf{Unité} & \textbf{Dénominateur} & \textbf{Fenêtre}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Grandeur} & \textbf{Définition} & \textbf{Unité} & \textbf{Dénominateur} & \textbf{Fenêtre}\\
+\midrule
+\endhead
+Ligne d'identité & demande adressée $d$ ; ventes par acheteur ($C^{\mathrm{vol}}$, $G^{\mathrm{vol}}$, $I^{\mathrm{vol}}$) ; production $y$ ; variation des stocks en volume, $y - v$ & u.v. par tour & --- & le tour\\
+Variation des stocks en \% des ventes & $(y - v)/v$ & fraction & ventes du tour & le tour\\
+Demande non servie, par acheteur & $(d_s - v_s)/d_s$, pour $s \in \{H, F, G\}$ & fraction & demande de l'acheteur & le tour\\
+Dépense publique demandée et exécutée & plan de dépense de l'État (phase 2) ; $p\, G^{\mathrm{vol}}$ & u.m. par tour & --- & le tour\\
+Production visée non réalisée & $(y^{\ast} - y)/y^{\ast}$ ; « sans objet » si $y^{\ast} = 0$ & fraction & production visée du tour & le tour\\
+Stocks en mois de ventes & stock de clôture rapporté à la moyenne mensuelle des ventes des 12 derniers tours (\S\ref{sec:cadre-calendrier}) & mois & ventes moyennes sur 12 tours & le tour (12 tours au dénominateur)\\
+Taux d'utilisation & utilisation de la capacité normale des équipements, $\mathit{tu}$ ; retiré de la restitution si les blocs prix et investissement ne lui donnent aucun effet & fraction & capacité normale du tour & le tour\\
+Indice de production & $100\, y/y_0$, et glissement annuel sur 12 tours & indice ; par an & production du tour 1 & le tour ; 12 tours\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\textbf{Paramètres du bloc.} Ils figurent dans la table de calibration (tableau~\ref{tab:calibration}) : $\lambda_v$, $\lambda_{\mathit{IN}}$, $\sigma_j$, $g_{\mathit{pr}}$, $\kappa_j$.
+
+\begin{joueur}[production et stocks]
+Le bloc n'ouvre aucun levier : le joueur ne produit pas, sauf en mode planifié (jalon J7). Des leviers du socle transitent par lui ; les délais sont en tours entiers, comptés depuis la lecture du levier en phase 1 du tour $n$.
+\begin{itemize}
+\item \textbf{Dépense publique} : ventes, variation des stocks et dépense exécutée au tour $n$ ; production au tour $n + 1$ ; emploi au tour $n + 1$ ou plus tard, selon la règle d'emploi du bloc travail (\S\ref{sec:travail}). Contrepartie visible le tour même : stocks en baisse (ligne 4 négative) ou demande non servie, conformément au tableau~\ref{tab:leviers-cadre}.
+\item \textbf{Impôts sur les ménages} : ventes au tour $n + 1$, puis production au tour $n + 2$, si le budget de consommation de la phase 2 lit les revenus du tour précédent (règle du bloc ménages, à fixer) ; contrepartie : stocks en hausse au tour $n + 1$.
+\item \textbf{Taux, par l'investissement} : ventes aux entreprises, puis production ; délais fixés par les blocs investissement et banque.
+\end{itemize}
+\end{joueur}
+
+\begin{portee}[production et stocks]
+\begin{itemize}
+\item Un seul bien ($J = 1$), consommé, investi et acheté par l'État : aucun prix relatif ; le PIB en volume est la production $y$. D'autres secteurs (jalons J5 à J7) s'ajouteront par l'indice $j$, sans réécrire N1 à N11, par une décision citant M24.
+\item Aucun intrant ni stock d'intrants : le coût unitaire est le seul coût salarial (terme d'intrants au jalon J5).
+\item Aucun levier n'agit sur l'offre au socle (issue \#37, à instruire par les fiches « prix » et « investissement » avant le jalon J7).
+\item Aucun plafond de capacité : la capacité normale est un indicateur.
+\item Le bloc ne tient pas l'emploi : contrainte d'offre de travail, rétention de main-d'œuvre et ajustement de l'emploi relèvent du bloc travail (\S\ref{sec:travail} ; ADR 0007).
+\item Le volume du capital est tenu par ce bloc ; la décision d'investissement et les lignes 3 et 8, par le bloc investissement (\S\ref{sec:investissement}), à confirmer par sa fiche.
+\item Aucune substitution entre capital et travail, aucun produit marginal ; aucune priorité de rationnement ; aucun tirage aléatoire. Variables d'état du bloc, par secteur : $v^e$, $\mathit{IN}^{\mathrm{vol}}$, $\mathit{pr}$ et $K^{\mathrm{vol}}$, chacune avec sa valeur stationnaire explicite (\S\ref{sec:production-stationnaire}) ; aucun historique.
+\end{itemize}
+\end{portee}
 
 %=====================================================================
 \section{Travail et salaires}
@@ -644,6 +933,10 @@ Cette section tiendra la table de calibration, où chaque paramètre figure une 
 Le cadre (\S\ref{sec:cadre}) introduit les paramètres ci-dessous, et aucune borne. Ils n'ont pas encore de nom dans le code, fixé au jalon J2, et les équations qui les emploieront n'ont pas encore de label. Ce ne sont pas des drapeaux de mode : le moteur n'a qu'un calendrier et qu'une règle de conversion, et $n_a$, $n_m$ sont des paramètres parce que toute fenêtre et toute conversion s'écrivent en fonction d'eux. Changer $n_a$ ou $n_m$, ou élargir $\varepsilon$ ou $\varepsilon_V$, est une décision du mainteneur citant M22, jamais un réglage ; un resserrement de $\varepsilon$ ou de $\varepsilon_V$ ne demande que le visa de l'expert pilote. Ne sont pas des paramètres : la longueur du registre de l'indice des prix (égale à $n_a$), le facteur entre les deux ratios au PIB annuel et l'encaisse stationnaire du Trésor $M^{G*}$, variable de l'état initial résolu.
 \end{proposee}
 
+\begin{proposee}[paramètres du bloc production et stocks, décision M24]
+Le bloc production et stocks (\S\ref{sec:production}) introduit les paramètres ci-dessous. Ils n'ont pas encore de nom dans le code, fixé au jalon J3 avec le module du bloc, et les équations qui les emploient n'ont pas encore de label : la dernière colonne renvoie à leur identifiant dans la section du bloc. Leurs valeurs sont indicatives et seront fixées au jalon J3, sur visa de l'expert pilote, dans leurs conditions déclarées : $0 < \lambda_v \le n_a$ et $0 < \lambda_{\mathit{IN}} \le n_a$, contrôlées au chargement, jamais par un écrêtage, et domaine de stabilité de la boucle fermée (\S\ref{sec:production-conditions}). Le bloc n'introduit aucune borne à paramètre : ses bornes sont physiques ou techniques (\S\ref{sec:production-conditions}). Ne sont pas des paramètres : le nombre de secteurs $J$, dimension du schéma d'état fixée à 1 par la décision M24 ; le taux d'amortissement $\delta$, paramètre du cadre dont la valeur relève du bloc investissement ; la croissance $g$, dérivée de $g_{\mathit{pr}}$ et de la croissance de la population active ; les rapports stationnaires $\bar\rho_{\mathit{IN}}$, $\bar\rho_K$ et $\overline{\mathit{tu}}$, grandeurs de l'état stationnaire ; les niveaux normaux restitués et la croissance annuelle effective, publiés par le script d'état stationnaire.
+\end{proposee}
+
 \begin{center}\small
 \begin{longtable}{p{1.5cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{1.4cm}>{\raggedright\arraybackslash}p{1.8cm}>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}p{2.6cm}}
 \caption{Table de calibration.}\label{tab:calibration}\\
@@ -659,6 +952,11 @@ $n_a$ & non encore créé (J2) & 12 & pas par an & décision M22 & calendrier, c
 $n_m$ & non encore créé (J2) & 1 & pas par tour & décision M22 & date de décision (\S\ref{sec:cadre-calendrier})\\
 $\varepsilon$ & non encore créé (J2) & $10^{-12}$ & sans dimension & décision M22 ; arrondi en double précision & identités par pas (\S\ref{sec:cadre-identites})\\
 $\varepsilon_V$ & non encore créé (J2) & $10^{-12}$ & sans dimension & décision M22 ; tenue par la mesure & identité cumulée (\S\ref{sec:cadre-identites})\\
+$\lambda_v$ & non encore créé (J3) & 3 (indicative) & par an & décision M24 ; valeur indicative, fixée au jalon J3 dans le domaine de stabilité de la boucle fermée & ventes anticipées, N1 (\S\ref{sec:production-visee})\\
+$\lambda_{\mathit{IN}}$ & non encore créé (J3) & 1,5 (indicative) & par an & décision M24 ; valeur indicative, fixée au jalon J3 dans le domaine de stabilité de la boucle fermée & production visée, N3 (\S\ref{sec:production-visee})\\
+$\sigma_j$ & non encore créé (J3) & $1{,}4/12 \approx 0{,}1167$ (indicative) & années de ventes ; restitué en mois, $12\sigma_j$ & décision M24 ; ordre de grandeur d'environ 1,4 mois de ventes relevé par la fiche dans des extraits de recherche, source primaire non lue : à établir au jalon J3 & stock cible, N2 (\S\ref{sec:production-visee})\\
+$g_{\mathit{pr}}$ & non encore créé (J3) & à fixer au jalon J3 & par an, conversion linéaire & décision M24, lecture (f) ; valeur fixée avec les critères de l'objectif d'économie de référence fiable & productivité, N9 (\S\ref{sec:production-technique})\\
+$\kappa_j$ & non encore créé (J3) & à fixer avec le bloc investissement & années & décision M24, lecture (e) ; fixé avec le taux d'utilisation stationnaire $\overline{\mathit{tu}}$ & capacité normale, N11 (\S\ref{sec:production-technique})\\
 \bottomrule
 \end{longtable}
 \end{center}
@@ -716,7 +1014,23 @@ Pistes écartées par la décision M22 (ADR 0005 ; fiche \nolinkurl{docs/blocs/t
 \item \textbf{Troncature du versement de la banque centrale} (résultats positifs seulement) : elle exige une borne et une règle de recapitalisation ; réservée au jalon J6, par une décision citant M22.
 \item \textbf{Émission des titres publics avant les règlements}, sur un besoin planifié en phase 3 : une variable de prévision de plus (les impôts planifiés) et une encaisse du Trésor non constante à la clôture ; le principe de simplicité a tranché pour l'émission après les règlements. La lisibilité, le rationnement de la dépense frappant le tour même d'un placement raté, reste consignée comme argument en sa faveur.
 \item \textbf{Plusieurs calendriers dans le code, choisis par un paramètre} : c'est un drapeau de mode, exclu par l'architecture (ADR 0002) ; une comparaison entre pas hebdomadaire et pas mensuel se ferait sur deux branches ou par un script d'outillage.
-\item \textbf{Tolérance cumulée justifiée par le pire cas d'arrondi} : $30 \times 3\,120 \times 2{,}2 \cdot 10^{-16} \approx 2{,}1 \cdot 10^{-11}\,S$ sur les 3\,120 pas hebdomadaires de 60 ans, au-dessus de $10^{-12}$ sans être observé ; la tolérance tient par la mesure, que le test du jalon J2 vérifie.
+\item \textbf{Tolérance cumulée justifiée par le pire cas d'arrondi} : $30 \times 3\,120 \times 2{,}22 \cdot 10^{-16} \approx 2{,}1 \cdot 10^{-11}\,S$ sur les 3\,120 pas hebdomadaires de 60 ans, au-dessus de $10^{-12}$ sans être observé ; la tolérance tient par la mesure, que le test du jalon J2 vérifie.
+\end{itemize}
+
+\subsection*{Production et stocks (décision M24)}
+Pistes écartées par la décision M24 (fiche \nolinkurl{docs/blocs/production.md}, \S~8 ; ADR 0007 pour l'ordre de la phase 4), au regard des critères écrits avant l'instruction et du principe de simplicité.
+\begin{itemize}
+\item \textbf{Bloc de la v1.5} (\S~« Secteur productif » et \S~« Marchés des biens et commerce international ») : pas hebdomadaire ; la loi des stocks, telle qu'écrite, n'est pas conservatrice : l'offre comprend une fraction des stocks, mais la loi des stocks ajoute l'invendu sans retirer cette fraction, si bien que des biens sont créés à chaque pas où l'offre dépasse la demande ; la variation des stocks n'est pas définie en valeur (le profit n'en contient pas, le bilan porte les stocks en volume) ; la vitesse d'ajustement de l'emploi, 0,25 par semaine, soit 13 par an, excède $n_a$ et n'est pas transposable au pas mensuel ; aucun état initial résolu (transitoire de trois à cinq ans prévu par le texte).
+\item \textbf{Bloc du moteur v2.0} (\texttt{archive/v2.0/prototype/model.py}, \texttt{\_step\_normal}) : la borne sur l'excédent de stock offert est active à l'état stationnaire (calcul analytique, fiche \S~3.B-3 ; remesure S1, profil par défaut : active toutes les semaines dans la consommation, et dans l'équipement hors d'un épisode de trois ans), si bien qu'aucun stock n'est offert et qu'un surcroît de demande est rationné alors que des stocks existent ; la variation des stocks est valorisée au prix de vente et la valeur comptable des entreprises réévalue le capital et les stocks au prix courant sans ligne de réévaluation ; un cycle propre amorti des stocks et de l'emploi (analyse linéaire de la fiche, \S~3.B-8) ; un état initial hors de l'état stationnaire de sa propre règle.
+\item \textbf{Défaut commun aux deux} : leur règle de production visée (ventes moyennes extrapolées, plus une correction du stock vers une cible proportionnelle aux ventes moyennes), sans terme pour la tendance ni pour la croissance de la cible, fait dépendre des vitesses d'ajustement le ratio stationnaire des stocks aux ventes sous croissance. La remesure du moteur v2.0 sous son profil par défaut (non l'état D1, qui n'est pas versé ; 60 ans, graine 0, années 31 à 60), par \code{outils/remesurer_v2_production.py}, le confirme : ce ratio varie de 7,8\,\% à 52,3\,\% selon le secteur et la vitesse entre les branches à vitesses divisées et multipliées par 2. La règle littérale du modèle DIS de Godley et Lavoie (cible proportionnelle aux ventes anticipées, anticipation sans tendance, aucun terme de croissance de la cible) a le même défaut sous croissance. Le socle retenu le corrige par deux termes (\S\ref{sec:production-visee}).
+\item \textbf{Technique de Cobb-Douglas de la v1.5 et du moteur v2.0} : inversion non linéaire de la production à chaque pas, borne d'emploi tirée de la condition de premier ordre sur le travail, aucun état stationnaire en forme fermée ; à capital donné, l'emploi y varie de $1/(1 - \alpha)$ fois la production, $\alpha$ étant la part du capital, sans que le fait de comparaison (réponse de l'emploi à la production) soit sourcé.
+\item \textbf{Deux secteurs, consommation et équipement} ($J = 2$) : aucune identité vérifiable de plus ; un mécanisme perçu, l'accélérateur visible dans le secteur d'équipement, payé d'un prix relatif à rendre stationnaire, précisément la zone des instabilités 9 à 11 et 14 (tableau~\ref{tab:instabilites}), sans aucun levier du socle qui l'exploite. Les secteurs arriveront aux jalons J5 à J7 avec leurs mécanismes propres.
+\item \textbf{Valorisation des stocks au coût unitaire courant} (forme du modèle DIS) : le gain de détention d'un stock dont le coût monte serait inscrit dans la ligne 4, réévaluation dans une ligne de transaction, contraire à l'encadré de portée du cadre et demandant une décision citant M22. \textbf{Au coût du pas sans réévaluation} : la valeur des stocks peut devenir négative. \textbf{Au prix de vente} (moteur v2.0) : réévaluation non tracée.
+\item \textbf{Ordre interne « production, puis travail »} de la phase 4 : il couperait le marché du travail entre deux blocs (ADR 0007).
+\item \textbf{Plafond de capacité}, $y \le y^{\mathrm{cap}}$ : un plafond produit un cycle (instabilité 15), et la borne serait active en reprise.
+\item \textbf{Priorité de l'État au rationnement au socle} : un paramètre sans mécanisme ; elle relèvera d'un levier éventuel du mode planifié (jalon J7).
+\item \textbf{Anticipations assises sur les ventes} (v1.5, modèle DIS) : un rationnement déprimerait les ventes anticipées et la pénurie s'entretiendrait d'elle-même ; l'état stationnaire est le même.
+\item \textbf{Conversion de la croissance de productivité calibrée sur une croissance effective} : une seconde règle de conversion, à côté de la règle linéaire unique du cadre ; la croissance effective de la règle linéaire est publiée à la place (issue \#24).
 \end{itemize}
 
 %=====================================================================
@@ -777,13 +1091,15 @@ Les instabilités ci-dessous ont été observées sur le moteur v2.0 ou rapport�
 
 Le cadre proposé (\S\ref{sec:cadre}, décision M22) écarte par construction quatre de ces instabilités : la 16, par des tolérances relatives à l'échelle du bilan et l'absence de tout solde résiduel ; la 2, par l'absence d'avances au Trésor dans le socle, une avance future devant être un instrument complet, avec sa ligne d'intérêt ; la 3, par un taux des titres publics déclaré avec sa date de fixation ; la 15, par l'absence de toute borne dans le cadre. Ce sont des propriétés de la spécification ; le moteur ne les exécutera qu'au jalon J2.
 
+Le bloc production et stocks proposé (\S\ref{sec:production}, décision M24, bien unique) ôte leur objet à l'instabilité 1 et à la 9, ainsi qu'à la forme « équipement » des 10, 11 et 14 : sans construction ni second bien, il n'y a ni rapport \texttt{p\_Z/p\_K} ni prix relatif du capital. Il ne les écarte pas par construction : une règle de prix sans terme de demande (instabilité 14) et un amortissement compté dans le coût (instabilités 10 et 11) restent des risques des blocs prix (\S\ref{sec:prix}) et investissement (\S\ref{sec:investissement}), qui les examineront. Il ne porte aucun plafond de capacité (instabilité 15) ; la seule contrainte physique sur la production est l'emploi disponible, borne du bloc travail inactive à l'état stationnaire. Ce sont des propriétés de la spécification ; le moteur ne les exécutera qu'au jalon J3.
+
 \appendix
 
 %=====================================================================
 \section{Correspondance équations \texorpdfstring{$\leftrightarrow$}{<->} code}
 \label{sec:correspondance}
 %=====================================================================
-Cette annexe associe à chaque label d'équation le module et la fonction du moteur qui portent sa balise ; elle est générée ou vérifiée par le script de concordance. Elle s'ouvre au jalon J1. En version 3.0-socle, la spécification ne porte aucun label d'équation et le moteur aucune balise : la concordance est vide des deux côtés.
+Cette annexe associe à chaque label d'équation le module et la fonction du moteur qui portent sa balise ; elle est générée ou vérifiée par le script de concordance. Elle s'ouvre au jalon J1. En version 3.0-socle, la spécification ne porte aucun label d'équation et le moteur aucune balise : la concordance est vide des deux côtés. Les labels prévus du bloc production et stocks, posés au jalon J3 avec leur balise, sont listés au tableau~\ref{tab:production-equations}.
 
 \begin{center}\small
 \begin{longtable}{p{5.0cm}p{6.6cm}p{3.2cm}}
@@ -805,9 +1121,9 @@ Cette annexe associe à chaque label d'équation le module et la fonction du mot
 \section{Glossaire de la notation}
 \label{sec:glossaire}
 %=====================================================================
-Cette annexe est le registre des symboles : tout symbole employé dans une équation y figure, avec sa définition, son unité, son bloc et le label de l'équation qui le définit ; tout symbole qui y figure est employé. Un symbole a un seul sens dans tout le document. Elle s'ouvre au jalon J1. Les symboles du cadre (\S\ref{sec:cadre}), proposé, renvoient à la sous-section qui les définit : ils n'ont pas encore de label d'équation.
+Cette annexe est le registre des symboles : tout symbole employé dans une équation y figure, avec sa définition, son unité, son bloc et le label de l'équation qui le définit ; tout symbole qui y figure est employé. Un symbole a un seul sens dans tout le document. Elle s'ouvre au jalon J1. Les symboles du cadre (\S\ref{sec:cadre}) et du bloc production et stocks (\S\ref{sec:production}), proposés, renvoient à la sous-section qui les définit : ils n'ont pas encore de label d'équation.
 
-Indices réservés : pays $i$, secteur $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Une variable $x_t$ est la valeur d'ouverture du pas $t$, $x_{t+1}$ sa valeur de clôture, sauf mention contraire. Une variable anticipée porte l'exposant $e$, une cible l'exposant $\ast$, une valeur de long terme ou stationnaire une barre.
+Indices réservés : pays $c$, secteur productif $j$ (et $k$ pour un intrant), strate de ménages $h$, pas $t$. Une variable $x_t$ est la valeur d'ouverture du pas $t$, $x_{t+1}$ sa valeur de clôture, sauf mention contraire. Une variable anticipée porte l'exposant $e$, une cible l'exposant $\ast$, une valeur de long terme ou stationnaire une barre. Le volume d'une grandeur nominale du cadre tenue en u.m. porte l'exposant $\mathrm{vol}$ ($\mathit{IN}^{\mathrm{vol}}$, $K^{\mathrm{vol}}$, $C^{\mathrm{vol}}$, $G^{\mathrm{vol}}$, $I^{\mathrm{vol}}$), en unités de volume du bien (u.v.) : c'est une variable du bloc qui le lit, jamais un poste des matrices ; il se cumule avec la marque de cible ($\mathit{IN}^{\mathrm{vol}\ast}$). La convention « minuscule = volume » n'est pas employée : $c$, $k$ et $s$ sont des indices réservés, $g$ et $i$ des taux.
 
 \begin{center}\small
 \begin{longtable}{>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.8cm}}
@@ -856,10 +1172,29 @@ $\delta$ & taux d'amortissement du capital fixe & par an & cadre & \S\ref{sec:ca
 $\mathit{Div}_F$, $\mathit{Div}_{\mathit{Bk}}$ & dividendes versés aux ménages par les entreprises, par la banque & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
 $\Pi^{\mathit{CB}}$ & résultat de la banque centrale versé à l'État & u.m. par pas & cadre & \S\ref{sec:cadre-caisse}, proposée\\
 $\Delta x$ & variation d'un poste $x$ sur le pas, $x_{t+1} - x_t$ ($\Delta D_H$, $\Delta L$, $\Delta \mathit{IN}$…) & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
-$\Delta B_X^p$, $\Delta B_X^s$ & titres publics souscrits par $X$ sur le marché primaire ; vendus par $X$ à la banque centrale sur le marché secondaire & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
-$f_{\ell,s,t}$ & montant de la ligne $\ell$ dans la colonne du secteur $s$ au pas $t$ & u.m. par pas & cadre & \S\ref{sec:cadre-identites}, proposée\\
+$\Delta B_s^{\mathrm{prim}}$, $\Delta B_s^{\mathrm{sec}}$ & titres publics souscrits par le secteur $s$ sur le marché primaire, $s \in \{H, \mathit{Bk}, \mathit{CB}\}$ ; vendus par $s$ à la banque centrale sur le marché secondaire, $s \in \{H, \mathit{Bk}\}$ & u.m. par pas & cadre & \S\ref{sec:cadre-flux}, proposée\\
+$f_{\ell,s,t}$ & montant de la ligne $\ell$ dans la colonne du secteur $s$ au pas $t$ (entreprises : deux sous-colonnes réunies) & u.m. par pas & cadre & \S\ref{sec:cadre-identites}, proposée\\
 $S$, $S^{\mathit{Bk}}$, $S^{\mathit{CB}}$ & échelle du bilan contrôlé : somme des valeurs absolues de tous ses postes, valeur nette comprise & u.m. & cadre & \S\ref{sec:cadre-identites}, proposée\\
 $\varepsilon$, $\varepsilon_V$ & tolérances des identités par pas et de l'identité cumulée, rapportées à $S$ & sans dimension & cadre & \S\ref{sec:cadre-identites}, proposée\\
+$J$ & nombre de secteurs productifs ; 1 au socle (décision M24) & sans objet & production & \S\ref{sec:production}, proposée\\
+$X^{\mathrm{vol}}$ & volume d'une grandeur nominale $X$ du cadre ($\mathit{IN}^{\mathrm{vol}}$, $K^{\mathrm{vol}}$, $C^{\mathrm{vol}}$, $G^{\mathrm{vol}}$, $I^{\mathrm{vol}}$) ; variable du bloc qui le lit, jamais un poste & u.v. (stocks) ; u.v. par pas (flux) & production & \S\ref{sec:production}, proposée\\
+$y_{j,t}$, $y^{\ast}_{j,t}$ & production du pas ; production visée & u.v. par pas & production & \S\ref{sec:production-ventes}, \S\ref{sec:production-visee}, proposées\\
+$v_{j,t}$, $v_{s,j,t}$ & ventes du pas ; volume servi à l'acheteur $s \in \{H, F, G\}$ & u.v. par pas & production & \S\ref{sec:production-ventes}, proposée\\
+$v^e_{j,t}$ & ventes anticipées pour le pas $t$ & u.v. par pas & production & \S\ref{sec:production-visee}, proposée\\
+$d_{j,t}$, $d_{s,j,t}$ & demande adressée au secteur $j$, totale ; par l'acheteur $s \in \{H, F, G\}$ & u.v. par pas & production & \S\ref{sec:production-ventes}, proposée\\
+$\mathit{IN}^{\mathrm{vol}}_{j,t}$, $\mathit{IN}^{\mathrm{vol}\ast}_{j,t}$ & stock de produits finis en volume ; stock cible & u.v., ouverture & production & \S\ref{sec:production-ventes}, \S\ref{sec:production-visee}, proposées\\
+$\sigma_j$ & stock cible, en années de ventes & années & production & \S\ref{sec:production-visee}, proposée\\
+$\lambda_v$, $\lambda_{\mathit{IN}}$ & vitesses annuelles d'ajustement des ventes anticipées, des stocks & par an & production & \S\ref{sec:production-visee}, proposée\\
+$\mathit{pr}_{j,t}$ & productivité du travail & u.v. par personne et par pas & production & \S\ref{sec:production-technique}, proposée\\
+$g_{\mathit{pr}}$, $g_N$ & croissance annuelle tendancielle de la productivité ; de la population active & par an & production ; travail et ménages & \S\ref{sec:production-technique}, \S\ref{sec:production-visee}, proposées\\
+$N_{j,t}$, $N^{\ast}_{j,t}$ & emploi effectif (écrit par le bloc travail en phase 4) ; demande de travail & personnes & travail ; production & \S\ref{sec:production-ventes}, \S\ref{sec:production-visee}, proposées\\
+$W_t$ & salaire nominal par personne employée (écrit par le bloc travail en phase 1) & u.m. par personne et par pas & travail & \S\ref{sec:production-valorisation}, proposée\\
+$p_{j,t}$ & prix du bien $j$ au pas $t$ (écrit par le bloc prix en phase 5) & u.m. par u.v. & prix & \S\ref{sec:production-ventes}, proposée\\
+$\mathit{UC}_{j,t}$, $\mathit{cm}_{j,t}$ & coût unitaire des entrées en stock ; coût moyen pondéré du stock disponible & u.m. par u.v. & production & \S\ref{sec:production-valorisation}, proposée\\
+$K^{\mathrm{vol}}_{j,t}$ & volume du capital & u.v., ouverture & production & \S\ref{sec:production-capital}, proposée\\
+$\kappa_j$ & rapport du capital à la production annuelle à capacité normale & années & production & \S\ref{sec:production-technique}, proposée\\
+$y^{\mathrm{cap}}_{j,t}$, $\mathit{tu}_{j,t}$, $\overline{\mathit{tu}}$ & capacité normale ; taux d'utilisation, $y/y^{\mathrm{cap}}$ ; sa valeur stationnaire & u.v. par pas ; fraction & production & \S\ref{sec:production-technique}, \S\ref{sec:production-stationnaire}, proposées\\
+$\bar\rho_{\mathit{IN}}$, $\bar\rho_K$ & rapports stationnaires de la valeur comptable des stocks à leur valeur au coût du pas, du capital à sa valeur au prix courant & sans dimension & production & \S\ref{sec:production-stationnaire}, \S\ref{sec:production-capital}, proposées\\
 \bottomrule
 \end{longtable}
 \end{center}

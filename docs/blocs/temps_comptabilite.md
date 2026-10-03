@@ -10,6 +10,8 @@ issue: #15
 
 # Fiche comparative — Temps et comptabilité
 
+> **Notation renommée après la décision (02/10/2026, #23, décision du mainteneur)** : la fiche garde la notation de son instruction. Dans la spécification, $\Delta B_X^p$ et $\Delta B_X^s$ s'écrivent $\Delta B_s^{\mathrm{prim}}$ et $\Delta B_s^{\mathrm{sec}}$ (indice de secteur $s$) ; l'indice des pays est $c$ (et non $i$) ; le « délai k » se dit « délai du premier flux d'intérêt » et le retard du registre se note $u$, $k$ étant réservé à l'intrant. Correspondance consignée dans l'ADR 0005.
+
 > Fiche ouverte à partir du gabarit `0000-gabarit.md`, **validé à l'usage** sur cette première fiche (M20) : les retours sur le gabarit sont rassemblés pour l'issue #17. Toute rubrique sans contenu porte la mention « non instruit » ou « non mesuré », jamais un vide.
 
 Une fiche comparative instruit **l'origine de l'approche** d'un bloc (`docs/exigences.md` § 2.3) : la spécification v1.5, le moteur v2.0, ou une approche nouvelle. Elle est **instruite par l'expert pilote**, commentée par `jeu` et par l'expert consulté, et **décidée par le mainteneur** (décision M-n, reportée dans `docs/feuille-de-route.md`). Aucune approche n'entre dans le moteur ni dans la spécification sans cette décision. Les agents n'écrivent pas la fiche dans le dépôt : elle figure dans leur compte rendu et la session principale la commite.

@@ -160,7 +160,7 @@ def test_sans_strict_code_0(matrices, tmp_path, capsys):
 
 def test_cellule_mal_formee(matrices, tmp_path, capsys):
     """Une somme factorisée est refusée : la cellule doit être développée."""
-    texte = muter(r"& $-\Delta B_H^s$ & \\", r"& $-(\Delta B_H^s)$ & \\")
+    texte = muter(r"& $-\Delta B_H^{\mathrm{sec}}$ & \\", r"& $-(\Delta B_H^{\mathrm{sec}})$ & \\")
     code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
     assert code == 1
     ligne = ligne_de(texte, "19b-ménages Achats")
