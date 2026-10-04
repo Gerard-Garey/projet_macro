@@ -1198,6 +1198,52 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
     - φ n'est **pas** exposé comme levier, son seuil de stabilité bougeant avec π̄ : ce serait un mur invisible ;
     - « leviers tenus » ne serait qu'un écart déclaré, sur avis de `jeu`, avec l'indicateur « charge d'intérêts financée par le déficit ».
 
+*Complément de `monnaie` du 04/10/2026, après l'avis de `jeu` (§ 7) :*
+
+**M^G\* et le multiplicateur m, après l'avis de `jeu` (cliquet à π̄ = 0)**
+
+1. **Je reçois le constat de `jeu` sans le remesurer.** `jeu` l'a mesuré sur une copie de `m9.py` à laquelle il a ajouté le plafond G^plan ≤ M^G d'ouverture :
+   - une baisse de 5 % pendant 12 tours, suivie d'un retour, reste rationnée 79 tours à π̄ = 0 ;
+   - m = 1,1 supprime tout rationnement dans ces scénarios.
+
+   Le mécanisme est confirmé par la forme fermée. Le plafond limite la hausse de G d'un tour au suivant à m/(Γ̄·s_G) − 1, où s_G = G/P (P : paiements bruts du pas) vaut 0,99467 à π̄ = 0, 0,96342 à 2 % et 0,78637 à 10 %. À π̄ = 0, les intérêts ne pèsent presque rien dans P, si bien que la dépense ne peut presque pas remonter.
+
+2. **Effet sur Res et L^CB (critère 11 (e)).**
+   - Sous E^CB = 0, s_CB = 0 et la position nette de la banque (M31), Res reste nul à la clôture et L^CB = M^G = m·P.
+   - Passer de m = 1 à m = 1,1 relève L^CB de 0,1·P, soit environ +0,0019 année de PIB à 2 %. Pour mémoire, M^G/(12 PIB) vaut 0,018904 à m = 1.
+   - L'identité du critère 11 (e) tient : Res − L^CB baisse de (m − 1)P.
+   - Le seuil de s_CB au-delà duquel Res devient positif monte avec m : il vaut m·M^G/B, soit 0,0686 × m à 2 % (C59 à lire avec ce facteur).
+
+3. **Effet sur les revenus : nul au socle.**
+   - Sous i_B = i_res = i_CB, l'encaisse supplémentaire est financée par des titres.
+   - L'État paie i_B(m − 1)P/n_a et reçoit autant par Π^CB, qui vaut i_CB·M^G/n_a.
+   - La banque finance les titres par L^CB, au même taux.
+   - Ce résultat vient d'une algèbre et n'est pas mesuré : m n'est pas un paramètre de `m9.py`.
+   - **Au J6** (prime, durée, i_B ≠ i_CB), le portage de l'encaisse coûtera (i_B − i_CB)(m − 1)P/n_a par pas. Ce coût est à déclarer.
+
+4. **Valeur de m : un calcul de premier tour sur la forme fermée, non une mesure.**
+   - Pour la propriété « hausse de 10 % de la dépense d'un tour au suivant sans rationnement », il faut m ≥ 1,10·Γ̄·s_G, soit **1,0959** à π̄ = 0, 1,0633 à 2 % et 0,8733 à 10 %.
+   - Pour le retour après une baisse de 5 %, il faut environ m ≥ Γ̄·s_G/0,95, soit 1,0488 à π̄ = 0. Ce calcul est approché : P a baissé pendant la phase basse.
+   - **m = 1,1 tient donc la propriété de `jeu` avec 0,4 % de marge seulement à π̄ = 0.** Il faut confirmer m sur la maquette avec plafond, en particulier pour une cible inférieure à 0 si le levier de cible le permet.
+   - Je recommande de fixer m à partir de la propriété écrite par `jeu`, avant l'essai, avec une marge déclarée, plutôt que de retenir 1,1 tel quel.
+
+5. **Qualification.** m > 1 contredit deux passages de la spécification : la l. 502 (« n'excède pas les paiements bruts d'un pas ») et la l. 2064 (M^G\* « n'est pas un paramètre »). C'est une **modification**, ce qui exige :
+   - une décision citant M22 ;
+   - une annotation du point 13 de l'ADR 0005 par `architect`, dont la qualification range déjà m > 1 en modification ;
+   - le constat que m est un paramètre déclaré du bloc 9.
+
+   Je n'ai pas trouvé de règle sans paramètre qui tienne la propriété : une telle règle porterait de toute façon un niveau de marge.
+
+**Couverture des intérêts (T9) en levier distinct : accord avec `jeu`, et amendement de C62**
+
+- **Accord** sur la forme proposée par `jeu` : un levier propre, distinct du barème τ_H, à deux valeurs.
+  - « Couverture intégrale » (φ = 1) : valeur de la règle et valeur par défaut.
+  - « Intérêts financés par le déficit » (φ = 0) : écart déclaré, accompagné de ses deux précurseurs.
+  - Un changement du barème garde la couverture.
+- **Ce qui reste exclu, c'est un curseur continu.** Le seuil de stabilité φ\* vaut ≤ 0 / 0,13 / 0,49 à π̄ = 0 / 2 / 10 %. Les mesures de `jeu` montrent aussi qu'à φ = 0,5 et 10 %, le taux directeur devient presque inerte (P_36 −0,015 %).
+- **C62, rédaction amendée** : « φ n'est pas un levier continu. La couverture des intérêts est un levier distinct du barème, à deux valeurs, 1 par défaut et 0 en écart déclaré. Sont publiés φ\* par π̄, et les temps de doublement sous φ = 0 : 382 tours à 2 % et 63 tours à 10 %. »
+- À signaler : à 10 %, φ = 0 double l'écart en 5 ans environ. L'affichage des précurseurs n'est donc pas facultatif.
+
 ### 6.5 Avis général
 
 **Favorable à l'option C-HS**, avec le socle commun du § 3.N (A8, i_B ≡ i_CB, M^G\* = paiements bruts en lecture nette, E^CB_0 = 0). Motifs dans mon domaine :
@@ -1502,3 +1548,4 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 | 04/10/2026 | Jalon 2, première partie : § 3 à § 5 instruits (huit options sur la maquette conjointe unique des fiches 8 et 9 ; recommandation de l'option C-HS) ; § 6 et § 7 à rendre | `macro` ; session principale |
 | 04/10/2026 | Avis de `jeu` (§ 7) : C-HS lisible sous neuf conditions, dont deux soumises au mainteneur (couverture des intérêts en levier distinct du barème ; encaisse sans cliquet, m > 1 ou propriété équivalente) ; F écartée | `jeu` ; session principale |
 | 04/10/2026 | Avis de `monnaie`, expert consulté (§ 6) : favorable à C-HS ; critère 13 de la fiche 8 : résidu des trois conventions 0,019 point (contre 0,112, C57), voie (c) recommandée (échec déclaré, défaut connu, échec attendu au J3) ; conditions C57 à C63 ; fiche « avis rendus », sous réserve de C57 et C58 | `monnaie` ; session principale |
+| 04/10/2026 | Complément de `monnaie` au § 6.4 : aucune objection monétaire à m > 1 (modification de la l. 502, décision citant M22) ; accord avec `jeu` sur la couverture des intérêts en levier distinct à deux valeurs ; C62 amendée | `monnaie` ; session principale |
