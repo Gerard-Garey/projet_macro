@@ -499,6 +499,20 @@ def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[
         return None, ecarts + [Ecart("structure", ou(debut_env), f"{label} : en-tête introuvable")]
     if tetes:
         corps = lignes_de(zone_corps)
+        # Première tête : après l'en-tête, seule une note `\multicolumn` d'une
+        # cellule est admise, comme dans le corps et les têtes répétées (une
+        # ligne de données placée là échapperait à toute vérification).
+        for a, b in tete:
+            if a <= entete[0]:
+                continue
+            cellules_tete = _separer(travail, a, b, "&")
+            premiere_tete = travail[cellules_tete[0][0]:cellules_tete[0][1]].strip()
+            if len(cellules_tete) == 1 and premiere_tete.startswith("\\multicolumn"):
+                continue  # note sur toute la largeur
+            nature = ("ligne à cellules" if len(cellules_tete) > 1
+                      else "ligne d'une cellule hors note \\multicolumn")
+            ecarts.append(Ecart("structure", ou(_debut_utile(travail, a, b)),
+                                f"{label} : {nature} dans la première tête, après l'en-tête"))
     else:
         corps = [r for r in tete if r[0] > entete[0]]
     cellules_entete = _separer(travail, entete[0], entete[1], "&")
@@ -507,16 +521,21 @@ def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[
                 ou(_debut_utile(travail, a, b)))
         for a, b in cellules_entete[1:]
     ]
-    # En-têtes répétés (têtes suivant la première) : chaque ligne à plusieurs
-    # cellules est identique au premier ; une note d'une seule cellule
-    # (« Suite de la page précédente ») est ignorée, comme dans la recherche
-    # de l'en-tête.
+    # En-têtes répétés (têtes suivant la première) : chaque tête porte au moins
+    # une ligne à cellules, et chaque ligne est identique au premier en-tête ;
+    # seule une note `\multicolumn` d'une cellule (« Suite de la page
+    # précédente ») est ignorée, comme dans le corps.
     cles = [cle_entete(travail[a:b]) for a, b in cellules_entete]
     for zone in tetes[1:]:
-        for a, b in lignes_de(zone):
+        rangs = lignes_de(zone)
+        if not any(_separer(travail, a, b, "&")[1:] for a, b in rangs):
+            ecarts.append(Ecart("structure", ou(_debut_utile(travail, zone[0], zone[1])),
+                                f"{label} : tête répétée sans ligne d'en-tête"))
+        for a, b in rangs:
             cellules_repetees = _separer(travail, a, b, "&")
-            if len(cellules_repetees) == 1:
-                continue
+            premiere_repetee = travail[cellules_repetees[0][0]:cellules_repetees[0][1]].strip()
+            if len(cellules_repetees) == 1 and premiere_repetee.startswith("\\multicolumn"):
+                continue  # note sur toute la largeur
             repetees = [cle_entete(travail[c:d]) for c, d in cellules_repetees]
             if repetees != cles:
                 ecarts.append(Ecart("structure", ou(_debut_utile(travail, a, b)),
