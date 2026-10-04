@@ -3,7 +3,7 @@ bloc: Banque commerciale
 module: src/nations/blocs/banque.py
 expert pilote: monnaie
 experts consultés: macro (demande de crédit des entreprises : frontière crédit ; placement de la dette publique, avec la fiche 9) ; jeu
-statut: décidée (M31)
+statut: spécifiée
 décision: M31 (04/10/2026)
 issue: #71
 ---
@@ -1717,3 +1717,4 @@ Encadrés `proposee` citant M31, sans label (§ 9.1). Numéros de ligne à `320b
 | 04/10/2026 | § 9 rédigé (conséquences de M31 : équations B1 à B8, paramètres, phases, restitution, tests du J3, conditions transmises, surface d'impact pour `sec:banque`) | `monnaie` ; session principale |
 | 04/10/2026 | Validation de `sec:banque` par `monnaie` (avec corrections) ; corrections de la fiche : C38 (−3,57), variante « position positive » du § 3.K, annotation de la condition 4 de `jeu`, localisation de la l. 1546, § 9.3 ; retrait d'un en-tête parasite introduit au commit `481c279` | `monnaie` ; session principale |
 | 04/10/2026 | Annotation de C38 (§ 6.5 et § 9.7) : seuils calculés à taux nominaux inchangés (`macro`) | `macro` ; session principale |
+| 04/10/2026 | Section `sec:banque` rédigée par `docwriter` (`12e1c4d`, corrections `2b24827` et retouches suivantes), validée par `monnaie` ; jalon 4 de #71 terminé, fiche « spécifiée » | `docwriter` ; `monnaie` ; session principale |
