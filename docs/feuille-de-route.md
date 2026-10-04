@@ -354,6 +354,10 @@ Suite, le même jour, sur les validations de `sec:banque_centrale` (`monnaie`, `
 - choix de la session, sans décision : la ligne « Couverture des intérêts » ajoutée par `docwriter` à `tab:leviers-cadre` est retirée (C9 de `macro` ; ADR 0011 : table inchangée ; φ figure dans `tab:leviers`) ;
 - intervalle ]1 + r̄ ; 1,5[ de a_π laissé ouvert et déclaré (majeur 2 de `monnaie` sur `sec:banque_centrale`) : toute calibration dans cet intervalle demande un avis de `jeu`.
 
+Revue finale (rang 12) : `monnaie-approfondi`, `macro-approfondi` et `jeu` sur le diff de la spécification à `e4ba6c0`. Décisions du mainteneur du 04/10/2026 :
+- **assiette de l'impôt des ménages nette de la couverture des intérêts** (E12 − T^cou ; décision citant M33) : la double reprise sous φ = 1, relevée indépendamment par `macro` et `monnaie`, est levée ; état stationnaire et chiffres du J1 inchangés ;
+- commentaires de `jeu` publiés sur #79 et #82 (mention sous φ = 0, précurseurs, aide, scénario de bascule de φ ; condition 8 de la fiche 7).
+
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 
 Ouvertes par M2 et M3 ; chacune sera présentée dans la fiche du bloc concerné, avec ses références vérifiées, l'avis de l'expert pilote et de `jeu`, puis tranchée par le mainteneur (M-n à venir). Une piste tranchée reste dans le tableau, barrée, avec sa décision.
