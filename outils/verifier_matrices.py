@@ -56,7 +56,8 @@ tenant : `$-D_H - B_H$`.
 **Structure d'une table.** Les zones d'une `longtable` sont délimitées par
 `\\endfirsthead`, `\\endhead`, `\\endfoot` et `\\endlastfoot`. Une note est
 une ligne d'une seule cellule qui commence par `\\multicolumn` (« Suite de la
-page précédente ») : c'est la seule ligne ignorée dans les têtes et le corps.
+page précédente ») : hors filets, lignes vides et ligne qui contient
+`\\caption`, la note est la seule ligne ignorée dans les têtes et le corps.
 La première ligne qui contient `&` dans la première zone de tête (fermée par
 `\\endfirsthead` ou `\\endhead`) est l'en-tête ; après lui, toute ligne de
 cette tête autre qu'une note est un écart, qu'elle ait une cellule ou
@@ -70,10 +71,11 @@ zones de pied (fermées par `\\endfoot` ou `\\endlastfoot`) sont ignorées : ni
 données ni en-tête. Le corps est la zone qui suit le dernier marqueur ; sans
 marqueur de tête, il suit l'en-tête. Les filets (`\\toprule`, `\\midrule`…)
 sont ignorés avec leurs seuls arguments (`[…]` optionnel ; `[…](…){…}` pour
-`\\cmidrule`), de même qu'une ligne faite d'un seul `\\multicolumn` (note). La première colonne porte
-l'étiquette de la ligne ; son premier mot est l'identifiant (`11a`,
-`19a-ménages`). Les colonnes de secteur se reconnaissent à leur en-tête
-(`SECTEURS`) ; une colonne Σ est un écart (§ 9.7, point 3). Dans
+`\\cmidrule`), de même qu'une ligne d'une cellule qui commence par
+`\\multicolumn` (note). La première colonne porte l'étiquette de la ligne ;
+son premier mot est l'identifiant (`11a`, `19a-ménages`). Les colonnes de
+secteur se reconnaissent à leur en-tête (`SECTEURS`) ; une colonne Σ est un
+écart (§ 9.7, point 3). Dans
 `tab:portes-monnaie`, les colonnes sont reconnues à « montant », « ΔM » et
 « ΔH » ; un signe vaut `+`, `-`, `−`, `0` ou `poste`. Sur les lignes de
 `LIGNES_POSTE` (17 et 20, § 9.7, point 5), les deux signes sont `poste`,
