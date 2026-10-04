@@ -1156,6 +1156,11 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 - **Conditions et réserves** : réserves du § 5 ; C45 à C50 (`macro`, § 6.6) ; C48 levée ; conditions 1 à 10 de `jeu` (§ 7).
 - **Ce qui est écarté et pourquoi** : A et B (critères 5, 6 (a), 8, 9 ; B instable sur G) ; T (biais de 2 points par point d'erreur sur r\*) ; C-c (jauge sans mécanisme) ; D (inerte au socle, J6) ; a_π = 1,5 (instable sur G) ; formation de π^e en phase 9 (retouche de `tab:phases` sans gain).
 - **Points tranchés avec M33** (fiche 9, § 8) : A8, i_B ≡ i_CB, M^G\* et contrôle de caisse, couverture des intérêts.
+- **Précisions du mainteneur du 04/10/2026, sur les questions du § 9** (sans numéro M ; consignées aussi dans `docs/feuille-de-route.md` § 4) :
+  - **question 1** : ADR 0011 accepté en **lecture (i)** — la ligne 19b n'a aucun proposant au socle (achats de la banque centrale au J6), l'État est le seul écrivain de la phase 7 ; la fiche 7 (§ 9.4, § 9.8) est alignée par `docwriter` ;
+  - **question 2** (π\* et i_res) : qualifiée par `architect` avant `docwriter` ;
+  - **question 3** : la bande du test zéro sur r = i − π (critère 17) est centrée sur la forme fermée **r̄(1 + π\*)** (1,02 % à π\* = 2 %, 1,10 % à 10 %), correction prospective écrite avant l'essai ; le texte initial du critère reste publié ;
+  - **question 4** (notation) : k_I devient **a_I** ; s_CB est renommé (symbole fixé au rang 9 bis par `architect`) ; r̂\* est gardé, **exception déclarée** au glossaire (l'astérisque y marque une cible) ; les § 1 à § 9 gardent les symboles d'origine.
 
 ## 9. Conséquences de la décision
 

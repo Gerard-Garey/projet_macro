@@ -331,6 +331,17 @@ Critères proposés par `monnaie-approfondi` (fiches 7 et 8, `3b06f8f`, `6777662
 
 Si A8, la lecture nette tenue par le noyau ou la variante (β) de i_B sont retenus à M33, `architect` recommande un seul ADR d'architecture, rédigé avec une consultation Fable (0 sur 3 à ce jour).
 
+### Décisions sur les questions des § 9 des fiches 8 et 9 (rang 9 de la n° 4, 04/10/2026)
+
+Questions posées par `monnaie-approfondi` (fiche 8, § 9, `15cc933`), `macro-approfondi` (fiche 9, § 9.3, QM1 à QM8, `3aea20c`) et `architect-approfondi` (ADR 0011, `50cc78b`, Fable, consultation 1 sur 3). Décisions du mainteneur, sans numéro M (précisions de M32 et M33), toutes selon la recommandation présentée :
+- **ADR 0011 accepté**, avec ses points de forme 3 et 4, en **lecture (i)** de la ligne 19b : aucun proposant de 19b au socle (achats de la banque centrale au J6), l'État seul écrivain de la phase 7 ; annotations des ADR 0005 (pts 5, 10, 13), 0009 et 0010 à appliquer par `architect` ;
+- **borne de m corrigée** : m ≥ 1,0959 à π̄ = 0 (1,10 × Γ̄ × s_G ; le 1,0965 de la fiche 9 § 8, commit `29dea85`, était une erreur de recopie ; remesure de la session : 1,0959441) ;
+- **notation** : k_I → a_I ; s_CB, m (encaisse visée) et P (paiements bruts) renommés pour lever des collisions ; r̂\* gardé, exception déclarée au glossaire ; symboles nouveaux fixés par `architect` (rang 9 bis), appliqués par `docwriter` ;
+- **bande du test zéro sur r = i − π** (fiche 8, critère 17) centrée sur r̄(1 + π\*), correction prospective écrite avant l'essai ;
+- **QM2** : lecture (a), parts non payées enregistrées sans ligne nouvelle de `tab:matrice-flux` ; **QM5** : N-3, N-5, N-6 et τ_F levier à 0 retenus avec M33 ; **QM6** : m visé par l'expert pilote (`macro`) ;
+- **QM3, QM4, QM8**, forme de π\* et de i_res : qualifiés par `architect-approfondi` (Opus) avant `docwriter` ;
+- numéros de ligne de la spécification cités dans les § 1 à § 8 des fiches : laissés tels quels, datés du commit lu (le § 9 de la fiche 8 en donne la correspondance à `9cc1ead`).
+
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 
 Ouvertes par M2 et M3 ; chacune sera présentée dans la fiche du bloc concerné, avec ses références vérifiées, l'avis de l'expert pilote et de `jeu`, puis tranchée par le mainteneur (M-n à venir). Une piste tranchée reste dans le tableau, barrée, avec sa décision.

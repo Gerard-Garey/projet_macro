@@ -1552,10 +1552,18 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
   - **i_B ≡ i_CB du tour** (option (i)) : identité de notation du socle, déclarée une seule fois dans `sec:finances_publiques`, sans label `eq:` ; prime nulle déclarée (J6) ;
   - **E^CB_0 = 0** ; ligne nommée « perte de la banque centrale non couverte » (C60) ;
   - **contrôle de caisse en lecture nette**, écrit dans `sec:cadre-caisse` aux deux conditions d'`architect` (banque exclue ; contrainte tenue par le plan du payeur, vérification du noyau en fin de phase) ;
-  - **encaisse visée M^G\* = m × paiements bruts avec m > 1** : m est un paramètre déclaré du bloc 9, fixé **avant l'essai** du J3, avec une marge déclarée, pour tenir la propriété de `jeu` (aucun rationnement de caisse pour une hausse de dépense de 10 % d'un tour au suivant, ni au retour d'une baisse de 5 % pendant 12 tours, à π̄ ∈ {0 ; 2 ; 10 %} ; borne algébrique m ≥ 1,0965 à π̄ = 0). **Modification** de la l. 502 et de la l. 2064 et du point 13 de l'ADR 0005 : décision citant M22 ;
+  - **encaisse visée M^G\* = m × paiements bruts avec m > 1** : m est un paramètre déclaré du bloc 9, fixé **avant l'essai** du J3, avec une marge déclarée, pour tenir la propriété de `jeu` (aucun rationnement de caisse pour une hausse de dépense de 10 % d'un tour au suivant, ni au retour d'une baisse de 5 % pendant 12 tours, à π̄ ∈ {0 ; 2 ; 10 %} ; borne algébrique m ≥ 1,0959 à π̄ = 0 [*corrigé le 04/10/2026 sur décision du mainteneur : le texte initial, au commit `29dea85`, portait 1,0965, erreur de recopie ; 1,10 × Γ̄ × s_G = 1,0959, § 6.4 et § 9.2*]). **Modification** de la l. 502 et de la l. 2064 et du point 13 de l'ADR 0005 : décision citant M22 ;
   - P2 : lecture (i), M^G\* encaisse visée.
 - **Critère 13 de la fiche 8** : voie (c), voir M32.
 - **Critère « −2 points » de la fiche 6** (essai du J3, #55) : la baisse porte sur le taux directeur, écarts du bloc banque constants (borne ζ < 17,85) ; précision prospective, écrite avant l'essai.
+- **Précisions du mainteneur du 04/10/2026, sur les questions du § 9** (sans numéro M ; consignées aussi dans `docs/feuille-de-route.md` § 4) :
+  - **ADR 0011 accepté** (lignes 19a sous A8), avec ses points de forme 3 et 4, en **lecture (i)** de la ligne 19b : aucun proposant de 19b au socle (J6), l'État seul écrivain de la phase 7 ;
+  - **QM1** : borne de m corrigée en 1,0959 (ci-dessus) ;
+  - **QM2** : lecture (a) — les parts non payées (E13, C60) sont enregistrées, sans ligne nouvelle de `tab:matrice-flux` ;
+  - **QM5** : les points N-3, N-5 et N-6 du socle commun (§ 3.N) et τ_F comme levier à 0 au socle sont **retenus** avec M33 ;
+  - **QM6** : la valeur de m, fixée avant l'essai du J3, est visée par l'expert pilote (`macro`) ;
+  - **notation** : m (encaisse visée), P (paiements bruts) et s_CB sont **renommés** (collisions avec la propension m, l'indice des prix P et l'indice s des secteurs acheteurs) ; symboles nouveaux fixés au rang 9 bis (`architect`) et appliqués par `docwriter` ; les § 1 à § 9 gardent les symboles d'origine ;
+  - **QM3, QM4 et QM8** : qualifiés par `architect` avant `docwriter`.
 - **Motifs** : le mainteneur a retenu la recommandation de `macro`, à laquelle `monnaie` (§ 6) et `jeu` (§ 7, sous deux conditions, toutes deux retenues) se rangent. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
 - **Conditions et réserves** : réserves du § 5 ; C51 à C56 ; C57 et C58 intégrées ; C59 à C63 (`monnaie`, C62 amendée) ; conditions 1 à 9 de `jeu`.
 - **Ce qui est écarté et pourquoi** : A (instable dans la boucle conjointe), B (dette ancre du taux réel), C-WB (traîne de 36,7 point-années), C-Y (impôt sur les intérêts nominaux), D (arrivée réglée par un gain), E comme valeur par défaut (divergence), F (instabilité 4 réintroduite par le budget), V (J6).
