@@ -3,7 +3,7 @@ bloc: Banque commerciale
 module: src/nations/blocs/banque.py
 expert pilote: monnaie
 experts consultés: macro (demande de crédit des entreprises : frontière crédit ; placement de la dette publique, avec la fiche 9) ; jeu
-statut: en instruction
+statut: avis rendus
 décision: —
 issue: #71
 ---
@@ -956,11 +956,354 @@ i_CB est relevé d'un point aux tours 1 à 12. Équilibre partiel : stocks sur l
 
 ## 6. Avis de l'expert consulté
 
-À instruire (jalon 2).
+*Rédigé par `macro` (expert consulté pour la frontière crédit, le bouclage stock-flux et l'état stationnaire) le 04/10/2026. Avis porté sur la fiche à l'état `0e3fb17` (branche `claude/j1-monnaie-etat`, PR #77). Les numéros de ligne de `docs/specification/nations_et_marches.tex` sont ceux de cet état. Les conditions nouvelles sont numérotées C38 à C44 (§ 6.5), sous réserve de l'ordre réel d'intégration.*
+
+*Sources lues :*
+- *fiche 7 : § 1 à § 5 ;*
+- *fiche 6 : § 3.N (F1 à F3), § 3.E, § 3.F, § 6.1, § 6.3 (C27 à C31), § 8 (M28), § 9.1, § 9.2 et § 9.4 ;*
+- *fiche 9 : § 1 (identité de la dette, identité de Domar) et § 1.4 ;*
+- *fiche 5 : § 6.1, Q1 (l. 1037 à 1044) et Q3 (l. 1121 à 1141) ;*
+- *spécification : l. 440 à 450 (`sec:cadre-identites`), l. 479 à 502 (`sec:cadre-caisse`), l. 703 à 705 (ρ̄_K), l. 745 à 765 (`sec:production-stationnaire`), l. 1542 à 1546 (`sec:menages`), l. 1843 à 1867 (`sec:investissement-stationnaire`), l. 1877 et 1895 (`sec:investissement-conditions`) ;*
+- *issue #55.*
+
+*Calculs : maquette propre de `macro`, écrite sans reprendre les scripts de `monnaie` et sans importer `archive/`, dans un répertoire créé par `mktemp -d` (commandes et sorties au compte rendu de `macro` du 04/10/2026). Avant toute grandeur nouvelle, elle reproduit les chiffres publiés de la fiche 6 : ρ̄_K, ρ̄_IN, K, L, D_F, V_F, taux de distribution, distribution à x = 3 (−0,07314) et x_max (2,933 et 2,853). Les sorties de maquette sont des résultats de modèle, sans statut de fait.*
+
+### 6.1 Réponses aux huit questions de `monnaie`
+
+**Q1 — F1 sous ς_L. La lecture convient, sans rouvrir M28. Le crédit refusé est en partie redemandé par F1, ce qui est à déclarer.**
+1. **F1 est inchangée.** Seule sa clause « ligne 18 » (fiche 6 § 9.1, `eq:investissement-demande-credit`) devient ΔL_t = (1 − ς_{L,t})·max(ΔL^d_t ; 0) + min(ΔL^d_t ; 0), ce qui redonne ΔL^d_t pour ς_L = 0. M28 l'a prévu : l'offre de crédit de la fiche 7 relève de C27 et « le refus partiel reste un scénario déclaré », sans rouvrir M28 (fiche 6 § 9.3). La spécification cite déjà « le dispositif du bloc banque, condition C31 » (l. 1895).
+2. **Triangularité.** ς_{L,t} est une entrée de scénario publiée à l'ouverture. Le bloc 6 la lit en phase 3 sans lire de réponse de la banque : le critère 3 (b) est tenu. F3 lit la ligne 18 exécutée : le refus tombe sur Div_F, puis sur D_F, jamais sur l'investissement (§ 3.F de la fiche 6).
+3. **Fait de maquette à déclarer.** F1 vise un niveau, L = lv\*·K : le crédit refusé au tour t est redemandé au tour t + 1. Scénario ς_L = 0,5 aux tours 1 à 12 ; chiffres en unités du crédit nouveau de base du tour.
+
+   | Tour | Demande | Accordé | Écart de Div_F |
+   |---|---|---|---|
+   | 1 | 1,000 | 0,500 | −0,500 |
+   | 2 | 1,498 | 0,749 | −0,251 |
+   | 3 | 1,747 | 0,873 | −0,127 |
+   | 4 | 1,871 | 0,935 | −0,065 |
+   | 12 | 1,993 | 0,997 | −0,0035 |
+   | 13 | 1,993 | 1,993 | **+0,993** |
+   | 14 et suivants | 1 | 1 | 0 |
+
+   - Le manque d'encours plafonne à un tour de crédit nouveau.
+   - Sur le cas à la main de la fiche 6 (crédit de base 3,096 ; Div_F 7,827), cela fait −19,8 % de Div_F au tour 1 et +39,3 % au tour 13.
+4. **Conséquences.**
+   - La « demande non satisfaite » publiée reste à 50 % d'une demande gonflée par le report, alors que l'effet sur les entreprises s'éteint en environ quatre tours (§ 6.6).
+   - La mesure de C31 (l. 1895 : Div_F ≥ 0 et D_F ≥ 0 inactives) tient. Elle doit publier le rebond du tour 13.
+
+**Q2 — Propriétaire de la ligne 9 : je confirme le bloc 7, avec un test d'égalité.**
+1. C'est ma recommandation de la fiche 6 (§ 9.4, l. 1975). Elle est cohérente avec la ligne 10, que le bloc 7 propose déjà (fiche 5, critère 1 (a)).
+2. F3 recalcule i_{L,t}L_t/n_a et i_{D,t}D_{F,t}/n_a (`eq:investissement-dividendes`) sur les mêmes entrées que C2 : encours d'ouverture et taux d'ouverture. Ces taux sont des variables d'état du bloc 7, que le bloc 6 lit dès la phase 2 (fiche 6 § 9.4, l. 1961). Les deux montants sont donc égaux par construction, sans ordre interne en phase 6.
+3. Le propriétaire de la ligne (bloc 7) n'est pas le payeur (les entreprises, bloc 6). La règle de caisse rattache la part non payée au **bloc payeur** (l. 481). L'ordre de priorité des entreprises reste celui de F3 : WB, puis intérêts et impôts, puis Div_F.
+4. Condition C41 (§ 6.5) : l'égalité est testée à chaque pas au J3. Une part impayée, au J6, la romprait : F3 et Div_Bk devraient alors lire les montants exécutés (défaut (iv) du § 3.C-6).
+
+**Q3 — Part non payée de la ligne 9 (#57, J6) : je préfère la capitalisation nommée, ligne du bloc 6.**
+1. **Le cadre la nomme** : « la part non payée est une ligne de flux nommée du bloc payeur (rationnement déclaré, ou capitalisation nommée) » (l. 481). La perte imputée à E^Bk n'est pas une part non payée du payeur. C'est une décision du créancier (passer une créance en perte), qui exige une règle de valorisation, donc un comportement.
+2. **Le résultat de la banque reste juste.** En comptabilité d'engagement, l'intérêt capitalisé est un produit : Π^Bk, calculé en phase 6, reste exact, et Div_Bk n'a pas à relire de montants exécutés. Le défaut (iv) du § 3.C-6 disparaît ; il demeure sous la perte imputée.
+3. **F1 la résorbe sans paramètre.** La capitalisation porte L au-dessus de lv\*·K. Au tour suivant, F1 demande un remboursement, qui cède sur Div_F puis sur D_F (§ 3.F de la fiche 6). Aucune vitesse n'est ajoutée.
+4. **Limite.** Une capitalisation répétée est une dette qui paie ses intérêts par de la dette. Sa borne est une règle de passage en perte, au J6, avec V4 (#57). Ce n'est pas un retour au défaut de la v2.0 (intérêts impayés capitalisés silencieusement dans le principal, `archive/v2.0/prototype/model.py` l. 1009 à 1017) : la ligne est nommée.
+
+**Q4 — E^Bk = ϑL dans l'identité de la dette : j'accepte. Ce n'est pas un choix, c'est l'identité.**
+1. La somme des valeurs nettes de `tab:matrice-bilans` donne B − M^G = V_H + (D_F − L) + E^Bk + E^CB (fiche 9 § 1, point 1). Sous l'option C : B − M^G = V_H + D_F − (1 − ϑ)L + E^CB.
+2. **Remesure.** ϑL/(12 PIB) vaut 0,08004 / 0,06220 / 0,03344 à π̄ = 0 / 2 % / 10 %. Avec B tiré de l'identité, le bilan de la banque reboucle : E^Bk par le stock moins ϑL vaut 1,4e−17, −6,9e−17 et 1,1e−16.
+3. **Conséquences pour la fiche 9** (C42) :
+   - l'illustration de son § 1, point 1, écrite sous E^Bk = 0, passe de 0,244 à **0,30622** an à π̄ = 2 % et YD^HS/PIB = 0,7 ;
+   - le déficit stationnaire de Domar augmente de n_a(Γ̄ − 1)·ϑL/(12 PIB), soit **0,159 / 0,247 / 0,387 % du PIB** à 0 / 2 / 10 % ;
+   - C30 : entre 2 % et 10 %, B/PIB monte de +0,25775, dont +0,2865 du côté des entreprises et −0,0288 du côté de la banque (ϑΔL), comme au § 3.E ;
+   - deux passages de la spécification prennent le terme E^Bk : la phrase « sans titres détenus par les ménages et sans fonds propres de la banque » (l. 1867), et le b de `sec:menages` (l. 1546 ; fiche 9, critère 21). On a b = ν − (L − D_F − E^Bk)/(n_a Y_o), forme déjà écrite par `monnaie` (fiche 5, l. 1128).
+4. E^Bk/PIB dépend de π̄ par L/PIB, comme L lui-même. C'est déclaré (C30), non une dérive.
+
+**Q5 — ΔYD = Δ·(B − M^G − E^CB)/n_a dès le tour n : c'est cohérent avec b/(1 + ib), et plus précis.**
+1. **Algèbre**, sous quatre hypothèses : stocks sur leur sentier ; Div_Bk et Div_F résiduels, versés le tour même ; contraintes Div ≥ 0 inactives ; i_B = i_res = i_CB du tour.
+   - Le revenu de capital des ménages vaut alors **i_CB·NPD/n_a − (Γ̄ − 1)ϑL par pas**, avec NPD = B − M^G − E^CB, quels que soient ϖ_L et ϖ_D. Les écarts se compensent entre la ligne 10, Div_F et Div_Bk.
+   - Vérification en maquette à π̄ = 2 % : 0,00678016 PIB du pas pour (ϖ_L, ϖ_D) = (0, 0), (2 %, 1 %), (0,4 %, 0,214 %) et (5 %, 3 %).
+2. **Conséquence : dYD/di_CB = NPD/n_a**, effet linéaire.
+   - Au tour n, il passe par Div_Bk seul (lignes 11b, 12 et 13).
+   - Aux tours suivants, il passe par trois canaux : la ligne 10 (+D_H), Div_F (−(L − D_F)) et Div_Bk (+E^Bk). Leurs parts valent +228,6 %, −148,9 % et +20,3 % à 2 %, comme au § 3.L.
+3. **Lien avec la fiche 5.** Si YD = Y_o + i·NPD/n_a, alors b/(1 + ib) = NPD/(n_a YD), c'est-à-dire la semi-élasticité du revenu. La consommation de long terme la reprend à dette donnée, puisque la cible est V_H = ν n_a YD^HS. Trois précisions :
+   - i est i_CB, et non i_D ;
+   - Y_o est le revenu hors intérêts, net de la rétention (Γ̄ − 1)ϑL ;
+   - le numérateur est la dette consolidée NPD, qui contient Res − L^CB (fiche 9, critère 21).
+
+   « Dès le tour n » vaut sous l'option (i) de i_B. Sous l'option (iii), le saut du tour n change de signe (−Δ·L^CB/n_a, § 3.L).
+4. **Fait nouveau de maquette : la semi-élasticité dépend fortement de π̄**, par NPD/PIB (C30). Elle vaut **+0,209 / +0,429 / +0,735 % de YD par point** à π̄ = 0 / 2 / 10 %. Le canal rentier est 3,5 fois plus fort à 10 % qu'à 0. Transmis à la fiche 8 (C14, C36) et à #56 (C43, C44).
+
+**Q6 — Calibration des écarts : ni sur le rendement des fonds propres, ni d'abord sur la marge nette d'intérêt. Je recommande les écarts de taux observés, la marge nette servant de contrôle.**
+1. **Au socle, les écarts ne touchent pas le revenu agrégé des ménages** (Q5, point 1). Ils n'agissent que par quatre voies :
+   - **la composition des dividendes.** Sous (2 %, 1 %), le taux de distribution des entreprises passe de 0,56853 à **0,50480** à 2 %, et de 0,39995 à **0,36359** à 10 %. x_max, au-delà duquel la contrainte Div_F ≥ 0 s'active, passe de 2,933 à **2,660** ans à 2 %, et de 2,853 à **2,697** à 10 % (#55, C38) ;
+   - **le niveau de ϱ̄_L** : 2,961 % au lieu de 1 % à 2 %. La calibration ζ ≈ σ/(ϱ̄_L + δ) (fiche 6 § 9.2) en est multipliée par 0,754 (C39) ;
+   - **les marges des contraintes** Div_Bk ≥ 0 et Div_F ≥ 0 ;
+   - **l'affichage** : i_L, i_D, rendement réel des dépôts.
+2. **Ce sont des prix vus par les agents, donc ils se calent sur des prix** : l'écart du taux des crédits nouveaux aux entreprises au taux directeur, et celui du taux directeur au taux des dépôts. Sources candidates, **non lues** : statistiques de taux d'intérêt des institutions financières monétaires de la BCE ; séries de la Réserve fédérale. À lire au J3 (critère 17).
+3. **La marge nette d'intérêt du modèle** (Π^Bk rapporté à l'actif) vaut 2,633 / 2,421 / 2,072 % par an sous (2 %, 1 %) à π̄ = 0 / 2 / 10 %. C'est un contrôle, pas une cible : elle mêle les écarts et la composition de l'actif, qui dépend de π̄ (C30).
+4. **Le rendement des fonds propres n'est pas calibrable au socle.**
+   - Sans coûts d'exploitation, sans pertes et sans impôt sur la banque, c'est un artefact.
+   - Il n'est pas superneutre : la variante basse, calée à 10 % à π̄ = 2 %, donne 7,32 % à 0 et 20,64 % à 10 %.
+   - Caler sur lui forcerait des écarts de 0,4 et 0,2 point, qui sous-estimeraient le coût du crédit des entreprises.
+
+   S'il est restitué, ce doit être avec la mention « sans coûts d'exploitation ni pertes », ou remplacé par la marge nette dans la fiche détaillée (avis de `jeu`).
+
+**Q7 — Effet de Div_Bk versé le tour même sur θ_H et sur la boucle conjointe.**
+1. **θ_H est inchangé.** θ_H est la part de la valeur de la production marginale du pas qui atteint le revenu des ménages (l. 1542).
+   - Π^Bk ne dépend que des encours d'ouverture et des taux de la phase 1.
+   - La rétention ϑL_{t+1} ne dépend que de la ligne 18, que F1 tire de K_t et du plan de la phase 2 (fondé sur y_{t−1}).
+   - Donc ∂Div_Bk/∂y_t = 0, et θ_H reste fixé par les fiches 6 et 9 (fiche 9, critère 14 (c)).
+2. **Couplage du crédit avec Div_Bk, dans le pas** : ∂Div_Bk/∂I^plan = −ϑ·lv\* = −0,04. La banque retient 10 % du crédit qui finance Div_F (F3). C'est une fuite faible et stabilisante, à déclarer.
+3. **Rendement marginal de la richesse des ménages.** Div_Bk reverse ϖ_D sur chaque dépôt supplémentaire placé en titres : le rendement marginal est donc i_CB, non i_D.
+   - Propension de long terme des ménages (`sec:menages`, l. 1544), à π̄ = 2 % : 0,79234 (θ_H = 0,8) et 0,99043 (θ_H = 1) avec i_CB = 3,02 %. On aurait 0,78442 et 0,98052 en prenant i_D = 2,02 %.
+   - La maquette conjointe doit prendre i_CB (C43) : fiche 8, critère 11 ; fiche 9, critères 8 (c) et 14 (c).
+4. **Délai du canal rentier.** Le plan des ménages du tour n + 1 lit YD_n, Div_Bk du tour n compris (M29). Sous la lecture (e) (i), la consommation répond donc **dès le tour n + 1**, en même temps que l'investissement, et non au seul tour n + 2. La chaîne de C35 et celle du § 3.L (« consommation au tour n + 2 ») sont à compléter.
+5. **Effet net à l'impact au tour n + 1**, en équilibre partiel. Hypothèses : α_Y = 0,6 ; η_r = 2 ; I/PIB du § 3.E de la fiche 6 ; YD^HS/PIB = 0,7 ; ϑ = 0,1.
+
+   | π̄ | Effet net, lecture (e) (i) | Effet net, lecture (e) (ii) |
+   |---|---|---|
+   | 0 | −0,189 % du PIB par point | −0,277 % |
+   | 2 % | −0,087 % | −0,271 % |
+   | 10 % | **+0,089 %** | −0,250 % |
+
+   - À inflation stationnaire haute, la première réponse de la demande à une hausse de taux est expansionniste. C'est un résultat de maquette, non un fait.
+   - Le gain statique (C14, C36) reste réglé par la règle budgétaire (C23). Transmis à la fiche 8 et à #56 (C44).
+
+**Q8 — Lectures (b) et (e) : j'accepte (i) dans les deux cas.**
+- **(b) Écart additif.**
+  - Les écarts sont neutres pour le revenu agrégé (Q5). S-ζ ne lit que ϱ_L − ϱ̄_L = (i_L − ī_L)/(1 + π\*).
+  - La forme de l'écart n'agit donc que par le niveau de ϱ̄_L (C39) et par la distribution des entreprises (C38).
+  - La forme multiplicative échouerait au critère 4 (c), écrit avant l'essai.
+- **(e) Div_Bk le tour même.** Trois motifs :
+  - **symétrie avec F3**, où Div_F est versé en phase 6 du tour de son résultat ;
+  - **consolidation exacte dans le tour** : la hausse de la charge d'intérêts de l'État au tour n (ligne 11b) devient le revenu des ménages au tour n. C'est l'hypothèse de distribution complète dans le pas qui fonde la forme b/(1 + ib) de la fiche 5 ;
+  - **aucune variable d'état ni aucun artefact de calendrier.** Sous (ii), Div_F change au tour n + 1, mais Div_Bk du tour n n'arrive qu'au tour n + 1. Le revenu des ménages reçoit 0 au tour n, puis (2·NPD − E^Bk)·Δ/n_a au tour n + 1, soit 1,80 fois le régime, puis le régime. Le même empilement, de signe opposé, se produit au tour du retour. C'est un artefact de décalage entre les deux sociétés, non un mécanisme.
+
+  Coût de (i) : la consommation répond dès le tour n + 1 (Q7, point 4). C'est déclaré.
+
+### 6.2 Contrôle des chiffres de mon domaine (remesure indépendante)
+
+| Grandeur | Publiée | Remesure de `macro` | Verdict |
+|---|---|---|---|
+| ρ̄_K à 2 % et 10 % (l. 705) | 0,7786 ; 0,4214 | 0,77862 ; 0,42144 | conforme |
+| ρ̄_IN à 2 % et 10 % (l. 755) | 0,996057 ; 0,981246 | idem | conforme |
+| K/(12 PIB) à 0 ; 2 % ; 10 % | — ; 1,55510 ; 0,83598 | 2,00092 ; 1,55510 ; 0,83598 | conforme |
+| L/(12 PIB) | 0,80037 (§ 3.0) ; 0,62204 ; 0,33439 | idem | conforme |
+| L à n_a = 4 et 52 (2 %) | 0,621423 ; 0,622275 | idem | conforme |
+| D_F/(12 PIB) | 0,16636 ; 0,16605 ; 0,16492 | idem | conforme |
+| L − D_F ; V_F à 2 % et 10 % | 0,45598 et 0,16947 ; 1,19174 et 0,75713 | idem (à 0 : 0,63401 ; 1,46007) | conforme |
+| Distribution des entreprises, taux de Fisher égaux | 0,56853 ; 0,39995 ; −0,07314 à x = 3 | idem (à 0 : 0,68966) | conforme |
+| x_max, Div_F ≥ 0 (#55) | 2,933 ; 2,853 | idem | conforme |
+| E^Bk = ϑL ; M ; B_Bk (§ 3.E) | 0,08004 / 0,06220 / 0,03344 ; 0,86636 / 0,86605 / 0,86492 ; 0,16686 / 0,32705 / 0,58480 | idem | conforme |
+| B − M^G − E^CB | 0,14603 / 0,30622 / 0,56397 | idem | conforme |
+| Π^Bk/PIB ; rendement des fonds propres ; Div/Π | 0,02547 / 0,02298 / 0,01905 ; 31,82 / 36,94 / 56,97 % ; 0,93772 / 0,89262 / 0,79695 | idem | conforme |
+| Div/Π à n_a = 4, 12 et 52 | 0,892301 / 0,892616 / 0,892737 | idem | conforme |
+| B_Bk/actif | 0,1725 / 0,3446 / 0,6362 | idem | conforme |
+| Condition d'existence à 2 % | −0,000947 (écarts nuls) ; +0,0330 | −0,000947 ; +0,03298 | conforme |
+| Impôt d'inflation net / YD | 0 / −0,037 / −0,485 % | idem | conforme |
+| C29 : saut du tour n ; tours suivants | +13,33 % ; +2,71 % de Π | idem | conforme |
+| ΔYD/YD par point à 2 % ; parts aux tours n + 1 et suivants | 0,429 % ; +229 / +20 / −149 % | 0,429 % ; +228,6 / +20,3 / −148,9 % | conforme |
+| C30 : ΔB entre 2 % et 10 % | +0,2578 ; +0,2865 ; −0,0288 | +0,25775 ; +0,2865 ; −0,0288 | conforme |
+| ϱ̄_L à 0, 2 % et 10 % (#44) | 3,000 / 2,961 / 2,818 % | idem | conforme |
+| Cas du § 3.K (à la main) | E = 60 ; Π = 2,05 ; Div = 1,05 ; 19a = 2,9 ; Res après 8 (b) = 0 ; ΔD = 11,9 | idem ; contrainte budgétaire nulle | conforme |
+
+Aucun écart. Les grandeurs nouvelles de cet avis (distribution des entreprises sous écarts, x_max, effet net au tour n + 1, propension de long terme) sont des résultats de maquette, sous les hypothèses du § 3.0.
+
+### 6.3 Lectures (a) à (h) du § 5 : avis de `macro`
+
+- **(a) l. 450 face à la l. 489 : (i).**
+  - Toute règle qui couvre une position négative « ajoute » cette position au refinancement. La lecture (ii) contredirait donc la l. 489.
+  - Ce que protège la l. 450, c'est le critère 1 (b) : aucun poste obtenu par différence. Res est tenu au grand livre et mû par la ligne 20 ; la ligne 21 est un flux décidé.
+  - Rédaction proposée à `docwriter` : « aucune règle ne calcule les réserves comme solde du bilan bancaire pour en reporter la partie négative sur le refinancement ; la ligne 21 est décidée par la règle du bloc banque à partir de la position tenue au grand livre ». Le mainteneur tranche.
+- **(b) : (i)** (Q8).
+- **(c) : pas d'objection à (i) au socle.** V1 ne change aucune forme fermée de mon domaine : le point fixe ne dépend pas de λ. Sous (e) (i), la lecture (c) (i) rend l'impulsion rentière immédiate, que V1 lisserait. À juger à la fiche 8.
+- **(d) : (i).**
+  - Un plancher de i_D déplace du revenu de la ligne 10 vers Div_Bk, sans effet sur le revenu agrégé tant que Div_Bk ≥ 0 est inactive (Q5).
+  - Ce serait une borne à seuil libre, active dans le scénario de plancher, sans gain macroéconomique. Le socle n'a pas de billets, donc aucun motif d'arbitrage.
+- **(e) : (i)** (Q8).
+- **(f) : A8.** C'est la recommandation commune de `macro` et `monnaie` (critère 1 (a)) : l'emprunteur propose sa ligne, sur le modèle de la lecture (a) de M28. C'est une modification, avec ADR, à M33.
+- **(g) : sans objection.** La lecture est inerte au socle : Res = 0 à chaque clôture tant que B_CB < M^G\* + E^CB (§ 3.C-3).
+- **(h) : i_L et i_D.** C'est ce que lit le bloc 6 : « i_{L,t} (état du bloc 7, C27) » (fiche 6 § 9.4, l. 1961). Avec i_{CB,t−1} seul, le bloc 6 devrait reconstruire i_L, donc connaître ϖ_L.
+
+### 6.4 Avis général
+
+**Favorable à l'option C, avec le socle commun du § 3.N.** Motifs dans mon domaine :
+- **Cohérence stock-flux** : aucun solde résiduel, contrainte budgétaire exacte (cas du § 3.K recalculé), E^Bk calculé deux fois.
+- **État stationnaire** : formes fermées sans vitesse, toutes reproduites (§ 6.2).
+- **Identités de la dette et de Domar** : elles restent en forme fermée avec ϑL.
+- **Frontière crédit** : conforme à M28 (lecture (a), F1 et F3 inchangées).
+- **Canal rentier** : la banque reverse intégralement son résultat marginal, si bien que ce canal vaut exactement i_CB·NPD/n_a. C'est la forme la plus nette pour #56 et C14.
+
+**Réserves**, sans désaccord avec `monnaie` :
+1. La chaîne des délais est à compléter : la consommation répond dès le tour n + 1 par Div_Bk (Q7, point 4 ; C43).
+2. Le taux de distribution des entreprises, x_max et la calibration de ζ sont à recalculer avec les écarts (C38, C39).
+3. La calibration se fait sur des prix, et le rendement des fonds propres n'est pas une cible (Q6).
+4. La « demande non satisfaite » sous ς_L inclut le report (Q1, § 6.6).
+
+### 6.5 Conditions transmises
+
+- **C38 (fiche 6, script d'état stationnaire du J3, #55).**
+  - Le taux de distribution des entreprises et x_max se calculent avec i_L = i_CB + ϖ_L et i_D = i_CB − ϖ_D : 0,50480 et 0,36359 ; x_max = 2,660 et 2,697 ans à π̄ = 2 % et 10 %.
+  - Seuils de Div_F ≥ 0 en écart de taux réel : −7,13 / −3,56 / −1,68 points à ζ = 4 / 8 / 17, au lieu de −9,57 / −4,79 / −2,25. À ζ = 17, le test « distribution positive sous −2 points » (l. 1895) échouerait.
+  - Les chiffres de la l. 1863, calculés à « taux du crédit et des dépôts de Fisher », gardent cette hypothèse déclarée ou sont mis à jour à la décision.
+- **C39 (fiche 6, calibration de ζ, M28 § 9.2).** ζ ≈ σ/(ϱ̄_L + δ) se calcule avec ϱ̄_L écart compris : 2,961 % à 2 %, soit un facteur 0,754 sur ζ à σ donné par rapport à ϱ̄_L = 1 %.
+- **C40 (fiche 6, clause « ligne 18 » de F1, dans M28).**
+  - Ligne 18 = (1 − ς_L)·max(ΔL^d ; 0) + min(ΔL^d ; 0) ; F1 inchangée.
+  - La mesure de C31 publie la décroissance de l'effet sur Div_F (−50 / −25 / −13 % du crédit de base aux tours 1 à 3) et le rebond du tour 13.
+- **C41 (fiches 6 et 7, J3).** À chaque pas, l'intérêt recalculé par F3 égale les lignes 9 et 10 (part des entreprises) exécutées, à 1e−12 × S^Bk près. Une part non payée (J6) est le déclencheur de la lecture des montants exécutés.
+- **C42 (fiche 9).**
+  - Identité : B − M^G = V_H + D_F − (1 − ϑ)L + E^CB.
+  - Illustration du § 1 : 0,30622 an à 2 %.
+  - Déficit de Domar : +0,159 / 0,247 / 0,387 % du PIB.
+  - La l. 1867 et le b de la l. 1546 (critère 21) prennent E^Bk.
+- **C43 (fiches 8 et 9, boucle conjointe : fiche 8, critère 11 ; fiche 9, critères 8 (c) et 14 (c)).**
+  - Le rendement marginal de la richesse des ménages est i_CB.
+  - θ_H est inchangé par la banque ; le couplage −ϑ·lv\*·ΔI^plan est déclaré.
+  - Le canal rentier vaut 0,209 / 0,429 / 0,735 % de YD par point.
+  - La consommation répond dès le tour n + 1 sous (e) (i). C35 et C16 sont complétées en conséquence.
+- **C44 (fiche 8, C14, et #56).** L'effet net en équilibre partiel au tour n + 1 vaut −0,189 / −0,087 / +0,089 % du PIB par point à π̄ = 0 / 2 / 10 %. Il est remesuré dans la boucle conjointe, avec la règle budgétaire, avant l'ouverture du levier de taux.
+- **Au J3 (critère 17).** ϖ_L et ϖ_D se calent sur des écarts de taux observés, sources lues. La marge nette d'intérêt sert de contrôle ; le rendement des fonds propres n'est pas une cible.
+
+### 6.6 Points signalés à `jeu` (non tranchés)
+
+- **Refus de crédit.** La « demande non satisfaite » reste à 50 % pendant les 12 tours, mais l'effet sur les dividendes s'éteint en environ quatre tours, et rebondit au tour 13. Additionner les montants refusés tour par tour surestimerait le choc d'environ onze fois. Je suggère de restituer aussi le manque d'encours (L/K face à lv\*).
+- **Écarts de taux.** Ils ne changent pas le revenu agrégé des ménages : seule la composition de leur revenu bouge.
+- **Rendement des fonds propres.** Les 37 % sont un artefact, sans coûts d'exploitation ni pertes.
+- **Premier effet d'une hausse de taux.** Sous (e) (i), la consommation réagit dès le tour n + 1. À inflation haute, la première réponse nette de la demande est positive (C44).
+
+### 6.7 Constat hors du périmètre (fiche 6 et spécification, section décidée)
+
+- `sec:investissement-conditions` (l. 1877) et `investissement.md` § 9.2 (l. 1914) écrivent : « distribution dans [0,2 ; 0,9], soit un capital de moins de 2,933 ans ». Or 2,933 est le seuil de Div_F ≥ 0 (#55).
+- La borne de 0,2 correspond à x < **2,707** ans à 2 % et à **2,482** à 10 % (taux de Fisher égaux), et à 2,469 et 2,356 sous les écarts de l'option C.
+- C'est un écart de rédaction, sans effet sur M28. Un commentaire sur #55 est proposé au compte rendu de `macro`.
 
 ## 7. Avis de `jeu`
 
-À instruire (jalon 2).
+*`jeu`, 04/10/2026 (issue #71, jalon 2), sur la fiche à l'état `0e3fb17` (branche `claude/j1-monnaie-etat`, PR #77). Réponses aux sept questions de `monnaie` (§ 5).*
+
+**Chiffres.** Aucun moteur n'existe encore. J'ai recalculé les formes fermées de l'option C, indépendamment de `monnaie`, à partir des ratios amont du § 3.E (deux scripts hors dépôt, 04/10/2026, sans import du dépôt ni d'`archive/`). Ils retrouvent les valeurs des § 3.E et 3.L : rendement des fonds propres 31,82 / 36,94 / 56,97 % ; écart de Π^Bk +13,33 % au tour 1, +2,71 % aux tours 2 à 12, −10,62 % au tour 13 ; revenu des ménages +0,429 %. Les hypothèses sont celles du § 3.0 ; le revenu disponible YD = 0,714 est une lecture de `jeu`. Les chiffres nouveaux de cet avis viennent des mêmes scripts.
+
+**Question ludique de la fiche.** Le bloc n'ouvre aucun levier. Il est le tuyau par lequel le taux directeur atteint les entreprises, les épargnants et le Trésor. Trois questions en découlent :
+- la transmission se voit-elle, au bon tour, sans faux signal ?
+- les gagnants et les perdants d'une décision de taux sont-ils nommables ?
+- un levier qui le traverse (achats de titres, dépense publique) a-t-il un effet identifiable ?
+
+### 7.A, 7.B, 7.D, 7.V et 7.R (brièvement)
+
+- **A : à revoir.** Les leviers κ^CAR et ϱ^res paraissent lisibles, mais l'effet de ϱ^res n'est écrit nulle part (3.A-6 (ix)) : c'est un levier mort. Le plafond est une falaise (instabilité 15). L'insolvabilité et la recapitalisation sont au socle, sans signal précurseur.
+- **B : à revoir.** Aucun levier. Le rationnement est servi dans l'ordre des indices des secteurs, invisible et injuste entre secteurs. Le cliquet de L_cb est invisible.
+- **D : à revoir.** Les taux sautent par crans quand un ratio que le joueur ne voit pas sort de sa bande.
+- **V1** : acceptable seulement si λ/n_a ≥ 0,5. À 0,25, le tour n + 1 ne transmet que 0,25 point (seuil d1 manqué). **V2** : sans intérêt ludique. **V3** : à revoir, la norme de fonds propres se déplace avec l'inflation (0,164 / 0,093 / 0,044). **V4** : à garder pour le J6, avec #57 ; E^Bk/L sous ϑ y serait un signal précurseur naturel d'un resserrement du crédit (O3).
+- **R : hors classement.** Référence ; contredit la grammaire des délais (C27, C35).
+
+### 7.C Option C — écarts constants, refinancement sur la position nette, fonds propres ancrés
+
+- **Récit en une phrase** : « la banque prête à qui le demande au taux directeur plus un écart fixe, rémunère les dépôts au taux directeur moins un écart fixe, applique tout changement au tour suivant, garde des fonds propres égaux à une part fixe de ses crédits et distribue le reste ». Une seule phrase, sans exception cachée.
+- **Ce que voit le joueur** (taux directeur +1 point aux tours 1 à 12, π̄ = 2 %) :
+  - taux du crédit et des dépôts : +1,0 point au tour 2, soit dix crans ; dès le tour 1 si les taux annoncés sont affichés (condition 1) ;
+  - revenu des ménages : +0,429 % à chaque tour de 1 à 12, 0 dès le tour 13 ; aucun reste ;
+  - résultat de la banque sur 12 tours : +3,59 % (fenêtre 1-12), puis −0,89 % sur la fenêtre 13-24, contrecoup du saut d'un tour (C29) ;
+  - rendement des fonds propres sur 12 tours : +1,33 point (d2).
+- **Gagnants et perdants d'une hausse de taux** : l'État paie plus d'intérêts (ligne 11b) ; les épargnants touchent davantage (intérêts des dépôts, dividendes de la banque) ; les entreprises endettées perdent (leurs dividendes reculent). Effet symétrique au retour : aucune remise à zéro gratuite.
+- **Leviers qui traversent le bloc** :
+  - *taux directeur* : direct, un tour de délai, contrepartie visible le tour même (charge d'intérêts de l'État, résultat de la banque) ;
+  - *dépense publique* : B_Bk et dépôts des entreprises montent le tour même ; Res et L^CB inchangés ;
+  - *achats de titres de la banque centrale* : **neutres au socle**, en deçà comme au-delà de M^G\*. Avec i_B = i_res = i_CB, l'écart de Π^Bk vaut −3,5e−18 pour un achat de 0,01 (12 × PIB) et −6,9e−18 pour 0,03 > M^G\*. Seuls B_Bk, L^CB et Res changent. C'est un levier sans effet identifiable (O2) : condition 6.
+- **Stratégies.**
+  - Aucune stratégie interne à la banque : elle n'a ni levier ni borne.
+  - *Dette sans contrainte de financement* : la banque souscrit tout le reliquat de l'émission, sans limite, au taux que fixe le même joueur. Cela renforce #78 ; un pays sans règle peut financer un déficit permanent sans coût perceptible tant que i_B < g.
+  - *Canal rentier et inflation* : l'écart de revenu des ménages par point de taux est proportionnel à B − M^G : 0,146 / 0,306 / 0,564 % du PIB à π̄ = 0 / 2 / 10 %. Il est 1,84 fois plus fort à 10 % qu'à 2 % : là où il faut casser l'inflation, la hausse du taux enrichit le plus les ménages (#56).
+- **Risques.**
+  - *Indicateurs morts* : écarts au taux directeur, E^Bk/L (= ϑ exactement), L^CB (= M^G\*) et Res (= 0) sont constants par construction.
+  - *Faux signal d'un tour* : au tour de la décision, l'écart affiché à l'ouverture se réduit d'un point, comme si la banque rognait sa marge.
+  - *Niveau du rendement des fonds propres* : 37 % à 2 %, 57 % à 10 % ; le joueur y lirait une rente bancaire qui n'est qu'une hypothèse de calibration (3.C-6 (v)).
+  - *Signe net du taux* : non établi (#56) ; l'option C retient la transmission complète aux dépôts, hypothèse sous laquelle la maquette de #56 inversait le signe.
+- **Verdict : lisible**, sous les conditions 1 à 9.
+
+### Réponses aux sept questions de `monnaie`
+
+1. **Deux niveaux d'indicateurs : à clarifier.**
+   - Au tableau du tour, « écarts au taux directeur » est remplacé par les **taux du crédit et des dépôts annoncés pour le tour suivant**, écrits en 8 (c) ; la transmission se lit au tour même de la décision.
+   - Le **rendement réel des dépôts** i_D − π monte au tableau du tour : quasi nul à l'état stationnaire quelle que soit l'inflation (0,00 / +0,02 / +0,10 %), il ne bouge que si le taux s'écarte de sa règle. C'est le signal de l'épargnant.
+   - La demande non satisfaite n'apparaît qu'avec l'événement de scénario (réponse 5).
+   - Le rendement des fonds propres reste dans la fiche détaillée, sur 12 tours seulement, avec son niveau normal à l'inflation mesurée et la mention « sans coûts d'exploitation au socle » jusqu'à la calibration du J3.
+   - E^Bk/L, Res, L^CB et B_Bk restent dans la fiche détaillée comme bilan ; E^Bk/L porte la mention « constant par règle au socle ».
+2. **Saut de C29 : lisible, sur 12 tours, avec une infobulle qui annonce les deux moitiés.** Le saut est interne à la banque : le revenu des ménages reste lisse, Div_Bk prenant le relais de la ligne 10 au seul tour 1. Le contrecoup laisse −0,89 % sur la fenêtre 13-24. Texte proposé : « Le tour où le taux directeur change, la banque paie et reçoit déjà le nouveau taux sur ses titres et son refinancement, mais ses taux de crédit et de dépôt ne changent qu'au tour suivant : son résultat fait un saut d'un tour, que le retour du taux compense à l'identique. »
+3. **Taux des dépôts négatif : lisible, accord pour la lecture (d)(i), sans plancher.** Sans billets au socle, rien ne permet aux ménages d'échapper à un taux négatif. Un plancher à 0 serait une borne sans mécanisme nommable. Le tableau affiche alors : « taux des dépôts négatif : au socle, aucun billet ne permet aux ménages d'y échapper ».
+4. **Achat de titres invisible : lisible pour la banque (B_Bk et L^CB bougent), à revoir pour le levier.** La neutralité est totale, au-delà de M^G\* aussi, sous i_B = i_res = i_CB. Condition 6, transmise à la fiche 8.
+5. **Noms des événements de scénario.**
+   - ς_L : « **Restriction du crédit bancaire** (événement externe, tours a à b) : les banques refusent x % des nouveaux crédits demandés ; demande non satisfaite : y u.m., absorbée par les dividendes et les dépôts des entreprises ; investissement non touché ».
+   - ς_B : « **Adjudication non couverte** (événement externe, tours a à b) : x % de la dette émise ce tour n'a pas trouvé preneur ; encaisse du Trésor sous sa cible ; dépenses rationnées au tour suivant ».
+   - Les deux portent la mention « scénario, sans signe précurseur au socle ». « Crise » est réservé aux types de crise du J6 (O3). « Resserrement » serait confondu avec une hausse de taux. « Placement raté » reste le terme interne.
+6. **Transmission : complète, lecture (c)(i).** Récit en une phrase ; avec les taux annoncés, l'effet se voit au tour de la décision. V1 à λ/n_a = 0,5 transmet 0,5 / 0,75 / 0,875 / 0,94 point aux tours n + 1 à n + 4 : un délai que le joueur ne distinguera pas des autres, pour deux paramètres. V1 reste une option de calibration au J3, sous d1 (λ/n_a ≥ 0,5), si des sources lues l'imposent.
+7. **Revenu des ménages +0,43 % : à clarifier.**
+   - Le mécanisme est explicable et symétrique : « taux haut : l'État paie, les épargnants touchent, les entreprises endettées perdent ».
+   - Le signe macroéconomique ne l'est pas encore (#56). L'option C confirme l'hypothèse de transmission complète aux dépôts sous laquelle le signe s'inversait.
+   - Le canal croît avec la dette nette et avec l'inflation (×1,84 entre 2 % et 10 %).
+   - Conditions 4 et 5. Toute correction est un choix de conception, dont `monnaie` et `macro` diraient le coût en fidélité ; je n'en propose pas.
+
+### Indicateurs (critère 13 (a))
+
+| Indicateur | Niveau | Verdict | Motif ou point à clarifier |
+|---|---|---|---|
+| i_L, i_D en vigueur ce tour | tableau du tour | **lisible** | % par an, une décimale |
+| i_L, i_D annoncés pour le tour suivant | tableau du tour | **à ajouter** | Transmission visible au tour de la décision |
+| Écarts au taux directeur | fiche détaillée | **hors du tableau** | Constants par construction ; faux signal d'un tour au tableau |
+| Rendement réel des dépôts i_D − π | tableau du tour | **à ajouter** | Signal de l'épargnant ; mention si i_D < 0 |
+| Crédit nouveau | tableau du tour | **lisible** | — |
+| Demande non satisfaite | événement | **à clarifier** | Affichée avec l'événement « Restriction du crédit bancaire » seulement |
+| Masse monétaire au PIB | tableau du tour | **lisible** | Facteur de fenêtre publié |
+| Π^Bk et Div_Bk | fiche détaillée | **à clarifier** | Sur 12 tours seulement ; infobulle C29 (réponse 2) |
+| Rendement des fonds propres | fiche détaillée | **à clarifier** | 12 tours ; niveau normal à l'inflation mesurée ; mention « sans coûts d'exploitation » jusqu'au J3 |
+| E^Bk/L | fiche détaillée | **hors du tableau** | Égal à ϑ par règle ; utile au J6 (V4) |
+| Res, L^CB, B_Bk au PIB | fiche détaillée | **lisible** | Bilan ; contrepartie des achats de titres |
+| Décomposition de ΔYD (d3) et charge d'intérêts de l'État | tableau du tour, avec la fiche 5 | **à ajouter** | Côte à côte, pour #56 |
+
+### Préférence motivée
+
+- **Ma préférence va à C**, comme celle de `monnaie`.
+  - **Mes motifs propres** :
+    - une règle en une phrase ;
+    - des taux annonçables un tour à l'avance ;
+    - d1 tenu avec dix crans et e (i) tenu ;
+    - aucun plancher ni plafond invisible ;
+    - des normes que n'importe quelle vitesse laisse en place ;
+    - des gagnants et perdants nommables ;
+    - aucune remise à zéro gratuite.
+  - **Les motifs de `monnaie`**, que je ne juge pas : critères 1 à 12 et 14 à 18.
+- **Faiblesses ludiques**, déclarables, aucune rédhibitoire au socle :
+  - quatre indicateurs constants ;
+  - un rendement des fonds propres invraisemblable avant calibration ;
+  - des achats de titres neutres ;
+  - une dette publique absorbée sans limite (#78) ;
+  - un canal rentier qui croît avec l'inflation (#56).
+- **Classement** : C > V1 (λ/n_a ≥ 0,5) > V3 > D > B > A. R est hors classement.
+- **Lectures du § 5** : (b) additive, accord (0,18 point entre 0 et 10 %, moins de deux crans) ; (c)(i) et (d)(i), accord ; (e)(i), accord (YD lisse, alors que (ii) crée un trou au tour n puis un pic au tour n + 1) ; (g), accord (une bascule de référence serait invisible) ; (a), (f) et (h) sans enjeu ludique.
+- **Coût en fidélité** : aucun écart à la littérature demandé. Taux annoncés, rendement réel des dépôts, retrait des indicateurs constants et libellés d'événements sont des choix de restitution.
+
+### Conditions demandées au § 9
+
+1. **Taux annoncés pour le tour suivant** au tableau du tour, à côté des taux en vigueur ; écarts au taux directeur dans la fiche détaillée seulement.
+2. **Rendement réel des dépôts** au tableau du tour, avec la mention « taux des dépôts négatif : au socle, aucun billet ne permet aux ménages d'y échapper » quand i_D < 0.
+3. **Π^Bk, Div_Bk et rendement des fonds propres sur 12 tours seulement**, avec l'infobulle C29 (réponse 2), le niveau normal à l'inflation mesurée et la mention « sans coûts d'exploitation au socle » jusqu'à la calibration du J3. E^Bk/L porte la mention « constant par règle au socle ».
+4. **Tableau levier → indicateur → délai → contrepartie** (critère 13 (c)) :
+
+   | Levier | Indicateur | Délai | Contrepartie |
+   |---|---|---|---|
+   | Taux directeur | i_L, i_D annoncés ; revenu des ménages | annoncés au tour n, appliqués au tour n + 1 ; revenu dès le tour n | Charge d'intérêts de l'État, résultat de la banque, dividendes des entreprises, le tour n |
+   | Dépense publique | B_Bk ; dépôts des entreprises | tour n | Dette publique détenue par la banque |
+   | Achats de titres de la banque centrale | B_Bk, L^CB, Res | tour n | Aucun effet sur les taux, la monnaie ni le résultat de la banque au socle (déclaré) |
+
+5. **Décomposition de ΔYD** (intérêts des dépôts, dividendes de la banque, dividendes des entreprises) affichée à côté de la charge d'intérêts de l'État. L'essai de #56 inclut π̄ = 10 % et un archétype à dette élevée, le canal rentier y étant 1,84 fois plus fort qu'à 2 %.
+6. **Fiche 8, levier « achats de titres »** : ouvert au J4 seulement avec un canal (corridor non nul, prime ou durée, fiche 9), sinon affiché comme « opération de bilan, sans effet sur les taux ni sur la monnaie au socle ».
+7. **Événements de scénario** nommés « Restriction du crédit bancaire » (ς_L) et « Adjudication non couverte » (ς_B), avec leur durée, leur ampleur et la mention « scénario, sans signe précurseur au socle » ; le libellé joueur entre au glossaire.
+8. **#78** : mention que la banque souscrit tout le reliquat sans limite au socle (C22), au taux fixé par le joueur.
+9. **J6** (#57) : V4, avec E^Bk/L sous ϑ comme signal précurseur d'un resserrement du crédit endogène.
+
+### Seuils (critère 13 (d) et (e), adoptés le 04/10/2026)
+
+- (d1) tenu : +1,0 point, dix crans, au tour n + 1.
+- (d2) +1,33 point sur 12 tours ; +1,00 point au tour 12.
+- (d3) publié (§ 3.L).
+- (e)(i) tenu par i_L et i_D ; (e)(ii) pic au tour 2, au tour 1 avec les taux annoncés ; (e)(iii) aucune dynamique lente.
+- Aucun seuil nouveau proposé.
+
+**Issue proposée par `jeu`** (création soumise au mainteneur ; corps dans le compte rendu de la session, PR #77) : « J4 — restitution du bloc banque commerciale : taux annoncés, rendement réel des dépôts, résultat sur 12 tours, indicateurs constants hors du tableau ».
 
 ## 8. Décision du mainteneur
 
@@ -978,3 +1321,4 @@ i_CB est relevé d'un point aux tours 1 à 12. Équilibre partiel : stocks sur l
 | 04/10/2026 | Relecture croisée intégrée (avis de `macro`, `monnaie` et `jeu`, une relance ciblée ; qualifications d'`architect`) ; options ouvertes marquées « à trancher par le mainteneur » | `macro` ; `monnaie` ; `jeu` ; `architect` ; session principale |
 | 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #71 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
 | 04/10/2026 | Jalon 2, première partie : § 3 à § 5 instruits (options A à D et socle commun, tableau comparatif, recommandation de l'option C) ; § 6 et § 7 à rendre | `monnaie` ; session principale |
+| 04/10/2026 | Jalon 2, seconde partie : avis de `macro`, expert consulté (§ 6, favorable à C, conditions C38 à C44), et de `jeu` (§ 7, C lisible sous neuf conditions) ; fiche « avis rendus » | `macro` ; `jeu` ; session principale |
