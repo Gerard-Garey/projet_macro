@@ -1721,7 +1721,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 4. **K/Y (ii) au joueur, (i) dans le bilan : lisible, à deux conditions.**
    - **(ii) au joueur, à clarifier sur la fenêtre.**
      - Dans la définition du test zéro : 1,997 an à 2 % et 1,984 à 10 %. C'est une grandeur physique.
-     - Dans la définition de restitution (lecture (e) : stock de clôture / somme des 12 derniers PIB), le niveau normal vaut **2,040 ans à 2 % et 2,110 à 10 %**.
+     - Dans la définition de restitution (lecture (e) : stock de clôture / somme des 12 derniers PIB), le niveau normal vaut **2,040 ans à 2 % et 2,110 à 10 %** (*Annotation du 04/10/2026 (revue finale de `macro`, mesure ; décision inchangée) : ce facteur nominal ne vaut que pour un stock en u.m. ; le numérateur p_t K^vol_{t+1} ne porte pas la hausse du prix du pas suivant : niveau normal **2,037 ans à 2 % et 2,093 à 10 %**, visé par le mainteneur le 04/10/2026)*.
        - Le facteur est Γ·12/Σ_{u=0}^{11}Γ^{−u}, soit 1,0216 et 1,0638 (calcul `python3 -c`).
        - C'est un effet de fenêtre qui dépend de l'inflation, comme pour le ratio de richesse de la fiche 5.
        - Le niveau normal se publie dans la définition affichée, à l'inflation mesurée.
@@ -1747,7 +1747,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 | Dette des entreprises en années de PIB | **à ajouter** | Remplace le levier ; niveau normal à l'inflation mesurée |
 | Levier L/K | **hors du tableau** | Constant par construction |
 | Taux d'utilisation | **hors du tableau du tour** | Conséquence déclarée mais imperceptible (question 2) |
-| K/Y (ii) | **à clarifier** ; panneau annuel | Niveau normal dans la définition affichée (2,040 ans à 2 % sous la lecture (e)) |
+| K/Y (ii) | **à clarifier** ; panneau annuel | Niveau normal dans la définition affichée (2,040 ans à 2 % sous la lecture (e) ; *2,037 ans, annotation du 04/10/2026*) |
 | Part d'investissement visée ti | **hors du tableau** | Imperceptible dans une partie |
 
 ### Préférence motivée

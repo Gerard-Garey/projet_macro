@@ -759,6 +759,7 @@ Transfert de +1 % du YD stationnaire aux tours 1 à 12.
 
 **Délais**
 - Consommation : inchangés. Dépense publique au tour n, consommation au tour n + 2 ; transferts au tour n, consommation au tour n + 1.
+  *Annotation du 04/10/2026 (revue finale de `macro`, mesure ; décision inchangée) : depuis M28 (règle F), une dépense publique du tour n relève le dividende du tour n (ligne 14, environ +0,498 par u.m. de G, les dépôts visés absorbant le reste), compté par H7 dans le revenu du tour n : le budget des ménages bouge **dès le tour n + 1** (+0,315 par u.m. de G), puis au tour n + 2 par l'emploi. Le critère J3 « Délais » est corrigé de façon prospective dans la spécification (décision du mainteneur du 04/10/2026, aucun essai fait).*
 - Prix, ajout de la boucle :
   - dépense publique au tour n, prix au tour n + 1 (par ξ) ;
   - transferts au tour n, prix au tour n + 2.
@@ -880,6 +881,7 @@ Le ratio baisse au tour du transfert : le revenu du tour monte avant la richesse
 
 - C égale le plan : la demande des ménages est entièrement servie.
 - Délais : G au tour n, consommation au tour n + 2 ; transferts au tour n, consommation au tour n + 1.
+  *Annotation du 04/10/2026 (revue finale de `macro`, mesure ; décision inchangée) : depuis M28 (règle F), une dépense publique du tour n relève le dividende du tour n (ligne 14, environ +0,498 par u.m. de G, les dépôts visés absorbant le reste), compté par H7 dans le revenu du tour n : le budget des ménages bouge **dès le tour n + 1** (+0,315 par u.m. de G), puis au tour n + 2 par l'emploi. Le critère J3 « Délais » est corrigé de façon prospective dans la spécification (décision du mainteneur du 04/10/2026, aucun essai fait).*
 - La part d'un transfert dépensée en 12 tours (critère 12 (d)) n'est **pas calculée** : à extraire de la même maquette.
 
 **Sur-commande** (critère 11 ; maquettes B1 et B2 ; G doublé, part de 20 %, tours 1 à 12 ; plafond N^pa) :
@@ -1325,6 +1327,7 @@ Deux précisions conditionnent mon accord :
     - la consommation monte dès le tour 2 (+0,66 %) ;
     - à la fin des transferts, en PE, elle retombe en un tour (+0,77 % au tour 13, +0,12 % au tour 14), puis s'éteint lentement (+0,09 % au tour 24).
   - **Dépense publique** : effet sur la consommation au tour n + 2. Le premier tour où l'écart de C atteint 0,1 % est le tour 5 pour G +1 %.
+    *Annotation du 04/10/2026 (revue finale de `macro`, mesure ; décision inchangée) : depuis M28 (règle F), une dépense publique du tour n relève le dividende du tour n (ligne 14, environ +0,498 par u.m. de G, les dépôts visés absorbant le reste), compté par H7 dans le revenu du tour n : le budget des ménages bouge **dès le tour n + 1** (+0,315 par u.m. de G), puis au tour n + 2 par l'emploi. Le critère J3 « Délais » est corrigé de façon prospective dans la spécification (décision du mainteneur du 04/10/2026, aucun essai fait).*
   - **Délais mécaniques** : transferts et impôts → consommation, 1 tour ; dépense publique → consommation, 2 tours ; taux → consommation, 1 tour. Ils sont **lisibles** et cohérents avec mes avis sur les fiches 3 (question 5) et 4 (question 2).
 - **Leviers.** Aucun levier propre. **Transferts et dépense publique ne sont pas redondants** (production supplémentaire en u.m. par u.m. publique, θ_H = 0,8) :
 
@@ -1731,7 +1734,7 @@ Je recommande (i). Le mainteneur tranche.
 |---|---|---|---|---|
 | Transferts | C ; revenu par source ; décomposition du taux d'épargne (revenu imprévu) | ligne 6 au tour n, plan au tour n + 1 | tour 2 | dépôts des ménages ; ligne « transferts » |
 | Impôts sur les ménages | idem, de signe opposé | n + 1 | tour 2 | dépôts ; ligne « impôts » |
-| Dépense publique | C | revenu au tour n + 1 (emploi), plan au tour n + 2 | tour 5 (G +1 %) | stocks, dépense exécutée (fiche 2) |
+| Dépense publique | C | revenu au tour n + 1 (emploi), plan au tour n + 2 (*Annotation du 04/10/2026 (revue finale de `macro`, mesure ; décision inchangée) : dividende au tour n, plan au tour n + 1 depuis M28)* | tour 5 (G +1 %) | stocks, dépense exécutée (fiche 2) |
 | Taux (i_D) | C ; ligne « intérêts reçus » | ligne 10 au tour n, plan au tour n + 1 ; **signe +** (canal rentier) | tour 2 (+0,25 point) | intérêts reçus au tour n |
 | Cible π\* | plan ; terme d'entretien de la décomposition ; ligne « érosion des dépôts (inflation cible) » | **0 ou 1 tour selon la date de π\*** (§ 9.8, contrat 2) ; une baisse d'un point relève le plan de +0,5543 % | — | érosion cible en baisse |
 
@@ -1816,7 +1819,7 @@ Chaque test énonce une propriété avec un seuil écrit avant l'essai (réserve
 | J3 | Boucle propre (critère 5 (b)) | Revenus hors intérêts exogènes. Valeur propre dominante : 0,96612 (i_D = 0), 0,96706 (i_D = 3 %), 0,96727 (i_D = 11 %, π̄ = 10 %) ; λ_H ×0,5 : 0,98352 ; ×2 : 0,93419 (i_D = 3 %) | module < 1 aux trois calibrations ; demi-vies publiées |
 | J3 | Boucle conjointe (critère 5 (c) ; réserve 3) | SN, C, M, ménages, avec F de la fiche 6 et π^e = π\* exogène ; régimes H et B. Repères de maquette (§ 3.C-10, point 8) : 0,9640 / 0,9617 (θ_H = 0,8), 0,9564 / 0,9537 (θ_H = 1), sous un θ_H effectif fixé par F. Recalculé avec la loi de π^e de la fiche 8 dès qu'elle existe | rayon < 1 à la calibration, hors racine nominale (\|λ − 1\| ≤ 1e−8) ; publié aux vitesses ×0,5 et ×2 |
 | J3 | Effet d'un changement de cible (réserve 9) | Appel direct, états d'ouverture fixés, π\* passant de 2 % à 1 % : le plan monte. Mesure : +0,5543 % (+0,9776 % sous la cible nominale écartée) | signe + ; ampleur dans [0,3 % ; 0,8 %] par point, à ν_H = 1 et λ_H = 0,4 |
-| J3 | Délais (critères 2 (d) et 12 (b)) | Transferts ou impôts au tour n : C^plan inchangé au tour n, modifié au tour n + 1, du signe du levier. i_D au tour n : ligne 10 au tour n, plan au tour n + 1, signe +. G au tour n : consommation au tour n + 2 (boucle). π\* : selon la date retenue (§ 9.8) | signe et date exacts |
+| J3 | Délais (critères 2 (d) et 12 (b)) | Transferts ou impôts au tour n : C^plan inchangé au tour n, modifié au tour n + 1, du signe du levier. i_D au tour n : ligne 10 au tour n, plan au tour n + 1, signe +. G au tour n : consommation au tour n + 2 (*Annotation du 04/10/2026 (revue finale de `macro`, mesure ; décision inchangée) : corrigé de façon prospective : dividende au tour n, budget au tour n + 1 ; revenu salarial au tour n + 1, budget au tour n + 2)* (boucle). π\* : selon la date retenue (§ 9.8) | signe et date exacts |
 | J3 | Phases (critère 2) | En phase 2, le bloc ne lit que l'ouverture et π\* ; aucune lecture de WB_t, N\*, y\*, G^plan, I^plan ni du registre. H6 vient après le bloc 2 ; H7 ne lit que les phases ≤ 6 | aucune lecture hors ordre |
 | J3 | Bornes (critère 8 ; #38) | (a) Plafond inactif à l'état résolu, marge de 12,24 mois de consommation ; appel direct avec D_{H,t} = 0,5·C^règle_t : C^plan = D_{H,t}. (b) Plancher : appel direct avec YD_{t−1} = −YD̄ : C^plan = 0. (c) Cas des impôts doublés (§ 3.N-6) : D_H vaut 1 280, 1 184 puis 1 155 après les phases 4, 5 et 6 ; le plan du tour suivant baisse de ΔT_H·(α_YΓ^e + λ_H/n_a − γ^e + ν_Hλ_Hπ^{∗,pas}) = 10,12 pour ΔT_H = 16. (d) D_H ≥ 0 à la fin de chaque phase, en O2 | (a), (b), (d) exacts ; (c) 1e−12 relatif |
 | J3 | Conditions de domaine (§ 9.2) | Chargement avec ν_Hλ_H = 1, ou λ_H > n_a, ou un coefficient de richesse ≤ 0 : refus explicite, sans écrêtage | refus |
