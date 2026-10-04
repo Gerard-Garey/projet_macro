@@ -1119,7 +1119,7 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 
    | Levier | Indicateur | Délai | Contrepartie |
    |---|---|---|---|
-   | Taux directeur (écart à la prescription) | prescription ; i_L, i_D annoncés ; glissement ; production | lignes 12 et 13 au tour n ; i_L, i_D au tour n + 1 ; production au tour 3 ; glissement au tour 3, deux crans avant le tour 12 | charge d'intérêts de l'État, revenu des ménages et Π^CB au tour n ; r̂\* au tour n + 1 |
+   | Taux directeur (écart à la prescription) | prescription ; i_L, i_D annoncés ; glissement ; production | lignes 12 et 13 au tour n ; i_L, i_D au tour n + 1 ; production au tour 3 ; glissement au tour 3, deux crans avant le tour 12 | charge d'intérêts de l'État, revenu des ménages et Π^CB au tour n ; r̂\* au tour n + 1 [*erratum du 04/10/2026 (`jeu`, sur constat de `monnaie`) : r̂\* ne lit pas le taux décidé mais le glissement (BC2) ; écrit au tour n + 3, affiché au tour n + 4 au plus tôt (maquette) ; l'ancienne valeur n + 1 confondait les deux*] |
    | Suivre la règle | taux indiqué par la règle | tour n | saut annoncé par l'écart affiché |
 
 8. **Signes contre-intuitifs déclarés dans l'aide** :
