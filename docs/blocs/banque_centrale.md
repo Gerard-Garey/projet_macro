@@ -349,7 +349,7 @@ Contrôles de la maquette (`chk1.py`, `chk3.py`) :
 *Lue* :
 - L. Gáti, « Monetary policy & anchored expectations: an endogenous gain learning model », ECB Working Paper 2685, juillet 2022 :
   - p. 13-14, équations (22) et (23) : gain endogène k_t = g(f_{t|t−1}), lisse et convexe (g_f·f ≥ 0), qui emboîte le gain constant comme cas particulier ;
-  - p. 19-20 : « the consensus in the literature on estimating learning gains is that if the true model is one with constant gain learning, then the gain lies between 0.01-0.05 » (données trimestrielles) ; Milani (2007) : 0,0183 ; Branch et Evans (2006) : 0,062 ; Erceg et Levin (2003) : 0,13 ; valeur de référence 0,05.
+  - p. 19-20 [*erratum du 04/10/2026 (validation de `sec:banque_centrale` par `monnaie`, PDF ECB WP 2685 relu) : la citation est p. 20 ; la p. 19 porte le tableau 2*] : « the consensus in the literature on estimating learning gains is that if the true model is one with constant gain learning, then the gain lies between 0.01-0.05 » (données trimestrielles) ; Milani (2007) : 0,0183 ; Branch et Evans (2006) : 0,062 ; Erceg et Levin (2003) : 0,13 ; valeur de référence 0,05.
 - Lues par les fiches précédentes et reprises ici : Taylor (1993), p. 202 (fiche 4) ; Barro et Gordon (1983), résumé NBER (fiche 4) ; Whitesell, FEDS 2006-22, p. 4 (fiche 7) ; Leeper (1991) et Bohn (1998), résumés (fiche 6) ; Coibion (2011), NBER w17034 (critère 15).
 
 *Retrouvée par extraits de moteur de recherche seulement (PDF bloqué par le proxy)* : Evans, « Adaptive Learning in Macroeconomics », notes de cours (Oxford, 2020) et « Theories of Learning and Economic Policy » (2021), Université de l'Oregon. Extrait relevé : les anticipations adaptatives sont un cas particulier de l'apprentissage par moindres carrés à gain constant dont le seul régresseur est une constante. **À relire à la source avant toute citation dans la spécification.**
@@ -493,7 +493,7 @@ Aucune remesure V n'a été faite.
 1. **Source.**
    - Taylor (1993), p. 202 : forme proportionnelle.
    - Action intégrale : v1.5 l. 1030 (« terme intégral »), sans clip ni log.
-   - Loi d'anticipation : apprentissage à gain constant de la moyenne (Evans ; voir § 3.0) ; gain calé sur Gáti (2022), p. 19-20.
+   - Loi d'anticipation : apprentissage à gain constant de la moyenne (Evans ; voir § 3.0) ; gain calé sur Gáti (2022), p. 20 (erratum du 04/10/2026, non p. 19-20).
 2. **Équations** (choix de conception, sauf mention).
    - (C1) 1 + i_t = (1 + r̂\*_t)(1 + π\*_t) + a_π(π_{t−1} − π\*_t).
    - (C2) r̂\*_{t+1} = r̂\*_t + (k_I/n_a)(π_{t−1} − π\*_t).
@@ -1239,7 +1239,7 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 |---|---|---|---|---|---|
 | a_π | `coefficient_ecart_inflation` | 0,5 (indicative) | sans dimension : points de taux par point d'écart du glissement | **choix de conception, sans source** (§ 4, critère 23). La forme proportionnelle est celle de Taylor (1993, p. 202), mais la réponse totale à l'inflation vaut ici a_π < 1 : le principe de Taylor n'est pas tenu à court terme (§ 3.C-6). **Calibré au J3** | BC1 |
 | k_I | `gain_integral` | 0,25 par an (indicative) | par an, gain, conversion linéaire (k_I/n_a = 0,020833 par pas, remesuré) | **choix de conception, sans source** (§ 4, critère 23). k_I = 1 est mesuré par `jeu` sur la calibration et la branche λ_w ×2 seulement (§ 7, réponse 2). **Calibré au J3** | BC2 |
-| λ_e | `gain_anticipation` | 0,2 par an (indicative) | par an, vitesse, conversion linéaire (λ_e/n_a = 0,016667 par pas, remesuré) | Gáti (2022), p. 19-20 : gain de 0,05 par trimestre, soit 0,2 par an en conversion linéaire (§ 3.0). **Calibré au J3** avec λ_w·β sur un ratio de sacrifice sourcé (C7, #45) | BC3 |
+| λ_e | `gain_anticipation` | 0,2 par an (indicative) | par an, vitesse, conversion linéaire (λ_e/n_a = 0,016667 par pas, remesuré) | Gáti (2022), p. 20 (erratum du 04/10/2026, non p. 19-20) : gain de 0,05 par trimestre, soit 0,2 par an en conversion linéaire (§ 3.0). **Calibré au J3** avec λ_w·β sur un ratio de sacrifice sourcé (C7, #45) | BC3 |
 | s_CB | `part_souscription_banque_centrale` | 0 au socle | fraction du besoin d'émission | A8 (M33) ; paramètre d'archétype ; levier au J6 (N-4) | BC5 |
 | r̄ | `taux_reel_neutre_initial` | 0,01 (indicative) | par an, taux réel de Fisher sur π\*, (1 + i_{CB,0}) = (1 + r̄)(1 + π\*) | lecture (1) de #44, M32 : r̄ donné, s_G résolu (N-5). Niveau du taux naturel contesté (critère 23). Repris comme r^ref par T9 (fiche 9, § 3.C-2). **Calibré au J3** | état initial (§ 9.4) |
 
@@ -1355,7 +1355,7 @@ Une fois les trois neutralisées, le résidu vaut 0,019 point. Toute réouvertur
    - Π^CB < 0 si i_CB < 0 (C60).
 7. **Une cible abaissée baisse le taux à l'impact.** C'est la question de fond que `jeu` adresse à `monnaie` (§ 7, réponse 6), instruite ici en forme fermée, sans décision.
    - Sous BC1, ∂(1 + i^règle)/∂π\* = (1 + r̂\*) − a_π = 1,01 − 0,5 = 0,51 (remesuré). Cela redonne la baisse de 0,51 point du tour 2 mesurée par `jeu`.
-   - Le signe s'inverserait seulement si a_π > 1 + r̂\*, valeurs exclues par la condition a_π < 1,5 dans la mesure où a_π = 1,5 est instable sur G.
+   - Le signe s'inverserait seulement si a_π > 1 + r̂\*, valeurs **non exclues** par la condition de domaine a_π < 1,5 : elles n'ont pas été mesurées en maquette et sortent de la lecture (a) de la décision ; toute calibration où a_π > 1 + r̄ demande un avis de `jeu`, le signe de l'effet d'une cible abaissée changeant avec elle. [*Erratum du 04/10/2026 (validation de `sec:banque_centrale`, majeur 2) : le texte initial disait ces valeurs « exclues par la condition a_π < 1,5 », ce qui est faux pour l'intervalle ]1 + r̂\* ; 1,5[.*]
    - Toute autre forme du terme de Fisher modifierait M32. Elle est à instruire avec #54, avant l'ouverture du levier de cible.
 8. **Pays joué sans reprise (φ = 0) explosif** sous toute règle à action intégrale : une hausse de taux y est inflationniste à moyen terme. C'est un régime déclaré de la fiche 9 (M33), non une référence.
 9. **Faible effet de long terme d'un taux tenu sous T9 nominal**, porté au mainteneur au titre du critère 10 (a) (§ 5, point (3)). Sous C-HS, le palier vaut +0,396 au tour 120, au-dessus du cran : l'exigence de persistance est tenue.
@@ -1604,7 +1604,7 @@ Encadrés `proposee` citant M32 (et M33 pour les points partagés), sans label (
   - identité i_res ≡ i_CB (corridor de largeur nulle) ;
   - `\limites` : principe de Taylor non tenu à court terme ; mémoire de r̂\* ; taux négatif sans billets ; cible abaissée qui baisse le taux (défaut 7, avec la dérivée 0,51) ;
 - **anticipations (BC3)** :
-  - apprentissage à gain constant de la moyenne ; gain de Gáti (2022), p. 19-20 ;
+  - apprentissage à gain constant de la moyenne ; gain de Gáti (2022), p. 20 (erratum du 04/10/2026, non p. 19-20) ;
   - **ne citer Evans qu'après lecture à la source** (§ 3.0) ;
   - phase 1, délai de deux tours, condition de Barro et Gordon ;
   - aucune crédibilité (C-g au J4 ou J6) ;
