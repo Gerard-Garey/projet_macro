@@ -110,6 +110,11 @@ jobs:
         run: uv sync --locked
       - name: Concordance stricte
         run: uv run --locked python outils/concordance_spec_moteur.py --strict
+      # Batterie à part entière (#28) : la CI échoue si une ligne d'une
+      # matrice ne somme pas à zéro, même sans les tests unitaires. Étape de
+      # ce travail, dont le nom est un contrôle requis du ruleset de main.
+      - name: Matrices strictes
+        run: uv run --locked python outils/verifier_matrices.py --strict
 
   compilation:
     name: Compilation de la spécification

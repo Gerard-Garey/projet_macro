@@ -34,11 +34,15 @@ tenant : `$-D_H - B_H$`.
 - Chaque terme porte son signe (`+`, `-` ou `−`), le premier compris ; un
   terme sans signe est un écart.
 - Parenthèses, crochets, `=`, `\\left`, `\\right`, `\\frac`, `\\sum`, `\\pm`
-  et `\\mp` sont refusés : une cellule ne factorise rien.
+  et `\\mp` sont refusés : une cellule ne factorise rien. Une commande est
+  comparée par son nom entier (`\\leftarrow`, `\\pmb` sont admis).
 - Un exposant ou un indice signé s'écrit entre accolades (`x^{-1}`) ; `x^-1`
   est refusé (« exposant ou indice signé sans accolades »), car il se lirait
   comme deux termes.
-- Le script ne décompose pas un produit : `i_D D_H` est un terme.
+- Le script ne décompose pas un produit : `i_D D_H` est un terme. Un signe
+  après `\\cdot` ou `\\times` est refusé (« signe après l'opérateur de
+  produit ») : le signe d'un produit se porte en tête du terme. Un opérateur
+  en fin de cellule est refusé (« facteur manquant »).
 - Deux écritures d'un même terme sont confondues si elles ne diffèrent que par
   les espaces, les espaces fins (`\\,`, `\\;`, `\\!`, `\\:`, `~`), les
   accolades d'un seul symbole (`B_{H}` = `B_H`) ou les commandes de police
@@ -50,18 +54,28 @@ tenant : `$-D_H - B_H$`.
   (`LIGNES_POSTE`) sont déclarés en tête du script.
 
 **Structure d'une table.** Les zones d'une `longtable` sont délimitées par
-`\\endfirsthead`, `\\endhead`, `\\endfoot` et `\\endlastfoot`. La première
-ligne qui contient `&` dans la première zone de tête (fermée par
-`\\endfirsthead` ou `\\endhead`) est l'en-tête ; dans les autres zones de tête
-(en-têtes répétés), chaque ligne qui contient `&` doit lui être identique, les
-notes d'une seule cellule (« Suite de la page précédente ») étant ignorées. Les
+`\\endfirsthead`, `\\endhead`, `\\endfoot` et `\\endlastfoot`. Une note est
+une ligne d'une seule cellule qui commence par `\\multicolumn` (« Suite de la
+page précédente ») : hors filets, lignes vides et ligne qui contient
+`\\caption`, la note est la seule ligne ignorée dans les têtes et le corps.
+La première ligne qui contient `&` dans la première zone de tête (fermée par
+`\\endfirsthead` ou `\\endhead`) est l'en-tête ; après lui, toute ligne de
+cette tête autre qu'une note est un écart, qu'elle ait une cellule ou
+plusieurs. Chacune des autres zones de tête (têtes répétées) porte au moins
+une ligne qui contient `&` (sinon « tête répétée sans ligne d'en-tête »), et
+toute ligne autre qu'une note, d'une cellule comme de plusieurs, y est
+comparée au premier en-tête (« en-tête répété différent du premier
+en-tête »). Limite : une ligne d'une seule cellule placée avant l'en-tête de
+la première tête n'est pas relevée, qu'elle soit une note ou non. Les
 zones de pied (fermées par `\\endfoot` ou `\\endlastfoot`) sont ignorées : ni
 données ni en-tête. Le corps est la zone qui suit le dernier marqueur ; sans
-marqueur de tête, il suit l'en-tête. Les filets (`\\toprule`, `\\midrule`…) sont ignorés, de même
-qu'une ligne faite d'un seul `\\multicolumn` (note). La première colonne porte
-l'étiquette de la ligne ; son premier mot est l'identifiant (`11a`,
-`19a-ménages`). Les colonnes de secteur se reconnaissent à leur en-tête
-(`SECTEURS`) ; une colonne Σ est un écart (§ 9.7, point 3). Dans
+marqueur de tête, il suit l'en-tête. Les filets (`\\toprule`, `\\midrule`…)
+sont ignorés avec leurs seuls arguments (`[…]` optionnel ; `[…](…){…}` pour
+`\\cmidrule`), de même qu'une ligne d'une cellule qui commence par
+`\\multicolumn` (note). La première colonne porte l'étiquette de la ligne ;
+son premier mot est l'identifiant (`11a`, `19a-ménages`). Les colonnes de
+secteur se reconnaissent à leur en-tête (`SECTEURS`) ; une colonne Σ est un
+écart (§ 9.7, point 3). Dans
 `tab:portes-monnaie`, les colonnes sont reconnues à « montant », « ΔM » et
 « ΔH » ; un signe vaut `+`, `-`, `−`, `0` ou `poste`. Sur les lignes de
 `LIGNES_POSTE` (17 et 20, § 9.7, point 5), les deux signes sont `poste`,
@@ -79,7 +93,8 @@ anomalie de ce retrait (un `\\iffalse` non refermé) est un écart `structure`.
 Usage : `uv run python outils/verifier_matrices.py [--strict] [fichier.tex]`
 (défaut : `docs/specification/nations_et_marches.tex`). Sans `--strict`, le
 script rend compte et sort avec le code 0 ; avec `--strict`, tout écart donne
-le code 1.
+le code 1. Un fichier absent, illisible ou non UTF-8 donne un message
+`fichier : …` sur la sortie d'erreur et le code 1, avec ou sans `--strict`.
 """
 
 from __future__ import annotations
@@ -157,14 +172,23 @@ LIGNES_POSTE = ("17", "20")
 COLONNE_REEL = "reel"
 
 MARQUEURS_TETE = re.compile(r"\\(endfirsthead|endhead|endfoot|endlastfoot)(?![A-Za-z])")
+# Filets et sauts de page effacés avant la lecture, avec leurs seuls arguments :
+# `[épaisseur]` optionnel pour les filets de booktabs, `\addlinespace` et les
+# sauts de page, `[…](…){…}` pour `\cmidrule`. Un groupe `{…}` ou `(…)` qui
+# suit un autre filet est le début de la ligne suivante : il est gardé (#27).
 FILETS = re.compile(
-    r"\\(?:toprule|midrule|bottomrule|hline|cmidrule|addlinespace|nopagebreak|pagebreak"
-    r"|newpage)(?![A-Za-z])\s*(?:\[[^\]]*\])?\s*(?:\([^)]*\))?\s*(?:\{[^{}]*\})?"
+    r"\\cmidrule(?![A-Za-z])\s*(?:\[[^\]]*\])?\s*(?:\([^)]*\))?\s*(?:\{[^{}]*\})?"
+    r"|\\(?:toprule|midrule|bottomrule|addlinespace|nopagebreak|pagebreak)(?![A-Za-z])"
+    r"\s*(?:\[[^\]]*\])?"
+    r"|\\(?:hline|newpage)(?![A-Za-z])"
 )
 ESPACES_FINS = re.compile(r"\\[,;!: ]|~|\\quad(?![A-Za-z])|\\qquad(?![A-Za-z])")
 POLICES = re.compile(r"\\(?:mathit|mathrm|text|textrm|textit)\s*\{([^{}]*)\}")
 ACCOLADE_SIMPLE = re.compile(r"([_^])\{([A-Za-z0-9]|\\[A-Za-z]+)\}")
 INTERDITS = ("(", ")", "[", "]", "=", r"\left", r"\right", r"\frac", r"\sum", r"\pm", r"\mp")
+# Opérateurs de produit : un signe qui les suit appartient au facteur, pas à la
+# somme (`a\cdot -b` se lirait comme deux termes `a\cdot` et `-b`) ; refusé.
+PRODUITS = (r"\cdot", r"\times")
 SIGNES = {"+": 1, "-": -1, "−": -1}
 
 
@@ -324,17 +348,28 @@ def lire_cellule(texte: str) -> tuple[list[tuple[int, str, str]], str | None]:
     if corps.strip() == "0":
         return [], None
     for interdit in INTERDITS:
-        if interdit in corps:
+        # Une commande se compare par son nom entier : `\leftarrow`, `\rightarrow`
+        # et `\pmb` ne sont pas `\left`, `\right` et `\pm` (#27).
+        motif = (re.escape(interdit) + r"(?![A-Za-z])" if interdit.startswith("\\")
+                 else re.escape(interdit))
+        if re.search(motif, corps):
             return [], (f"« {interdit} » interdit : une cellule est une somme signée "
                         "de termes simples, développée (§ 9.7, point 1)")
     if not _accolades_equilibrees(corps):
         return [], "accolades déséquilibrées"
     termes = []
-    for signe, brut in _decouper_termes(corps):
+    morceaux = _decouper_termes(corps)
+    for rang, (signe, brut) in enumerate(morceaux):
         # `x^-1` se découperait en `x^` et `-1` : le signe appartient à l'exposant.
         if normaliser_terme(brut).endswith(("^", "_")):
             return [], (f"exposant ou indice signé sans accolades après « {brut.strip()} » "
                         "(écrire par exemple x^{-1})")
+        if normaliser_terme(brut).endswith(PRODUITS) and rang == len(morceaux) - 1:
+            # Opérateur en fin de cellule : aucun signe ne le suit (#27).
+            return [], f"facteur manquant après l'opérateur de produit de « {brut.strip()} »"
+        if normaliser_terme(brut).endswith(PRODUITS):
+            return [], (f"signe après l'opérateur de produit de « {brut.strip()} » : le signe "
+                        "se porte en tête du terme (écrire par exemple -a\\cdot b)")
         if signe == "":
             return [], f"terme sans signe explicite : « {brut.strip()} »"
         cle = normaliser_terme(brut)
@@ -499,6 +534,20 @@ def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[
         return None, ecarts + [Ecart("structure", ou(debut_env), f"{label} : en-tête introuvable")]
     if tetes:
         corps = lignes_de(zone_corps)
+        # Première tête : après l'en-tête, seule une note `\multicolumn` d'une
+        # cellule est admise, comme dans le corps et les têtes répétées (une
+        # ligne de données placée là échapperait à toute vérification).
+        for a, b in tete:
+            if a <= entete[0]:
+                continue
+            cellules_tete = _separer(travail, a, b, "&")
+            premiere_tete = travail[cellules_tete[0][0]:cellules_tete[0][1]].strip()
+            if len(cellules_tete) == 1 and premiere_tete.startswith("\\multicolumn"):
+                continue  # note sur toute la largeur
+            nature = ("ligne à cellules" if len(cellules_tete) > 1
+                      else "ligne d'une cellule hors note \\multicolumn")
+            ecarts.append(Ecart("structure", ou(_debut_utile(travail, a, b)),
+                                f"{label} : {nature} dans la première tête, après l'en-tête"))
     else:
         corps = [r for r in tete if r[0] > entete[0]]
     cellules_entete = _separer(travail, entete[0], entete[1], "&")
@@ -507,16 +556,21 @@ def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[
                 ou(_debut_utile(travail, a, b)))
         for a, b in cellules_entete[1:]
     ]
-    # En-têtes répétés (têtes suivant la première) : chaque ligne à plusieurs
-    # cellules est identique au premier ; une note d'une seule cellule
-    # (« Suite de la page précédente ») est ignorée, comme dans la recherche
-    # de l'en-tête.
+    # En-têtes répétés (têtes suivant la première) : chaque tête porte au moins
+    # une ligne à cellules, et chaque ligne est identique au premier en-tête ;
+    # seule une note `\multicolumn` d'une cellule (« Suite de la page
+    # précédente ») est ignorée, comme dans le corps.
     cles = [cle_entete(travail[a:b]) for a, b in cellules_entete]
     for zone in tetes[1:]:
-        for a, b in lignes_de(zone):
+        rangs = lignes_de(zone)
+        if not any(_separer(travail, a, b, "&")[1:] for a, b in rangs):
+            ecarts.append(Ecart("structure", ou(_debut_utile(travail, zone[0], zone[1])),
+                                f"{label} : tête répétée sans ligne d'en-tête"))
+        for a, b in rangs:
             cellules_repetees = _separer(travail, a, b, "&")
-            if len(cellules_repetees) == 1:
-                continue
+            premiere_repetee = travail[cellules_repetees[0][0]:cellules_repetees[0][1]].strip()
+            if len(cellules_repetees) == 1 and premiere_repetee.startswith("\\multicolumn"):
+                continue  # note sur toute la largeur
             repetees = [cle_entete(travail[c:d]) for c, d in cellules_repetees]
             if repetees != cles:
                 ecarts.append(Ecart("structure", ou(_debut_utile(travail, a, b)),
@@ -913,7 +967,18 @@ def main(arguments: list[str] | None = None) -> int:
     analyseur.add_argument("tex", nargs="?", type=Path, default=TEX_DEFAUT,
                            help="spécification LaTeX (défaut : %(default)s)")
     options = analyseur.parse_args(arguments)
-    rapport = verifier(options.tex)
+    try:
+        rapport = verifier(options.tex)
+    except OSError as erreur:
+        # Fichier absent ou illisible : message d'une ligne, sans trace (#27).
+        print(f"fichier : {_relatif(options.tex)} : lecture impossible "
+              f"({erreur.strerror or erreur})", file=sys.stderr)
+        return 1
+    except UnicodeDecodeError:
+        # Fichier présent mais non UTF-8 : même message, sans trace (#27).
+        print(f"fichier : {_relatif(options.tex)} : lecture impossible "
+              "(encodage non UTF-8)", file=sys.stderr)
+        return 1
     afficher(rapport, options.tex)
     return 1 if options.strict and rapport.ecarts else 0
 
@@ -921,4 +986,5 @@ def main(arguments: list[str] | None = None) -> int:
 if __name__ == "__main__":
     # La console Windows n'est pas toujours en UTF-8 : sortie forcée en UTF-8.
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     sys.exit(main())

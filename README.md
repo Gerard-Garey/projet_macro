@@ -32,12 +32,13 @@ Installer l'environnement verrouillé (Python 3.12, NumPy, pytest, selon `uv.loc
 uv sync --locked
 ```
 
-Batteries de vérification (identiques dans `CLAUDE.md`, « Commandes », et dans le workflow `circuit-technique`) :
+Batteries de vérification (identiques, et dans le même ordre, dans `CLAUDE.md`, « Commandes », et dans la liste `BATTERIES` du workflow `circuit-technique` ; chacune est aussi une étape de la CI ; le test `tests/unitaires/test_batteries.py` le vérifie) :
 
 ```bash
 uv run pytest -q tests/unitaires
 uv run pytest -q tests/invariants
 uv run python outils/concordance_spec_moteur.py --strict
+uv run python outils/verifier_matrices.py --strict
 ```
 
 Un succès inattendu d'un test marqué en échec attendu fait échouer la batterie (`xfail_strict`). La concordance applique le contrat de `docs/specification/CONVENTIONS.md` § 9 ; sans `--strict`, elle rend compte sans échouer.
@@ -48,7 +49,7 @@ Vérification des matrices des bilans et des flux de la spécification (tables `
 uv run python outils/verifier_matrices.py [--strict] [fichier.tex]
 ```
 
-Sans `--strict`, elle rend compte sans échouer ; la batterie `tests/unitaires` la lance en `--strict` sur la spécification.
+Sans `--strict`, elle rend compte sans échouer, sauf si le fichier est absent, illisible ou non UTF-8 (code 1 dans les deux modes). En `--strict` sur la spécification, c'est une batterie à part entière (ci-dessus) et une étape de la CI (« Matrices strictes », travail « Concordance spécification-moteur ») ; la batterie `tests/unitaires` la lance aussi.
 
 Compilation de la spécification (XeLaTeX ; MiKTeX sur le poste local, TeX Live en session cloud et en CI) :
 

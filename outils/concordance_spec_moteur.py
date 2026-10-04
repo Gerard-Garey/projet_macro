@@ -58,10 +58,22 @@ environnements `verbatim`, `verbatim*`, `lstlisting` et `comment`, les
 parcours de gauche à droite (le premier ouvert l'emporte : un
 `\\begin{verbatim}` cité dans un commentaire n'ouvre rien), puis les blocs
 `\\iffalse … \\fi`. Dans un bloc, seules comptent pour l'appariement des
-`\\fi` les conditions primitives de TeX et d'ε-TeX et les noms déclarés par
-`\\newif` hors d'un bloc (`\\ifbool`, `\\iftoggle`… n'en sont pas). Un
-`\\iffalse` non refermé n'efface rien : c'est un écart (règle 0, texte
-analysé), et la suite est analysée.
+`\\fi` les conditions primitives de TeX et d'ε-TeX et les noms déclarés
+hors d'un bloc par `\\newif` ou copiés d'une condition par `\\let`
+(`\\ifbool`, `\\iftoggle`… n'en sont pas). Une copie de `\\iffalse` par
+`\\let` ouvre un bloc comme `\\iffalse`. Un `\\else` du bloc lui-même le
+ferme : la branche `\\else`, que TeX compose, est analysée. Un `\\iffalse`
+cité par `\\let` ou écrit dans le corps d'une définition (`\\newcommand`,
+`\\renewcommand`, `\\providecommand`, `\\newenvironment`,
+`\\renewenvironment`, `\\def`, `\\gdef`) n'ouvre pas de bloc. Un `\\iffalse`
+non refermé, ou dont la branche `\\else` n'a pas de `\\fi`, n'efface rien
+lui-même (les blocs complets qui le suivent sont effacés) : c'est un écart
+(règle 0, texte analysé), et la suite est analysée.
+Limite : seules les commandes de définition listées ci-dessus sont
+reconnues. Un `\\iffalse` écrit dans le corps de `\\DeclareRobustCommand`,
+de `\\NewDocumentCommand` (ou d'une autre commande de `xparse`), ou cité par
+`\\expandafter\\let\\csname …\\endcsname\\iffalse`, ouvre encore un bloc ;
+`\\string\\iffalse` est lu comme un `\\iffalse`.
 
 Usage : `uv run python outils/concordance_spec_moteur.py [--strict]`. Sans
 `--strict`, le script rend compte et sort avec le code 0 ; avec `--strict`,
@@ -216,15 +228,19 @@ def retirer_commentaires_et_verbatim(texte: str) -> str:
 
 
 # Conditions de TeX (primitives) et d'ε-TeX (`\ifdefined`, `\ifcsname`,
-# `\iffontchar`) : seules elles, et les noms déclarés par `\newif`, ouvrent
-# une condition dont TeX apparie le `\fi` quand il saute un bloc `\iffalse`. `\ifbool`,
-# `\iftoggle`, `\ifdef…`, `\ifstrequal` (etoolbox), `\ifthenelse` (ifthen) ou
+# `\iffontchar`) : seules elles, et les noms déclarés par `\newif` ou copiés
+# d'une condition par `\let`, ouvrent une condition dont TeX apparie le
+# `\fi` quand il saute un bloc `\iffalse`. `\ifbool`, `\iftoggle`, `\ifdef…`, `\ifstrequal` (etoolbox), `\ifthenelse` (ifthen) ou
 # `\iff` (symbole) n'en sont pas.
 CONDITIONS_PRIMITIVES = frozenset({
     "if", "ifcat", "ifnum", "ifdim", "ifodd", "ifvmode", "ifhmode", "ifmmode",
     "ifinner", "ifvoid", "ifhbox", "ifvbox", "ifx", "ifeof", "iftrue", "iffalse",
     "ifcase", "ifdefined", "ifcsname", "iffontchar",
 })
+
+
+MESSAGE_IFFALSE_NON_REFERME = ("\\iffalse non refermé (aucun \\fi apparié) : "
+                               "la suite est analysée")
 
 
 def retirer_iffalse(texte: str) -> tuple[str, list[tuple[int, str]]]:
@@ -234,8 +250,40 @@ def retirer_iffalse(texte: str) -> tuple[str, list[tuple[int, str]]]:
     déclare `\\ifnom` comme condition pour la suite ; écrit dans un bloc, il
     n'est pas exécuté et ne déclare rien. Dans un bloc, seules comptent les
     conditions de `CONDITIONS_PRIMITIVES` et les noms déjà déclarés. Un
-    `\\iffalse` sans son `\\fi` n'efface rien : il est rendu comme anomalie
+    `\\iffalse` sans son `\\fi` n'efface rien lui-même (les blocs complets
+    qui le suivent sont effacés) : il est rendu comme anomalie
     `(position, message)`, et la lecture reprend après lui.
+
+    Hors d'un bloc, `\\let\\nom<cible>` (`=` admis) donne à `\\nom` la nature
+    de la cible, comme TeX : condition si la cible en est une (primitive,
+    déclarée ou copiée), copie de `\\iffalse` si la cible est `\\iffalse` ou
+    l'une de ses copies, ni l'une ni l'autre sinon. Une copie de `\\iffalse`
+    ouvre un bloc comme `\\iffalse`, et compte dans un bloc comme toute
+    condition.
+
+    Un `\\else` au niveau du bloc (pas celui d'une condition imbriquée) le
+    ferme : seul le texte de `\\iffalse` à `\\else` compris est effacé, et la
+    branche `\\else`, que TeX compose, est relue hors bloc ; son `\\fi` reste
+    dans le texte rendu, comme celui de toute condition hors bloc. Pour le
+    trouver, les conditions composées sont comptées hors bloc ; une branche
+    `\\else` sans `\\fi` laisse le bloc non refermé : son `\\iffalse` est
+    lu comme un `\\iffalse` sans `\\fi` (même anomalie, même texte rendu),
+    la lecture reprenant juste après lui.
+
+    Hors d'un bloc, la cible de `\\let` et le corps d'une définition
+    (`\\newcommand`, `\\renewcommand`, `\\providecommand`, étoilées ou non,
+    `\\def`, `\\gdef` ; les deux corps de `\\newenvironment` et
+    `\\renewenvironment`, étoilées ou non) ne sont pas exécutés quand TeX les
+    lit : un `\\iffalse` qui s'y trouve n'ouvre pas de bloc, et un `\\newif`
+    n'y déclare rien. Dans un bloc, TeX compte les conditions sans lire les
+    définitions : elles y sont comptées.
+
+    Limite : seules les définitions de `definitions` sont reconnues. Un
+    `\\iffalse` dans le corps de `\\DeclareRobustCommand`, de
+    `\\NewDocumentCommand` (ou d'une autre commande de `xparse`), ou cité par
+    `\\expandafter\\let\\csname …\\endcsname\\iffalse`, ouvre encore un bloc ;
+    `\\string\\iffalse` est lu comme un `\\iffalse` (ouvre un bloc, ou rend
+    l'anomalie d'un `\\iffalse` sans `\\fi`).
 
     Comme dans `retirer_commentaires_et_verbatim`, une barre oblique inverse
     et le caractère qui la suit forment un jeton : un mot n'est une commande
@@ -244,41 +292,118 @@ def retirer_iffalse(texte: str) -> tuple[str, list[tuple[int, str]]]:
     (`\\newif{\\ifnom}`).
     """
     # Les paires `\\` qui précèdent le jeton sont consommées hors du groupe
-    # `jeton` : seule la barre restante ouvre la commande.
-    jeton = re.compile(
-        r"(?<!\\)(?:\\\\)*(?P<jeton>\\(?P<nom>newif|if[A-Za-z@]*|fi))(?![A-Za-z@])")
+    # `jeton` : seule la barre restante ouvre la commande. Tout mot de
+    # commande est lu, car `\let` peut faire d'un nom quelconque une condition.
+    jeton = re.compile(r"(?<!\\)(?:\\\\)*(?P<jeton>\\(?P<nom>[A-Za-z@]+))(?![A-Za-z@])")
     declaration = re.compile(r"\s*(\{\s*)?\\(?P<nom>if[A-Za-z@]+)(?![A-Za-z@])(?(1)\s*\})")
-    declarees: set[str] = set()
-    zones = []
-    anomalies = []
-    position = 0
-    while (m := jeton.search(texte, position)) is not None:
-        position = m.end()
-        nom = m.group("nom")
-        if nom == "newif":
-            d = declaration.match(texte, m.end())
-            if d is not None:
-                declarees.add(d.group("nom"))
-                position = d.end()
-            continue
-        if nom != "iffalse":
-            continue
-        profondeur = 1
-        for j in jeton.finditer(texte, m.end()):
-            nom_j = j.group("nom")
-            if nom_j == "fi":
-                profondeur -= 1
+    # Commande définie (mot ou symbole), et ce qui précède le corps.
+    commande = r"\\(?:[A-Za-z@]+|[^A-Za-z@])"
+    cible_let = re.compile(
+        r"\s*\\(?P<nom>[A-Za-z@]+|[^A-Za-z@])\s*=?\s*\\(?P<cible>[A-Za-z@]+|[^A-Za-z@])")
+    tete_def = re.compile(r"\s*" + commande + r"[^{]*")
+    tete_newcommand = re.compile(
+        r"\*?\s*(?:\{\s*" + commande + r"\s*\}|" + commande + r")(?:\s*\[[^\]]*\]){0,2}")
+    tete_environnement = re.compile(r"\*?\s*\{[^{}]*\}(?:\s*\[[^\]]*\]){0,2}")
+    definitions = {"def": (tete_def, 1), "gdef": (tete_def, 1),
+                   "newcommand": (tete_newcommand, 1), "renewcommand": (tete_newcommand, 1),
+                   "providecommand": (tete_newcommand, 1),
+                   "newenvironment": (tete_environnement, 2),
+                   "renewenvironment": (tete_environnement, 2)}
+    def lire(non_refermes: set[int]):
+        """Une lecture ; les `\\iffalse` de `non_refermes` sont lus sans `\\fi`.
+
+        Rend le texte rendu, les anomalies et la position du premier
+        `\\iffalse` dont la branche `\\else` n'a pas de `\\fi` (`None` sinon).
+        """
+        conditions = set(CONDITIONS_PRIMITIVES)  # primitives, `\newif` et `\let`
+        fausses = {"iffalse"}  # `\iffalse` et ses copies par `\let` : ouvrent un bloc
+        zones = []
+        anomalies = []
+        # Branches `\else` composées en attente de leur `\fi` : (niveau des
+        # conditions composées à l'ouverture, position du `\iffalse`) ; `niveau`
+        # compte les conditions composées encore ouvertes.
+        branches: list[tuple[int, int]] = []
+        niveau = 0
+        position = 0
+        while (m := jeton.search(texte, position)) is not None:
+            position = m.end()
+            nom = m.group("nom")
+            if nom == "newif":
+                d = declaration.match(texte, m.end())
+                if d is not None:
+                    conditions.add(d.group("nom"))
+                    position = d.end()
+                continue
+            if nom == "let":
+                if (c := cible_let.match(texte, m.end())) is not None:
+                    # Comme TeX : la copie prend la nature de la cible.
+                    nouveau, cible = c.group("nom"), c.group("cible")
+                    conditions.discard(nouveau)
+                    fausses.discard(nouveau)
+                    if cible in conditions:
+                        conditions.add(nouveau)
+                    if cible in fausses:
+                        fausses.add(nouveau)
+                    position = c.end()
+                continue
+            if nom in definitions:
+                tete, nombre = definitions[nom]
+                t = tete.match(texte, m.end())
+                if t is not None and (corps := lire_arguments(texte, t.end(), nombre)) is not None:
+                    position = corps[1]
+                continue
+            if nom == "fi":
+                if niveau > 0:
+                    niveau -= 1
+                    if branches and branches[-1][0] == niveau:
+                        branches.pop()
+                continue
+            if nom not in fausses:
+                if nom in conditions:
+                    niveau += 1
+                continue
+            if m.start("jeton") in non_refermes:
+                anomalies.append((m.start("jeton"), MESSAGE_IFFALSE_NON_REFERME))
+                continue
+            profondeur = 1
+            for j in jeton.finditer(texte, m.end()):
+                nom_j = j.group("nom")
+                if nom_j == "fi":
+                    profondeur -= 1
+                elif nom_j == "else" and profondeur == 1:
+                    # La branche `\else` est composée : relue hors bloc, elle
+                    # attend son `\fi`.
+                    profondeur = 0
+                    branches.append((niveau, m.start("jeton")))
+                    niveau += 1
+                elif nom_j in conditions:
+                    profondeur += 1
                 if profondeur == 0:
                     zones.append((m.start("jeton"), j.end()))
                     position = j.end()
                     break
-            elif nom_j in CONDITIONS_PRIMITIVES or nom_j in declarees:
-                profondeur += 1
-        else:
-            anomalies.append((m.start("jeton"),
-                              "\\iffalse non refermé (aucun \\fi apparié) : "
-                              "la suite est analysée"))
-    return _blanchir_zones(texte, zones), anomalies
+            else:
+                anomalies.append((m.start("jeton"), MESSAGE_IFFALSE_NON_REFERME))
+        if branches:
+            return None, None, branches[0][1]
+        return _blanchir_zones(texte, zones), sorted(anomalies), None
+
+    # Une branche `\else` sans `\fi` : le bloc n'est pas refermé. Son
+    # `\iffalse` est alors lu comme un `\iffalse` sans `\fi`, et la lecture
+    # recommence : tout ce qui le suit (premier bloc compris, et ses `\newif`
+    # et `\let`) est relu, comme après tout `\iffalse` non refermé. La
+    # lecture qui précède ce `\iffalse` est inchangée. Les branches ouvertes
+    # avant lui ont toutes été refermées avant lui (sinon, plus anciennes, elles
+    # seraient restées sous lui dans la pile), et le restent à la relecture :
+    # une nouvelle marque suit donc strictement la précédente. D'où au plus
+    # une relecture par `\iffalse`, plus la dernière lecture. Le filtre des
+    # marques plus loin que la nouvelle est défensif : il n'agit jamais.
+    non_refermes: set[int] = set()
+    while True:
+        rendu, anomalies, a_relire = lire(non_refermes)
+        if a_relire is None:
+            return rendu, anomalies
+        non_refermes = {x for x in non_refermes if x < a_relire} | {a_relire}
 
 
 def preparer_tex_et_anomalies(texte: str) -> tuple[str, list[tuple[int, str]]]:

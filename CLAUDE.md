@@ -32,12 +32,13 @@ Le dépôt de référence est `https://github.com/Gerard-Garey/projet_macro` (pu
 
 Les commandes courantes (installer, lancer, tester, compiler) sont dans `README.md` : s'y reporter plutôt que de les recopier ici. Python s'exécute toujours par `uv run` ; sur le poste Windows, `python` seul désigne l'alias du Microsoft Store.
 
-Batteries de vérification, lancées par `coder`, `audit` et le workflow `circuit-technique` (liste `BATTERIES` de `.claude/workflows/circuit-technique.js`, à tenir identique). Elles ont été mises en place par l'issue #4.
+Batteries de vérification, lancées par `coder`, `audit` et le workflow `circuit-technique` (liste `BATTERIES` de `.claude/workflows/circuit-technique.js`, à tenir identique). Elles ont été mises en place par l'issue #4 ; la quatrième, `verifier_matrices.py --strict`, par l'issue #28. Un test (`tests/unitaires/test_batteries.py`) vérifie que les listes de `CLAUDE.md`, de `BATTERIES` et de `README.md` sont identiques et que chaque batterie est une étape de la CI.
 
 ```
 uv run pytest -q tests/unitaires
 uv run pytest -q tests/invariants
 uv run python outils/concordance_spec_moteur.py --strict
+uv run python outils/verifier_matrices.py --strict
 ```
 
 Règles des tests :

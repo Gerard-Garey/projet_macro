@@ -663,6 +663,142 @@ def test_iffalse_condition_declaree_par_newif_entre_accolades(concordance, tmp_p
     assert regles(rapport) == [6] and releves(rapport) == ["(15)"]
 
 
+def test_iffalse_branche_else_composee(concordance, tmp_path):
+    # Issue #32, cas 1 : TeX compose la branche \else d'un \iffalse. Seul le
+    # texte jusqu'au \else est effacé ; un \else d'une condition imbriquée
+    # (\ifnum) reste dans le bloc. La branche \else est relue au niveau
+    # supérieur : un \iffalse qu'elle contient ouvre un bloc.
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse (12) \ifnum1=1 (13) \else (14) \fi \else Composé : (15). \fi
+        \iffalse (16) \else (17) \iffalse (18) \fi \fi
+        Après les blocs, (19) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(15)", "(17)", "(19)"]
+
+
+def test_iffalse_cite_par_let_n_ouvre_rien(concordance, tmp_path):
+    # Issue #32, cas 2 : `\let\ifbrouillon\iffalse` ne fait que copier le
+    # jeton \iffalse ; il n'ouvre pas de bloc jusqu'au \fi suivant. Le signe
+    # `=` et les espaces sont admis, et `\global\let` est un \let.
+    corps = EQUATION + textwrap.dedent(r"""
+        \let\ifbrouillon\iffalse
+        Entre les deux, (13) est relevé.
+        \ifbrouillon Y\fi
+        \let\ifnotes = \iffalse \global\let\ifannexe\iffalse
+        Plus loin, (15) est relevé. \ifnotes Z\fi
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6] and releves(rapport) == ["(13)", "(15)"]
+
+
+def test_iffalse_dans_une_definition_n_ouvre_rien(concordance, tmp_path):
+    # Issue #32, cas 2 : le corps d'une définition n'est pas exécuté quand
+    # elle est lue ; un \iffalse qu'il contient n'ouvre pas de bloc.
+    corps = EQUATION + textwrap.dedent(r"""
+        \newcommand{\debutcache}{\iffalse}
+        Après \newcommand, (12) est relevé.
+        \renewcommand*\debutcache[1][x]{\iffalse #1}
+        Après \renewcommand, (13) est relevé.
+        \providecommand{\autre}{\iffalse}
+        Après \providecommand, (14) est relevé.
+        \def\cacher#1{\iffalse #1} \gdef\cachertout{\iffalse}
+        Après \def et \gdef, (15) est relevé.
+        \newcommand{\fincache}{\fi}
+        \iffalse (16) \fi
+        Après le bloc qui suit les définitions, (17) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [6]
+    assert releves(rapport) == ["(12)", "(13)", "(14)", "(15)", "(17)"]
+
+
+def test_retirer_iffalse_cas_de_l_issue_32(concordance):
+    # Cas mesurés dans l'issue #32 (appel direct) : le label reste visible.
+    for texte in (r"A \iffalse X \else \label{eq:b} \fi C",
+                  "\\let\\ifbrouillon\\iffalse\n\\label{eq:b}\n\\ifbrouillon Y\\fi",
+                  "\\newcommand{\\debut}{\\iffalse}\n\\label{eq:b}\n\\newcommand{\\fin}{\\fi}"):
+        rendu, anomalies = concordance.retirer_iffalse(texte)
+        assert "\\label{eq:b}" in rendu and anomalies == []
+        assert rendu.count("\n") == texte.count("\n")
+    rendu, _ = concordance.retirer_iffalse(r"A \iffalse X \else \label{eq:b} \fi C")
+    assert "X" not in rendu
+
+
+def test_copie_de_iffalse_par_let_compte_dans_un_bloc(concordance):
+    # Comme TeX, `\let\ifbrouillon\iffalse` fait de \ifbrouillon une
+    # condition : dans un bloc, son \else ne ferme pas le bloc et son \fi
+    # est apparié ; le \fi suivant ferme le bloc.
+    texte = (r"\let\ifbrouillon\iffalse \iffalse \ifbrouillon A \else B=\label{eq:b} "
+             r"\fi C=\label{eq:c} \fi D")
+    rendu, anomalies = concordance.retirer_iffalse(texte)
+    assert rendu.split() == [r"\let\ifbrouillon\iffalse", "D"] and anomalies == []
+
+
+def test_copie_de_iffalse_par_let_ouvre_un_bloc(concordance):
+    # La copie ouvre un bloc comme \iffalse ; le \iffalse cité par \let,
+    # lui, n'en ouvre pas. Une copie de copie et une condition déclarée
+    # (\newif) copiée par \let se comportent comme leur cible, et un \let
+    # vers une commande ordinaire retire la nature de condition.
+    texte = "\n".join([
+        r"\let\ifbrouillon\iffalse \ifbrouillon \label{eq:cache}\fi D",
+        r"\let\ifnotes=\ifbrouillon \ifnotes \label{eq:cache2}\fi E",
+        r"\newif\ifannexe \let\ifcopie\ifannexe \iffalse \ifcopie\fi \label{eq:cache3}\fi F",
+        r"\let\ifnotes\relax \ifnotes \label{eq:vu}\fi G",
+    ])
+    rendu, anomalies = concordance.retirer_iffalse(texte)
+    assert "cache" not in rendu and anomalies == []
+    assert r"\label{eq:vu}" in rendu
+    assert [m for m in "DEFG" if m in rendu.split()] == list("DEFG")
+    assert rendu.count("\n") == texte.count("\n")
+
+
+def test_iffalse_dans_un_environnement_n_ouvre_rien(concordance):
+    # Les deux corps de \newenvironment et \renewenvironment (étoilés ou
+    # non, arguments optionnels) ne sont pas exécutés à la lecture.
+    for texte in ("\\newenvironment{cache}{\\iffalse}{}\n\\label{eq:b}\n\\fi",
+                  "\\renewenvironment*{cache}[1][x]{\\iffalse #1}{\\iffalse}\n\\label{eq:b}\n\\fi",
+                  "\\newenvironment{cache}{}{\\iffalse}\n\\label{eq:b}\n\\fi"):
+        rendu, anomalies = concordance.retirer_iffalse(texte)
+        assert "\\label{eq:b}" in rendu and anomalies == [], texte
+
+
+def test_branche_else_sans_fi_est_un_ecart(concordance, tmp_path):
+    # La branche \else d'un \iffalse attend son \fi : sans lui, le bloc
+    # n'est pas refermé, rien n'est effacé et c'est un écart (règle 0).
+    rendu, anomalies = concordance.retirer_iffalse(r"A \iffalse X \else Y")
+    assert rendu == r"A \iffalse X \else Y"
+    assert anomalies == [(2, "\\iffalse non refermé (aucun \\fi apparié) : "
+                             "la suite est analysée")]
+    # Le \fi d'une condition composée dans la branche ne la ferme pas.
+    _, anomalies = concordance.retirer_iffalse(r"\iffalse X \else \ifnum1=1 Y\fi")
+    assert len(anomalies) == 1
+    corps = EQUATION + textwrap.dedent(r"""
+        \iffalse (14) \else
+        Plus loin, (15) est relevé.
+        """)
+    rapport = verifier(concordance, tmp_path, fabriquer(tmp_path, corps_tex=corps))
+    assert regles(rapport) == [0, 6] and releves(rapport) == ["(14)", "(15)"]
+
+
+@pytest.mark.parametrize("texte", [
+    r"\iffalse A \iffalse \label{eq:x} \fi B \else C",
+    # Le \newif de la première branche est lu : \ifz compte dans le bloc
+    # imbriqué, qui reste alors sans \fi.
+    r"\iffalse \newif\ifz \else \iffalse \ifz \fi X",
+])
+def test_branche_else_sans_fi_comme_iffalse_sans_fi(concordance, texte):
+    # Issue #32 : un \iffalse dont la branche \else n'a pas de \fi se lit
+    # comme un \iffalse sans \fi : même anomalie, même texte rendu, la
+    # lecture reprenant juste après le \iffalse. Le \else est remplacé par
+    # un mot de même longueur (\null), qui garde les positions.
+    sans_else = texte.replace(r"\else", r"\null")
+    rendu, anomalies = concordance.retirer_iffalse(texte)
+    rendu_sans, anomalies_sans = concordance.retirer_iffalse(sans_else)
+    assert rendu.replace(r"\else", r"\null") == rendu_sans
+    assert anomalies == anomalies_sans and anomalies[0][0] == 0
+
+
 def test_verbatim_cite_en_commentaire(concordance, tmp_path):
     # Le commentaire est ouvert avant le \begin{verbatim} qu'il cite : il
     # n'ouvre rien, et le texte jusqu'au vrai verbatim reste analysé.
