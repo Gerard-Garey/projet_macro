@@ -2013,7 +2013,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 | Emplois de la trésorerie des entreprises | contributions additives du § 9.5, condition 5 | u.m. par tour | — | le tour | — |
 | Dette des entreprises ; dette nette | L/ΣPIB ; (L − D_F)/ΣPIB, encours de clôture | années | PIB sur 12 tours | le tour (12 tours au dénominateur) | 0,635 et 0,466 ; 0,356 et 0,180 |
 | K/Y (ii), panneau annuel | p K^vol de clôture / ΣPIB | années | PIB sur 12 tours | 12 tours | 2,040 ; 2,110 (à ϱ_L = ϱ̄_L) |
-| Bilan : capital comptable et écart de valorisation | K ; K − p K^vol | u.m. ; fraction de p K^vol | p K^vol | clôture | −(1 − ρ̄_K) : −22,14 % ; −57,86 % |
+| Bilan : capital comptable et écart de valorisation | K ; K − p K^vol | u.m. ; fraction de p K^vol | p K^vol | clôture | −(1 − ρ̄_K) : −22,14 % ; −57,86 %  *Annotation du 04/10/2026 : écart défini à l'ouverture, K_t/(p_t K^vol_t) − 1, fenêtre « K : clôture ; écart : stocks d'ouverture, au prix du tour » (lecture (a), décision du mainteneur ; `sec:investissement-restitution`). Avis de `jeu` (à clarifier, pour le J4) : afficher « Écart de valorisation du capital (début du mois) », à une décimale, en annotation sous K et non comme un poste ; infobulle expliquant le coût historique, le signe négatif sous l'inflation et l'absence de recoupement avec le K de fin de mois.* |
 | Séries et fiche détaillée, hors du tableau | tu, tu\*_t, L/K, ti | fraction | — | le tour | t̄u·e^{ζ(ϱ_L − ϱ̄_L)} ; lv\* ; ti_0 |
 
 ### 9.5 Conditions de `jeu` (§ 7, reprises telles quelles) et mise en œuvre
