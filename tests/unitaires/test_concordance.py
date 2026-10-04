@@ -781,6 +781,24 @@ def test_branche_else_sans_fi_est_un_ecart(concordance, tmp_path):
     assert regles(rapport) == [0, 6] and releves(rapport) == ["(14)", "(15)"]
 
 
+@pytest.mark.parametrize("texte", [
+    r"\iffalse A \iffalse \label{eq:x} \fi B \else C",
+    # Le \newif de la première branche est lu : \ifz compte dans le bloc
+    # imbriqué, qui reste alors sans \fi.
+    r"\iffalse \newif\ifz \else \iffalse \ifz \fi X",
+])
+def test_branche_else_sans_fi_comme_iffalse_sans_fi(concordance, texte):
+    # Issue #32 : un \iffalse dont la branche \else n'a pas de \fi se lit
+    # comme un \iffalse sans \fi : même anomalie, même texte rendu, la
+    # lecture reprenant juste après le \iffalse. Le \else est remplacé par
+    # un mot de même longueur (\null), qui garde les positions.
+    sans_else = texte.replace(r"\else", r"\null")
+    rendu, anomalies = concordance.retirer_iffalse(texte)
+    rendu_sans, anomalies_sans = concordance.retirer_iffalse(sans_else)
+    assert rendu.replace(r"\else", r"\null") == rendu_sans
+    assert anomalies == anomalies_sans and anomalies[0][0] == 0
+
+
 def test_verbatim_cite_en_commentaire(concordance, tmp_path):
     # Le commentaire est ouvert avant le \begin{verbatim} qu'il cite : il
     # n'ouvre rien, et le texte jusqu'au vrai verbatim reste analysé.
