@@ -1319,7 +1319,7 @@ Aucun écart. Les grandeurs nouvelles de cet avis (distribution des entreprises 
 - **Motifs** : le mainteneur a retenu la recommandation de `monnaie`, à laquelle `macro` (§ 6, favorable sous quatre réserves) et `jeu` (§ 7, lisible sous neuf conditions) se rangent. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
 - **Conditions et réserves** : les réserves du § 5 ; les conditions C38 à C44 de `macro` (§ 6.5) ; les neuf conditions de restitution de `jeu` (§ 7).
 - **Ce qui est écarté et pourquoi** : A, B et D (§ 4 et § 7 : levier mort, cliquet de refinancement, taux à crans, plafond en falaise) ; V1 gardée comme option de calibration au J3, sous λ/n_a ≥ 0,5, non comme mode ; V3 (norme de fonds propres dépendant de l'inflation) ; V4 renvoyée au J6 avec #57.
-- **Issues et commentaires liés**, sur accord du mainteneur du 04/10/2026 : issue de restitution J4 du bloc banque (proposée par `jeu`) ; commentaires sur #78 (souscription sans limite du reliquat) et sur #55 (seuil de distribution de la l. 1877, `macro`, § 6.7).
+- **Issues et commentaires liés**, sur accord du mainteneur du 04/10/2026 : issue **#79** (restitution J4 du bloc banque, proposée par `jeu`) ; commentaires sur #78 (souscription sans limite du reliquat) et sur #55 (seuil de distribution de la l. 1877, `macro`, § 6.7).
 
 ## 9. Conséquences de la décision
 
