@@ -713,6 +713,7 @@ h (indice réservé), ℓ et ε (tolérance du cadre) sont évités.
   - **À x = 3, m = 0,8 est hors du domaine (A = −0,0104)** : les cas m = 0,8 de la partie 1 avaient eux aussi A < 0. Ce constat est **nouveau ; il ne change pas le verdict de A et B**.
 - **Condition de vitesse** : seuils mesurés.
   - S est instable dès λ_ti ≥ 0,05 à m = 0,7, et dès 0,1 à m = 0,6.
+    *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : ces seuils valent à x = 3 (sur la grille de `n_scan.py`) ; à la calibration (x = 2), S devient instable à λ_ti ≥ 0,157 / 0,097 / 0,036 pour m = 0,6 / 0,7 / 0,8, et à x = 3 à 0,077 / 0,037 pour m = 0,6 / 0,7 (m = 0,8 hors domaine). La spécification écrit les seuils à x = 2.*
   - C est instable dès λ_K ≥ 0,1 à m = 0,7, et à 0,25 pour tout m (`n_scan.py`).
 
 **(2) Boucle conjointe avec les fiches 3, 4 et 5** (`final_conj.py`). Système :
@@ -1155,6 +1156,7 @@ Sous S-ζ (τ = 0,25, T9), r̄, π̄ et tu sont aussi identiques au 8e chiffre d
    - Les demi-vies de 240 à 900 tours sur tu et K/Y ne valent que pour les chocs permanents (nuance de `jeu`, § 7, question 2, confirmée par remesure, `t1.py`).
    - **Après un choc temporaire** (G +5 % aux tours 1 à 12) :
      - tu revient près de t̄u en 24 tours : 0,8112 au tour 6, 0,7939 au tour 18, 0,7997 au tour 24, 0,7999 au tour 120 ;
+       *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : chiffre d'une maquette d'équilibre général sous S (avant M28), choc G +5 %, non remesuré. Dans la boucle réduite de la spécification (choc A +5 % aux tours 1 à 12), tu vaut 0,817 au tour 24, repasse sous t̄u vers le tour 34 et descend vers 0,788 (tours 48 à 51 selon la reconstruction) ; « retour en N tours » ne se lit pas sans seuil ni configuration.*
      - les trois branches de λ_ti sont identiques au 4e chiffre jusqu'au tour 24 ;
      - le reste, au plus 3e−4, s'efface à la vitesse lente.
    - **Après un choc permanent**, tu s'écarte durablement (G +5 % maintenu) : 0,8048 au tour 24, 0,8035 au tour 120, 0,8006 au tour 480.
@@ -1692,6 +1694,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 2. **Taux d'utilisation : ni chiffre avec niveau normal au tableau du tour, ni libellé « capacités tendues ». Hors du tableau du tour.**
    - **Mesures** (EG) :
      - Après un choc temporaire, tu revient en 24 tours (G +5 % : 0,8112 au tour 6, 0,7939 au tour 18, 0,7997 au tour 24).
+       *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : chiffre d'une maquette d'équilibre général sous S (avant M28), choc G +5 %, non remesuré. Dans la boucle réduite de la spécification (choc A +5 % aux tours 1 à 12), tu vaut 0,817 au tour 24, repasse sous t̄u vers le tour 34 et descend vers 0,788 (tours 48 à 51 selon la reconstruction) ; « retour en N tours » ne se lit pas sans seuil ni configuration.*
      - Il ne s'écarte durablement qu'après un choc permanent :
        - G +5 % maintenu : 0,8048 au tour 24, 0,8035 au tour 120, 0,8006 au tour 480 ;
        - taux +1 point maintenu : 0,8077 au tour 120.
@@ -1852,11 +1855,9 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 
 ## 9. Conséquences de la décision
 
-», en remplaçant « Non instruit. ») -----
-
-## 9. Conséquences de la décision
-
 *Rédigé par `macro` (expert pilote), 03/10/2026, d'après M28 (§ 8), sur la fiche à l'état `b8978f2`.*
+
+*Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : le γ de cette fiche désigne la croissance réelle par pas, (1 + g)^{1/n_a} − 1. Il est distinct de γ^e_t = Γ^e_t − 1, croissance nominale attendue (ADR 0010, M30), seul γ de la spécification, qui écrit la croissance réelle par pas en clair. Les tests repris au J3 suivent la notation de la spécification.*
 
 *Conventions :*
 - *« S1 » à « S7 » désignent les équations de l'option S-ζ ; « F1 » à « F4 », celles de la règle de financement F. F4, l'impôt anticipé, faisait partie de F3 au § 3.N : elle est isolée parce qu'elle s'exécute comme une équation propre.*
@@ -1901,7 +1902,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 | t̄u | `taux_utilisation_normal` | 0,8 (indicative) | fraction de y^cap | Q3 : paramètre, ancre unique, « niveau normal à ϱ̄_L » sous S-ζ. Federal Reserve, G.17 : existence vérifiée, non lu (extrait cité par la fiche 2 § 9.2) | `eq:investissement-utilisation-visee` ; état initial résolu |
 | κ (paramètre du bloc 2) | `capital_par_production_normale` (fiche 2) | 1,6 (indicative : κ = x·t̄u, avec x = K^vol/(n_a y) = 2 ans, hypothèse) | années | Q3 : x calibré au J3 sur K/Y (ii) d'O1, puis κ = x·t̄u | `eq:production-capacite` |
 | δ (paramètre du cadre) | `taux_amortissement` | 0,05 (hypothèse) | par an, taux de flux (conversion linéaire) | Q11 : un seul δ pour N10 et la ligne 8. OCDE (2009), *Measuring Capital* : existence vérifiée, non lu ; source à lire au J3 | `eq:investissement-amortissement`, `eq:investissement-demande-credit`, `eq:production-capital-volume` |
-| λ_ti | `vitesse_part_investissement` | 0,02 (indicative) | par an, vitesse (conversion linéaire, ADR 0008, I.1) ; λ_ti ≤ n_a | hypothèse. Domaine mesuré en maquette (§ 3.B7) : S instable dès λ_ti ≥ 0,05 à m = 0,7, et dès 0,1 à m = 0,6 | `eq:investissement-part-visee` |
+| λ_ti | `vitesse_part_investissement` | 0,02 (indicative) | par an, vitesse (conversion linéaire, ADR 0008, I.1) ; λ_ti ≤ n_a | hypothèse. Domaine mesuré en maquette (§ 3.B7) : S instable dès λ_ti ≥ 0,05 à m = 0,7, et dès 0,1 à m = 0,6. *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : ces seuils valent à x = 3 (sur la grille de `n_scan.py`) ; à la calibration (x = 2), S devient instable à λ_ti ≥ 0,157 / 0,097 / 0,036 pour m = 0,6 / 0,7 / 0,8, et à x = 3 à 0,077 / 0,037 pour m = 0,6 / 0,7 (m = 0,8 hors domaine). La spécification écrit les seuils à x = 2.* | `eq:investissement-part-visee` |
 | η_r | `semi_elasticite_investissement_taux` | 2 (indicative) | par unité de taux réel annuel, sans conversion | hypothèse. Chirinko (1993), *Journal of Economic Literature* 31(4) : candidat, non lu. Contrainte de (d1) : η_r ≥ ln(1/0,99)/0,01 = 1,005 | `eq:investissement-plan` |
 | ζ | `elasticite_utilisation_taux` | **à calibrer au J3** ; ordre de grandeur 4 à 8 (hypothèse) ; ζ = 2 écarté (M28) | par unité de taux réel annuel, sans conversion ; **élasticité de niveau, non une vitesse** | ζ ≈ σ/(ϱ̄_L + δ), σ étant l'élasticité de K/Y au coût d'usage. σ est **contestée** : Chirinko, Fazzari et Meyer (1999), *Journal of Public Economics* 74(1), 53-80 : existence vérifiée, non lu | `eq:investissement-utilisation-visee` |
 | lv\* | `levier_vise` | 0,4 (hypothèse) | fraction de K comptable | hypothèse ; source à trouver au J3 (critère 16) | `eq:investissement-demande-credit` |
@@ -2213,7 +2214,7 @@ Postes :
   - tableau des équations S1 à S7 et F1 à F4, avec les labels prévus au J3 (§ 9.1) ;
   - taux réel du crédit et utilisation visée (S1, S2) : lecture (c) ; C32 ; ζ, élasticité de niveau non une vitesse, et sa clause de sortie ; `\limites` : écart durable à la cible (§ 9.7 (a)) ;
   - plan (S3, S4) : supermultiplicateur, sources non lues et écriture propre ; I^vol ≥ 0 tenu par la forme ; plan servi en u.m.
-  - part visée (S6) : t̄u, ancre conditionnelle (« niveau normal à ϱ̄_L ») ; aucun continuum ; `\limites` : lenteur après un choc permanent (racine comptable d'au moins 0,9926, demi-vies de 240 à 900 tours ; retour en 24 tours après un choc temporaire) ;
+  - part visée (S6) : t̄u, ancre conditionnelle (« niveau normal à ϱ̄_L ») ; aucun continuum ; `\limites` : lenteur après un choc permanent (racine comptable d'au moins 0,9926, demi-vies de 240 à 900 tours ; retour en 24 tours après un choc temporaire ; *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : chiffre d'une maquette d'équilibre général sous S (avant M28), choc G +5 %, non remesuré. Dans la boucle réduite de la spécification (choc A +5 % aux tours 1 à 12), tu vaut 0,817 au tour 24, repasse sous t̄u vers le tour 34 et descend vers 0,788 (tours 48 à 51 selon la reconstruction) ; « retour en N tours » ne se lit pas sans seuil ni configuration.*) ;
   - lignes 3 et 8 (S5, S7) : Q4 confirmée ; K comptable ; ρ̄_K par renvoi à `sec:production-capital`, dans sa forme (G) ; instabilités 10 et 11 ;
   - financement F (F1 à F4) :
     - levier sur K comptable, exact quand le plan nominal est servi ; cible de dépôts ; impôt anticipé ; dividende résiduel ;
@@ -2319,7 +2320,7 @@ Commentaires proposés sur #55 (seuils de Div ≥ 0 en fonction de ζ) et sur #5
 **Avis de `monnaie` du 03/10/2026 sur les § 9** (fiche de base ; extrait) :
 - **Date de π\*** : délai 1, pour la cohérence interne de ϱ_L = (1 + i_L)/(1 + π\*) − 1 (numérateur et dénominateur à la même date ; sous le délai 0, un changement de cible sans changement de taux produirait un faux saut du taux réel perçu d'un tour) et pour un délai uniforme des deux leviers de la banque centrale. π\* devient une variable d'état « cible en vigueur ». Statut : vérifié (algèbre de S1 et date de C27).
 - **Γ^e** : grandeur du moteur, une équation, un symbole ; distinct du facteur réalisé Γ = [(1 + g)(1 + π̄)]^{1/n_a} hors cible (écart T̂_F/T_F = 0,99373 au § 9.7 (a)).
-- **Précision (b) de `macro` sur le levier sous N6** : accord ; le chiffre « −3,0e−5 pour 1 % » du § 6.1, Q5, point 1, est retiré (il supposait un plan servi en volume, contraire à N6). Mesure : L_{t+1}/K_{t+1} − lv\* = 5,6e−17 pour une surprise de prix de 0, +1 % et −5 %. Rédaction : « exact quand le plan nominal est servi ». Sous rationnement des biens (90 % du plan servi), le levier monte de +4,8e−4, à l'inverse du rationnement du crédit ; l'écart se corrige au pas suivant. Statut : vérifié (arithmétique) ; effet sur la boucle non mesuré.
+- **Précision (b) de `macro` sur le levier sous N6** : accord ; le chiffre « −3,0e−5 pour 1 % » du § 6.1, Q5, point 1, est retiré (il supposait un plan servi en volume, contraire à N6). Mesure : L_{t+1}/K_{t+1} − lv\* = 5,6e−17 pour une surprise de prix de 0, +1 % et −5 %. Rédaction : « exact quand le plan nominal est servi ». Sous rationnement des biens (90 % du plan servi), le levier monte de +4,8e−4, à l'inverse du rationnement du crédit ; l'écart se corrige au pas suivant. Statut : vérifié (arithmétique) ; effet sur la boucle non mesuré. *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : sur le cas à la main de la spécification, le levier monte à 0,400298, soit +3,0e−4 (ligne 8 = 9,7552) ; le +4,8e−4 ne s'y reproduit pas (autre cas ou autre base, non établi). La spécification cite 0,400298.*
 
 ## 10. Historique de la fiche
 

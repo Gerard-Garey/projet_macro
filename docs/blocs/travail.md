@@ -1058,6 +1058,8 @@ Verdict : **à revoir**. Elles révisent M24 et ne résolvent pas leur état sta
 
 *Rédigé par `macro` (expert pilote), 03/10/2026, d'après M25 (§ 8), M26 (fiche 4, § 8) et la lecture commune (G) des taux annuels (M25 (b), décision citant M22 et M24, consignée par ADR). « Tk » désigne l'équation k des § 3.N et 3.C ; « Nk », l'équation k de la fiche 2. Tous les taux de croissance et d'inflation sont convertis géométriquement, (1 + x)^{1/n_a} par pas ; les taux d'intérêt, flux et vitesses restent linéaires (M22, lecture (a)). Chiffres recalculés le 03/10/2026 (§ 9.7).*
 
+*Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : le γ de cette fiche désigne la croissance réelle par pas, (1 + g)^{1/n_a} − 1. Il est distinct de γ^e_t = Γ^e_t − 1, croissance nominale attendue (ADR 0010, M30), seul γ de la spécification, qui écrit la croissance réelle par pas en clair. Les tests repris au J3 suivent la notation de la spécification.*
+
 ### 9.1 Labels d'équation
 
 **Au jalon J1, aucun label** (#39, jalon 4) : `sec:travail` est écrite sans `\label{eq:…}`, chaque mécanisme dans un encadré `proposee` citant M25, en `equation*` (`CONVENTIONS.md` § 4.1). **Labels à créer au J3**, avec `src/nations/blocs/travail.py` (radical `travail`) ; `coder` pose une balise par label, `docwriter` retire l'encadré et pose le label dans le même passage.
@@ -1150,7 +1152,7 @@ Le choix revient à `coder`, sous visa de `macro`, avec la fiche 4 (§ 9.1).
 | Taux de chômage | U = 1 − N/N^pa ; mention « plein emploi : main-d'œuvre épuisée » si N = N^pa ; « tension sur le marché du travail » si U < U^eq/2 | fraction | population active du tour | le tour ; moyenne sur 12 tours |
 | Emploi | N | personnes | — | le tour |
 | Salaire nominal | W, et glissement W_t/W_{t−12} − 1 | u.m. par personne et par tour ; par an | W_{t−12} | le tour ; 12 tours |
-| Salaire réel | 100·(W_t/p_t)/(W_1/p_1), et son glissement | indice ; par an | prix et salaire du tour 1 | le tour ; 12 tours |
+| Salaire réel | 100·(W_t/p_t)/(W_1/p_1), et son glissement (*Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : lire 100·(W_t/p_t)/(W_0/p_0), le tour 1 étant le pas 0, comme l'indice des prix et la production)* | indice ; par an | prix et salaire du tour 1 (pas 0) | le tour ; 12 tours |
 | Part salariale | ΣWB/ΣVA, avec VA = p·v + ΔIN | fraction | valeur ajoutée sur 12 tours | 12 tours |
 | Sureffectif | N − y/pr, en personnes et en fraction de N (= 1 − (y/N)/pr) ; le montant W(N − y/pr) figure au compte des entreprises seulement | personnes ; fraction | emploi du tour | le tour |
 

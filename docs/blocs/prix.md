@@ -522,6 +522,7 @@ Sous SN (w1) et M, C, T, D (sous (G)) ou R :
   - M aux vitesses du bloc × 0,5 : 0,9400 à 0,9733 ; × 2 : 0,9477 à 0,9808.
   - Frontière de C (P6) : ψ_ξ ≤ 0,257 pour tenir toutes les combinaisons (vitesses de la fiche 2 × 2, m = 0,8) ; ψ_ξ ≤ 0,684 à la calibration.
   - Frontière de M : ψ_ξ ≥ 10 à la calibration, 4,875 aux vitesses × 2.
+    *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : frontière remesurée à 14,18 / 13,79 / 13,39 / 12,99 pour m = 0,5 à 0,8 à la calibration, et 6,90 / 6,22 / 5,55 / 4,875 aux vitesses × 2 ; la stabilité s'y perd par une racine réelle négative (−1,0001), c'est-à-dire une alternance d'un tour sur l'autre ; à ψ_ξ = 10, la calibration est stable (rayon de 0,9874 à 0,9949). « ≥ 10 » est donc une borne vraie mais lâche ; la spécification cite la valeur mesurée (`sec:prix-conditions`).*
   - La variante T instantanée, sans mémoire, est explosive aux vitesses de la fiche 2 × 2 avec m = 0,8 (−1,0345).
   - M ≡ C quand λ_μ = n_a (vérifié).
 
@@ -724,7 +725,7 @@ Pour M avec m = 0,6 : marge au plus +0,23 / +1,13 point ; part salariale au plus
 | Lignes de la v2.0 et de `workplan.py` citées | L, vérifiées le 03/10/2026 |
 | Commentaires l. 83 et l. 1086 | L (commentaire), contenu non mesuré |
 | Résultats de la v1.5 (l. 767) | rapportés, invérifiables |
-| Instabilités 12 (« N6, correction de marge par le gain ») et 13 (« R1, élasticité à référence mobile ») | contenu non documenté dans la synthèse ; M ne corrige pas la marge par un gain, et la référence de ξ est la cible de M24, ancrée. **À confirmer si leur contenu est retrouvé** |
+| Instabilités 12 (« N6, correction de marge par le gain ») et 13 (« R1, élasticité à référence mobile ») | contenu non documenté dans la synthèse ; M ne corrige pas la marge par un gain, et la référence de ξ est la cible de M24, ancrée. **À confirmer si leur contenu est retrouvé**. *Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : « gain » est ambigu ; M ajuste la marge vers une cible fixe à la vitesse λ_μ/n_a et ne la corrige pas par le gain réalisé ; si « gain » désigne un coefficient de correction, le rapprochement avec l'instabilité 12 n'est pas exclu.* |
 
 Aucun fait D1 n'a été remesuré.
 
@@ -1239,6 +1240,8 @@ Verdict : **à revoir**. Leur état stationnaire dépend des vitesses (critère 
 - ψ_ξ ≥ 0.
 
 Domaine de stabilité : le § 3.N-9 ne trouve d'instabilité de M qu'à ψ_ξ ≥ 10 à la calibration et à ψ_ξ ≥ 4,875 aux vitesses de la fiche 2 × 2. Il se revérifie au J3 (réserve 3).
+
+*Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : frontière remesurée à 14,18 / 13,79 / 13,39 / 12,99 pour m = 0,5 à 0,8 à la calibration, et 6,90 / 6,22 / 5,55 / 4,875 aux vitesses × 2 ; la stabilité s'y perd par une racine réelle négative (−1,0001), c'est-à-dire une alternance d'un tour sur l'autre ; à ψ_ξ = 10, la calibration est stable (rayon de 0,9874 à 0,9949). « ≥ 10 » est donc une borne vraie mais lâche ; la spécification cite la valeur mesurée (`sec:prix-conditions`).*
 
 **Ce qui n'est pas un paramètre** : π^e (aucune anticipation consommée, C13) ; t̄u (variante T, M28) ; la marge stationnaire (égale à μ̄).
 

@@ -994,6 +994,8 @@ La question est donc : chaque grandeur affichée a-t-elle un sens, une cause que
 
 *Rédigé par `macro` (expert pilote), 02/10/2026, d'après M24 (§ 8). « Nk » désigne l'équation k du § 3.N ; « lecture (x) », la lecture du § 5 retenue en (i) par M24.*
 
+*Annotation du 04/10/2026 (validation de la spécification par `macro`, remesure ; décision inchangée) : le γ de cette fiche désigne la croissance réelle par pas, (1 + g)^{1/n_a} − 1. Il est distinct de γ^e_t = Γ^e_t − 1, croissance nominale attendue (ADR 0010, M30), seul γ de la spécification, qui écrit la croissance réelle par pas en clair. Les tests repris au J3 suivent la notation de la spécification.*
+
 ### 9.1 Labels d'équation
 
 **Au jalon J1, aucun label** (#34, jalon 4). La section `sec:production` est écrite sans `\label{eq:…}`. Chaque mécanisme figure dans un encadré `proposee` citant M24, avec ses équations en `equation*` (`CONVENTIONS.md` § 4.1 ; règle 1 de la concordance).
