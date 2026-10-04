@@ -251,7 +251,7 @@ Chaque élément listé par #73 est **retenu**, **écarté** ou **transmis**, av
 
 ## 2. Critères d'évaluation, écrits avant l'instruction
 
-**Statut** : proposés par `macro` le 04/10/2026, **à valider par le mainteneur** avec ceux des fiches 7 et 8 (P14), avant tout commit d'instruction (jalon 1 de #73). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
+**Statut** : proposés par `macro` le 04/10/2026, **validés par le mainteneur le 04/10/2026**, avec les amendements ci-dessous avec ceux des fiches 7 et 8 (P14), avant tout commit d'instruction (jalon 1 de #73). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
 
 Correspondance avec le gabarit :
 
@@ -323,6 +323,14 @@ Critères propres au bloc : 2, 3, 6, 9 à 15, 18, 21, 22 et 23.
 
 Aucun à ce jour. Les questions soumises au mainteneur avec la validation figurent au compte rendu de `macro` du 04/10/2026.
 
+### Amendements adoptés
+
+Décisions du mainteneur du 04/10/2026, prises avant l'instruction, sur les questions des experts (validation groupée des critères des fiches 7, 8 et 9, P14) :
+
+- **Critères** : la liste est validée telle qu'amendée par la relecture croisée du 04/10/2026 (avis de `macro`, `monnaie` et `jeu` ; qualifications d'`architect`), avec la nature de chaque critère (exigence ou mesure) ; les seuils reconduits et les seuils de `jeu` sont adoptés.
+- **Options marquées « à trancher par le mainteneur » au choix M31 à M33** (propriétaire des lignes 19a, règle de i_B, règle de M^{G*} et lecture du contrôle de caisse, forme de E^CB) : instruites telles qu'écrites, avec leur qualification (interprétation ou modification) ; elles se décident aux décisions de fiche, non à cette validation.
+- **Critère 18 (#56)** : renvoi au critère 15 de la fiche 8, dont la branche (A) de référence est la règle de taux en vigueur plus un écart d'un point à la prescription.
+
 ## 3. Options
 
 À instruire (jalon 2).
@@ -357,3 +365,4 @@ Aucun à ce jour. Les questions soumises au mainteneur avec la validation figure
 |---|---|---|
 | 04/10/2026 | Ouverture (issue #73) ; § 1 et § 2 proposés (jalon 1), en attente de validation des critères par le mainteneur | `macro` ; session principale |
 | 04/10/2026 | Relecture croisée intégrée (avis de `macro`, `monnaie` et `jeu`, une relance ciblée ; qualifications d'`architect`) ; options ouvertes marquées « à trancher par le mainteneur » | `macro` ; `monnaie` ; `jeu` ; `architect` ; session principale |
+| 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #73 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
