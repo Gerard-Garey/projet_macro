@@ -3,7 +3,7 @@ bloc: État et dette
 module: src/nations/blocs/finances_publiques.py
 expert pilote: macro
 experts consultés: monnaie (placement de la dette et prime : frontière dette publique) ; jeu
-statut: en instruction
+statut: avis rendus
 décision: —
 issue: #73
 ---
@@ -964,7 +964,281 @@ Retenir C-HS (reprise réelle intégrale des intérêts, impôt sur le revenu de
 
 ## 6. Avis de l'expert consulté
 
-À instruire (jalon 2).
+*Rédigé par `monnaie` le 04/10/2026, comme expert consulté sur trois sujets :*
+- *la frontière dette publique : placement, prime, i_B ;*
+- *la banque centrale : Π^CB, s_CB, M^G\* ;*
+- *la règle de taux et l'option F.*
+
+*Avis porté sur la fiche à l'état `18d2868` (branche `claude/j1-monnaie-etat`, PR #77). Les conditions nouvelles sont numérotées C57 à C63 (§ 6.6), à la suite de C51 à C56 du § 5, sous réserve de l'ordre réel d'intégration.*
+
+*Sources lues :*
+- *fiche 9 : § 1 (identités de la dette et de Domar), § 1.1, § 1.4, critères 6 et 8 à 13 avec leurs amendements, § 3 à § 5 ;*
+- *fiche 8 : critères 2 et 13, § 5, § 6.3, § 6.6 ;*
+- *fiche 7 : critère 4 (c), § 6.1 (Q5, Q8) ;*
+- *fiche 6 : § 6.6 et l. 1476 (cible intégrale de B/PIB) ;*
+- *fiche 3 : forme SN (`travail.md` l. 324) ;*
+- *ADR 0008, I.2 ;*
+- *maquette conjointe de `macro` (`m9.py`, empreinte `cbe8da70131a4464`, et `lib9.py`), lue en entier.*
+
+*Calculs :*
+- *Les essais sont faits dans un répertoire créé par `mktemp -d` (`…/scratchpad/mon9.Jgu8/`, scripts `qa.py` à `qj.py`, sorties `*.out`). Commande : `/home/user/projet_macro/.venv/bin/python <script>`.*
+- *Ils importent `m9.py` et `lib9.py` de `macro` sans les modifier, avec une exception : une copie de `m9.py` ajoute une seule ligne, la règle intégrale pure de la Q6 (`diff` : ligne 191).*
+- *Ce sont des **ré-exécutions du même code**, pas une contre-épreuve indépendante.*
+- *Les sorties sont des résultats de modèle, sans statut de fait.*
+
+### 6.1 Réponses aux huit questions de `macro`
+
+**Q1 — A8 et i_B ≡ i_CB sous C-HS : accord. Un Π^CB négatif est couvert par l'émission sous α ; la ligne nommée ne joue qu'en cas de placement raté.**
+1. **Neutralité de la composition du bilan de la banque centrale.**
+   - Sous (i) et i_res = i_CB, l'identité du critère 2 (b) de la fiche 8 se réduit à Π^CB = i_CB(M^G + E^CB)/n_a, quels que soient B_CB, L^CB et Res.
+   - Mesure (`qb.py`) : avec s_CB = 0,05 puis 0,5 au lieu de 0, l'écart relatif maximal sur y, p, i, C, YD et T_H, sur 240 tours, vaut 2,2e−16 puis 3,3e−16.
+2. **Signe de Π^CB.**
+   - Sous E^CB = 0, Π^CB < 0 si et seulement si i_CB < 0.
+   - C'est atteignable : la règle n'a pas de plancher (fiche 8, lecture (b)), et i_CB stationnaire vaut 1 % à π̄ = 0.
+   - Mesure (`qb.py`), avec i_CB tenu à −0,5 % pendant six tours :
+     - Π^CB = −1,18e−4 par pas, soit i_CB·M^G/n_a ;
+     - M^G clôt à M^G\* (écart 0) ;
+     - E^CB par le stock de clôture vaut 0.
+   - Le besoin de la phase 7 contient −Π^CB (`m9.py:184`), calculé en phase 1 (`m9.py:118`). La perte est donc financée par l'émission avant la ligne 16 de 8 (b).
+3. **Part non couverte.** Elle n'existe que si deux conditions se réunissent au même tour : i_CB < 0, et un placement raté (entrée ς_B de M31, ou limite C22).
+   - J'approuve le point 3 de N-3 : une ligne nommée « perte de la banque centrale non couverte », proposée par le bloc 9 (payeur) en 8 (b), en dernier, sans créance. Sa contrepartie est une baisse de E^CB : la banque centrale constate la perte.
+   - À déclarer : ensuite E^CB < 0, et ce niveau reste constant sous M22 (d).
+     - Π^CB devient négatif même à i_CB > 0 dès que −E^CB > M^G.
+     - La condition E^CB ≥ 0 du critère 2 (b) de la fiche 8 est rompue.
+     - La recapitalisation relève du J6.
+   - Cas à la main (ii) du critère 12, au J3 (C60).
+
+**Q2 — T9 réel non nul dans les états déplacés : compatible avec la règle de salaire SN (M25) et avec la règle de taux de la fiche 8.**
+1. **Mesure** (`qc.py`, `qh.py`), après G +1 % permanent, au tour 5 500 :
+   - π − π\* = −1,0e−10 ; prescription − i = 0 ;
+   - U − U^eq = −1,1e−11 ; part salariale rapportée à la référence : 5,7e−13 ;
+   - Δi = +0,981 point (Fisher : +0,96, soit les +96 pb de `macro`) ;
+   - T9/PIB = +0,276 % en permanence ; T_H/PIB = 22,16 %, contre 21,68 %.
+2. **Raisons.**
+   - SN lit π^e, U et la part salariale avant impôt : T9 n'y entre pas.
+   - La règle de la fiche 8 lit π et r̂\* : T9 n'y entre pas non plus.
+   - T9 est une fonction de niveau de i − i^ref, sans action intégrale, avec φ fixe : aucun continuum.
+   - r^ref est une constante de l'état résolu, non une estimation. T9 ne lit donc aucun estimateur sans ancre (instabilité 4), contrairement à F (Q4).
+3. **Deux déclarations.**
+   - (a) Après un choc permanent, l'impôt apparent reste déplacé (T9 ≠ 0). T9 doit être restitué à part (§ 6.7).
+   - (b) Sous taux tenu, T9 transmet le taux au budget : il devient négatif si le taux est tenu bas. Cela contribue au palier mesuré par `macro`, +0,396 au tour 120 et +0,596 au tour 2 400, contre +0,155 et +0,085 sous la règle provisoire (non remesuré ici).
+     - Cela rapproche le modèle de l'intention du 17/09/2026 (fiche 8 § 5, point (3)).
+
+**Q3 — Écarts ϖ réels : non pris seuls. Une décision citant M31 n'a de sens que dans un ensemble.**
+1. **La mesure du § 3.Q est à corriger.**
+   - L'option `spreadreal` (`m9.py:44`) met à l'échelle ϖ dans le revenu stationnaire seulement.
+   - Or les écarts sont neutres pour le revenu agrégé (fiche 7 § 6.1, Q5). La neutralisation n'a donc rien mesuré : r̄ est identique à quatre décimales (`qa.py`).
+   - Le canal réel est le taux du crédit lu par S-ζ. Avec un écart nominal, ϱ_L = r + ϖ_L/(1 + π̄), qui dépend de π̄ (`m9.py:127` ; `lib9.py:5, 20, 26`).
+   - Avec ϖ_L(1 + π\*)/1,02, ϱ_L − r est invariant.
+2. **Mesures** (lecture (α), C-HS ; `qe.py`, `qg.py`, `qj.py`) :
+
+   | Neutralisé | r̄ à π\* = 0 | r̄ à 10 % | Écart |
+   |---|---|---|---|
+   | rien | 1,5363 % | 1,0750 % | 0,461 |
+   | écarts, complets | 1,5697 | 1,0018 | 0,568 |
+   | C30 + conversion | 0,9757 | 1,0879 | −0,112 |
+   | conversion + écarts | 1,6086 | 0,3121 | 1,297 |
+   | C30 + écarts | 0,9729 | 1,4025 | −0,430 |
+   | **les trois, complets** | **1,0039** | **0,9853** | **0,019** |
+
+3. **Fond économique.**
+   - Un écart réel constant est la cohérence de Fisher exacte avec S1, qui lit ϱ_L sous forme de Fisher.
+   - Aucune source que j'ai lue n'établit la dépendance de long terme des écarts à l'inflation.
+   - Côté dépôts, Drechsler, Savov et Schnabl (2017, *QJE* 132(4), p. 1819-1876 ; résumé retrouvé, texte non lu) trouvent que les banques américaines **élargissent** l'écart sur dépôts quand le taux directeur monte. Cela ne soutient ni l'écart nominal constant, ni l'écart réel constant. **Contesté** à long terme.
+4. **Contrat.**
+   - Des écarts réels contrediraient la lettre du critère 4 (c) de la fiche 7, que j'ai écrit : écarts i_L − i_CB et i_CB − i_D identiques à 1e−10 près pour π̄ ∈ {0 ; 2 ; 10 %}.
+   - Ils contrediraient aussi M31 (écart constant).
+   - Il faudrait une correction prospective de ce critère et une décision citant M31 (C63).
+5. **Verdict : non.** Seuls, ils aggravent l'écart (0,461 → 0,568). Ils ne servent qu'à l'intérieur de la voie (b) complète (§ 6.3).
+
+**Q4 — Option F : la lecture de r̂\* est recevable techniquement, mais l'option est à écarter, car elle réintroduit l'instabilité 4 par le budget.**
+1. **Techniquement**, r̂\* est une variable d'état d'ouverture du bloc 8 : la lecture est triangulaire, sans cycle. Mais elle transforme un estimateur interne du bloc 8 en contrat d'interface, que la fiche 8 n'a pas publié comme tel.
+2. **Divergence confirmée** (`qc.py`, k_F = 0,01, taux tenu −1 point) :
+   - glissement +0,345 / −0,591 / +1,045 / +3,238 aux tours 120 / 600 / 1 200 / 2 400 ;
+   - prescription − taux tenu = +2,10 / +0,78 / +1,73 / +4,95 points.
+3. **Mécanisme.**
+   - Sous taux tenu, r̂\* intègre encore l'écart d'inflation sans agir sur le taux : c'est un estimateur sans ancre, l'instabilité 4 du critère 8 (a).
+   - F intègre cet estimateur dans τ_H. On obtient une double action intégrale sur l'inflation, portée par le budget.
+4. **Pas de contournement admissible.**
+   - Geler r̂\* sous taux tenu serait un drapeau de mode (ADR 0002).
+   - F deviendrait en outre inerte précisément quand le joueur se sert du levier de taux.
+
+**Q5 — Leeper : la classification ne vaut que par analogie, et le mécanisme diffère.**
+1. **Ce que je sais du texte.**
+   - Leeper (1991), *JME* 27(1), p. 129-147 : existence vérifiée (IDEAS, sans résumé) ; texte non lu.
+   - Selon le résumé retrouvé par moteur de recherche : le taux répond à l'inflation, un impôt forfaitaire répond à la dette réelle, et deux régimes en découlent, monnaie active et budget passif, ou budget actif et monnaie passive.
+2. **C-HS est « passive » par analogie.** Le solde primaire absorbe le surcroît d'intérêts que la politique monétaire induit (φ = 1), si bien que le signe de #56 est tenu.
+   - Mais T9 ne répond pas au niveau de la dette (∂T9/∂b = i − i^ref = 0 à la référence) : au sens de Leeper, la réponse à la dette est nulle.
+   - La dette est stable par r̄ < g (boucle propre 0,999214) et par les normes privées. Le modèle de Leeper, sans croissance, ne couvre pas ce cas.
+3. **E est « active » par analogie.** Mais sa divergence (1,001818 à 2 %) ne vient pas d'une dette explosive, puisque la boucle de Domar est stable. Elle vient de la boucle rentière combinée à l'action intégrale monétaire.
+4. **Côté monétaire**, a_π = 0,5 < 1 et l'ancre vient de l'action intégrale : ni l'un ni l'autre n'est dans Leeper.
+5. **Rédaction proposée** : « dominance budgétaire, par analogie avec Leeper (1991) ; mécanisme : canal rentier, non explosion de la dette ».
+
+**Q6 — Option B stable, contrairement à la cible intégrale de la fiche 6 : c'est une différence de forme, établie sur la même maquette.**
+1. **Mesure.** Copie de `m9.py` à une ligne : τ ← τ + (k_B/n_a)(b − b̄), forme de la fiche 6 l. 1476, sans T9 (`qd.py`).
+
+   | Réglage | Rayon | Période |
+   |---|---|---|
+   | k_B = 0,05 | 1,004152 | 484 tours |
+   | k_B = 0,2 | 1,004713 | 235 tours |
+   | k_B = 1 | 1,008681 | 106 tours |
+   | Option B (λ_τ = 1), même maquette | 0,997149 | — |
+   | Intégrale pure k_B = 0,2 avec T9 HS | 0,998976, stable mais lent | 235 tours |
+
+   L'intégrale pure est explosive et oscillante, comme à la fiche 6 § 6.6.
+2. **Explication.**
+   - La dette intègre les déficits. Une action intégrale seule sur la dette fait donc une double intégration, d'où l'oscillation.
+   - La cible de déficit de B donne d − d\* ≈ n_a Δb + (n_a(Γ − 1) + κ)(b − b̄) : un terme proportionnel sur b, qui amortit.
+   - De plus, comme le déficit contient i_B B/n_a, B reprend la charge d'intérêts avec un délai 1/λ_τ : c'est un T9 implicite.
+3. **Aucun désaccord avec la fiche 6.** B reste écartée pour les motifs du § 5.
+
+**Q7 — Valeur stationnaire de s_CB : 0 au socle. B_CB/B tend vers s_CB, ce qui est neutre pour les allocations mais pas pour la position dans le corridor.**
+1. **Convergence.** Sous A8 en croissance équilibrée, B_CB/B tend vers s_CB.
+   - Mesure : 0,0274 au tour 240 pour s_CB = 0,05, depuis B_CB,0 = 0.
+   - C'est conforme à s_CB(1 − Γ̄^−240) = 0,05 × 0,547.
+2. **Seuil de position.** Au-delà de s_CB = M^G/B, soit 0,0686 à 2 % sous C-HS, la banque centrale détient plus de titres que le compte du Trésor.
+   - On passe alors à Res > 0 et L^CB = 0 à la clôture. À s_CB = 0,5 : Res/M^G = 2,99 au tour 240.
+   - Sans effet sur les revenus sous i_res = i_CB, mais la position nette de la banque (ligne 21, M31) change de signe. À déclarer (C59).
+3. **Recommandation.** s_CB est un paramètre d'archétype, valant 0 au test zéro (fiche 8 § 1.5, Q7). Des valeurs non nulles ne prennent sens qu'au J6, avec la prime, quand elles cessent d'être neutres.
+
+**Q8 — Variante V : renvoi au J6 approuvé, mais pas pour ce seul motif.**
+1. Le critère 10 (c) est **vide au socle** : avec s_CB = 0, B_CB ≡ 0, et il n'y a rien à « repricer ».
+2. Les motifs réels sont :
+   - (a) aucun gain de stabilité pour le pays joué : 1,001266 contre 1,001818 (mesure de `macro`) ;
+   - (b) i_B ≠ i_CB ajoute (i_B − i_CB)B_CB/n_a à Π^CB. Cela rouvre le point 1 de #26 et la condition Π^CB ≥ 0, et rend s_CB non neutre. C'est donc un levier d'achats, qui relève du J6 ;
+   - (c) une décision citant M22 (l. 548) serait nécessaire ;
+   - (d) un taux apparent rétrospectif, sans prime ni anticipations, n'est pas une structure par terme. Il est à instruire avec la prime.
+
+### 6.2 Contrôle des chiffres de mon domaine (ré-exécution du même code)
+
+| Grandeur | Publiée (§ 3 à 5) | Ré-exécution | Verdict |
+|---|---|---|---|
+| r̄ critère 13, C-HS, (α) | +1,536 / +1,075 % | +1,5363 / +1,0750 % | conforme |
+| C/PIB, écart de 0 à 10 % | +0,435 / −0,473 | 0,908 | conforme |
+| C30 + conversion neutralisés | 0,976 / 1,088 % | 0,9757 / 1,0879 % | conforme |
+| « Les trois » neutralisés | 0,112 point | 0,112 en neutralisation incomplète ; **0,019 en neutralisation complète** | **écart de méthode** (Q3) |
+| Option F, taux tenu, glissement | +0,345 / −0,591 / +1,045 / +3,238 | idem | conforme |
+| φ\* sous HS à 2 % et 10 % | 0,131 / 0,487 | 0,1305 / 0,4871 | conforme |
+| Pays joué E-HS | 1,001818 / 1,011036 | idem | conforme |
+| Option B (λ_τ = 1) | 0,997149 | idem | conforme |
+| Marche de π\* de 2 à 3 %, r̄ | 0,8788 % (tour 2 400, simulation) | 0,8784 % (stationnaire) | conforme |
+| E^CB, cas à la main de C-7 (s_CB = 0,5) | « E^CB = 0 » | `main9.py` affiche −3,46e−02 ; le stock de clôture donne 0 | **écart de traçabilité** (C58) |
+
+L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui somme B_CB d'**ouverture** avec L^CB, Res et M^G de clôture.
+- Mesure (`qf.py`) : la sortie vaut −1,5e−03 et −1,5e−02 au tour 240 pour s_CB = 0,05 et 0,5, contre 2e−16 et 4e−16 par le stock de clôture.
+- La dynamique n'est pas atteinte. Le contrôle du § 3.0 (« E^CB = 0 à 5,6e−17 ») ne vaut que pour s_CB = 0.
+
+### 6.3 Critère 13 de la fiche 8 (C15) : avis pour la décision par paire
+
+1. **Verdict (α) publié : échec.**
+   - L'écart de r̄ vaut 0,461 point entre π̄ = 0 et 10 %. Celui de C/PIB vaut 0,908 point.
+   - La lecture (β) échoue aussi, sur s_G (+0,110 point) et sur C/PIB (−0,662 point), mesures de `macro` non refaites : la lecture ne change pas le verdict.
+   - **Avis : (α)**, seule lecture qui teste une statique comparative à paramètres structurels fixés. En (β), s_G, levier budgétaire, devient une variable de calibration.
+2. **Diagnostic de `macro` : accord sur l'attribution, désaccord sur le résidu.**
+   - La dépendance vient entièrement de trois conventions hors des blocs 8 et 9 : C30 (M28), la conversion linéaire des taux de flux (M22, ADR 0005 point 4, confirmée par l'ADR 0008, I.2) et les écarts nominaux (M31).
+   - Une fois les trois complètement neutralisés, l'écart maximal de r̄ sur [0 ; 10 %] vaut 0,019 point (`qi.py`), et non 0,11. Ni C-HS ni la règle de la fiche 8 ne laissent de résidu matériel.
+3. **Contribution de chaque source, les deux autres neutralisées** (r̄ à π\* = 0 / 1 / 2 / 3 / 4 / 10 %, `qj.py`) :
+
+   | Source gardée | 0 | 1 % | 2 % | 3 % | 4 % | 10 % |
+   |---|---|---|---|---|---|---|
+   | C30 seule | 1,609 | 1,244 | 1,000 | 0,827 | 0,697 | 0,312 |
+   | Conversion seule | 0,973 | 0,983 | 1,000 | 1,025 | 1,057 | 1,402 |
+   | Écarts seuls | 0,976 | 0,988 | 1,000 | 1,012 | 1,023 | 1,088 |
+
+   - C30 domine (−1,30 point). C'est une non-neutralité comptable porteuse de sens : le levier et les stocks sont à la valeur comptable.
+   - La conversion (+0,43) est un artefact de convention. Les écarts pèsent +0,11.
+   - **Les effets se compensent.** Rouvrir une seule convention, ou deux, porte l'écart entre 0,43 et 1,30 point (tableau de la Q3).
+4. **Le critère, mesuré aux bornes, sous-estime la dépendance.** Le profil tel quel est non monotone (`qi.py`) :
+   - r̄ = 1,536 / 1,203 / 1,000 / 0,878 / 0,813 / 0,799 / 1,075 % à π\* = 0 / 1 / 2 / 3 / 4 / 6 / 10 % ;
+   - l'écart maximal vaut 0,74 point ;
+   - **une marche de cible de 2 à 3 % déplace r̄ de −0,12 point**, au-delà du cran d'affichage. Ce point est à porter à `jeu`, avant l'ouverture du levier de cible (#54).
+5. **Deux lectures du « seuil de matérialité ».** J'ai proposé ce seuil.
+   - Mon intention était un seuil sur la **dépendance totale** : moins d'un cran d'affichage.
+   - Le texte admet une seconde lecture, où le seuil fixerait ce qu'il faut attribuer. L'adopter après observation déplacerait le critère : je ne la soutiens pas.
+6. **Voies pour la décision par paire.**
+   - **(a) Correction prospective**, l'ancien verdict restant publié : le seuil de 0,1 point porterait sur le résidu, une fois les conventions déclarées neutralisées dans le script de mesure.
+     - Elle serait tenue (0,019).
+     - Mais elle change ce qui est testé et laisse une dépendance perceptible près de la référence (point 4).
+   - **(b) Réouverture.** Seule la réouverture conjointe des trois conventions atteint le seuil :
+     - M28 (C30, `macro`) ;
+     - M22 / ADR 0008 I.2 (conversion, `architect`) ;
+     - M31 et le critère 4 (c) de la fiche 7 (écarts, `monnaie`).
+     - Toute réouverture partielle aggrave l'écart. Le coût est élevé, et C30 n'est pas un artefact.
+   - **(b′) Écarts réels seuls** : écartée (0,568 point).
+   - **(c) Ma recommandation : garder le critère 13 tel qu'écrit et décider M33 avec l'échec déclaré comme défaut connu du socle.**
+     - Le défaut est attribué, chiffré par source et suivi par une issue (proposée en fin de compte rendu).
+     - Il est codé en échec attendu au script d'état stationnaire du J3 (P16 (a)).
+     - Aucune réouverture n'a lieu sur cette branche. L'issue instruit, au J3, s'il faut traiter C30 ou la conversion, avec une remesure conjointe (C61).
+     - **Motif** : le critère protège une propriété perceptible en jeu (point 4). Le redéfinir pour qu'il passe la masquerait. (a) reste acceptable si elle est rédigée pour ce qu'elle est.
+7. **M32.** Retenir l'option C de la fiche 8 sur ses propres critères : l'échec du critère 13 ne lui est pas imputable (fiche 8 § 6.3, point 2, confirmé).
+
+### 6.4 Options renvoyées à M33 et stabilité du pays joué
+
+- **A8 : favorable.**
+  - s_CB est écrit par le bloc 8 en phase 1. C'est un paramètre d'archétype, valant 0 au socle, avec une contrainte de domaine [0 ; 1].
+  - La position Res/L^CB est déclarée au-delà de M^G/B (Q7).
+- **i_B ≡ i_CB, lecture (i) : favorable.**
+  - Prime nulle déclarée ; corridor dégénéré au socle (i_res = i_B = i_CB) ; délai 0 des lignes 11b et 11c.
+  - C'est ce qui rend Π^CB = i_CB(M^G + E^CB)/n_a et s_CB neutre (Q1, Q7).
+  - Prime, durée et achats au J6 (Q8).
+- **M^G\* = paiements bruts, m = 1, lecture nette : favorable comme interprétation.**
+  - **Du côté monétaire, m est neutre pour les revenus sous (i).** Un surcroît x d'encaisse est financé par x de titres :
+    - l'État paie i_B x/n_a et en reçoit i_CB x/n_a par Π^CB ;
+    - la banque finance x par L^CB, reçoit i_B x et paie i_CB x.
+    - Le solde est nul. C'est une algèbre : m n'est pas un paramètre de `m9.py`, donc **non mesuré**.
+  - Seul le niveau de L^CB change : L^CB = M^G − B_CB (cas de `main9.py` : 0,316582 − 0,034613 = 0,281969).
+  - Le plafond de premier tour dépend de π̄ : 0,37 % à 0, 3,34 % à 2 %, 20,6 % à 10 %. C'est une question de `jeu`. Si `jeu` demande m > 1, je n'ai pas d'objection monétaire ; c'est une modification de la l. 502 citant M22.
+- **E^CB_0 = 0 : favorable.** C'est la forme (ii) du critère 2 (a) de la fiche 8, et la condition de Π^CB ≥ 0 à i_CB ≥ 0.
+- **P2 : (i)**, garder M^G\* au sens d'encaisse visée.
+- **Stabilité du pays joué.**
+  - φ\* est confirmé : ≤ 0 / 0,1305 / 0,4871 à π̄ = 0 / 2 / 10 %.
+  - Sans reprise (E-HS), l'écart double en 382 tours (≈ 32 ans) à 2 % et en **63 tours (≈ 5 ans) à 10 %** (`qg.py`).
+  - Recommandation, en trois points :
+    - la reprise est automatique (φ = 1), et le levier d'impôt du joueur est τ_H, T9 s'y ajoutant ;
+    - φ n'est **pas** exposé comme levier, son seuil de stabilité bougeant avec π̄ : ce serait un mur invisible ;
+    - « leviers tenus » ne serait qu'un écart déclaré, sur avis de `jeu`, avec l'indicateur « charge d'intérêts financée par le déficit ».
+
+### 6.5 Avis général
+
+**Favorable à l'option C-HS**, avec le socle commun du § 3.N (A8, i_B ≡ i_CB, M^G\* = paiements bruts en lecture nette, E^CB_0 = 0). Motifs dans mon domaine :
+- elle neutralise le canal rentier à fréquence nulle sans lire d'estimateur (contrairement à F) ;
+- elle est compatible avec SN et avec la règle de la fiche 8 dans les états déplacés (Q2) ;
+- elle laisse Π^CB et s_CB neutres ;
+- elle tient le signe de #56.
+
+**Écartées** : A et B (§ 5) ; F, qui réintroduit l'instabilité 4 (Q4) ; V, renvoyée au J6 (Q8).
+
+**Réserves** :
+1. Le critère 13 est en échec, et je recommande la voie (c) (§ 6.3).
+2. Il faut corriger le § 3.Q et le § 3.C-7 (C57, C58).
+3. Pays joué : la reprise est automatique, sans levier φ (§ 6.4).
+
+### 6.6 Conditions transmises
+
+- **C57 (fiche 9, § 3.Q et § 5, `macro`).**
+  - Republier la décomposition avec des écarts réels complets : revenu et taux réel du crédit lu par S-ζ (`m9.py:127`, `lib9.py:5, 20, 26`).
+  - Résidu des trois sources : 0,019 point, au lieu de 0,112. Publier aussi le tableau par source et le profil de r̄ sur [0 ; 10 %].
+- **C58 (fiche 9, § 3.0 et § 3.C-7, `macro`).**
+  - Calculer E^CB par le stock de clôture (diagnostic de `m9.py:209`).
+  - Citer pour le cas à la main une sortie qui affiche 0, non −3,46e−02.
+  - Refaire le contrôle « E^CB = 0 » avec s_CB > 0.
+- **C59 (fiches 8 et 9, J3).**
+  - Tester la neutralité de s_CB sous i_B = i_res = i_CB.
+  - Déclarer la borne s_CB ≤ M^G/B (0,0686 à 2 %), au-delà de laquelle Res > 0 et L^CB = 0 à la clôture.
+- **C60 (fiche 9, critère 12 (c) ; fiche 8, critère 2 (b) ; J3).**
+  - Ligne « perte de la banque centrale non couverte » : bloc 9, 8 (b), en dernier, sans créance, contrepartie −ΔE^CB.
+  - Elle n'est active que si i_CB < 0 et que le placement rate au même tour. Ensuite, E^CB < 0 est déclaré, et la condition Π^CB ≥ 0 est rompue.
+  - Cas (ii) du critère 12. Recapitalisation au J6.
+- **C61 (critère 13, toute réouverture de C30, de la conversion ou des écarts).** Remesurer le critère conjointement sur les trois sources : elles se compensent, et une réouverture isolée aggrave l'écart (jusqu'à 1,30 point).
+- **C62 (fiche 9, `jeu`, J4).** φ n'est pas un levier. Publier φ\* par π̄, ainsi que les temps de doublement de E (382 et 63 tours).
+- **C63 (fiche 7, critère 4 (c)).** Si des écarts réels sont retenus un jour, corriger le critère de façon prospective (lettre nominale) et prendre une décision citant M31.
+
+### 6.7 Points signalés à `jeu` (non tranchés)
+
+- **Taux neutre et cible.** Une marche de cible de 2 à 3 % déplace r̄ de −0,12 point, et de +0,54 point de 2 à 0 % (§ 6.3, point 4). C'est perceptible au cran d'affichage.
+- **Impôt apparent après un choc permanent.** T9 reste à +0,28 % du PIB : à restituer à part (« reprise des intérêts »).
+- **Pays joué sans reprise à cible haute.** L'écart double en 5 ans environ à 10 %.
+- **Plafond de caisse.** Il dépend de π̄ (0,37 % à 3,34 % à 0 et 2 %) ; m > 1 n'a pas de coût monétaire au socle.
 
 ## 7. Avis de `jeu`
 
@@ -1227,3 +1501,4 @@ Retenir C-HS (reprise réelle intégrale des intérêts, impôt sur le revenu de
 | 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #73 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
 | 04/10/2026 | Jalon 2, première partie : § 3 à § 5 instruits (huit options sur la maquette conjointe unique des fiches 8 et 9 ; recommandation de l'option C-HS) ; § 6 et § 7 à rendre | `macro` ; session principale |
 | 04/10/2026 | Avis de `jeu` (§ 7) : C-HS lisible sous neuf conditions, dont deux soumises au mainteneur (couverture des intérêts en levier distinct du barème ; encaisse sans cliquet, m > 1 ou propriété équivalente) ; F écartée | `jeu` ; session principale |
+| 04/10/2026 | Avis de `monnaie`, expert consulté (§ 6) : favorable à C-HS ; critère 13 de la fiche 8 : résidu des trois conventions 0,019 point (contre 0,112, C57), voie (c) recommandée (échec déclaré, défaut connu, échec attendu au J3) ; conditions C57 à C63 ; fiche « avis rendus », sous réserve de C57 et C58 | `monnaie` ; session principale |
