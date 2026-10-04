@@ -347,6 +347,13 @@ Suite, le même jour, sur le compte rendu d'`architect-approfondi` (Opus ; ADR 0
 - **points P1 à P6 de l'ADR 0011 confirmés** : perte non couverte de la banque centrale en 8 (b), État écrivain sans ordre interne (P1) ; transferts et impôt planifiés en phase 2 (P2) ; assiette Y^HS écrite en phase 7, non dans le groupe de la phase 9, date π\*^pas_t (P3, lecture de M29 qui s'écarte de celle de `macro`) ; impôt non recouvré en vérification seule du noyau, violation = défaut, limite déclarée, part non payée au bloc payeur (P4, corrige E13 de la fiche 9) ; ordre de la phase 1 « moteur (leviers), puis travail, banque centrale » (P5) ; i_res ≡ i_CB identité de notation (P6) ;
 - **source du paramètre π\*** : table du bloc 8, valeur par archétype dans `scenarios/` (décision citant M30 et M32 ; annotation de l'ADR 0010).
 
+Suite, le même jour, sur les validations de `sec:banque_centrale` (`monnaie`, `macro`, `jeu`) et de `sec:finances_publiques` (`macro`, `monnaie`) :
+- **critère J1 de la fiche 9 (C10 de `macro`)** : la dette brute est publiée à ν_G = 1 et en forme fermée en ν_G, puis à la valeur retenue dès qu'elle est fixée ; seuil : égalité à la dernière décimale publiée (correction prospective, avant l'essai) ;
+- **libellé « dominance budgétaire »** (valeur φ = 0) gardé, l'analogie avec Leeper (1991) étant déclarée non établie (la règle de taux n'entre dans aucune de ses classes ; constat C2 de `monnaie`) ;
+- **issue #83 créée** (republier les chiffres de `sec:banque-stationnaire` et les niveaux du bloc État et dette à la richesse résolue et à la valeur retenue de ν_G ; script de la n° 4 bis) ;
+- choix de la session, sans décision : la ligne « Couverture des intérêts » ajoutée par `docwriter` à `tab:leviers-cadre` est retirée (C9 de `macro` ; ADR 0011 : table inchangée ; φ figure dans `tab:leviers`) ;
+- intervalle ]1 + r̄ ; 1,5[ de a_π laissé ouvert et déclaré (majeur 2 de `monnaie` sur `sec:banque_centrale`) : toute calibration dans cet intervalle demande un avis de `jeu`.
+
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 
 Ouvertes par M2 et M3 ; chacune sera présentée dans la fiche du bloc concerné, avec ses références vérifiées, l'avis de l'expert pilote et de `jeu`, puis tranchée par le mainteneur (M-n à venir). Une piste tranchée reste dans le tableau, barrée, avec sa décision.
