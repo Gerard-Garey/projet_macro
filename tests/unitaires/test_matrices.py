@@ -134,6 +134,72 @@ def test_note_de_tete_repetee_ignoree(matrices, tmp_path, capsys):
     assert "1 écart(s)" in sortie
 
 
+# Têtes de `longtable` (issue #21) : premier en-tête de tab:matrice-bilans.
+ENTETE_BILANS = ("\\textbf{Poste} & \\textbf{Ménages} & \\textbf{Entreprises} & \\textbf{Banque} "
+                 "& \\textbf{Banque centrale} & \\textbf{État} & \\textbf{Réel}\\\\\n")
+NOTE_BILANS = "\\multicolumn{7}{l}{\\emph{Suite de la page précédente}}\\\\\n"
+
+
+def test_ligne_d_une_cellule_hors_note_dans_une_tete_repetee(matrices, tmp_path, capsys):
+    """Seule une note `\\multicolumn` est ignorée dans une tête répétée (#21, cas 1)."""
+    texte = muter("\\endfirsthead\n" + NOTE_BILANS, "\\endfirsthead\nPoste\\\\\n")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    ligne = ligne_de(texte, "Poste\\\\")
+    assert (f"[structure] {tmp_path / 'spec.tex'}:{ligne} : tab:matrice-bilans : en-tête "
+            "répété différent du premier en-tête") in sortie
+    assert "1 écart(s)" in sortie
+
+
+def test_ligne_de_donnees_dans_la_premiere_tete(matrices, tmp_path, capsys):
+    """Ligne à cellules après l'en-tête, avant `\\endfirsthead` : relevée (#21, cas 2)."""
+    avant = ENTETE_BILANS + "\\midrule\n\\endfirsthead"
+    texte = muter("\\toprule\n" + avant,
+                  "\\toprule\n" + ENTETE_BILANS + "X1 & $+a$ & & & & & \\\\\n\\midrule\n\\endfirsthead")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    ligne = ligne_de(texte, "X1 &")
+    assert (f"[structure] {tmp_path / 'spec.tex'}:{ligne} : tab:matrice-bilans : ligne à cellules "
+            "dans la première tête, après l'en-tête") in sortie
+    assert "1 écart(s)" in sortie
+    # Le décompte du corps est inchangé : la ligne n'est pas lue comme donnée.
+    assert "tab:matrice-bilans : 9 lignes, 6 colonnes" in sortie
+
+
+def test_ligne_d_une_cellule_dans_la_premiere_tete(matrices, tmp_path, capsys):
+    """Ligne d'une cellule hors note `\\multicolumn`, avant `\\endfirsthead` : relevée."""
+    avant = ENTETE_BILANS + "\\midrule\n\\endfirsthead"
+    # Une note `\\multicolumn` à cet endroit reste ignorée.
+    note = "\\multicolumn{7}{l}{\\emph{Note}}\\\\\n"
+    texte = muter("\\toprule\n" + avant, "\\toprule\n" + ENTETE_BILANS + note
+                  + "\\midrule\n\\endfirsthead")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 0, sortie
+    assert "Aucun écart." in sortie
+    texte = muter("\\toprule\n" + avant, "\\toprule\n" + ENTETE_BILANS + "X1 $+a$\\\\\n"
+                  + "\\midrule\n\\endfirsthead")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    ligne = ligne_de(texte, "X1 $+a$")
+    assert (f"[structure] {tmp_path / 'spec.tex'}:{ligne} : tab:matrice-bilans : ligne d'une "
+            "cellule hors note \\multicolumn dans la première tête, après l'en-tête") in sortie
+    assert "1 écart(s)" in sortie
+    assert "tab:matrice-bilans : 9 lignes, 6 colonnes" in sortie
+
+
+def test_tete_repetee_sans_ligne_d_en_tete(matrices, tmp_path, capsys):
+    """Tête répétée réduite à des filets : relevée (#21, cas 3)."""
+    texte = muter("\\endfirsthead\n" + NOTE_BILANS + "\\toprule\n" + ENTETE_BILANS,
+                  "\\endfirsthead\n\\toprule\n")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    # Emplacement : début de la zone, juste après `\\endfirsthead`.
+    ligne = ligne_de(texte, "\\endfirsthead")
+    assert (f"[structure] {tmp_path / 'spec.tex'}:{ligne} : tab:matrice-bilans : tête répétée "
+            "sans ligne d'en-tête") in sortie
+    assert "1 écart(s)" in sortie
+
+
 # --------------------------------------------------------------------------
 # Écarts
 # --------------------------------------------------------------------------
