@@ -3,7 +3,7 @@ bloc: Banque centrale et anticipations
 module: src/nations/blocs/banque_centrale.py
 expert pilote: monnaie
 experts consultés: macro (prix et salaires : frontière inflation ; fermeture du niveau d'activité et dette publique, avec la fiche 9) ; jeu
-statut: en instruction
+statut: avis rendus
 décision: —
 issue: #72
 ---
@@ -694,7 +694,242 @@ Abréviations : « ×2 » renvoie à la grille G du critère 12 (vitesses et gai
 
 ## 6. Avis de l'expert consulté
 
-À instruire (jalon 2).
+*Rédigé par `macro` (expert consulté pour la frontière inflation côté prix et salaires, la fermeture du niveau d'activité et la dette publique, avec la fiche 9 dont il est pilote) le 04/10/2026. Avis porté sur la fiche à l'état `f07d02f` (branche `claude/j1-monnaie-etat`, PR #77). Les conditions nouvelles sont numérotées C45 à C50 (§ 6.6), sous réserve de l'ordre réel d'intégration.*
+
+*Sources lues :*
+- *fiche 8 : § 1 à § 5 ;*
+- *fiche 9 : critères 5, 6, 9, 11, 13 et 14 ;*
+- *fiche 7 : § 6 ;*
+- *spécification :*
+  - *`sec:cadre-calendrier`, `sec:cadre-bilans`, `sec:cadre-flux`, `sec:cadre-caisse`, `sec:cadre-phases` (l. 180 à 541) ;*
+  - *équations N1 à N11, T1 à T6, P1 à P4, H2 à H7, S1 à S7, F1 à F4, B1 à B8 ;*
+  - *l. 1543 (θ_H) et `tab:calibration` ;*
+- *constats de `jeu` transmis le 04/10/2026.*
+
+*Calculs : maquette propre de `macro`, écrite depuis la spécification dans un répertoire créé par `mktemp -d`. Elle n'importe ni la maquette de `monnaie` ni `archive/`. Elle reprend les hypothèses déclarées par `monnaie` au § 3.0 :*
+- *bloc 9 provisoire : T9, T_H = τ·WB avec τ = 0,25, M^G\* = G + i_B B/n_a, G en volume indexé sur la production potentielle ;*
+- *A8 avec s_CB = 0, et i_B = i_res = i_CB ;*
+- *option C avec a_π = 0,5, k_I = 0,25 par an et λ_e = 0,2 par an ;*
+- *ζ = 4, ϖ_L = 2 %, ϖ_D = 1 %, ϑ = 0,10 ;*
+- *état initial résolu en lecture (1) de #44.*
+
+*Les deux régimes de T4 sont linéarisés séparément. L'état est normalisé par le dernier prix connu et la production potentielle, ce qui retire la racine nominale. Les fonds propres E^CB et E^Bk sont rattachés aux identités de bilan, ce qui exclut toute perturbation hors bilan. Les sorties de la maquette sont des résultats de modèle, sans statut de fait. Coût : 15,2 µs par pas.*
+
+### 6.1 Réponses aux six questions de `monnaie`
+
+**Q1 — Assiette de T_H et forme de T9.**
+
+Ma recommandation, provisoire et à trancher à M33 : pour la maquette conjointe et l'instruction de la fiche 9, prendre **T9 réel**, avec **T_H assis sur le revenu avant impôt retardé**.
+
+1. **T9 doit être réel.**
+   - Sous T9 nominal, le taux de référence est fixe en nominal. Un changement de cible prélève alors Δπ × (B − M^G − E^CB)/n_a sur les ménages, un impôt forfaitaire sans motif.
+   - Mesure, à s_G et ϱ̄_L tenus à leurs valeurs de π\* = 2 % :
+     - sous T9 nominal, r̄ vaut −7,87 % à π\* = 0 et −17,69 % à π\* = 10 % ;
+     - sous T9 réel, il vaut +5,73 % et +2,60 % (`c15.py`) ;
+     - la référence est 1 %.
+   - La reprise doit donc porter sur le surcroît de **taux réel** : le taux de référence suit π\* par Fisher (C45).
+2. **L'assiette fixe le gain statique, et avec lui toute la dynamique de long terme de la règle à action intégrale.** Mesures à π̄ = 2 % :
+
+   | Grandeur | T_H = τ·WB, T9 | T_H sur le revenu avant impôt retardé, T9 réel |
+   |---|---|---|
+   | Gain statique (% de y par point de i) | −0,0259 | −0,2216 |
+   | Δr̄ après G +1 % permanent (Fisher) | +918 pb | +97 pb |
+   | i au tour 120 ; au tour 600 | +0,76 ; +2,78 points | +0,67 ; +1,09 point |
+   | Glissement − π\* aux tours 60 / 120 / 240 / 600 | +0,238 / +0,238 / +0,224 / +0,160 | +0,219 / +0,165 / +0,086 / −0,007 |
+   | Inflation excédentaire cumulée, Δr̄/k_I | 36,7 point-années | 3,9 point-années |
+   | Palier, taux tenu −1 point (critère 10 (b) (ii)) | +0,085 point | +0,615 point |
+   | Rayon sous la règle de référence | 0,999413 | 0,997482 |
+
+   - L'identité de la quatrième ligne est exacte sous C2 : r̂\* doit se déplacer de Δr̄, et il ne se déplace que par k_I·Σ(π_{t−1} − π\*)/n_a.
+   - Seuls un gain statique plus fort ou un k_I plus grand réduisent donc la traîne. C'est la réponse au constat (1) de `jeu` : sous l'assiette élargie, l'écart reste au-dessus d'un cran au tour 120 (+0,165), puis passe sous un cran au tour 240 (+0,086).
+3. **Pourquoi l'assiette joue autant.**
+   - Sous l'assiette WB, l'investissement qu'une hausse de taux évite retourne aux ménages par Div_F, et n'est pas imposé (Q6).
+   - Sous l'assiette élargie :
+     - un quart de ce dividende est prélevé ;
+     - l'impôt sur les intérêts, ajouté à T9, rend le canal rentier net négatif, soit −τ·Δi·(B − M^G − E^CB)/n_a.
+4. **Réserves** :
+   - sous l'assiette élargie, le critère 13 échoue encore (§ 6.3) ;
+   - à π\* = 0, la recherche de racines trouve **deux valeurs stationnaires de r̄** dans [−60 % ; +100 %] (+5,20 % et −15,44 % sous T9 nominal ; +3,11 % et −21,53 % sous T9 réel). L'unicité est à examiner au comptage du critère 4 (b) de la fiche 9 ;
+   - un impôt sur les intérêts nominaux rend le rendement réel après impôt dépendant de π̄. C'est déjà déclaré au critère 13 (c).
+
+**Q2 — Palier de +0,085 point.**
+
+Oui, il relève à mon avis de l'indexation des plans en u.m. sur π\* :
+- S4 et F2 ;
+- l'entretien γ^e de H3 et H4 ;
+- G^plan.
+
+Un excès de π sur π\* y devient une baisse du volume demandé. Le palier vaut à peu près le gain statique × Δi, rapporté à cette sensibilité.
+
+La mesure le confirme : sous l'assiette élargie (gain multiplié par 8,5), le même taux tenu donne un palier de +0,615 point (+0,402 au tour 120), au lieu de +0,085 (`palier.py`).
+
+Je n'ai pas testé la neutralisation de l'indexation : c'est une hypothèse cohérente avec la mesure. Les deux régimes donnent un « nouveau palier », sans « retour », et l'exigence du critère 10 (b) (ii) est tenue au tour 120 (+0,155 et +0,402).
+
+Je recommande de le porter au mainteneur au titre du critère 10 (a), comme information, non comme échec : l'effet de long terme d'un taux tenu existe, son ampleur est réglée par la règle budgétaire.
+
+**Q3 — Règle du pays joué qui neutralise la divergence.**
+
+Il faut **une reprise automatique et quasi intégrale du surcroît d'intérêts réels**. Rayon selon la part φ de T9 reprise (`joue.py`) :
+
+| φ | 0 | 0,5 | 0,75 | 0,9 | 1 |
+|---|---|---|---|---|---|
+| π̄ = 2 % | 1,007482 | 1,003141 | 1,001130 | 1,000033 | 0,999413 |
+| π̄ = 10 % | 1,019719 | 1,008420 | 1,003738 | 1,001249 | 0,999814 |
+
+- L'assiette élargie seule, sans reprise, ne suffit pas : 1,001642 à 2 % et 1,010681 à 10 %.
+- Avec T9 réel, elle tient : 0,997482 et 0,998306.
+- Un levier d'impôt « défini net des intérêts » ne neutralise la divergence que s'il finance automatiquement le surcroît d'intérêts. C'est alors T9 sous un autre nom.
+
+Je rejoins `jeu` : **la valeur par défaut du levier budgétaire devrait être une règle avec reprise**, et « leviers tenus » un écart déclaré (régime « intérêts financés par le déficit », fiche 9, critère 9 (d)), avec la charge d'intérêts restituée.
+
+Constat (2) de `jeu` reproduit : à π̄ = 10 %, une hausse d'un point aux tours 1 à 12 donne +1,45 point de glissement au tour 120 et +36,95 au tour 240. C'est à instruire à la fiche 9 (critères 9 (d) et 19) et à trancher à M33 (C47).
+
+**Q4 — θ_H effectif de 0,498.**
+
+Ce chiffre n'est pas le θ_H de la l. 1543, qui est la part de la valeur de la production marginale qui atteint le revenu des ménages dans le pas.
+
+Je le reproduis comme **ΔDiv_F/ΔG au tour 1**, soit 0,4983 :
+- au tour 1, la production ne varie pas (Δy = 0) ;
+- le PIB ne monte que de la marge, soit ΔPIB/ΔG = 0,2018 ;
+- F2 garde en dépôts environ ν_F·λ_v ≈ 0,5 de la vente imprévue.
+
+C'est cohérent avec F, mais c'est un autre objet. La fiche 9 publiera les deux grandeurs (critère 14 (c)) :
+- la part d'une vente imprévue qui atteint les ménages ;
+- θ_H au sens de la l. 1543, sous chaque règle. Sous T_H = τ·WB, sa part salariale vaut (1 − τ)·UC/p = 0,6. Le reste n'est pas mesuré.
+
+**Q5 — λ_e = 0,2 par an pour #45.**
+
+Je l'accepte comme valeur indicative de la maquette, non comme calibration.
+- La racine dominante y est insensible : 0,999411 à λ_e = 0,1 et 0,999414 à 0,4.
+- λ_w = 1 est déjà déclarée au-dessus des ordres de grandeur sourcés (`tab:calibration`). Si le J3 la baisse, 1/(λ_e λ_w β) monte d'autant. La calibration reste conjointe au J3.
+- Je n'ai pas remesuré le ratio de sacrifice de 2,08. Je ne cite aucun ratio empirique (Ball, 1994, non lu).
+
+**Q6 — Compensation de 95 % du gain statique.**
+
+Elle ne vient pas de C30, qui ne joue que sur la dépendance à π̄ (critère 13). Elle vient de F3 et de la norme stationnaire des ménages.
+- À l'état stationnaire de plein emploi, C^vol + I^vol + G^vol = v.
+- Un point de taux retire 0,00537 y d'investissement en volume et ajoute 0,00512 y de consommation, soit un rapport de 0,953.
+- F1 et F2 fixent le crédit et les dépôts. F3 verse donc l'investissement non fait en dividendes.
+- La propension stationnaire des ménages au revenu vaut 1 − γ̄·n_a ν_H/(1 + n_a ν_H π\*^pas) = 0,961 à 2 % (calcul à la main). Le revenu disponible reprend donc environ 99 % de l'investissement non fait (déduit, non mesuré séparément).
+- Sous T9, le canal rentier est neutralisé. Rien ne fait alors dépendre l'épargne des ménages du taux (M27).
+
+Par point de ϱ_L, je trouve 0,00548 et 0,00522 y, contre 0,0056 et 0,0053 publiés. L'écart de 2 % peut venir d'une dérivée contre une différence d'un point ; il n'est pas éclairci.
+
+### 6.2 Contre-épreuve indépendante (critère 11)
+
+| Grandeur | Publiée (`monnaie`) | Remesure de `macro` | Verdict |
+|---|---|---|---|
+| K/(12 PIB) à 0 / 2 / 10 % | — / 1,55510 / — | 2,00092 / 1,55510 / 0,83598 | reproduite |
+| L/(12 PIB) ; D_F/(12 PIB) | 0,80037 / 0,62204 / 0,33439 ; 0,16605 | idem ; 0,16636 / 0,16605 / 0,16492 | reproduite |
+| I/PIB ; M^G\*/(12 PIB) à 2 % | 13,945 % ; 0,017536 | 13,94 % ; 0,017536 | reproduite |
+| Résidu d'un pas ; E^Bk stock − flux | 3,6e−15 ; 2e−15 | ≤ 3,6e−15 ; ≤ 1,7e−15 | reproduite |
+| Rayon sous T9 à 0 / 2 / 10 % | 0,999270 / 0,999413 / 0,999814 | idem, dans les deux régimes | reproduite (écart < 1e−6) |
+| Paire complexe | 0,8779, période 18,7 | hausse : 0,8651, période 18,84, h 4,8 ; baisse : 0,9130, période 20,84, h 7,6 ; 0,8779 et 18,75 seulement en dérivant au coude de T4 | **non reproduite : artefact** (C48) |
+| Pays joué à 0 / 2 / 10 % | 1,002307 / 1,007481 / 1,019711 | 1,002307 / 1,007481 (baisse ; hausse 1,007482) / hausse 1,019719, baisse 1,019685 ; 1,019711 au coude | reproduite à 0 et 2 % ; à 10 %, même artefact |
+| Tour où i s'écarte d'un point en pays joué | 1 024 / 323 / 107 | idem | reproduite |
+| Gain statique ; Δr̄ après G +1 % permanent | −0,026 % ; +918 pb | −0,0259 % ; +918 pb (Fisher ; +936 pb en i) | reproduite |
+| Rampe de i aux tours 120 / 600 | +0,76 / +2,78 | idem | reproduite |
+| Arrivée après G +1 % permanent, 20 demi-vies | ≤ 5,9e−4 (27 branches) | 4,8e−5 sur i, H = 23 610, calibration seule | reproduite (une branche) |
+| Assiette élargie : gain ; Δr̄ ; i au tour 120 ; rayon | −0,23 % ; +97 pb ; +0,67 ; 0,997482 | −0,2216 % ; +97 pb ; +0,67 ; 0,997482 | reproduite (gain à 0,01 près, non éclairci) |
+| #56 (A) à 2 % : cumul ; P_36 ; premiers écarts ; P3 | −0,160 % ; P_36 < réf ; I^vol au tour 2, y, C^vol et P au tour 3 ; 0,254 % et 0,39 point | idem (P_36 −0,138 %) | reproduite |
+| #56 (B) : P_120 ; glissement ; écart maximal de y | −1,81 % ; −0,15 ; 0,256 % | idem | reproduite |
+| #56 en pays joué à 0 / 2 / 10 % | −0,089 / +0,016 / +0,181 % | −0,088 / +0,016 / +0,181 % | reproduite (3e chiffre à 0 %) |
+| Critère 10 (b) (ii) | tour 3 ; +0,412 / +0,159 / +0,155 ; palier 2,0847 % | idem ; 2,0847 % (dérive 1e−9 sur 1 000 tours) | reproduite |
+| Taux tenu en pays joué, tour 120 | −0,305 | −0,305 (−0,542 au tour 600) | reproduite |
+| Constats de `jeu` | +0,24 point aux tours 60 à 240 ; +0,165 au tour 120 (assiette élargie) ; +1,45 / +37 en pays joué | +0,238 / +0,224 / +0,160 aux tours 60 / 240 / 600 ; +0,165 ; +1,45 / +36,95 | reproduite |
+| Critère 13, r̄ à π\* = 0 / 10 % | −7,9 / −17,7 % (T9 nominal) ; 5,7 / 2,6 % (T9 réel) | −7,87 / −17,69 % ; +5,73 / +2,60 % | reproduite |
+| θ_H effectif | 0,498 | 0,4983 = ΔDiv_F/ΔG au tour 1 | reproduite (lecture : Q4) |
+| Pire valeur sur G, k_I ×0,5 | 0,999551 | 0,999551 | reproduite |
+| a_π = 1,5 | 1,0299 (λ_w ×2, période d'environ 16) | instable : 1,018868 en baisse, période 17,7 ; stable en hausse | signe reproduit ; 1,0299 non reproduit (configuration non identifiée) |
+
+**Non mesuré** :
+- la grille du critère 12 (24 calibrations × G) ;
+- l'arrivée sur les 27 branches ;
+- #54 et l'essai (3) du critère 16 ;
+- C44 dans la boucle ;
+- les variantes C-h, C-c, C-g, D, T, R, et les options A et B ;
+- ζ = 8 ;
+- le critère 6 (d) ;
+- le plancher (critère 18 (c)) ;
+- le ratio de sacrifice.
+
+### 6.3 Critère 13 (C15) : conséquence pour M32-M33 et instruction de la fiche 9
+
+1. **Je confirme que la source de l'échec est hors du bloc 8.**
+   - Sous la fermeture monétaire, le bloc 8 ne fixe que π̄ = π\*.
+   - r̄ est fixé par l'équilibre stationnaire de la demande des blocs 5, 6, 7 et 9. Son déplacement entre deux cibles vaut, en ordre de grandeur, la dépendance de la demande privée à π̄ à taux donné, divisée par le gain statique.
+   - Numérateur, en lecture (1) à r̄ = 1 % : s_G = 0,201144 / 0,202599 / 0,202482 à π̄ = 0 / 2 / 10 %. Dénominateur : −0,026 % par point.
+   - Aucune option du bloc 8 ne change ce rapport : aucun paramètre de la règle n'entre dans l'état stationnaire.
+2. **Pour la décision par paire**, je recommande :
+   - que M32 retienne l'option du bloc 8 sur ses propres critères ;
+   - que le critère 13 reste ouvert comme **condition de M33** : la fiche 9 doit montrer une règle qui le tient au seuil adopté, ou établir qu'aucune ne le peut.
+3. **Dans ce dernier cas, deux voies sont au mainteneur** :
+   - une correction prospective du critère 13, l'ancien verdict restant publié ;
+   - la réouverture d'une sensibilité de l'épargne au taux, côté ménages (fiche 5, Q3, point 4) ou côté distribution des entreprises.
+
+   Le critère 11 (c) (C14) est tenu au pied de la lettre, puisque le gain est négatif. Je ne propose pas d'y ajouter un seuil après observation.
+4. **Ce que la fiche 9 doit instruire**, sur la même maquette :
+   - (a) T9 sous forme réelle (C45) ;
+   - (b) au moins trois assiettes : WB, revenu avant impôt retardé, et l'une ou l'autre avec T9 réel. Pour chacune : gain statique, Δr̄, critère 13, palier du critère 10 (b) (ii), Δr̄/k_I, rayon et #56 ;
+   - (c) le seuil φ\* de reprise partielle ;
+   - (d) une règle de rappel de la dette, proportionnelle seulement, sans action intégrale sur l'activité (critère 6 (b)) ;
+   - (e) la décomposition de la dépendance de la demande privée à π̄ : C30, H3, impôt d'inflation sur les dépôts, forme de T9, impôt sur les intérêts nominaux ;
+   - (f) l'unicité de r̄ stationnaire ;
+   - (g) θ_H sous ses deux définitions ;
+   - (h) la valeur par défaut du levier budgétaire en pays joué.
+
+### 6.4 Lectures (a) à (e) du § 5 : avis de `macro`
+
+- **(a) a_π = 0,5.**
+  - Sous a_π = 1,5 et λ_w ×2, la boucle salaires-prix est instable en baisse : 1,018868, période 17,7 tours.
+  - Sous a_π = 0,5, elle est stable sur les cas que j'ai mesurés : λ_w ×2 et k_I ×0,5 et ×2.
+  - La stabilisation de long terme vient de l'action intégrale.
+- **(b) Aucun plancher.** Sans billets, aucun arbitrage ne le motive au socle. Je signale à `jeu` que i_D = i_CB − ϖ_D devient négatif dès que i_CB < 1 %.
+- **(c) Aucune crédibilité au socle.**
+  - Ni C-h ni C-c n'ont d'effet stationnaire.
+  - C1 tient sans elles, et la règle SN reste exacte.
+  - C-g change la dynamique salariale : à instruire au J4 ou au J6 seulement.
+- **(d) Formation en phase 1.**
+  - Elle laisse `tab:phases` inchangée.
+  - Le délai prix → anticipation → salaire est de deux tours, et la condition de Barro et Gordon tient : la π^e consommée au tour n est formée en phase 1 du tour n − 1, sur π_{n−2}.
+  - Le rayon est identique sous la formation en phase 9 (`monnaie`).
+- **(e) Lecture (1) de #44.** C'est la seule bien conditionnée sous la règle actuelle :
+  - en lecture (1), s_G varie de 0,026 % de y par point de r̄ : choisir r̄ est presque libre ;
+  - en lecture (2), r̄ varierait d'environ 38 points par point de PIB de G.
+
+### 6.5 Avis général
+
+**Favorable à l'option C**, avec le socle commun du § 3.N.
+- Formes fermées sans vitesse.
+- Rayon inférieur à 1 dans les deux régimes à 0, 2 et 10 %.
+- Arrivée tenue et #56 tenue, sous T9.
+- Tout est reproduit indépendamment, sauf la paire complexe.
+
+**Réserves**, sans désaccord sur l'option :
+1. Paire complexe et pays joué à 10 % à republier par régime (C48).
+2. La stabilité et l'ampleur de long terme dépendent d'une reprise quasi intégrale des intérêts réels et de l'assiette de T_H. C'est l'objet de M33, que je porte à la fiche 9.
+3. Le critère 13 échoue pour une raison qui relève de la fiche 9 et des fiches 5 et 6 (§ 6.3).
+
+### 6.6 Conditions transmises
+
+- **C45 (fiche 9)** : toute reprise du surcroît d'intérêts porte sur le taux réel. Le taux de référence de T9 suit π\* par Fisher.
+- **C46 (fiche 9)** : pour chaque règle candidate, publier :
+  - le gain statique et Δr̄ après G +1 % permanent ;
+  - l'inflation excédentaire cumulée Δr̄/k_I (identité exacte sous C2) ;
+  - le palier du critère 10 (b) (ii) et le critère 13.
+- **C47 (fiche 9, `jeu`, M33)** : stabilité du pays joué seulement pour φ ≥ 0,9 environ (2 %) et φ > 0,9 (10 %). Valeur par défaut du levier budgétaire avec reprise ; « leviers tenus » est un écart déclaré.
+- **C48 (fiche 8, `monnaie`)** : chaque régime de T4 est linéarisé séparément, jamais par différences au coude. Republier :
+  - la paire complexe : 0,8651, période 18,84 en hausse ; 0,9130, période 20,84 en baisse ;
+  - le rayon en pays joué à 10 % : 1,019719 en hausse ; 1,019685 en baisse ;
+  - et vérifier les grandeurs du critère 12.
+- **C49 (fiche 9, critère 4 (b))** : unicité de r̄ stationnaire sous l'assiette élargie (deux racines à π\* = 0).
+- **C50 (fiche 9, critère 14 (c))** : θ_H publié sous ses deux définitions. La part d'une vente imprévue vaut 0,498 sous F2 ; θ_H au sens de la l. 1543 est à mesurer.
+
+### 6.7 Points signalés à `jeu` (non tranchés)
+
+- Le cycle perceptible est de 18,8 tours (hausse) et 20,8 tours (baisse), avec des demi-vies de 4,8 et 7,6 tours. La lecture « environ 19 tours » tient.
+- Après une dépense publique permanente, la traîne d'inflation est de 36,7 point-années sous l'assiette WB, contre 3,9 sous l'assiette élargie : c'est l'assiette qui la décide.
+- En pays joué sans reprise, une hausse de taux est inflationniste à moyen terme et explosive à 10 %.
 
 ## 7. Avis de `jeu`
 
@@ -920,3 +1155,4 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 | 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #72 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
 | 04/10/2026 | Jalon 2, première partie (partielle) : § 3 à § 5 instruits (options A, B, C et variantes, socle commun, tableau comparatif, recommandation de l'option C) ; contre-épreuve, essai (3) de #54 et remesure V restants ; § 6 et § 7 à rendre | `monnaie` ; session principale |
 | 04/10/2026 | Avis de `jeu` (§ 7) : option C lisible sous dix conditions ; π\* paramètre au J4 (le verdict de #54 ne suffit pas) ; défaut du levier budgétaire en pays joué renvoyé à la fiche 9 | `jeu` ; session principale |
+| 04/10/2026 | Avis de `macro`, expert consulté (§ 6), favorable à C, et contre-épreuve indépendante (critère 11) : tout reproduit sauf la paire complexe (artefact de linéarisation au coude de T4, C48) ; conditions C45 à C50 ; fiche « avis rendus », sous réserve de C48 | `macro` ; session principale |
