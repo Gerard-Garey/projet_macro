@@ -2012,7 +2012,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 | Dividendes, profits non distribués, taux de distribution | ΣDiv_F, ΣFU, ΣDiv_F/Σ(Div_F + FU) | u.m. ; fraction | résultat sur 12 tours | 12 tours seulement | 0,56853 ; 0,39995 |
 | Emplois de la trésorerie des entreprises | contributions additives du § 9.5, condition 5 | u.m. par tour | — | le tour | — |
 | Dette des entreprises ; dette nette | L/ΣPIB ; (L − D_F)/ΣPIB, encours de clôture | années | PIB sur 12 tours | le tour (12 tours au dénominateur) | 0,635 et 0,466 ; 0,356 et 0,180 |
-| K/Y (ii), panneau annuel | p K^vol de clôture / ΣPIB | années | PIB sur 12 tours | 12 tours | 2,040 ; 2,110 (à ϱ_L = ϱ̄_L) |
+| K/Y (ii), panneau annuel | p K^vol de clôture / ΣPIB | années | PIB sur 12 tours | 12 tours | 2,040 ; 2,110 (à ϱ_L = ϱ̄_L)  *(annotation du 04/10/2026 : 2,037 ; 2,093, visés par le mainteneur ; facteur de fenêtre d'un volume valorisé au prix du tour)* |
 | Bilan : capital comptable et écart de valorisation | K ; K − p K^vol | u.m. ; fraction de p K^vol | p K^vol | clôture | −(1 − ρ̄_K) : −22,14 % ; −57,86 %  *Annotation du 04/10/2026 : écart défini à l'ouverture, K_t/(p_t K^vol_t) − 1, fenêtre « K : clôture ; écart : stocks d'ouverture, au prix du tour » (lecture (a), décision du mainteneur ; `sec:investissement-restitution`). Avis de `jeu` (à clarifier, pour le J4) : afficher « Écart de valorisation du capital (début du mois) », à une décimale, en annotation sous K et non comme un poste ; infobulle expliquant le coût historique, le signe négatif sous l'inflation et l'absence de recoupement avec le K de fin de mois.* |
 | Séries et fiche détaillée, hors du tableau | tu, tu\*_t, L/K, ti | fraction | — | le tour | t̄u·e^{ζ(ϱ_L − ϱ̄_L)} ; lv\* ; ti_0 |
 
@@ -2044,7 +2044,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
    *Mise en œuvre* :
    - Le bloc 6 écrit en phase 6, sans variable d'état, y = min{ΔL^d − ΔL, max(0, Div^{servi})} et z = (ΔL^d − ΔL) − y. Div^{servi} est la valeur de F3 avec ΔL = ΔL^d.
    - La mention n'apparaît que dans le scénario adverse : au socle, l'offre est accommodante (C27).
-7. **K/Y (ii)** au panneau annuel, avec son niveau normal dans la définition affichée (2,040 ans à 2 % sous la lecture (e)). Dans le bilan, K comptable avec la ligne « écart de valorisation, capital au coût historique » (−(1 − ρ̄_K)).
+7. **K/Y (ii)** au panneau annuel, avec son niveau normal dans la définition affichée (2,040 ans à 2 % sous la lecture (e) ; *2,037 ans, annotation du 04/10/2026*). Dans le bilan, K comptable avec la ligne « écart de valorisation, capital au coût historique » (−(1 − ρ̄_K)) (*annotation du 04/10/2026 : écart défini à l'ouverture, K_t/(p_t K^vol_t) − 1, lecture (a) décidée par le mainteneur*).
    *Mise en œuvre* : tableau du § 9.4.
    - Sous S-ζ, le niveau normal affiché est celui de ϱ_L = ϱ̄_L.
    - Sous un écart de taux durable, x se déplace de e^{−ζΔϱ} : mention dans la fiche détaillée, soumise à `jeu`.
