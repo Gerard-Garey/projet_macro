@@ -33,7 +33,7 @@ La procédure (passes, contrôle du journal) est portée par le script `outils/c
    - le nombre de pages et la table des matières ;
    - la chaîne de composition, affichée par le script en tête de sortie : MiKTeX sur le poste local, TeX Live en session cloud.
 
-4. **Vérifier la concordance** : `uv run python outils/concordance_spec_moteur.py --strict` (labels, balises, `\code{…}`, encadrés « Lecture » ; contrat de `CONVENTIONS.md` § 9).
+4. **Vérifier la concordance** : `uv run python outils/concordance_spec_moteur.py --strict` (labels, balises, `\code{…}`, encadrés « Lecture » ; contrat de `CONVENTIONS.md` § 9) ; puis les matrices : `uv run python outils/verifier_matrices.py --strict` (tables du cadre, #28). Les deux doivent répondre « Aucun écart. ».
 
 5. **Vérifier ce qui sera commité** : `git status docs/specification` doit montrer le `.tex` et le `.pdf` modifiés ensemble. Les fichiers auxiliaires (`.aux`, `.log`, `.out`, `.toc`) sont ignorés par Git.
 

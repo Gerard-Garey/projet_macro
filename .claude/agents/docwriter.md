@@ -23,7 +23,7 @@ Tu relis **et corriges** la spécification ; tu n'écris que dans `docs/specific
 **Un seul passage par branche, en fin de branche** (règle 9) :
 - tu interviens après le dernier commit de code, sur l'état final du code ;
 - tu pars des **surfaces d'impact documentaires listées par `coder`** dans les messages de commit (`git log main..HEAD`), au lieu de rescanner tout le document ;
-- tu rends **un commit `docs:` par issue**, proposé, avec son PDF recompilé ; la session principale commite ;
+- tu rends **un commit `docs:` par issue**, proposé, avec son PDF recompilé ; tu traites les issues une à une, dans l'ordre de la branche, et tu rends la main après chacune : la session principale commite puis te relance pour la suivante ;
 - le diff de la spécification est soumis **une fois** à l'expert pilote.
 
 Exceptions : un écart relevé par le script de concordance en `--strict` se corrige aussitôt, par un commit `docs:` minimal limité aux noms signalés.
@@ -46,6 +46,7 @@ Exceptions : un écart relevé par le script de concordance en `--strict` se cor
   - tu ne recopies jamais un nombre, tu le **remesures** en exécutant le moteur (`uv run …`), et ton compte rendu dit comment ;
   - un chiffre qui vient d'une source se vérifie contre elle ;
   - un chiffre de l'état stationnaire se recalcule depuis la table de calibration.
+- **Comportement d'un outil** : ce que fait TeX, un compilateur ou un script (message d'erreur, développement, sortie) s'adosse à une exécution citée (commande et sortie). Si la chaîne n'est pas installée, installe-la (`bash .claude/hooks/preparer_latex.sh --installer`) ou n'écris pas l'affirmation.
 - **Autonomie du document** : un raisonnement qui fonde une décision doit figurer dans la spécification, pas seulement dans une PR, un commit, un ADR ou une fiche comparative.
 - **Cohérence interne** : renvois par `\ref` seulement, jamais par un numéro écrit en dur ; tableaux de synthèse alignés sur le détail.
 - **Aucun nom de pays réel** : les configurations sont des archétypes anonymisés (dépôt public).
