@@ -698,7 +698,210 @@ Abréviations : « ×2 » renvoie à la grille G du critère 12 (vitesses et gai
 
 ## 7. Avis de `jeu`
 
-À instruire (jalon 2).
+*`jeu`, 04/10/2026 (issue #72, jalon 2), sur la fiche à l'état `f07d02f` (branche `claude/j1-monnaie-etat`, PR #77). Réponses aux sept questions de `monnaie` (§ 5, l. 684-691).*
+
+**Chiffres.** Aucun moteur n'existe encore. J'ai rejoué la maquette conjointe de `monnaie` (§ 3.0), importée sans modification, avec mes propres scénarios vus du joueur (cinq scripts hors dépôt, 04/10/2026). Mes remesures retrouvent les valeurs du § 3.C-4 :
+- i +0,76 point au tour 120 après une dépense publique +1 % permanente ;
+- glissement +0,155 point au tour 120 sous taux tenu −1 point ;
+- rayon 0,999413.
+
+Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résultats de maquette, sous le bloc 9 provisoire (T9 nominal, T_H sur WB, sauf mention), et non des faits. Le cran d'affichage est de 0,1 point. La fenêtre de partie va de 60 à 120 tours (`docs/exigences.md`, O5 : scénarios de 5 à 10 ans).
+
+**Question ludique de la fiche.** Le bloc porte le premier levier macroéconomique du joueur, le taux directeur, et la boussole qui l'accompagne, la règle. Quatre questions en découlent :
+- l'écart à la règle a-t-il un effet perceptible, au bon tour et avec le bon signe ?
+- la règle est-elle un conseil fiable, ou garde-t-elle une mémoire que le joueur ne voit pas ?
+- les anticipations ont-elles un indicateur qui annonce le coût d'une désinflation ?
+- existe-t-il un piège, une remise à zéro gratuite ou un signe inversé sans explication ?
+
+### 7.A, 7.B, 7.T, 7.D et 7.R (brièvement)
+
+- **A : à revoir.**
+  - La crédibilité ne monte que dans une bande d'un point : effet de falaise (§ 3.A-8, l. 427).
+  - Six écrêtages font autant de murs invisibles.
+  - Le catalogue de leviers (QE, avances, réserves obligatoires) est sans effet au socle.
+- **B : à revoir.**
+  - Une crédibilité nulle pour toujours est un indicateur mort (§ 3.B-8, l. 463).
+  - Avec un biais de deux points, le joueur verrait la banque centrale manquer sa cible en suivant sa règle.
+  - B est instable sur G.
+- **T : à revoir.** Deux points d'inflation de biais permanent par point d'erreur sur r\* (§ 3.V, l. 585) : la règle suivie manque la cible pour toujours.
+- **D : sans objet au socle.** Le corridor est inerte (Res = 0). À reprendre au J6 avec le levier d'achats.
+- **R : hors classement.** C'est une référence.
+- **Formation de π^e en phase 9 : sans enjeu ludique.** Le rayon est identique ; un délai d'un tour au lieu de deux ne se voit pas.
+
+### 7.C Option C — action intégrale sans fuite, anticipation à gain constant
+
+- **Récit en une phrase** : « la banque centrale fixe le taux à son taux neutre plus la cible, corrigés de la moitié de l'écart d'inflation, et relève son taux neutre tant que l'inflation dépasse la cible ; les anticipations rattrapent l'inflation observée d'environ un cinquième par an ». Il n'y a ni seuil, ni borne, ni crédibilité cachée.
+- **Ce que voit le joueur** (taux décidé un point au-dessus de la prescription aux tours 1 à 12, π\* = 2 %) :
+  - glissement : −0,013 point au tour 3, −0,36 au tour 12, minimum −0,39 au tour 14, puis rebond à +0,25 au tour 24. Les écarts restent sous un cran dès le tour 31 ;
+  - production : −0,11 % au tour 3, −0,25 % au tour 6, rebond à +0,17 % au tour 18, sous un cran dès le tour 21 ;
+  - consommation : +0,30 % au tour 12 (canal rentier, #56) ;
+  - la prescription baisse de 3,02 à 2,81 % pendant l'écart et désigne le taux de retour ; r̂\* bouge de −0,075 point au plus, sous un cran ;
+  - critère 19 (e) tenu : (i) deux crans dans les 12 tours, sur le glissement et la production ; (ii) pic au tour 14 ; (iii) résidu au tour 60 de +0,005 point de glissement et de +0,005 % de production.
+- **Gagnants et perdants** : ceux de la fiche 7 (§ 7.C). Une hausse de taux enrichit les épargnants et alourdit la charge d'intérêts de l'État.
+- **Aucune remise à zéro gratuite.**
+  - Le joueur tient le taux un point bas pendant 120 tours : glissement +0,41 au tour 12, +0,155 au tour 120, consommation −0,52 %.
+  - Pendant ce temps, la prescription monte jusqu'à 3,56 %, soit 1,54 point au-dessus du taux tenu. Revenir à la règle coûte une récession annoncée : production −0,29 % et glissement −0,44 au tour 136. La prescription en a affiché le prix à chaque tour.
+- **Stratégies.**
+  - « Suivre la règle » est viable.
+  - « S'écarter puis revenir » se paie au retour, au prix affiché.
+  - « Tenir le taux bas » produit de l'inflation sans relance : la production revient à +0,005 % au tour 120.
+  - Aucune stratégie dominante n'apparaît dans les scénarios joués.
+- **Risques.**
+  - *Cible manquée en suivant la règle* : après une dépense publique +1 % permanente, glissement +0,24 point aux tours 60 à 240, +0,16 au tour 600 (réponse 2).
+  - *Mémoire de la règle* : r̂\* garde la trace des écarts passés pendant des siècles (réponse 7).
+  - *Signe inversé en pays joué* (réponse 5).
+  - *Cible abaissée qui relève l'inflation* (réponse 6).
+- **Verdict : lisible**, sous les conditions 1 à 10.
+
+### 7.V Variantes de crédibilité
+
+- **C-h : sans intérêt ludique.** Le c̄ ajouté est invisible du joueur ; palier semblable (+0,143 au tour 120).
+- **C-c : à revoir au socle.**
+  - C'est une jauge de 0 à 1, attrayante pour le joueur, mais inerte au premier ordre (l. 575).
+  - Aucune source ne la calibre (l. 578) ; elle redouble π^e − π\* sans conséquence propre identifiable.
+  - Une jauge sans mécanisme nommable est décorative.
+- **C-g : à garder pour le J6.**
+  - Le gain qui croît avec l'erreur de prévision fait du laisser-aller inflationniste un coût non linéaire : π^e +1,23 point et production −1,76 % sous G +5 % (l. 581).
+  - C'est un mécanisme de crise, « désancrage », adossé à une source (Gáti, 2022). Son signal précurseur naturel est π^e − π\*.
+  - Au socle, il ferait apparaître des ruptures avant que le joueur ait appris l'indicateur.
+
+### Réponses aux sept questions de `monnaie`
+
+1. **Cycle d'environ 19 tours et traîne séculaire.**
+   - **Cycle : lisible.** Le joueur voit un dépassement puis un rebond, et rien de plus.
+     - Sous une dépense publique +1 % aux tours 1 à 12 : glissement +0,50 au tour 12, −0,26 aux tours 24 à 27, sous un cran dès le tour 32 ; production +0,27 % au tour 6, −0,25 % au tour 18.
+     - Un seul changement de signe au-dessus d'un cran en 120 tours, dans le scénario d'écart à la prescription.
+   - **Traîne : à clarifier.**
+     - Après un choc transitoire, elle reste sous un cran : i +0,06 point aux tours 60 à 120 (l. 563).
+     - Après un choc permanent, elle devient un écart visible et durable (réponse 2).
+2. **Rampe du taux après une dépense publique permanente.**
+   - **Dans la fenêtre de partie : à clarifier.**
+     - i +0,76 point et r̂\* +0,63 point au tour 120.
+     - Si r̂\* est restitué, le récit est explicable : « l'État dépense durablement plus, le taux neutre monte ».
+   - **À revoir pour ce qui l'accompagne.**
+     - Le glissement reste à +0,24 point (deux crans) pendant toute la partie et au-delà : +0,16 au tour 600 (l. 523).
+     - Le joueur qui suit la règle voit la banque centrale manquer sa cible pendant des décennies, et seul un écart à la règle y remédie.
+     - Sous l'assiette élargie avec T9 réel, l'écart est de +0,165 au tour 120 et de +0,086 au tour 240.
+     - Un Δr̄ de +9 points à l'horizon long serait absurde au simulateur du J4.
+   - **Ma préférence ludique** va à l'assiette élargie (question 1 de `monnaie` à `macro`) ; c'est un choix de la fiche 9.
+   - **k_I à calibrer au J3.** Avec k_I = 1 par an, l'écart tombe à +0,10 au tour 120 et le rebond du cycle passe de +0,27 à +0,35. Je n'ai mesuré que la calibration et la branche λ_w ×2 dans les deux régimes (rayon de 0,999269 à 1), non la grille G complète.
+3. **Indicateur d'ancrage π^e − π\* ou crédibilité C-c : π^e − π\*, lisible.**
+   - Il ignore les écarts courts : au plus 0,055 point sous un écart de 12 tours à la prescription.
+   - Il réagit aux écarts persistants : +0,21 point au tour 120 après une dépense permanente.
+   - Il signale ainsi le coût d'une désinflation future, avec un ratio de sacrifice de 2,1 point-années (l. 541).
+   - Nom proposé : « écart d'ancrage des anticipations ».
+   - C-c est à écarter au socle (§ 7.V).
+4. **Taux directeur négatif sans plancher : lisible, avec mention ; accord pour la lecture (b).**
+   - À π\* = 2 %, il faut une dépense publique −10 % pendant 12 tours pour descendre à −0,10 %, pendant 3 tours.
+   - À π\* = 0 %, une dépense −5 % suffit : minimum −0,52 %, 8 tours.
+   - Un plancher serait une borne sans mécanisme nommable.
+   - Mention : « taux directeur négatif : au socle, aucun billet ne permet d'y échapper ». C'est la même règle que pour i_D à la fiche 7 (§ 7, réponse 3).
+5. **Pays joué, hausse de taux expansionniste : à revoir. L'afficher ne suffit pas.**
+   - À 2 %, un taux décidé un point au-dessus de la prescription pendant 12 tours relève le glissement (+0,05 au tour 12, +0,145 au tour 24) et la consommation (+0,49 %).
+   - À 10 %, la même hausse donne +1,45 point d'inflation au tour 120 et +37 points au tour 240. Le taux directeur atteint 53 %.
+   - C'est un piège irréversible, déclenché par le geste même qui combat l'inflation, sans signal précurseur.
+   - Ma préférence ludique est que la **valeur par défaut du levier budgétaire soit une règle avec reprise des intérêts**, symétrique de « suivre la règle » pour le taux (critère 19 (c)).
+   - Les leviers tenus sans reprise seraient alors un écart déclaré, avec :
+     - la mention « charge d'intérêts financée par le déficit » ;
+     - un précurseur : l'écart de r̂\* à sa valeur initiale, et la charge d'intérêts croissante au PIB.
+   - Décision de la fiche 9 (M33).
+6. **#54 « non rentable » partout : nécessaire, non suffisant pour ouvrir le levier de cible au J4.**
+   - Le verdict exclut un stimulant gratuit, non un levier illisible.
+   - Marche de la cible de 2 à 1 % (mesure indicative) :
+     - le taux directeur **baisse** de 0,51 point au tour 2 (terme de Fisher sur π\*, demi-écart a_π = 0,5) ;
+     - le glissement **monte** à 2,52 % au tour 12 (2,13 % sous T9 réel) ;
+     - au tour 120, il est encore à 1,62 / 1,31 / 1,21 % selon le réglage budgétaire ;
+     - π^e dépasse la nouvelle cible de 0,46 à 0,78 point au tour 120 ;
+     - en pays joué, le glissement atteint 6,41 % au tour 240.
+   - Le levier a donc un signe inversé à l'impact et n'atteint pas sa cible dans la fenêtre de partie.
+   - Ma préférence ludique : **π\* reste un paramètre au J4**. Je corrige l'avis concordant de la l. 136, qui conditionnait le levier au seul verdict de #54.
+   - L'ouverture serait conditionnée à deux critères écrits avant l'essai :
+     - (a) le glissement s'écarte de l'ancienne cible dans le sens de la nouvelle au plus tard au tour 24, sans la dépasser de plus d'un cran dans l'autre sens ;
+     - (b) au moins la moitié du changement est atteinte au tour 120.
+   - Pourquoi la règle baisse le taux quand la cible baisse (a_π < 1), et si une autre forme du terme de Fisher l'éviterait : question de fond pour `monnaie`, non tranchée ici.
+7. **Restituer la prescription et r̂\*.**
+   - **Prescription et écart du taux décidé : lisible.** C'est la boussole du joueur et l'annonce du prix d'un retour à la règle.
+   - **r̂\*, « taux neutre estimé » : à clarifier.** Après 120 tours de taux tenu bas, un joueur qui revient à l'ancien taux plutôt qu'à la règle voit :
+     - le glissement revenir à la cible (−0,01 point) ;
+     - r̂\* rester à 1,35 % au tour 360, contre r̄ = 1 % ;
+     - la prescription rester 0,35 à 0,39 point au-dessus du taux qui tient la cible.
+   - Le mot « estimé » promet une estimation qui se corrige ; r̂\* est la mémoire des écarts passés.
+   - Libellé proposé : « **taux neutre retenu par la règle** », avec l'infobulle « monte tant que l'inflation dépasse la cible, baisse tant qu'elle est en dessous ; garde la mémoire des écarts passés ».
+
+### Indicateurs (critère 19 (a))
+
+| Indicateur | Niveau | Verdict | Motif ou point à clarifier |
+|---|---|---|---|
+| Glissement et cible | tableau du tour | **lisible** | % par an, une décimale |
+| i_CB et taux réel r = i − π | tableau du tour | **lisible** | — |
+| Taux indiqué par la règle, écart du taux décidé | tableau du tour | **lisible** | Annonce le prix d'un retour à la règle |
+| r̂\* | tableau du tour | **à clarifier** | Libellé « taux neutre retenu par la règle » et infobulle de mémoire (réponse 7) ; porte les chocs permanents |
+| π^e et π^e − π\* | tableau du tour | **lisible** | « Écart d'ancrage des anticipations » ; ne bouge qu'aux écarts persistants |
+| Crédibilité | — | **sans objet** | Aucune au socle (C-g au J6) |
+| H au PIB | fiche détaillée | **hors du tableau** | H = Res = 0 au socle (N-3, l. 474) : indicateur mort |
+| Π^CB et E^CB | fiche détaillée | **à clarifier** | E^CB = 0 constant, mention « constant par construction au socle » ; Π^CB = i_CB·M^G/n_a, négatif si le taux l'est |
+| Ratio de sacrifice | documentation, scénario O2 | **lisible** | 2,1 point-années par point, non au tableau |
+| Retour du niveau des prix (C11) | documentation | **lisible** | −0,106 % au tour 60, sous deux crans d'un niveau ; non affiché |
+
+### Préférence motivée
+
+- **Ma préférence va à C**, comme celle de `monnaie`.
+  - **Mes motifs propres** :
+    - une règle en une phrase ;
+    - une prescription qui affiche le prix d'un écart ;
+    - aucune remise à zéro gratuite ;
+    - aucun plancher ni seuil invisible ;
+    - un cycle lisible en un rebond ;
+    - un indicateur d'ancrage qui ne bouge que lorsqu'il le faut.
+  - **Les motifs de `monnaie`**, que je ne juge pas : critères 1 à 18 et 20 à 24.
+- **Faiblesses ludiques** : trois sont à traiter hors du bloc 8, une est déclarable.
+  - La cible est manquée en suivant la règle après un choc budgétaire permanent : fiche 9, assiette (réponse 2).
+  - La hausse de taux est inversée et explosive en pays joué : fiche 9, défaut du levier budgétaire (réponse 5).
+  - La cible abaissée relève l'inflation : π\* reste un paramètre (réponse 6).
+  - Déclarable : la mémoire de r̂\* (réponse 7).
+- **Classement** : C > C-g (J6) > C-h ≈ phase 9 > C-c > T > A > B. D sans objet ; R hors classement.
+- **Lectures du § 5.**
+  - (a) a_π = 0,5 : accord. Le principe de Taylor est sans enjeu ludique visible ; l'instabilité sur G en a un.
+  - (b) aucun plancher : accord.
+  - (c) aucune crédibilité au socle : accord. C-g au J6, non au J4.
+  - (d) phase 1 : accord.
+  - (e) sans enjeu ludique.
+- **Coût en fidélité** : aucun écart à la littérature demandé. Libellés, mentions, niveau d'affichage et maintien de π\* comme paramètre sont des choix de restitution. Le défaut du levier budgétaire relève de la fiche 9.
+
+### Conditions demandées au § 9
+
+1. **Prescription et écart du taux décidé à la prescription** au tableau du tour. « Suivre la règle » est une valeur du levier ; après un écart, la prescription annonce le saut du retour.
+2. **r̂\* au tableau du tour**, libellé « taux neutre retenu par la règle », avec son infobulle de mémoire et son écart à la valeur initiale.
+3. **π^e et « écart d'ancrage des anticipations » π^e − π\*** au tableau du tour.
+4. **Mention du taux directeur négatif** quand i_CB < 0 (réponse 4).
+5. **Pays joué** (fiche 9, M33) :
+   - valeur par défaut du levier budgétaire avec reprise des intérêts ;
+   - à défaut, la mention « charge d'intérêts financée par le déficit » et un précurseur affiché ;
+   - le signe inversé d'une hausse de taux, déclaré dans l'aide.
+6. **π\* reste un paramètre au J4.** L'ouverture du levier est soumise aux critères (a) et (b) de la réponse 6, écrits avant l'essai, en plus du verdict de #54.
+7. **Tableau levier → indicateur → délai → contrepartie** (critère 19 (c)) :
+
+   | Levier | Indicateur | Délai | Contrepartie |
+   |---|---|---|---|
+   | Taux directeur (écart à la prescription) | prescription ; i_L, i_D annoncés ; glissement ; production | lignes 12 et 13 au tour n ; i_L, i_D au tour n + 1 ; production au tour 3 ; glissement au tour 3, deux crans avant le tour 12 | charge d'intérêts de l'État, revenu des ménages et Π^CB au tour n ; r̂\* au tour n + 1 |
+   | Suivre la règle | taux indiqué par la règle | tour n | saut annoncé par l'écart affiché |
+
+8. **Signes contre-intuitifs déclarés dans l'aide** :
+   - taux tenu bas : la consommation baisse (canal rentier, −0,52 % au tour 120) ;
+   - cible abaissée : le taux baisse et l'inflation monte à l'impact (mesure indicative) ;
+   - retour du niveau des prix (C11) ;
+   - absence de l'« énigme des prix ».
+9. **Bilan de la banque centrale dans la fiche détaillée** : H, Res et E^CB portent la mention « constant par construction au socle » ; Π^CB est restitué.
+10. **Choc budgétaire permanent** : le scénario O2 du J4 publie l'écart de glissement aux tours 60 et 120 et le chemin de r̂\*. Au-delà d'un cran au tour 60, le cas est signalé (critère 19 (e) (iii)).
+
+### Seuils (critère 19 (d) et (e))
+
+- (e) (i) tenu : −0,36 point de glissement au tour 12 ; production −0,25 % au tour 6.
+- (e) (ii) tenu : pic au tour 14.
+- (e) (iii) déclaré : demi-vie de 1 181 tours ; résidu au tour 60 sous un cran pour un choc transitoire. Pour un choc budgétaire permanent, +0,24 point au tour 60 : au-delà d'un cran, signalé (réponse 2).
+- (d) aucun seuil nouveau. Les critères (a) et (b) de la réponse 6 sont proposés pour l'ouverture du levier de cible.
+
+**Issue proposée par `jeu`** (création soumise au mainteneur ; corps dans le compte rendu de la session, PR #77) : « J4 — restitution du bloc banque centrale : prescription et écart, taux neutre retenu par la règle, écart d'ancrage, taux négatif, bilan constant hors du tableau ». Commentaires proposés sur #54 (critères d'ouverture du levier de cible) et sur #73 (défaut du levier budgétaire en pays joué).
 
 ## 8. Décision du mainteneur
 
@@ -716,3 +919,4 @@ Abréviations : « ×2 » renvoie à la grille G du critère 12 (vitesses et gai
 | 04/10/2026 | Relecture croisée intégrée (avis de `macro`, `monnaie` et `jeu`, une relance ciblée ; qualifications d'`architect`) ; options ouvertes marquées « à trancher par le mainteneur » | `macro` ; `monnaie` ; `jeu` ; `architect` ; session principale |
 | 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #72 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
 | 04/10/2026 | Jalon 2, première partie (partielle) : § 3 à § 5 instruits (options A, B, C et variantes, socle commun, tableau comparatif, recommandation de l'option C) ; contre-épreuve, essai (3) de #54 et remesure V restants ; § 6 et § 7 à rendre | `monnaie` ; session principale |
+| 04/10/2026 | Avis de `jeu` (§ 7) : option C lisible sous dix conditions ; π\* paramètre au J4 (le verdict de #54 ne suffit pas) ; défaut du levier budgétaire en pays joué renvoyé à la fiche 9 | `jeu` ; session principale |
