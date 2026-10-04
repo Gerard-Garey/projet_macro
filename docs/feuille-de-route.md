@@ -342,6 +342,11 @@ Questions posées par `monnaie-approfondi` (fiche 8, § 9, `15cc933`), `macro-ap
 - **QM3, QM4, QM8**, forme de π\* et de i_res : qualifiés par `architect-approfondi` (Opus) avant `docwriter` ;
 - numéros de ligne de la spécification cités dans les § 1 à § 8 des fiches : laissés tels quels, datés du commit lu (le § 9 de la fiche 8 en donne la correspondance à `9cc1ead`).
 
+Suite, le même jour, sur le compte rendu d'`architect-approfondi` (Opus ; ADR 0011 accepté et annotations, `a8c4209`) :
+- symboles fixés par `architect` sur délégation : **θ_CB** (ex-s_CB), **ν_G** (ex-m, encaisse visée M^G\*_t = ν_G × PB_t), **PB_t** (ex-P, paiements bruts) ; le mainteneur ajoute le renommage de s_G et s_Tr en **θ_G** et **θ_Tr** ;
+- **points P1 à P6 de l'ADR 0011 confirmés** : perte non couverte de la banque centrale en 8 (b), État écrivain sans ordre interne (P1) ; transferts et impôt planifiés en phase 2 (P2) ; assiette Y^HS écrite en phase 7, non dans le groupe de la phase 9, date π\*^pas_t (P3, lecture de M29 qui s'écarte de celle de `macro`) ; impôt non recouvré en vérification seule du noyau, violation = défaut, limite déclarée, part non payée au bloc payeur (P4, corrige E13 de la fiche 9) ; ordre de la phase 1 « moteur (leviers), puis travail, banque centrale » (P5) ; i_res ≡ i_CB identité de notation (P6) ;
+- **source du paramètre π\*** : table du bloc 8, valeur par archétype dans `scenarios/` (décision citant M30 et M32 ; annotation de l'ADR 0010).
+
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 
 Ouvertes par M2 et M3 ; chacune sera présentée dans la fiche du bloc concerné, avec ses références vérifiées, l'avis de l'expert pilote et de `jeu`, puis tranchée par le mainteneur (M-n à venir). Une piste tranchée reste dans le tableau, barrée, avec sa décision.
