@@ -52,6 +52,7 @@ date: 2026-09-30
 ### Phases et état (question 5)
 
 15. **Neuf phases** : 0 ouverture ; 1 décision ; 2 plans ; 3 crédit ; 4 production et travail ; 5 marché des biens ; 6 revenus et impôts ; 7 titres publics ; 8 monnaie centrale ((a) intérêts sur Res et L^CB, (b) versement du résultat, (c) refinancement) ; 9 clôture (identités par pas et cumulées, double calcul des valeurs nettes, registre, t + 1). Tableau phase → blocs qui écrivent / lisent dans la fiche § 3.N, Q5 ; matrice de dépendance triangulaire ; aucune ligne touchant Res après 8 (c). Les lignes Δ dépôts, Δ réserves, Δ compte du Trésor sont des contreparties de règlement appliquées par le noyau.
+    *Annotation du 03/10/2026 (complément, M29 ; la décision M22 est inchangée).* La phase 9 reçoit aussi un groupe de blocs déclarés qui écrivent leurs variables d'état du pas suivant, sans proposer de flux et sans se lire entre eux, après les identités du noyau et avant l'avancée du registre et le passage à t + 1 : ADR 0009.
 16. **Empreinte calendaire de l'état** : l'indice t et un **registre de l'indice des prix** de 12 valeurs (valeur stationnaire P/(1 + π̄)^{k/12}), soit 13 variables ; aucun historique, aucun compteur caché.
     *Annotation du 02/10/2026 (notation, issue #23 ; la décision est inchangée).* Le retard dans le registre se note **u** (k étant réservé à l'intrant) : la valeur stationnaire ci-dessus se lit P_{t−u} = P_t (1 + π̄)^{−u/n_a}, u = 1, …, n_a, écriture de la spécification (`sec:cadre-calendrier`). Correspondance avec les autres notations changées le même jour, absentes du texte de cet ADR : indice des pays i → c ; exposants des marchés primaire et secondaire des titres publics ^p → ^{prim}, ^s → ^{sec}.
 17. **Ratio stationnaire au PIB annuel** (lecture (e)) : stock d'ouverture / (12 × flux du pas) pour le test zéro ; stock de clôture / somme des 12 derniers tours pour la restitution ; le facteur entre les deux (0,9 % pour g = 2 %) est publié.
@@ -92,4 +93,35 @@ date: 2026-09-30
 - **Ce que l'ADR ne règle pas** : le contenu économique des blocs ; les règles de refinancement, de taux et de placement de la dette (fiches 7 à 9) ; les barrières entre pays et le reste du monde (J5) ; les actifs hors socle et les crises (J6) ; les valeurs numériques de l'état stationnaire (J3).
 - **Conditions de réouverture** : une nouvelle décision M-m citant M22, si une fiche (J3, J6) établit **par un fait mesuré** qu'un mécanisme exige une dynamique infra-mensuelle (ruée bancaire, crise de change en jours) que le pas mensuel ne représente pas ; ou si le test J2 de l'identité cumulée est violé sur la fenêtre longue (alors c'est un défaut à corriger, jamais un motif d'élargir ε_V). Une contradiction avec un invariant de l'ADR 0002 passe par un nouvel ADR qui le cite.
 
-Issues : #15, #16, #17 (décision), #18 (spécification), #19 (script des matrices).
+## Annotation du 03/10/2026
+
+Rédigée par `architect-approfondi` sur les décisions M25, lecture (b), et M26, question 1, du mainteneur (03/10/2026 ; fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8, commit `de91847`). Ces décisions citent M22 et sont consignées dans l'**ADR 0008** (proposé à la rédaction de l'annotation, **accepté par le mainteneur le 03/10/2026 avec son point II.3**). **La décision M22 est inchangée pour ce qu'elle tranche** ; trois points et deux phrases du § Conséquences se lisent désormais ainsi :
+
+- **Point 4.** La règle linéaire reste celle des taux d'intérêt, des flux annuels et des vitesses d'ajustement, mais elle n'est plus « unique ». Les taux de croissance et d'inflation, que M22 ne classait pas (`sec:cadre-calendrier`, l. 195) et que M24 (f) convertissait linéairement, sont désormais convertis géométriquement, (1 + x)^{1/n_a} par pas (ADR 0008, partie I).
+  - Le § Conséquences, « `eq:moteur-conversion-taux` est la seule conversion », se lit « la seule conversion des taux de flux et des vitesses ».
+  - L'option écartée « conversion composée pour les taux » n'est pas rouverte : elle visait les taux d'intérêt.
+  - La mesure du Contexte, « 14,2857 pour tout n en linéaire », suppose une croissance convertie linéairement. Sous l'ADR 0008, K/(n_a I) vaut 14,3228 à n_a = 12 et dépend légèrement de n_a : dépendance déclarée (ADR 0008, pt I.6).
+- **Point 16.** L'indice des prix n'est plus révisé en phase 1 : c'est le prix du tour, écrit en phase 5 et lu au tour suivant (ADR 0008, partie II). Le registre tient 13 niveaux (P_{t−1}, …, P_{t−13}) et l'empreinte calendaire compte 14 variables, forme proposée par l'ADR 0008 (pt II.3) et retenue par le mainteneur à son acceptation (03/10/2026).
+  - Le § Conséquences, « le schéma porte t et le registre de 12 valeurs », se lit « de 13 valeurs ».
+  - Le point 15 (neuf phases) est inchangé : la phase 9 tient déjà la mise à jour du registre.
+- **Point 17.** Le facteur entre les deux ratios s'écrit avec (1 + g)^{1/n_a} au lieu de 1 + g/n_a. Il vaut **1,0108** pour g = 2 % au lieu de 1,0109. Remesure d'`architect` le 03/10/2026 (`uv run python -`) : 1,010768 sous la conversion géométrique, 1,010866 sous la conversion linéaire.
+  - *Incohérence préexistante, relevée par `macro` le 03/10/2026.* Le texte du point 17 écrit encore « 0,9 % pour g = 2 % », là où la spécification écrit 1,0109 (+1,09 %, `sec:cadre-calendrier`) ; l'annotation du 02/10/2026 l'avait corrigé en marge sans que le point se lise sans elle. Sous l'ADR 0008, « (0,9 % pour g = 2 %) » se lit donc « **1,0108, soit +1,08 %**, pour g = 2 % (δ = 5 %, 12 pas par an), le ratio restitué dépassant celui du test zéro ». Valeur visée par le mainteneur le 03/10/2026 avec les chiffres de la fiche 2 recalculés sous (G).
+
+*Complément du 03/10/2026, à l'acceptation de l'ADR 0008.* L'ADR 0008 a été accepté avec son point II.3 : la lecture des points 4, 16 et 17 ci-dessus vaut telle quelle, sans nouvelle annotation.
+
+## Annotation du 04/10/2026
+
+Rédigée par `architect` sur décision du mainteneur du 04/10/2026, après un constat majeur de `macro` (validation de fond du diff de spécification de #39, commit `9bcd6b9`, 04/10/2026, mesuré). **La décision M22 est inchangée, et la valeur 1,0108 aussi pour ce qu'elle mesure.** L'annotation est prospective : elle précise quel taux entre dans le facteur du point 17, sans retirer aucun chiffre publié.
+
+- **Point 17, taux du facteur.** Le facteur entre le ratio restitué et le ratio du test zéro dépend du taux annuel x auquel croissent ensemble le stock et le flux du ratio. Il vaut n_a (1 + x)^{1/n_a} / Σ_{u=0}^{n_a−1} (1 + x)^{−u/n_a}, forme de `sec:cadre-calendrier`. On distingue deux cas :
+  - **ratio en volume** (stock et flux en unités de volume) : x = g, la croissance réelle ((1 + g_pr)(1 + g_N) − 1 au socle, `tab:symboles`). Le facteur vaut **1,0108** pour g = 2 % et n_a = 12 ;
+  - **ratio en u.m.** (stock nominal rapporté au PIB nominal, par exemple dette publique / PIB à la fiche 9) : x = (1 + g)(1 + π̄) − 1, la croissance nominale. Le facteur vaut **1,0216** pour g = π̄ = 2 % (x = 4,04 %) et n_a = 12.
+- **Lecture des annotations antérieures.** Les mentions « 1,0108 pour g = 2 % » (annotation du 03/10/2026) et « 1,0109, soit +1,09 % pour g = 2 % » (annotation du 02/10/2026, sous la conversion linéaire alors en vigueur) se lisent « pour un ratio en volume ». Appliqué à un ratio en u.m., 1,0108 sous-estimerait le niveau normal restitué de 1,07 % du ratio.
+  - La forme fermée ne contient pas δ : la mention « δ = 5 % » des annotations antérieures décrit la simulation de mesure, non une condition du facteur.
+- **Mesure.** Remesure d'`architect` le 04/10/2026 :
+  - commande : `uv run --no-project python -c "n=12; f=lambda x: n*(1+x)**(1/n)/sum((1+x)**(-u/n) for u in range(n)); g=pi=0.02; xn=(1+g)*(1+pi)-1; print(f'{f(g):.6f} {xn:.4%} {f(xn):.6f} {f(xn)/f(g)-1:.4%}')"` ;
+  - sortie : `1.010768 4.0400% 1.021618 1.0735%`.
+  - Ces valeurs sont identiques à celles de `macro` (1,0107678 et 1,021618).
+- **Report.** `docwriter` corrige le paragraphe « Ratio stationnaire au PIB annuel » de `sec:cadre-calendrier` (texte proposé par `macro`). `CONTEXT.md` (« Ratio stationnaire au PIB annuel ») est précisé le même jour. L'ADR 0008 reçoit la même annotation pour son § Conséquences.
+
+Issues : #15, #16, #17 (décision), #18 (spécification), #19 (script des matrices) ; #24, #39 et #40 (annotation du 03/10/2026, ADR 0008) ; #39 (annotation du 04/10/2026).
