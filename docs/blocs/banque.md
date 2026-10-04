@@ -1366,7 +1366,7 @@ Aucun écart. Les grandeurs nouvelles de cet avis (distribution des entreprises 
 - **Res_{t+1}.** Res_{t+1} = max(Res^{8b}_t − L^{CB}_t ; 0) est la conséquence de B7 par la ligne 20, contrepartie de règlement appliquée par le noyau (l. 319). C'est une dérivation, sans balise.
 - **Ligne 18.** Elle reste proposée par le bloc 6. Sa clause devient ΔL_t = (1 − ς_{L,t})·max(ΔL^d_t ; 0) + min(ΔL^d_t ; 0) (C40). C'est une retouche de F1 (`eq:investissement-demande-credit`, l. 1773), non une équation du bloc 7.
 - **Entrées de scénario ς_{L,t} et ς_{B,t}.** Ce sont des données du scénario, publiées à l'ouverture, non des équations.
-- **Ligne 19b-banque.** Elle est proposée par le bloc 8 ; la banque en est la contrepartie passive, au pair (§ 3.N-3 (d)).
+- **Ligne 19b-banque.** Elle est proposée par le bloc 8 ; la banque en est la contrepartie passive, au pair (§ 3.N-3 (d)). *Précision du 04/10/2026 (ADR 0011 accepté, lecture (i) de 19b, décision du mainteneur ; `docs/feuille-de-route.md` § 4) : au socle, la ligne 19b n'a **aucun proposant** (achats de la banque centrale au J6) et l'État est le seul écrivain de la phase 7 ; la lecture (f) est tranchée par A8 (M33), la branche « variante » des § 9.4 et § 9.8 est sans objet. Les tableaux du § 9.4 gardent leur rédaction d'origine ; `sec:banque` est mise à jour par `docwriter`. Notation : s_CB devient θ_CB.*
 - **Contrôle mécanique.** Les huit labels vérifient l'expression régulière de `CONVENTIONS.md` § 2.1, `eq:[a-z][a-z0-9_]*-[a-z0-9]+(-[a-z0-9]+)*`. Contrôle par `uv run --no-project python` dans un répertoire `mktemp -d` : huit « True ».
 
 ### 9.2 Paramètres
