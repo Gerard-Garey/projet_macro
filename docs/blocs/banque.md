@@ -179,7 +179,7 @@ Les symboles **ne sont pas fixés** : ils le seront à l'instruction, sous le cr
 
 ## 2. Critères d'évaluation, écrits avant l'instruction
 
-**Statut** : proposés par `monnaie` le 04/10/2026, **à valider par le mainteneur** (jalon 1 de #71), avec ceux des fiches 8 et 9 (P14). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau. Seuils reconduits des fiches 2 à 6, à confirmer :
+**Statut** : proposés par `monnaie` le 04/10/2026, **validés par le mainteneur le 04/10/2026**, avec les amendements ci-dessous (jalon 1 de #71), avec ceux des fiches 8 et 9 (P14). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau. Seuils reconduits des fiches 2 à 6, à confirmer :
 - 1e−10 en relatif (critère 8) ;
 - 1e−6 après H = max(720 ; 20 demi-vies de la racine dominante mesurée) pas (critère 9, critère commun des vitesses) ;
 - 0,48 ms par pays-pas (critère 15) ;
@@ -241,6 +241,14 @@ Sont des **mesures** (elles décrivent sans écarter) :
 
 Aucun à ce jalon.
 
+### Amendements adoptés
+
+Décisions du mainteneur du 04/10/2026, prises avant l'instruction, sur les questions des experts (validation groupée des critères des fiches 7, 8 et 9, P14) :
+
+- **Critères** : la liste est validée telle qu'amendée par la relecture croisée du 04/10/2026 (avis de `macro`, `monnaie` et `jeu` ; qualifications d'`architect`), avec la nature de chaque critère (exigence ou mesure) ; les seuils reconduits et les seuils de `jeu` sont adoptés.
+- **Options marquées « à trancher par le mainteneur » au choix M31 à M33** (propriétaire des lignes 19a, règle de i_B, règle de M^{G*} et lecture du contrôle de caisse, forme de E^CB) : instruites telles qu'écrites, avec leur qualification (interprétation ou modification) ; elles se décident aux décisions de fiche, non à cette validation.
+- **Critère 9 et seuils de `jeu` (critère 13 (d))** : adoptés en mesure, comme écrits.
+
 ## 3. Options
 
 À instruire (jalon 2).
@@ -275,3 +283,4 @@ Aucun à ce jalon.
 |---|---|---|
 | 04/10/2026 | Ouverture (issue #71) ; § 1 et § 2 proposés (jalon 1), en attente de validation des critères par le mainteneur | `monnaie` ; session principale |
 | 04/10/2026 | Relecture croisée intégrée (avis de `macro`, `monnaie` et `jeu`, une relance ciblée ; qualifications d'`architect`) ; options ouvertes marquées « à trancher par le mainteneur » | `macro` ; `monnaie` ; `jeu` ; `architect` ; session principale |
+| 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #71 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
