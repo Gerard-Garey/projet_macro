@@ -1911,7 +1911,7 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 **Conditions déclarées, contrôlées au chargement, jamais par écrêtage** :
 - 0 < λ_ti ≤ n_a ; 0 < δ/n_a < 1 ; 0 ≤ lv\* < 1 ; ν_F > 0 ; t̄u > 0 ; η_r ≥ 0 ; ζ ≥ 0.
 - **Domaine de la demande autonome** (réserve 5) : A = v/y − m/(1 + γ) − (n_aγ + δ)·κ/t̄u > 0, avec m effectif fourni au J3 par les fiches 5 et 9. Contrôle par le script d'état stationnaire.
-- **Distribution stationnaire dans [0,2 ; 0,9]** (#55, critère écrit avant l'essai) : x < x_max(μ̄, lv\*, π̄), soit 2,933 ans à μ̄ = 0,25.
+- **Distribution stationnaire dans [0,2 ; 0,9]** (#55, critère écrit avant l'essai) : x < x_max(μ̄, lv\*, π̄), soit 2,933 ans à μ̄ = 0,25. *Annotation du 04/10/2026 (`macro`, fiche 7 § 6.7 ; commentaire sur #55) : 2,933 ans est le seuil de Div_F ≥ 0, non celui de la borne de 0,2 ; la borne de 0,2 demande x < 2,707 ans (taux de Fisher égaux) et x < 2,469 ans sous les écarts du bloc banque (M31). Le critère et la décision M28 sont inchangés ; seule l'équivalence « soit » est corrigée.*
 
 **Contraintes de calibration** (J3, visa de `macro`) :
 - η_r ≥ 1,005 (seuil (d1)).
