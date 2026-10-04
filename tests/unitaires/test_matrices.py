@@ -83,14 +83,44 @@ def test_aucune_matrice_trouvee(matrices, tmp_path, capsys):
 
 
 def test_specification_reelle(matrices, capsys):
-    """La spécification passe en `--strict`.
+    """La spécification passe en `--strict`, ses trois tables lues et non vides.
 
-    Avant #18, elle ne contient pas les tables : le script le dit (« aucune
-    matrice trouvée ») sans échouer.
+    Resserré par #27 : « aucune matrice trouvée » n'est plus admis, et chaque
+    table doit avoir été lue (décompte de lignes et de termes non nul).
     """
     code, sortie = executer(matrices, matrices.TEX_DEFAUT, capsys)
     assert code == 0, sortie
-    assert "aucune matrice trouvée" in sortie or "Aucun écart." in sortie
+    assert "Aucun écart." in sortie
+    assert "aucune matrice trouvée" not in sortie
+    rapport = matrices.verifier(matrices.TEX_DEFAUT)
+    assert rapport.absentes == [] and rapport.non_verifies == []
+    assert sorted(rapport.decomptes) == sorted(matrices.LABELS)
+    for label, (lignes, colonnes, termes) in rapport.decomptes.items():
+        assert lignes > 0 and colonnes > 0 and termes > 0, label
+
+
+def test_fichier_absent_sans_trace(matrices, tmp_path, capsys):
+    """Fichier absent : message `fichier : …`, code 1, avec ou sans `--strict` (#27)."""
+    absent = tmp_path / "inexistant.tex"
+    for strict in (True, False):
+        code = matrices.main((["--strict"] if strict else []) + [str(absent)])
+        sortie = capsys.readouterr()
+        assert code == 1
+        assert sortie.out == ""
+        assert sortie.err.startswith(f"fichier : {absent} : lecture impossible")
+        assert "Traceback" not in sortie.err
+
+
+def test_fichier_non_utf8_sans_trace(matrices, tmp_path, capsys):
+    """Fichier présent mais non UTF-8 : message `fichier : …`, code 1, sans trace (#27)."""
+    mauvais = tmp_path / "mauvais.tex"
+    mauvais.write_bytes(b"\xff\xfe\xc3(")
+    for strict in (True, False):
+        code = matrices.main((["--strict"] if strict else []) + [str(mauvais)])
+        sortie = capsys.readouterr()
+        assert code == 1
+        assert sortie.out == ""
+        assert sortie.err == f"fichier : {mauvais} : lecture impossible (encodage non UTF-8)\n"
 
 
 def test_specification_reelle_porte_les_trois_tables(matrices, capsys):
@@ -224,6 +254,25 @@ def test_sans_strict_code_0(matrices, tmp_path, capsys):
     assert "écart(s)" in sortie
 
 
+@pytest.mark.parametrize("filet", ["\\midrule", "\\midrule[1pt]", "\\cmidrule(lr){2-7}"])
+def test_groupe_apres_un_filet_garde(matrices, tmp_path, capsys, filet):
+    """Un groupe `{…}` qui suit un filet ouvre la ligne suivante : il est gardé (#27).
+
+    Seuls les arguments du filet sont effacés : `[…]` optionnel, et
+    `[…](…){…}` pour `\\cmidrule`.
+    """
+    avant = "\\midrule\nValeur nette &"
+    texte = muter(avant, filet + "\n{Valeur nette} &")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 0, sortie
+    assert "Aucun écart." in sortie
+    assert "tab:matrice-bilans : 9 lignes, 6 colonnes" in sortie
+    table, ecarts = matrices.lire_table(matrices.preparer_tex(texte), matrices.LABEL_BILANS,
+                                        "spec.tex")
+    assert ecarts == []
+    assert table.lignes[-1].etiquette == "Valeur nette"
+
+
 def test_cellule_mal_formee(matrices, tmp_path, capsys):
     """Une somme factorisée est refusée : la cellule doit être développée."""
     texte = muter(r"& $-\Delta B_H^{\mathrm{sec}}$ & \\", r"& $-(\Delta B_H^{\mathrm{sec}})$ & \\")
@@ -334,6 +383,60 @@ def test_exposant_signe_sans_accolades(matrices, cellule):
     termes, erreur = matrices.lire_cellule(cellule)
     assert termes == []
     assert erreur is not None and "exposant ou indice signé sans accolades" in erreur
+
+
+@pytest.mark.parametrize("cellule, terme", [
+    ("$+\\leftarrow x$", "\\leftarrowx"),
+    ("$+a\\rightarrow b$", "a\\rightarrowb"),
+    ("$+\\pmb{x}$", "\\pmb{x}"),
+])
+def test_commande_comparee_par_son_nom_entier(matrices, cellule, terme):
+    """`\\leftarrow`, `\\rightarrow`, `\\pmb` ne sont pas `\\left`, `\\right`, `\\pm` (#27)."""
+    termes, erreur = matrices.lire_cellule(cellule)
+    assert erreur is None
+    assert [(s, n) for s, n, _ in termes] == [(1, terme)]
+
+
+@pytest.mark.parametrize("cellule, interdit", [
+    ("$+\\left. x$", "\\left"), ("$+x\\right.$", "\\right"), ("$+\\pm x$", "\\pm"),
+    ("$+\\pm{}x$", "\\pm"), ("$+\\sum_i x_i$", "\\sum"),
+])
+def test_commande_interdite_toujours_refusee(matrices, cellule, interdit):
+    termes, erreur = matrices.lire_cellule(cellule)
+    assert termes == []
+    assert erreur is not None and f"« {interdit} » interdit" in erreur
+
+
+@pytest.mark.parametrize("cellule", ["$+a\\cdot -b$", "$+a\\times -b$", "$+a \\cdot{} - b$",
+                                     "$-a\\,\\cdot\\, +b$"])
+def test_signe_apres_un_produit_refuse(matrices, cellule):
+    """`a\\cdot -b` se lirait comme deux termes `a\\cdot` et `-b` : refusé (#27)."""
+    termes, erreur = matrices.lire_cellule(cellule)
+    assert termes == []
+    assert erreur is not None and "signe après l'opérateur de produit" in erreur
+
+
+@pytest.mark.parametrize("cellule", ["$+a\\cdot$", "$-a\\times$", "$+b - a \\cdot{}$"])
+def test_facteur_manquant_apres_un_produit(matrices, cellule):
+    """Opérateur de produit en fin de cellule : facteur manquant, pas un signe (#27)."""
+    termes, erreur = matrices.lire_cellule(cellule)
+    assert termes == []
+    assert erreur is not None and "facteur manquant après l'opérateur de produit" in erreur
+    assert "signe après" not in erreur
+
+
+def test_produit_sans_signe_interne_admis(matrices):
+    termes, erreur = matrices.lire_cellule("$-a\\cdot b + c\\times d$")
+    assert erreur is None
+    assert [s for s, _, _ in termes] == [-1, 1]
+
+
+def test_signe_apres_un_produit_dans_une_table(matrices, tmp_path, capsys):
+    texte = muter("1 Consommation & $-C$", "1 Consommation & $+a\\cdot -C$")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    assert f"[format] {tmp_path / 'spec.tex'}:{ligne_de(texte, '1 Consommation')}" in sortie
+    assert "signe après l'opérateur de produit" in sortie
 
 
 def test_exposant_signe_entre_accolades(matrices):
