@@ -12,6 +12,8 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 ## 1. Branche de travail en cours
 
+**État au 04/10/2026, en fin de branche** : neuf fiches sur neuf « spécifiées » ; revue finale complète faite (règle 10 : `monnaie-approfondi`, `macro-approfondi`, `jeu`, puis contrôle des corrections ; `/code-review` sans constat) ; #24 et #49 fermées ; issue #83 créée ; Fable 1 sur 3 (ADR 0011). PR #77 prête pour la revue du mainteneur.
+
 **Branche n° 4 ouverte le 04/10/2026**, après la fusion de la PR #68 (`9097617`, 12 h 20 UTC ; § 7), sur validation du plan par le mainteneur (P13 à P18, § 4, toutes selon l'avis d'`architect`). PR brouillon #77 vers `main`, un `Closes #N` par ligne pour #71, #72, #73, #26 et #69.
 
 ### Branche n° 4 (en cours) — J1 : fiches 7 « banque commerciale » (#71), 8 « banque centrale et anticipations » (#72), 9 « État et dette » (#73)
@@ -31,11 +33,11 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
   - `sec:banque`, `sec:banque_centrale` et `sec:finances_publiques` sont réservées, sans équation (`nations_et_marches.tex` l. 1993-2009) ;
   - les fiches `banque.md`, `banque_centrale.md` et `finances_publiques.md` n'existent pas. Les trois issues de fiche, rédigées dans le compte rendu d'`architect` du 04/10/2026, ont été créées sur accord du mainteneur (P13) : **#71** (F7), **#72** (F8), **#73** (F9).
 - **Périmètre** (fermé, cinq issues avec `Closes`, toutes en `ready-for-agent` ; P13, option (a), décidée le 04/10/2026) :
-  - [ ] **#71** (F7) — fiche « banque commerciale » : expert pilote `monnaie`, `macro` consulté (frontière crédit), avis de `jeu` ;
-  - [ ] **#72** (F8) — fiche « banque centrale et anticipations » : `monnaie`, `macro` consulté (frontière inflation), avis de `jeu` ;
-  - [ ] **#73** (F9) — fiche « État et dette » : `macro`, `monnaie` consulté (frontière dette publique), avis de `jeu` ;
-  - [ ] **#26** — cas limites du cadre monétaire hérités de M22 : cinq points répartis entre #71, #72 et #73, et explication de M^G\* dans `tab:symboles` (P2) ;
-  - [ ] **#69** — ligne 0 de `tab:phases` et renvoi du glossaire (forme visée par `architect` le 04/10/2026 ; P10).
+  - [x] **#71** (F7) — fiche « banque commerciale » : expert pilote `monnaie`, `macro` consulté (frontière crédit), avis de `jeu`  — **fait** : fiche spécifiée, `sec:banque` (`4c95991`, mise à jour A8 `4e158fb`) ;
+  - [x] **#72** (F8) — fiche « banque centrale et anticipations » : `monnaie`, `macro` consulté (frontière inflation), avis de `jeu`  — **fait** : fiche spécifiée, `sec:banque_centrale` (`e0155c4`) ;
+  - [x] **#73** (F9) — fiche « État et dette » : `macro`, `monnaie` consulté (frontière dette publique), avis de `jeu`  — **fait** : fiche spécifiée, `sec:finances_publiques` (`4e158fb`) ;
+  - [x] **#26** — cas limites du cadre monétaire hérités de M22 : cinq points répartis entre #71, #72 et #73, et explication de M^G\* dans `tab:symboles` (P2)  — **fait** : `tab:cadre-cas-limites` (`b9aaf19`) ;
+  - [x] **#69** — ligne 0 de `tab:phases` et renvoi du glossaire (forme visée par `architect` le 04/10/2026 ; P10) — **fait** : `2aaf060` ; ADR 0010 annoté `ecd2689`.
 
   D'autres issues sont rattachées **sans `Closes`**, hors du décompte (règle de P3) :
   - **#24** (volet « banque centrale ») et **#49** (r = i − π sous (G)) sont des critères de #72 (F8) ; la session les ferme après le jalon 4 de #72 si la fiche y répond (précédent de #58 et #59, P4 et P5) ;
