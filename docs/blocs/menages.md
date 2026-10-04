@@ -830,7 +830,7 @@ Plan public doublé (0,2 de la demande) aux tours 1 à 12 ; borne N ≤ N^pa.
 
 - **Écriture** : V*_t = ν·n_a·(YD^e_t − π_s·V_{H,t}), V_{H,t} d'ouverture.
 - **État stationnaire** : V/(n_a·YD) = ν/(1 + ν·n_a·π_s), soit 0,98057 à π̄ = 2 % et 0,91267 à π̄ = 10 %. V/(n_a·YD^HS) = ν exactement, YD^HS = YD − π_s·V.
-- **Superneutralité** (r = 1 %, i_D = r + π̄ ; Y_o = YD − i_D·V/n_a, revenu hors intérêts) : V/(n_a·Y_o) vaut 1,010286 à π̄ = 2 % et 1,014518 à π̄ = 10 %, contre 1,030928 et 1,123596 sous la cible nominale. Le résidu tient à #49.
+- **Superneutralité** (r = 1 %, i_D = r + π̄ ; Y_o = YD − i_D·V/n_a, revenu hors intérêts) : V/(n_a·Y_o) vaut 1,010286 à π̄ = 2 % et 1,014518 à π̄ = 10 %, contre 1,030928 et 1,123596 sous la cible nominale. Le résidu tient à #49. *Précision du 04/10/2026 (`macro`, validation de `sec:banque_centrale`, #72) : le résidu tient à l'écart entre la conversion linéaire des intérêts (i_D/n_a, M22) et la conversion géométrique de l'inflation dans la règle ; il ne se ferme pas sous la forme de Fisher retenue par M32, qui l'élargit (1,010490 à 2 %, 1,015548 à 10 %) ; il relève du défaut connu de superneutralité (#80).*
 - **Boucle propre** : 0,96612 / 0,96706 (i_D = 0 et 3 %, π̄ = 2 %) ; 0,96727 (i_D = 11 %, π̄ = 10 %).
 - **Boucle conjointe**, i_D = 3 %, régimes H / B :
 
@@ -960,7 +960,7 @@ Calibration indicative : ν = 1 an, λ_V = 0,4 par an (α_Y = 0,6).
 - aucune borne à seuil libre hors 3.N-6 (a) ;
 - deux paramètres et une variable d'état ;
 - boucle conjointe stable à la calibration (0,9640 / 0,9617), là où (a) est explosive (1,0275 / 1,0029) ;
-- superneutralité sous C2 : V/(n_a·Y_o) = 1,010286 à 2 % et 1,014518 à 10 % (résidu : #49) ;
+- superneutralité sous C2 : V/(n_a·Y_o) = 1,010286 à 2 % et 1,014518 à 10 % (résidu : #49 ; cause précisée le 04/10/2026 : conversion linéaire des intérêts contre conversion géométrique de l'inflation, défaut connu #80) ;
 - D est équivalente au niveau agrégé sans levier ciblé (principe de simplicité).
 
 **Écartées** :
