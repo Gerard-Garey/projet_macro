@@ -1159,7 +1159,537 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 
 ## 9. Conséquences de la décision
 
-À instruire (jalon 2).
+*Rédigé par `monnaie` (expert pilote) le 04/10/2026, d'après M32 (§ 8) et les points tranchés avec M33 (`finances_publiques.md` § 8). Rédaction faite sur la fiche à l'état `9cc1ead` (branche `claude/j1-monnaie-etat`, PR #77).*
+
+*Numéros de ligne.* Ils renvoient à `docs/specification/nations_et_marches.tex` à l'état `9cc1ead`. Ils diffèrent de ceux des § 1 à § 7, lus à `10391a1` : `git diff --stat 10391a1 9cc1ead` donne 401 insertions, 27 suppressions. Correspondances vérifiées sur le contenu :
+
+| `10391a1` | `9cc1ead` | Contenu |
+|---|---|---|
+| l. 214 | l. 215 | r = i − π |
+| l. 493 | l. 494 | Π^CB |
+| l. 502 | l. 503 | M^G\* |
+| l. 529 | l. 530 | phase 1 |
+| l. 535 | l. 536 | phase 7 |
+| l. 2064 | l. 2411 | paramètres du cadre |
+
+*Conventions.*
+- *Identifiants.* « BC1 » à « BC9 » désignent les équations du bloc 8 retenues par M32. Ils remplacent les identifiants (C1) à (C4) du § 3.C-2, qui entreraient en collision avec les conditions C1 à C63 (`grep -c '\bC2\b'` sur la spécification : 8). `grep -rnoI '\bBC[0-9]\+\b' docs/ CONTEXT.md` ne trouve aucune occurrence.
+- *Conversions* (ADR 0008, I.1 ; l. 190-202) :
+  - i_CB, i_res et i_B sont des taux de flux annuels, convertis linéairement (x/n_a) ;
+  - k_I et λ_e sont des vitesses ou gains annuels, convertis linéairement (k_I/n_a, λ_e/n_a) ;
+  - π\*, π^e et π̄ sont des taux d'inflation, convertis géométriquement ;
+  - le glissement π_{t−1} est mesuré, jamais converti ;
+  - r̂\* et r̄ sont des taux réels annuels de Fisher sur π\* (N-6). Ils n'entrent que dans le produit annuel de BC1 et ne sont jamais convertis par pas.
+- *Statut des chiffres.* Ce sont des résultats de maquette, non des faits. Chaque chiffre porte la section de la fiche qui le publie. Les chiffres marqués « remesuré » ont été recalculés le 04/10/2026 par `uv run --no-project python` (calcul à la main en forme fermée, sorties au compte rendu de la session).
+- *Portée.* Le § 9 ne décide rien. Il traduit :
+  - M32 ;
+  - les points tranchés avec M33 ;
+  - les réserves du § 5 ;
+  - C45 à C50 (§ 6.6) ;
+  - les conditions 1 à 10 de `jeu` (§ 7) ;
+  - les conditions C59 à C62 de la fiche 9 (§ 6.6) qui touchent le bloc 8.
+
+  Tout point qui exigerait une décision nouvelle est signalé comme question. Ce qui relève de l'ADR d'architecture d'A8 est cité comme « ADR 0011 (proposé) ».
+
+### 9.1 Équations retenues et labels
+
+**Au jalon J1, aucun label.** C'est la convention de #42, suivie par `sec:investissement` et `sec:banque`. La spécification compte 0 `\label{eq:` à `9cc1ead`, et `concordance_spec_moteur.py --strict` affiche « Aucun écart ».
+
+`sec:banque_centrale` est écrite en encadrés `proposee` citant M32, en `equation*` (`CONVENTIONS.md` § 4.1). Chaque mécanisme y est repéré par son identifiant et son label prévu en `\texttt{}`, sur le modèle du tableau `tab:banque-equations` (l. 2024-2043).
+
+**Labels à créer au J3**, avec `src/nations/blocs/banque_centrale.py` (radical `banque_centrale`, `CONVENTIONS.md` § 2.1, l. 60). `coder` pose une balise par label ; `docwriter` retire l'encadré et pose le label dans le même passage.
+
+| Label | Id. | Ce que l'équation détermine | Équation | Phase | Statut | Provenance | Couche |
+|---|---|---|---|---|---|---|---|
+| `eq:banque_centrale-regle-taux` | BC1 | taux indiqué par la règle (prescription), et taux directeur du tour | 1 + i^règle_t = (1 + r̂\*_t)(1 + π\*_t) + a_π(π_{t−1} − π\*_t). Sous la valeur « suivre la règle » du levier, i_{CB,t} = i^règle_t ; sinon i_{CB,t} est la valeur décidée (levier ouvert au J4) | 1 | choix de conception | § 3.C-2 (C1) ; forme de Fisher sur π\* (N-6, #49) ; mesure lue : glissement π_{t−1} (#24, lecture (ii)) ; aucun terme d'activité ; aucun plancher (lecture (b)) ; forme proportionnelle : Taylor (1993), p. 202 ; M32 | `blocs/` |
+| `eq:banque_centrale-taux-neutre` | BC2 | taux neutre retenu par la règle, au pas suivant (variable d'état) | r̂\*_{t+1} = r̂\*_t + (k_I/n_a)(π_{t−1} − π\*_t) | 1 | choix de conception | § 3.C-2 (C2) ; action intégrale sans fuite (C2 de la fiche 3) ; « terme intégral » de la v1.5 (l. 1030), sans clip ni logarithme. Même loi que la règle soit suivie ou non, jamais réinitialisée (critère 19 (c)) ; M32 | `blocs/` |
+| `eq:banque_centrale-anticipation` | BC3 | anticipation d'inflation du pas suivant (variable d'état lue à l'ouverture par le bloc 3) | π^e_{t+1} = π^e_t + (λ_e/n_a)(π_{t−1} − π^e_t) | 1 | choix de conception | § 3.C-2 (C3) ; apprentissage à gain constant de la moyenne (Evans, notes de cours, lues par extraits seulement : **à relire à la source avant toute citation**, § 3.0) ; gain : Gáti (2022), p. 19-20 (lu) ; formation en phase 1, lecture (d) ; aucune crédibilité, lecture (c) ; M32 | `blocs/` |
+| `eq:banque_centrale-cible` | BC4 | cible en vigueur du pas suivant (variable d'état) | π\*_{t+1} = π\*_t | 1 | choix de conception | ADR 0010, point 3 ; N-1 ; π\* reste un paramètre au socle et au J4 (M32). Le levier de cible reste fermé jusqu'au verdict de #54 et aux critères (a) et (b) de `jeu` (§ 7, réponse 6) | `blocs/` |
+| `eq:banque_centrale-part-souscription` | BC5 | part de la banque centrale dans la souscription primaire, lue par le bloc 9 en phase 7 | s_{CB,t} = s_CB (paramètre d'archétype) | 1 | choix de conception | A8 (M33 ; ADR 0011, proposé) ; N-4 ; neutre sous i_B = i_res = i_CB (C59) ; levier au J6 | `blocs/` |
+| `eq:banque_centrale-resultat` | BC6 | résultat de la banque centrale du pas | Π^CB_t = [i_{B,t}B_{CB,t} + i_{CB,t}L^CB_t − i_{res,t}Res_t]/n_a, sur les encours d'ouverture. Au socle (i_B ≡ i_res ≡ i_CB) : Π^CB_t = i_{CB,t}(E^CB_t + M^G_t)/n_a = i_{CB,t}M^G_t/n_a sous E^CB = 0 | 1 | dérivée (cadre, l. 494) | M22, lecture (d) ; ADR 0005, point 12 ; encours d'ouverture et taux de la phase 1 (l. 496) ; identité de N-3 ; M32 et M33 | `blocs/` |
+| `eq:banque_centrale-interets-reserves` | BC7 | ligne 12 | i_{res,t}Res_t/n_a, soit i_{CB,t}Res_t/n_a au socle | 8 (a) | dérivée (ligne 12, l. 355) | M22 ; corridor de largeur nulle (N-2 ; M31, lecture (g)) ; ligne nulle au socle tant que Res = 0 | `blocs/` |
+| `eq:banque_centrale-interets-refinancement` | BC8 | ligne 13 | i_{CB,t}L^CB_t/n_a | 8 (a) | dérivée (ligne 13, l. 356) | M22, lecture (c) : délai nul (l. 484) | `blocs/` |
+| `eq:banque_centrale-versement-resultat` | BC9 | ligne 16 | ligne 16 = Π^CB_t, versée sans troncature. Une perte est un versement négatif, payé par le compte du Trésor | 8 (b) | dérivée (l. 492-496) | M22, lecture (d). La part non couverte d'une perte est la ligne nommée « perte de la banque centrale non couverte » du bloc 9 (C60, M33) | `blocs/` |
+
+**Ordre interne de la phase 1** (critère 4 (d)) :
+- BC1 précède BC6, puisque Π^CB lit i_{CB,t} ;
+- BC2, BC3, BC4 et BC5 ne lisent que l'ouverture et sont sans ordre entre eux ;
+- le bloc lit le levier de taux que le moteur lit en phase 1 : « moteur (leviers) » le précède (§ 9.4).
+
+**Ce qui n'a pas de label** :
+- **i_res ≡ i_CB.** Corridor de largeur nulle (M32 ; N-2). C'est une identité de notation du socle, déclarée une seule fois dans `sec:banque_centrale`, sans label ni équation exécutée, sur le modèle de i_B ≡ i_CB (M33). Tout lecteur lit i_CB, et la ligne 12 garde sa notation (l. 355). La forme (identité ou variable écrite en phase 1) est un point de forme pour `architect` (question 2).
+- **i_B ≡ i_CB.** Déclarée dans `sec:finances_publiques` (M33), non répétée ici.
+- **E^CB.** Calculée deux fois par le noyau : par le stock (l. 256), et par les flux, E^CB_{t+1} = E^CB_t + Π^CB_t − ligne 16 exécutée. Seul le montant exécuté de la ligne 16, lu au grand livre, entre dans le calcul par les flux. La part non couverte d'une perte (C60) réduit donc E^CB sans ligne de monnaie.
+- **Res et L^CB.** Positions tenues au grand livre, mues par les lignes 12, 13, 19a, 19b, 20 et 21. Leurs formes fermées (critère 3 (d) ; § 9.4) sont des dérivations.
+- **Ligne 19a-BC.** Proposée par le bloc 9 (A8) : 19a-BC = s_{CB,t} × besoin d'émission.
+- **Lignes 19b-ménages et 19b-banque.** Aucune n'est proposée au socle (N-4, N-7 : achats non ouverts, renvoyés au J6). Ce point est à concilier avec la fiche 7 (question 1).
+- **Grandeurs de restitution** : taux réel r = i − π (l. 215), écart à la prescription, écart d'ancrage π^e − π\*. Elles relèvent de `observation/` (§ 9.5).
+- **Contrôle mécanique.** Les neuf labels vérifient l'expression régulière de `CONVENTIONS.md` § 2.1 (l. 62). Contrôle par `uv run --no-project python` dans un répertoire temporaire : neuf « True ».
+
+### 9.2 Paramètres
+
+À porter dans `tab:calibration` au J1, sans `\code{}` avant le code. Les noms sont des propositions.
+
+| Symbole | Nom proposé | Valeur | Unité | Source | Équation |
+|---|---|---|---|---|---|
+| a_π | `coefficient_ecart_inflation` | 0,5 (indicative) | sans dimension : points de taux par point d'écart du glissement | **choix de conception, sans source** (§ 4, critère 23). La forme proportionnelle est celle de Taylor (1993, p. 202), mais la réponse totale à l'inflation vaut ici a_π < 1 : le principe de Taylor n'est pas tenu à court terme (§ 3.C-6). **Calibré au J3** | BC1 |
+| k_I | `gain_integral` | 0,25 par an (indicative) | par an, gain, conversion linéaire (k_I/n_a = 0,020833 par pas, remesuré) | **choix de conception, sans source** (§ 4, critère 23). k_I = 1 est mesuré par `jeu` sur la calibration et la branche λ_w ×2 seulement (§ 7, réponse 2). **Calibré au J3** | BC2 |
+| λ_e | `gain_anticipation` | 0,2 par an (indicative) | par an, vitesse, conversion linéaire (λ_e/n_a = 0,016667 par pas, remesuré) | Gáti (2022), p. 19-20 : gain de 0,05 par trimestre, soit 0,2 par an en conversion linéaire (§ 3.0). **Calibré au J3** avec λ_w·β sur un ratio de sacrifice sourcé (C7, #45) | BC3 |
+| s_CB | `part_souscription_banque_centrale` | 0 au socle | fraction du besoin d'émission | A8 (M33) ; paramètre d'archétype ; levier au J6 (N-4) | BC5 |
+| r̄ | `taux_reel_neutre_initial` | 0,01 (indicative) | par an, taux réel de Fisher sur π\*, (1 + i_{CB,0}) = (1 + r̄)(1 + π\*) | lecture (1) de #44, M32 : r̄ donné, s_G résolu (N-5). Niveau du taux naturel contesté (critère 23). Repris comme r^ref par T9 (fiche 9, § 3.C-2). **Calibré au J3** | état initial (§ 9.4) |
+
+π\* figure déjà dans `tab:calibration` (l. 2453). Seuls changent son propriétaire et sa source (§ 9.8).
+
+**Conditions déclarées, contrôlées au chargement, jamais par écrêtage** :
+- **0 < a_π < 1,5** (réserve 3 du § 5). Toutes les calibrations à a_π = 1,5 sont instables sur G en régime de baisse (§ 3.C-4, clause II.7).
+- **k_I > 0.** k_I = 0 redonnerait la règle à taux naturel fixe (variante T, écartée) : biais de 2 points par point d'erreur sur r\* (§ 3.V).
+- **0 < λ_e ≤ n_a** (l. 215).
+- **0 ≤ s_CB ≤ 1** (M33). Au-delà de m·M^G/B, soit 0,0686 × m à 2 %, Res > 0 et L^CB = 0 à la clôture (C59 ; fiche 9 § 6.4, complément, point 2). C'est un changement de position, non une condition.
+- **Condition d'existence : aucune**, sans plancher (§ 3.C-3).
+- **Domaine de r̄.** La racine parasite de r̄ (r̄ ≤ −7,5 % à π̄ = 0 sous C-HS) est exclue par une condition de domaine déclarée en `\limites` du bloc 9 (C51, « r̄ > −5 % par exemple », fiche 9 § 3.C-6).
+
+**Ce qui n'est pas un paramètre** :
+- i_CB et i^règle (phase 1 ; BC1) ; i_res et i_B (identités) ;
+- r̂\*_0, π^e_0, i_{CB,0}, E^CB_0 = 0, B_{CB,0}, L^CB_0 et Res_0, valeurs de l'état initial résolu (§ 9.4) ;
+- U^eq : **non lu** par le bloc, puisque la règle n'a aucun terme d'activité (M32) ;
+- m (bloc 9, M33) ;
+- ς_{B,t}, entrée de scénario lue par le bloc 9 sous A8.
+
+**Décompte (critère 20)** :
+- 3 paramètres de comportement (a_π, k_I, λ_e), 1 paramètre d'archétype (s_CB) et 1 paramètre d'état initial (r̄).
+- 2 variables d'état nouvelles :
+  - r̂\*, par an, valeur stationnaire r̄ ;
+  - π^e, par an, valeur stationnaire π̄ = π\*.
+- 1 variable d'état reprise du moteur : π\*_t (ADR 0010, point 3).
+- 0 borne à seuil libre. 4 contraintes de domaine, contrôlées au chargement.
+- Lignes proposées : 12, 13 et 16.
+- Aucun drapeau, aucun tirage, aucun historique. La règle lit π_{t−1} au registre (ADR 0008, II.6).
+- Environ 35 opérations par pas, sans itération (§ 3.C-5).
+
+### 9.3 Conditions et réserves
+
+**Lectures de M32 que la section reprend** (§ 8) :
+- (a) a_π = 0,5 ;
+- (b) aucun plancher de i_CB ;
+- (c) aucune crédibilité au socle (C-g gardée pour le J4 ou le J6) ;
+- (d) formation de π^e en phase 1, d'où un délai prix → anticipation → salaire de deux tours. La π^e consommée au tour n est formée en phase 1 du tour n − 1, sur π_{n−2}, et la condition de Barro et Gordon tient (`macro`, § 6.4 (d)) ;
+- (e) lecture (1) de #44.
+
+**Points tranchés avec M33, et leur effet sur le bloc 8** :
+- **A8.**
+  - Le bloc 8 écrit s_{CB,t} en phase 1 (BC5).
+  - Il ne propose aucune ligne 19a et ne siège pas en phase 7 au socle (N-7).
+  - La lecture (f) de M31 est tranchée. **Modification** de contrat (`temps_comptabilite.md:838`, ADR 0009 l. 84), portée par l'ADR 0011 (proposé).
+- **i_B ≡ i_CB.**
+  - BC6 se réduit à i_CB(E^CB + M^G)/n_a.
+  - s_CB est neutre pour les revenus (C59), avec une prime nulle déclarée (J6).
+  - Lignes 11b et 11c au taux du tour, délai 0.
+- **E^CB_0 = 0** (forme (ii) du critère 2 (a)). C'est la seule forme dont le ratio est stationnaire sous M22 (d) (N-3).
+  - Π^CB ≥ 0 tant que i_CB ≥ 0.
+  - Sans plancher, une perte est possible si i_CB < 0. Elle est couverte par l'émission en position α (−Π^CB entre dans le besoin de la phase 7, fiche 9 N-3), sauf si le placement rate le même tour.
+  - Dans ce cas, la ligne nommée C60 du bloc 9 réduit E^CB, et E^CB < 0 est déclaré.
+  - La recapitalisation relève du J6.
+- **Contrôle de caisse en lecture nette.** Sans effet sur le bloc 8. La banque en est exclue (découvert intra-pas, l. 486-490).
+- **M^G\* = m × paiements bruts, m > 1.**
+  - Sous E^CB = 0 et s_CB = 0, Res = 0 et L^CB = M^G = m·P à la clôture.
+  - Passer de m = 1 à 1,1 relève L^CB d'environ 0,0019 année de PIB à 2 % (fiche 9 § 6.4, complément, point 2).
+  - L'effet sur les revenus est nul sous i_B = i_CB. C'est une algèbre, **non mesurée** : m n'est pas un paramètre de `m9.py`.
+- **Règle budgétaire de référence : C-HS**, avec la couverture intégrale (φ = 1) comme valeur par défaut. C'est la règle sous laquelle les critères 6 (d), 7, 11, 15 et 17 se jugent au J3 et au J4.
+
+**Chiffres de référence de la règle retenue sous C-HS** (`finances_publiques.md` § 3.C-4, mesures de `macro`). Ils remplacent comme référence ceux du § 3.C-4 de cette fiche, obtenus sous T9 nominal et assiette WB, qui restent publiés.
+
+| Grandeur | Sous T9 nominal, assiette WB (§ 3.C-4) | Sous C-HS (fiche 9 § 3.C-4) |
+|---|---|---|
+| Rayon à 0 / 2 / 10 % (deux régimes) | 0,999270 / 0,999413 / 0,999814 | 0,997497 / 0,997486 / 0,997558 |
+| Demi-vie dominante | 1 181 tours | 275 tours (remesuré depuis le rayon : 275,4) |
+| Grille G | pire valeur 0,999551 | 31 branches toutes sous 1, pire valeur 0,998883 ; ζ = 8 : 0,996234 |
+| Gain statique (% de y par point de i) | −0,0259 | −0,2208 |
+| Δr̄ après G +1 % permanent ; Δr̄/k_I | +918 pb ; 36,7 point-années | +96 pb ; 3,8 point-années |
+| Glissement − π\* aux tours 60 / 120 / 240 / 600 (G +1 % permanent) | +0,238 / +0,238 / +0,224 / +0,160 (§ 6.1) | +0,214 / +0,161 / +0,085 / −0,006 |
+| Taux tenu −1 point, tour 120 | +0,155 (palier 2,0847 %) | +0,396 (nouveau palier, +0,596 au tour 2 400) |
+| #56 (A) : cumul des tours 1 à 12 ; P_36 | −0,160 ; −0,138 % | −0,216 ; −0,226 % |
+| #56 (B) : P_120 ; glissement | −1,81 % ; −0,151 | −3,72 % ; −0,385 |
+| Pays joué (φ = 0) à 2 / 10 % | 1,007482 / 1,019719 | 1,001818 / 1,011036 ; doublement de l'écart en 382 / 63 tours (fiche 9 § 6.4) |
+
+**Non mesurés sous C-HS**, à remesurer au J3 :
+- la paire complexe (cycle de 18,8 et 20,8 tours sous T9, § 3.C-4) ;
+- le verdict de la clause II.7. Il a été remesuré sous l'assiette du revenu avant impôt retardé avec T9 réel, voisine de C-HS : « non déterminant » (§ 3.C-4) ;
+- #54 et l'essai (3) ;
+- les scénarios de perceptibilité de `jeu` (§ 7).
+
+**Critère 13 (C15) : défaut connu du socle** (M32, voie (c) ; #80). Sous C-HS, en lecture (α) :
+- r̄ vaut 1,536 % à π\* = 0 et 1,075 % à π\* = 10 % : écart de 0,461 point entre les bornes, 0,74 point au maximum sur [0 ; 10 %] ;
+- une marche de cible de 2 à 3 % déplace r̄ de −0,12 point (fiche 9 § 6.3, point 4).
+
+Le seuil adopté est de 0,1 point. La dépendance vient de trois conventions hors des blocs 8 et 9 :
+- C30 (M28) ;
+- la conversion linéaire des taux de flux (M22 ; ADR 0008, I.2) ;
+- les écarts nominaux (M31).
+
+Une fois les trois neutralisées, le résidu vaut 0,019 point. Toute réouverture partielle aggrave l'écart (C61). Le critère est codé en **échec attendu** au J3 (§ 9.6). Aucune réouverture sur la branche n° 4.
+
+**Réserves du § 5, et où elles sont tenues** (§ 9.6) :
+1. Rayon de la boucle conjointe inférieur à 1 sur G, sous C-HS : test « Stabilité ».
+2. Arrivée à 1e−6 en 20 demi-vies : test « Vitesses ».
+3. a_π ∈ ]0 ; 1,5[ contrôlé au chargement : § 9.2 et test « Calibration ».
+4. Formes fermées de 3.C-3 à 1e−10 : test « État stationnaire ».
+5. Persistance du critère 10 (b) (ii) : test « Persistance ».
+
+**Défauts déclarés, coût en fidélité de l'option** (§ 3.C-6, § 5). Ils vont aux `\limites` de BC1 à BC3 et à l'encadré `portee`.
+1. **Principe de Taylor non tenu à court terme** (a_π = 0,5 < 1). La stabilisation de long terme vient de l'action intégrale.
+2. **Persistance adaptative de l'inflation.**
+   - Ratio de sacrifice de 2,08 point-années par point (T9 réel, § 3.C-4), contre 1/(λ_e λ_w β) = 1/(0,2 × 1 × 2) = 2,5 (remesuré).
+   - Ratio non cité dans la littérature : Ball (1994) n'a pas été lu.
+3. **Aucune crédibilité** au socle.
+4. **Racine dominante lente.**
+   - Demi-vie de 275 tours sous C-HS. Après un choc permanent, r̂\* traîne : glissement +0,214 au tour 60, au-delà d'un cran, signalé (condition 10).
+   - Hors de la boucle conjointe, π^e seule résorbe 18,3 % d'un écart par an, soit une demi-vie de 41,2 tours (remesuré : 1 − (1 − 0,2/12)^12 = 0,1826). Le récit de `jeu`, « environ un cinquième par an », est cohérent.
+5. **Mémoire de r̂\*.** Après 120 tours de taux tenu un point bas, r̂\* vaut encore 1,35 % au tour 360, contre r̄ = 1 % (§ 7, réponse 7, sous T9 nominal).
+6. **Taux directeur négatif possible**, sans billet pour y échapper.
+   - i_D < 0 dès que i_CB < ϖ_D = 1 % (§ 6.4 (b)).
+   - Π^CB < 0 si i_CB < 0 (C60).
+7. **Une cible abaissée baisse le taux à l'impact.** C'est la question de fond que `jeu` adresse à `monnaie` (§ 7, réponse 6), instruite ici en forme fermée, sans décision.
+   - Sous BC1, ∂(1 + i^règle)/∂π\* = (1 + r̂\*) − a_π = 1,01 − 0,5 = 0,51 (remesuré). Cela redonne la baisse de 0,51 point du tour 2 mesurée par `jeu`.
+   - Le signe s'inverserait seulement si a_π > 1 + r̂\*, valeurs exclues par la condition a_π < 1,5 dans la mesure où a_π = 1,5 est instable sur G.
+   - Toute autre forme du terme de Fisher modifierait M32. Elle est à instruire avec #54, avant l'ouverture du levier de cible.
+8. **Pays joué sans reprise (φ = 0) explosif** sous toute règle à action intégrale : une hausse de taux y est inflationniste à moyen terme. C'est un régime déclaré de la fiche 9 (M33), non une référence.
+9. **Faible effet de long terme d'un taux tenu sous T9 nominal**, porté au mainteneur au titre du critère 10 (a) (§ 5, point (3)). Sous C-HS, le palier vaut +0,396 au tour 120, au-dessus du cran : l'exigence de persistance est tenue.
+
+**Ce qui reste paramétrable sans rouvrir M32** (visa de l'expert pilote) :
+- les valeurs de a_π, k_I, λ_e et r̄, dans les conditions du § 9.2 ;
+- s_CB par archétype, dans [0 ; 1].
+
+**Par une décision citant M32** :
+- un plancher de i_CB (borne à seuil libre, lecture (b) ; critère 18) ;
+- une crédibilité (C-h, C-c) ou le gain endogène C-g (J4 ou J6) ;
+- un terme d'activité, a_U ≠ 0 (C6 : sur U^eq lu au bloc 3, sans coefficient d'Okun importé) ;
+- un corridor non nul (variante D, J6) ;
+- l'ouverture du levier de cible (#54 et critères (a), (b) de `jeu`) ;
+- le levier d'achats de titres (J6) ;
+- a_π ≥ 1,5 ;
+- la formation de π^e en phase 9 (qui cite aussi M22 et M29, avec ADR).
+
+### 9.4 Propriétaires et phases des lignes de `tab:matrice-flux`
+
+**Lignes de la colonne « BC »** (l. 354-369) :
+
+| Ligne | Propriétaire (propose) | Phase | Règle | Moyen de paiement côté banque centrale | Statut |
+|---|---|---|---|---|---|
+| 11c | bloc 9 | 6 | i_B B_CB/n_a, avec i_B ≡ i_CB | reçue sur le compte du Trésor, sans réserves | M33 |
+| 12 | bloc 8 | 8 (a) | BC7 | crée des réserves | M32 |
+| 13 | bloc 8 | 8 (a) | BC8 | draine des réserves | M32 |
+| 16 | bloc 8 | 8 (b) | BC9 ; part non couverte d'une perte : ligne nommée du bloc 9 (C60), en dernier | compte du Trésor, sans réserves | M32 ; M33 |
+| 19a-BC | **bloc 9** (A8) | 7 | s_{CB,t} × besoin (s_{CB,t} écrit par le bloc 8 en phase 1) | crédite le compte du Trésor, sans monnaie centrale (l. 379) | M33 ; ADR 0011 (proposé) |
+| 19b-ménages | aucun au socle | — | nulle (B_H ≡ 0) | — | M27 |
+| 19b-banque | **aucun au socle** (N-4, N-7) | 7 au J6 | levier d'achats au J6 | crée des réserves | M32 ; à concilier avec la fiche 7 (question 1) |
+| 20, 22 | noyau | — | contreparties de règlement (l. 319) | — | inchangé |
+| 21 | bloc 7 | 8 (c) | B7 | — | M31 |
+
+Ni ligne ni poste nouveau du fait du bloc 8 : `tab:matrice-flux`, `tab:portes-monnaie` et `tab:matrice-bilans` sont inchangées. Sortie de `uv run python outils/verifier_matrices.py --strict` à `9cc1ead` : « tab:matrice-bilans : 9 lignes, 6 colonnes, 44 termes ; tab:matrice-flux : 28 lignes, 6 colonnes, 62 termes ; tab:portes-monnaie : 28 lignes, 3 colonnes, 31 termes ; Aucun écart. », code 0.
+
+La forme de la ligne nommée C60 (ligne de la matrice sans montant monétaire, ou registre du noyau) relève de la fiche 9 § 9 et du contrat partagé décidé par M33. Pour le bloc 8, il suffit que E^CB par les flux lise la ligne 16 exécutée.
+
+**Phases du bloc 8** :
+
+| Phase | Le bloc 8 lit | Le bloc 8 écrit ou propose | Autres blocs |
+|---|---|---|---|
+| 0 | — | rien. L'ouverture contient r̂\*_t, π^e_t, π\*_t, le registre, B_{CB,t}, L^CB_t, Res_t et M^G_t | moteur (Γ^e_t sur π\*_t, ADR 0010) |
+| 1 | ouverture : π_{t−1} (registre), π\*_t, r̂\*_t, π^e_t, B_{CB,t}, L^CB_t, Res_t ; levier de taux lu par le moteur dans la phase. Jamais W_t, p_t ni U_{t−1} | i^règle_t et i_{CB,t} (BC1), r̂\*_{t+1} (BC2), π^e_{t+1} (BC3), π\*_{t+1} (BC4), s_{CB,t} (BC5), Π^CB_t (BC6) | moteur (leviers) avant le bloc 8 ; bloc 3 : W_t, sur π^e_t d'ouverture, sans lecture mutuelle |
+| 2 à 6 | — | rien | blocs 7 et 9 lisent i_{CB,t} en phase 6 (lignes 9 et 10 sur i_L, i_D d'ouverture ; 11a à 11c sur i_B ≡ i_CB) |
+| 7 | — | **rien** (A8, N-7) | bloc 9 : lignes 19a, en lisant s_{CB,t} et Π^CB_t de la phase 1 |
+| 8 (a) | Res_t, L^CB_t (ouverture) ; i_{CB,t} | lignes 12 (BC7) et 13 (BC8) | — |
+| 8 (b) | Π^CB_t | ligne 16 (BC9) | bloc 9 : part non couverte (C60) |
+| 8 (c) | — | rien | bloc 7 : ligne 21 (B7), i_{L,t+1}, i_{D,t+1} |
+| 9 | — | rien. Le bloc n'entre pas dans le groupe de la phase 9 | noyau : E^CB calculé deux fois, Res_{t+1} ≥ 0 |
+
+**Triangularité** (critère 4 (h)) :
+- En phase 1, le bloc ne lit que l'ouverture et le levier.
+- Le bloc 3 ne lit rien de ce que le bloc 8 écrit dans la phase : il lit π^e_t à l'ouverture (lecture (a), M25).
+- En phase 7, le bloc 9 lit des variables de la phase 1.
+- En phase 8 (a) et (b), le bloc lit l'ouverture et la phase 1.
+- Aucun ordre nouveau entre blocs. Seul est déclaré l'ordre « moteur (leviers), puis banque centrale », déjà implicite (§ 9.8).
+
+**Phase des variables d'état.** r̂\*_{t+1}, π^e_{t+1} et π\*_{t+1} sont écrites une fois par pas, en phase 1, où le bloc siège après toutes leurs entrées (ADR 0009, point 4). Aucun lecteur ne les lit sous leur indice daté avant le pas suivant.
+
+**État initial résolu** (C3, critère 6 (b) ; lecture (1) de #44) :
+- r̂\*_0 = r̄ ; π^e_0 = π\*_0 = π\* ; i_{CB,0} = (1 + r̄)(1 + π\*) − 1, soit 1,00 / 3,02 / 11,10 % à π\* = 0 / 2 / 10 % et r̄ = 1 % (remesuré) ;
+- registre stationnaire P_{t−u} = P_t(1 + π\*)^{−u/n_a} (l. 220), d'où π_{−1} = π\* et i^règle_0 = i_{CB,0} exactement ;
+- E^CB_0 = 0 ; B_{CB,0} = s_CB·B_0, soit 0 au socle ; L^CB_0 = max(M^G\*_0 + E^CB_0 − B_{CB,0} ; 0) = M^G\*_0 ; Res_0 = max(B_{CB,0} − M^G\*_0 − E^CB_0 ; 0) = 0 (critère 3 (d)) ;
+- formes fermées : π̄ = π\* quels que soient r̄, a_π, k_I et λ_e (C2) ; π^e = π̄ (C1) ; r̂\* = r̄. Aucune vitesse n'entre (critère 7 (a)) ;
+- Π^CB = i_CB·M^G/n_a ≥ 0.
+
+**Interfaces avec les blocs voisins** :
+
+| Bloc | Le bloc 8 lit | Le bloc 8 rend | Contrat |
+|---|---|---|---|
+| moteur | leviers (phase 1) ; registre ; π\*_t | π\*_{t+1} (BC4) | ADR 0010 ; M30 |
+| 3, travail | rien (U_{t−1} non lu au socle) | π^e_t à l'ouverture | C1, C5, C12 ; M25 |
+| 4, prix | rien | rien (aucun canal π^e → p ni canal de coût) | C9 à C13 ; M26 |
+| 5 et 6, ménages et investissement | rien | π\*_t (par le moteur, Γ^e) ; i_CB, par le bloc 7 | C14, C32 à C36 ; M27, M28 |
+| 7, banque | rien | i_{CB,t} en phase 1 (i_res ≡ i_CB) ; lignes 12 et 13 ; refinancement sans plafond ni collatéral | M31, lecture (g) ; fiche 7 § 9.7 |
+| 9, État | rien | i_{CB,t}, lu comme i_B ; Π^CB_t ; s_{CB,t} (phase 1) ; ligne 16 (8 (b)) | A8, C25, C59, C60 ; M33 |
+
+### 9.5 Restitution
+
+Les conditions de `jeu` (§ 7) sont reprises telles quelles. Leur mise en œuvre au J4 relève de l'issue **#81**. La couche `observation/` lit l'état et les montants exécutés, sans effet sur la trajectoire.
+
+1. **Prescription et écart du taux décidé**, au tableau du tour. « Suivre la règle » est une valeur du levier (BC1). Après un écart, la prescription annonce le saut du retour.
+   *Mise en œuvre* : i^règle_t est calculé à chaque pas, que la règle soit suivie ou non. L'écart affiché vaut i_{CB,t} − i^règle_t.
+2. **r̂\* au tableau du tour**, libellé « taux neutre retenu par la règle », avec :
+   - l'infobulle « monte tant que l'inflation dépasse la cible, baisse tant qu'elle est en dessous ; garde la mémoire des écarts passés » ;
+   - son écart à la valeur initiale, r̂\*_t − r̄.
+3. **π^e et « écart d'ancrage des anticipations », π^e − π\***, au tableau du tour.
+4. **Mention du taux directeur négatif** quand i_CB < 0 : « taux directeur négatif : au socle, aucun billet ne permet d'y échapper ».
+5. **Pays joué** : décidé par M33.
+   - Couverture des intérêts : levier distinct du barème, à deux valeurs. « Couverture intégrale » est la règle et la valeur par défaut. « Intérêts financés par le déficit » est un écart déclaré, avec la mention et deux précurseurs.
+   - Le signe inversé d'une hausse de taux sous φ = 0 est déclaré dans l'aide.
+   - Restitution à l'issue #82.
+6. **π\* reste un paramètre au J4** (M32). L'ouverture du levier est soumise au verdict de #54 et aux critères (a) et (b) de `jeu` (§ 7, réponse 6), écrits avant l'essai.
+7. **Tableau levier → indicateur → délai → contrepartie** (critère 19 (c)), repris tel quel du § 7 dans l'encadré `joueur` de `sec:banque_centrale`.
+   - Complément sous i_B ≡ i_CB : la charge d'intérêts de l'État (lignes 11a à 11c) et T9 bougent au tour n (fiche 9 § 7, condition 8).
+   - Complément C43 (fiche 7) : la consommation bouge dès le tour n + 1, par Div_Bk.
+8. **Signes contre-intuitifs déclarés dans l'aide** :
+   - taux tenu bas : la consommation baisse (canal rentier) ;
+   - cible abaissée : le taux baisse et l'inflation monte à l'impact (§ 9.3, défaut 7) ;
+   - retour du niveau des prix (C11) ;
+   - absence de l'« énigme des prix ».
+9. **Bilan de la banque centrale dans la fiche détaillée** : H, Res et E^CB portent la mention « constant par construction au socle ». Π^CB et L^CB sont restitués.
+10. **Choc budgétaire permanent** : le scénario O2 du J4 publie l'écart de glissement aux tours 60 et 120 et le chemin de r̂\*.
+    - Constat de maquette sous C-HS : +0,214 / +0,161 (#81).
+    - Au-delà d'un cran au tour 60, le cas est signalé (critère 19 (e) (iii)).
+
+**Grandeurs restituées.** Niveaux normaux pour g = 2 %, r̄ = 1 %, π̄ = π\* = 0 / 2 / 10 %, à m = 1. Ils seront republiés par le script d'état stationnaire au J3, avec la valeur de m fixée avant l'essai.
+
+| Grandeur | Définition | Unité | Dénominateur | Fenêtre | Niveau normal (0 ; 2 ; 10 %) |
+|---|---|---|---|---|---|
+| Glissement et cible | π_t (l. 219) ; π\*_t | % par an, une décimale | — | phase 5 ; ouverture | π\* |
+| i_CB ; taux réel r = i − π | BC1 ; l. 215 | % par an | — | le tour | 1,00 ; 3,02 ; 11,10 % et 1,00 ; 1,02 ; 1,10 % (remesuré) |
+| Prescription ; écart du taux décidé | i^règle_t ; i_{CB,t} − i^règle_t | % par an ; points | — | le tour | = i_CB ; 0 |
+| Taux neutre retenu par la règle ; écart à la valeur initiale | r̂\*_t ; r̂\*_t − r̄ | % par an ; points | — | ouverture | 1 % ; 0 |
+| π^e ; écart d'ancrage | π^e_t ; π^e_t − π\*_t | % par an ; points | — | ouverture | π\* ; 0 |
+| Π^CB (fiche détaillée) | somme sur 12 tours / PIB des 12 derniers tours | % du PIB | PIB des 12 derniers tours | 12 tours | 0,0183 ; 0,0571 ; 0,2537 % (remesuré : i_CB × M^G/(n_a PIB), avec M^G/(n_a PIB) = 0,018282 / 0,018904 / 0,022857, fiche 9 N-2) ; ×m environ sous M33 |
+| L^CB (fiche détaillée) | clôture / ΣPIB | années | PIB des 12 derniers tours | clôture | M^G/(n_a PIB) multiplié par le facteur de fenêtre 1,0108 / 1,0216 / 1,0638 (remesuré, formule de la l. 230) |
+| H = Res ; E^CB (fiche détaillée) | clôture | années | idem | clôture | 0 ; 0 (« constant par construction au socle ») |
+| Ratio de sacrifice | point-années de chômage par point de désinflation | point-années | — | scénario O2, documentation | 2,08 en maquette sous T9 réel ; 1/(λ_e λ_w β) = 2,5 |
+
+### 9.6 Tests prévus au J3, puis au J4
+
+Chaque test énonce une propriété et un seuil écrits avant l'essai. Ils couvrent les réserves 1 à 5 du § 5, les critères 1 à 24, les conditions C45 à C50 et C59 à C61.
+
+| Jalon | Test | Propriété | Seuil |
+|---|---|---|---|
+| J3 | État stationnaire (critères 6 (a), (b), 8 (a) ; réserve 4) | Un pas sans choc depuis l'état résolu laisse r̂\* = r̄, π^e = π\*, i_CB = i^règle = (1 + r̄)(1 + π\*) − 1, Π^CB = i_CB(M^G + E^CB)/n_a, Res = 0 et L^CB = M^G\* (s_CB = 0), pour π\* ∈ {0 ; 2 % ; 10 %} et n_a ∈ {4 ; 12 ; 52} | 1e−10 relatif |
+| J3 | Cas à la main (critère 1 (c) ; N-8) | Appel direct de BC1 à BC9 sur le cas de N-8 (i_CB de 3 à 4 %, achat de 25 à la banque, M^G\* = 20) : lignes 12, 13 et 16 ; E^CB par le stock et par les flux ; contrainte budgétaire ΔB_CB + ΔL^CB = ΔRes + ΔM^G + Π^CB − ligne 16. Le cas n'a pas été rejoué en fractions exactes (N-8) | 1e−12 × S^CB |
+| J3 | Résultat et lignes exécutées (critères 1 (b), 4 (b)) | À chaque pas, Π^CB_t de la phase 1 égale 11c + 13 − 12 exécutées. Π^CB ne lit aucune grandeur intra-pas | 1e−12 × S^CB |
+| J3 | Neutralité de s_CB (C59) | Sous i_B = i_res = i_CB, s_CB ∈ {0 ; 0,05 ; borne m·M^G/B ; 0,5} : trajectoires réelles et revenus identiques ; au-delà de la borne, Res > 0 et L^CB = 0 à la clôture | 1e−12 relatif |
+| J3 | Perte (critère 2 (b) ; C60) | (i) i_CB < 0 sans placement raté : perte couverte par l'émission, E^CB inchangée ; (ii) i_CB < 0 et ς_B > 0 le même tour : ligne nommée = part non couverte, E^CB = −part, par le stock et par les flux (cas (ii) du critère 12 de la fiche 9) | 1e−12 × S^CB |
+| J3 | Phases (critère 4) | r̂\*, π^e et π\*_{t+1} écrits une seule fois, en phase 1 ; aucune lecture de W_t, p_t ni U_{t−1} ; aucune écriture du bloc 8 en phases 2 à 7 ; aucune ligne 19b proposée au socle | aucune lecture hors ordre |
+| J3 | Cible (ADR 0010 ; critère 4 (c)) | À levier fermé, π\*_{t+1} = π\*_t à chaque pas ; trajectoire identique à celle du moteur propriétaire provisoire (ADR 0010, Conséquences, test (4)) | exact |
+| J3 | Stabilité (critère 11 (a) ; réserve 1) | Rayon de la boucle conjointe, hors racine nominale, sous C-HS (φ = 1), dans les deux régimes de T4 linéarisés séparément (C48), sur G et à π̄ ∈ {0 ; 2 ; 10 %}, ζ ∈ {4 ; 8}. Période et demi-vie publiées (11 (b)) | < 1 |
+| J3 | Vitesses (critère 7 ; C36 ; réserve 2) | Branches ×0,5 et ×2 de a_π, k_I, λ_e et des vitesses des autres blocs : point fixe identique ; arrivée après les trois chocs (G +1 % aux tours 1 à 12, marche de π\* de +1 point, π^e +1 point) ; G +1 % permanent | 1e−6 après H = max(720 ; 20 demi-vies), soit 5 500 pas sous C-HS, H déclaré avant l'essai ; 1e−3 en 20 demi-vies pour le choc permanent |
+| J3 | Gain statique (critère 6 (d) (i), 11 (c)) | ∂(demande)/∂r < 0, tous canaux réunis (C34) | < 0 (−0,2208 %/pt en maquette) |
+| J3 | Clause II.7 (critère 12) | ρ_c et ρ_b sur D × G à la calibration retenue ; verdict ; clause de l'ADR 0010 (ρ_1 = ρ_0 par construction, π\* exogène) | verdict publié ; « déterminant » ⇒ décision citant M26, M24, M22 et M32 |
+| J3 | Cible relevée (critère 10 (b) (i)) | Marche de π\* de +1 point : π̄ +1 point au point fixe, U\* inchangé, M/PIB stationnaire | 1e−6 |
+| J3 | Persistance (critère 10 (b) (ii) ; réserve 5) | Taux tenu −1 point : premier écart au tour 3 au plus tard ; glissement au tour 120 supérieur d'au moins un cran à π\*, de même signe ; classement publié (sous C-HS, maquette : « nouveau palier », +0,396) | ≥ +0,1 point au tour 120 |
+| J3 | **Superneutralité (critère 13 ; C15)** | Écart de r̄ et de chaque allocation en % du PIB entre π̄ = 0 et 10 %, sous les formes fermées de l'option. **Codé en échec attendu (`xfail`, strict), avec renvoi à #80** ; un succès inattendu fait échouer la batterie. Toute réouverture de C30, de la conversion ou des écarts remesure les trois sources ensemble (C61) | < 0,1 point (non tenu : 0,461 point aux bornes, 0,74 au maximum en maquette) |
+| J3 | C46 | Pour C-HS : gain statique, Δr̄ après G +1 % permanent, Δr̄/k_I (identité exacte sous BC2), palier du critère 10 (b) (ii) et critère 13, publiés par le script | republiés ; Δr̄/k_I à 1e−6 |
+| J3 | Bornes (critère 18) | Aucune borne. Scénarios G −5 % pendant 12 tours et marche de ±1 point : i_CB égale exactement la prescription, même négative | exact ; taux minimal publié |
+| J3 | Test zéro (critère 17) | 720 pas sans choc, moyennes par blocs de 60 pas ; bandes à confirmer avec O1 avant l'essai (M19), voir question 3 | glissement π\* ± 0,1 ; π^e − π̄ ± 0,1 ; H nulle à 1e−12 × S^CB ; B_CB/B ± 1 point (0 au socle) ; E^CB nulle |
+| J3 | Empreinte et coût (critères 20, 21) | Deux variables d'état nouvelles, plus π\*_t ; reprise de sauvegarde exacte ; part du bloc dans `tests/invariants/test_budget.py` | décompte exact ; ≤ 0,48 ms par pays-pas |
+| J3 | Calibration (critère 23 ; C7, #45) | a_π, k_I et λ_e calés avec λ_w·β sur un ratio de sacrifice sourcé ; contrôle 0 < a_π < 1,5 et k_I > 0 au chargement | sources citées, ou « non trouvée » |
+| J3 ou J4 | #54 (critère 16) | Essais (1), (2) et (4) depuis l'état résolu ; essai (3) en maquette ; critères (a) et (b) de `jeu` | verdict avant l'ouverture du levier de cible |
+| J4 | #56 (critère 15) | Configuration (A) de référence : règle en vigueur, taux supérieur d'un point à la prescription aux tours 1 à 12, sous C-HS, à π̄ = 0, 2 et 10 % et sur un archétype à dette élevée ; pays joué (φ = 0) en mesure | P1 et P2 tenus, exigence avant l'ouverture du levier de taux ; P3 publié |
+| J4 | Perceptibilité (critère 19 (e) ; O2) | Même choc apparié | deux crans en 12 tours ; pic au plus tard au tour 24 ; demi-vie supérieure à 60 tours déclarée avec le résidu au tour 60 |
+| J4 | Restitution (conditions 1 à 10, #81) | Niveaux normaux restitués égaux à ceux du script | 1e−9 relatif |
+
+### 9.7 Conditions transmises
+
+**Conditions de `macro` (§ 6.6)** :
+- **C45** (fiche 9) : **levée par M33**. T9 est réel, avec un taux de référence de Fisher sur π\*.
+- **C46** (fiche 9) : publiée pour cinq règles (fiche 9 § 3.C-4). Republiée au J3 par le script pour C-HS (§ 9.6).
+- **C47** (fiche 9, `jeu`, M33) : **levée par M33**. Couverture intégrale par défaut ; φ = 0 en écart déclaré ; φ jamais continu (C62).
+- **C48** (fiche 8) : **levée** (§ 10, 04/10/2026). La règle « un régime de T4 à la fois » est reconduite aux tests du J3.
+- **C49** (fiche 9) : suivie par C51. Condition de domaine de r̄ en `\limites` du bloc 9 ; voisinage dynamique à mesurer au J3.
+- **C50** (fiche 9) : publiée (fiche 9 § 3.C-4) — 0,4983 en part d'une vente, 0 au sens de la l. 1543 sous C-HS. La boucle de `sec:menages` est à refaire avec les impôts (C52).
+
+**Conditions de la fiche 9 qui touchent le bloc 8** (§ 6.6) :
+- C59 : test « Neutralité de s_CB », et borne déclarée au § 9.2 ;
+- C60 : test « Perte », et ligne 16 exécutée dans E^CB ;
+- C61 : test « Superneutralité » ;
+- C62 : φ n'est pas un levier continu (restitution, #82).
+
+**Fiche 7 (`monnaie`, M31)** :
+- **lecture (f) tranchée par A8** : `sec:banque` à mettre à jour (§ 9.8). Le bloc 7 n'a plus que **sept labels** (B1 à B7) ; B8 devient une équation du bloc 9 ;
+- corridor de largeur nulle et i_res ≡ i_CB : **décidés** (M32) ;
+- i_res ≤ i_CB : tenue avec égalité ;
+- allocation du refinancement sans plafond ni collatéral : **acceptée** ;
+- dépendance de ϱ̄_L à π\* (lecture (b)) : déclarée ;
+- levier « achats de titres » (condition 6 de `jeu`) : **non ouvert au J4**, renvoyé au J6 (M32) ;
+- ligne 19b-banque, que la fiche 7 attribue au bloc 8 en phase 7 (§ 9.4) : sans proposant au socle selon N-7 (question 1).
+
+**Fiches 3 et 4 (`macro`)** :
+- C1, C2, C5 et C12 tenues : π^e formée en phase 1, délai de deux tours ;
+- C9 : prescription restituée ;
+- C10 : contenu publié ; clause II.7 « non déterminante », réévaluée au J3 ;
+- C11 : retour du niveau des prix déclaré (−0,106 % au tour 60, § 3.C-8) ;
+- C13 : aucun canal de coût.
+
+**Fiches 5 et 6 (`macro`)** :
+- C14 : gain statique négatif ;
+- C15 : défaut connu (#80) ;
+- C26 : « non déclenchée » (les ménages lisent π\*) ;
+- C32 : une seule lecture (π\*) ;
+- C33 : effets d'un changement de cible déclarés, π\* paramètre ;
+- C34 à C36 : tests du J3 ;
+- C43 (délai du canal rentier) : test du J3, avec les fiches 7 et 9.
+
+**J4** :
+- #81 (restitution) ;
+- #54, avec les critères (a) et (b) de `jeu` ;
+- #56 en exigence avant l'ouverture du levier de taux ;
+- « suivre la règle » comme valeur du levier de taux.
+
+**J5** : régimes de souveraineté B à E et change ; cible lue hors du régime A (#64).
+
+**J6** :
+- C-g (gain endogène, « désancrage ») ;
+- corridor D ;
+- leviers d'achats (19b-banque) et de souscription (s_CB) ;
+- prime i_B ≠ i_CB, avec le coût de portage de l'encaisse (i_B − i_CB)(m − 1)P/n_a (fiche 9 § 6.4) ;
+- troncature du versement et recapitalisation (C60) ;
+- plancher de i_CB si des billets sont introduits ;
+- hyperinflation et réforme monétaire.
+
+**`architect`** :
+- **ADR 0011 (proposé)** :
+  - propriétaire des lignes 19a ;
+  - s_CB écrit en phase 1 ;
+  - banque et banque centrale retirées de la phase 7 au socle (question 1) ;
+  - `tab:phases`, l. 536 ; `temps_comptabilite.md:838` ; ADR 0009 l. 84.
+- **Annotation de l'ADR 0010** (rang 9, #69) :
+  - le bloc 8 devient propriétaire de π\*_t dès le J3 et écrit π\*_{t+1} = π\*_t, le levier de cible étant fermé au socle et au J4 (M32) ;
+  - source du paramètre π\* (question 2) ;
+  - la clause de réouverture de l'ADR 0010 n'est pas déclenchée (ρ_1 = ρ_0, § 3.C-4).
+- **Annotation de l'ADR 0005, point 13** (m > 1, M33). Le point 5 (l. 215, précision rédactionnelle adoptée le 04/10/2026, critère 13 (b)) reste à annoter s'il ne l'est pas : je ne trouve pas d'annotation datée du point 5 dans l'ADR 0005 (`grep -n 'testé\|r = i\|i − π'` : aucune annotation).
+- **`CONTEXT.md`** : « taux indiqué par la règle (prescription) », « taux neutre retenu par la règle », « écart d'ancrage des anticipations », « action intégrale sans fuite », « apprentissage à gain constant », « part de souscription de la banque centrale ».
+- **Statut de l'inventaire** (`docs/blocs/README.md`).
+
+**Issues** :
+- #44 : se ferme à la branche n° 4 bis (fermeture monétaire, lecture (1)) ;
+- #24, volet « banque centrale », et #49 : tranchés par M32 (glissement ; Fisher sur π\*). Clôture possible après le jalon 4 de #72 ;
+- #26 :
+  - point 1 : C60 (M33) ;
+  - point 2 : forme (ii), M32 ;
+  - points 4 et 5 : M31 ;
+  - tableau de réponses au rang 11 ;
+- #45 : J3 ;
+- #61 : bloc 8 propriétaire ; le reste relève du J2 et du J3.
+
+### 9.8 Surface d'impact documentaire (pour `docwriter`)
+
+Encadrés `proposee` citant M32 (et M33 pour les points partagés), sans label (§ 9.1). Numéros de ligne à `9cc1ead`.
+
+**`sec:banque_centrale`**, à écrire à la place du texte d'attente (l. 2346-2349) :
+- **encadré de décision M32** : option C et socle commun du § 3.N ; lectures (a) à (e) ; points tranchés avec M33 (A8, i_B ≡ i_CB, E^CB_0 = 0) ; critère 13 en défaut connu (#80) ;
+- **tableau des identifiants BC1 à BC9**, avec phase, statut et label prévu, sur le modèle de `tab:banque-equations` (l. 2024-2043) ;
+- **règle de taux (BC1, BC2)** :
+  - forme de Fisher sur π\* ; mesure lue : glissement π_{t−1} ;
+  - prescription et levier (« suivre la règle », valeur du levier) ; action intégrale jamais réinitialisée ;
+  - aucun terme d'activité, aucun plancher ;
+  - identité i_res ≡ i_CB (corridor de largeur nulle) ;
+  - `\limites` : principe de Taylor non tenu à court terme ; mémoire de r̂\* ; taux négatif sans billets ; cible abaissée qui baisse le taux (défaut 7, avec la dérivée 0,51) ;
+- **anticipations (BC3)** :
+  - apprentissage à gain constant de la moyenne ; gain de Gáti (2022), p. 19-20 ;
+  - **ne citer Evans qu'après lecture à la source** (§ 3.0) ;
+  - phase 1, délai de deux tours, condition de Barro et Gordon ;
+  - aucune crédibilité (C-g au J4 ou J6) ;
+  - C1 : π^e = π̄ démontré ;
+- **cible (BC4)** : renvoi à `sec:cadre-calendrier` (l. 223) ; paramètre au socle et au J4 ; conditions d'ouverture du levier ;
+- **bilan et résultat (BC5 à BC9)** :
+  - s_CB (A8) ; Π^CB (renvoi à la l. 494) et sa forme réduite ;
+  - lignes 12, 13 et 16 ; E^CB_0 = 0 et calcul deux fois ;
+  - perte et C60 ; formes fermées de Res et L^CB, y compris sous m > 1 ;
+- **phases** : tableau du § 9.4 ;
+- **état stationnaire** : C2, C1, r̂\* = r̄ ; fermeture monétaire, lecture (1) de #44 ; aucune vitesse ; état initial résolu ;
+- **conditions et stabilité** :
+  - chiffres de référence sous C-HS (§ 9.3, avec renvoi à `sec:finances_publiques`) ;
+  - clause II.7 « non déterminante » ; clause de l'ADR 0010 ;
+  - C36 ; critère 13 en défaut connu ; tests du J3 (§ 9.6) ;
+- **grandeurs restituées** (§ 9.5) ;
+- **encadré `joueur`** : tableau de la condition 7 de `jeu`, complété (§ 9.5) ;
+- **encadré `portee`** :
+  - ni billets, ni avances, ni crédibilité, ni plancher, ni levier d'achats (J6) ;
+  - π\* paramètre ; régimes B à E (J5) ; hyperinflation (J6) ;
+  - aucun tirage, aucun historique.
+
+**Passages existants à retoucher** :
+- **l. 223 et 227 (`sec:cadre-calendrier`)** : « jusqu'à la fiche … ; ensuite, le bloc banque centrale … l'écrira depuis son levier » devient « le bloc banque centrale et anticipations, propriétaire, écrit π\*_{t+1} = π\*_t (décision M32 : levier de cible fermé au socle et au J4) ». Annotation de l'ADR 0010 en parallèle (rang 9).
+- **l. 494-496 (`sec:cadre-caisse`)** :
+  - « Les fonds propres E^CB restent à leur valeur initiale résolue » devient « … nulle (E^CB_0 = 0, décisions M32 et M33), sauf la part non couverte d'une perte, ligne nommée du bloc État et dette (C60), qui les réduit » ;
+  - la phrase sur la perte renvoie à cette ligne.
+- **l. 503** (M^G\*, « n'excède pas » ; « n'est pas un paramètre ») et **l. 2411** (« l'encaisse stationnaire du Trésor M^G\*, variable de l'état initial résolu ») : modifications de M33, à la charge de la fiche 9 § 9. Ici, seule la cohérence avec L^CB = m·P (§ 9.3) est à vérifier.
+- **l. 2411** : « La décision M30 ajoute la cible d'inflation déclarée π\*, paramètre typé à source unique du moteur » est à ajuster selon la question 2.
+- **`tab:phases`** :
+  - l. 530, phase 1 :
+    - contenu complété par « taux neutre retenu par la règle et anticipation du pas suivant ; part de souscription primaire de la banque centrale (décision M33, A8) » ;
+    - écrivains « moteur (leviers), puis travail, banque centrale » : le bloc 8 lit le levier lu par le moteur dans la phase. Retouche de forme à qualifier par `architect` ;
+  - l. 536, phase 7 : selon l'ADR 0011 (proposé) et la question 1, écrivains « État » ; contenu « souscriptions (19a, proposées par le bloc État et dette) ; achats décidés de la banque centrale (19b, jalon J6) » ;
+  - l. 529, phase 0 : sans objet pour le bloc 8. ς_{B,t} est lue par le bloc 9 sous A8 ; la ligne 0 relève de #69 (Γ^e) et de la fiche 9 ;
+  - l. 532, phase 3 : la colonne « Écrivent » porte encore « investissement, banque », alors que la fiche 7 (§ 9.8) retire la banque des écrivains. Constat hors du bloc 8, à vérifier par la session.
+- **`sec:banque` (lecture (f) tranchée par A8)** :
+  - l. 2009 : « renvoyée à … M33 » devient « tranchée par M33 : A8 » ;
+  - l. 2011-2012 : **branche « variante » à retirer**, la branche A8 devient le texte ;
+  - l. 2040 : ligne B8 retirée ; renvoi au label du bloc État et dette ; **sept labels** ;
+  - l. 2122-2135 (`sec:banque-placement`) : la règle du reliquat devient une équation du bloc État et dette, à laquelle la sous-section renvoie ;
+  - l. 2130 : « ligne 19a-BC, décidée par le bloc banque centrale » devient « proposée par le bloc État et dette, part s_CB écrite par le bloc banque centrale en phase 1 » ;
+  - l. 2132 : la ligne 19b « est proposée par le bloc banque centrale » devient « aucune n'est proposée au socle (levier au jalon J6) » (question 1) ; ς_{B,t} est lue par le bloc État et dette ;
+  - l. 2135 : provenance M33 ;
+  - l. 2157 et 2161 : phase 7 retirée ;
+  - l. 2169 : 19a-banque retirée des lignes proposées ; 19b-banque reçue au J6 seulement ;
+  - l. 2190 : « i_{res,t} » devient l'identité i_res ≡ i_CB, et « i_{B,t} selon la règle du bloc État et dette » devient « i_B ≡ i_CB (M33) » ;
+  - l. 2193 : ligne de la phase 7 réduite à « rien » ;
+  - l. 2058 : « hypothèse transmise » devient « décision M32 » ;
+  - l. 2059 et 2214 : « la forme … relève du bloc banque centrale » devient « forme de Fisher sur π\* (décision M32) » ;
+  - l. 2116 : « condition transmise » devient « acceptée (M32) » ;
+  - l. 2229 : i_{CB,0} = (1 + r̄)(1 + π\*) − 1 ;
+  - l. 2265 : « selon la lecture (f) » devient « lu par le bloc État et dette (A8) » ;
+  - l. 2325 : le levier « achats de titres » n'est **pas ouvert au J4** (M32 ; J6).
+- **l. 279-280 (`tab:instruments`)** : i_res ≡ i_CB au socle.
+- **l. 1020 (`sec:travail-stationnaire`)** : fermeture monétaire, lecture (1) de #44 — r̄ paramètre, part de la dépense résolue (M32-M33).
+- **l. 1185 (`sec:prix-conditions`)** : verdict de la clause, « non déterminant » à la calibration indicative (fiche 8 § 3.C-4), réévalué au J3.
+- **l. 1456 (C26)** : « non déclenchée » (M32).
+- **l. 1460, 1907 et 2265** : renvoi aux réponses du § 9.7.
+- **l. 1519** : « la relation de Fisher que retiendra le bloc » devient « la forme de Fisher sur π\* retenue par M32 ».
+- **`tab:leviers-cadre`, l. 2380** :
+  - « dans la mesure où leur taux suit le taux directeur » devient « leur taux étant le taux directeur au socle (i_B ≡ i_CB, M33) » ;
+  - contrepartie : ligne 16 = i_CB(M^G + E^CB)/n_a.
+- **`tab:leviers`, l. 2399** : ligne « Taux directeur » — type : valeur numérique ou « suivre la règle » ; unité : % par an ; délai : 0 tour ; contrepartie : lignes 11a à 11c, 12, 13 et 16. Mention « cible : paramètre au socle et au J4 », « achats de titres : J6 ». Avis de `jeu` à la revue finale (rang 12).
+- **`tab:calibration`** :
+  - encadré « paramètres du bloc banque centrale et anticipations, décision M32 », sur le modèle de la l. 2435 ;
+  - lignes a_π, k_I, λ_e, s_CB et r̄ (§ 9.2) ; aucune borne ;
+  - l. 2453 (π\*) : « reconduite par le moteur jusqu'au bloc » devient « écrite par le bloc banque centrale (reconduction, M32) ; levier fermé au J4 » ;
+  - **l. 2461 (U^eq)** : « lue à source unique par le bloc banque centrale et anticipations » est faux sous M32 (aucun terme d'activité) : « non lue par la règle de taux au socle ».
+- **`tab:symboles`** (l. 2760-2863) :
+  - nouvelles entrées : i^règle_t, r̂\*_t, r̄, a_π, k_I, λ_e, s_{CB,t} ;
+  - l. 2766 (i_X) : i_res ≡ i_CB et i_B ≡ i_CB au socle ;
+  - l. 2818 (π^e_t) : renvoi à BC3 (`sec:banque_centrale`) ;
+  - l. 2832 (π\*) : écrite par le bloc banque centrale (BC4) ;
+  - l. 2794 (Π^CB) : renvoi à BC6 ;
+  - collisions vérifiées par `grep -c -F` à `9cc1ead` : `k_I`, `a_\pi`, `\lambda_e`, `\hat`, `s_{\mathit{CB}}` et `i^{\mathrm{ref}}` : 0 chacun ; `\bar r` : 2 (l. 2214, sens identique). Points de notation : question 4.
+- **`sec:ecartees`**, sous-section « Banque centrale et anticipations (décision M32) » :
+  - A : mesure en log contre glissement, six écrêtages, loi à seuil, avances (ν_3) ;
+  - B : intégrateur à fuite et bande, loi K1a, drapeaux, pire valeur sur G de 1,0135 ;
+  - T : 2 points de biais par point d'erreur sur r\* ;
+  - C-h, C-c ; D (J6) ; R (référence) ;
+  - a_π = 1,5 ; formation de π^e en phase 9 ; plancher à 0 ; terme d'activité.
+- **`tab:instabilites`, paragraphe après la l. 2715** :
+  - le bloc réintroduit la **forme** de l'instabilité 4 (estimateur du taux naturel sans ancre ni bande), avec le fait nouveau exigé : rayon inférieur à 1 sur G dans les deux régimes, sous T9 (§ 3.C-4, contre-épreuve de `macro` § 6.2) et sous C-HS (fiche 9 § 3.C-4), à remesurer au J3 ;
+  - il ne réintroduit ni la 2 (aucune avance), ni la 15 (aucune borne), ni une loi de crédibilité à seuil (K1a) ;
+  - la divergence sous φ = 0 est un régime déclaré.
+- **`sec:changements-v3x`** (l. 90-116) : ligne 14, « Banque centrale et anticipations (décision M32), proposée », et retouches A8 de `sec:banque` et `tab:phases`.
+- **`tab:correspondance`** : inchangée, aucun label au J1.
+- **`tab:chantiers`** : inchangée, aucun mécanisme essayé sur le moteur v3.
+- **Inchangées** : `tab:matrice-flux`, `tab:portes-monnaie` et `tab:matrice-bilans` du fait du bloc 8 (sortie de `verifier_matrices.py` au § 9.4). La forme de la ligne C60 relève de la fiche 9.
 
 ## 10. Historique de la fiche
 
@@ -1174,3 +1704,4 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 | 04/10/2026 | C48 levée : paire complexe, pays joué à 10 % et a_π = 1,5 republiés par régime de T4 (§ 3.0, § 3.C-4, § 3.C-8, § 4) ; second coude de la linéarisation de la baisse identifié ; critère 12 remesuré, verdict inchangé. Les chiffres du § 6.2 (contre-épreuve de `macro`) sont confirmés | `monnaie` ; session principale |
 | 04/10/2026 | Décision du mainteneur : M32, prise par paire (M32-M33) ; voir § 8 | mainteneur ; session principale |
 | 04/10/2026 | Issues créées sur accord du mainteneur : #80 (critère 13), #81 (restitution J4 banque centrale), #82 (restitution J4 État et dette) ; commentaires publiés sur #54, #73 et #55 | session principale |
+| 04/10/2026 | § 9 rédigé (conséquences de M32 et des points tranchés avec M33 : équations BC1 à BC9 et labels prévus, paramètres, chiffres de référence sous C-HS, phases sous A8, restitution, tests du J3 et du J4 avec le critère 13 en échec attendu (#80), conditions transmises, surface d'impact pour `sec:banque_centrale`, `sec:banque` et `tab:phases`) ; renvois à l'ADR d'A8 rapportés à l'ADR 0011 (proposé) par la session | `monnaie` ; session principale |
