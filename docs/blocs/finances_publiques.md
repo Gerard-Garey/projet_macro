@@ -1,0 +1,358 @@
+---
+bloc: État et dette
+module: src/nations/blocs/finances_publiques.py
+expert pilote: macro
+experts consultés: monnaie (placement de la dette et prime : frontière dette publique) ; jeu
+statut: en instruction
+décision: —
+issue: #73
+---
+
+# Fiche comparative — État et dette
+
+> Fiche ouverte à partir du gabarit `0000-gabarit.md` (validé à l'usage, M20), sur le modèle de forme des fiches 5 « ménages » et 6 « investissement et financement des entreprises » (M27, M28). Jalon 1 de l'issue #73 : § 1 et § 2 seuls ; les rubriques suivantes portent « à instruire (jalon 2) ». La fiche est **décidée par paire avec la fiche 8** « banque centrale et anticipations » (décision P14 du 04/10/2026 ; numéros M32 et M33 sous réserve de l'ordre réel des décisions). Ses critères sont validés avec ceux des fiches 7 et 8, en tête de branche, avant tout commit d'instruction. Son instruction (jalon 2) attend que la fiche 8 soit « avis rendus » (`docs/feuille-de-route.md` § 1, rang 6).
+
+Une fiche comparative instruit **l'origine de l'approche** d'un bloc (`docs/exigences.md` § 2.3) : la spécification v1.5, le moteur v2.0, ou une approche nouvelle. Elle est **instruite par l'expert pilote**, commentée par `jeu` et par l'expert consulté que désigne `README.md`, et **décidée par le mainteneur** (décision M-n, reportée dans `docs/feuille-de-route.md`). Aucune approche n'entre dans le moteur ni dans la spécification sans cette décision. Les agents n'écrivent pas la fiche dans le dépôt : elle figure dans leur compte rendu et la session principale la commite. Un **bloc-cadre** (temps et comptabilité) n'est pas un module de `blocs/` : sa fiche instruit ce que le cadre **définit** (conventions, matrices, règles), non des flux proposés ; les adaptations que cela impose sont signalées rubrique par rubrique.
+
+Règles de rigueur (`CLAUDE.md`, « Rigueur ») :
+- un chiffre se remesure ou cite sa source ;
+- une équation de la v1.5 n'a jamais été garantie exécutée ;
+- un comportement de la v2.0 ne vaut que sous son profil (état D1, **non versé** : aucun fait ne peut y être remesuré) et avec ses défauts connus ;
+- chaque fait de la première tentative porte son **statut** S+O, O, R, L, V ou V+O (`CONTEXT.md`, « Statut d'un fait ») ; un fait V sur le prototype v2.0 reste un fait de la première tentative, non un résultat v3 ;
+- chaque référence est une publication retrouvée ;
+- citer `archive/v1.5/…` avec numéro d'équation et section, ou avec le **numéro de ligne du `.tex`** quand section ou équation ne sont pas identifiables sans compiler ; citer `archive/v2.0/…` avec fichier et ligne.
+
+**Principe de simplicité** (adopté par le mainteneur le 30/09/2026, fiche « temps et comptabilité » § 2 ; `CONTEXT.md`) :
+- à exigences comptables égales, l'option la plus simple pour le joueur et pour le moteur est préférée ;
+- toute complexité se justifie par une identité qu'elle rend vérifiable ou par un mécanisme perçu à l'échelle d'une partie ;
+- une simplification ne supprime ni une contrepartie comptable visible d'un levier ni une grandeur restituée au tour ;
+- les identités, les tolérances relatives, le déterminisme, les invariants de l'ADR 0002 et la concordance ne se simplifient pas.
+
+## 1. Question posée
+
+*Rédigé par `macro` (expert pilote), 04/10/2026, sur la spécification à l'état `10391a1` (branche `claude/j1-monnaie-etat`, PR #77). Les numéros de ligne sans fichier renvoient à `docs/specification/nations_et_marches.tex` à cet état.*
+
+Le bloc porte le secteur de l'État du socle. Il comprend :
+- **les dépenses** : la dépense publique, plan en u.m. écrit en phase 2 (« dépense publique du pas », `tab:phases`, l. 530) puis ligne 2 exécutée en phase 5 sur le volume servi ; les transferts aux ménages (ligne 6, phase 6) ;
+- **les recettes** : les impôts des ménages et des entreprises (ligne 7, phase 6) ;
+- **la charge d'intérêts** sur les titres publics, au taux i_B (lignes 11a à 11c, phase 6), et la réception du résultat de la banque centrale (ligne 16, phase 8 (b)), dont le montant est calculé par le bloc 8 en phase 1 (l. 495) ;
+- **l'émission** des titres publics en phase 7, après les règlements (M22, lecture (f), position α) : ligne 19a, avec un compte du Trésor M^G qui clôt le pas à l'encaisse M^G\* (l. 497 à 502) ;
+- **le solde public, la dette publique et la règle budgétaire de référence** (pays non joués, test zéro) ;
+- **les leviers budgétaires du joueur** : taux d'imposition, dépense publique, transferts (`tab:leviers-cadre`, l. 2034 à 2036). L'émission n'est pas un levier du socle (l. 502 et 2017).
+
+C'est le dernier bloc du socle : il « clôt le bouclage stock-flux » (`docs/blocs/README.md` § 3, rang 9 ; `sec:finances_publiques`, l. 2008). Deux identités, dérivées du cadre, structurent la fiche.
+
+1. **La dette publique n'est pas un paramètre libre à l'état stationnaire.** Dans `tab:matrice-bilans` (l. 298 à 307), la somme des valeurs nettes vaut K + IN. On en tire, avec B = B_H + B_Bk + B_CB :
+   - B − M^G = V_H + (D_F − L) + E^Bk + E^CB ;
+   - autrement dit, la dette nette de l'encaisse égale la richesse financière nette du secteur privé, plus les fonds propres de la banque et de la banque centrale.
+   - Les fiches décidées fixent déjà deux termes :
+     - V_H = ν_H n_a YD^HS (M27) ;
+     - L − D_F (M28) : (L − D_F)/(12 × PIB) vaut 0,456 à π̄ = 2 % et 0,169 à 10 % (condition C30, `investissement.md` l. 1397).
+   - *Illustration*, sous les hypothèses ν_H = 1 an, E^Bk = E^CB = 0 et π̄ = 2 % : si YD^HS/PIB vaut 0,6, 0,7 ou 0,8, (B − M^G)/(12 × PIB) vaut 0,144, 0,244 ou 0,344 an.
+   - Une règle qui vise la dette fait donc d'un autre instrument son résultat (fiche 6 § 3.E, l. 784).
+2. **Le solde stationnaire est fixé par la dette et la croissance nominale** (identité de Domar, dérivée de la formule d'émission des l. 499 et 500). Sur la trajectoire de référence, B et M^G croissent du facteur Γ̄ par pas, si M^G\* croît comme le PIB (critère 11). On a alors :
+   - Déficit_t = G + Tr + i_B B/n_a − T_H − T_F − Π^CB = (Γ̄ − 1)(B_t − M^G_t) ;
+   - en part du PIB annuel, n_a(Γ̄ − 1) × (B − M^G)/(12 × PIB), soit **3,9671 %** de la dette nette à g = π̄ = 2 % et n_a = 12 ;
+   - 3,9802 % et 3,9620 % à n_a = 4 et 52 ; 11,5667 % à π̄ = 10 % et n_a = 12 (commande au compte rendu de `macro` du 04/10/2026).
+
+   Le solde n'est donc pas un paramètre libre non plus.
+
+Il reste au bloc à dire quel instrument porte le résultat, et quelle variable ferme le niveau d'activité (#44, avec la fiche 8). Sous M22, un pas est un tour (n_a = 12, n_m = 1) : toute fenêtre exprimée en pas l'est aussi en tours.
+
+### 1.1 Contrats hérités
+
+| Contrat | Source | Ce qu'il impose à la fiche 9 | Ce qui le rouvrirait |
+|---|---|---|---|
+| Calendrier, conversions et phases | M22 ; ADR 0005 ; ADR 0008, I.2 ; `tab:phases` (l. 528 à 537) ; `sec:cadre-phases` (l. 510) | **Pas et conversions** : pas mensuel, n_a = 12. i_B est un taux de flux, converti linéairement (i_B B/n_a). Les vitesses de la règle budgétaire sont linéaires, avec λ ≤ n_a. Les taux de croissance et d'inflation (indexation d'un plan, croissance d'une cible) sont géométriques. **Phases** : plan de dépense en phase 2 ; ligne 2 en phase 5, après prix et production (l. 533) ; lignes 6, 7 et 11a à 11c en phase 6, **sans ordre interne** (l. 510 et 534) ; émission en phase 7, l'ordre « État, banque, banque centrale » restant « à fixer par leurs fiches » (l. 535) ; ligne 16 en 8 (b) (l. 536). Neuf phases triangulaires, aucune résolution simultanée | Décision citant M22 ; un ADR pour tout ordre interne nouveau |
+| Compte du Trésor et émission après les règlements | M22, lectures (b) et (f) ; ADR 0005, points 9 et 13 ; `sec:cadre-caisse` (l. 497 à 502) | **Compte du Trésor** : M^G est tenu à la banque centrale, sans intérêt ; chaque impôt draine des réserves, chaque dépense publique en crée. **Émission** : en phase 7, l'État émet le besoin réalisé du pas (formule des l. 499 et 500), et M^G clôt à M^G\*. **Encaisse M^G\*** (l. 502) : elle « n'excède pas les paiements bruts d'un pas avant impôts » ; elle « n'est pas un paramètre : c'est une variable de l'état initial résolu », calculée « selon la règle du bloc État et dette » ; un placement raté laisse M^G sous M^G\*, et le rationnement de la dépense frappe le tour suivant. L'émission n'est pas un levier. La position β, émission avant les règlements, est écartée (ADR 0005, options écartées, l. 80) | Décision citant M22 |
+| Résultat de la banque centrale | M22, lecture (d) ; ADR 0005, point 12 ; l. 491 à 495 | Π^CB est versé chaque tour, sans troncature ; il est calculé en phase 1 sur des encours d'ouverture. Une perte est un versement négatif, payé depuis M^G et soumis à la règle de caisse de l'État. E^CB reste à sa valeur initiale résolue. Troncature et recapitalisation sont réservées au J6 | Décision citant M22 |
+| Intérêts et durée de la dette | M22, lecture (c) ; ADR 0005, point 11, et § Conséquences (l. 89) ; l. 483 et 548 | Intérêt assis sur l'encours brut d'ouverture. Toute la dette porte le taux de la dernière date de décision. Au socle, aucun encours à taux fixe, qui « relèverait du bloc État et dette » | Décision citant M22 (C24) |
+| Instruments et portefeuille | M22 ; ADR 0005, point 7 ; M27, lecture (c) ; l. 1441 | **Instruments** : ni avances au Trésor ni billets ; la seule porte de monnaie centrale vers l'État est l'achat de titres par la banque centrale. **Portefeuille** : B_H ≡ 0 ; les lignes 11a, 19a-ménages et 19b-ménages restent à montant nul, sans retrait (un retrait exigerait une décision citant M22) ; le placement est assuré par la banque et la banque centrale | Décision citant M22 ou M27 |
+| Matrices et portes de la monnaie | `tab:matrice-flux` (l. 341 à 368) ; `tab:portes-monnaie` (l. 410 à 437) ; sortie de `verifier_matrices.py --strict` à `10391a1` : 9 / 28 / 28 lignes, 44 / 62 / 31 termes, « Aucun écart » | La colonne de l'État porte les lignes 2, 6, 7, 11a à 11c, 16, 19a (trois souscripteurs) et 22. La ligne 22 est une contrepartie de règlement, appliquée par le noyau. Aucune ligne ni aucun poste n'est ajouté sans décision. La CI bloque une table dont une ligne ne somme pas à zéro | Décision citant M22, et un ADR |
+| Règles de caisse | `sec:cadre-caisse` (l. 481) ; ADR 0005, point 10 | L'État paie sur M^G. Un payeur ne paie pas plus que son moyen de paiement ; la part non payée est une ligne nommée du bloc payeur, jamais un découvert implicite ni un ajout au principal. Le bloc déclare son ordre de priorité. La date du contrôle de caisse dans une phase sans ordre interne n'est pas fixée (constat de la fiche 5, § 9.8, `menages.md` l. 1978) | Décision citant M22 |
+| Dates d'effet des leviers | M22 ; `tab:leviers-cadre` (l. 2033 à 2036) | Taux d'imposition : ligne 7, phase 6, délai 0. Dépense publique : ligne 2, phase 5, délai 0. Transferts : ligne 6, phase 6, délai 0. Les contreparties visibles le même tour sont listées | Décision du mainteneur citant M22 |
+| Variables d'état et phase 9 | M29 ; ADR 0009 ; l. 512 | Une variable d'état assise sur un flux lit le montant exécuté, au grand livre. Elle est écrite en phase 9 si aucune phase du bloc ne convient | Décision citant M29 |
+| Cible d'inflation et facteur du moteur | M30 ; ADR 0010 ; l. 222 | Toute lecture de la cible porte sur π\*_t d'ouverture. Γ^e est calculé par le moteur et n'est jamais recalculé | Décision citant M30 |
+| Bornes | #38, lecture (ii) ; `CONVENTIONS.md` § 2.4 | Une borne à seuil libre a un paramètre déclaré et un motif contre un mécanisme. Une contrainte de conservation n'a pas de paramètre : elle est déclarée dans les `\limites`, avec son activité à l'état stationnaire et un test | Décision citant #38 |
+| Fiche 3 (M25) | M25 ; l. 977 | Les allocations de chômage (ligne 6) et les cotisations et impôts sur les salaires (ligne 7) relèvent du bloc 9. La relation salaires – chômage est verticale (U^eq) : l'état stationnaire exige y = pr(1 − U^eq)N^pa (#44) | M25 |
+| Fiche 5 (M27) | Critère 10 (`menages.md` l. 188) ; § 6.3 (l. 1221 à 1224) ; § 9.4 (l. 1729) ; § 9.8 (l. 1976 à 1979) ; `sec:menages` (l. 1478, 1542, 1638) | **Lecture de H7** : H7 a une forme symbolique ; T_H et Tr sont lus au grand livre en phase 9 ; transferts et impôts du tour n agissent sur le budget du tour n + 1. **Comportement** : aucun comportement ricardien ; V_H = ν_H n_a YD^HS. **Insuffisance de dépôts pour la ligne 7** : rationnement déclaré (impôt non recouvré), sans créance fiscale. **Conditions** C23 à C25 | M27 |
+| Fiche 6 (M28) | § 3.E (`investissement.md` l. 773 à 791) ; § 6.3 (C30, C36) ; § 6.6 (C37) ; § 9.8 (l. 2291) ; `sec:investissement` (l. 1779, 1865) | **Impôt des entreprises** : l'assiette de T_F comprend la ligne 8 comptable ; T_F tombe sur Div_F, jamais sur l'investissement ; impôt anticipé T^e_F = Γ^e T_{F,t−1} (F4), exécuté et retenu en phase 9, avec un rattrapage au tour n + 1. **Dette** : B/PIB porte le solde des normes privées ; si la règle vise B/PIB, le taux d'impôt est son résultat. **Taux réel ϱ̄_L** : deux lectures (l. 1865). **Terme ζ** : il sort de la spécification si la fiche 9 retient un autre canal de niveau (M28). **Condition** C37 | M28 |
+| Statut des faits | Décision P1 du 03/10/2026 ; `CONTEXT.md` | Statuts S+O, O, R, L, V ou V+O. L'état D1 n'est pas versé | — |
+
+### 1.2 Ce que le bloc doit produire
+
+Les symboles **ne sont pas fixés** : ils le seront à l'instruction, sous le critère 21. **PIB nominal du pas** : PIB_t = C_t + G_t + I_t + ΔIN_t (lignes 1 à 4), en u.m. par pas. C'est la définition déjà employée par la fiche 6 (« p v + ΔIN », l. 1853).
+
+| Grandeur | Définition | Unité | Dénominateur | Fenêtre |
+|---|---|---|---|---|
+| Plan de dépense publique | Budget de dépense du pas, fixé en phase 2 | u.m. par pas | — | le pas, phase 2 |
+| Dépense exécutée G ; taux d'exécution | p_t·v_{G,t}, ligne 2, phase 5 ; G/plan | u.m. par pas ; fraction | plan du pas | le tour ; 12 tours |
+| Transferts Tr | Ligne 6, phase 6 | u.m. par pas | — | le tour ; 12 tours |
+| Impôts T_H, T_F ; taux apparents | Ligne 7, phase 6 ; impôt rapporté à son assiette déclarée | u.m. par pas ; fraction | assiette | le tour ; 12 tours |
+| Charge d'intérêts, brute et nette | i_B B/n_a (lignes 11a à 11c) ; i_B B/n_a − Π^CB | u.m. par pas ; part du PIB | PIB nominal sur 12 tours | 12 tours |
+| Solde primaire | T_H + T_F − G − Tr | u.m. par pas ; part du PIB | PIB nominal sur 12 tours | 12 tours |
+| Solde public | Solde primaire − i_B B/n_a + Π^CB = −(ΔB − ΔM^G) | u.m. par pas ; part du PIB | PIB nominal sur 12 tours | 12 tours |
+| Émission | ΔB^prim par souscripteur, ligne 19a, phase 7 | u.m. par pas | — | le pas |
+| Encaisse du Trésor M^G ; encaisse M^G\* | Ouverture ; clôture ; rapport aux paiements bruts du pas | u.m. ; tours de paiements | paiements bruts du pas | ouverture, clôture |
+| Dette publique | Brute B ; nette de l'encaisse B − M^G ; consolidée État et banque centrale B − M^G − E^CB = B_H + B_Bk + Res − L^CB ; part détenue par la banque centrale B_CB/B | u.m. ; années de PIB ; fraction | test zéro : 12 × PIB du pas ; restitution : somme des 12 derniers PIB | ouverture (test zéro) ; clôture (restitution) |
+| Taux des titres i_B | Taux de la dernière date de décision (l. 483) ; règle à déclarer avec `monnaie` | par an, taux de flux | — | phase 1 |
+| Variables d'état du bloc, si l'option en a | Par exemple : dépense du pas précédent, taux apparent de la dette, impôt retardé | unité propre | — | ouverture |
+| Parts non payées, si lignes nommées | Dépense rationnée ; impôt non recouvré ; perte de la banque centrale non versée | u.m. par pas | — | le pas |
+
+### 1.3 Ce qu'il lit
+
+- **Ouverture** :
+  - B_Bk et B_CB (B_H ≡ 0) ; M^G ; ses variables d'état ;
+  - π\*_t et Γ^e (moteur) ;
+  - le dernier prix connu P_{t−1}, s'il en a besoin.
+- **Phase 1** :
+  - les leviers, lus par le moteur ;
+  - les taux arrêtés par le bloc 8, pour i_B ;
+  - Π^CB, calculé par le bloc 8 (l. 495).
+- **Phase 2** : aucun autre plan (phase sans ordre interne).
+- **Phase 4** : WB_t et N_t, comme assiettes ou bases d'allocations.
+- **Phase 5** :
+  - p_t et v_{G,t}, pour proposer la ligne 2 après les blocs 4 et 2 ;
+  - C_t, I_t et ΔIN_t, comme assiette éventuelle de T_F.
+- **Phase 6** : rien de ce qu'un autre bloc y écrit, puisque la phase n'a pas d'ordre interne (critère 2 (c)).
+- **Phase 7** :
+  - les positions exécutées des phases 5 et 6, qui donnent le besoin réalisé ;
+  - un ordre interne avec la banque et la banque centrale (C25).
+- **Phase 9** : les montants exécutés du pas, au grand livre (M29).
+- **Leviers du joueur** : taux d'imposition, dépense publique, transferts. Aucun autre sans décision.
+- **Décisions qui le contraignent** :
+  - M13, M19 (critère de J1), M22 (ADR 0005), M24 (ADR 0007), M25 et M26 (ADR 0008), M27, M28, M29 (ADR 0009), M30 (ADR 0010) ;
+  - décision du 03/10/2026 sur #38 ;
+  - P14 (décision par paire) et P16 (a) (script d'état stationnaire à la branche n° 4 bis).
+
+### 1.4 Frontières
+
+**Blocs décidés**
+- **Ménages (fiche 5, M27)** : le bloc 5 lit T_H, Tr, i_B et la ligne 19a-ménages (nulle). Les hypothèses provisoires de `sec:menages` sont à remplacer, et l'impôt non recouvré à déclarer. Critères 12 et 14.
+- **Investissement (fiche 6, M28)** :
+  - le bloc 6 lit G (ligne 2) et T_F ; l'assiette de T_F est fixée ;
+  - B/PIB est le résultat des normes privées (§ 3.E) ;
+  - ϱ̄_L reste entre deux lectures (l. 1865) ;
+  - condition C37 ; le terme ζ n'est garanti que si la fiche 9 ne retient pas un autre canal de niveau.
+
+  Critères 4, 5, 6, 9 et 14.
+- **Travail (fiche 3, M25)** : la verticale U^eq ; allocations de chômage et cotisations. Critères 6 et 14.
+
+**Blocs en instruction, tenus par `monnaie`**
+- **Banque commerciale (fiche 7)** :
+  - C19 : la banque souscrit le reliquat ;
+  - C22 : limite de détention, dont l'activation est le placement raté ;
+  - E^Bk entre dans l'identité de la dette.
+
+  Critères 5, 12 et 13.
+- **Banque centrale et anticipations (fiche 8, décidée par paire)**. Critères 5, 6, 8, 9, 11, 12, 13 et 18.
+
+**Frontière dette publique** (`docs/blocs/README.md` § 2, l. 31) :
+- chez `macro` : le solde, la dynamique de la dette et la règle budgétaire ;
+- chez `monnaie` : le placement (banque, banque centrale) et la prime.
+
+**`jeu`** : critère 17 et avis au § 7.
+
+**Points de frontière à coordonner avec la fiche 8**. `macro` n'a pas consulté `monnaie` à ce jalon ; ces points sont à reprendre dans le jalon 1 de la fiche 8 ou à sa validation :
+- (a) **#44** :
+  - quelle variable ferme le niveau d'activité ;
+  - un tableau de comptage commun ;
+  - **une seule action intégrale par condition stationnaire**, puisque sous la verticale de M25 la cible d'inflation et U = U^eq sont une même condition ;
+  - les deux lectures de ϱ̄_L (l. 1865).
+- (b) **C36 et C37** : mesure conjointe, sur la même maquette, avec ζ dans l'ordre de grandeur de M28 (4 à 8, hypothèse).
+- (c) **#56** : la propriété attendue est écrite une seule fois, avant l'essai. `macro` en propose le texte au critère 18.
+- (d) **i_B** :
+  - `tab:instruments` (l. 277) en confie la règle à `sec:finances_publiques`, mais la prime relève de `monnaie` ;
+  - à fixer : rapport à i_CB, prime nulle ou mécanisme, date.
+- (e) **Π^CB négatif et E^CB** (#26, points 1 et 2) :
+  - ligne nommée ou règle de recapitalisation, et quel bloc la propose ;
+  - effet sur l'identité B − M^G.
+- (f) **Phase 7 (C25)** : souscription primaire et achats décidés de la banque centrale (19a-BC, 19b-banque).
+- (g) **M^G\* et réserves** : chaque impôt draine des réserves ; l'effet du niveau de M^G\* sur Res et L^CB à la clôture (légende de `tab:leviers-cadre`, l. 2024).
+- (h) **Dominance budgétaire** (pays joué, intérêts financés par le déficit) et divergence de C2 (`monnaie`, fiche 6 § 6.6, l. 1540 et 1550).
+- (i) **Symbole de la dette** : `sec:menages` emploie déjà b pour « la dette publique nette détenue hors banque centrale en années de revenu hors intérêts » (l. 1546).
+
+### 1.5 Ce que la fiche ne tranche pas, et questions ouvertes
+
+**Hors du périmètre**
+- **Défaut, restructuration, prime souveraine endogène, plafond indicatif** (v1.5, `eq:spread` l. 1223, `eq:default` l. 1528, plafond l. 1539 à 1541) : J6, `monnaie`.
+- **Avances au Trésor, monétisation, billets** : absents du socle (ADR 0005, point 7) ; instabilité 2.
+- **Dette en devise, tarifs** : J5.
+- **Composition de la dépense et effets d'offre** (investissement public, éducation, santé, capital public ; v1.5 l. 1472 à 1480) : aucun levier d'offre au socle (M28 ; #37, ouverte jusqu'au J7).
+- **Recettes multiples de la v1.5** (l. 1452 à 1470) :
+  - fiscalité de la consommation : renvoyée au catalogue des leviers du J4 (fiche 5, Q11) ;
+  - capitation, capacité administrative et courbe de Laffer : décrites au § 3 comme éléments de l'option A, leur retrait est motivé.
+- **Entreprises publiques, nationalisation** : J7.
+- **Strates de ménages** : fiche 5, variante D, J4.
+- **Calibration** : J3. Les bandes du test zéro sont confirmées avec O1 avant l'essai (M19).
+
+**Questions ouvertes à instruire**
+- **Q1 — Règle budgétaire de référence.** Options à instruire :
+  - **A (v1.5)** :
+    - facteur des achats `eq:fiscrule` (l. 1513 à 1518) ;
+    - recettes (l. 1457 à 1470) ;
+    - contrainte `eq:gbc` et dynamique `eq:debtdyn` (l. 1500 à 1503) ;
+    - taux apparent `eq:iapp` (l. 1484 à 1490) ;
+    - placement (l. 1520 à 1527).
+  - **B (v2.0)**, branche active de D1 : `tax_rule=True`, `fiscal_rule=False` (`archive/faits_mesures_G_K.md` l. 11) :
+    - multiplicateur des impôts sur le revenu (`policies.py` l. 73 à 96) ;
+    - émission vers une encaisse égale à `gov_cash_ratio` × PIB annuel (`model.py` l. 1215, `gov_cash_ratio` = 0,04 par défaut, l. 201) ;
+    - placement aux ménages, puis à la banque dans sa limite (l. 1220 à 1244).
+  - **Nouvelles** :
+    - reprise intégrale de la charge d'intérêts (« T9 », fiche 6 § 3.L, l. 934) ;
+    - réaction de Bohn (fiche 6 § 6.6) ;
+    - instrument ancré sur l'activité (finance fonctionnelle, Lerner, 1943) ;
+    - dépense et taux d'imposition fixés, forme des modèles SIM et PC de Godley et Lavoie (2007), lus par reproduction.
+- **Q2 — Instrument qui porte le résultat** : dépense, taux d'imposition des ménages ou transferts (critères 4 et 5).
+- **Q3 — Fermeture du niveau d'activité** (#44, avec la fiche 8 ; critère 6).
+- **Q4 — Charge d'intérêts** (C23, C37 ; critère 9).
+- **Q5 — Durée de la dette** (C24 ; critère 10).
+- **Q6 — Encaisse M^G\* et contrôle de caisse** (#26, point 3 ; P2 ; critère 11).
+- **Q7 — Ordre des paiements de l'État et parts non payées** (#26, point 1 ; critère 12).
+- **Q8 — Assiettes et phases des impôts et transferts** : T_H sur WB_t (phase 4), sur YD_{t−1} ou autre ; cotisations ; allocations ; T_F selon la fiche 6 (critères 2 et 14).
+- **Q9 — Phase 7 et taux des titres** (C25 ; i_B avec `monnaie` ; critère 13).
+- **Q10 — Forme du plan de dépense.** Trois formes candidates :
+  - part du PIB passé, prolongée par Γ^e ;
+  - volume indexé ;
+  - autre.
+
+  Sous M24 (g), un plan en u.m. a une élasticité de −1 du volume au prix du pas. La gratuité de la sur-commande est à traiter (#53 ; critère 17 (e)).
+- **Q11 — Règle de référence et leviers du joueur** (pays joué ou non joué), sans drapeau de mode (critère 19).
+- **Q12 — Restitution** : dette brute ou nette ; soldes ; charge d'intérêts (critères 5 et 17).
+
+### 1.6 Conditions et issues reçues : traitement
+
+Chaque élément listé par #73 est **retenu**, **écarté** ou **transmis**, avec sa raison. Les éléments que les fiches décidées ont transmis à la fiche 9 sans figurer dans #73 suivent, sous la ligne de séparation.
+
+| Élément | Source | Traitement | Où | Raison |
+|---|---|---|---|---|
+| C23, règle face à la charge d'intérêts | Fiche 5 § 6.3 (`menages.md` l. 1222) | Retenu | Critère 9 (a) | Elle fixe le signe de long terme du canal rentier (Auclert, 2017, p. 17, lu par `monnaie`) |
+| C24, durée de la dette | Fiche 5 § 6.3 (l. 1223) ; ADR 0005, § Conséquences (l. 89) | Retenu | Critère 10 | Variante instruite ; si elle est retenue, la décision cite M22 (l. 548) |
+| C25, ordre de la phase 7 sous B_H ≡ 0 | Fiche 5 § 6.3 (l. 1224) | Retenu, avec les fiches 7 et 8 | Critère 13 | L'ordre de la phase 7 reste « à fixer par leurs fiches » (l. 535). La variante de Tobin est transmise au J6 |
+| C36, gain statique et stationnarité de l'action intégrale | Fiche 6 § 6.3 (`investissement.md` l. 1408 à 1413) ; rédaction de M28 (l. 1849) | Retenu comme mesure conjointe ; la règle de taux reste à la fiche 8 | Critères 8 (d) et 9 (c) | M28 : « côté monétaire, C36 se juge avec la règle de la fiche 9 » |
+| C37, qui paie le surcroît d'intérêts | Fiche 6 § 6.6 (l. 1531 à 1541) | Retenu (exigence) | Critère 9 (b) | Sans reprise budgétaire, aucun ζ testé ne tient C36 (fiche 6 § 5 et § 6.6, maquettes) |
+| Règle visant B/PIB sans surdétermination | Fiche 6 § 3.E (l. 783 et 784) | Retenu | Critères 4 (b) et 5 | Identité de la dette (§ 1, point 1) |
+| Grandeurs lues par le bloc 5 ; hypothèses provisoires | Fiche 5, critère 10 (`menages.md` l. 188) ; `sec:menages` l. 1542 | Retenu | Critère 14 | La fiche 5 a écrit ses formes symboliques pour que la fiche 9 ne la réécrive pas |
+| #26, point 1 : perte de la banque centrale non payée | #26 | Retenu côté État ; transmis à la fiche 8 côté banque centrale (E^CB, recapitalisation) | Critère 12 (c) ; point (e) du § 1.4 | Répartition décidée par P13 : point 1 → fiches 8 et 9 |
+| #26, point 3 : règle de M^G\* | #26 ; renvoi du mainteneur du 02/10/2026 | Retenu | Critère 11 | L'illustration du point 3 est reproduite (5,69 à 25,80 ans, commande au compte rendu) |
+| P2 : notation de M^G\* | Décision du 03/10/2026 ; commentaire sur #26 | Retenu | Critères 11 (d) et 21 | La marque ∗ (cible) et « stationnaire » (barre) se cumulent sans explication (`CONVENTIONS.md` § 5.2 ; l. 502, 2064, 2410) |
+| #44, variable de fermeture du niveau d'activité | #44 et ses commentaires | Retenu pour les variantes budgétaires ; fermeture déclarée avec la fiche 8 | Critère 6 | P14 ; #44 se ferme à la n° 4 bis (P16 (a)) |
+| #56, propriété attendue avant l'essai | #56 | Retenu comme critère partagé : texte proposé, à arrêter avec `monnaie` | Critère 18 | #56 demande une propriété écrite par `monnaie` et `macro` avant l'essai |
+| — | — | — | — | — |
+| Insuffisance de dépôts pour la ligne 7 | Fiche 5 § 9.8 (l. 1978) ; `sec:menages` l. 1441 | Retenu | Critère 12 (d) | Le traitement compatible avec le socle est une ligne nommée du bloc 9 |
+| Gratuité de la sur-commande (#53) | Fiche 2 § 7 (`production.md` l. 914) ; fiche 5, condition 9 de `jeu` (`menages.md` l. 1468) | Retenu | Critère 17 (e) | « Soit supprimée, soit rendue visible et coûteuse (fiche 9, J4) » |
+| Assiette et date de T_F | Fiche 6 § 9.8 (`investissement.md` l. 2291) | Retenu | Critère 14 (b) | Contrat de la fiche 6 (F3, F4) |
+| Dépendance de B/PIB à π̄ (C30) | Fiche 6 § 6.3 (l. 1397) | Retenu (mesure) | Critère 5 (d) | Renvoi explicite à la fiche 9 |
+| #26, point 2 : E^CB constant en niveau | #26 ; P13 (point 2 → #72) | Transmis à la fiche 8 ; la fiche 9 porte E^CB dans son identité | Critère 5 (b) ; point (e) du § 1.4 | Décision de P13 |
+| Allocations de chômage, cotisations | l. 977 | Retenu comme options de Tr et de T_H | Critère 14 (e) | Renvoi de `sec:travail` |
+| Capital public, effets d'offre de la dépense | Fiche 6, critère 10 (a) ; #37 | Écarté au socle ; transmis au J7 | § 1.5 | M28 : aucun levier d'offre au socle |
+| Fiscalité de la consommation | Fiche 5, Q11 | Écartée du socle ; transmise au catalogue du J4 | § 1.5 | Amendement de la fiche 5, Q11 |
+| Avances au Trésor ; prime et défaut | ADR 0005, point 7 ; v1.5 l. 1223, 1528 | Écartés du socle ; transmis à J5 et J6 (`monnaie`) | § 1.5 | Instruments absents (M22) ; instabilité 2 |
+
+## 2. Critères d'évaluation, écrits avant l'instruction
+
+**Statut** : proposés par `macro` le 04/10/2026, **à valider par le mainteneur** avec ceux des fiches 7 et 8 (P14), avant tout commit d'instruction (jalon 1 de #73). La liste est fermée : elle ne se déplace pas après observation (`docs/exigences.md` § 2.5). Un amendement adopté avant l'instruction se consigne sous le tableau.
+
+Correspondance avec le gabarit :
+
+| Critère du gabarit | Critère de la fiche |
+|---|---|
+| 1 | 1 |
+| 2 | 4, 5 et 7 |
+| 3 | 8 |
+| 4 | 20 |
+| 5 | 17 |
+| 6 | 16 et 19 |
+
+Critères propres au bloc : 2, 3, 6, 9 à 15, 18, 21, 22 et 23.
+
+**Exigences** (elles peuvent écarter une option) :
+- 1 à 3 ;
+- 4 (a) à (c) ;
+- 5 (a) à (c) ;
+- 6 ;
+- 7 ;
+- 8 (a) à (d), pour le rayon spectral ;
+- 9 (a) à (c) ;
+- 10 (a) et (b) ;
+- 11 (a) à (c) ;
+- 12 ; 13 ; 14 ; 15 ; 16 ;
+- 17 (b) et (e) ;
+- 18 au J4 ;
+- 19 (sans historique, état caché ni drapeau) ;
+- 20 (sans itération) ;
+- 21 et 23.
+
+**Mesures** (elles décrivent sans écarter) :
+- 4 (d) et 5 (d) ;
+- 8 : période et demi-vie, et (e) ;
+- 9 (d) ; 10 (c) ;
+- 11 (d), qui est une lecture soumise au mainteneur ;
+- 17 (a), (c), (d), (f) et (g) ;
+- 18 à la fiche ;
+- 19 et 20 (décomptes) ;
+- 22.
+
+| N° | Critère | Ce qui est attendu (seuil ou forme du verdict) | Par quoi on le vérifie | Qui | Quand |
+|---|---|---|---|---|---|
+| 1 | Cohérence stock-flux (gabarit 1 ; `macro`) — **exigence** | (a) **Lignes proposées par le bloc** : 2 (G = p_t·v_{G,t}, phase 5, après les blocs 4 et 2 ; État −, entreprises « courant » +) ; 6 (Tr) et 7 (T_H, T_F), en phase 6 ; 11a à 11c (intérêts payés, phase 6 ; 11a nulle) ; 19a (montant émis en phase 7, réparti entre souscripteurs selon l'ordre du critère 13). Reçue : ligne 16 (bloc 8, phase 8 (b)). Contrepartie : ligne 22 (noyau). Signatures de `tab:portes-monnaie` inchangées. Toute ligne ajoutée (part non payée, critère 12) est déclarée avec sa phase et sa signature : c'est un contrat partagé, donc une décision citant M22. (b) B et M^G ne varient que par leurs lignes ; aucun poste n'est obtenu par différence ; V_G = M^G − B est calculée par le stock et par les flux. (c) La contrainte budgétaire de l'État est écrite sur un pas : ΔB − ΔM^G = G + Tr + i_B B/n_a − T_H − T_F − Π^CB. (d) L'identité de la dette (§ 1, point 1), dérivée de `tab:matrice-bilans`, est écrite et contrôlée sur le cas à la main | Matrice des flux de l'option, en tableau. **Cas à la main sur un pas** : dépense publique +10 %, souscription primaire d'un montant décidé par la banque centrale, reliquat par la banque ; lignes 2, 6, 7, 11b, 11c, 16, 19a, 20 et 22 ; B, M^G, Res ; V_G par le stock et par les flux. Si une table change : `uv run python outils/verifier_matrices.py --strict <copie>`, sortie citée avant et après | `macro` ; `monnaie` (19a, 11c, 16) | fiche ; J3 (identités, ε = 1e−12 × S, M22) |
+| 2 | Contrats hérités, phases et lectures (§ 1.1 ; ADR 0005, 0008, 0009 ; `macro` ; `monnaie` pour (d)) — **exigence** | (a) Le plan de dépense de la phase 2 ne lit que l'ouverture et la phase 1 (ni plan de la phase 2, ni revenu du pas). (b) La ligne 2 est proposée en phase 5, après les blocs 4 et 2, sur v_{G,t} (M24 (g)) ; le bloc ne lit ni C ni I du pas pour la proposer. (c) **Phase 6 sans ordre interne** : T_H, T_F, Tr et les intérêts se calculent sur l'ouverture, les phases 1 à 5 et les taux de la phase 1. Une assiette qui lirait une ligne de la phase 6 (intérêts reçus, dividendes) exige un ordre interne de la phase 6, donc une décision citant M22 et un ADR. (d) **Phase 7** : le besoin réalisé se lit sur les positions exécutées des phases 5 et 6, avec Π^CB de la phase 1 (l. 495) ; l'ordre interne (critère 13) est déclaré pour report dans `tab:phases` (l. 535). (e) Une variable d'état assise sur un flux prend le montant exécuté ; elle est écrite en phase 9 si nécessaire (M29). (f) Les dates d'effet des trois leviers de `tab:leviers-cadre` sont confirmées, ou une révision est proposée. (g) Chaque taux annuel est classé selon l'ADR 0008, I.2. (h) La matrice des lectures reste triangulaire | Tableau phase → lit / écrit, par option ; triangularité vérifiée à la main | `macro` ; `monnaie` ((d)) | fiche ; J2 (test de triangularité de l'ordonnanceur) |
+| 3 | Relevé des lignes de `tab:matrice-flux` (critère d'acceptation de #73 ; `macro`) — **exigence** | Chacune des **28 lignes** reçoit : le bloc qui la propose et sa phase, concordante avec la colonne « Lignes » de `tab:phases` ; ou « contrepartie de règlement » (17, 20, 22) ; ou « montant nul au socle », avec la décision qui le fixe (11a, 19a-ménages, 19b-ménages : M27). **Verdict** : zéro ligne sans bloc qui la propose ; zéro ligne à deux propriétaires. Les lignes dont le propriétaire relève des fiches 7 et 8 (9, 10, 12, 13, 15, 16, 19b-banque, 21 ; la souscription des lignes 19a-banque et 19a-BC) sont reprises de M31 et M32, ou signalées « en attente » avec la fiche qui les tient | Tableau au § 9 de la fiche. Décompte des lignes par `uv run python outils/verifier_matrices.py --strict` (28) ; lecture de la colonne « Lignes » de `tab:phases` (l. 528 à 537). Commandes et sorties citées | `macro` ; `monnaie` (lignes des blocs 7 et 8) | fiche, § 9, après M31 à M33 (jalon 4 de #73) |
+| 4 | État stationnaire en forme fermée, sans surdétermination (gabarit 2 ; fiche 6 § 3.E ; `macro`) — **exigence** pour (a) à (c), **mesure** pour (d) | (a) **Trajectoire de référence** des fiches 3 à 6 : volumes en hausse de γ = (1 + g)^{1/n_a} − 1 par pas, prix de (1 + π̄)^{1/n_a} − 1, nominal Γ̄. Chaque grandeur du bloc a sa valeur stationnaire en forme fermée, sans simulation : G/PIB, Tr/PIB, taux d'imposition apparents, solde primaire, solde public, charge d'intérêts brute et nette, dette (critère 5), M^G\*/PIB (critère 11), B_CB/B (avec la fiche 8). Chaque variable d'état a sa valeur stationnaire, d'où se déduit l'état initial résolu, sans préparation. (b) **Comptage** : tableau « équation stationnaire → grandeur qu'elle détermine » pour le socle (blocs 2 à 9). Il comprend le supermultiplicateur (fiche 6 § 3.E, l. 775), l'identité de la dette, la condition de fermeture (critère 6), les ancres de la règle budgétaire (G/PIB, taux d'imposition, transferts, cible de dette ou de solde) et r̄ (fiche 8). **Verdict** : autant d'ancres que d'inconnues. Aucune grandeur ancrée deux fois : viser à la fois un taux d'impôt et B/PIB surdétermine l'état (fiche 6, l. 784). Aucune ancre manquante : une règle sur ΔB ou sur le solde sans ancre de niveau laisse un continuum. L'identité de Domar (§ 1, point 2) est montrée redondante (loi de Walras) et n'est pas comptée comme une équation de plus. (c) **Indépendance envers n_a** : les dépendances par n_a(Γ̄ − 1) (3,9802 %, 3,9671 % et 3,9620 % à n_a = 4, 12 et 52, g = π̄ = 2 %) et par le facteur de fenêtre sont déclarées et chiffrées ; toute autre est écrite avec la condition qui la supprime. (d) **Dépendance à π̄**, chiffrée à π̄ = π\* ∈ {0 ; 2 % ; 10 %}. La non-superneutralité est déclarée (avec C15 de la fiche 8) | Calcul à la main dans la fiche ; script d'état stationnaire de la branche n° 4 bis (P16 (a)). **Au J3** : un pas sans choc depuis l'état résolu laisse les variables d'état du bloc sur leur trajectoire à 1e−10 près en relatif (seuil reconduit) ; ratios du script égaux à ceux du moteur à t = 0 à 1e−9 près (ADR 0005, point 20) | `macro` ; `monnaie` ((b) pour r̄ ; (d) pour C15) | fiche ; n° 4 bis ; J3 |
+| 5 | Ratio dette publique / PIB stationnaire (critère de passage de J1, M19 ; `macro`) — **exigence** pour (a) à (c), **mesure** pour (d) | (a) **Définition publiée**. Numérateurs possibles :<br>– dette brute B = B_H + B_Bk + B_CB ;<br>– dette nette de l'encaisse, B − M^G ;<br>– dette consolidée de l'État et de la banque centrale, B − M^G − E^CB = B_H + B_Bk + Res − L^CB.<br>La fiche dit lequel est le ratio du critère de J1, lequel est restitué et lequel entre au test zéro. **Dénominateur** : PIB nominal (§ 1.2). **Unité** : années de PIB. **Fenêtre au test zéro** : stock d'ouverture / (12 × PIB du pas) (M22, lecture (e)). **Fenêtre à la restitution** : stock de clôture / somme des 12 derniers PIB, avec un facteur de fenêtre de 1,0216 à π̄ = 2 % et 1,0638 à 10 % (n_a = 12), et de 1,0250 et 1,0203 à n_a = 4 et 52 (π̄ = 2 %). (b) **Forme fermée**, tirée de l'identité du § 1 : (B − M^G)/(12 PIB) = ν_H·YD^HS/PIB − (L − D_F)/(12 PIB) + (E^Bk + E^CB)/(12 PIB). Chaque terme est renvoyé à sa fiche (5, 6, 7, 8). (c) **Valeurs publiées** à π̄ = π\* ∈ {0 ; 2 % ; 10 %} et n_a ∈ {4 ; 12 ; 52}, avec le solde stationnaire (Domar) ; la fiche dit quel paramètre fixe le ratio. (d) **Dépendance à π̄** chiffrée : la condition C30 en donne déjà +0,287 année de PIB entre 2 % et 10 %, par le seul côté des entreprises. Pour mémoire, la v1.5 rapporte une première cible de dette rapportée par erreur à 52 fois le PIB annuel (l. 1518, R) : l'unité de la cible se vérifie | Calcul à la main ; le script de la n° 4 bis publie le ratio (M19), ses valeurs égales à celles de la fiche aux chiffres publiés | `macro` ; `monnaie` (E^CB, B_CB) | fiche ; n° 4 bis (critère de J1) ; J3 |
+| 6 | Fermeture du niveau d'activité (#44, avec la fiche 8 ; `macro`, `monnaie`, `jeu` pour (d)) — **exigence** | (a) **Au moins deux fermetures instruites** :<br>– (i) **monétaire** : r̄ résolu (condition C3), la règle budgétaire ne visant aucune grandeur d'activité ;<br>– (ii) **budgétaire** : un instrument (dépense, impôt ou transferts) ancré sur l'écart d'activité, de sorte que y = pr(1 − U^eq)N^pa, avec r\* posé en paramètre.<br>S'y ajoutent les deux lectures de ϱ̄_L (l. 1865) : « taux réel stationnaire posé en paramètre, la dépense publique initiale étant résolue », ou « taux réel résolu à part de la dépense publique dans le PIB donnée ». (b) **Une seule action intégrale par condition stationnaire.** Sous la verticale de M25 (C1), π̄ = π\* et U = U^eq sont une même condition. Une action intégrale budgétaire sur l'activité et l'action intégrale C2 de la fiche 8 créeraient un continuum de couples (r̄, G/PIB). **Verdict** : l'état stationnaire est unique (rang plein du comptage du critère 4 (b)) et ne dépend pas de l'état initial. (c) La fermeture est déclarée avec la fiche 8, à M32 et M33 ; #44 se ferme avec le script de la n° 4 bis. (d) **Persistance**, critère de `jeu` (commentaire de #44 ; `sec:menages` l. 1564), reconduit : après une hausse de la dépense publique ou des transferts aux tours 1 à 12, l'écart de production revient sous la moitié de son pic en **au plus 60 tours**, sous la fermeture retenue | Comptage du critère 4 ; formes fermées. Pour (d), maquette conjointe (blocs 2 à 6 décidés, règle de la fiche 9, règle de taux de la fiche 8), commande et sortie citées, puis scénario au J3 | `macro` ; `monnaie` ; `jeu` ((d)) ; mainteneur | fiche, avec la fiche 8 ; M32-M33 ; n° 4 bis ; J3 ((d)) |
+| 7 | Aucune vitesse d'ajustement ne détermine l'état d'arrivée (`docs/exigences.md` § 2.7 ; `macro`) — **exigence** | (a) Ni les gains de réaction de la règle budgétaire, ni les vitesses, ni la durée du pas n'apparaissent dans les formes fermées des critères 4 et 5. **Cas à examiner explicitement** :<br>– (i) **v1.5**, `eq:fiscrule` (l. 1513 à 1518) : facteur proportionnel des achats sur b\* − b, φ_b = 0,3 ; l'écart stationnaire à b\* dépend-il de φ_b ?<br>– (ii) **v2.0**, `update_taxes` (`policies.py` l. 73 à 96 ; actif dans D1, `tax_rule=True`, faits l. 11) : le déficit visé est le déficit de croissance moins 0,20 × l'écart de dette nette (`tax_debt_feedback`, `model.py` l. 297), à la vitesse `tax_adjust_speed` (l. 298) ; l'arrivée n'est exacte que si la croissance estimée (l. 86, lissée et écrêtée) égale la croissance réalisée, à vérifier ;<br>– (iii) **règle de Bohn** : la part reprise du surcroît d'intérêts, φ_B/(g − i + φ_B), est une hypothèse de `monnaie` (fiche 6 § 6.6, l. 1490), à établir ;<br>– (iv) **reprise T9**, sans vitesse.<br>Toute dépendance subsistante est écrite et chiffrée pour un gain divisé et multiplié par 2, avec la condition qui la supprime (terme de tendance, comme à la l. 617). (b) Aucun intégrateur sans ancre (critère 4 (b)) | Calcul à la main. **Au J3**, depuis l'état résolu : dépense publique +1 % pendant 12 tours, puis branches où toutes les vitesses et tous les gains du bloc sont multipliés par 0,5 et par 2. Écart relatif de chaque ratio du bloc entre les branches au plus de **1e−6 après 2 160 pas** (horizon de l'amendement prospectif du critère 6 de la fiche 6, M28 ; à confirmer) | `macro` | fiche ; J3 |
+| 8 | Stabilité (gabarit 3 ; `macro` ; `monnaie` pour (d) et (e)) — **exigence** pour (a) à (d) quant au rayon spectral, **mesure** pour la période, la demi-vie et (e) | (a) **Instabilités connues** (`archive/faits_mesures_G_K.md` l. 225 à 243), non réintroduites sans fait nouveau :<br>– n° 2 : avances au Trésor sans intérêt ;<br>– n° 3 : coupon de consolidation au taux du moment, pour toute variante de durée (critère 10) ;<br>– n° 5 : dividende de trésorerie sans règle fiscale (v2.0 : `treasury_rebate_speed`, `model.py` l. 203, interdit avec `tax_rule`, l. 379 et 380) ;<br>– n° 4 : estimateur de r\* sans ancre, si la fermeture lit un taux ;<br>– n° 15 : un plafond produit un cycle (v1.5, facteur écrêté à [0,6 ; 1,6], l. 1515 ; v2.0, exécution des dépenses `rhoG` écrêtée à [0,2 ; 1], `model.py` l. 1244) ;<br>– n° 16.<br>Résultats de maquette v3 discutés (fiche 6 § 6.6, maquette de `monnaie` ; ce ne sont pas des faits de la première tentative) : une cible intégrale de B/PIB est explosive pour tous les ζ testés ; une règle de Bohn localement stable manque l'arrivée dans deux cas sur quatre ; T9 suffit. (b) **Boucle propre** (dette et règle), revenus privés et taux exogènes : modules strictement inférieurs à 1 à la calibration et pour chaque gain multiplié par 0,5 et par 2 ; demi-vie et période publiées. (c) **Boucle conjointe avec les blocs 2 à 6** (N1 à N7, T2 à T4, P1 à P3, H2 à H6, S-ζ et F), taux exogène : rayon spectral strictement inférieur à 1 à la calibration (exigence) ; aux gains ×0,5 et ×2, module, demi-vie et période publiés (mesure) ; θ_H effectif sous la règle retenue (critère 14). (d) **Boucle complète avec la règle de taux de la fiche 8** : C36 (critère 9 (c)). (e) Le couple « règle de taux – règle budgétaire » est situé dans la classification de Leeper (1991) en politiques actives et passives (cité par `monnaie`, fiche 6 § 6.6, résumé lu) | Faits § 6 à 8, puis `tab:instabilites`. Valeurs propres calculées à la main ou par `uv run python`, commande et sortie citées | `macro` ; `monnaie` ((d), (e)) | fiche ; J3 |
+| 9 | Charge d'intérêts : C23, C37 et C36 (fiches 5 et 6 ; `macro`, `monnaie`, `jeu` pour (d)) — **exigence** pour (a) à (c), **mesure** pour (d) | (a) **C23** : la règle de référence déclare sa réponse à la charge d'intérêts (forme, délai en tours, part reprise à fréquence nulle), et le signe de long terme du canal rentier qui en résulte (`sec:menages` l. 1546). (b) **C37** : la règle de référence (test zéro, pays non joués) reprend aux agents privés, à fréquence nulle, le surcroît d'intérêts sur B qu'entraîne une hausse durable du taux. Elle doit garantir que C36 (i) tient, tous canaux réunis, et que l'arrivée existe après G +1 % permanent. (c) **C36**, rédaction de M28 (`investissement.md` l. 1849) :<br>– (i) gain statique de la demande totale au taux réel strictement négatif ;<br>– (ii-a) r̄ et π̄ résolus par point fixe à 1e−6 près en relatif dans chaque branche ×0,5 et ×2 de toutes les vitesses, avec π̄ = π\* ;<br>– (ii-b) arrivée simulée après G +1 % permanent, à moins de 1e−3 en relatif, en au plus 20 demi-vies de la racine dominante ;<br>– (iii) module dominant inférieur à 1, hors racine nominale et hors état inerte déclaré, **et** (ii-b) satisfait.<br>C36 est mesurée à la fiche sur maquette, avec ζ de 4 à 8 (hypothèse de M28), puis au J3 sur le moteur. (d) **Régime « intérêts financés par le déficit »** (pays joué) : déclaré comme dominance budgétaire (Leeper, 1991), non comme référence ; ses conséquences (gain positif de la demande au taux, divergence de C2) sont chiffrées sur la maquette ; sa disponibilité pour le joueur est soumise à `jeu` et au mainteneur | Maquette conjointe (fiches 2 à 6 décidées, règle de la fiche 9, règle de taux de la fiche 8), commandes et sorties citées ; au J3, test C36 de la fiche 6 (§ 9.6) | `macro` ; `monnaie` ; `jeu` ((d)) | fiche, avec la fiche 8 ; M32-M33 ; J3 |
+| 10 | Durée de la dette : C24 (fiche 5 ; ADR 0005, § Conséquences ; `macro`, `monnaie`) — **exigence** pour (a) et (b), **mesure** pour (c) | (a) **Variante de référence** : toute la dette au taux de la dernière date de décision (M22 ; l. 548). (b) **Au moins une variante** avec une part à taux fixe ou une maturité moyenne (v1.5, `eq:iapp`, l. 1484 à 1490 : taux apparent à mémoire, fraction refinancée 1/T̄ plus déficit/B, dette consolidée avec la banque centrale). Pour chaque variante :<br>– le contrat qu'elle rouvre (décision citant M22 ; lignes 11a à 11c ; sortie de `verifier_matrices.py`) ;<br>– ses variables d'état : un taux apparent agrégé, de valeur stationnaire i_B sous taux constant, sans historique de cohortes ;<br>– son effet sur la vitesse du canal rentier (C24) et sur C36 ;<br>– l'examen de l'instabilité n° 3.<br>(c) La part détenue par la banque centrale « se reprice » immédiatement (v1.5, l. 1493) : frontière avec la fiche 8, mesurée | Formes fermées ; maquette pour (b), commande et sortie citées | `macro` ; `monnaie` | fiche ; M33 |
+| 11 | Encaisse du Trésor M^G\* (#26, point 3 ; P2 ; ADR 0005, point 13 ; `macro`) — **exigence** pour (a) à (c), **mesure** pour (d) et (e) | (a) **Une règle de M^G\*** qui donne un ratio M^G\*/PIB stationnaire : par exemple en proportion des paiements bruts du pas, ou de la dépense planifiée (proposition de `monnaie`, #26). Une encaisse de niveau fixe est écartée sauf fait nouveau : sous croissance nominale, la dépense de la phase 5 finit par la dépasser. L'illustration de #26 est reproduite : rationnement après 5,69 ans (croissance nominale de 4 %, dépense égale à 80 % des paiements bruts) à 25,80 ans (2 %, 60 %). La règle ne lit que des grandeurs disponibles en phase 7. (b) **Contrôle de caisse inactif à l'état stationnaire, marge chiffrée.** M^G_t = M^G\*_{t−1} couvre les paiements qui précèdent les recettes. Avec M^G\*_t = m × P_t (P : paiements bruts du pas), deux lectures du contrôle dans la phase 6, sans ordre interne, sont à instruire :<br>– (i) **net par phase** : m ≥ Γ̄ × max{s_G ; 1 − T/P}, s_G étant la part de G dans P ; à g = π̄ = 2 % et n_a = 12, Γ̄ − 1 = 0,3306 % ;<br>– (ii) **brut, paiements avant recettes** : m ≥ Γ̄ > 1, ce qui contredit la borne de la l. 502 (« n'excède pas les paiements bruts d'un pas ») et demande une décision citant M22.<br>(c) **Contrat partagé** : la l. 502 et la l. 2064 disent que M^G\* « n'est pas un paramètre ». La fiche déclare si sa règle introduit un paramètre du bloc ; `architect` qualifie l'effet sur l'ADR 0005 (point 13). (d) **P2**, deux lectures :<br>– (i) garder M^{G\*}, marque de cible cohérente avec une encaisse visée à chaque pas, renommer « encaisse stationnaire » en « encaisse visée » et l'expliquer dans `tab:symboles` (l. 2410) ;<br>– (ii) noter la valeur stationnaire par la barre.<br>Avis au § 5. (e) L'effet du niveau de M^G\* sur les réserves et le refinancement est déclaré avec la fiche 8 | Forme fermée ; cas à la main sur 24 tours de croissance nominale ; au J3, aucun rationnement sur 720 pas | `macro` ; `monnaie` ((e)) ; `architect` ((c)) ; `docwriter` ((d), dans la section) | fiche ; M33 ; J3 |
+| 12 | Ordre des paiements de l'État et parts non payées (#26, point 1 ; fiche 5 § 9.8 ; ADR 0005, points 10, 12 et 13 ; `macro`, `monnaie` pour (b) et (c)) — **exigence** | (a) **Ordre de priorité déclaré** : ligne 2 (phase 5) ; lignes 6, 11b et 11c (phase 6) ; ligne 16 négative (phase 8 (b)). (b) **Placement raté** (limite de détention de la banque, C22 de la fiche 7) : M^G clôt sous M^G\*. La fiche dit quelle dépense du tour suivant est rationnée et par quel mécanisme, par exemple un plafond du plan sur l'encaisse d'ouverture, sur le modèle du budget des ménages ; le signal précède d'un tour (l. 502). (c) **#26, point 1, côté État** : montrer à la main que sous α l'émission compte −Π^CB, calculé en phase 1, si bien qu'une perte de la banque centrale est couverte sauf placement raté. Dans ce cas, la part non versée est une ligne nommée (versement rationné, E^CB réduit) ou une règle de recapitalisation, décidée avec la fiche 8. (d) **Impôt non recouvré** (fiche 5 § 9.8 ; entreprises, D_F ≥ 0) : ligne nommée du bloc 9, sans créance fiscale, instrument absent. (e) Aucun découvert implicite, aucune avance, aucun intérêt impayé capitalisé dans le principal (pratique de la v1.5, l. 1522). (f) Chaque ligne nouvelle passe par une décision citant M22 et une sortie de `verifier_matrices.py --strict` avant et après (`cmp`) ; toutes sont inactives à l'état stationnaire, marge chiffrée | Cas à la main, postes après chaque phase : (i) placement raté de moitié sur un tour ; (ii) perte de la banque centrale égale à deux fois M^G ; (iii) impôt des ménages supérieur à leurs dépôts | `macro` ; `monnaie` ((b), (c)) ; `architect` ((f)) | fiche ; J3 ou J4 (scénarios adverses) |
+| 13 | Phase 7, émission et placement (C25 ; frontière dette publique ; `macro`, `monnaie`) — **exigence** | (a) **C25, ordre interne** : besoin de l'État, puis souscription primaire et achats décidés de la banque centrale, puis reliquat de la banque (19a-banque = besoin − 19a-BC ; C19). La ligne 19b n'est jamais en acheteur passif. La Q5 de la fiche 5 est sans objet (B_H ≡ 0). La variante de Tobin est transmise au J6. (b) La formule d'émission des l. 499 et 500 est reprise, ou une révision est proposée par une décision citant M22. (c) **i_B** : règle déclarée (rapport à i_CB, prime nulle ou mécanisme, date de fixation à la dernière date de décision, l. 483), avec `monnaie`, qui tient la prime. (d) La limite de détention de la banque (C22), si la fiche 7 la retient, et sa conséquence (critère 12 (b)). (e) Report dans `tab:phases`, ligne 7, sans cycle | Tableau de la phase 7 (qui lit, qui écrit, quelle ligne) ; triangularité | `macro` ; `monnaie` | fiche, avec les fiches 7 et 8 ; M31 à M33 |
+| 14 | Grandeurs lues par les blocs 5 et 6 (fiche 5, critère 10 ; fiche 6 § 9.8 ; `macro`) — **exigence** | (a) **Tableau des grandeurs lues**, chacune avec sa phase et sa date :<br>– par le bloc 5 : T_H (ligne 7), Tr (ligne 6), i_B (ligne 11a, nulle), ligne 19a-ménages (nulle) ;<br>– par le bloc 6 : G (ligne 2, phase 5) et T_F (ligne 7).<br>Les formes symboliques de H7, de F3 et de F4 sont conservées : la fiche 9 choisit ses règles sans réécrire les fiches 5 et 6. (b) **Impôt des entreprises** (fiche 6 § 9.8, l. 2291) : assiette avec la ligne 8 comptable ; T_F tombe sur Div_F, jamais sur l'investissement ; rattrapage au tour n + 1 ; assiette calculable sans lire la phase 6. (c) **Hypothèses provisoires remplacées** (fiche 5, critère 10 (c)) : la boucle conjointe de `sec:menages` (l. 1542) est « sans impôts ni transferts », avec θ_H = 0,8 ou 1. La fiche publie θ_H effectif sous sa règle et la part m_G de la propension totale m (fiche 5, critère 6 ; réserve 3 de la fiche 2), puis refait, ou fait refaire, le rayon de la boucle conjointe. (d) Aucune anticipation ricardienne (l. 1638), sauf option déclarée. (e) Allocations de chômage et cotisations (l. 977) : options de Tr et de T_H, avec leur assiette et leur phase | Tableau (bloc, ligne, phase, date) ; maquette conjointe pour (c) | `macro` | fiche |
+| 15 | Test zéro des ratios du bloc (`docs/exigences.md` § 2.6 ; O1 ; `macro`) — **exigence**, mesurée au J3 | Sur 60 ans (720 pas) sans choc depuis l'état résolu, pour plusieurs graines, la moyenne par blocs de 5 ans (60 pas) de chaque ratio reste dans sa bande. **Bandes proposées**, à confirmer avec O1 avant l'essai (M19) :<br>– dette publique / PIB (numérateur du critère 5) : **±0,02 année de PIB**, en absolu, parce que c'est une différence de stocks (critère 5 (b)) ;<br>– solde public / PIB sur 12 tours : ±0,2 point ;<br>– M^G\*/PIB : ±2 % en relatif ;<br>– B_CB/B : ±1 point, bande commune avec la fiche 8.<br>**Aucune part non payée** ni rationnement de la dépense sur les 720 pas. B_H/V_H est sans objet (B_H ≡ 0). Pour mémoire, sans valeur de référence :<br>– la v1.5 rapporte une dette passée de 0,61 à 0,04 en 60 ans sans règle, et de 0,40 à 0,45 avec `eq:fiscrule` (l. 1518, R) ;<br>– la v2.0 rapporte une dette publique nette de 62,4225 % du PIB dans le contrôle de F3 (faits § 8, R).<br>Toute dérive depuis l'état résolu est un défaut | Au stade de la fiche, le préalable (critère 4) ; au J3, test zéro du socle | `macro` ; mainteneur (bandes) | J3 |
+| 16 | Bornes (gabarit 6 ; #38, lecture (ii) ; `CONVENTIONS.md` § 2.4 ; `macro`) — **exigence** | (a) **Chaque borne est classée.** M^G ≥ 0 est une contrainte de conservation (sans avances). G^plan ≥ 0, Tr ≥ 0 et un taux d'imposition dans [0 ; 1[ sont des conditions déclarées, jamais des écrêtages. Un plafond du plan de dépense sur l'encaisse (critère 12 (b)) est une borne à seuil libre dont le seuil est une base (lecture (i) de la fiche 5, § 9.2). Exemples de la première tentative à classer :<br>– v1.5 : facteur écrêté à [0,6 ; 1,6] (l. 1515) ;<br>– v2.0 : multiplicateur d'impôt dans [0 ; 3] (`model.py` l. 296 ; `policies.py` l. 93) ; taux d'impôt au plus 0,90 (`policies.py` l. 32) ; croissance estimée dans [−0,10 ; 0,20] (l. 86) ; exécution des dépenses dans [0,2 ; 1] (`model.py` l. 1244) ; résultat de la banque centrale tronqué à ses valeurs positives (l. 1208), écarté par M22 (d).<br>(b) Un mécanisme est préféré à une borne. (c) **Instabilité 15** : aucune borne active à l'état stationnaire ni dans les scénarios O2 (dépense publique +1 % et +5 %, taux d'imposition +1 point). Scénarios adverses : placement raté de moitié pendant 12 tours ; dépense doublée pendant 12 tours (#53). Une borne activée cesse de l'être **au plus tard 12 tours après la fin du choc**, sans réactivation (seuil reconduit) | Décompte et classement des bornes par option ; cas à la main ; scénarios au J3 ou au J4 | `macro` ; mainteneur (seuil de (c)) | fiche ; J3 ou J4 |
+| 17 | Lisibilité pour le joueur (gabarit 5 ; `macro`, à soumettre à `jeu`) — **exigence** pour (b) et (e), **mesure** pour (a), (c), (d), (f) et (g) | (a) **Indicateurs au tour**, chacun avec définition, unité, dénominateur et fenêtre : dette brute et nette / PIB ; soldes primaire et public / PIB (12 tours) ; charge d'intérêts nette / PIB et i_B ; émission du tour par souscripteur ; encaisse en tours de paiements ; part de la dette détenue par la banque centrale ; dépense demandée et exécutée ; parts non payées. Les niveaux normaux sont publiés par le script de la n° 4 bis, avec le facteur de fenêtre d'un stock en u.m. (1,0216 à 2 %). (b) **Délais en tours entiers** :<br>– du levier au premier flux : délai 0 (`tab:leviers-cadre`) ;<br>– vers les ménages et les entreprises : fiches 5 et 6 (budget au tour n + 1 ; dividendes au tour n) ;<br>– puis vers le solde et la dette ;<br>– du taux directeur à la charge d'intérêts (lignes 11b, 11c, 16) : délai 0.<br>La contrepartie est visible le même tour ; aucun effet plus rapide que le tour sans contrepartie. (c) Tableau levier → indicateur → délai → contrepartie, pour les trois leviers et pour le taux directeur vu du budget. (d) **Ampleur** : effet d'une hausse d'un point du taux d'imposition des ménages et d'une dépense publique +1 % et +5 % pendant 12 tours sur le solde, la dette et la production, perceptible à l'échelle d'une partie ; **seuil à proposer par `jeu`**. (e) **Gratuité de la sur-commande** (#53 ; `production.md` l. 914 ; `menages.md` l. 1468) : la part non servie de la dépense est soit supprimée, soit rendue visible et coûteuse ; la fiche propose le mécanisme, `jeu` le juge, essai au J4. (f) Dominance budgétaire (critère 9 (d)) : lisible ou non, selon l'avis de `jeu`. (g) Signes contre-intuitifs déclarés : hausse de taux qui accroît le revenu des ménages ; changement de cible | Tableau du § 9, « Interfaces ». Exemple daté à la main : dépense publique +1 % aux tours 1 à 12, avec G, émission, M^G, solde, dette / PIB et production aux tours 1, 2, 3, 4, 9, 13, 14, 18 et 24. Avis de `jeu` (§ 7) ; au J4, scénario apparié (O2) | `jeu` ; `macro` (exemple daté) | fiche ; J4 |
+| 18 | Signe net d'une hausse de taux (#56, avec la fiche 8 ; `macro`, `monnaie`) — **mesure** à la fiche, **exigence** au J4 | **Propriété attendue proposée par `macro`**, à arrêter avec `monnaie` dans la fiche 8 avant tout essai. Hypothèses : la règle budgétaire de référence retenue (C37) ; un taux exogène relevé d'un point aux tours 1 à 12, puis, dans une seconde branche, maintenu ; comparaison au contrôle apparié. Propriétés :<br>– (P1) l'écart de production cumulé des tours 1 à 12 est strictement négatif ;<br>– (P2) l'indice des prix au tour 36 est inférieur au contrôle ;<br>– (P3) dans la branche maintenue, l'indice des prix au tour 120 est inférieur au contrôle.<br>Publiés sans seuil : production, prix, consommation et investissement aux tours 12, 36 et 120. Si une propriété échoue, la procédure de #56 s'applique : `monnaie` et `macro` décrivent les options (transmission, règle budgétaire, η_r) et leur coût en fidélité ; le mainteneur tranche | Maquette conjointe à la fiche ; scénario apparié au J4, avant l'ouverture du levier de taux | `macro` ; `monnaie` ; mainteneur | fiche (mesure) ; J4 (exigence) |
+| 19 | Simplicité, empreinte sur l'état, déterminisme, leviers sans drapeau (gabarit 6 et rubrique 9 ; principe de simplicité ; `macro`, `jeu` pour les leviers) — **mesure** (décompte) et **exigence** (sans historique, état caché ni drapeau) | **Décompte** par option : paramètres, bornes, variables d'état, lignes et phases touchées. Chaque élément est justifié ; chaque variable d'état a son unité et sa valeur stationnaire. **Aucun historique ni état caché** : `update_taxes` lit les quatre dernières semaines d'un historique (`policies.py` l. 82 et 83) et un `getattr` avec valeur par défaut (l. 86), ce qui est exclu (ADR 0002). **Une seule règle par mécanisme** : `fiscal_rule`, `tax_rule`, `fiscal_on_net_debt` et `treasury_redeem_all` (`model.py` l. 202, 206, 249 et 294) ne sont pas repris comme drapeaux. **Règle de référence et leviers du joueur** : une seule écriture, par exemple des leviers qui sont les paramètres de la règle, ou une règle qui donne la valeur des leviers d'un pays non joué. « Le joueur peut la désactiver » (v1.5, l. 1518) n'est pas repris comme drapeau ; la forme est soumise à `jeu`. Aucun tirage, ou un tirage par la graine du pays, déclaré | Tableau de décompte ; liste des variables d'état | `macro` ; `jeu` (leviers) | fiche ; J2 (reprise exacte) |
+| 20 | Coût de calcul (gabarit 4 ; invariant 3 ; `macro`) — **exigence** (aucune itération) et **mesure** (décompte) | Aucune itération ni optimisation à chaque pas (ADR 0002). Un placement qui ferait monter le taux « jusqu'à équilibre » (v1.5, l. 1525) est écarté ou écrit en forme fermée. Décompte des opérations par pas. **Part indicative proposée** : 0,48 ms par pays-pas, celle des blocs 2 à 6 ((52/12 − 0,5)/8) | Décompte dans la fiche ; au J3, `tests/invariants/test_budget.py` | `macro` ; `audit` | fiche ; J3 |
+| 21 | Notation (`CONVENTIONS.md` § 5.2 ; décision du 02/10/2026 sur #23 ; `macro`) — **exigence** | Chaque symbole a un seul sens ; aucune collision avec les indices réservés (c, j, k, h, t ; s, ℓ, u) ni avec `tab:symboles`. **Déjà pris** : S, s, m, A, β, θ_H, r, G (dépense et marque de secteur), T_H, T_F, T^e_F. Le symbole du ratio de dette est harmonisé avec le b de `sec:menages` (l. 1546). M^G\* suit la lecture retenue de P2 (critère 11 (d)). Un taux d'imposition, un gain de réaction et une cible de dette reçoivent des symboles vérifiés par `grep -c -F` sur le `.tex`, sortie citée | Liste des symboles confrontée à `tab:symboles` | `macro` ; `docwriter` (section) | fiche ; section proposée |
+| 22 | Calibrabilité et faits établis (`macro`) — **mesure** | Les paramètres se calibrent sur des ordres de grandeur établis, chacun avec sa source retrouvée et sa date : dette publique / PIB, solde, charge d'intérêts, G/PIB, transferts/PIB, taux de prélèvement, encaisse du Trésor en mois de dépense. Statistiques publiques à retrouver ; aucune configuration n'est associée à un pays réel. Points **contestés**, séparés : multiplicateur budgétaire ; signe de r − g. **Sources**, existence vérifiée, **non lues à ce jalon** :<br>– Domar (1944), *American Economic Review* 34, 798-827 ;<br>– Lerner (1943), « Functional Finance and the Federal Debt », *Social Research* 10 (pages non vérifiées, 38-51 ou 38-57 selon les sources) ;<br>– Blanchard (2019), *American Economic Review* 109(4), 1197-1229.<br>Lues par `monnaie` (fiche 6 § 6.6), en résumé seulement, non lues par `macro` :<br>– Bohn (1998), *Quarterly Journal of Economics* 113(3), 949-963 ;<br>– Leeper (1991), *Journal of Monetary Economics* 27(1), 129-147.<br>Godley et Lavoie (2007), chap. 3 et 4 (secteur public des modèles SIM et PC), connus par les reproductions `sfcr` déjà citées dans la spécification, livre non lu. Blanchard (1990), cité par la v1.5 (l. 1507), n'a pas été retrouvé à ce jalon. Un résultat de la v1.5 ou de la v2.0 n'est pas un fait établi | Sources citées ; « non trouvée » le cas échéant | `macro` | fiche ; J3 (calibration) |
+| 23 | Remesure des faits de la première tentative (décision P1 du 03/10/2026 ; `CONTEXT.md` ; `macro`) — **exigence** de procédure | (a) Chaque fait cité porte son statut ; les faits établis sur D1 ne sont pas remesurables. (b) Toute remesure (statut V) passe par un script d'`outils/` qui exécute le prototype dans un processus séparé, jamais par import (invariant 4). Le script est revu par `audit` (circuit 3), avec ses critères écrits avant l'essai et son verdict publié même défavorable. (c) Un fait V sur le prototype v2.0 reste un fait de la première tentative. (d) Les lectures de code (L) citent fichier et ligne, avec la branche active et les coefficients effectifs. Dans D1 : `tax_rule=True`, `fiscal_rule=False`, `treasury_redeem_all=True` (faits l. 11). Les valeurs dans D1 de `tax_debt_feedback`, `tax_adjust_speed`, `gov_cash_ratio`, `b_target` et `phi_Bbank` ne sont pas établies par la synthèse. Les chiffres du prototype de la v1.5 sont rapportés (R) | Liste des faits et statuts ; commande, sortie et commit de chaque script | `macro` ; `coder` ; `audit` | fiche (jalon 2) |
+
+### Amendements adoptés
+
+Aucun à ce jour. Les questions soumises au mainteneur avec la validation figurent au compte rendu de `macro` du 04/10/2026.
+
+## 3. Options
+
+À instruire (jalon 2).
+
+## 4. Tableau comparatif
+
+À instruire (jalon 2).
+
+## 5. Avis de l'expert pilote
+
+À instruire (jalon 2).
+
+## 6. Avis de l'expert consulté
+
+À instruire (jalon 2).
+
+## 7. Avis de `jeu`
+
+À instruire (jalon 2).
+
+## 8. Décision du mainteneur
+
+À instruire (jalon 2).
+
+## 9. Conséquences de la décision
+
+À instruire (jalon 2).
+
+## 10. Historique de la fiche
+
+| Date | Événement | Auteur |
+|---|---|---|
+| 04/10/2026 | Ouverture (issue #73) ; § 1 et § 2 proposés (jalon 1), en attente de validation des critères par le mainteneur | `macro` ; session principale |
