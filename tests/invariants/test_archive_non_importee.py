@@ -5,10 +5,12 @@ Deux contrôles complémentaires :
 - **statique** (`ast`), sur tous les modules Python de `src/`, `tests/` et
   `outils/` : aucune instruction `import archive…` ni `from archive… import …` ;
   aucun `importlib.import_module` ni `__import__` d'un nom dont le premier
-  composant est `archive` ; aucun `spec_from_file_location`, `run_path` ou
-  `SourceFileLoader` dont un argument littéral est un chemin qui passe par un
-  dossier `archive` ; aucun `exec` ni `compile` (fonctions natives) dont un
-  argument littéral contient le mot `archive` ; aucun ajout de `archive` au
+  composant est `archive` ; aucun `spec_from_file_location`, `run_path`,
+  `SourceFileLoader`, `site.addsitedir` ou `zipimport.zipimporter` dont un
+  argument littéral est un chemin qui passe par un dossier `archive` ; aucun
+  `exec` ni `compile` (fonctions natives, appelées par leur nom ou comme
+  `builtins.exec`, `builtins.compile`) dont un argument littéral contient le
+  mot `archive` (issue #33) ; aucun ajout de `archive` au
   chemin de recherche des modules (`sys.path` : appel `append`, `insert`,
   `extend`, affectation, affectation augmentée ou par tranche) ; un nom (ou
   attribut) affecté depuis une expression qui contient un tel chemin, un tel
@@ -18,13 +20,24 @@ Deux contrôles complémentaires :
   module chargé (`sys.modules`) ne provient d'un fichier sous `archive/`.
 
 Lire un fichier d'archive (fiche comparative) reste permis : seuls les appels
-qui importent ou exécutent du code sont contrôlés.
+qui importent ou exécutent du code dans le processus sont contrôlés. Exécuter
+le prototype dans un processus séparé (`subprocess`) reste permis aussi : les
+fiches du J1 remesurent des faits en le lançant (issue #33).
 
 Limites acceptées du contrôle statique (décision du mainteneur du 02/10/2026,
 issue #9, sans issue de suivi) : un chemin vers `archive` n'est pas suivi
 à travers un retour de fonction, un paramètre ou sa valeur par défaut, un
 littéral découpé (`'arch' + 'ive'`), ni d'un module à l'autre ; la portée est
 ignorée (un nom marqué l'est dans tout le module : marquage prudent).
+Aucun appel contrôlé n'est reconnu sous un alias de la fonction elle-même
+(`from … import … as`), qu'il serve à importer (`import_module`), à charger un
+chemin (`run_path`, `addsitedir`, `zipimporter`…) ou à exécuter du code
+(`exec`, `compile`) ; un alias de module (`import runpy as r`, puis
+`r.run_path(…)`) reste relevé, l'appel étant reconnu par son seul nom
+d'attribut, sauf pour `exec` et `compile`, reconnues seulement comme attribut
+du nom `builtins` (`import builtins as b` et `__builtins__` ne sont pas
+suivis). Un chemin dont le composant est `archive.zip`, et non le dossier
+`archive`, n'est pas relevé (issue #33).
 """
 
 import ast
@@ -41,7 +54,9 @@ RACINE = Path(__file__).resolve().parents[2]
 ARCHIVE = RACINE / "archive"
 DOSSIERS = ("src", "tests", "outils")
 APPELS_PAR_NOM_DE_MODULE = {"import_module", "__import__"}
-APPELS_PAR_CHEMIN = {"spec_from_file_location", "run_path", "SourceFileLoader"}
+APPELS_PAR_CHEMIN = {
+    "spec_from_file_location", "run_path", "SourceFileLoader", "addsitedir", "zipimporter",
+}
 APPELS_DE_CODE = {"exec", "compile"}
 APPELS_SUR_LE_CHEMIN = {"append", "insert", "extend"}
 
@@ -151,6 +166,15 @@ def _est_sys_path(noeud: ast.AST) -> bool:
     return ast.unparse(noeud) == "sys.path"
 
 
+def _est_native(fonction: ast.AST) -> bool:
+    """Vrai si la fonction appelée est désignée comme native : par son nom seul
+    (`exec`) ou comme attribut de `builtins` (`builtins.exec`), jamais comme
+    attribut d'un autre objet (`re.compile`)."""
+    return isinstance(fonction, ast.Name) or (
+        isinstance(fonction, ast.Attribute) and ast.unparse(fonction.value) == "builtins"
+    )
+
+
 def _nom_appele(appel: ast.Call) -> str:
     fonction = appel.func
     if isinstance(fonction, ast.Attribute):
@@ -181,7 +205,7 @@ def importations_d_archive(source: str) -> list[int]:
                 lignes.append(noeud.lineno)
             elif (
                 nom in APPELS_DE_CODE
-                and isinstance(noeud.func, ast.Name)
+                and _est_native(noeud.func)
                 and (
                     any(re.search(r"\barchive\b", s) for s in _litteraux(arguments))
                     or _cite_un_nom_marque(arguments, marques)
@@ -295,6 +319,15 @@ def test_le_controle_dynamique_detecte_un_module_d_archive():
         "import sys\nfor dossier in ['archive/v2.0']:\n    sys.path.insert(0, dossier)",
         "import sys\nchemins = ['archive/v2.0']\n[sys.path.append(c) for c in chemins]",
         "with open('archive/v2.0/moteur.py') as f:\n    exec(f.read())",
+        # Appels non relevés avant l'issue #33 : un par appel.
+        "import site\nsite.addsitedir('archive/v2.0')",
+        "import zipimport\nzipimport.zipimporter('archive/v2.0.zip')",
+        "import builtins\nbuiltins.exec(open('archive/v2.0/m.py').read())",
+        "import builtins\nbuiltins.compile(open('archive/v2.0/m.py').read(), 'm', 'exec')",
+        # Les mêmes, par un nom marqué (propagation de l'issue #9).
+        "import site\nfrom pathlib import Path\nV2 = Path('archive') / 'v2.0'\nsite.addsitedir(str(V2))",
+        "import zipimport\nZIP = 'archive/v2.0.zip'\nzipimport.zipimporter(ZIP).load_module('m')",
+        "import builtins\nchemin = 'archive/v2.0/m.py'\nbuiltins.exec(open(chemin).read())",
     ],
 )
 def test_le_controle_detecte_une_importation(source):
@@ -320,6 +353,12 @@ def test_le_controle_detecte_une_importation(source):
         "        self.arch = Path('archive')\n        self.src = Path('src')\n"
         "    def preparer(self):\n        sys.path.insert(0, str(self.src))",
         "import os, sys\nos.environ['A'] = 'archive/v2.0'\nsys.path.insert(0, os.path.join('src'))",
+        # Hors du contrôle (issue #33) : exécution dans un processus séparé, et
+        # appels de #33 sur un chemin ou un code hors d'`archive`.
+        "import subprocess, sys\nsubprocess.run([sys.executable, 'archive/v2.0/m.py'])",
+        "import site\nsite.addsitedir('src')",
+        "import zipimport\nzipimport.zipimporter('dist/nations.zip')",
+        "import builtins\nbuiltins.exec('x = 1')",
     ],
 )
 def test_le_controle_admet_ce_qui_n_importe_pas(source):
