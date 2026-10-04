@@ -10,8 +10,6 @@ comparée aux autres ; chaque batterie doit aussi être une étape de la CI.
 import re
 from pathlib import Path
 
-import pytest
-
 RACINE = Path(__file__).resolve().parents[2]
 
 
@@ -63,8 +61,6 @@ def test_batteries_claude_et_workflow_identiques():
     assert batteries_workflow() == batteries_claude()
 
 
-@pytest.mark.xfail(reason="#28 : README.md aligné par docwriter en fin de branche "
-                          "(règle 9) ; marque retirée au commit docs: de README")
 def test_batteries_readme_identiques():
     assert batteries_readme() == batteries_claude()
 
