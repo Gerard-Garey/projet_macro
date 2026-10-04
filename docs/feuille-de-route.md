@@ -190,6 +190,9 @@ Au 03/10/2026, après la fusion de la PR #35 (`3021eaa`), **douze issues ouverte
 | #76 | Skill `compiler-doc`, étape 4 : lancer aussi `verifier_matrices.py --strict` | `.claude/` | n° 4, premier commit (`14c8050`), hors décompte, sans `Closes` ; fermée par la session après la fusion | `enhancement`, `ready-for-agent` ; point 6 de la PR #68 (P15) : prévu en correctif rapide, traité dans la n° 4 sur accord du mainteneur, avec les leçons de la n° 3 bis (`coder.md`, `audit.md`, `docwriter.md`, `circuit-technique.js`, `CLAUDE.md`). |
 | #78 | J4 et J6 : coût perceptible de la dette publique au socle (aucune prime ni plafond) | scénarios J4, restitution ; J6 (prime) | J4, puis J6 | `needs-triage` ; rédigée par `jeu` à la relecture des critères des fiches 7 à 9, soutenue par `monnaie` ; création approuvée par le mainteneur le 04/10/2026. |
 | #79 | J4 — restitution du bloc banque commerciale : taux annoncés, rendement réel des dépôts, résultat sur 12 tours, indicateurs constants hors du tableau | restitution J4 | J4, avec #52, #63 et #70 | `needs-triage` ; rédigée par `jeu` (fiche 7, § 7), création approuvée par le mainteneur le 04/10/2026 avec M31. |
+| #80 | Critère 13 de la fiche 8 (superneutralité) : dépendance de r̄ à π̄ par trois conventions déclarées, échec attendu au J3 | script d'état stationnaire ; fiches 6 et 8 ; ADR 0008 | n° 4 bis ou J3 | `needs-triage` ; rédigée par `monnaie`, création approuvée le 04/10/2026 avec M32 (voie (c)). |
+| #81 | J4 — restitution du bloc banque centrale | restitution J4 | J4, avec #52, #63, #70, #79 | `needs-triage` ; rédigée par `jeu` (fiche 8, § 7), création approuvée le 04/10/2026. |
+| #82 | J4 — restitution du bloc État et dette | restitution J4 | J4, avec #81 | `needs-triage` ; rédigée par `jeu` (fiche 9, § 7), création approuvée le 04/10/2026. |
 
 ## 4. Décisions du mainteneur
 
