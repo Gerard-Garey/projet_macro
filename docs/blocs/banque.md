@@ -3,8 +3,8 @@ bloc: Banque commerciale
 module: src/nations/blocs/banque.py
 expert pilote: monnaie
 experts consultés: macro (demande de crédit des entreprises : frontière crédit ; placement de la dette publique, avec la fiche 9) ; jeu
-statut: avis rendus
-décision: —
+statut: décidée (M31)
+décision: M31 (04/10/2026)
 issue: #71
 ---
 
@@ -1307,7 +1307,19 @@ Aucun écart. Les grandeurs nouvelles de cet avis (distribution des entreprises 
 
 ## 8. Décision du mainteneur
 
-À instruire (jalon 2).
+- **Numéro** : M31 (reporté dans `docs/feuille-de-route.md`, § 4), prise seule, avant la paire des fiches 8 et 9 (P14).
+- **Date** : 04/10/2026.
+- **Option retenue** : **C**, avec le socle commun du § 3.N :
+  - taux des crédits et des dépôts à écart constant du taux directeur, i_L = i_CB + ϖ_L et i_D = i_CB − ϖ_D, écrits en phase 8 (c), lus au tour suivant (variables d'état i_L et i_D du bloc 7) ;
+  - refinancement (ligne 21) décidé sur la position nette de réserves après la phase 8 (b) : à la clôture, Res·L^CB = 0, sans paramètre ;
+  - fonds propres ancrés à ϑ·L par un dividende résiduel Div_Bk, versé le tour même ;
+  - crédit servi à la demande, sans plafond ; deux entrées de scénario déclarées (ς_L, refus de crédit ; ς_B, placement raté), valeur stationnaire nulle ;
+  - aucun levier bancaire propre au socle (renvoi au J6).
+- **Lectures du § 5**, toutes selon l'avis commun de `monnaie`, `macro` et `jeu` : (a) (i), la l. 450 n'interdit que le calcul de Res par différence suivi du report de sa partie négative, `docwriter` la précise dans `sec:banque` ; (b) (i), écart additif, dépendance de ϱ̄_L à π\* déclarée et transmise à la fiche 8 ; (c) (i), transmission complète en un tour ; (d) (i), aucun plancher de i_D au socle ; (e) (i), Div_Bk versé le tour même ; (g) écart référencé à i_CB, corridor de largeur nulle au socle, transmis à la fiche 8 ; (h) variables d'état i_L et i_D. **La lecture (f)** (propriétaire des lignes 19a, A8 ou variante) **reste à M33**, avec les fiches 8 et 9 : la propriété de la ligne 19a-banque est conditionnelle jusque-là.
+- **Motifs** : le mainteneur a retenu la recommandation de `monnaie`, à laquelle `macro` (§ 6, favorable sous quatre réserves) et `jeu` (§ 7, lisible sous neuf conditions) se rangent. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : les réserves du § 5 ; les conditions C38 à C44 de `macro` (§ 6.5) ; les neuf conditions de restitution de `jeu` (§ 7).
+- **Ce qui est écarté et pourquoi** : A, B et D (§ 4 et § 7 : levier mort, cliquet de refinancement, taux à crans, plafond en falaise) ; V1 gardée comme option de calibration au J3, sous λ/n_a ≥ 0,5, non comme mode ; V3 (norme de fonds propres dépendant de l'inflation) ; V4 renvoyée au J6 avec #57.
+- **Issues et commentaires liés**, sur accord du mainteneur du 04/10/2026 : issue de restitution J4 du bloc banque (proposée par `jeu`) ; commentaires sur #78 (souscription sans limite du reliquat) et sur #55 (seuil de distribution de la l. 1877, `macro`, § 6.7).
 
 ## 9. Conséquences de la décision
 
@@ -1322,3 +1334,4 @@ Aucun écart. Les grandeurs nouvelles de cet avis (distribution des entreprises 
 | 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #71 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
 | 04/10/2026 | Jalon 2, première partie : § 3 à § 5 instruits (options A à D et socle commun, tableau comparatif, recommandation de l'option C) ; § 6 et § 7 à rendre | `monnaie` ; session principale |
 | 04/10/2026 | Jalon 2, seconde partie : avis de `macro`, expert consulté (§ 6, favorable à C, conditions C38 à C44), et de `jeu` (§ 7, C lisible sous neuf conditions) ; fiche « avis rendus » | `macro` ; `jeu` ; session principale |
+| 04/10/2026 | Décision du mainteneur : option C (M31) ; lectures (a) à (e), (g), (h) selon l'avis commun ; (f) renvoyée à M33 | mainteneur ; session principale |
