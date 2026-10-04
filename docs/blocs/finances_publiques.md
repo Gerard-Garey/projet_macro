@@ -3,8 +3,8 @@ bloc: État et dette
 module: src/nations/blocs/finances_publiques.py
 expert pilote: macro
 experts consultés: monnaie (placement de la dette et prime : frontière dette publique) ; jeu
-statut: avis rendus
-décision: —
+statut: décidée (M33)
+décision: M33 (04/10/2026)
 issue: #73
 ---
 
@@ -1539,7 +1539,26 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 
 ## 8. Décision du mainteneur
 
-À instruire (jalon 2).
+- **Numéro** : M33 (reporté dans `docs/feuille-de-route.md`, § 4), prise par paire avec M32 (fiche 8, P14), citant M22, M25, M28, M29 et M31 pour les contrats qu'elle touche.
+- **Date** : 04/10/2026.
+- **Option retenue** : **C-HS** :
+  - reprise réelle intégrale du surcroît d'intérêts (T9 réel : taux de référence indexé sur π\* par Fisher, C45) ;
+  - impôt des ménages assis sur le revenu de Haig-Simons du tour précédent ;
+  - dépense en volume indexée sur la production potentielle ;
+  - règle de référence et **valeur par défaut** des leviers budgétaires (« suivre la règle » est une valeur de chaque levier).
+- **Couverture des intérêts** : levier **distinct du barème τ_H**, à deux valeurs — « couverture intégrale » (φ = 1, règle et défaut) et « intérêts financés par le déficit » (φ = 0, écart déclaré, avec la mention et deux précurseurs) ; changer le barème ne touche pas la couverture ; φ n'est jamais un curseur continu. Lecture du critère 19 retenue par le mainteneur (avis de `jeu`, accepté par `macro` et `monnaie`).
+- **Socle commun avec M32** :
+  - **lignes 19a : A8** — le bloc 9 propose les trois lignes 19a ; la part s_CB est écrite par le bloc 8 en phase 1 (paramètre d'archétype, 0 au socle, domaine [0 ; 1]) ; la banque ne siège plus en phase 7. **Modification** de contrat (`temps_comptabilite.md:838`, ADR 0009) : décision citant M22 et M29, **ADR d'architecture** (consultation Fable, routage § 4.1) ; la lecture (f) de M31 est ainsi tranchée ;
+  - **i_B ≡ i_CB du tour** (option (i)) : identité de notation du socle, déclarée une seule fois dans `sec:finances_publiques`, sans label `eq:` ; prime nulle déclarée (J6) ;
+  - **E^CB_0 = 0** ; ligne nommée « perte de la banque centrale non couverte » (C60) ;
+  - **contrôle de caisse en lecture nette**, écrit dans `sec:cadre-caisse` aux deux conditions d'`architect` (banque exclue ; contrainte tenue par le plan du payeur, vérification du noyau en fin de phase) ;
+  - **encaisse visée M^G\* = m × paiements bruts avec m > 1** : m est un paramètre déclaré du bloc 9, fixé **avant l'essai** du J3, avec une marge déclarée, pour tenir la propriété de `jeu` (aucun rationnement de caisse pour une hausse de dépense de 10 % d'un tour au suivant, ni au retour d'une baisse de 5 % pendant 12 tours, à π̄ ∈ {0 ; 2 ; 10 %} ; borne algébrique m ≥ 1,0965 à π̄ = 0). **Modification** de la l. 502 et de la l. 2064 et du point 13 de l'ADR 0005 : décision citant M22 ;
+  - P2 : lecture (i), M^G\* encaisse visée.
+- **Critère 13 de la fiche 8** : voie (c), voir M32.
+- **Critère « −2 points » de la fiche 6** (essai du J3, #55) : la baisse porte sur le taux directeur, écarts du bloc banque constants (borne ζ < 17,85) ; précision prospective, écrite avant l'essai.
+- **Motifs** : le mainteneur a retenu la recommandation de `macro`, à laquelle `monnaie` (§ 6) et `jeu` (§ 7, sous deux conditions, toutes deux retenues) se rangent. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : réserves du § 5 ; C51 à C56 ; C57 et C58 intégrées ; C59 à C63 (`monnaie`, C62 amendée) ; conditions 1 à 9 de `jeu`.
+- **Ce qui est écarté et pourquoi** : A (instable dans la boucle conjointe), B (dette ancre du taux réel), C-WB (traîne de 36,7 point-années), C-Y (impôt sur les intérêts nominaux), D (arrivée réglée par un gain), E comme valeur par défaut (divergence), F (instabilité 4 réintroduite par le budget), V (J6).
 
 ## 9. Conséquences de la décision
 
@@ -1557,3 +1576,4 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 | 04/10/2026 | Avis de `monnaie`, expert consulté (§ 6) : favorable à C-HS ; critère 13 de la fiche 8 : résidu des trois conventions 0,019 point (contre 0,112, C57), voie (c) recommandée (échec déclaré, défaut connu, échec attendu au J3) ; conditions C57 à C63 ; fiche « avis rendus », sous réserve de C57 et C58 | `monnaie` ; session principale |
 | 04/10/2026 | Complément de `monnaie` au § 6.4 : aucune objection monétaire à m > 1 (modification de la l. 502, décision citant M22) ; accord avec `jeu` sur la couverture des intérêts en levier distinct à deux valeurs ; C62 amendée | `monnaie` ; session principale |
 | 04/10/2026 | C57 et C58 intégrées (remesurées par `macro`) : résidu du critère 13 à 0,019 point, profil de r̄, contributions par source ; diagnostic E^CB corrigé. Avis de `macro` : favorable à la voie (c), au levier de couverture à deux valeurs et à m > 1 | `macro` ; `monnaie` ; session principale |
+| 04/10/2026 | Décision du mainteneur : M33, prise par paire (M32-M33) ; voir § 8 | mainteneur ; session principale |

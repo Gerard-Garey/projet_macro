@@ -3,8 +3,8 @@ bloc: Banque centrale et anticipations
 module: src/nations/blocs/banque_centrale.py
 expert pilote: monnaie
 experts consultés: macro (prix et salaires : frontière inflation ; fermeture du niveau d'activité et dette publique, avec la fiche 9) ; jeu
-statut: avis rendus
-décision: —
+statut: décidée (M32)
+décision: M32 (04/10/2026)
 issue: #72
 ---
 
@@ -1141,7 +1141,21 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 
 ## 8. Décision du mainteneur
 
-À instruire (jalon 2).
+- **Numéro** : M32 (reporté dans `docs/feuille-de-route.md`, § 4), prise par paire avec M33 (fiche 9, P14).
+- **Date** : 04/10/2026.
+- **Option retenue** : **C**, avec le socle commun du § 3.N :
+  - règle de taux à action intégrale sans fuite, sous la forme de Fisher sur π\*, lisant le glissement : a_π = 0,5, k_I = 0,25 par an (valeurs indicatives, calibrées au J3) ;
+  - anticipation adaptative (apprentissage à gain constant de la moyenne), λ_e = 0,2 par an, formée en phase 1 ;
+  - aucune crédibilité au socle (C-g gardée pour le J4 ou le J6) ; indicateur d'ancrage π^e − π\* restitué ;
+  - aucun plancher de i_CB au socle ; corridor de largeur nulle (i_res = i_CB) ; E^CB_0 = 0 (forme (ii)) ;
+  - fermeture monétaire du niveau d'activité (#44), état initial en lecture (1) ;
+  - π\* paramètre au socle et au J4 : le levier de cible ne s'ouvre qu'après le verdict de #54 **et** les deux critères de `jeu` (§ 7, réponse 6), écrits avant l'essai.
+- **Lectures du § 5**, toutes selon l'avis commun de `monnaie`, `macro` et `jeu` : (a) a_π = 0,5 ; (b) aucun plancher ; (c) aucune crédibilité au socle ; (d) formation de π^e en phase 1 ; (e) lecture (1) de #44.
+- **Critère 13 (C15)** : échec déclaré comme **défaut connu du socle** (voie (c) de `monnaie`, avis favorable de `macro`) ; critère gardé tel qu'écrit ; dépendance attribuée à trois conventions hors des blocs 8 et 9 (C30, conversion linéaire, écarts nominaux ; résidu 0,019 point une fois les trois neutralisées) ; codé en échec attendu au J3 ; issue de suivi. Aucune réouverture sur cette branche.
+- **Motifs** : le mainteneur a retenu la recommandation de `monnaie`, à laquelle `macro` (§ 6, contre-épreuve indépendante) et `jeu` (§ 7) se rangent. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
+- **Conditions et réserves** : réserves du § 5 ; C45 à C50 (`macro`, § 6.6) ; C48 levée ; conditions 1 à 10 de `jeu` (§ 7).
+- **Ce qui est écarté et pourquoi** : A et B (critères 5, 6 (a), 8, 9 ; B instable sur G) ; T (biais de 2 points par point d'erreur sur r\*) ; C-c (jauge sans mécanisme) ; D (inerte au socle, J6) ; a_π = 1,5 (instable sur G) ; formation de π^e en phase 9 (retouche de `tab:phases` sans gain).
+- **Points tranchés avec M33** (fiche 9, § 8) : A8, i_B ≡ i_CB, M^G\* et contrôle de caisse, couverture des intérêts.
 
 ## 9. Conséquences de la décision
 
@@ -1158,3 +1172,4 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 | 04/10/2026 | Avis de `jeu` (§ 7) : option C lisible sous dix conditions ; π\* paramètre au J4 (le verdict de #54 ne suffit pas) ; défaut du levier budgétaire en pays joué renvoyé à la fiche 9 | `jeu` ; session principale |
 | 04/10/2026 | Avis de `macro`, expert consulté (§ 6), favorable à C, et contre-épreuve indépendante (critère 11) : tout reproduit sauf la paire complexe (artefact de linéarisation au coude de T4, C48) ; conditions C45 à C50 ; fiche « avis rendus », sous réserve de C48 | `macro` ; session principale |
 | 04/10/2026 | C48 levée : paire complexe, pays joué à 10 % et a_π = 1,5 republiés par régime de T4 (§ 3.0, § 3.C-4, § 3.C-8, § 4) ; second coude de la linéarisation de la baisse identifié ; critère 12 remesuré, verdict inchangé. Les chiffres du § 6.2 (contre-épreuve de `macro`) sont confirmés | `monnaie` ; session principale |
+| 04/10/2026 | Décision du mainteneur : M32, prise par paire (M32-M33) ; voir § 8 | mainteneur ; session principale |
