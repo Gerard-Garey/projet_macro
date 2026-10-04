@@ -362,7 +362,7 @@ Décisions du mainteneur du 04/10/2026, prises avant l'instruction, sur les ques
   - r̄ = 1 % (Fisher), état initial résolu en lecture (1) de #44 : r̄ donné, s_G résolu.
 - **Contrôles**, sur 10 réglages × 3 cibles (`chk9.py`) :
   - un pas depuis l'état résolu laisse l'état normalisé inchangé à 3,6e−15 près ;
-  - E^Bk calculé par le stock et par les flux coïncide à 3,1e−15 près ; E^CB = 0 à 5,6e−17 près.
+  - E^Bk calculé par le stock et par les flux coïncide à 3,1e−15 près ; E^CB = 0 à 5,6e−17 près (s_CB = 0). Avec s_CB ∈ {0,25 ; 0,5 ; 1}, π̄ ∈ {0 ; 2 ; 10 %}, G +10 % au tour 1 et 24 pas : |E^CB|/B ≤ 1,2e−16 (`c58.py`), après correction du diagnostic de `m9.py:209` (C58).
 - **Méthode spectrale** : celle de la fiche 8 (§ 3.0). Les deux régimes de T4 sont linéarisés séparément, la racine nominale est retirée, et les états inertes de chaque option sont retirés.
 - Coût : 22,1 µs par pas pour la maquette entière, sous C-Y ; 21,0 µs sous F (`ratios.py`).
 
@@ -660,7 +660,7 @@ Aucune remesure V n'a été faite.
    - Cas à la main (`main9.py`, C-Y, s_CB = 0,5, G +10 %) :
      - ligne 2 : 0,306275 ; ligne 7 : 0,275426 ; ligne 11b : 0,010307 ; ligne 11c : 0 (B_CB d'ouverture nul) ; ligne 16 : 0,000724 ; 19a-banque = 19a-BC = 0,034613 ;
      - ΔV_G par le stock = par les flux = −0,040431486786, écart −2,8e−16 ;
-     - M^G de clôture = M^G\* = 0,316582 ; E^CB = 0 ; E^Bk stock − flux = −2,0e−15.
+     - M^G de clôture = M^G\* = 0,316582 ; E^CB = 0 (stock de clôture, `main9.py` corrigé : 0,00e+00 ; la sortie de `18d2868` affichait ~~−3,46e−02~~, diagnostic qui sommait B_CB d'ouverture avec des postes de clôture, C58) ; E^Bk stock − flux = −2,0e−15.
 8. **Ce que le joueur en percevrait** (C-HS ; `final_hs.py` ; mesures sans le plafond de caisse de N-2).
    - Taux d'imposition +1 point :
      - production −0,838 % au tour 8 (moitié du pic au tour 15) ;
@@ -794,7 +794,7 @@ Aucune remesure V n'a été faite.
 **Décomposition** (`decomp.py`, `decomp2.py`). Grandeur mesurée : Δs_G entre π̄ = 0 et 10 % à r̄ = 1 % donné, en fraction de y. Trois canaux sont neutralisés à la main (pour la mesure seulement) :
 - **C30** : capital et stocks à la valeur comptable de π̄ = 2 % ;
 - **conversion** : taux annuels convertis exactement, (1 + i)^{1/n_a} − 1, au lieu de i/n_a (ADR 0008, I.2) ;
-- **écarts réels** : ϖ_L et ϖ_D proportionnels à 1 + π̄.
+- **écarts réels** : ϖ_L et ϖ_D proportionnels à 1 + π̄, dans le revenu stationnaire et dans le taux réel du crédit lu par S-ζ. *Corrigé le 04/10/2026 (C57)* : la mesure de `18d2868` ne neutralisait les écarts que dans le revenu, qui est neutre en agrégat. Le canal opérant est ϱ_L − r = ϖ_L/(1 + π̄).
 
 | Assiette | Base | C30 neutralisé | Conversion exacte | C30 + conversion | Les trois |
 |---|---|---|---|---|---|
@@ -803,6 +803,8 @@ Aucune remesure V n'a été faite.
 | Y | +0,01618 | +0,01415 | +0,01808 | — | +0,01507 |
 | HS | +0,00109 (s_G : 0,218474 / 0,219573 / 0,219568) | — | — | — | — |
 
+Ce tableau est mesuré en lecture (1) : ϱ̄_L est résolu à chaque π̄. Il ne voit donc pas le canal des écarts par S-ζ, et sa colonne « les trois » vaut « C30 + conversion ». Le critère 13 se lit sur r̄ en lecture (α), ci-dessous.
+
 - **Les deux sources dominantes sont C30 (fiches 2 et 6) et la conversion linéaire (cadre).** Elles sont de signes opposés et se compensent en partie.
 - Sous l'assiette Y, l'impôt sur les intérêts nominaux domine.
 - H3 (Haig-Simons) ne laisse pas de résidu mesurable au-delà de 2e−5 y.
@@ -810,10 +812,13 @@ Aucune remesure V n'a été faite.
 
 **r̄ au critère 13** (paramètres de 2 % fixés) :
 - tel quel : C-HS +1,536 / +1,075 % (écart de 0,46 point entre 0 et 10 %) ; C-WB réel +5,73 / +2,60 % ;
-- les trois canaux neutralisés : C-WB 0,978 / 1,078 % (0,100 point) ; C-HS 0,976 / 1,088 % (0,112 point) ; C-Yhi 0,913 / 1,311 % ; C-Y 2,369 / −4,526 %.
+- les trois canaux neutralisés **complètement** (C57, `c57.py`, `c57b.py`) : C-HS 1,004 / 0,985 %, soit **0,019 point** ; C-WB 1,017 / 0,936 % (0,081) ; C-Yhi 1,014 / 0,948 % (0,066) ; C-Y 2,396 / −4,654 % (impôt sur les intérêts nominaux).
+- valeurs de `18d2868`, neutralisation incomplète, maintenues barrées : ~~C-WB 0,978 / 1,078 % (0,100 point) ; C-HS 0,976 / 1,088 % (0,112 point) ; C-Yhi 0,913 / 1,311 % ; C-Y 2,369 / −4,526 %~~.
+- profil C-HS tel quel, r̄ à π\* = 0 / 1 / 2 / 3 / 4 / 6 / 10 % : 1,536 / 1,203 / 1,000 / 0,878 / 0,813 / 0,799 / 1,075 % ; non monotone ; écart maximal 0,74 point ; une marche de cible de 2 à 3 % déplace r̄ de −0,12 point.
+- contribution de chaque source, les deux autres neutralisées, en r̄(10 %) − r̄(0) : C30 −1,30 ; conversion +0,43 ; écarts +0,11. Toute neutralisation partielle aggrave l'écart.
 
 **Conclusion.**
-- Aucune règle de la fiche 9 qui garde la fermeture (i) ne tient le critère 13 au seuil adopté. La meilleure, C-HS, divise l'écart par 20 par rapport à C-WB nominal, mais le seuil demande de toucher la fiche 6 (C30), le cadre (ADR 0008) et la fiche 7 (écarts nominaux), et encore il ne serait que frôlé.
+- Aucune règle de la fiche 9 qui garde la fermeture (i) ne tient le critère 13 au seuil adopté. La meilleure, C-HS, divise l'écart par 20 par rapport à C-WB nominal, mais le seuil demande de toucher la fiche 6 (C30), le cadre (ADR 0008) et la fiche 7 (écarts nominaux), toutes trois ensemble. Il serait alors tenu (0,019 point). ~~et encore il ne serait que frôlé~~ (corrigé, C57).
 - La seule règle qui le tient (F) diverge sous taux tenu (§ 3.F).
 
 
@@ -898,7 +903,8 @@ Abréviations : « ok » = tenu ; « échec » = non tenu ; « mesure » = crit�
 
 Voies au mainteneur, comme au § 6.3 de la fiche 8 :
 - (a) une correction prospective du critère 13, l'ancien verdict restant publié ;
-- (b) la réouverture conjointe de C30 (M28), de la conversion linéaire (M22, ADR 0008) et des écarts nominaux (M31). Même alors, l'écart est de 0,10 à 0,11 point : la voie (b) ne suffit pas seule.
+- (b) la réouverture conjointe de C30 (M28), de la conversion linéaire (M22, ADR 0008) et des écarts nominaux (M31, critère 4 (c) de la fiche 7) : résidu de 0,019 point. Toute réouverture partielle aggrave l'écart. ~~Même alors, l'écart est de 0,10 à 0,11 point : la voie (b) ne suffit pas seule.~~ (corrigé, C57).
+- (c) voie de `monnaie` (§ 6.3) : critère gardé, échec déclaré comme défaut connu, codé en échec attendu au J3, issue. Avis de `macro` (relance du 04/10/2026) : favorable.
 
 Je ne propose aucun seuil nouveau.
 
@@ -930,6 +936,7 @@ Numérotées C51 à C56 sous réserve de l'ordre réel d'intégration.
   - τ_H, Y^{pre}_H, i^{ref} (ou ϱ^{ref}) et T^{rep} pour la reprise : 0 occurrence chacun dans le `.tex` (`grep -c -F`) ;
   - s_G : 4 occurrences de la chaîne, dont « mesures_G_K » ; à vérifier par `docwriter` ;
   - m est déjà pris : le multiplicateur d'encaisse, s'il existe, prendra κ_G (0 occurrence).
+- **C57 et C58** : corrections reçues de `monnaie` et intégrées au § 3.Q, au § 3.0 et au § 3.C-7 (04/10/2026), remesurées par `macro`.
 
 ### Lectures possibles
 
@@ -1549,3 +1556,4 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 | 04/10/2026 | Avis de `jeu` (§ 7) : C-HS lisible sous neuf conditions, dont deux soumises au mainteneur (couverture des intérêts en levier distinct du barème ; encaisse sans cliquet, m > 1 ou propriété équivalente) ; F écartée | `jeu` ; session principale |
 | 04/10/2026 | Avis de `monnaie`, expert consulté (§ 6) : favorable à C-HS ; critère 13 de la fiche 8 : résidu des trois conventions 0,019 point (contre 0,112, C57), voie (c) recommandée (échec déclaré, défaut connu, échec attendu au J3) ; conditions C57 à C63 ; fiche « avis rendus », sous réserve de C57 et C58 | `monnaie` ; session principale |
 | 04/10/2026 | Complément de `monnaie` au § 6.4 : aucune objection monétaire à m > 1 (modification de la l. 502, décision citant M22) ; accord avec `jeu` sur la couverture des intérêts en levier distinct à deux valeurs ; C62 amendée | `monnaie` ; session principale |
+| 04/10/2026 | C57 et C58 intégrées (remesurées par `macro`) : résidu du critère 13 à 0,019 point, profil de r̄, contributions par source ; diagnostic E^CB corrigé. Avis de `macro` : favorable à la voie (c), au levier de couverture à deux valeurs et à m > 1 | `macro` ; `monnaie` ; session principale |
