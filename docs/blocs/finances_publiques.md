@@ -1934,7 +1934,7 @@ Les conditions 1 à 9 de `jeu` (§ 7) sont reprises telles quelles. Leur mise en
 | Dette nette de l'encaisse ; part de la banque centrale (infobulle) | (B − M^G)/ΣPIB ; B_CB/B | % ; fraction | idem | clôture | sous E^CB = 0, la dette nette égale la consolidée (ligne suivante) ; B_CB/B = 0 au socle, « constant au socle » |
 | Dette consolidée (fiche détaillée ; test zéro) | (B − M^G − E^CB) d'ouverture / (12 × PIB du pas) | années de PIB | 12 × PIB du pas | ouverture | 0,25674 ; 0,51013 ; indépendante de m |
 | Solde public ; solde primaire | sommes sur 12 tours / ΣPIB | % du PIB | PIB des 12 derniers tours | 12 tours | −1,0185 et −0,2432 % ; −5,9005 et −0,2381 % |
-| Solde primaire stabilisant et écart au solde réalisé | n_a·[i_B B/n_a − Π^CB − (Γ^e − 1)(B − M^G)], soit [i/n_a − (Γ^e − 1)](B − M^G) sous (i) et E^CB = 0 | % du PIB | PIB des 12 derniers tours | 12 tours | −0,2432 % à 2 % (0,7754 − 1,0185) ; écart nul à l'état stationnaire |
+| Solde primaire stabilisant et écart au solde réalisé | i_B B/n_a − Π^CB − (Γ^e − 1)(B − M^G − E^CB), sommé sur 12 tours, encours d'ouverture de chaque tour [*erratum du 04/10/2026 (`macro`, validation de `sec:finances_publiques`, C1) : le texte initial portait un facteur n_a en trop et la base (B − M^G), exacte sous E^CB = 0 seulement*] | % du PIB | PIB des 12 derniers tours | 12 tours | −0,2432 % à 2 % (0,7754 − 1,0185) ; écart nul à l'état stationnaire |
 | Charge d'intérêts brute † et nette | i_B B/n_a ; i_B B/n_a − Π^CB | % du PIB | idem | 12 tours | 0,8324 et 0,7754 % ; 5,9162 et 5,6625 % |
 | i_B ; i^ref | i_CB du tour ; (1 + r̄)(1 + π\*) − 1 | % par an | — | le tour | 3,02 et 3,02 % ; 11,10 et 11,10 % |
 | Couverture des intérêts | T^cou/ΣPIB | % du PIB | idem | 12 tours | 0 à l'état stationnaire |
