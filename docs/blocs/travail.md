@@ -1309,6 +1309,7 @@ Le § 3.N-4, les § 4 à 7 et le § 3.N-7 (tableau à λ_N = 2,4) restent la tra
   - la constante de taux réel (r = i − π) est à voir avec la fiche 8 (ci-dessous).
 - **Fiche 6** :
   - le sureffectif W(N − y/pr) réduit les profits non distribués (sous-colonne courante, #36), de façon transitoire, donc la demande de crédit (fiches 6 et 7) ;
+    *Annotation du 04/10/2026 (signalée par `architect`, décision inchangée) : depuis M28 (règle F, fiche 6), la charge du sureffectif réduit les dividendes et non les profits non distribués (`sec:investissement`, cas à la main ; `CONTEXT.md`, « Sureffectif »).*
   - Q4 confirmée pour l'emploi.
 - **Fiche 8** :
   - C1 à C8 ; U^eq à source unique (C6) ; π^e variable d'état d'ouverture (C5) ; (G), avec la cible comparée au glissement (C4) ;

@@ -120,6 +120,9 @@ Au 03/10/2026, après la fusion de la PR #35 (`3021eaa`), **douze issues ouverte
 | #62 | Calibration de ν_H et λ_H sur des sources lues | fiche 5 ; calibration | J3, avec O1 | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. |
 | #63 | J4 : restitution du bloc ménages | restitution (J4) | J4, avec #52 (fusion possible) | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. |
 | #64 | S-ζ hors cible durable : l'allocation réelle dépend de π̄ − π\* | fiche 8 ; fiche 6 § 9.7 | n° 4 (fiche 8) | `needs-triage` ; rédigée par `macro`, création approuvée le 03/10/2026. |
+| #65 | Outils : maquette de la boucle conjointe (blocs 2 à 6) versée dans `outils/` | `outils/` | J3, avant #66 | `needs-triage` ; rédigée par `docwriter`, création approuvée le 04/10/2026. |
+| #66 | Contre-épreuve indépendante des boucles conjointes de la fiche 6 et des variantes explosives de F, avant `tab:instabilites` | spécification ; fiche 6 | J3, après #65 | `needs-triage` ; rédigée par `docwriter`, création approuvée le 04/10/2026. |
+| #67 | J3 : `src/nations/blocs/investissement.py` et ses tests (fiche 6, § 9.6) | `src/`, `tests/` | J3, après #60 | `needs-triage` ; rédigée par `docwriter`, création approuvée le 04/10/2026. |
 
 ## 4. Décisions du mainteneur
 
@@ -192,6 +195,7 @@ Décisions prises **en cours de branche**, le 03/10/2026 (PR #43), sans numéro 
 - **Création de #53 à #59** (proposées par `jeu` et `macro`, fiches 5 et 6, et propositions de la passation) et de commentaires sur #44 (`macro` : fermeture sous S et extension du script d'état stationnaire ; `monnaie` : S-ζ et C36 ; `jeu` : persistance d'une impulsion) (§ 3).
 - **Désaccord `macro` / `monnaie` sur la fiche 6 (S ou S-ζ)** : s'il persiste après la remesure de `macro`, une consultation Fable précède M28 (`docs/agents/routage.md` § 4.1, point 2 ; accord du mainteneur du 03/10/2026).
 - **Après M27 et M28** (§ 9 des fiches 5 et 6) : π\* en vigueur lue à l'ouverture (délai 1) par les blocs 5 et 6, Γ^e grandeur du moteur, π\* paramètre au J3 initialisant une variable d'état « cible en vigueur » ; lectures de la fiche 5 retenues (renommages ν_H, λ_H, π^{∗,pas} ; plafond sur D_H ; plancher du plan ; seuil 12 (d) de 0,50 à 0,85) ; **#58 rattachée à la branche sans `Closes`** ; **M29 acceptée sur le fond** (lecture (i) d'`architect` : variables d'état retardées écrites en phase 9 ; ADR 0009 déposé après relecture Fable, consultation 1 sur 3) ; création de #60 à #64 et de commentaires sur #55 et #57 (fiches 5 et 6, § 9.10).
+- **Validation de la spécification par `macro` (04/10/2026)**, quatre rapports (un par commit `docs:` de `docwriter`), tous « validés avec réserves », aucune équation fautive : (a) **critère de période de la boucle combinée (36 à 96 tours, fiche 3 critère 5 (c)) mesuré à prix figé** (lecture (a), avis de `macro`) ; la période sous la règle M (100,4 tours à m = 0,7, 115,5 à m = 0,8) est publiée dans `sec:prix-conditions` sans verdict ; (b) annotations datées et prospectives des fiches 2 à 6 (`2af377e`) ; (c) annotation des ADR 0005 et 0008 par `architect` (facteur du ratio restitué en volume ou en u.m. ; `eq:moteur-glissement` ; `b6ad4da`) ; (d) création de #65, #66 et #67 (§ 3).
 
 ### Décisions du point d'étape du 03/10/2026
 
