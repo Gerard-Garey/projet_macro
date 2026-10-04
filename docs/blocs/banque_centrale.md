@@ -333,7 +333,7 @@ Contrôles de la maquette (`chk1.py`, `chk3.py`) :
 - E^Bk et E^CB, calculés par le stock et par les flux, coïncident à 2e−15 près ;
 - l'application normalisée ne dépend pas de t (3,6e−15).
 
-**Méthode spectrale.** Le jacobien est calculé par différences centrées sur l'état normalisé (nominaux divisés par P̄_t·Ȳ_t). En sont retirés les états exogènes (pr, N^pa, π\*) et les états inutilisés par l'option. La racine nominale (|λ − 1| ≤ 1e−11) est écartée. Les deux régimes de T4 (hausse, baisse) sont linéarisés séparément.
+**Méthode spectrale.** Le jacobien est calculé par différences centrées sur l'état normalisé (nominaux divisés par P̄_t·Ȳ_t). En sont retirés les états exogènes (pr, N^pa, π\*) et les états inutilisés par l'option. La racine nominale (|λ − 1| ≤ 1e−11) est écartée. Les deux régimes de T4 (hausse, baisse) sont linéarisés séparément ; en baisse, N ≥ N\* par construction, donc y = y\*. *(Précisé le 04/10/2026, C48 : avant cette date, la paire complexe et le rayon en pays joué à 10 % venaient d'une dérivée au coude de T4 (régime « automatique »), et la linéarisation de la baisse gardait un second coude, y = min{y\*, pr·N} pris à l'égalité ; les rayons réels dominants, insensibles au régime, sont inchangés.)*
 
 **Domaine D du critère 12**, écrit dans `run5.py` avant tout calcul de ρ_b : a_π ∈ {0,5 ; 1,5} × k_I ∈ {0,1 ; 0,25 ; 0,5}/an × a_U ∈ {0 ; 0,5} × mesure lue ∈ {glissement π_{t−1} ; variation du tour annualisée géométriquement}, soit 24 calibrations.
 
@@ -513,9 +513,9 @@ Aucune remesure V n'a été faite.
      - 0,999413 à 2 %, réel, demi-vie de 1 181 tours ; 0,999270 à 0 ; 0,999814 à 10 % ;
      - pire valeur sur G : 0,999551 (k_I ×0,5) ; ζ = 8 : 0,999307 ;
      - racine dominante portée par K^vol, B_Bk et D_H ;
-     - cycle perceptible : paire de module 0,8779 et de **période 18,7 tours** (demi-vie 5,3 tours) ;
+     - cycle perceptible, par régime de T4 : paire de module 0,8651 et de **période 18,8 tours** (demi-vie 4,8 tours) en hausse ; 0,9130 et **période 20,8 tours** (demi-vie 7,6 tours) en baisse ; mêmes valeurs à 0,01 près à 0 et 10 % *(corrigé le 04/10/2026, C48 : 0,8779, période 18,7 tours, demi-vie 5,3 tours, dérivée au coude de T4, linéarisation d'aucun des deux régimes)* ;
      - sous T_H sur le revenu retardé et T9 réel : 0,997482 (demi-vie 275 tours).
-   - **Pays joué (sans reprise)** : 1,002307 / 1,007481 / 1,019711 à 0 / 2 / 10 %. Après une dépense publique +1 % aux tours 1 à 12, i_CB s'écarte d'un point au tour **1 024 / 323 / 107** : dominance budgétaire déclarée (critère 11 (b)).
+   - **Pays joué (sans reprise)** : 1,002307 / 1,007481 (1,007482 en hausse) / 1,019719 en hausse et 1,019685 en baisse à 0 / 2 / 10 % *(corrigé le 04/10/2026, C48 : 1,019711 à 10 %, au coude de T4)*. Après une dépense publique +1 % aux tours 1 à 12, i_CB s'écarte d'un point au tour **1 024 / 323 / 107** : dominance budgétaire déclarée (critère 11 (b)).
    - **Arrivée (critère 7 et C36)**, 27 branches, H = 20 demi-vies (17 228 à 30 893 pas) :
      - écarts au point fixe : G +1 % aux tours 1 à 12 au plus 3,3e−8 ; π^e +1 point au plus 9,0e−8 ; marche de cible +1 point au plus 7,8e−9 ; **tous sous 1e−6** ;
      - G +1 % permanent : au plus 5,9e−4 après 20 demi-vies (seuil 1e−3) ;
@@ -544,10 +544,11 @@ Aucune remesure V n'a été faite.
      - G −5 % : plancher jamais atteint (taux minimal 1,45 %) ;
      - G −15 % et −25 % : actif aux tours 11 à 19 et 8 à 21, désactivé 7 et 9 tours après la fin du choc, sans réactivation.
    - **Clause II.7, critère 12** : 6 calibrations sur 24 ont ρ_c < 1 sur toute G, 9 ont ρ_b < 1. **Verdict : non déterminant.**
-     - Toutes les calibrations a_π = 1,5 échouent, sous (c) comme sous (b) (1,0299 à λ_w ×2, période d'environ 16 tours).
+     - Remesuré par régime le 04/10/2026 (C48) : décomptes (6 et 9 sur 24) et verdict inchangés, sous T9 comme sous T_H sur le revenu retardé et T9 réel.
+     - Toutes les calibrations a_π = 1,5 échouent, sous (c) comme sous (b), en baisse : 1,018868 à λ_w ×2, période 17,7 tours (c) ; 1,016903, période 16,8 tours (b) ; elles sont stables en hausse *(corrigé le 04/10/2026, C48 : 1,0299, période d'environ 16 tours, obtenu avec le second coude y = min{y\*, pr·N} dans la linéarisation de la baisse)*.
      - La mesure « variation du tour » échoue sous (c) quand toutes les vitesses sont ×2.
      - Même verdict sous T_H sur le revenu retardé et T9 réel.
-     - À la calibration retenue : ρ_c = 0,999413 (1 181 tours, réel) ; ρ_b = 0,999414 (1 182) ; paire perceptible 0,8779, période 18,7 (c), contre 0,8737, période 17,4 (b).
+     - À la calibration retenue : ρ_c = 0,999413 (1 181 tours, réel) ; ρ_b = 0,999414 (1 182) ; paire perceptible en hausse 0,8651, période 18,8 (c), contre 0,8564, période 17,4 (b) ; en baisse 0,9130, période 20,8 (c), contre 0,9103, période 19,9 (b) *(corrigé le 04/10/2026, C48 : 0,8779, période 18,7 (c), contre 0,8737, période 17,4 (b), au coude de T4)*.
    - **Clause de l'ADR 0010** : ρ_1 = ρ_0 par construction. π\* est une entrée exogène, absente de la rétroaction ; mesuré identique.
 5. **Coût.** Environ 35 opérations par pas, sans itération ; très au-dessous de 0,48 ms. La maquette Python complète du socle coûte 38 µs par pas.
 6. **Défauts.**
@@ -560,7 +561,7 @@ Aucune remesure V n'a été faite.
 8. **Joueur.**
    - Taux indiqué par la règle et r̂\* (« taux neutre estimé ») restitués.
    - Écart du taux décidé à la prescription.
-   - Un cycle de 18,7 tours ; une traîne lente au-delà de 60 tours (résidu au tour 60 : π +0,006 point, y +0,005 %).
+   - Un cycle de 18,8 tours en hausse et de 20,8 tours en baisse *(corrigé le 04/10/2026, C48 : 18,7 tours, au coude de T4)* ; une traîne lente au-delà de 60 tours (résidu au tour 60 : π +0,006 point, y +0,005 %).
    - Le niveau des prix revient vers son sentier (C11) : −0,106 % au tour 60, −0,059 % au tour 240.
 9. **Empreinte.** Deux variables d'état : r̂\* (par an, valeur stationnaire r̄) et π^e (par an, valeur stationnaire π̄). Aucune crédibilité, aucun historique, aucun tirage.
 
@@ -607,7 +608,7 @@ Abréviations : « ×2 » renvoie à la grille G du critère 12 (vitesses et gai
 | 10 (b) (ii) Persistance | non mesuré | non mesuré | **tenue** : +0,155 au tour 120, palier 2,085 % ; pays joué : signe inversé | C-h : +0,143 | — |
 | 10 (b) (iii) Régime v2.0 | non reproduit | — | non reproduit | — | — |
 | 11 (a) Rayon | 0,99948 ; pire sur G 0,99953 | pire sur G **1,0135** | 0,999413 ; pire sur G 0,999551 ; à 0 et 10 %, ζ = 4 et 8 : inférieur à 1 | 0,99944 à 0,99947 | T : 0,998 |
-| 11 (b) Contenu de C10 | — | — | délai 1 ; glissement ; période 18,7 ; h 1 181 ; pays joué : tours 1 024 / 323 / 107 | — | — |
+| 11 (b) Contenu de C10 | — | — | délai 1 ; glissement ; période 18,8 (hausse) et 20,8 (baisse) *(corrigé le 04/10/2026, C48 : 18,7)* ; h 1 181 ; pays joué : tours 1 024 / 323 / 107 | — | — |
 | 11 (c) C14 | — | — | gain statique négatif mais quasi nul | — | — |
 | 11 (d) C26 | non déclenchée | non déclenchée | non déclenchée | non déclenchée | non déclenchée |
 | 12 II.7 | — | — | **non déterminant** | — | R = (b) |
@@ -1156,3 +1157,4 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 | 04/10/2026 | Jalon 2, première partie (partielle) : § 3 à § 5 instruits (options A, B, C et variantes, socle commun, tableau comparatif, recommandation de l'option C) ; contre-épreuve, essai (3) de #54 et remesure V restants ; § 6 et § 7 à rendre | `monnaie` ; session principale |
 | 04/10/2026 | Avis de `jeu` (§ 7) : option C lisible sous dix conditions ; π\* paramètre au J4 (le verdict de #54 ne suffit pas) ; défaut du levier budgétaire en pays joué renvoyé à la fiche 9 | `jeu` ; session principale |
 | 04/10/2026 | Avis de `macro`, expert consulté (§ 6), favorable à C, et contre-épreuve indépendante (critère 11) : tout reproduit sauf la paire complexe (artefact de linéarisation au coude de T4, C48) ; conditions C45 à C50 ; fiche « avis rendus », sous réserve de C48 | `macro` ; session principale |
+| 04/10/2026 | C48 levée : paire complexe, pays joué à 10 % et a_π = 1,5 republiés par régime de T4 (§ 3.0, § 3.C-4, § 3.C-8, § 4) ; second coude de la linéarisation de la baisse identifié ; critère 12 remesuré, verdict inchangé. Les chiffres du § 6.2 (contre-épreuve de `macro`) sont confirmés | `monnaie` ; session principale |
