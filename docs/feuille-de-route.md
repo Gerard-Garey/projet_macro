@@ -50,7 +50,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 - **État de la branche au 04/10/2026** (tête `da76aad`, SHA vérifiés par `git log --oneline 050ffbf..HEAD` : vingt commits après `74c6e35`, tous rattachés ci-dessus ou ci-dessous) :
   - cinq issues traitées ; passage unique de `docwriter` fait (règle 9 : un commit `docs:` par issue, #21 `799a85d`, #27 `0c9dfe4`, #32 `38d6f4d`, #28 `61f401c` ; #33 sans surface documentaire) ; annotation de l'ADR 0003 par `architect` ;
   - revue finale complète (règle 10 : `git diff main...HEAD`, scénarios adverses, `/code-review`) **faite** : `audit` conforme avec réserves (constats mineurs C1 et C2 corrigés par `9493870` et `b56fc59` ; C3 → issue proposée 6 ci-dessous) ; `/code-review` : un défaut mineur (branche `\else` sans `\fi`), corrigé par `4a1cd6f` et `da76aad`, audité (coût quadratique mesuré) ; audits légers des corrections postérieures faits ;
-  - dernier commit `docs:` de `docwriter` pour #32 (`CONVENTIONS.md` § 9, suite de `4a1cd6f`) **à venir** ;
+  - dernier commit `docs:` de `docwriter` pour #32 (`CONVENTIONS.md` § 9, suite de `4a1cd6f`) : `88f6506` ;
   - escalades : Fable 0 sur 3 ; au plus une reprise `coder` → `audit` par issue (#21, #27, #32, #33) ; #28 : `CLAUDE.md` et `.claude/` modifiés par la session principale (`1636466`), `coder` ayant légitimement refusé d'écrire dans ces fichiers sur consigne relayée ;
   - batteries (mesures de la session, non remesurées par `architect`) : `tests/unitaires` 196 passed, 1 skipped ; `tests/invariants` 61 passed, 1 skipped ; concordance `--strict` et `verifier_matrices.py --strict` : aucun écart ; CI verte sur `3442155` et `b56fc59` ;
   - **issues proposées par la branche, non créées (accord du mainteneur requis)** :
