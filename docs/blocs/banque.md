@@ -239,10 +239,6 @@ Sont des **mesures** (elles décrivent sans écarter) :
 
 ### Amendements adoptés
 
-Aucun à ce jalon.
-
-### Amendements adoptés
-
 Décisions du mainteneur du 04/10/2026, prises avant l'instruction, sur les questions des experts (validation groupée des critères des fiches 7, 8 et 9, P14) :
 
 - **Critères** : la liste est validée telle qu'amendée par la relecture croisée du 04/10/2026 (avis de `macro`, `monnaie` et `jeu` ; qualifications d'`architect`), avec la nature de chaque critère (exigence ou mesure) ; les seuils reconduits et les seuils de `jeu` sont adoptés.
