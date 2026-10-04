@@ -54,11 +54,18 @@ tenant : `$-D_H - B_H$`.
   (`LIGNES_POSTE`) sont déclarés en tête du script.
 
 **Structure d'une table.** Les zones d'une `longtable` sont délimitées par
-`\\endfirsthead`, `\\endhead`, `\\endfoot` et `\\endlastfoot`. La première
-ligne qui contient `&` dans la première zone de tête (fermée par
-`\\endfirsthead` ou `\\endhead`) est l'en-tête ; dans les autres zones de tête
-(en-têtes répétés), chaque ligne qui contient `&` doit lui être identique, les
-notes d'une seule cellule (« Suite de la page précédente ») étant ignorées. Les
+`\\endfirsthead`, `\\endhead`, `\\endfoot` et `\\endlastfoot`. Une note est
+une ligne d'une seule cellule qui commence par `\\multicolumn` (« Suite de la
+page précédente ») : c'est la seule ligne ignorée dans les têtes et le corps.
+La première ligne qui contient `&` dans la première zone de tête (fermée par
+`\\endfirsthead` ou `\\endhead`) est l'en-tête ; après lui, toute ligne de
+cette tête autre qu'une note est un écart, qu'elle ait une cellule ou
+plusieurs. Chacune des autres zones de tête (têtes répétées) porte au moins
+une ligne qui contient `&` (sinon « tête répétée sans ligne d'en-tête »), et
+toute ligne autre qu'une note, d'une cellule comme de plusieurs, y est
+comparée au premier en-tête (« en-tête répété différent du premier
+en-tête »). Limite : une ligne d'une seule cellule placée avant l'en-tête de
+la première tête n'est pas relevée, qu'elle soit une note ou non. Les
 zones de pied (fermées par `\\endfoot` ou `\\endlastfoot`) sont ignorées : ni
 données ni en-tête. Le corps est la zone qui suit le dernier marqueur ; sans
 marqueur de tête, il suit l'en-tête. Les filets (`\\toprule`, `\\midrule`…)

@@ -68,6 +68,11 @@ cité par `\\let` ou écrit dans le corps d'une définition (`\\newcommand`,
 `\\renewenvironment`, `\\def`, `\\gdef`) n'ouvre pas de bloc. Un `\\iffalse`
 non refermé, ou dont la branche `\\else` n'a pas de `\\fi`, n'efface rien :
 c'est un écart (règle 0, texte analysé), et la suite est analysée.
+Limite : seules les commandes de définition listées ci-dessus sont
+reconnues. Un `\\iffalse` écrit dans le corps de `\\DeclareRobustCommand`,
+de `\\NewDocumentCommand` (ou d'une autre commande de `xparse`), ou cité par
+`\\expandafter\\let\\csname …\\endcsname\\iffalse`, ouvre encore un bloc ;
+`\\string\\iffalse` est lu comme un `\\iffalse`.
 
 Usage : `uv run python outils/concordance_spec_moteur.py [--strict]`. Sans
 `--strict`, le script rend compte et sort avec le code 0 ; avec `--strict`,
@@ -269,6 +274,13 @@ def retirer_iffalse(texte: str) -> tuple[str, list[tuple[int, str]]]:
     lit : un `\\iffalse` qui s'y trouve n'ouvre pas de bloc, et un `\\newif`
     n'y déclare rien. Dans un bloc, TeX compte les conditions sans lire les
     définitions : elles y sont comptées.
+
+    Limite : seules les définitions de `definitions` sont reconnues. Un
+    `\\iffalse` dans le corps de `\\DeclareRobustCommand`, de
+    `\\NewDocumentCommand` (ou d'une autre commande de `xparse`), ou cité par
+    `\\expandafter\\let\\csname …\\endcsname\\iffalse`, ouvre encore un bloc ;
+    `\\string\\iffalse` est lu comme un `\\iffalse` (ouvre un bloc, ou rend
+    l'anomalie d'un `\\iffalse` sans `\\fi`).
 
     Comme dans `retirer_commentaires_et_verbatim`, une barre oblique inverse
     et le caractère qui la suit forment un jeton : un mot n'est une commande
