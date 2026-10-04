@@ -48,6 +48,7 @@ const BATTERIES = [
   'uv run pytest -q tests/unitaires',
   'uv run pytest -q tests/invariants',
   'uv run python outils/concordance_spec_moteur.py --strict',
+  'uv run python outils/verifier_matrices.py --strict',
 ]
 
 // Repertoires que ni coder ni audit ne doivent toucher dans un workflow :
