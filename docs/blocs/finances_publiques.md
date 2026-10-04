@@ -329,15 +329,638 @@ Décisions du mainteneur du 04/10/2026, prises avant l'instruction, sur les ques
 
 ## 3. Options
 
-À instruire (jalon 2).
+*Rédigé par `macro` (expert pilote), 04/10/2026, sur l'état `3edff4e` (branche `claude/j1-monnaie-etat`, PR #77). Les numéros de ligne de la spécification renvoient à `docs/specification/nations_et_marches.tex` à cet état. Les numéros de ligne de la v1.5 renvoient à `archive/v1.5/Nations_et_Marches_v1_5.tex`.*
+
+### 3.0 Conventions, maquette conjointe, mesures et littérature
+
+**Découpage par question** (gabarit § 3).
+- Les options A (v1.5) et B (v2.0) sont instruites en entier.
+- Sur Q5 à Q10 et Q12, les contrats hérités (M22 à M31) ne laissent qu'une forme compatible, à une lecture près chacune. Cette forme est instruite une fois, comme socle commun (§ 3.N).
+- Les options nouvelles diffèrent sur Q1 à Q4 (règle de référence, instrument, fermeture, charge d'intérêts) et sur Q8 pour l'assiette de T_H. Il y en a six :
+  - **C** : reprise réelle T9, en quatre variantes d'assiette : C-WB, C-Y, C-Yhi, C-HS ;
+  - **D** : rappel proportionnel de la dette (forme de Bohn), ajouté à C ou seul ;
+  - **E** : leviers tenus, forme SIM/PC de Godley et Lavoie. C'est le « pays joué » des fiches 6 et 8 ;
+  - **F** : fermeture budgétaire sur le taux neutre (nouvelle) ;
+  - **L** : finance fonctionnelle (Lerner), instruite par argument ;
+  - **V** : variante de durée de la dette, à taux apparent ; elle se combine avec C.
+
+**Maquette conjointe unique** (critère 11 de la fiche 8 ; critères 6, 8 (c) et (d), 9 et 18 de cette fiche).
+- Fichier : `m9.py`, extension de la maquette indépendante de `macro` pour la fiche 8 (`maquette_f8_macro/m.py`), copiée dans le bloc-notes de la session (`…/scratchpad/maquette_f9/`). Empreinte : `sha256sum m9.py`, début `cbe8da70131a4464`.
+- Avec les paramètres par défaut, m9.py reproduit m.py à 9,7e−14 près en relatif sur 300 pas, dans trois réglages (`cmp_m.py`). C'est donc le même code pour les fiches 8 et 9 ; les options du bloc 9 s'activent par paramètre.
+- Elle exécute les équations décidées :
+  - N1 à N11, T1 à T6, P1 à P4, H2 à H7, S1 à S7, F1 à F4 ;
+  - l'option C de M31 (fiche 7) et l'option C de la fiche 8 (a_π = 0,5, k_I = 0,25 par an, λ_e = 0,2 par an) ;
+  - le cadre : émission en position α, Π^CB, registre de 13 niveaux, π\*_t.
+- Bloc 9, commun à toutes les options :
+  - plan de dépense en volume indexé sur la production potentielle : G^plan_t = P_{t−1}(1 + π\*^pas)·s_G·ŷ_t ;
+  - T_F = Tr = 0 ;
+  - M^G\* égale aux paiements bruts du pas (m = 1) ;
+  - A8 avec une part s_CB de la banque centrale (0 sauf mention) ;
+  - i_B = i_res = i_CB ; E^CB_0 = 0.
+- Calibration indicative :
+  - celle de `tab:calibration`, avec ζ = 4 (variante 8), ϖ_L = 2 %, ϖ_D = 1 %, ϑ = 0,10, g = 2 %, g_N = 0,5 %, τ = 0,25 ;
+  - r̄ = 1 % (Fisher), état initial résolu en lecture (1) de #44 : r̄ donné, s_G résolu.
+- **Contrôles**, sur 10 réglages × 3 cibles (`chk9.py`) :
+  - un pas depuis l'état résolu laisse l'état normalisé inchangé à 3,6e−15 près ;
+  - E^Bk calculé par le stock et par les flux coïncide à 3,1e−15 près ; E^CB = 0 à 5,6e−17 près.
+- **Méthode spectrale** : celle de la fiche 8 (§ 3.0). Les deux régimes de T4 sont linéarisés séparément, la racine nominale est retirée, et les états inertes de chaque option sont retirés.
+- Coût : 22,1 µs par pas pour la maquette entière, sous C-Y ; 21,0 µs sous F (`ratios.py`).
+
+**Mesures exécutées** (04/10/2026). Commandes : `cd …/scratchpad/maquette_f9 && /home/user/projet_macro/.venv/bin/python <script>`, avec l'interpréteur du `.venv` du projet, le même que `uv run python`.
+
+| Script | Objet |
+|---|---|
+| `chk9.py` | Stationnarité et identités, 30 cas |
+| `tab.py` | Gain statique, Δr̄, racines du critère 13, assiettes C |
+| `decomp.py`, `decomp2.py` | Décomposition de la dépendance à π̄ (§ 3.Q) |
+| `tab2.py` | Rayons, #56, palier, options A, B, C, D, E, V |
+| `tab3.py` | φ\*, gain et arrivée sous D |
+| `tabF.py`, `simF.py`, `arr9.py` | Option F ; chocs permanents ; taux tenu long |
+| `jeu9.py` | Seuils de `jeu`, θ_H, arrivée |
+| `hs.py`, `grid.py`, `final_hs.py` | Option C-HS : critère 13, grille, ratios, scénarios |
+| `ratios.py`, `uniq.py`, `main9.py`, `cmp_m.py` | Ratios stationnaires, unicité de r̄, cas à la main, concordance des maquettes |
+
+Aucune mesure n'a été recalculée par un autre agent. Toutes sont des **résultats de modèle**, sans statut de fait.
+
+**Littérature.**
+- *Retrouvée, contenu lu par résumé seulement* :
+  - H. Bohn, « The Behavior of U.S. Public Debt and Deficits », *QJE* 113(3), 1998, p. 949-963. Le résumé, retrouvé par moteur de recherche (PDF bloqué par le proxy, deux miroirs essayés), dit : « the primary surplus is an increasing function of the debt-GDP ratio », sur 1916-1995. Cela soutient la *forme* de l'option D, pas une valeur de pente.
+  - E. M. Leeper (1991), *JME* 27(1), p. 129-147 : lu par `monnaie` en résumé (fiche 6 § 6.6), non lu par `macro`.
+- *Existence vérifiée, non lus* :
+  - M. Feldstein, « Inflation, Income Taxes, and the Rate of Interest: A Theoretical Analysis », *AER* 66(5), 1976, p. 809-830 (le non-neutralisme d'un impôt sur les intérêts nominaux) ;
+  - Domar (1944) ; Lerner (1943) ; Blanchard (2019) (critère 22).
+- *Lus par reproduction* : Godley et Lavoie (2007), chap. 3 (SIM), par la reproduction `sfcr` déjà citée dans `sec:menages`.
+- *Ce que la littérature permet de conclure* :
+  - la forme « surplus primaire croissant avec la dette » est documentée empiriquement (Bohn) ;
+  - le non-neutralisme d'un impôt sur intérêts nominaux est une identité arithmétique, montrée ici (§ 3.Q) sans appui de littérature lue.
+- *Ce qu'elle ne permet pas* : calibrer φ_b, ni départager les assiettes.
+
+**Statut des faits de la première tentative** (critère 23).
+
+| Fait | Statut |
+|---|---|
+| D1 : `tax_rule=True`, `fiscal_rule=False`, `treasury_redeem_all=True` (faits l. 11) | S+O |
+| Dette 0,61 → 0,04 sans règle ; 0,40 à 0,45 avec `eq:fiscrule` (v1.5, l. 1518) | R |
+| Dette publique nette de 62,4225 % du PIB (F3) ; monétisation, 293,0506 % (faits l. 277) | R |
+| Lectures de `policies.py` l. 25-96 et de `model.py` l. 195-210, 288-300, 375-382, 508, 1200-1250, 1400 | L, le 04/10/2026 |
+
+Aucune remesure V n'a été faite.
+
+### 3.A Option A — v1.5
+
+1. **Source exacte.** Dans `archive/v1.5/Nations_et_Marches_v1_5.tex`, § `sec:etat` :
+   - recettes (l. 1457 à 1470) et capacité administrative (l. 1471) ;
+   - `eq:iapp` (l. 1484 à 1490) ;
+   - `eq:gbc` et `eq:debtdyn` (l. 1500 à 1503) ;
+   - `eq:fiscrule` (l. 1513 à 1518) ;
+   - placement v1.2 et trésorerie v0.9 (l. 1520 à 1527) ;
+   - `eq:default` et plafond indicatif (l. 1528 à 1541).
+2. **Équations.**
+   - Facteur des achats : φ^fisc_t = clip(1 + φ_b(b\* − b_t), 0,6, 1,6), avec φ_b = 0,3 et b\* = 0,6 (*choix de conception*). Il multiplie les achats, l'investissement public et les minima.
+   - Recettes : impôts du travail par strate, du capital distribué, des sociétés, TVA, tarifs, capitation, le tout multiplié par ε^adm(1 − ε^ev τ̄²), forme de Laffer (*approchée*).
+   - Taux apparent : i^app_{t+1} = (1 − θ_t) i^app_t + θ_t i^B_t, avec θ = 1/T̄ + déficit⁺/B (*approchée*).
+   - Contrainte budgétaire : `eq:gbc` (*dérivée*).
+   - Placement : « le taux monte jusqu'à équilibre » ; rationnement ρ^G = min(1, T^disp/D^prev) ; intérêts impayés capitalisés (l. 1522).
+   - **Forme retenue sur la maquette**, déclarée : G^plan multiplié par 1 + φ_A(b̄ − b_t), sans écrêtage (inactif près de l'état stationnaire), sans T9, avec b_t la dette nette d'ouverture sur 12 × le PIB potentiel au prix attendu. La cible b\* est remplacée par la valeur résolue b̄ : sinon l'état initial n'est pas stationnaire.
+3. **État stationnaire impliqué.**
+   - Avec b\* ≠ b̄, le facteur stationnaire vaut 1 + φ_b(b\* − b̄) ≠ 1. L'écart stationnaire à b\* dépend donc de φ_b (critère 7 (a) (i)). La dette reste fixée par les normes privées (identité du § 1), b\* n'est pas atteinte, et G/PIB porte l'écart.
+   - En v3, la seule lecture stationnaire est b\* = b̄. Mais après tout choc permanent (marche de π\*, G +1 %), l'arrivée dépend encore de φ_A : continuum par le gain, comme sous D (§ 3.D-3).
+4. **Comportement mesuré.**
+   - R (v1.5, l. 1518) : dette 0,61 → 0,04 en 60 ans sans règle, 0,40 à 0,45 avec elle ; une première version rapportait la cible à 52 fois le PIB annuel.
+   - Maquette (`tab2.py`), rayon dans les deux régimes :
+
+     | φ_A | π̄ = 0 | 2 % | 10 % |
+     |---|---|---|---|
+     | 0,15 | 0,999033 | 1,005479 | 1,018550 |
+     | 0,3 | 0,998371 | **1,003214** | 1,017313 |
+     | 0,6 | 0,997472 | 0,999366 | 1,014580 |
+
+   - #56 (A) à 2 % : P_36 > P_36^réf (+0,201 / +0,165 / +0,097 %), signe inversé.
+   - Taux tenu un point bas : glissement −0,220 / −0,144 / −0,021 au tour 120, signe inversé (critère 10 (b) (ii) de la fiche 8).
+   - **La règle de la v1.5, à sa pente d'origine, est instable dans la boucle conjointe v3 à 2 % et à 10 %.** Un rappel par les achats ne reprend pas le surcroît d'intérêts à fréquence nulle (C37).
+5. **Coût de calcul.** Négligeable pour le facteur et `eq:iapp`. Le placement « jusqu'à équilibre » est une itération par pas, exclue (critère 20). La capacité administrative et le terme de Laffer sont en forme fermée.
+6. **Défauts connus.**
+   - L'écrêtage [0,6 ; 1,6] est une borne à seuil libre (instabilité 15) ;
+   - capitalisation des intérêts impayés (exclue, critère 12 (e)) ;
+   - placement itératif ;
+   - avances au Trésor dans T^disp (instabilité 2, exclue par M22) ;
+   - prime et défaut : J6 ;
+   - sans T9, C37 n'est pas tenue (mesure ci-dessus).
+7. **Identités de bilan touchées.**
+   - Lignes 2, 6, 7, 11a à 11c, 16 et 19a, comme le socle.
+   - Les avances (ΔA^G) et la capitalisation créent un poste hors des portes de `tab:portes-monnaie` (ADR 0005, point 7) : incompatible sans décision citant M22.
+   - Le rationnement ρ^G est une part non payée sans ligne nommée.
+8. **Ce que le joueur en percevrait.**
+   - Une dépense qui baisse quand la dette monte : lisible.
+   - Mais la reprise passe par les achats, et non par l'impôt : un choc de taux devient expansionniste (signe inversé).
+   - L'écrêtage fait un mur invisible. À soumettre à `jeu`.
+9. **Empreinte sur l'état.**
+   - Facteur : aucune variable d'état ; b_t se lit sur l'ouverture.
+   - `eq:iapp` : une variable d'état i^app, de valeur stationnaire i_B (§ 3.V).
+   - Le rationnement v0.9 exige T^disp, une prévision des recettes : un état caché à déclarer.
+
+### 3.B Option B — v2.0 (branche active de D1 : `tax_rule=True`)
+
+1. **Source exacte.**
+   - `archive/v2.0/prototype/policies.py:73-96` (`update_taxes`) ; l. 30-32 (taux plafonnés à 0,90) ; l. 86 (croissance estimée, écrêtée dans [−0,10 ; 0,20]) ; l. 89 (déficit visé) ; l. 93-94 (multiplicateur écrêté dans [0 ; 3], vitesse).
+   - `archive/v2.0/prototype/model.py` : l. 201 (`gov_cash_ratio` = 0,04) ; l. 202 (`treasury_redeem_all`) ; l. 297-298 (`tax_debt_feedback` = 0,20, `tax_adjust_speed` = 1 par an) ; l. 379-380 (interdiction du dividende de trésorerie sous `tax_rule`) ; l. 1208 (Π^CB tronqué) ; l. 1215 (encaisse visée = `gov_cash_ratio` × PIB) ; l. 1220-1244 (placement : ménages, puis banque dans sa limite, puis ρ^G écrêté dans [0,2 ; 1]) ; l. 1248 (rachat) ; l. 508 et 1400 (i_B = i_app ; i_B = i_cb + min(prime, prime_max)).
+   - Statut L.
+2. **Équations.**
+   - Déficit visé : d\* = 52 (b\* − k)(1 − e^{−g_n/52}) − κ(b^net − (b\* − k)), avec κ = 0,20 par an.
+   - Multiplicateur : x ← x + (1 − e^{−λ_τ/52})·[clip(x + (d − d\*)/base, 0, 3) − x], avec λ_τ = 1 par an.
+   - Ces équations lisent les quatre dernières semaines d'un historique (l. 82-83) et un `getattr` avec valeur par défaut (l. 86).
+   - **Forme v3 retenue sur la maquette**, déclarée :
+     - τ_{t+1} = τ_t + (λ_τ/n_a)(d_t − d\*_t)/base_t, avec d\*_t = n_a(Γ^e − 1) b̄ − κ(b_t − b̄) ;
+     - grandeurs rapportées au PIB potentiel du pas au prix attendu, assiette WB, sans T9 ;
+     - sans historique ni écrêtage ;
+     - Γ^e du moteur remplace la croissance estimée.
+   - Statut : *choix de conception* (contrôleur PI sur la dette).
+3. **État stationnaire impliqué.**
+   - À l'arrêt, d = d\* ⇒ b̄ = b\* exactement, si Γ^e égale la croissance réalisée. Sous la v2.0, l'arrivée n'est exacte que si la croissance estimée (lissée et écrêtée, l. 86) égale la croissance réalisée : vérifié non exact hors de la trajectoire de référence (lecture, critère 7 (a) (ii)).
+   - Comptage : B **ancre la dette** ; τ est son résultat. Le rang est plein avec r̄ résolu par la demande. Mais la dette dépend de π̄ (C30 : +0,287 année de PIB entre 2 et 10 %) : une cible réelle b̄ fixe alors le taux réel, et les deux dépendances se cumulent dans r̄ (mesure ci-dessous).
+4. **Comportement mesuré.**
+   - R (D1) : dette publique nette de 62,4225 % du PIB (contrôle F3). Coût de la monétisation sous barèmes figés (faits l. 277).
+   - Maquette (`tab2.py`, `simF.py`), rayon dans les deux régimes, κ = 0,2 :
+
+     | λ_τ | π̄ = 0 | 2 % | 10 % |
+     |---|---|---|---|
+     | 0,5 | 0,997082 | 0,997156 | 0,997261 |
+     | 1 | 0,997080 | 0,997149 | 0,997244 |
+     | 2 | 0,997079 | 0,997146 | 0,997235 |
+
+     **Stable.** Ce n'est pas la cible intégrale de B/PIB « explosive pour tous les ζ » de la fiche 6 § 6.6 : la forme est PI sur la dette, via le déficit.
+   - #56 à λ_τ = 1 : (A) écart cumulé −0,033 %, P_36 −0,228 % ; (B) P_120 −2,49 %, glissement −0,295.
+   - Taux tenu −1 point : palier +0,302 au tour 120.
+   - G +1 % permanent : glissement −0,011 au tour 60 ; Δi +0,075 point au tour 2 400 ; Δτ = +0,00279.
+   - **Marche de π\* de 2 à 3 % : r̄ de Fisher passe de 1 % à −1,03 % au tour 2 400.** Le critère 13 est très loin.
+5. **Coût de calcul.**
+   - Forme v3 : quelques opérations par pas.
+   - La v2.0 lit une moyenne sur quatre semaines d'historique, exclue par l'ADR 0002.
+6. **Défauts connus.**
+   - Historique et `getattr` (critère 19).
+   - Quatre écrêtages : multiplicateur [0 ; 3], taux ≤ 0,90, croissance [−0,10 ; 0,20], ρ^G [0,2 ; 1] (instabilité 15).
+   - Π^CB tronqué (écarté par M22 (d)).
+   - Instabilité 5 évitée par l'interdiction croisée (l. 379-380).
+   - Drapeaux `tax_rule`, `fiscal_rule`, `fiscal_on_net_debt`, `treasury_redeem_all`.
+   - Encaisse en part du PIB annuel, au lieu des paiements du pas (critère 11 : une encaisse de 4 % du PIB annuel vaut à peu près ½ mois de PIB).
+7. **Identités de bilan touchées.**
+   - Lignes du socle.
+   - Le placement aux ménages (B_H > 0) contredit M27 (B_H ≡ 0).
+   - Le rachat (`redeem_public_debt`) est une ligne 19a négative.
+   - Le rationnement ρ^G n'a pas de ligne nommée.
+8. **Ce que le joueur en percevrait.**
+   - Un multiplicateur d'impôt qui bouge sans levier du joueur : boîte noire.
+   - Un choc de dépense presque sans effet sur l'inflation, l'impôt l'ayant compensé (glissement −0,011).
+   - Une cible de dette qui fait bouger le taux réel de deux points par point de cible.
+9. **Empreinte sur l'état.**
+   - Une variable d'état τ (taux de prélèvement, sans dimension, de valeur stationnaire résolue).
+   - La v2.0 ajoute un historique de quatre semaines et l'état `tax_scale`.
+
+### 3.N Socle commun des options nouvelles (Q5 à Q10, Q12)
+
+**N-1, Q9 : i_B et phase 7.**
+- Recommandation commune, celle du § 2, critère 13 (c) : **(i) i_B ≡ i_CB**.
+  - Grandeur dérivée, prime nulle déclarée, délai 0 des lignes 11b et 11c.
+  - Position dans le corridor : i_res = i_B = i_CB.
+  - Π^CB = i_CB(B_CB + L^CB − Res)/n_a ; sous E^CB_0 = 0, Π^CB = i_CB·M^G/n_a, négatif si i_CB < 0.
+- Phase 7 sous A8 :
+  - besoin de l'État (formule l. 497 à 500), puis 19a-BC = s_CB × besoin (s_CB écrit par le bloc 8 en phase 1), puis 19a-banque = reliquat (C19) ;
+  - les trois lignes 19a sont proposées par le bloc 9 ;
+  - 19b n'est jamais en acheteur passif ;
+  - triangulaire : la phase 7 lit les phases 5 et 6 et Π^CB de la phase 1.
+- Instruit, avis au § 5, non tranché.
+
+**N-2, Q6 : M^G\*.**
+- Option sans paramètre : **M^G\*_t = G_t + Tr_t + i_B B_t/n_a**, paiements bruts exécutés, lus en phase 7 (m = 1).
+- M^G\*/(12 PIB) sous C-HS à n_a = 12 : 0,018282 / 0,018904 / 0,022857 à π̄ = 0 / 2 / 10 %. Valeurs à n_a = 4 et 52 au § 3.C-3.
+- Contrôle de caisse en lecture nette, (i), marge 1 − Γ̄ max{s_G ; 1 − T/P} (où P désigne les paiements bruts du pas, critère 11) :
+
+  | π̄ | 0 | 2 % | 10 % |
+  |---|---|---|---|
+  | Marge (C-HS) | **0,0037** | 0,0334 | 0,2061 |
+
+  - À n_a = 4 et 52, à π̄ = 0 : 0,0019 et 0,0044.
+  - Le contrôle est inactif à l'état stationnaire, mais **la marge plafonne la hausse de G d'un tour au suivant** à 1/(Γ̄ s_G) − 1.
+  - À π̄ = 2 %, une dépense +5 % est rationnée au premier tour d'environ 1,5 % de G (1,05 × 0,9666 = 1,0149). À π̄ = 0, toute hausse au-delà de 0,37 % l'est.
+  - Cas à la main (`main9.py`, G +10 %) : G/M^G d'ouverture = 1,0642, le plan serait rationné de 6 %.
+  - La maquette n'exécute pas ce plafond ; les scénarios de `jeu` (§ 3.C-8) sont donc mesurés sans lui.
+- Effet sur les réserves (critère 11 (e)) : sous E^CB = 0 et Res = 0, L^CB = M^G. Une hausse de M^G\* de x relève L^CB de x (cas à la main : L^CB = 0,281969 avec M^G = 0,316582 et B_CB = 0,034613).
+
+**N-3, Q7 : ordre des paiements et parts non payées.**
+- Ordre déclaré :
+  1. **plan de dépense plafonné en phase 2 sur l'encaisse d'ouverture**, G^plan_t ≤ M^G_t. C'est une borne à seuil libre dont le seuil est une base, sur le modèle de H5 ;
+  2. phase 6 : intérêts (11b, 11c) prioritaires, puis Tr ; la part de Tr non versée devient la ligne nommée « transferts non versés » ;
+  3. ligne 16 négative en 8 (b), dernière ; la part non versée devient la ligne nommée « perte de la banque centrale non couverte », qui réduit E^CB (à décider avec la fiche 8).
+- Impôt non recouvré (ménages, entreprises) : ligne nommée du bloc 9, sans créance.
+- Sous α, une perte de la banque centrale est couverte par l'émission. Montré à la main : −Π^CB entre dans le besoin de la phase 7, et Π^CB est calculé en phase 1. Elle n'est donc non couverte que si le placement rate.
+- **Non mesuré** : cas à la main (i) à (iii) du critère 12, postes après chaque phase, renvoyés au J3.
+
+**N-4, Q5 : durée de la dette.**
+- Référence : toute la dette au taux de la dernière date de décision (M22, l. 548). Variante V au § 3.V.
+
+**N-5, Q10 : forme du plan de dépense.**
+- **Volume indexé sur la production potentielle, au prix attendu** : G^plan_t = P_{t−1}(1 + π\*^pas_t)·s_G·ŷ_t, avec ŷ_t = pr_t(1 − U^eq)N^pa_t.
+  - Unité du levier : s_G, en part du potentiel en volume.
+  - Un levier inchangé laisse l'état stationnaire (critère 19). Pas d'ancre nominale en u.m. (critère 10 (b) (ii) de la fiche 8).
+- Sur-commande (#53) : la part non servie (rationnement proportionnel du bloc production) n'est pas payée.
+  - Elle est **bornée par le plafond de caisse** (N-3).
+  - Son coût est l'éviction proportionnelle de C et de I au même tour.
+  - Elle est visible par « dépense demandée et exécutée ».
+  - Proposition soumise à `jeu`.
+
+**N-6, Q8 : T_F, Tr, cotisations.**
+- T_F suit le contrat de la fiche 6 : assiette avec la ligne 8, chute sur Div_F, T^e_F = Γ^e T_{F,t−1}, rattrapage au tour n + 1. Taux τ_F, valeur indicative 0 au socle ; à trancher, puisque l'assiette HS de T_H impose déjà les dividendes distribués.
+- Tr en part du PIB potentiel nominal (levier), valeur indicative 0 au test zéro.
+- Allocations de chômage (l. 977) : variante de stabilisateur proportionnel, compatible avec la fermeture (i). **Non mesurée.**
+- T_F > 0 et Tr > 0 : **non mesurés** sur la maquette.
+
+**N-7, Q12 : restitution.**
+- Choix adopté au § 2 : dette brute de clôture sur la somme des 12 derniers PIB, à une décimale.
+- Sous C-HS à 2 % : 0,27564 × 1,0216 = **28,2 % du PIB affiché**, contre 0,25674 année de PIB pour la dette consolidée du test zéro.
+
+### 3.C Option C — reprise réelle du surcroît d'intérêts (T9 réel), quatre assiettes (nouvelle)
+
+1. **Source exacte.**
+   - Nouvelle : fiche 6 § 3.L (T9, l. 934) et § 6.6 (C37) ; fiche 8 § 6.6 (C45, C46) ; assiette de Haig-Simons transposée de H3 (`sec:menages`, l. 1410).
+   - Godley et Lavoie (2007, chap. 9, DISINF), lus par reproduction.
+2. **Équations** (phase 6, lues sur l'ouverture et les phases 1 à 5, sans ordre interne).
+   - T_{H,t} = τ_H·A_t + φ·(i_B,t − i^ref_t)·(B_t − M^G_t − E^CB)/n_a, avec i^ref_t = (1 + r^ref)(1 + π\*_t) − 1 (T9 réel, C45) et φ = 1. Statut *choix de conception*.
+   - r^ref = r̄ de l'état résolu. T9 est nul à l'état stationnaire de référence.
+   - Les quatre assiettes A_t, toutes lues sur l'ouverture pour respecter le critère 2 (c) :
+
+     | Variante | Assiette A_t |
+     |---|---|
+     | C-WB | WB_t (phase 4) |
+     | C-Y | Γ^e Y^pre_{H,t−1}, avec Y^pre = WB + i_D D_H/n_a + Div_F + Div_Bk |
+     | C-Yhi | Γ^e (WB + Div_F + Div_Bk)_{t−1} |
+     | **C-HS** | Γ^e (Y^pre_{H,t−1} − π\*^pas D_{H,t−1}) : revenu de Haig-Simons avant impôt, les intérêts n'étant imposés qu'au-delà de l'érosion des dépôts par l'inflation visée |
+
+   - « C-WB nominal » (T9 de référence nominale) est la règle provisoire de la fiche 8.
+3. **État stationnaire impliqué.**
+   - T9 = 0. La dette consolidée est fixée par l'identité (critère 5 (b)) : (B − M^G − E^CB)/(12 PIB) = ν_H·YD^HS/PIB − (L − D_F)/(12 PIB) + E^Bk/(12 PIB).
+   - Vérifié sous C-HS à 2 % : 0,6505 − 0,4560 + 0,0622 = 0,2567, contre 0,25674 mesuré.
+   - Solde de Domar : déficit/PIB = n_a(Γ̄ − 1) × dette consolidée, soit 3,9671 % × 0,25674 = 1,0185 %, égal à la mesure.
+   - **C'est l'assiette qui fixe la dette**, par YD^HS/PIB.
+   - Valeurs (`final_hs.py`, `ratios.py`), avec r̄ = 1 % et s_G résolu :
+
+     | C-HS | n_a | π̄ = 0 | 2 % | 10 % |
+     |---|---|---|---|---|
+     | Dette brute B/(n_a PIB) | 12 | 0,11712 | 0,27564 | 0,53299 |
+     | Dette consolidée (B − M^G)/(n_a PIB) | 4 | 0,09466 | 0,25237 | 0,49978 |
+     | | 12 | **0,09884** | **0,25674** | **0,51013** |
+     | | 52 | 0,10045 | 0,25844 | 0,51438 |
+     | M^G/(n_a PIB) | 12 | 0,018282 | 0,018904 | 0,022857 |
+     | Déficit / PIB (Domar) | 12 | 0,1959 % | 1,0185 % | 5,9005 % |
+     | Solde primaire / PIB | 12 | −0,0971 % | −0,2432 % | −0,2381 % |
+     | Charge d'intérêts brute / nette (PIB) | 12 | 0,1171 / 0,0988 % | 0,8324 / 0,7754 % | 5,9162 / 5,6625 % |
+     | G/PIB ; T_H/PIB | 12 | 21,86 ; 21,76 % | 21,93 ; 21,68 % | 21,78 ; 21,54 % |
+     | YD^HS/PIB | 12 | 0,6528 | 0,6505 | 0,6462 |
+
+   - Sous C-WB à 2 % : dette consolidée 0,27403 ; sous C-Y : 0,25351.
+   - **Paramètre qui fixe le ratio** : ν_H (fiche 5), avec les normes de la fiche 6 et ϑ. **La dépendance à π̄** (+0,253 entre 2 et 10 % sous C-HS) vient de C30 et de YD^HS (critère 5 (d)).
+   - La dette du socle (environ 26 % du PIB à 2 %) est basse au regard des ordres de grandeur publics. **Non sourcé ici** : c'est une question de calibration au J3 (critère 22).
+4. **Comportement mesuré** (π̄ = 2 % sauf mention ; `tab.py`, `tab2.py`, `tab3.py`, `hs.py`, `uniq.py`, `final_hs.py`, `grid.py`).
+
+   | Grandeur | C-WB nominal | C-WB réel | C-Y réel | C-Yhi réel | **C-HS réel** |
+   |---|---|---|---|---|---|
+   | Gain statique, % de y par point de i | −0,0259 | −0,0259 | −0,2216 | −0,0599 | **−0,2208** |
+   | Δr̄ après G +1 % permanent | +918 pb | +918 pb | +97 pb | +322 pb | **+96 pb** |
+   | Δr̄/k_I, point-années | 36,7 | 36,7 | 3,9 | 12,9 | **3,8** |
+   | Critère 13 : r̄ à π\* = 0 / 10 % (paramètres de 2 %) | −7,87 / −17,69 % | +5,73 / +2,60 % | +3,11 / −3,09 % | +3,55 / +1,92 % | **+1,536 / +1,075 %** |
+   | Critère 13 : écart de C/PIB à 0 / 10 % | −5,80 / −16,02 pt | +2,55 / +0,34 pt | +1,27 / −2,99 pt | +1,49 / −0,01 pt | +0,435 / −0,473 pt |
+   | Racines de r̄ dans [−60 ; 100 %] à 0 / 2 / 10 % | une / une / une | une / une / une | −21,53 et +3,11 / −26,95 et +1,00 / −40,80 et −3,09 | −7,54 et +3,55 / −14,79 et +1,00 / −39,04 et +1,92 | −20,63 et +1,54 / −26,65 et +1,00 / −40,49 et +1,08 |
+   | Palier, taux tenu −1 point, tours 60 / 120 | +0,159 / +0,155 | idem | +0,367 / +0,402 | +0,104 / +0,100 | +0,363 / **+0,396** |
+   | Rayon à 0 / 2 / 10 % (deux régimes) | 0,999270 / 0,999413 / 0,999814 | idem | 0,997497 / 0,997482 / 0,997537 | 0,999098 / 0,998517 (période 3 737) / 0,997761 | **0,997497 / 0,997486 / 0,997558** |
+   | Demi-vie dominante | 1 181 tours | 1 181 | 275 | 467 | **275** |
+   | #56 (A) : écart cumulé des tours 1 à 12 ; P_36 | −0,160 ; −0,138 % | idem | −0,216 ; −0,227 % | −0,134 ; −0,073 % | −0,216 ; −0,226 % |
+   | #56 (B) : P_120 ; glissement | −1,81 % ; −0,151 | idem | −3,76 % ; −0,391 | −1,24 % ; −0,096 | −3,72 % ; −0,385 |
+   | φ\* (rayon = 1) à 0 / 2 / 10 % | — | 0,709 / 0,905 / 0,986 | ≤ 0 / 0,112 / 0,454 | 0,702 / 0,764 / 0,806 | ≤ 0 / **0,131** / **0,487** |
+   | Pays joué (φ = 0) à 2 / 10 % | 1,007482 / 1,019719 | idem | 1,001642 / 1,010681 | 1,007929 / 1,018494 | 1,001818 / 1,011036 |
+
+   - Les valeurs de la fiche 8 (§ 6.1 et 6.2) sont reproduites : −0,0259 ; +918 pb ; 36,7 ; −0,2216 ; +97 pb ; 3,9 ; 0,999413 ; 0,997482 ; −7,87 / −17,69 ; +5,73 / +2,60 ; 3,11 et −21,53.
+   - **Sous C-HS** (`final_hs.py`) :
+     - après G +1 % permanent, arrivée sur i à 1,9e−8 en relatif au tour 5 500 (20 demi-vies) ;
+     - glissement +0,214 / +0,161 / +0,085 / −0,006 aux tours 60 / 120 / 240 / 600 ;
+     - Δi +0,652 point au tour 120 ;
+     - marche de π\* de 2 à 3 % : glissement 2,949 % au tour 120, 3,0000 au tour 2 400 ; r̄ de Fisher 0,8788 % ;
+     - taux tenu −1 point : +0,014 au tour 3, +0,580 au tour 12, +0,396 au tour 120, +0,596 au tour 2 400. C'est un **nouveau palier**.
+   - **Grille G sous C-HS** (`grid.py`), 31 branches, chaque vitesse et chaque gain ×0,5 et ×2, deux régimes : toutes sous 1, pire cas 0,998883 (toutes vitesses ×0,5). ζ = 8 : 0,996234.
+   - **θ_H (C50)**, sous les deux définitions (`jeu9.py`, `final_hs.py`) :
+     - part d'une vente imprévue qui atteint les ménages (ΔDiv_F/ΔG au tour 1) : 0,4983, quelle que soit l'assiette ;
+     - θ_H au sens de la l. 1543 (ΔYD/Δ(p·y), production marginale non vendue) : −0,2000 sous C-WB, −τ·UC/p ; 0,0000 sous C-Y et C-HS. F2 finance la masse salariale d'une production invendue sur le dividende : ΔWB/Δ(py) = 0,80, ΔDiv_F/Δ(py) = −0,80.
+     - Les hypothèses provisoires θ_H = 0,8 ou 1 de `sec:menages` ne sont donc pas celles du socle sous F2 : la propension opérante est la part de la vente, 0,498.
+5. **Coût de calcul.** Une assiette et T9 : une dizaine d'opérations. Sans itération. 22,1 µs par pas pour la maquette entière.
+6. **Défauts connus.**
+   - Aucune instabilité connue réintroduite : ni avance, ni coupon de consolidation, ni dividende de trésorerie.
+   - C-WB : traîne d'inflation de 36,7 point-années et φ\* de 0,905 à 0,986.
+   - C-Y : impôt sur les intérêts nominaux, d'où le critère 13 dégradé (−3,09 % à 10 %).
+   - Deux racines de r̄ sous C-Y, C-Yhi et C-HS (C49) : la seconde est à r̄ ≤ −7,5 % à 0 % et ≤ −14,8 % à 2 %. **Aucune n'est dans le domaine de la fiche 8** : une condition de domaine, r̄ > −5 % par exemple, à déclarer en `\limites`, sélectionne la racine. Son voisinage dynamique n'est pas mesuré.
+7. **Identités de bilan touchées.**
+   - Lignes 2, 7 (T9 compris), 11b, 11c, 16 et 19a ; aucune ligne ajoutée.
+   - Cas à la main (`main9.py`, C-Y, s_CB = 0,5, G +10 %) :
+     - ligne 2 : 0,306275 ; ligne 7 : 0,275426 ; ligne 11b : 0,010307 ; ligne 11c : 0 (B_CB d'ouverture nul) ; ligne 16 : 0,000724 ; 19a-banque = 19a-BC = 0,034613 ;
+     - ΔV_G par le stock = par les flux = −0,040431486786, écart −2,8e−16 ;
+     - M^G de clôture = M^G\* = 0,316582 ; E^CB = 0 ; E^Bk stock − flux = −2,0e−15.
+8. **Ce que le joueur en percevrait** (C-HS ; `final_hs.py` ; mesures sans le plafond de caisse de N-2).
+   - Taux d'imposition +1 point :
+     - production −0,838 % au tour 8 (moitié du pic au tour 15) ;
+     - solde sur 12 tours +0,791 point au tour 12 ;
+     - dette restituée −0,529 point au tour 12, −2,441 au tour 60.
+   - Dépense +1 % pendant 12 tours : production +0,290 % au tour 6, moitié au tour 12 ; dette +0,095 point au tour 12.
+   - Dépense +5 % pendant 12 tours : production +1,445 % ; solde −0,944 point ; dette **+0,473** point au tour 12, +0,599 au tour 60.
+   - Transferts +0,2 % du PIB potentiel mensuel pendant 12 tours : production +0,175 % au tour 7, moitié au tour 14 (critère 6 (d) tenu).
+   - Une hausse de taux alourdit l'impôt (T9) le tour même : la reprise est visible.
+9. **Empreinte sur l'état.**
+   - C-Y, C-Yhi et C-HS : une variable d'état assise sur un flux (Y^pre_{t−1} ou sa variante, u.m. par pas, valeur stationnaire Y^pre/Γ̄), écrite en phase 9 au montant exécuté (M29).
+   - C-WB : aucune.
+   - T9 : aucune (r^ref est une constante de l'état résolu).
+
+### 3.D Option D — rappel proportionnel de la dette (forme de Bohn), nouvelle
+
+1. **Source exacte.** Bohn (1998), résumé retrouvé : forme qualitative seulement. Demande de la fiche 8 § 6.3 (d).
+2. **Équation.** T^rap_t = (φ_b/n_a)·[(B − M^G − E^CB)_t − b̄·n_a·P_{t−1}(1 + π\*^pas)ŷ_t], ajouté à T_H. Proportionnel, sans action intégrale. Statut *choix de conception*.
+3. **État stationnaire impliqué.**
+   - À la référence, b = b̄ et T^rap = 0.
+   - Après tout choc permanent, la dette d'arrivée reste fixée par les normes privées, et T^rap ≠ 0 en permanence : **l'arrivée dépend de φ_b**.
+4. **Comportement mesuré** (`tab2.py`, `tab3.py`).
+   - Avec C-Y réel :
+
+     | φ_b (par an) | 0,05 | 0,1 | 0,2 |
+     |---|---|---|---|
+     | Rayon à 2 % | 0,997282 | 0,997234 | 0,997204 |
+     | Gain statique (% de y par point) | −0,3401 | −0,4477 | −0,6361 |
+     | Δr̄ après G +1 % permanent | +64,2 pb | +48,9 pb | +34,5 pb |
+     | r̄ à π\* = 3 % | −0,237 % | −0,452 % | −0,655 % |
+
+     L'écart d'arrivée entre branches dépasse de loin 1e−6 : **le critère 7 (iii) échoue**.
+   - Sans T9 (D0) :
+     - φ_b = 0,1 : 0,998096 à 2 %, **1,006585 à 10 %** ;
+     - φ_b = 0,3 : 0,997085 et 0,999740.
+5. **Coût de calcul.** Négligeable.
+6. **Défauts connus.** Continuum d'arrivées indexé par le gain (`docs/exigences.md` § 2.7). Sans T9, instable à 10 % pour φ_b = 0,1.
+7. **Identités de bilan touchées.** Ligne 7 seulement.
+8. **Ce que le joueur en percevrait.** « Plus de dette, plus d'impôt » : lisible. Mais l'état d'arrivée dépend d'un réglage caché.
+9. **Empreinte sur l'état.** Aucune variable d'état (b̄ est une constante de l'état résolu).
+
+### 3.E Option E — leviers tenus, forme SIM/PC (pays joué, « intérêts financés par le déficit »)
+
+1. **Source exacte.** Godley et Lavoie (2007, chap. 3, SIM ; chap. 4, PC), par reproduction `sfcr` : G exogène, taux d'imposition fixe.
+2. **Équations.** T_H = τ_H·A_t ; G^plan selon N-5 ; aucune reprise (φ = 0).
+3. **État stationnaire impliqué.** Le même que C à la référence, puisque T9 y est nul. Après un choc de taux, le surcroît d'intérêts est financé par le déficit.
+4. **Comportement mesuré** (`tab2.py`, `final_hs.py`).
+   - Rayons (WB / Y / Yhi / HS) :
+
+     | | WB | Y | Yhi | HS |
+     |---|---|---|---|---|
+     | π̄ = 2 % | 1,007482 | 1,001642 | 1,007929 | 1,001818 |
+     | π̄ = 10 % | 1,019719 | 1,010681 | 1,018494 | 1,011036 |
+     | π̄ = 0 | 1,002307 | 0,997894 | 1,003219 | non mesuré |
+
+   - #56 (A) sous E-HS :
+     - à 0 % : écart cumulé −0,136 %, P_36 −0,110 % ;
+     - à 2 % : −0,053 % et **P_36 +0,033 %**, P1 échoue ;
+     - à 10 % : +0,085 % et +0,463 %.
+   - Scénarios : G +5 % pendant 12 tours, dette +0,603 point au tour 12 et +1,073 au tour 60 (au-dessus du contrôle) ; taux d'imposition +1 point, production moitié du pic au tour 34.
+5. **Coût de calcul.** Négligeable.
+6. **Défauts connus.** Divergence de C2 (dominance budgétaire, critère 9 (d)). Lecture de Leeper (1991) au § 3.N-8 ci-dessous, par analogie et non établie.
+7. **Identités de bilan touchées.** Celles du socle.
+8. **Ce que le joueur en percevrait.** Une hausse de taux inflationniste à moyen terme, explosive à 10 %. C'est le piège signalé par `jeu` (fiche 8 § 7, réponse 5).
+9. **Empreinte sur l'état.** Aucune.
+
+### 3.F Option F — fermeture budgétaire sur le taux neutre (nouvelle)
+
+1. **Source exacte.** Nouvelle. L'idée est voisine de la finance fonctionnelle : le taux réel est fixé, le budget règle la demande. Aucune référence lue ne la soutient sous cette forme.
+2. **Équation.**
+   - τ_{H,t+1} = τ_{H,t} + (k_F/n_a)(r̂\*_t − r^ref), en phase 9, avec C-Y réel.
+   - Le bloc 9 lit r̂\*, variable d'état d'ouverture du bloc 8.
+   - Statut *choix de conception*.
+3. **État stationnaire impliqué.**
+   - Il y a deux actions intégrales et deux conditions : π̄ = π\* (bloc 8) et r̄ = r^ref (bloc 9). τ_H est fixé par l'égalité de la demande au potentiel. Le rang est plein.
+   - r̄ est indépendant de π̄ et des gains. G/y, I/y, tu, ti et V_H/(n_a YD^HS) sont invariants : **c'est la seule option qui tient le critère 13 par construction.**
+   - La fermeture est nouvelle, ni (i) ni (ii) du critère 6 (a). C2 reste au bloc 8.
+4. **Comportement mesuré** (`tabF.py`, `simF.py`, `arr9.py`).
+   - Rayon sous C-Y réel :
+
+     | k_F | 0,003 | 0,01 | 0,03 | 0,1 | 0,3 |
+     |---|---|---|---|---|---|
+     | π̄ = 2 % | 0,999045 | 0,998184 | 0,998267 (période 793) | 0,998951 | 0,999969 |
+     | π̄ = 0 | 0,998894 | 0,998234 | 0,998866 | 0,999462 | **1,000432** |
+     | π̄ = 10 % | 0,999223 | 0,998267 | 0,998009 | 0,997949 | 0,999031 |
+
+   - Sous l'assiette WB : instable dès k_F = 0,03 (1,000097).
+   - Marche de π\* de 2 à 3 % : r̄ = 1,0007 % au tour 2 400 (k_F = 0,01).
+   - G +1 % permanent : Δi au tour 2 400 = −0,001 point, Δτ_H = +0,00256 ; arrivée sur i à 3,0e−8.
+   - #56 : (A) −0,216 %, P_36 −0,225 % ; (B) P_120 −3,57 %.
+   - **Taux tenu −1 point (k_F = 0,01) : glissement +0,345 au tour 120, −0,591 au tour 600, +1,045 au tour 1 200, +3,238 au tour 2 400 : oscillation divergente.** Sous un taux tenu, r̂\* intègre encore l'écart d'inflation sans agir sur le taux, et le budget devient une double action intégrale sur l'inflation.
+5. **Coût de calcul.** 21,0 µs par pas pour la maquette entière.
+6. **Défauts connus.**
+   - Instable dès que le levier de taux est tenu : c'est l'usage du joueur.
+   - Le budget devient alors l'ancre nominale. C'est le cas « retour » du critère 10 (b) (ii) de la fiche 8, ici divergent.
+   - Lecture croisée d'une variable d'état du bloc 8 par le bloc 9 : contrat partagé.
+   - Cycle long, de 66 ans.
+7. **Identités de bilan touchées.** Ligne 7.
+8. **Ce que le joueur en percevrait.**
+   - Après un choc permanent, l'impôt paie la dépense et r̂\* revient à sa référence. Cela répond à la « mémoire de r̂\* » de `jeu`.
+   - Mais tenir le taux fait diverger l'économie sans signal.
+9. **Empreinte sur l'état.** τ_H, variable d'état (sans dimension, valeur stationnaire résolue).
+
+### 3.L Option L — finance fonctionnelle (Lerner, 1943), instruite par argument
+
+- Une action intégrale budgétaire sur l'écart d'activité est exclue par le critère 6 (b) : sous la verticale de M25, elle n'ajoute aucune équation et laisse un continuum.
+- La version proportionnelle (stabilisateur) est compatible avec la fermeture (i). Elle est déjà présente sous les assiettes C-Y et C-HS (impôt pro-cyclique) et sous l'allocation de chômage (N-6).
+- La version « taux fixé, budget sur la demande » est l'option F.
+- **Non mesurée séparément** : rubriques 2 à 9 sans objet, parce que l'option se ramène à F ou à N-6.
+
+### 3.V Variante V — durée de la dette, à taux apparent (C24, critère 10 (b))
+
+1. **Source exacte.** v1.5, `eq:iapp`, l. 1484 à 1490.
+2. **Équation.** i^app_{t+1} = [i^app_t(B_t − B_t/(n_a T̄)) + i_CB,t(B_t/(n_a T̄) + émission⁺_t)]/(B_t + émission⁺_t), avec T̄ = 5 ans. i_B = i^app pour les lignes 11b et 11c, et pour T9.
+3. **État stationnaire impliqué.** i^app = i_B. Aucun effet stationnaire.
+4. **Comportement mesuré.**
+   - Rayons : C-Y réel 0,997503 ; C-HS 0,997507 (contre 0,997482 et 0,997486 sans la variante).
+   - Pays joué C-Y : 1,001125 à 2 % et 1,006981 à 10 % (contre 1,001642 et 1,010681) ; pays joué C-HS : 1,001266.
+   - #56 (A) sous C-Y : −0,191 % et −0,207 %.
+   - La variante **ralentit le canal rentier sans stabiliser le pays joué**.
+5. **Coût de calcul.** Négligeable.
+6. **Défauts connus.**
+   - Pas de coupon de consolidation : l'instabilité 3 n'est pas réintroduite (moyenne pondérée, sans coupon au taux du moment).
+   - La part détenue par la banque centrale « se reprice » immédiatement (critère 10 (c)) : non modélisé ici (B_CB = 0).
+7. **Identités de bilan touchées.** Lignes 11b et 11c : leur taux n'est plus celui de la dernière décision. C'est une décision citant M22 (l. 548), puisque `tab:leviers-cadre` voit son délai changer.
+8. **Ce que le joueur en percevrait.** Une hausse de taux qui pèse sur la charge d'intérêts sur plusieurs années.
+9. **Empreinte sur l'état.** i^app (par an, valeur stationnaire i_B), sans cohortes.
+
+### 3.Q Dépendance de la demande privée à π̄ et critère 13 (C15) (fiche 8 § 6.3 (e))
+
+**Décomposition** (`decomp.py`, `decomp2.py`). Grandeur mesurée : Δs_G entre π̄ = 0 et 10 % à r̄ = 1 % donné, en fraction de y. Trois canaux sont neutralisés à la main (pour la mesure seulement) :
+- **C30** : capital et stocks à la valeur comptable de π̄ = 2 % ;
+- **conversion** : taux annuels convertis exactement, (1 + i)^{1/n_a} − 1, au lieu de i/n_a (ADR 0008, I.2) ;
+- **écarts réels** : ϖ_L et ϖ_D proportionnels à 1 + π̄.
+
+| Assiette | Base | C30 neutralisé | Conversion exacte | C30 + conversion | Les trois |
+|---|---|---|---|---|---|
+| WB | +0,00134 | −0,00141 | +0,00411 | +0,00002 | +0,00002 |
+| Yhi | +0,00023 | −0,00182 | +0,00295 | −0,00011 | +0,00004 |
+| Y | +0,01618 | +0,01415 | +0,01808 | — | +0,01507 |
+| HS | +0,00109 (s_G : 0,218474 / 0,219573 / 0,219568) | — | — | — | — |
+
+- **Les deux sources dominantes sont C30 (fiches 2 et 6) et la conversion linéaire (cadre).** Elles sont de signes opposés et se compensent en partie.
+- Sous l'assiette Y, l'impôt sur les intérêts nominaux domine.
+- H3 (Haig-Simons) ne laisse pas de résidu mesurable au-delà de 2e−5 y.
+- T9 nominal, au lieu de réel : −7,87 / −17,69 % au lieu de +5,73 / +2,60 % (assiette WB).
+
+**r̄ au critère 13** (paramètres de 2 % fixés) :
+- tel quel : C-HS +1,536 / +1,075 % (écart de 0,46 point entre 0 et 10 %) ; C-WB réel +5,73 / +2,60 % ;
+- les trois canaux neutralisés : C-WB 0,978 / 1,078 % (0,100 point) ; C-HS 0,976 / 1,088 % (0,112 point) ; C-Yhi 0,913 / 1,311 % ; C-Y 2,369 / −4,526 %.
+
+**Conclusion.**
+- Aucune règle de la fiche 9 qui garde la fermeture (i) ne tient le critère 13 au seuil adopté. La meilleure, C-HS, divise l'écart par 20 par rapport à C-WB nominal, mais le seuil demande de toucher la fiche 6 (C30), le cadre (ADR 0008) et la fiche 7 (écarts nominaux), et encore il ne serait que frôlé.
+- La seule règle qui le tient (F) diverge sous taux tenu (§ 3.F).
+
 
 ## 4. Tableau comparatif
 
-À instruire (jalon 2).
+Abréviations : « ok » = tenu ; « échec » = non tenu ; « mesure » = critère de mesure, valeur publiée ; « n. m. » = non mesuré. Les renvois portent sur le § 3. La colonne C-HS est l'option recommandée ; « C autres » regroupe C-WB, C-Y et C-Yhi.
+
+| Critère | A. v1.5 | B. v2.0 | C-HS | C autres | D. rappel | E. leviers tenus | F. taux neutre |
+|---|---|---|---|---|---|---|---|
+| 1 (a)-(d) flux et identités | avances et capitalisation hors portes (A-7) | B_H > 0, rachats (B-7) | ok, cas à la main 2,8e−16 (C-7) | ok (C-7) | ok (D-7) | ok (E-7) | ok (F-7) |
+| 2 phases et lectures | ρ^G lit des recettes prévues (A-9) | historique (B-1) | ok : assiette retardée, ouverture (C-2) | WB lu en phase 4 (C-2) | ok | ok | lit r̂\* du bloc 8 : contrat partagé (F-6) |
+| 3 relevé des 28 lignes | jalon 4 | jalon 4 | jalon 4 | jalon 4 | jalon 4 | jalon 4 | jalon 4 |
+| 4 (a) forme fermée | b\* ≠ b̄ (A-3) | ok si Γ^e (B-3) | ok (C-3) | ok (C-3) | ok à la référence (D-3) | ok (E-3) | ok (F-3) |
+| 4 (b) comptage | rang plein, continuum après choc (A-3) | dette ancrée, τ résultat (B-3) | rang plein, r̄ résolu ; racine parasite r̄ < −7 % (C-6) | idem | arrivée fonction de φ_b (D-4) | rang plein | rang plein, 2 intégrateurs pour 2 conditions (F-3) |
+| 4 (c) n_a | n. m. | n. m. | Domar 3,98 / 3,97 / 3,96 %, fenêtre déclarée (C-3) | C-WB et C-Y mesurées (`ratios.py`) | n. m. | idem C | n. m. |
+| 4 (d) dépendance à π̄ | n. m. | r̄ −2,03 pt par point de π\* (B-4) | +0,253 année de PIB entre 2 et 10 % (C-3) | C-Y +0,241 (`ratios.py`) | mesure | idem C | r̄ invariant (F-4) |
+| 5 (a)-(c) ratio de dette | b\* fixe (A-3) | b̄ visé (B-3) | 0,09884 / **0,25674** / 0,51013, consolidée (C-3) | C-WB 0,27403 ; C-Y 0,25351 | idem C | idem C | idem C |
+| 5 (d) | n. m. | n. m. | mesure (C-3) | mesure | — | — | — |
+| 6 (a)-(c) fermeture | (i) avec continuum | (i) + ancre de dette | (i), lecture (1) | (i) | (i), arrivée fonction du gain | (i) | fermeture nouvelle (F-3) |
+| 6 (d) persistance ≤ 60 tours | n. m. | n. m. | ok : tours 12 et 14 (C-8) | ok | n. m. | ok : tours 14 à 55 (E-4) | n. m. |
+| 7 vitesses et arrivée | **échec** (A-3) | ok à Γ^e exact (B-3) | ok : aucun gain du bloc 9 ; grille 31 branches (C-4) | ok | **échec** : r̄(3 %) de −0,24 à −0,66 % (D-4) | ok | ok à la référence ; instable sous taux tenu (F-4) |
+| 8 (a) instabilités connues | 2, 15 (A-6) | 5 évitée, 15 (B-6) | aucune (C-6) | aucune | aucune | dominance déclarée | nouvelle, sous taux tenu (F-6) |
+| 8 (b) boucle propre | Domar, rayon < 1 sous r̄ < g | idem | (1 + i^ref/n_a)/Γ̄ = 0,999214 à 2 % | idem | 0,99088 (φ_b = 0,1) | 0,999214 | idem C |
+| 8 (c) boucle conjointe | **1,003214** (A-4) | 0,997149 (B-4) | 0,997486 ; pire 0,998883 (C-4) | 0,997482 à 0,999413 | 0,997234 | **1,001818 à 1,007929** | 0,998184 |
+| 8 (d) avec la règle de la fiche 8 | échec | ok | ok | ok | ok | échec | ok, sauf taux tenu |
+| 8 (e) Leeper | budget passif, mal réglé | passif | passif (C37) | passif | passif | actif : dominance | budget sur la demande |
+| 9 (a) C23 | réponse sur les achats | réponse par τ, délai | reprise intégrale à délai 0 ; canal rentier nul à fréquence nulle | idem | idem + rappel | aucune : rentier positif | idem C |
+| 9 (b) C37 | échec | partiel (B-4) | ok | ok | ok | échec | ok |
+| 9 (c) C36 (i)-(iii) | échec | ok | ok : gain −0,2208, arrivée 1,9e−8 (C-4) | ok (C-WB très lent) | (i) ok, (ii-a) échec | échec | ok, sauf taux tenu |
+| 9 (d) dominance budgétaire | — | — | voir E | voir E | — | mesure (E-4) | — |
+| 10 (a)-(b) durée | `eq:iapp` (A-2) | i_app (l. 508) | variante V (§ 3.V) | idem | idem | V pays joué 1,001125 | — |
+| 10 (c) part de la banque centrale | n. m. | n. m. | n. m. (B_CB = 0) | n. m. | n. m. | n. m. | n. m. |
+| 11 (a)-(c) M^G\* | T^disp | 4 % du PIB annuel (B-6) | m = 1 ; marge 0,37 / 3,34 / 20,6 % (N-2) | idem | idem | idem | idem |
+| 11 (d) P2 | — | — | avis § 5 | — | — | — | — |
+| 11 (e) | — | — | L^CB = M^G (N-2) | idem | idem | idem | idem |
+| 12 parts non payées | ρ^G implicite, capitalisation (A-6) | ρ^G écrêté (B-6) | ordre déclaré (N-3) ; cas (i) à (iii) n. m. | idem | idem | idem | idem |
+| 13 phase 7 et i_B | « jusqu'à équilibre » (A-5) | ménages et banque (B-7) | A8, i_B ≡ i_CB (N-1) | idem | idem | idem | idem |
+| 14 grandeurs lues ; θ_H | — | — | θ vente 0,498 ; θ_H 0 (C-4) | θ_H −0,20 sous WB | — | — | — |
+| 15 test zéro | n. m. | n. m. | préalable : un pas 3,6e−15 (§ 3.0) ; au J3 | idem | idem | idem | idem |
+| 16 bornes | écrêtage [0,6 ; 1,6] (A-6) | 4 écrêtages (B-6) | plafond du plan sur M^G (base), domaine de r̄ (C-6) | idem | idem | idem | idem |
+| 17 (a)-(c) | — | — | § 3.C-8 et § 5 | — | — | — | — |
+| 17 (d) seuils de `jeu` | — | — | d1 ok ; d2 ok ; **d3 0,473 < 0,5 sous la règle** ; pays joué 0,603 ok (C-8, E-4) | C-Y 0,489 ; C-WB 0,376 | — | ok | idem C-Y |
+| 17 (e) sur-commande | rationnement ρ^G | ρ^G | plafond de caisse et éviction (N-5) | idem | idem | idem | idem |
+| 18 #56 (P1, P2) | **échec** : P_36 +0,165 % | ok | ok : −0,216 / −0,226 % ; −3,72 % | ok | ok | échec à 2 et 10 % | ok |
+| 19 simplicité, sans drapeau | écrêtage, T^disp | historique, 4 drapeaux | 1 paramètre (τ_H) + T9 ; 1 état | 0 ou 1 état | + φ_b | aucun | + k_F, état τ |
+| 20 coût | itération (A-5) | ok | 22,1 µs par pas | idem | idem | idem | 21,0 µs |
+| 21 notation | — | — | § 5 (symboles proposés) | — | — | — | — |
+| 22 calibrabilité | — | — | dette basse, environ 26 % (C-3) | — | — | — | — |
+| 23 statut des faits | § 3.0 | § 3.0 | — | — | — | — | — |
+| **13 de la fiche 8 (C15)** | n. m. | **échec** (r̄ −1,03 % à 3 %) | **échec** : 0,46 point (§ 3.Q) | échec : de 3,1 à 9,2 points | échec | idem C | **ok** par construction (F-3) |
+
 
 ## 5. Avis de l'expert pilote
 
-À instruire (jalon 2).
+### Recommandation
+
+**Option C-HS**, avec le socle commun du § 3.N.
+- **Règle de référence** (test zéro, pays non joués), sous la fermeture monétaire (i), lecture (1) de #44 :
+  - plan de dépense en volume indexé sur la production potentielle (s_G résolu) ;
+  - impôt des ménages au taux τ_H, assis sur le revenu de Haig-Simons avant impôt, retardé d'un tour, Γ^e(Y^pre_{t−1} − π\*^pas D_{H,t−1}) ;
+  - reprise intégrale et réelle du surcroît d'intérêts : T9 avec i^ref de Fisher sur π\*, φ = 1 ;
+  - Tr et τ_F en leviers, à valeur indicative nulle au test zéro.
+- **Motifs, critère par critère** :
+  - critère 9 : gain statique −0,2208 % de y par point de taux, Δr̄ +96 pb, traîne d'inflation de 3,8 point-années (contre 36,7) ;
+  - critère 8 : rayon 0,997486, stable à 0, 2 et 10 %, pire cas de la grille 0,998883 ;
+  - critère 18 : #56 tenue ;
+  - critère 7 : aucun gain du bloc 9 ;
+  - critère 13 : la plus faible dépendance à π̄ des options sûres, et aucun impôt sur les intérêts nominaux (critère 13 (c)) ;
+  - critère 19 : un paramètre et une variable d'état.
+- **Valeur par défaut du levier budgétaire en pays joué** (C47) : « suivre la règle » = C-HS avec T9.
+  - φ\* sous l'assiette HS : 0,131 à 2 % et 0,487 à 10 % ; ≤ 0 à 0 %. L'assiette HS donne donc **une marge de stabilité que l'assiette WB n'a pas** (φ\* de 0,905 à 0,986).
+  - « Leviers tenus » (E) est un écart déclaré, avec la mention « charge d'intérêts financée par le déficit » : instable à 2 % (1,001818) et à 10 %.
+- **Écartées** :
+  - A, instable à sa pente d'origine ;
+  - B, qui fait de la dette l'ancre du taux réel (r̄ −2,03 points par point de cible), avec un historique et des drapeaux ;
+  - D, arrivée fonction de φ_b (critère 7) ;
+  - F, divergente sous taux tenu.
+
+### Critère 13 de la fiche 8 (C15), réponse demandée
+
+**Établi sur la maquette** : aucune règle recommandable de la fiche 9 ne le tient au seuil de 0,1 point. C-HS en est à 0,46 point sur r̄ et à ±0,45 point sur C/PIB. Les sources restantes sont hors de la fiche 9 (§ 3.Q). La seule règle qui le tient, F, diverge sous taux tenu.
+
+Voies au mainteneur, comme au § 6.3 de la fiche 8 :
+- (a) une correction prospective du critère 13, l'ancien verdict restant publié ;
+- (b) la réouverture conjointe de C30 (M28), de la conversion linéaire (M22, ADR 0008) et des écarts nominaux (M31). Même alors, l'écart est de 0,10 à 0,11 point : la voie (b) ne suffit pas seule.
+
+Je ne propose aucun seuil nouveau.
+
+**Deux lectures du critère 13** (à trancher) :
+- (α) paramètres fixés (s_G fixé, r̄ résidu) : lecture appliquée ci-dessus ;
+- (β) état résolu à chaque π\* en lecture (1), r̄ donné : r̄ est alors invariant par construction ; s_G +0,110 point de 0 à 10 % ; C/PIB −0,662 point, dont la valorisation des stocks (C30). Mesure : `uv run python` sur `lib9`, sortie au compte rendu.
+
+Avis : (α) est la seule lecture qui teste quelque chose.
+
+### Options renvoyées à M33 (avis, non tranchées)
+
+- **Lignes 19a** : A8, comme recommandé au § 2. Il exige que s_CB soit écrit par le bloc 8 en phase 1 ; le cas à la main (C-7) le montre exécutable et triangulaire.
+- **i_B** : (i) i_B ≡ i_CB. La variante V (taux apparent) n'apporte pas de stabilité au pays joué (§ 3.V) ; je la renvoie au J6 avec la prime.
+- **M^G\* et contrôle de caisse** : m = 1 (interprétation), avec la lecture nette du contrôle.
+  - Constat : la marge plafonne une hausse de dépense au premier tour à 0,37 % à π̄ = 0, 3,34 % à 2 % et 20,6 % à 10 %. La dépense +5 % du scénario de `jeu` serait rationnée d'environ 1,5 % au premier tour à 2 %.
+  - Si `jeu` juge ce rationnement non lisible, m > 1 est une **modification** (borne de la l. 502, décision citant M22). À trancher avec `jeu`.
+- **E^CB_0 = 0** : favorable. La dette consolidée égale alors B − M^G, et Π^CB = i_CB M^G/n_a.
+- **P2** : lecture (i), garder M^G\* comme encaisse visée.
+
+### Réserves et conditions (à vérifier au premier essai)
+
+Numérotées C51 à C56 sous réserve de l'ordre réel d'intégration.
+- **C51 (C49)** : la racine parasite de r̄ (≤ −7,5 %) est exclue par une condition de domaine déclarée en `\limites`. Son voisinage dynamique est à mesurer au J3.
+- **C52 (C50)** : θ_H est republié au sens de la l. 1543 (0 sous HS) et sous le sens « vente imprévue » (0,498). La boucle de `sec:menages` est à refaire avec les impôts.
+- **C53** : la maquette n'exécute ni le plafond de caisse, ni Tr > 0, ni τ_F > 0. Le J3 mesure le scénario G +5 % avec le plafond.
+- **C54 (critère 17 (d3))** : la dette restituée monte de 0,473 point au tour 12 sous la règle, sous le seuil de 0,5 point. Elle monte de 0,603 point en pays joué. Je signale l'écart à `jeu` sans changer le seuil.
+- **C55** : ratio de dette bas (environ 26 % du PIB) : calibration de ν_H au J3, sur des sources (critère 22).
+- **C56** : symboles proposés au critère 21 :
+  - τ_H, Y^{pre}_H, i^{ref} (ou ϱ^{ref}) et T^{rep} pour la reprise : 0 occurrence chacun dans le `.tex` (`grep -c -F`) ;
+  - s_G : 4 occurrences de la chaîne, dont « mesures_G_K » ; à vérifier par `docwriter` ;
+  - m est déjà pris : le multiplicateur d'encaisse, s'il existe, prendra κ_G (0 occurrence).
+
+### Lectures possibles
+
+- (a) Assiette HS contre assiette Y : un écart de dynamique de 0,1 % au plus ; HS supprime l'impôt sur la part inflationniste des intérêts. Avis : HS.
+- (b) T_F : τ_F = 0 au socle, l'assiette HS imposant les dividendes distribués, contre un τ_F actif. Avis : τ_F levier, valeur indicative 0.
+
+### Questions pour `monnaie`
+
+1. A8 et i_B ≡ i_CB sous C-HS : accord ? Π^CB = i_CB M^G/n_a est négatif si i_CB < 0 : quelle ligne pour la part non couverte ?
+2. T9 réel reste non nul dans les états déplacés (r̄ ≠ r^ref après un choc permanent) : est-ce compatible avec la règle SN de la fiche 8 ?
+3. Les écarts ϖ_L et ϖ_D nominaux sont l'une des trois sources du critère 13 : accepteriez-vous des écarts réels (décision citant M31) ?
+4. Option F : la lecture de r̂\* par le bloc 9 est-elle recevable ? Partagez-vous le constat de divergence sous taux tenu ?
+5. Leeper : C-HS est-elle « passive » au sens de Leeper (1991), et E « active » ?
+6. B est stable ici, contrairement à la cible intégrale de B/PIB de la fiche 6 § 6.6 : différence de forme (PI sur le déficit) ou de maquette ?
+7. Valeur stationnaire de s_CB (B_CB/B) sous l'option C de la fiche 8 ?
+8. Variante V : la part détenue par la banque centrale qui se reprice immédiatement (critère 10 (c)) suffit-elle à la renvoyer au J6 ?
+
+### Questions pour `jeu`
+
+1. L'assiette de Haig-Simons, « impôt sur le revenu ; les intérêts ne sont imposés qu'au-delà de l'inflation visée », est-elle lisible ? Quel libellé pour T9 (« reprise des intérêts ») ?
+2. Valeur par défaut « suivre la règle » avec reprise, et « leviers tenus » en écart déclaré : faut-il exposer la part reprise φ comme levier, puisque φ\* vaut 0,13 à 2 % et 0,49 à 10 % ?
+3. M^G\* = paiements bruts : une hausse de dépense au-delà de 3,3 % (2 %) ou de 0,37 % (π\* = 0) est rationnée au premier tour. Coût visible acceptable, ou faut-il m > 1 ?
+4. Sur-commande (#53) : plafond de caisse et éviction proportionnelle de C et de I, avec « dépense demandée et exécutée » : suffisant ?
+5. Seuil (d3) : 0,473 point sous la règle, 0,603 en pays joué : lecture du seuil ?
+6. Après une dépense permanente : glissement +0,161 au tour 120 et +0,085 au tour 240 (contre +0,238 et +0,224) : acceptable ?
+7. Taux tenu un point bas : palier +0,396 au tour 120 puis +0,596 au tour 2 400 : un nouveau palier lisible ?
+8. Option F : elle ramène le taux neutre à sa référence après un choc permanent, mais diverge si le taux est tenu. Confirmez-vous qu'elle est à écarter ?
+
+### Recommandation en une phrase
+
+Retenir C-HS (reprise réelle intégrale des intérêts, impôt sur le revenu de Haig-Simons retardé, dépense en volume indexée sur la production potentielle) comme règle de référence et valeur par défaut du levier budgétaire, avec le socle commun (A8, i_B ≡ i_CB, M^G\* = paiements bruts, E^CB_0 = 0), et porter au mainteneur le constat qu'aucune règle recommandable de la fiche 9 ne tient le critère 13.
 
 ## 6. Avis de l'expert consulté
 
@@ -362,3 +985,4 @@ Décisions du mainteneur du 04/10/2026, prises avant l'instruction, sur les ques
 | 04/10/2026 | Ouverture (issue #73) ; § 1 et § 2 proposés (jalon 1), en attente de validation des critères par le mainteneur | `macro` ; session principale |
 | 04/10/2026 | Relecture croisée intégrée (avis de `macro`, `monnaie` et `jeu`, une relance ciblée ; qualifications d'`architect`) ; options ouvertes marquées « à trancher par le mainteneur » | `macro` ; `monnaie` ; `jeu` ; `architect` ; session principale |
 | 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #73 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
+| 04/10/2026 | Jalon 2, première partie : § 3 à § 5 instruits (huit options sur la maquette conjointe unique des fiches 8 et 9 ; recommandation de l'option C-HS) ; § 6 et § 7 à rendre | `macro` ; session principale |
