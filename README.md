@@ -48,7 +48,7 @@ Vérification des matrices des bilans et des flux de la spécification (tables `
 uv run python outils/verifier_matrices.py [--strict] [fichier.tex]
 ```
 
-Sans `--strict`, elle rend compte sans échouer ; la batterie `tests/unitaires` la lance en `--strict` sur la spécification.
+Sans `--strict`, elle rend compte sans échouer, sauf si le fichier est absent, illisible ou non UTF-8 (code 1 dans les deux modes) ; la batterie `tests/unitaires` la lance en `--strict` sur la spécification.
 
 Compilation de la spécification (XeLaTeX ; MiKTeX sur le poste local, TeX Live en session cloud et en CI) :
 
