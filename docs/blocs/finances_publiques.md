@@ -968,7 +968,247 @@ Retenir C-HS (reprise réelle intégrale des intérêts, impôt sur le revenu de
 
 ## 7. Avis de `jeu`
 
-À instruire (jalon 2).
+*`jeu`, 04/10/2026 (issue #73, jalon 2), sur la fiche à l'état `18d2868` (branche `claude/j1-monnaie-etat`, PR #77). Réponses aux huit questions de `macro` (§ 5, l. 950 à 959).*
+
+**Chiffres.**
+- Aucun moteur n'existe encore. J'ai rejoué la maquette conjointe `m9.py` de `macro` (§ 3.0, empreinte `cbe8da70131a4464`), copiée sans modification dans un répertoire temporaire, avec mes propres scénarios vus du joueur (neuf scripts hors dépôt, 04/10/2026, interpréteur du `.venv` du projet).
+- **Deux ajouts déclarés**, sur une copie distincte, pour les questions 3 et 4 :
+  - le plafond du plan de dépense sur l'encaisse d'ouverture, G^plan_t ≤ M^G_t (§ 3.N-3 (1), l. 551), que la maquette n'exécute pas (C53) ;
+  - une encaisse visée M^G\* = m × paiements bruts, avec m = 1 ou 1,1, et une variante indexée sur la dépense tendancielle.
+
+  Sans ces ajouts, la copie reproduit `m9.py`.
+- **Mes remesures retrouvent** les valeurs du § 3 :
+  - dette restituée +0,473 point au tour 12 et +0,599 au tour 60 (G +5 % pendant 12 tours) ;
+  - glissement +0,214 / +0,161 / +0,085 / −0,006 aux tours 60 / 120 / 240 / 600 (G +1 % permanente) ;
+  - palier +0,580 au tour 12 et +0,396 au tour 120 (taux tenu −1 point) ;
+  - rayons du pays joué 1,001818 et 1,011036 ;
+  - option F : +0,345 / −0,591 / +1,045 / +3,238 aux tours 120 / 600 / 1 200 / 2 400.
+- Ce sont des résultats de maquette, non des faits. Le cran d'affichage est de 0,1 point. La fenêtre de partie va de 60 à 120 tours (`docs/exigences.md`, O5, l. 41).
+
+**Question ludique de la fiche.** Le bloc porte les trois leviers budgétaires du joueur et la contrepartie de tous les autres : chaque décision finit dans le solde et la dette. Quatre questions en découlent :
+- chaque levier budgétaire a-t-il un effet identifiable, au bon tour, avec un coût visible ?
+- la règle de référence est-elle une boussole que le joueur peut suivre ou quitter instrument par instrument, sans basculer à son insu dans un autre régime ?
+- la dette porte-t-elle la trace des décisions, sans effacement gratuit ni signe trompeur ?
+- un mécanisme comptable (encaisse, sur-commande) crée-t-il un mur ou un cliquet invisible ?
+
+### 7.A, 7.B, 7.D, 7.E, 7.F, 7.L et 7.V (brièvement)
+
+- **A : à revoir.**
+  - Une dépense qui baisse quand la dette monte est lisible (§ 3.A-8, l. 453).
+  - Mais l'écrêtage [0,6 ; 1,6] fait un mur invisible.
+  - L'option est instable à 2 % (1,003214).
+  - Une hausse de taux y devient expansionniste.
+- **B : à revoir.**
+  - Le taux d'imposition bouge sans levier du joueur : c'est une boîte noire.
+  - La cible de dette devient un levier caché du taux réel (−2,03 points par point de cible).
+  - L'option repose sur un historique et des drapeaux (critère 19).
+- **D : à revoir.** « Plus de dette, plus d'impôt » est lisible, mais l'arrivée dépend d'un gain que le joueur ne voit pas (§ 3.D-8, l. 702).
+- **E (leviers tenus, intérêts financés par le déficit) : à revoir comme valeur par défaut ; lisible comme écart déclaré** (réponse 2).
+  - À 2 %, une hausse de taux d'un point pendant 12 tours relève P_36 de +0,033 %.
+  - Après G +5 % pendant 12 tours :
+    - à 2 %, la dérive est lente mais visible : i +0,68 point et dette +1,32 point au tour 120 ;
+    - à 10 %, elle est explosive : glissement +1,09 point au tour 120, +5,95 au tour 240.
+- **F : à écarter** (réponse 8).
+- **L : sans objet**, ramenée à F ou à N-6.
+- **V : à garder pour le J6.**
+  - Une hausse de taux qui pèse sur plusieurs années serait un mécanisme lisible.
+  - Mais la variante ôte la contrepartie du tour même (T9 et lignes 11b et 11c au délai 0), et elle ne stabilise pas le pays joué (§ 3.V).
+
+### 7.C Option C-HS — reprise réelle intégrale, assiette de Haig-Simons retardée
+
+- **Récit en une phrase** : « l'État dépense une part constante de la production potentielle et impose le revenu des ménages du mois précédent ; quand le taux des titres dépasse son niveau de référence, l'impôt couvre le surcroît d'intérêts, et il le rend quand le taux est en dessous ». Il n'y a ni seuil, ni gain caché, ni état d'arrivée réglé par une vitesse.
+- **Ce que voit le joueur** (π̄ = 2 %, sans plafond de caisse, sauf mention) :
+  - *taux d'imposition +1 point* : production −0,838 % au tour 8, solde sur 12 tours +0,791 point au tour 12, dette −0,529 point au tour 12 (§ 3.C-8, l. 664) ; en permanence : glissement −1,25 point au tour 12, dette −2,44 au tour 60 et −10,97 au tour 600, consommation −0,96 % au tour 60 ;
+  - *dépense +5 % pendant 12 tours* :
+    - production +1,445 % au tour 6, puis **−1,41 % au tour 18** ;
+    - glissement +2,82 points au tour 12, puis −1,58 au tour 24 ;
+    - taux directeur +1,55 point au tour 12 ;
+    - dette +0,473 point au tour 12, au plus +0,693 au tour 30, sous la moitié de ce maximum au tour 193 ;
+  - *hausse de taux d'un point* : T9 de +0,257 % du PIB dès le tour même. C'est la dette consolidée (0,257 année de PIB) multipliée par l'écart de taux.
+- **Gagnants et perdants d'une hausse de taux.**
+  - Au tour 1, le revenu disponible des ménages ne bouge pas (+0,000 %) : le supplément de dividendes de la banque est repris exactement par T9.
+  - Au tour 12, il recule de 0,43 %, parce que les dividendes des entreprises endettées baissent.
+  - Sous E, il **monte** de 0,39 %.
+  - Le récit devient : « taux haut : l'État reprend aux contribuables ce qu'il verse aux épargnants ; les entreprises endettées perdent ».
+  - Le signe contre-intuitif de #56 disparaît sous la règle.
+- **Aucune remise à zéro gratuite** dans la fenêtre de partie.
+  - Après une dépense transitoire, la dette reste au-dessus du contrôle jusqu'au tour 193 au moins à la moitié de son maximum. Elle revient ensuite vers le ratio que fixent les normes privées (identité du § 1).
+  - C'est une transition longue, à déclarer, non un effacement.
+  - Une consolidation permanente, à l'inverse, baisse durablement la dette : −11 à −16 points au tour 1 200.
+- **Stratégies.**
+  - Relance financée par le déficit : production d'abord, puis inflation, hausse des taux et contrecoup au tour 18.
+  - Relance financée par l'impôt (G +1 % permanente et taux d'imposition +0,253 point) : aucune traîne d'inflation (+0,002 point au tour 60), mais la consommation recule de 0,33 %.
+  - Consolidation : dette en baisse et désinflation (−0,84 point au tour 60).
+  - Ces trois approches sont viables, avec des coûts différents et visibles. Aucune n'est dominante dans les scénarios joués.
+- **Risques.**
+  - *Fixer le barème éteint-il T9 ?* Le critère 19 (l. 316) le laisse lire ainsi (réponse 2, condition 1).
+  - *Cliquet de l'encaisse à basse inflation* (réponse 3).
+  - *Dette qui baisse quand on dépense, à 10 %* (réponse 5).
+  - *Relance suivie d'une récession au tour 18* : elle est explicable par la hausse du taux (+1,55 point), à dire dans l'aide.
+  - *Fenêtre longue* : après G −5 % permanente, la consommation est à −2,92 % au tour 600, alors qu'elle était à +0,02 % au tour 120. Le signe est contre-intuitif hors de la fenêtre de partie. Je le signale à `macro` pour le simulateur de 60 ans (J4), sans le juger.
+- **Verdict : lisible**, sous les conditions 1 à 9.
+- **Autres assiettes.**
+  - C-WB est **à revoir** : traîne de 36,7 point-années, que j'avais signalée à la fiche 8.
+  - C-Y est **à clarifier** : elle impose les intérêts nominaux, d'où une dépendance à l'inflation que le joueur ne peut pas attribuer.
+  - C-Yhi est acceptable, mais sa traîne est plus longue (12,9 point-années).
+
+### Réponses aux huit questions de `macro`
+
+1. **Assiette et libellé de T9 : à clarifier.**
+   - *Assiette.* Le libellé « Impôt sur le revenu des ménages » convient, avec l'infobulle : « porte sur les salaires, dividendes et intérêts du mois précédent ; les intérêts des dépôts n'y entrent qu'au-delà de l'inflation visée ».
+   - Le retard d'un tour se dit dans l'infobulle : une récession ne réduit l'impôt qu'au tour suivant.
+   - Le tableau du tour montre le **barème** τ_H, qui est le levier, et le **taux apparent**, c'est-à-dire l'impôt rapporté à l'assiette. Les deux ne coïncident que si T9 est nul.
+   - *T9.* « Reprise des intérêts » est ambigu (reprise de quoi ?). Je propose « **couverture des intérêts** », avec l'infobulle : « quand le taux des titres publics dépasse son niveau de référence (taux réel de référence plus cible d'inflation), l'impôt couvre le surcroît d'intérêts payé sur la dette ; en dessous, il le rend ».
+   - Ordre de grandeur à afficher : « un point de taux au-dessus de la référence = dette/PIB × 1 point du PIB d'impôt par an ». Mesure : +0,257 % du PIB au tour 1, pour une dette consolidée de 0,257 année de PIB.
+   - Le taux de référence i^ref s'affiche à côté de i_B.
+2. **φ comme levier : à revoir s'il est continu ; lisible en levier distinct à deux valeurs.**
+   - Mesure, rayon et P_36 après une hausse de taux d'un point pendant 12 tours :
+
+     | φ | 0 | 0,1 | 0,25 | 0,5 | 1 |
+     |---|---|---|---|---|---|
+     | π̄ = 2 % : rayon | 1,001818 | 1,000575 | 0,999076 | 0,997792 | 0,997486 |
+     | π̄ = 2 % : P_36 | +0,033 % | +0,001 % | −0,045 % | −0,112 % | −0,226 % |
+     | π̄ = 10 % : rayon | 1,011036 | 1,008794 | 1,005564 | 0,999488 | 0,997558 |
+     | π̄ = 10 % : P_36 | +0,463 % | +0,327 % | +0,164 % | −0,015 % | −0,248 % |
+
+   - Un curseur φ aurait une zone dangereuse qui se déplace avec l'inflation, sans signal. À φ = 0,5 et 10 %, le taux directeur devient presque inerte (P_36 −0,015 %) : le budget désactiverait en silence le levier monétaire.
+   - **Préférence** : la couverture des intérêts est un **levier propre**, distinct du barème, à deux valeurs.
+     - « Couverture intégrale » (φ = 1) : valeur de la règle et valeur par défaut.
+     - « Aucune couverture : intérêts financés par le déficit » (φ = 0) : écart déclaré, avec la mention et deux précurseurs, l'écart au solde primaire stabilisant et l'écart de r̂\* à sa valeur initiale.
+   - Le joueur qui change le barème τ_H **garde** la couverture.
+   - C'est une lecture du critère 19, dont l'exemple (« sous T9 si le taux d'imposition est fixé ») laisse lire l'inverse. Elle est soumise au mainteneur.
+   - Ce n'est pas un drapeau de mode : c'est une valeur de levier, d'un paramètre déjà présent (φ).
+3. **Rationnement au premier tour sous m = 1 : à revoir.**
+   - Mesure avec le plafond G^plan ≤ M^G d'ouverture (ajout déclaré) :
+
+     | Scénario | π̄ = 0, m = 1 | π̄ = 2 %, m = 1 | m = 1,1 (0 et 2 %) |
+     |---|---|---|---|
+     | G +5 % pendant 12 tours | rationnée les 12 tours (exécuté/demandé 0,956 au tour 1) | tour 1 seul (0,985) | aucun rationnement |
+     | G +10 % pendant 12 tours | 12 tours (0,913) ; **même effet que +5 %** | tours 1 et 2 (0,941 ; 0,972) | aucun |
+     | G +20 % et +100 % | volume de G +2,0 % au tour 6 dans les deux cas | volume +19,0 % au tour 6 dans les deux cas | — |
+     | G −5 % pendant 12 tours, puis retour | **rationnée 79 tours** (13 à 90) ; production −2,96 % ; dette −11,8 points au tour 60, contre −0,67 sans plafond | 2 tours (13 et 14) | aucun |
+
+   - À π̄ = 2 %, le coût est lisible s'il est affiché : un tour de rationnement pour +5 %.
+   - À π̄ = 0, le levier de dépense sature dès +0,37 % par tour. Une baisse temporaire devient un **cliquet** : on ne peut plus revenir au niveau antérieur pendant 79 tours, sans aucun signal. C'est un piège irréversible à l'échelle d'une partie, et une asymétrie artificielle entre pays peu et très inflationnistes.
+   - Une encaisse indexée sur la dépense tendancielle (m = 1) supprime presque le cliquet (10 tours à π̄ = 0) mais rationne toute hausse pendant 12 tours : ce n'est pas la solution.
+   - **Préférence** : m > 1, par exemple 1,1 (M^G/(12 PIB) passe de 0,0183 à 0,0201 à π̄ = 0), ce qui est une **modification** (l. 502, décision citant M22, § 5, l. 917). Une autre règle conviendrait si elle tient la propriété suivante, que je propose d'écrire avant l'essai du J3 : « aucun rationnement de caisse pour une hausse de dépense de 10 % d'un tour au suivant, ni au retour d'une baisse de 5 % pendant 12 tours, à π̄ ∈ {0 ; 2 ; 10 %} ».
+   - Si m = 1 est retenu, le plafond de trésorerie du tour s'affiche **dans la saisie du levier**, avant la décision.
+4. **Sur-commande (#53) : à clarifier.**
+   - Le rationnement proportionnel du bloc production ne mord presque jamais : seulement 5 % de dépense non servie pour G doublée pendant 12 tours.
+   - Le vrai coût est le prix. Le plan est en u.m. au prix attendu, si bien que l'inflation ronge le volume (glissement +11,6 points au tour 12 pour G +20 %, sans plafond).
+   - Sous plafond de caisse à 2 %, l'excès au-delà d'environ 3,3 % par tour est coupé à la saisie.
+   - La sur-commande n'est donc pas gratuite. Mais « dépense demandée et exécutée » ne dit pas **pourquoi** l'exécution manque : il faut décomposer l'écart en trois causes, à savoir le plafond de trésorerie (phase 2), le prix plus haut que prévu (volume obtenu sous le volume visé) et la production non servie (phase 5).
+   - L'éviction de C et de I se lit sur leurs volumes, qui sont déjà au tableau.
+5. **Seuil d3 : lisible ; le seuil ne bouge pas.**
+   - *Lecture du texte* (critère 17 (d3), l. 314) : le seuil de 0,5 point au tour 12 et l'exigence « au-dessus du contrôle au tour 60 » portent sur la « configuration de pays joué ». Sous la règle, seul le tour de demi-retour est publié.
+   - E tient le seuil : +0,603 au tour 12, +1,073 au tour 60. C-HS publie :
+     - +0,473 au tour 12, soit 4,7 crans, au-dessus des deux crans du critère (h) ;
+     - +0,599 au tour 60 ;
+     - un maximum de +0,693 au tour 30, sous sa moitié au tour 193 (+0,471 et +0,585 avec le plafond de caisse).
+   - L'intention du seuil (pas d'effacement gratuit, effet perceptible) est tenue sous la règle.
+   - La valeur par défaut du levier devient la règle, alors que d3 a été écrit quand le pays joué tenait ses leviers. Je ne propose pas de déplacer le seuil.
+   - **Fait nouveau, à 10 %** : sous C-HS, la dette restituée **baisse** au tour 12 (−0,153 point) et ne repasse au-dessus du contrôle qu'au tour 23. Sous E, elle monte de +0,084. L'encours, lui, monte (+2,16 %), mais le PIB nominal monte plus vite (glissement +3,0 points) et T9 suit le taux. Le joueur y lirait « dépenser réduit la dette ».
+   - Ce n'est pas un critère : c'est une infobulle (condition 6). L'archétype à 10 % entre dans le scénario O2 du J4.
+6. **Traîne après une dépense permanente : à clarifier.**
+   - Sous C-HS : +0,214 / +0,161 / +0,085 aux tours 60 / 120 / 240, avec un taux directeur à +0,65 point au tour 120. Sous la règle provisoire de la fiche 8 : +0,238 et +0,224.
+   - L'écart reste au-dessus d'un cran au tour 60 : il est signalé au titre du critère 17 (h) (iii).
+   - Il est **attribuable** : la même dépense financée par le barème (+0,253 point) ne laisse que +0,002 au tour 60 et −0,006 au tour 120, au prix d'une consommation à −0,33 %.
+   - Le récit au joueur : « une dépense permanente financée par le déficit entretient l'inflation et fait monter le taux pendant des années ; financée par l'impôt, elle évince la consommation ».
+   - Condition 7 : l'aide le dit, et le solde primaire stabilisant le montre.
+7. **Palier sous taux tenu : lisible.**
+   - Taux tenu un point bas :
+     - glissement +0,58 au tour 12, de +0,36 à +0,43 entre les tours 24 et 120 ;
+     - production +0,21 % au tour 12, +0,04 % au tour 120.
+   - Le récit tient en une phrase : « un taux tenu bas donne une inflation durablement plus haute, sans relance durable ».
+   - La dérive vers +0,54 au tour 600 sort de la fenêtre de partie et reste sous deux crans.
+   - La consommation à −0,48 % au tour 120 reste un signe contre-intuitif à déclarer (fiche 8, condition 8) : l'inflation ronge l'épargne, que les ménages reconstituent.
+8. **Option F : à écarter, confirmé.**
+   - Dans la fenêtre de partie, F ne se distingue pas de C-HS : après G +1 % permanente, glissement +0,139 au tour 120, contre +0,161, et barème déplacé de +0,03 point. Son avantage, ramener le taux neutre à sa référence, est donc imperceptible.
+   - Son défaut est un piège à retardement dans le simulateur de 60 ans. Sous taux tenu, le glissement passe à −0,59 au tour 600, +1,05 au tour 1 200 et +3,24 au tour 2 400, avec un barème qui bouge seul de +0,59 puis −1,56 point.
+   - Tenir le taux est un geste ordinaire du joueur, et l'impôt qui bouge seul est la boîte noire de B.
+
+### Critère 19 : verdict par option
+
+| Option | Décompte (§ 4, l. 556) | « Suivre la règle » comme valeur de levier | Prescription restituable au tour | Verdict |
+|---|---|---|---|---|
+| A | écrêtage, T^disp | sur G, multiplicatif | oui, mais avec un mur à 0,6 et 1,6 | **à revoir** |
+| B | historique, 4 drapeaux, état τ | sur τ, qui bouge seul | trajectoire de τ, cible de dette qui fixe r̄ | **à revoir** |
+| C-HS | 1 paramètre, T9, 1 état | s_G et τ_H constants, couverture intégrale | triviale (niveaux) plus montant de T9 | **lisible**, sous les conditions 1 et 2 |
+| C-WB / C-Y / C-Yhi | 0 ou 1 état | idem | idem | à revoir / à clarifier / lisible |
+| D | + φ_b | idem plus rappel | oui, mais l'arrivée dépend de φ_b | **à revoir** |
+| E | aucun | absence de règle | solde stabilisant | **lisible comme écart déclaré** ; à revoir comme valeur par défaut |
+| F | + k_F, état τ | τ déplacé par la règle | divergence hors fenêtre | **à écarter** |
+
+### Indicateurs (critère 17 (a))
+
+| Indicateur | Niveau | Verdict | Motif ou point à clarifier |
+|---|---|---|---|
+| Dette brute, fin du mois, en % du PIB des 12 derniers mois | tableau du tour | **lisible** | 28,2 % à 2 % ; infobulle : dette nette et part de la banque centrale ; infobulle « le PIB nominal croît plus vite que la dette » quand le ratio baisse alors que l'encours monte (réponse 5) |
+| Soldes primaire et public sur 12 tours | tableau du tour | **lisible** | — |
+| Solde primaire stabilisant et écart au solde réalisé | tableau du tour | **lisible** | Précurseur de l'écart « aucune couverture » |
+| Charge d'intérêts nette, i_B et i^ref | tableau du tour | **à clarifier** | i^ref affiché à côté de i_B (réponse 1) |
+| Couverture des intérêts (T9) en % du PIB | tableau du tour | **à ajouter** | Ligne distincte de l'impôt ; règle « dette/PIB × écart de taux » |
+| Barème τ_H et taux apparent | tableau du tour | **à clarifier** | Deux lignes (réponse 1) |
+| Dépense demandée, exécutée et causes de l'écart | tableau du tour | **à clarifier** | Plafond de trésorerie, prix, non servi (réponse 4) |
+| Plafond de trésorerie du tour | saisie du levier | **à ajouter si m = 1** | Annonce le rationnement avant la décision (réponse 3) |
+| i_B − croissance nominale | fiche détaillée | **à clarifier** | Point contesté (critère 22) : jamais présenté comme une règle de soutenabilité |
+| Encaisse en tours de paiements | fiche détaillée | **hors du tableau** | Vaut m par construction : indicateur mort |
+| Émission par souscripteur ; part de la banque centrale | fiche détaillée | **lisible** | B_CB = 0 au socle, mention « constant au socle » |
+| Parts non payées | événement | **lisible** | Avec « Adjudication non couverte » (fiche 7, condition 7) |
+
+### Préférence motivée
+
+- **Ma préférence va à C-HS**, comme celle de `macro`.
+  - **Mes motifs propres** :
+    - une règle en une phrase ;
+    - une hausse de taux qui ne distribue plus de revenu aux épargnants aux frais du déficit (ΔYD = 0 au tour 1) ;
+    - trois approches budgétaires viables, aux coûts visibles ;
+    - aucune remise à zéro gratuite dans la fenêtre de partie ;
+    - le piège de la fiche 8 (réponse 5) fermé par défaut.
+  - **Les motifs de `macro`**, que je ne juge pas : critères 1 à 16, 18 et 20 à 23.
+- **Deux réserves** qui conditionnent ma préférence et que `macro` n'a pas posées :
+  - la couverture des intérêts doit être un levier distinct du barème ;
+  - m = 1 crée un cliquet à basse inflation.
+- **Classement** : C-HS > C-Y > C-Yhi > D > C-WB > B > A. F est écartée. E est hors classement, comme écart déclaré. L et V sont hors classement (V au J6).
+- **Lectures du § 5.** (a) HS : accord. (b) τ_F comme levier de valeur 0 : sans enjeu ludique au socle. P2 (i) : sans enjeu ludique.
+- **Coût en fidélité.**
+  - Le levier distinct de couverture et m > 1 sont des **choix de conception**. `macro` dira ce qu'ils coûtent : pour m, la borne de la l. 502 ; pour la couverture, la lecture du critère 19.
+  - Libellés, infobulles et décomposition de l'exécution sont des choix de restitution.
+
+### Conditions demandées au § 9
+
+1. **Couverture des intérêts, levier distinct du barème**, à deux valeurs : « couverture intégrale », qui est la règle et la valeur par défaut, et « aucune couverture : intérêts financés par le déficit », écart déclaré avec mention et précurseurs. Changer le barème ne touche pas la couverture. Lecture du critère 19 soumise au mainteneur.
+2. **Encaisse du Trésor sans cliquet** : m > 1, ou une règle qui tient la propriété de la réponse 3. À défaut, le plafond de trésorerie s'affiche dans la saisie du levier.
+3. **Libellés** : « impôt sur le revenu des ménages », avec l'infobulle de l'assiette et du retard ; « couverture des intérêts », avec son infobulle et i^ref.
+4. **Barème et taux apparent** sur deux lignes ; T9 en ligne propre, en % du PIB.
+5. **Dépense demandée, exécutée et causes de l'écart** (trésorerie, prix, non servi), avec les volumes de C et de I.
+6. **Infobulle de la dette** quand le ratio baisse alors que l'encours monte ; un archétype à π̄ = 10 % dans le scénario O2 du J4.
+7. **Aide** : une dépense permanente non financée entretient l'inflation et le taux (réponse 6) ; une relance est suivie d'un contrecoup au tour 18 ; un taux tenu bas réduit la consommation (fiche 8, condition 8).
+8. **Tableau levier → indicateur → délai → contrepartie** (critère 17 (c)) :
+
+   | Levier | Indicateur | Délai | Contrepartie |
+   |---|---|---|---|
+   | Barème τ_H | impôt, solde, production, glissement | impôt au tour n, sur l'assiette du tour n − 1 ; production à son pic au tour 8 | revenu disponible des ménages au tour n, consommation au tour n + 1 |
+   | Dépense publique | dépense exécutée, production, dette | tour n ; production au tour 3 ; glissement en deux crans avant le tour 12 | émission et dépôts des entreprises au tour n ; plafond de trésorerie si m = 1 |
+   | Transferts | revenu disponible des ménages, production | tour n ; production au tour 7 | solde et émission au tour n |
+   | Couverture des intérêts | T9, solde stabilisant | tour n | revenu disponible des ménages au tour n ; signe d'une hausse de taux |
+   | Taux directeur, vu du budget | charge d'intérêts, T9 | tour n | revenu des épargnants repris par T9 au tour n |
+
+9. **Fenêtre longue** : pour le simulateur de 60 ans, `macro` dit si la consommation à −2,92 % au tour 600 après G −5 % permanente est un comportement à déclarer.
+
+### Seuils (critère 17 (d) et (h))
+
+- (d1) tenu : solde +0,791 point au tour 12 ; production −0,838 % au tour 8.
+- (d2) tenu : +0,290 % (G +1 %) ; +1,445 % (G +5 %).
+- (d3) tenu en pays joué (E) : +0,603 au tour 12, +1,073 au tour 60. Publié sous la règle : +0,473 au tour 12, +0,599 au tour 60, demi-retour au tour 193. Non tenu à 10 % dans les deux configurations (−0,153 et +0,084). C'est une mesure publiée, non un déplacement de seuil.
+- (h) (i) tenu par les trois leviers.
+- (h) (ii) tenu : pic de production au tour 6 ou 8, pic du glissement au tour 12.
+- (h) (iii) déclaré : demi-vie dominante de 275 tours. Écarts signalés au tour 60 :
+  - production −0,116 % (G +5 % pendant 12 tours) ;
+  - glissement +0,214 (G +1 % permanente), attribuable (réponse 6).
+- Aucun seuil nouveau. La propriété de la réponse 3 est proposée pour l'essai du J3, à écrire avant lui.
+
+**Issue proposée par `jeu`** (création soumise au mainteneur ; corps dans le compte rendu de la session, PR #77) : « J4 — restitution du bloc État et dette : couverture des intérêts distincte du barème, assiette libellée, dépense demandée et causes de l'écart, solde stabilisant ». Commentaire proposé sur #73 : cliquet de l'encaisse sous m = 1 à basse inflation.
 
 ## 8. Décision du mainteneur
 
@@ -986,3 +1226,4 @@ Retenir C-HS (reprise réelle intégrale des intérêts, impôt sur le revenu de
 | 04/10/2026 | Relecture croisée intégrée (avis de `macro`, `monnaie` et `jeu`, une relance ciblée ; qualifications d'`architect`) ; options ouvertes marquées « à trancher par le mainteneur » | `macro` ; `monnaie` ; `jeu` ; `architect` ; session principale |
 | 04/10/2026 | Critères validés par le mainteneur (jalon 1 de #73 terminé), amendements adoptés consignés au § 2 | mainteneur ; session principale |
 | 04/10/2026 | Jalon 2, première partie : § 3 à § 5 instruits (huit options sur la maquette conjointe unique des fiches 8 et 9 ; recommandation de l'option C-HS) ; § 6 et § 7 à rendre | `macro` ; session principale |
+| 04/10/2026 | Avis de `jeu` (§ 7) : C-HS lisible sous neuf conditions, dont deux soumises au mainteneur (couverture des intérêts en levier distinct du barème ; encaisse sans cliquet, m > 1 ou propriété équivalente) ; F écartée | `jeu` ; session principale |
