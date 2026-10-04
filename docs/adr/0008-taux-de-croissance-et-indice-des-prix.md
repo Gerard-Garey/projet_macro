@@ -235,4 +235,21 @@ date: 2026-10-03
   - Partie II : clause II.7.
   - Partie I : une décision M-m citant M25, M24 et M22, dans deux cas : une fiche établit, par une mesure, qu'une grandeur restituée ou un critère du test zéro dépend de n_a d'une façon que le point I.6 ne couvre pas ; ou n_a change (décision citant M22), et les dépendances déclarées doivent alors être remesurées.
 
-Issues : #24 (les deux volets : le volet « prix » est tranché ici, le volet « banque centrale » reste à la branche n° 4), #39 (M25), #40 (M26), #17 (ADR 0005, révisé en partie), #34 (M24 (f), révisée).
+## Annotation du 04/10/2026
+
+Rédigée par `architect` sur décision du mainteneur du 04/10/2026. **La décision est inchangée** (parties I et II, point II.3 compris). L'annotation est prospective et porte sur trois points.
+
+- **Taux du facteur du ratio restitué** (§ Conséquences, « Ratio stationnaire au PIB annuel », et ligne « Facteur du ratio restitué » du tableau des mesures citées). Les valeurs 1,0108 et 1,010768 (sous (G)), ainsi que 1,010866 (sous (L)), valent pour un **ratio en volume** à g = 2 %.
+  - Pour un **ratio en u.m.**, le taux qui entre dans le facteur est la croissance nominale (1 + g)(1 + π̄) − 1. Sous (G), le facteur vaut 1,021618 pour g = π̄ = 2 % et n_a = 12.
+  - Le détail, la mesure et l'origine du constat (`macro`, 04/10/2026) sont dans l'annotation du 04/10/2026 de l'ADR 0005, point 17.
+  - La conversion géométrique, objet de la partie I, n'est pas en cause : seul le taux auquel on l'applique est précisé.
+- **Label du glissement : `eq:moteur-glissement`.**
+  - **Pourquoi cet ADR.** Il était muet sur le radical. Or la fiche « prix » (`docs/blocs/prix.md` § 9.1) renvoie à « l'ADR de la lecture (c) » le radical et le propriétaire de l'équation du glissement.
+  - **Pourquoi `moteur`.** Le point II.3 et le § Conséquences (« Pour `moteur/` et `etat/` ») font du registre un objet d'état du moteur, dont les fonctions de lecture sont les seules à l'indexer, glissement compris. `CONVENTIONS.md` § 2.1 lie le radical au module de la balise : `moteur` pour le calendrier.
+  - **Pose.** Le label est posé au jalon J2, avec sa balise, sur l'équation π_t = P_t/P_{t−n_a} − 1 de `sec:cadre-calendrier`, comme `eq:moteur-conversion-croissance`.
+  - **Option écartée.** Le label `eq:prix-glissement` de la fiche correspondait à la forme « 12 niveaux plus π_t en état », écartée par le présent ADR (§ Options écartées, partie II). Avis concordant de `macro` (validation de `sec:prix`, 04/10/2026, question 2).
+- **Radical de P4 (indice des prix, `eq:prix-indice` dans la fiche) : non fixé.** Sous J = 1, P_t ≡ p_{j,t} est écrit par le bloc prix en phase 5, alors que son entrée au registre relève du moteur. L'agrégat à J ≥ 2 n'est pas défini (§ Conséquences, « Ce que l'ADR ne règle pas »).
+  - **Responsable et échéance.** Le radical est fixé par `architect` au jalon J2, avec le registre, par une annotation du présent ADR. Un nouvel ADR n'est requis que si le contrat du registre change.
+  - **Suivi.** Ce point s'ajoute à « Ce que l'ADR ne règle pas » et figure à la ligne de la branche J2 de `docs/feuille-de-route.md` (§ 2).
+
+Issues : #24 (les deux volets : le volet « prix » est tranché ici, le volet « banque centrale » reste à la branche n° 4), #39 (M25), #40 (M26), #17 (ADR 0005, révisé en partie), #34 (M24 (f), révisée) ; #39 et #40 (annotation du 04/10/2026).

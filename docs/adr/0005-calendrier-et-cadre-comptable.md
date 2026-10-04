@@ -109,4 +109,19 @@ Rédigée par `architect-approfondi` sur les décisions M25, lecture (b), et M26
 
 *Complément du 03/10/2026, à l'acceptation de l'ADR 0008.* L'ADR 0008 a été accepté avec son point II.3 : la lecture des points 4, 16 et 17 ci-dessus vaut telle quelle, sans nouvelle annotation.
 
-Issues : #15, #16, #17 (décision), #18 (spécification), #19 (script des matrices) ; #24, #39 et #40 (annotation du 03/10/2026, ADR 0008).
+## Annotation du 04/10/2026
+
+Rédigée par `architect` sur décision du mainteneur du 04/10/2026, après un constat majeur de `macro` (validation de fond du diff de spécification de #39, commit `9bcd6b9`, 04/10/2026, mesuré). **La décision M22 est inchangée, et la valeur 1,0108 aussi pour ce qu'elle mesure.** L'annotation est prospective : elle précise quel taux entre dans le facteur du point 17, sans retirer aucun chiffre publié.
+
+- **Point 17, taux du facteur.** Le facteur entre le ratio restitué et le ratio du test zéro dépend du taux annuel x auquel croissent ensemble le stock et le flux du ratio. Il vaut n_a (1 + x)^{1/n_a} / Σ_{u=0}^{n_a−1} (1 + x)^{−u/n_a}, forme de `sec:cadre-calendrier`. On distingue deux cas :
+  - **ratio en volume** (stock et flux en unités de volume) : x = g, la croissance réelle ((1 + g_pr)(1 + g_N) − 1 au socle, `tab:symboles`). Le facteur vaut **1,0108** pour g = 2 % et n_a = 12 ;
+  - **ratio en u.m.** (stock nominal rapporté au PIB nominal, par exemple dette publique / PIB à la fiche 9) : x = (1 + g)(1 + π̄) − 1, la croissance nominale. Le facteur vaut **1,0216** pour g = π̄ = 2 % (x = 4,04 %) et n_a = 12.
+- **Lecture des annotations antérieures.** Les mentions « 1,0108 pour g = 2 % » (annotation du 03/10/2026) et « 1,0109, soit +1,09 % pour g = 2 % » (annotation du 02/10/2026, sous la conversion linéaire alors en vigueur) se lisent « pour un ratio en volume ». Appliqué à un ratio en u.m., 1,0108 sous-estimerait le niveau normal restitué de 1,07 % du ratio.
+  - La forme fermée ne contient pas δ : la mention « δ = 5 % » des annotations antérieures décrit la simulation de mesure, non une condition du facteur.
+- **Mesure.** Remesure d'`architect` le 04/10/2026 :
+  - commande : `uv run --no-project python -c "n=12; f=lambda x: n*(1+x)**(1/n)/sum((1+x)**(-u/n) for u in range(n)); g=pi=0.02; xn=(1+g)*(1+pi)-1; print(f'{f(g):.6f} {xn:.4%} {f(xn):.6f} {f(xn)/f(g)-1:.4%}')"` ;
+  - sortie : `1.010768 4.0400% 1.021618 1.0735%`.
+  - Ces valeurs sont identiques à celles de `macro` (1,0107678 et 1,021618).
+- **Report.** `docwriter` corrige le paragraphe « Ratio stationnaire au PIB annuel » de `sec:cadre-calendrier` (texte proposé par `macro`). `CONTEXT.md` (« Ratio stationnaire au PIB annuel ») est précisé le même jour. L'ADR 0008 reçoit la même annotation pour son § Conséquences.
+
+Issues : #15, #16, #17 (décision), #18 (spécification), #19 (script des matrices) ; #24, #39 et #40 (annotation du 03/10/2026, ADR 0008) ; #39 (annotation du 04/10/2026).
