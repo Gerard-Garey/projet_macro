@@ -28,6 +28,8 @@ date: 2026-10-03
 5. **Γ^e n'est pas le facteur réalisé Γ** = [(1 + g)(1 + π̄)]^{1/n_a} : hors cible, ils diffèrent (T̂_F/T_F = 0,99373 à π̄ = 10 %, π\* = 2 %, fiche 6 § 9.7 (a), chiffre de la fiche, non remesuré ici). Γ est une grandeur de l'état stationnaire résolu, non du moteur.
 6. **Phases.** Phase 1 : écriture de π\*_{t+1} (moteur, puis bloc 8) ; phase 2 : les blocs 5 et 6 lisent π\*_t et Γ^e_t. `tab:phases` est inchangée : la ligne 1 écrit déjà « moteur (leviers) » et « banque centrale », et la ligne 2 lit la phase 1 et l'ouverture.
 
+   *Annotation du 04/10/2026 (précision de forme, #41 ; la décision M30 est inchangée).* Le moment du calcul de Γ^e_t, que le point 4 ne fixait pas, est l'**ouverture du pas (phase 0)** : le moteur calcule Γ^e_t, γ^e_t et π^{∗,pas}_t sur la cible d'ouverture π\*_t, avant la phase 1 où s'écrit π\*_{t+1}, et les blocs 5 et 6 lisent cette valeur unique en phase 2 (et le bloc 6 en phase 6). π\*_t étant figée dans l'état d'ouverture (ADR 0009, point 1) et Γ^e n'étant pas une variable d'état, ce choix ne change aucune valeur : un calcul placé plus tard dans le pas, sur la même π\*_t, donnerait la même. Spécification : `sec:cadre-calendrier`, commit `5d2c831` ; `tab:phases` reste inchangée.
+
 ## Options écartées
 
 - **Délai 0 : π\* du tour, lue en phase 1 par les blocs 5 et 6** (lecture implicite des § 3.N-5 et 6.5 de la fiche 5). Écartée par le mainteneur : faux saut du taux réel perçu ϱ_L pendant un tour quand la cible change sans le taux ; délai non uniforme entre les deux leviers de la banque centrale ; dérogation à la grammaire des délais des fiches 3 et 4. Aucun effet stationnaire (fiche 5 § 9.8).
