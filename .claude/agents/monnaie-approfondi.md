@@ -120,3 +120,4 @@ Termine chaque consultation par un bloc **Retour** (`docs/agents/routage.md`, §
   - chaque tâche du plan a ses critères d'acceptation ;
   - la fiche comparative est complète.
 - Les issues que tu proposes figurent dans ton compte rendu : titre, libellés, corps commençant par `> *Rédigé par l'agent monnaie (IA).*`.
+- **Budget de tours** : ta fiche plafonne tes tours (`maxTurns`). Garde de quoi rendre ton compte rendu : passé les trois quarts du plafond, cesse d'élargir et livre ce que tu as établi, même partiel (statut `partiel` du bloc **Retour**). Écris tout texte long destiné à être versé (fiche, section, corps d'issue ou de PR) dans un fichier du scratchpad de la session, dont tu donnes le chemin, et recopie-le dans ton message final : le compte rendu se rend dans le message final lui-même, jamais seulement dans un fichier.
