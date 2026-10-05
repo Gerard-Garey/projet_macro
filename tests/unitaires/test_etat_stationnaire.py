@@ -27,39 +27,48 @@ TOL = 1e-12
 
 # Écarts historiques aux valeurs publiées avant le visa du 05/10/2026 (#84,
 # commit 9c8bdbd), publiés par le script et visés par le mainteneur : la
-# spécification (commit 8b9fa94) et les annotations de la fiche 9 les ont
-# republiés. Le script garde l'ancien verdict
-# (`table_historique`) ; le test vérifie que la liste est exacte. Les
-# explications établies sont des propriétés testées (`test_explication_*`) ;
-# les écarts de r̄_α, des allocations (α) et des racines parasites relèvent
-# de #80.
-ECARTS_PUBLIES = {
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %"),
-    ("sec:finances_publiques-depense", "G/PB à 2 %"),
-    ("sec:finances_publiques-depense", "G/PB à 10 %"),
-    ("sec:finances_publiques-depense", "marge de E1 à 10 %"),
-    ("sec:finances_publiques-emission", "borne de ν_G à 10 %"),
-    ("sec:finances_publiques-emission", "marge J-ν à ν_G = 1,1, 0 %, %"),
-    ("sec:banque_centrale-stationnaire", "sensibilité de θ_G, % de la production par point de r̄ (|dθ_G/dr̄|)"),
-    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense (|·|), environ"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 0 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 1 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 3 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 4 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 10 %, %"),
-    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point"),
-    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point"),
-    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point"),
-    ("sec:finances_publiques-impots", "racine parasite à 0 %, %"),
-    ("sec:finances_publiques-impots", "racine parasite à 2 %, %"),
-    ("sec:finances_publiques-impots", "racine parasite à 10 %, %"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"),
-    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point"),
+# spécification (commit 8b9fa94) et les annotations des fiches 8 et 9 les ont
+# republiés. Le script garde l'ancien verdict (`table_historique`) ; le test
+# vérifie que la liste est exacte et que chaque ancienne valeur est celle
+# figée ici en littéral (constat m3 du rang 8 : une ancienne valeur publiée ne
+# se modifie pas sans échec). Les explications établies sont des propriétés
+# testées (`test_explication_*`) ; les écarts de r̄_α, des allocations (α) et
+# des racines parasites relèvent de #80. Les quatre dernières (fiche 9, n_a = 4
+# et 52 à 0 et 10 %) sont visées après la revue finale (décision du mainteneur
+# du 05/10/2026, point B).
+ANCIENNES_PUBLIEES = {
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4"): "0,25237",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52"): "0,25844",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %"): "0,8672",
+    ("sec:finances_publiques-depense", "G/PB à 2 %"): "0,96343",
+    ("sec:finances_publiques-depense", "G/PB à 10 %"): "0,78639",
+    ("sec:finances_publiques-depense", "marge de E1 à 10 %"): "0,2060",
+    ("sec:finances_publiques-emission", "borne de ν_G à 10 %"): "0,8734",
+    ("sec:finances_publiques-emission", "marge J-ν à ν_G = 1,1, 0 %, %"): "0,37",
+    ("sec:banque_centrale-stationnaire", "sensibilité de θ_G, % de la production par point de r̄ (|dθ_G/dr̄|)"):
+        "0,026",
+    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense (|·|), environ"): "38",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 0 %, %"): "1,536",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 1 %, %"): "1,203",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 3 %, %"): "0,878",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 4 %, %"): "0,813",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"): "0,799",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 10 %, %"): "1,075",
+    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point"): "0,461",
+    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point"): "0,74",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point"): "-0,12",
+    ("sec:finances_publiques-impots", "racine parasite à 0 %, %"): "-20,63",
+    ("sec:finances_publiques-impots", "racine parasite à 2 %, %"): "-26,65",
+    ("sec:finances_publiques-impots", "racine parasite à 10 %, %"): "-40,49",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"): "0,435",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"): "-0,473",
+    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point"): "0,908",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"): "0,09466",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 4"): "0,49978",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 52"): "0,10045",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 52"): "0,51438",
 }
+ECARTS_PUBLIES = set(ANCIENNES_PUBLIEES)
 
 
 @pytest.fixture(scope="module")
@@ -467,23 +476,34 @@ def test_refus_a_lv_0_6(stationnaire, base):
 
 def test_dividende_nul_admis_a_la_borne(stationnaire, base):
     """Réponse (b) de `macro` : Div_F ≥ 0 est une inégalité large (plancher de F3 atteint, non contraignant).
-    Par bissection sur τ_F (π̄ = 2 %, n_a = 12), le dernier flottant où Div_F ≥ 0 donne Div_F = 0 exactement
-    (mesuré) : l'état y est admis ; au flottant suivant, Div_F < 0 est refusé."""
-    def dividende(tau_F):
-        return stationnaire.etat_stationnaire(replace(base, tau_F=tau_F), controler=False)["Div_F"]
+    Par bissection sur τ_F (π̄ = 2 %, n_a = 12), le dernier flottant où Div_F ≥ 0 donne 0 ≤ Div_F ≤ 10⁻¹⁵ p v
+    (propriété indépendante de l'arrondi de la plateforme) : l'état y est admis ; au flottant suivant, Div_F < 0
+    est refusé."""
+    def etat(tau_F):
+        return stationnaire.etat_stationnaire(replace(base, tau_F=tau_F), controler=False)
 
     bas, haut = base.tau_F, 0.9
-    assert dividende(bas) > 0 > dividende(haut)
+    assert etat(bas)["Div_F"] > 0 > etat(haut)["Div_F"]
     while (milieu := (bas + haut) / 2) not in (bas, haut):
-        if dividende(milieu) >= 0:
+        if etat(milieu)["Div_F"] >= 0:
             bas = milieu
         else:
             haut = milieu
-    assert dividende(bas) == 0.0 and dividende(haut) < 0
+    e = etat(bas)
+    assert 0 <= e["Div_F"] <= 1e-15 * e["p"] * e["v"] and etat(haut)["Div_F"] < 0
     stationnaire.controler_domaine(replace(base, tau_F=bas))
-    assert stationnaire.etat_stationnaire(replace(base, tau_F=bas))["Div_F"] == 0.0
+    stationnaire.etat_stationnaire(replace(base, tau_F=bas))  # admis
     with pytest.raises(stationnaire.HorsDomaine, match="Div_F"):
         stationnaire.etat_stationnaire(replace(base, tau_F=haut))
+
+
+def test_dividende_exactement_nul_admis_par_le_controle(stationnaire, base):
+    """Égalité exacte, sans dépendre de l'arrondi : un état où Div_F est posé à 0,0 est admis par `controler_etat`
+    (une inégalité stricte Div_F > 0 le refuserait) ; Div_F = −5·10⁻³²⁴ est refusé."""
+    e = stationnaire.etat_stationnaire(base, controler=False)
+    stationnaire.controler_etat(e | {"Div_F": 0.0}, base)
+    with pytest.raises(stationnaire.HorsDomaine, match="Div_F"):
+        stationnaire.controler_etat(e | {"Div_F": -5e-324}, base)
 
 
 def test_refus_de_theta_G_nul(stationnaire, base):
@@ -734,9 +754,11 @@ def test_valeurs_speciales_aucune_exception_hors_refus(stationnaire, base):
 
 
 def test_explication_dette_consolidee_sigma_en_pas(stationnaire, base):
-    """La maquette tenait σ = 1,4 pas de ventes (σ = 1,4/n_a an) : elle redonne 0,25237 et 0,25844."""
-    for na, publie in ((4, "0,25237"), (52, "0,25844")):
-        p = replace(base, n_a=na, sigma=1.4 / na)
+    """La maquette tenait σ = 1,4 pas de ventes (σ = 1,4/n_a an) : elle redonne 0,25237 et 0,25844 à 2 %, et les
+    quatre valeurs de la fiche 9 à 0 et 10 % (visées après la revue finale)."""
+    for pi, na, publie in ((0.02, 4, "0,25237"), (0.02, 52, "0,25844"), (0.0, 4, "0,09466"), (0.10, 4, "0,49978"),
+                           (0.0, 52, "0,10045"), (0.10, 52, "0,51438")):
+        p = replace(base, pi_cible=pi, n_a=na, sigma=1.4 / na)
         v = stationnaire.valeurs(stationnaire.etat_stationnaire(p), p)
         assert stationnaire.comparer(publie, v["dette_consolidee"])[2], (na, v["dette_consolidee"])
 
@@ -767,7 +789,9 @@ def test_explications_des_ecarts_A_publiees_avec_leur_statut(stationnaire, resul
     assert set(ecarts_A) == set(stationnaire.EXPLICATIONS_ECARTS)
     etablies = {k for k, x in ecarts_A.items() if x.startswith("établie après l'essai : ")}
     assert {k[1] for k in etablies} == {"dette consolidée à 2 %, n_a = 4", "dette consolidée à 2 %, n_a = 52",
-                                       "Y^HS/PIB à 2 %", "marge J-ν à ν_G = 1,1, 0 %, %"}
+                                       "Y^HS/PIB à 2 %", "marge J-ν à ν_G = 1,1, 0 %, %",
+                                       "dette consolidée à 0 %, n_a = 4", "dette consolidée à 10 %, n_a = 4",
+                                       "dette consolidée à 0 %, n_a = 52", "dette consolidée à 10 %, n_a = 52"}
     for k, x in ecarts_A.items():
         if k not in etablies:
             assert x == "cause non établie : maquette perdue (visa du 05/10/2026)", k
@@ -777,7 +801,7 @@ def test_explications_des_ecarts_A_publiees_avec_leur_statut(stationnaire, resul
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert texte.count("— explication établie après l'essai : ") == 4
+    assert texte.count("— explication établie après l'essai : ") == 8
     assert texte.count("— cause non établie : maquette perdue (visa du 05/10/2026)") == 4
 
 
@@ -812,11 +836,12 @@ def test_seuil_derniere_decimale(stationnaire):
 
 
 def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
-    """Valeurs en vigueur (spécification et fiche 9 republiées) : toutes égales à la dernière décimale publiée."""
+    """Valeurs en vigueur (spécification et fiches 8 et 9 republiées) : toutes égales à la dernière décimale
+    publiée ; aucune valeur barrée n'y figure (catégories B-1 et N en contre-épreuve)."""
     lignes = resultat["publiees"]
-    assert len(lignes) == 289
-    assert {l["categorie"] for l in lignes} == {"A", "S", "B-1", "D"}
-    assert sum(1 for l in lignes if l["categorie"] == "S") == 7
+    assert len(lignes) == 429
+    assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
+    assert sum(1 for l in lignes if l["categorie"] == "S") == 8
     assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
     assert [l for l in lignes if l["verdict"] != "égal"] == []
     for l in lignes:
@@ -827,11 +852,13 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
 
 
 def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
-    """C4 de `macro` (rang 7) : les 25 valeurs visées et republiées (spécification, commit 8b9fa94 ; fiche 9) sont
-    égales au script ; l'historique (commit 9c8bdbd) garde les 25 anciennes valeurs, toutes en écart."""
+    """C4 de `macro` (rang 7) : les 29 valeurs visées et republiées (spécification, commit 8b9fa94 ; fiches 8 et 9)
+    sont égales au script ; l'historique (commit 9c8bdbd) garde les 29 anciennes valeurs, toutes en écart, chacune
+    égale à sa valeur figée en littéral (`ANCIENNES_PUBLIEES`)."""
     historique = resultat["historique"]
-    assert len(historique) == len(ECARTS_PUBLIES) == 25
+    assert len(historique) == len(ECARTS_PUBLIES) == 29
     assert {(l["section"], l["grandeur"]) for l in historique if l["verdict"] == "écart"} == ECARTS_PUBLIES
+    assert {(l["section"], l["grandeur"]): l["publie"] for l in historique} == ANCIENNES_PUBLIEES
     en_vigueur = {(l["section"], l["grandeur"]): l for l in resultat["publiees"]}
     for k in stationnaire._AVANT_VISA:
         assert en_vigueur[k]["verdict"] == "égal", en_vigueur[k]
@@ -840,8 +867,9 @@ def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 289 valeurs comparées, 282 égales sur l'état résolu, 7 égales en arithmétique de la "
+    assert ("Bilan : 429 valeurs comparées, 421 égales sur l'état résolu, 8 égales en arithmétique de la "
             "spécification (catégorie S, sans état résolu), aucun écart.") in texte
+    assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
 
 
@@ -866,6 +894,7 @@ def test_racine_unique_dans_le_domaine_et_residu(resultat):
     for mesures in [sn["alpha"]] + list(sn["alpha_n_a"].values()):
         for a in mesures.values():
             assert sum(1 for r in a["racines"] if -0.05 < r <= 1.0) == 1
+            assert len(a["racines"]) == 1  # aucune racine parasite (C51), mesurée sur tout le balayage
             assert a["poles"] == []
             assert abs(a["F"]) <= 1e-12
 
@@ -941,7 +970,8 @@ def test_alpha_et_fermeture_lisent_la_valeur_retenue(stationnaire, base, resulta
     monkeypatch.setattr(stationnaire, "superneutralite", superneutralite)
     monkeypatch.setattr(stationnaire, "sensibilite_fermeture", sensibilite_fermeture)
     r = stationnaire.calculer(base, nu_g_retenu)
-    assert sorted(recus) == [("alpha", attendu), ("fermeture", attendu)]
+    # Une mesure de #80 ; trois fermetures : 2 % (`Calculs.fermeture`), puis 0 et 10 % (pentes publiées).
+    assert sorted(recus) == [("alpha", attendu)] + [("fermeture", attendu)] * 3
     tampon = io.StringIO()
     stationnaire.afficher(r, tampon)
     texte = tampon.getvalue()
@@ -1099,3 +1129,162 @@ def test_chaque_grandeur_publiee_porte_sa_definition(stationnaire, resultat):
         assert g.definition and g.unite and g.denominateur and g.fenetre and g.source
     for v in resultat["grille"].values():
         assert set(idents) <= set(v)
+
+
+# --- Domaine : facteur de croissance avant la racine n_a-ième (/code-review du rang 8) ------
+
+
+@pytest.mark.parametrize("champs", [{"g_N": -1.5}, {"g_pr": -2.0}])
+def test_facteur_de_croissance_negatif_refuse_avant_la_racine(stationnaire, base, champs, capsys):
+    """(1 + g_pr)(1 + g_N) ≤ 0 : refus de domaine (`HorsDomaine`, code de sortie 1), non `TypeError` sur le
+    complexe que donnerait la racine n_a-ième d'une base négative."""
+    with pytest.raises(stationnaire.HorsDomaine, match=r"\(1 \+ g_pr\)\(1 \+ g_N\) > 0"):
+        stationnaire.controler_domaine(replace(base, **champs))
+    with pytest.raises(stationnaire.HorsDomaine, match=r"\(1 \+ g_pr\)\(1 \+ g_N\) > 0"):
+        stationnaire.calculer(replace(base, **champs))
+
+
+# --- Racine parasite : aucune, une, plusieurs (constat m2 du rang 8) -------------------
+
+
+class _CalculsFactices:
+    """`Calculs` réduit à `alpha()`, aux racines données pour chaque π* (appel direct de `_racine_parasite`)."""
+
+    def __init__(self, racines: list[float]) -> None:
+        self._racines = racines
+
+    def alpha(self) -> dict[str, object]:
+        return {"alpha": {pi: {"racines": self._racines} for pi in (0.0, 0.02, 0.10)}}
+
+
+def test_racine_parasite_aucune_une_plusieurs(stationnaire):
+    """NaN (« aucune ») seulement sans racine hors du domaine C51 ; une racine est rendue en % ; deux ou plus sont
+    refusées, faute de pouvoir publier une valeur unique."""
+    assert math.isnan(stationnaire._racine_parasite(_CalculsFactices([0.01]), 0.02))
+    assert stationnaire._racine_parasite(_CalculsFactices([-0.2, 0.01]), 0.02) == 100 * -0.2
+    with pytest.raises(stationnaire.HorsDomaine, match="2 racines parasites"):
+        stationnaire._racine_parasite(_CalculsFactices([-0.3, -0.2, 0.01]), 0.02)
+    # La borne −5 % est hors du domaine C51 (−5 % ; 100 %] : elle compte comme racine parasite.
+    assert stationnaire._racine_parasite(_CalculsFactices([-0.05, 0.01]), 0.02) == 100 * -0.05
+
+
+# --- Contre-épreuve hors du bilan des valeurs en vigueur (constat M1 du rang 8) ---------
+
+
+def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
+    """Les 47 valeurs barrées reproduites sous leurs entrées d'origine (B-1 : illustration du bloc 7 ; N : ν_G non
+    retenu) ont leur section et leur bilan, toutes égales, et aucune n'est comptée en vigueur."""
+    lignes = resultat["contre_epreuve"]
+    assert len(lignes) == 47
+    assert {l["categorie"] for l in lignes} == {"B-1", "N"}
+    assert sum(1 for l in lignes if l["categorie"] == "N") == 4
+    assert all(l["verdict"] == "égal" for l in lignes)
+    en_vigueur = {(l["section"], l["grandeur"], l["publie"]) for l in resultat["publiees"]}
+    assert not en_vigueur & {(l["section"], l["grandeur"], l["publie"]) for l in lignes}
+    tampon = io.StringIO()
+    stationnaire.afficher(resultat, tampon)
+    assert "Bilan de la contre-épreuve : 47 valeurs barrées, 47 égales sous leurs entrées d'origine, aucun écart." \
+        in tampon.getvalue()
+
+
+def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
+    """« Δr̄_α ne descend pas sous 0,1428 point, minimum vers ζ ≈ 68 » : sur ζ ∈ {4 ; 30 ; 50 ; 67 ; 69 ; 100 ;
+    1 000}, Δr̄_α reste au-dessus de sa valeur à ζ = 68, publiée."""
+    calc = stationnaire.Calculs(base)
+    minimum = stationnaire._delta_r_alpha(calc, 68.0)
+    assert stationnaire.comparer("0,1428", minimum)[2]
+    for zeta in (4.0, 30.0, 50.0, 67.0, 69.0, 100.0, 1000.0):
+        assert stationnaire._delta_r_alpha(calc, zeta) > minimum, zeta
+
+
+# --- Valeurs publiées lues dans leur source (constat M1 du rang 8, décision A (iii)) ----
+
+SPECIFICATION = RACINE / "docs" / "specification" / "nations_et_marches.tex"
+FICHES = {
+    "fiche 8": RACINE / "docs" / "blocs" / "banque_centrale.md",
+    "banque_centrale.md": RACINE / "docs" / "blocs" / "banque_centrale.md",
+    "fiche 9": RACINE / "docs" / "blocs" / "finances_publiques.md",
+}
+# Anciennes valeurs de l'historique écrites en clair dans la fiche 9 (§ 3.C, tableau du critère 13 ; § 6.2),
+# gardées « comme trace de l'instruction » par l'annotation du 05/10/2026 : à barrer (#84).
+HISTORIQUE_NON_BARRE = {
+    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"),
+    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"),
+}
+
+
+def _partager_tex(texte: str) -> tuple[str, str]:
+    """(texte dans les \\barre{…}, texte hors des \\barre{…}), accolades imbriquées comprises."""
+    dedans, dehors, i = [], [], 0
+    while (j := texte.find("\\barre{", i)) >= 0:
+        dehors.append(texte[i:j])
+        k, profondeur = j + len("\\barre{"), 1
+        while profondeur:
+            profondeur += {"{": 1, "}": -1}.get(texte[k], 0)
+            k += 1
+        dedans.append(texte[j + len("\\barre{"):k - 1])
+        i = k
+    dehors.append(texte[i:])
+    return "\n".join(dedans), "\n".join(dehors)
+
+
+def _partager_md(texte: str) -> tuple[str, str]:
+    """(texte dans les ~~…~~, texte hors des ~~…~~), sur une ligne."""
+    return "\n".join(re.findall(r"~~(.+?)~~", texte)), re.sub(r"~~(.+?)~~", "\n", texte)
+
+
+def _section_tex(texte: str, label: str) -> str:
+    """Texte de la spécification depuis \\label{label} jusqu'au label de section ou de tableau suivant."""
+    debut = texte.index("\\label{" + label + "}")
+    suite = re.compile(r"\\label\{(?:sec|tab):").search(texte, debut + 1)
+    return texte[debut:suite.start() if suite else len(texte)]
+
+
+def _sources(section: str) -> list[tuple[str, str, str]]:
+    """(nom, texte barré, texte hors barre) de chaque source citée par la section d'une valeur publiée : sections et
+    tableaux de la spécification par leur label, fiches par leur fichier."""
+    tex = SPECIFICATION.read_text(encoding="utf-8")
+    sources = [(label, *_partager_tex(_section_tex(tex, label)))
+               for label in re.findall(r"(?:sec|tab):[\w-]+", section)]
+    sources += [(nom, *_partager_md(chemin.read_text(encoding="utf-8")))
+                for nom, chemin in FICHES.items() if nom in section]
+    assert sources, section
+    return sources
+
+
+def _figure(publie: str, texte: str) -> bool:
+    """La valeur publiée (sans son signe) figure dans le texte, seule ou en mode mathématique ({,}), sans chiffre
+    collé avant ni après."""
+    absolu = publie.lstrip("-−+")
+    return any(re.search(r"(?<![0-9])" + re.escape(forme) + r"(?![0-9])", texte)
+               for forme in (absolu, absolu.replace(",", "{,}")))
+
+
+def test_valeurs_en_vigueur_ecrites_hors_barre_dans_leur_source(stationnaire):
+    """Chaque valeur en vigueur figure hors de \\barre{…} (spécification) et de ~~…~~ (fiches) dans chacune des
+    sources que cite sa section : une valeur barrée ne peut être comptée en vigueur."""
+    manquantes = [(section, grandeur, publie) for section, grandeur, publie, _, _ in stationnaire.VALEURS_PUBLIEES
+                  if publie != stationnaire.AUCUNE
+                  and not all(_figure(publie, dehors) for _, _, dehors in _sources(section))]
+    assert manquantes == []
+
+
+def test_valeurs_de_contre_epreuve_et_d_historique_barrees_dans_leur_source(stationnaire):
+    """Chaque valeur de contre-épreuve et d'historique figure barrée dans au moins une des sources que cite sa
+    section (sauf `HISTORIQUE_NON_BARRE`, en échec attendu ci-dessous) : une valeur qui change de statut dans la
+    source sans que le script suive fait échouer la batterie."""
+    listes = stationnaire.VALEURS_CONTRE_EPREUVE + stationnaire.VALEURS_AVANT_VISA
+    assert len(listes) == 47 + 29
+    manquantes = [(section, grandeur, publie) for section, grandeur, publie, _, _ in listes
+                  if (section, grandeur) not in HISTORIQUE_NON_BARRE
+                  and not any(_figure(publie, dedans) for _, dedans, _ in _sources(section))]
+    assert manquantes == []
+
+
+@pytest.mark.xfail(strict=True, reason="#84 : 0,435 et −0,473 écrites en clair dans la fiche 9 (§ 3.C, § 6.2), "
+                                       "à barrer par un commit docs:")
+def test_anciennes_valeurs_de_C_PIB_barrees_dans_la_fiche_9(stationnaire):
+    anciennes = [(section, publie) for section, grandeur, publie, _, _ in stationnaire.VALEURS_AVANT_VISA
+                 if (section, grandeur) in HISTORIQUE_NON_BARRE]
+    assert len(anciennes) == 2
+    assert all(any(_figure(publie, dedans) for _, dedans, _ in _sources(section)) for section, publie in anciennes)
