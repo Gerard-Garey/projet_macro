@@ -50,19 +50,22 @@ la publication et jamais comme valeur de table), forme fermée en ν_G
 (coefficients publiés), valeur retenue ν_G = 1,15 (décision du mainteneur du
 05/10/2026 ; option `--nu-g-retenu`, qui refuse 1 ; ν_G,min et la marge de la
 propriété J-ν sont publiés sur toute la grille). Croissance : g_pr = 2 %, g_N = 0 (décision du 05/10/2026, point 1).
+Un point de référence (ν_G = 1) où le plafond de E1 est actif n'est pas refusé : il est publié comme constat
+déclaré, sans valeur d'état ni résidu (décision de `macro`, option (b)) ; les autres refus y restent bloquants.
 
 **Valeurs publiées.** Chaque valeur publiée de la spécification que les
 critères listent est comparée à sa dernière décimale publiée : arrondi au plus
 proche, |écart| ≤ 0,5 unité de la dernière décimale, dans l'unité publiée
 (décision du 05/10/2026, point 2). Un écart est **publié**, jamais masqué :
-la colonne « verdict » dit « écart » et l'explication écrite avant l'essai,
-s'il y en a une, l'accompagne.
+la colonne « verdict » dit « écart » et l'explication l'accompagne avec son
+statut : écrite avant l'essai, établie après l'essai (et testée), ou cause
+non établie.
 
 Usage : `uv run python outils/etat_stationnaire.py [--nu-g-retenu X] [--json
 FICHIER]`. Codes de sortie : 0 si l'état se résout sur toute la grille et que
 le plus grand résidu des contrôles est ≤ 1e−12, quels que soient les écarts
 aux valeurs publiées (ils sont publiés, le visa relève du mainteneur) et les
-constats (q1) ; 1 sur un refus de domaine (`HorsDomaine`) ; 2 si le plus
+constats (q1, point de référence hors domaine) ; 1 sur un refus de domaine (`HorsDomaine`) ; 2 si le plus
 grand résidu dépasse 1e−12 (la sortie est alors publiée en entier).
 """
 
@@ -79,6 +82,24 @@ from dataclasses import dataclass, fields, replace
 
 class HorsDomaine(ValueError):
     """Refus explicite d'un paramètre ou d'un état hors de son domaine (jamais d'écrêtage)."""
+
+
+class ReferenceNonPubliee(Exception):
+    """Point de référence ν_G = 1 dont le plafond de E1 est actif : constat déclaré, état non publié.
+
+    Ce n'est pas un refus (décision de `macro`, option (b)) : `calculer` publie
+    le constat et le code de sortie reste celui des colonnes ν_G > 1. `marge`
+    est la marge relative 1 − Γ̄ (G/PB)/ν_G du point.
+    """
+
+    def __init__(self, pi: float, n_a: int, marge: float) -> None:
+        super().__init__(f"π̄ = {pi!r}, n_a = {n_a} : {constat_reference(marge)}")
+        self.pi, self.n_a, self.marge = pi, n_a, marge
+
+
+def constat_reference(marge: float) -> str:
+    """Texte du constat déclaré d'un point de référence hors domaine (décision de `macro`, option (b))."""
+    return f"point de référence hors domaine : plafond de E1 actif (marge = {marge:.6g}), état non publié"
 
 
 @dataclass(frozen=True)
@@ -203,6 +224,7 @@ NU_G_PROPOSES = (1.1, 1.15)  # valeurs proposées par `jeu` (fiche 9, § 7 ; dé
 NU_G_RETENU = 1.15  # valeur retenue, troisième colonne ν_G de la grille (décision du mainteneur du 05/10/2026, #84)
 MARGE_J_NU = 0.03  # propriété J-ν (formulation de `jeu`)
 HAUSSE_J_NU = 1.10
+BORNE_ECHELLE = (1e-100, 1e100)  # borne déclarée des normalisations p_0, pr_0, N^pa_0 et de leur produit
 
 
 def controler_domaine(par: Parametres) -> list[str]:
@@ -216,6 +238,9 @@ def controler_domaine(par: Parametres) -> list[str]:
     n = par.n_a
     if not (isinstance(n, int) and n >= 1):
         raise HorsDomaine(f"n_a = {n!r} : entier ≥ 1 attendu")
+    for champ in fields(par):  # NaN et ±∞ : refus avant tout calcul (aucune division par zéro ni dépassement)
+        if not math.isfinite(getattr(par, champ.name)):
+            raise HorsDomaine(f"{champ.name} = {getattr(par, champ.name)!r} : valeur finie attendue")
     for nom in ("lambda_v", "lambda_IN", "lambda_w", "lambda_N", "lambda_mu", "lambda_H", "lambda_ti", "lambda_e"):
         val = getattr(par, nom)
         if not 0 < val <= n:
@@ -283,6 +308,14 @@ def controler_domaine(par: Parametres) -> list[str]:
     for nom in ("p_0", "pr_0", "N_pa_0"):
         if not getattr(par, nom) > 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : > 0 attendu (normalisation)")
+    # Borne déclarée des normalisations : chacune, et l'échelle nominale p_0 pr_0 N^pa_0, dans [1e−100 ; 1e100].
+    # Au-delà, le contrôle « Res · L^CB », rapporté au carré de l'échelle, sort de la plage des flottants
+    # (mesuré sur p_0 seul : division par zéro dès 1e−162, dépassement dès 1e155) ; l'état est homogène de degré un
+    # en ces échelles (propriété testée), la borne ne restreint donc aucun résultat.
+    for nom, val in (("p_0", par.p_0), ("pr_0", par.pr_0), ("N_pa_0", par.N_pa_0),
+                     ("p_0 pr_0 N^pa_0", par.p_0 * par.pr_0 * par.N_pa_0)):
+        if not BORNE_ECHELLE[0] <= val <= BORNE_ECHELLE[1]:
+            raise HorsDomaine(f"{nom} = {val!r} : dans [1e−100 ; 1e100] attendu (borne déclarée des normalisations)")
     return declares
 
 
@@ -328,8 +361,13 @@ def etat_stationnaire(par: Parametres, r_neutre: float | None = None, rho_bar_L:
     d'ouverture du pas 0 et les flux du pas 0, en u.m., u.v. et personnes.
     `controler` : lever `HorsDomaine` sur les conditions des formes fermées
     (D1, D2, existence du dividende de la banque, Div_F > 0, θ_G > 0, marge
-    du plafond de E1 > 0, B ≥ 0, B_Bk ≥ 0, B_CB ≥ 0, B_H = 0). Em ≤ 0 n'est
-    pas un refus : Em = γ̄ B a le signe de γ̄ (rachat net si γ̄ < 0).
+    du plafond de E1 > 0 pour ν_G > 1, B ≥ 0, B_Bk ≥ 0, B_CB ≥ 0, B_H = 0).
+    Au point de référence ν_G = 1, hors du domaine ν_G > 1 de la table, le
+    plafond de E1 n'est pas un refus : sa marge est rendue
+    (`marge_E1_montant`) et `calculer` publie le point comme constat déclaré,
+    sans valeur d'état (décision de `macro`, option (b)) ; les autres
+    conditions y restent des refus. Em ≤ 0 n'est pas un refus : Em = γ̄ B a
+    le signe de γ̄ (rachat net si γ̄ < 0).
     """
     n = par.n_a
     f = facteurs(par)
@@ -448,11 +486,14 @@ def etat_stationnaire(par: Parametres, r_neutre: float | None = None, rho_bar_L:
         if not theta_G > 0:
             raise HorsDomaine(f"θ_G = {theta_G!r} : θ_G > 0 attendu (demande autonome A = θ_G > 0, part de "
                               "`macro`, § 6 ; sec:finances_publiques-conditions)")
-        if not marge_E1_montant > 0:
+        if par.nu_G != 1.0 and not marge_E1_montant > 0:
             raise HorsDomaine(f"plafond de E1 : ν_G PB − Γ̄ G = {marge_E1_montant!r} ≤ 0 attendu > 0 "
                               "(marge 1 − Γ̄ (G/PB)/ν_G ≤ 0, sec:finances_publiques-depense)")
         if not B >= 0:
             raise HorsDomaine(f"B = {B!r} : dette brute ≥ 0 attendue (sec:finances_publiques-conditions)")
+        # Contrôles de cohérence, inatteignables sous θ_CB ∈ [0 ; 1] (contrôlé au chargement) et B ≥ 0 : B_Bk =
+        # (1 − θ_CB) B ≥ 0, B_CB = θ_CB B ≥ 0 et B_H = 0 par construction (C42). Ils gardent les formes contre
+        # une modification ultérieure de l'ordre triangulaire.
         if not B_Bk >= 0:
             raise HorsDomaine(f"B_Bk = {B_Bk!r} : titres de la banque ≥ 0 attendus (sec:banque-conditions)")
         if not B_CB >= 0:
@@ -977,7 +1018,7 @@ def valeurs(e: dict[str, float], par: Parametres) -> dict[str, float]:
         "borne_nu_G": HAUSSE_J_NU * e["Gam"] * e["G"] / e["PB"],
         "retour_approche": e["Gam"] * (e["G"] / e["PB"]) / (1 - 0.05 * e["G"] / e["PB"]),
         "nu_G_min": nu_min, "nu_G_J": nu_J, "marge_J_nu": 1 - HAUSSE_J_NU * e["Gam"] * (e["G"] / e["PB"]) / par.nu_G,
-        "a": e["a"], "x": (e["G"] + e["Tr"]) / P, "nu_G_max_D2": 1 / e["a"],
+        "a": e["a"], "x": (e["G"] + e["Tr"]) / P, "nu_G_max_D2": 1 / e["a"] if e["a"] > 0 else math.inf,
         "multiplicateur_nu": par.nu_G * (1 - e["a"]) / (1 - par.nu_G * e["a"]),
         "D_H_sur_T_H": _rapport(e["D_H"], e["T_H"]),
         "plafond_E6": (e["M_G"] + e["T_H"] - e["interets"] - e["G"]) / e["PB"],
@@ -1224,7 +1265,7 @@ GRANDEURS: tuple[Grandeur, ...] = (
              "part de `monnaie`, § 2"),
     Grandeur("x", "x = (G + Tr)/PIB, coefficient de la forme fermée en ν_G", "fraction du PIB", "PIB du pas", PAS,
              "part de `monnaie`, § 2"),
-    Grandeur("nu_G_max_D2", "ν_G maximal de D2 : 1/a", "sans dimension", "—", "—", "part de `macro`, § 4 (D2)"),
+    Grandeur("nu_G_max_D2", "ν_G maximal de D2 : 1/a (inf si a ≤ 0 : D2 sans borne)", "sans dimension", "—", "—", "part de `macro`, § 4 (D2)"),
     Grandeur("multiplicateur_nu", "effet de ν_G sur le refinancement ν_G(1 − a)/(1 − ν_G a)", "sans dimension",
              "refinancement à ν_G = 1", "—", "sec:banque-stationnaire (K22)"),
     # Caisse, domaine
@@ -1396,6 +1437,11 @@ ALLOCATIONS_MESUREES = (
     "C/(p v)", "G/(p v)", "I/(p v)", "ΔIN/(p v)", "T^cou/PIB",
 )
 TOL_INVARIANCE = 1e-12  # invariance exacte, relative
+# Sensibilité à ζ (décision de `macro`, complément de #84) : le verdict reste jugé à ζ du paramètre (4) ; l'étendue
+# des allocations de la liste L2 est publiée en mesure sur la plage de la table, ζ ∈ {4 ; 8}, et à ζ = 2 en
+# illustration, sans verdict. Les allocations qui en dépendent (par r̄_α) sont mesurées, non supposées.
+ZETA_PLAGE = (4.0, 8.0)
+ZETA_ILLUSTRATION = 2.0
 
 GRANDEURS_ALPHA: tuple[Grandeur, ...] = (
     Grandeur("r_alpha", "r̄_α(π*), racine de θ_G(r̄ ; π*, n_a) = θ_G* ; lecture A de i^ref (E4 garde r̄ = 1 %), "
@@ -1461,7 +1507,16 @@ def superneutralite(par: Parametres) -> dict[str, object]:
     alloc_beta = {q: max(a[q] for a in alloc_b.values()) - min(a[q] for a in alloc_b.values())
                   for q in ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES + ALLOCATIONS_MESUREES}
     profil = [grille[pi]["r_alpha"] for pi in PROFIL_PI]
+    toutes = ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES + ALLOCATIONS_MESUREES
+    par_zeta = {z: {pi: mesure_alpha(replace(par, zeta=z), pi, 12) for pi in POINTS_PI}
+                for z in (ZETA_ILLUSTRATION,) + ZETA_PLAGE}
+    dependantes = [q for q in toutes if any(
+        abs(par_zeta[z][pi]["allocations"][q] - par_zeta[ZETA_PLAGE[0]][pi]["allocations"][q])
+        > TOL_INVARIANCE * abs(par_zeta[ZETA_PLAGE[0]][pi]["allocations"][q]) for z in par_zeta for pi in POINTS_PI)]
     return {
+        "zeta": {z: {"r_alpha": {pi: d[pi]["r_alpha"] for pi in POINTS_PI}, "delta_r_alpha": ecart(d),
+                     "allocations": {q: ecart(d, q) for q in toutes}} for z, d in par_zeta.items()},
+        "dependantes_de_zeta": dependantes,
         "alpha": grille,
         "delta_r_alpha": ecart(grille),
         "delta_r_alpha_n_a": {n: ecart(autres[n]) for n in (4, 52)},
@@ -1531,12 +1586,16 @@ class Calculs:
         return p
 
     def etat(self, pi: float = 0.02, na: int = 12, nu: float = 1.0, cfg: str = "R") -> dict[str, float]:
+        """État du point ; lève `ReferenceNonPubliee` au point de référence ν_G = 1 si le plafond de E1 est actif."""
         cle = (pi, na, nu, cfg)
         if cle not in self._etats:
             p = self.par(pi, na, nu, cfg)
             e = etat_stationnaire(p, controler=(cfg == "R"))
             self._etats[cle] = (e, p)
-        return self._etats[cle][0]
+        e = self._etats[cle][0]
+        if cfg == "R" and nu == 1.0 and not e["marge_E1_montant"] > 0:
+            raise ReferenceNonPubliee(pi, na, 1 - e["Gam"] * (e["G"] / e["PB"]) / nu)
+        return e
 
     def v(self, pi: float = 0.02, na: int = 12, nu: float = 1.0, cfg: str = "R") -> dict[str, float]:
         cle = (pi, na, nu, cfg)
@@ -1568,6 +1627,23 @@ ILL = {"v_H": 0.7, "m": 0.25 / 12}  # entrées d'illustration de `sec:banque-sta
 EXPL_B2 = ("V_H résolu par le bloc ménages au lieu de 0,7 ; M^G* par E8, avec le délai Γ̄ et les intérêts de PB, "
            "au lieu de 0,25/12 (part de `monnaie`, § 5, B-2, écrite avant l'essai)")
 EXPL_C = "règle C-HS de M33 au lieu de la maquette à impôt sur WB (part de `monnaie`, § 5, C, écrite avant l'essai)"
+
+# Explications des écarts de catégorie A (complément de #84) : établies après l'essai et testées
+# (`test_explication_*`), ou cause non établie. Le statut est écrit dans le texte publié.
+_ETABLIE = "établie après l'essai : "
+_NON_ETABLIE = "cause non établie : maquette perdue (visa du 05/10/2026)"
+EXPLICATIONS_ECARTS: dict[tuple[str, str], str] = {
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4"): _ETABLIE + "σ en pas dans la maquette",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52"): _ETABLIE + "σ en pas dans la maquette",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %"): _ETABLIE + "publié recalculé depuis T_H/PIB arrondi",
+    ("sec:finances_publiques-emission", "marge J-ν à ν_G = 1,1, 0 %, %"): _ETABLIE + "publié sur G/PB à ν_G = 1",
+    ("sec:finances_publiques-depense", "G/PB à 2 %"): _NON_ETABLIE,
+    ("sec:finances_publiques-depense", "G/PB à 10 %"): _NON_ETABLIE,
+    ("sec:finances_publiques-depense", "marge de E1 à 10 %"): _NON_ETABLIE,
+    ("sec:finances_publiques-emission", "borne de ν_G à 10 %"): _NON_ETABLIE,
+}
+# Valeurs publiées dont le NaN du script signifie « aucune » (aucune racine hors du domaine C51), non « sans objet ».
+SANS_RACINE = ("racine parasite à 0 %, %", "racine parasite à 2 %, %", "racine parasite à 10 %, %")
 
 
 def _racine_parasite(calc: Calculs, pi: float) -> float:
@@ -1602,7 +1678,8 @@ VALEURS_PUBLIEES: tuple[tuple[str, str, str, object, str], ...] = (
     ("sec:production-stationnaire", "y/v, n_a = 52", "1,0023107", lambda c: c.v(na=52)["y_sur_v"], "A"),
     ("sec:production-stationnaire", "ρ̄_IN à 2 %", "0,996057", lambda c: c.v()["rho_IN"], "A"),
     ("sec:production-stationnaire", "ρ̄_IN à 10 %", "0,981246", lambda c: c.v(pi=0.10)["rho_IN"], "A"),
-    ("sec:production-stationnaire", "ρ̄_IN à 50 % (forme)", "0,923901", lambda c: rho_IN(12, 1.4 / 12, 0.02, 0.50),
+    ("sec:production-stationnaire", "ρ̄_IN à 50 % (forme)", "0,923901",
+     lambda c: rho_IN(12, c.base.sigma, c.etat()["g"], 0.50),
      "A"),
     ("sec:production-stationnaire", "ρ̄_IN, n_a = 4", "0,992779", lambda c: c.v(na=4)["rho_IN"], "A"),
     ("sec:production-stationnaire", "ρ̄_IN, n_a = 52", "0,997321", lambda c: c.v(na=52)["rho_IN"], "A"),
@@ -2030,11 +2107,24 @@ def table_publiees(calc: Calculs) -> list[dict[str, object]]:
     """Comparaison de chaque valeur publiée listée par les critères à sa valeur de script."""
     lignes = []
     for section, description, publie, fonction, categorie in VALEURS_PUBLIEES:
-        script = float(fonction(calc))
+        try:
+            script = float(fonction(calc))
+        except ReferenceNonPubliee as constat:  # la valeur lit un point de référence non publié (option (b))
+            lignes.append({"section": section, "grandeur": description, "publie": publie, "script": math.nan,
+                           "ecart": math.nan, "seuil": comparer(publie, 0.0)[1], "verdict": "non publiée",
+                           "categorie": categorie, "libelle": str(constat), "explication": ""})
+            continue
         ecart, seuil, ok = comparer(publie, script)
+        if ok:
+            explication = ""
+        elif categorie == "C":
+            explication = f"écrite avant l'essai : {EXPL_C}"
+        else:
+            explication = EXPLICATIONS_ECARTS.get((section, description), "")
         lignes.append({"section": section, "grandeur": description, "publie": publie, "script": script,
                        "ecart": ecart, "seuil": seuil, "verdict": "égal" if ok else "écart", "categorie": categorie,
-                       "explication": EXPL_C if (categorie == "C" and not ok) else ""})
+                       "libelle": "aucune" if (math.isnan(script) and description in SANS_RACINE) else "",
+                       "explication": explication})
     return lignes
 
 
@@ -2099,18 +2189,29 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
 
     `nu_g_retenu` : troisième colonne ν_G (1,15 par défaut, décision du 05/10/2026) ; None la retire. La valeur 1
     est refusée : elle dupliquerait la colonne du point de référence.
+
+    Les colonnes de la table (ν_G > 1) sont calculées d'abord, la colonne de référence ν_G = 1 ensuite : un refus
+    porte le nom de la colonne et du point où il survient. Sur la colonne de référence, un plafond de E1 actif
+    n'est pas un refus : le point est publié comme constat déclaré (`reference_hors_domaine`, marge relative),
+    sans valeur d'état ni résidu (décision de `macro`, option (b)) ; les autres refus y restent bloquants.
     """
     declares = controler_domaine(base)
     if nu_g_retenu == 1.0:
         raise HorsDomaine("ν_G retenu = 1 : la colonne ν_G = 1 est déjà le point de référence de la grille")
     calc = Calculs(base)
     points = [(pi, na) for pi in POINTS_PI for na in POINTS_NA]
-    nus = [1.0] + ([nu_g_retenu] if nu_g_retenu is not None else [])
-    grille, ctrl, niveaux = {}, {}, {}
+    nus = ([nu_g_retenu] if nu_g_retenu is not None else []) + [1.0]
+    grille, ctrl, niveaux, hors_reference = {}, {}, {}, {}
     for nu in nus:
         controler_domaine(replace(base, nu_G=nu))
         for pi, na in points:
-            e = calc.etat(pi, na, nu)
+            try:
+                e = calc.etat(pi, na, nu)
+            except ReferenceNonPubliee as constat:
+                hors_reference[(pi, na)] = constat.marge
+                continue
+            except HorsDomaine as refus:
+                raise HorsDomaine(f"colonne ν_G = {nu!r}, π̄ = {pi!r}, n_a = {na} : {refus}") from refus
             p = calc.par(pi, na, nu)
             grille[(nu, pi, na)] = calc.v(pi, na, nu)
             ctrl[(nu, pi, na)] = max_controles(controles(e, p))
@@ -2124,13 +2225,18 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
     propositions = {}
     for nu in sorted(set(NU_G_PROPOSES) | ({nu_g_retenu} if nu_g_retenu is not None else set())):
         for pi, na in points:
-            propositions[(nu, pi, na)] = calc.v(pi, na, nu)["marge_J_nu"]
+            try:
+                propositions[(nu, pi, na)] = calc.v(pi, na, nu)["marge_J_nu"]
+            except HorsDomaine as refus:
+                raise HorsDomaine(f"colonne ν_G = {nu!r}, π̄ = {pi!r}, n_a = {na} : {refus}") from refus
     republication = {}
     for nu in nus:
         for pi in POINTS_PI:
-            republication[(nu, pi)] = calc.banque(pi=pi, nu=nu)
+            if not (nu == 1.0 and (pi, 12) in hors_reference):
+                republication[(nu, pi)] = calc.banque(pi=pi, nu=nu)
     return {
         "parametres": base, "declares": declares, "nu_g_retenu": nu_g_retenu, "grille": grille, "controles": ctrl,
+        "reference_hors_domaine": hors_reference,
         "niveaux": niveaux, "propositions": propositions, "republication": republication,
         "fermeture": calc.fermeture(), "superneutralite": calc.alpha(), "publiees": table_publiees(calc),
         "cf": {pi: calc.v(pi, 12, 1.0, "C-F") for pi in POINTS_PI},
@@ -2164,6 +2270,9 @@ def afficher(r: dict[str, object], sortie=None) -> None:
       f"au plus {ITERATIONS_MAX} itérations")
     for d in r["declares"]:
         p(f"- point déclaré : {d}")
+    hors = r["reference_hors_domaine"]
+    for (pi, na), marge in sorted(hors.items()):
+        p(f"- point déclaré : ν_G = 1, π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
     p()
     p("Normalisation : p_0 = 1 u.m./u.v., pr_0 = 1 u.v. par personne et par pas, N^pa_0 = 1 personne ; "
       "« ouverture » = stock d'ouverture du pas 0 ; « pas » = flux du pas 0, égal au rapport sur 12 tours.")
@@ -2177,7 +2286,8 @@ def afficher(r: dict[str, object], sortie=None) -> None:
         for gr in GRANDEURS:
             p(f"- {gr.ident} — {gr.definition} [{gr.unite} ; dénominateur : {gr.denominateur} ; fenêtre : "
               f"{gr.fenetre} ; {gr.source}]")
-            p("  " + " | ".join(_f(r["grille"][(nu, pi, na)][gr.ident]) for pi, na in entetes))
+            p("  " + " | ".join(_f(r["grille"][(nu, pi, na)][gr.ident]) if (nu, pi, na) in r["grille"]
+                                else "non publié" for pi, na in entetes))
     p()
     p("## Forme fermée en ν_G (n_a, π̄ du point ; a, c, x publiés ci-dessus)")
     p("m(ν_G) = M^G/(n_a PIB) = ν_G [x/(n_a Γ̄) + a c]/(1 − ν_G a) ; dette brute b(ν_G) = c + m(ν_G) ; "
@@ -2187,18 +2297,25 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     for nu in sorted({k[0] for k in r["propositions"]}):
         vals = [r["propositions"][(nu, pi, na)] for pi, na in entetes]
         p(f"- ν_G = {_f(nu)} : m_ν " + " | ".join(_f(v, 6) for v in vals) + f" ; pire point {_f(min(vals), 6)}")
-    nus_min = [r["grille"][(1.0, pi, na)]["nu_G_J"] for pi, na in entetes]
-    p("- ν_G minimal pour m_ν ≥ 0,03 : " + " | ".join(_f(v, 7) for v in nus_min) + f" ; maximum {_f(max(nus_min), 7)}")
+    nus_min = {(pi, na): r["grille"][(1.0, pi, na)]["nu_G_J"] for pi, na in entetes if (1.0, pi, na) in r["grille"]}
+    p("- ν_G minimal pour m_ν ≥ 0,03 : " + " | ".join(
+        _f(nus_min[k], 7) if k in nus_min else "non publié" for k in entetes)
+      + f" ; maximum {_f(max(nus_min.values()), 7) if nus_min else 'non publié'}")
     p()
     p("## Niveaux bancaires (#83), republication (B-2) à v_H résolu et m par E8")
     p(f"Explication écrite avant l'essai : {EXPL_B2}.")
     for (nu, pi), b in sorted(r["republication"].items()):
         p(f"- ν_G = {_f(nu)}, π̄ = {_f(100 * pi)} %, n_a = 12 : " + " ; ".join(
             f"{k} = {_f(v, 8)}" for k, v in b.items()))
+    for pi in POINTS_PI:
+        if (pi, 12) in hors:
+            p(f"- ν_G = 1, π̄ = {_f(100 * pi)} %, n_a = 12 : {constat_reference(hors[(pi, 12)])}")
     p()
     p("## État initial résolu (ν_G = 1), niveaux d'ouverture du pas 0")
     for (pi, na), niv in sorted(r["niveaux"].items()):
         p(f"- π̄ = {_f(100 * pi)} %, n_a = {na} : " + " ; ".join(f"{k} = {_f(v)}" for k, v in niv.items()))
+    for (pi, na), marge in sorted(hors.items()):
+        p(f"- π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
     p()
     p("## Contrôles (plus grand résidu par famille, relatif à l'échelle déclarée ; seuil 1e−12)")
     for (nu, pi, na), c in sorted(r["controles"].items()):
@@ -2215,12 +2332,13 @@ def afficher(r: dict[str, object], sortie=None) -> None:
                             f"ν_F,min = {_f(v['nu_F_min'], 6)} an > ν_F = {_f(base.nu_F, 6)}")
         if not 0.2 <= v["distribution"] <= 0.9:
             constats.append(f"distribution {_f(v['distribution'], 6)} hors de [0,2 ; 0,9] (#55)")
-        if v["marge_E1"] <= 0:
-            constats.append(f"plafond de E1 actif : marge {_f(v['marge_E1'], 6)}")
         if v["Em"] <= 0:
             constats.append("rachat net (Em ≤ 0)")
         if constats:
             p(f"- ν_G = {_f(nu)}, π̄ = {_f(100 * pi)} %, n_a = {na} : " + " ; ".join(constats))
+    # Plafond de E1 actif : refus sur les colonnes ν_G > 1 ; constat déclaré sur la colonne de référence.
+    for (pi, na), marge in sorted(hors.items()):
+        p(f"- ν_G = 1, π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
     p()
     fe = r["fermeture"]
     p("## Fermeture (#44, lecture (e)) : sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12)")
@@ -2265,6 +2383,15 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     p("- lecture (β) (r̄ = 1 % à chaque π*, mesure sans verdict) : "
       f"écart de θ_G {100 * sn['beta_theta_G']:.6f} point ; "
       + " ; ".join(f"{q} {100 * v:.6f}" for q, v in sn["beta_allocations"].items()))
+    p(f"- sensibilité à ζ (mesure, décision de `macro`) : verdict jugé à ζ = {_f(base.zeta)} ; étendue max − min sur "
+      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = 1, en point, sur la plage de la table ζ ∈ {"
+      + " ; ".join(_f(z) for z in ZETA_PLAGE) + f"}} et à ζ = {_f(ZETA_ILLUSTRATION)} en illustration, sans verdict")
+    for z, d in sn["zeta"].items():
+        statut = "plage de la table" if z in ZETA_PLAGE else "illustration, sans verdict"
+        p(f"  - ζ = {_f(z)} ({statut}) : Δr̄_α {100 * d['delta_r_alpha']:.6f} ; " + " ; ".join(
+            f"{q} {100 * v:.6f}" for q, v in d["allocations"].items()))
+    p("  - allocations dépendantes de ζ (par r̄_α ; écart relatif > " + f"{TOL_INVARIANCE:g} entre ζ ∈ "
+      "{" + " ; ".join(_f(z) for z in sn["zeta"]) + "}, mesuré) : " + ", ".join(sn["dependantes_de_zeta"]))
     p()
     p("## Configuration de contrôle C-F (ϖ_L = ϖ_D = 0), non admissible : "
       "condition d'existence du dividende de la banque")
@@ -2274,17 +2401,22 @@ def afficher(r: dict[str, object], sortie=None) -> None:
           f"dividendes/ventes {_f(v['Div_F_sur_ventes'], 6)} %")
     p()
     p("## Valeurs publiées : comparaison à la dernière décimale (arrondi au plus proche)")
-    ecarts = [l for l in r["publiees"] if l["verdict"] != "égal"]
+    ecarts = [l for l in r["publiees"] if l["verdict"] == "écart"]
+    non_publiees = [l for l in r["publiees"] if l["verdict"] == "non publiée"]
     for l in r["publiees"]:
         p(f"- [{l['categorie']}] {l['section']} — {l['grandeur']} : publié {l['publie']} ; "
-          f"script {_f(l['script'], 9)} ; "
+          f"script {l['libelle'] or _f(l['script'], 9)} ; "
           f"écart {l['ecart']:+.3g} (seuil {l['seuil']:.1g}) : {l['verdict']}"
-          + (f" — explication écrite avant l'essai : {l['explication']}" if l["explication"] else ""))
+          + (f" — explication {l['explication']}" if l["explication"].startswith(("écrite", "établie"))
+             else f" — {l['explication']}" if l["explication"] else ""))
     p()
     egales_S = sum(1 for l in r["publiees"] if l["verdict"] == "égal" and l["categorie"] == "S")
-    p(f"Bilan : {len(r['publiees'])} valeurs comparées, {len(r['publiees']) - len(ecarts) - egales_S} égales sur "
+    p(f"Bilan : {len(r['publiees'])} valeurs comparées, "
+      f"{len(r['publiees']) - len(ecarts) - len(non_publiees) - egales_S} égales sur "
       f"l'état résolu, {egales_S} égales en arithmétique de la spécification (catégorie S, sans état résolu), "
-      f"{len(ecarts)} écarts (publiés, soumis au visa ; aucun n'est masqué).")
+      f"{len(ecarts)} écarts (publiés, soumis au visa ; aucun n'est masqué)"
+      + (f", {len(non_publiees)} non publiées (point de référence hors domaine, plafond de E1 actif)."
+         if non_publiees else "."))
 
 
 def _jsonable(x):
