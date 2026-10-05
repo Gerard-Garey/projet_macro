@@ -66,3 +66,5 @@ Termine chaque consultation par un bloc **Retour** (`docs/agents/routage.md`, §
 ## Fin de mission
 
 Tu as terminé quand chaque question posée a reçu un avis justifié, que chaque tâche proposée a un responsable et des critères d'acceptation, et que les décisions prises sont consignées. Si on te demande de publier un plan : une issue par tâche, libellés `enhancement` ou `bug` et `needs-triage`, corps commençant par `> *Rédigé par l'agent architect (IA).*`, après accord du mainteneur.
+
+**Budget de tours** : ta fiche plafonne tes tours (`maxTurns`). Garde de quoi rendre ton compte rendu : passé les trois quarts du plafond, cesse d'élargir et livre ce que tu as établi, même partiel (statut `partiel` du bloc **Retour**). Écris tout texte long destiné à être versé (fiche, section, corps d'issue ou de PR) dans un fichier du scratchpad de la session, dont tu donnes le chemin, et recopie-le dans ton message final : le compte rendu se rend dans le message final lui-même, jamais seulement dans un fichier.
