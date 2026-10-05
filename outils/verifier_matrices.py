@@ -45,10 +45,12 @@ tenant : `$-D_H - B_H$`.
   en fin de cellule est refusé (« facteur manquant »).
 - Deux écritures d'un même terme sont confondues si elles ne diffèrent que par
   les espaces, les espaces fins (`\\,`, `\\;`, `\\!`, `\\:`, `~`), les
-  accolades d'un seul symbole (`B_{H}` = `B_H`) ou les commandes de police
-  `\\mathit`, `\\mathrm`, `\\text`, `\\textrm` et `\\textit` (`\\mathit{Res}`
-  = `Res`). Toute autre différence les distingue : l'ordre des indices et
-  exposants est significatif (`B_H^{\\mathrm{prim}}` ≠ `B^{\\mathrm{prim}}_H`).
+  accolades vides ou d'un seul symbole (`B_{H}` = `B_H`) ou les commandes de
+  police `\\mathit`, `\\mathrm`, `\\text`, `\\textrm` et `\\textit`
+  (`\\mathit{Res}` = `Res`). Un nom de commande reste séparé de la lettre qui
+  le suit : `\\le q` ≠ `\\leq`, `\\Delta{}D` = `\\Delta D` ≠ `\\DeltaD`.
+  Toute autre différence les distingue : l'ordre des indices et exposants est
+  significatif (`B_H^{\\mathrm{prim}}` ≠ `B^{\\mathrm{prim}}_H`).
 - Les secteurs (`SECTEURS`, reconnus à l'en-tête de colonne), leurs postes de
   règlement (`POSTES_DE_REGLEMENT`) et les lignes marquées « poste »
   (`LIGNES_POSTE`) sont déclarés en tête du script.
@@ -56,8 +58,9 @@ tenant : `$-D_H - B_H$`.
 **Structure d'une table.** Les zones d'une `longtable` sont délimitées par
 `\\endfirsthead`, `\\endhead`, `\\endfoot` et `\\endlastfoot`. Une note est
 une ligne d'une seule cellule qui commence par `\\multicolumn` (« Suite de la
-page précédente ») : hors filets, lignes vides et ligne qui contient
-`\\caption`, la note est la seule ligne ignorée dans les têtes et le corps.
+page précédente ») : hors filets, lignes vides et lignes de légende (un
+`\\caption` et des `\\label`, rien d'autre ; une ligne qui porte autre chose
+est lue), la note est la seule ligne ignorée dans les têtes et le corps.
 La première ligne qui contient `&` dans la première zone de tête (fermée par
 `\\endfirsthead` ou `\\endhead`) est l'en-tête ; après lui, toute ligne de
 cette tête autre qu'une note est un écart, qu'elle ait une cellule ou
@@ -65,8 +68,9 @@ plusieurs. Chacune des autres zones de tête (têtes répétées) porte au moins
 une ligne qui contient `&` (sinon « tête répétée sans ligne d'en-tête »), et
 toute ligne autre qu'une note, d'une cellule comme de plusieurs, y est
 comparée au premier en-tête (« en-tête répété différent du premier
-en-tête »). Limite : une ligne d'une seule cellule placée avant l'en-tête de
-la première tête n'est pas relevée, qu'elle soit une note ou non. Les
+en-tête »). Avant l'en-tête, toute ligne autre qu'une note est un écart
+(« ligne d'une cellule hors note \\multicolumn avant l'en-tête »), avec ou
+sans marqueur de tête. Les
 zones de pied (fermées par `\\endfoot` ou `\\endlastfoot`) sont ignorées : ni
 données ni en-tête. Le corps est la zone qui suit le dernier marqueur ; sans
 marqueur de tête, il suit l'en-tête. Les filets (`\\toprule`, `\\midrule`…)
@@ -171,6 +175,8 @@ LIGNES_POSTE = ("17", "20")
 # Colonne propre à `tab:matrice-bilans` (actifs réels, § 9.7, point 3).
 COLONNE_REEL = "reel"
 
+# Commandes d'une ligne de légende (`_est_legende`).
+COMMANDES_LEGENDE = re.compile(r"\\(caption|label)(?![A-Za-z])")
 MARQUEURS_TETE = re.compile(r"\\(endfirsthead|endhead|endfoot|endlastfoot)(?![A-Za-z])")
 # Filets et sauts de page effacés avant la lecture, avec leurs seuls arguments :
 # `[épaisseur]` optionnel pour les filets de booktabs, `\addlinespace` et les
@@ -272,16 +278,35 @@ class Rapport:
 # --------------------------------------------------------------------------
 
 
+def _compacter(texte: str) -> str:
+    """Blancs retirés, sauf un espace entre un nom de commande et une lettre.
+
+    Cet espace sépare deux lexèmes : `\\le q` n'est pas `\\leq` (#74).
+    """
+    def remplacer(m: re.Match) -> str:
+        suivant = m.string[m.end():m.end() + 1]
+        if m.group(1) and suivant.isascii() and suivant.isalpha():
+            return m.group(1) + " "
+        return m.group(1) or ""
+    return re.sub(r"(\\[A-Za-z]+)?\s+", remplacer, texte)
+
+
 def normaliser_terme(texte: str) -> str:
-    """Clé d'un terme : espaces, espaces fins, polices et accolades simples retirés."""
-    s = ESPACES_FINS.sub("", texte)
-    s = re.sub(r"\s+", "", s)
+    """Clé d'un terme : espaces, espaces fins, polices et accolades simples retirés.
+
+    Un retrait laisse un blanc, que `_compacter` efface sauf entre un nom de
+    commande et une lettre : `\\Delta{}D`, `\\Delta\\,D` et `\\Delta D` sont
+    un même terme, `\\DeltaD` un autre (#74). Chaque passage qui change la
+    chaîne la raccourcit : la boucle s'arrête.
+    """
+    s = _compacter(ESPACES_FINS.sub(" ", texte))
     precedent = None
     while precedent != s:
         precedent = s
-        s = POLICES.sub(r"\1", s)
-        s = s.replace("{}", "")
-        s = ACCOLADE_SIMPLE.sub(r"\1\2", s)
+        s = POLICES.sub(r" \1 ", s)
+        s = s.replace("{}", " ")
+        s = ACCOLADE_SIMPLE.sub(r"\1\2 ", s)
+        s = _compacter(s)
     return s
 
 
@@ -486,6 +511,56 @@ def _debut_utile(texte: str, debut: int, fin: int) -> int:
     return i if i < fin else debut
 
 
+def _est_legende(contenu: str) -> bool:
+    """Ligne de légende : un `\\caption` et des `\\label{…}`, rien d'autre (#74).
+
+    `\\caption` admet `*` et `[…]` optionnels, puis un argument `{…}`. Une
+    ligne qui porte autre chose (une cellule, un mot) n'est pas une légende :
+    elle est lue comme les autres.
+
+    Limite connue : l'argument `[…]` se ferme sur le premier `]`, sans
+    équilibrer les accolades ; une légende `\\caption[a{]}b]{…}`, valide en
+    LaTeX, n'est pas reconnue et produit un faux écart (jamais un faux
+    négatif). La spécification n'en contient pas.
+    """
+    i = 0
+    legende = False
+    while True:
+        while i < len(contenu) and contenu[i] in " \t\n":
+            i += 1
+        if i == len(contenu):
+            return legende
+        m = COMMANDES_LEGENDE.match(contenu, i)
+        if m is None:
+            return False
+        i = m.end()
+        if m.group(1) == "caption":
+            if legende:
+                return False
+            legende = True
+            if contenu.startswith("*", i):
+                i += 1
+            j = i
+            while j < len(contenu) and contenu[j] in " \t\n":
+                j += 1
+            if contenu.startswith("[", j):
+                fermant = contenu.find("]", j)
+                if fermant < 0:
+                    return False
+                i = fermant + 1
+        lu = lire_arguments(contenu, i, 1)
+        if lu is None:
+            return False
+        i = lu[1]
+
+
+def _est_note(travail: str, a: int, b: int) -> bool:
+    """Note : ligne d'une seule cellule qui commence par `\\multicolumn`."""
+    cellules = _separer(travail, a, b, "&")
+    premiere = travail[cellules[0][0]:cellules[0][1]].strip()
+    return len(cellules) == 1 and premiere.startswith("\\multicolumn")
+
+
 def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[Ecart]]:
     """Lit la `longtable` qui porte `\\label{label}` ; `None` si elle est absente."""
     positions = [m.start() for m in re.finditer(r"\\label\{" + re.escape(label) + r"\}", texte)]
@@ -523,7 +598,7 @@ def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[
         rangs = []
         for a, b in _separer(travail, zone[0], zone[1], "\\\\"):
             contenu = travail[a:b]
-            if not contenu.strip() or "\\caption" in contenu:
+            if not contenu.strip() or _est_legende(contenu):
                 continue
             rangs.append((a, b))
         return rangs
@@ -532,18 +607,22 @@ def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[
     entete = next(((a, b) for a, b in tete if _separer(travail, a, b, "&")[1:]), None)
     if entete is None:
         return None, ecarts + [Ecart("structure", ou(debut_env), f"{label} : en-tête introuvable")]
+    # Avant l'en-tête (ses lignes ont une seule cellule), seule une note
+    # `\multicolumn` est admise, avec ou sans marqueur de tête (#74).
+    for a, b in tete:
+        if a < entete[0] and not _est_note(travail, a, b):
+            ecarts.append(Ecart("structure", ou(_debut_utile(travail, a, b)),
+                                f"{label} : ligne d'une cellule hors note \\multicolumn "
+                                "avant l'en-tête"))
     if tetes:
         corps = lignes_de(zone_corps)
         # Première tête : après l'en-tête, seule une note `\multicolumn` d'une
         # cellule est admise, comme dans le corps et les têtes répétées (une
         # ligne de données placée là échapperait à toute vérification).
         for a, b in tete:
-            if a <= entete[0]:
-                continue
+            if a <= entete[0] or _est_note(travail, a, b):
+                continue  # en-tête, ligne qui le précède ou note sur toute la largeur
             cellules_tete = _separer(travail, a, b, "&")
-            premiere_tete = travail[cellules_tete[0][0]:cellules_tete[0][1]].strip()
-            if len(cellules_tete) == 1 and premiere_tete.startswith("\\multicolumn"):
-                continue  # note sur toute la largeur
             nature = ("ligne à cellules" if len(cellules_tete) > 1
                       else "ligne d'une cellule hors note \\multicolumn")
             ecarts.append(Ecart("structure", ou(_debut_utile(travail, a, b)),
@@ -567,20 +646,18 @@ def lire_table(texte: str, label: str, chemin: str) -> tuple[Table | None, list[
             ecarts.append(Ecart("structure", ou(_debut_utile(travail, zone[0], zone[1])),
                                 f"{label} : tête répétée sans ligne d'en-tête"))
         for a, b in rangs:
-            cellules_repetees = _separer(travail, a, b, "&")
-            premiere_repetee = travail[cellules_repetees[0][0]:cellules_repetees[0][1]].strip()
-            if len(cellules_repetees) == 1 and premiere_repetee.startswith("\\multicolumn"):
+            if _est_note(travail, a, b):
                 continue  # note sur toute la largeur
-            repetees = [cle_entete(travail[c:d]) for c, d in cellules_repetees]
+            repetees = [cle_entete(travail[c:d]) for c, d in _separer(travail, a, b, "&")]
             if repetees != cles:
                 ecarts.append(Ecart("structure", ou(_debut_utile(travail, a, b)),
                                     f"{label} : en-tête répété différent du premier en-tête"))
     lignes = []
     for a, b in corps:
+        if _est_note(travail, a, b):
+            continue  # note sur toute la largeur
         cellules = _separer(travail, a, b, "&")
         premiere = travail[cellules[0][0]:cellules[0][1]].strip()
-        if len(cellules) == 1 and premiere.startswith("\\multicolumn"):
-            continue  # note sur toute la largeur
         emplacement = ou(_debut_utile(travail, a, b))
         etiquette = texte_simple(premiere)
         identifiant = etiquette.split(" ")[0] if etiquette else ""
