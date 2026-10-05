@@ -434,18 +434,19 @@ def test_refus_de_la_condition_d_existence_a_ecarts_nuls(stationnaire, base):
 
 
 def test_refus_a_lv_0_6(stationnaire, base):
-    """lv* = 0,6 : plafond de E1 à marge négative et dette brute négative sur une partie de la grille ; refus."""
-    refus = 0
+    """lv* = 0,6, ν_G = 1 : dette brute négative sur une partie de la grille, refusée ; le plafond de E1 seul n'est
+    pas un refus au point de référence (décision de `macro`, option (b)), mais il l'est à ν_G > 1."""
+    refus = e1_seul = 0
     for p in points(stationnaire, replace(base, lv=0.6)):
         e = stationnaire.etat_stationnaire(p, controler=False)
-        hors = e["marge_E1_montant"] <= 0 or e["B"] < 0 or e["B_Bk"] < 0
-        if hors:
+        if e["B"] < 0 or e["B_Bk"] < 0:
             refus += 1
-            with pytest.raises(stationnaire.HorsDomaine):
+            with pytest.raises(stationnaire.HorsDomaine, match="B ="):
                 stationnaire.etat_stationnaire(p)
         else:
-            stationnaire.etat_stationnaire(p)
-    assert refus == 6
+            e1_seul += e["marge_E1_montant"] <= 0
+            assert stationnaire.etat_stationnaire(p)["marge_E1_montant"] == e["marge_E1_montant"]
+    assert (refus, e1_seul) == (5, 1)
     with pytest.raises(stationnaire.HorsDomaine):
         stationnaire.calculer(replace(base, lv=0.6))
     # Les deux conditions sont violées séparément sur la grille (π̄ = 0, n_a = 12 : les deux à la fois).
@@ -523,6 +524,131 @@ def test_q1_publie_comme_constat_a_n_a_4(stationnaire, resultat):
 # --- Valeurs publiées (propriété 9 ; critère J1) --------------------------------
 
 
+# --- Colonne de référence ν_G = 1 hors domaine (décision de `macro`, option (b)) ---------
+
+
+@pytest.mark.parametrize("pi, n_a, admis", [
+    (0.0, 4, False), (0.0, 12, False), (0.0, 52, False), (0.02, 4, True), (0.02, 12, False), (0.02, 52, False),
+])
+def test_lv_0_6_a_nu_G_1_15_refus_sur_la_dette_brute(stationnaire, base, pi, n_a, admis):
+    """`macro` : lv* = 0,6, ν_G = 1,15 : refus sur B < 0 là où la marge de E1 est positive (le refus ne vient pas
+    de E1) ; témoin admis à π̄ = 2 %, n_a = 4 (B/(n_a PIB) ≈ +0,042)."""
+    p = replace(base, lv=0.6, nu_G=1.15, pi_cible=pi, n_a=n_a)
+    e = stationnaire.etat_stationnaire(p, controler=False)
+    assert 1 - e["Gam"] * (e["G"] / e["PB"]) / p.nu_G > 0 and e["marge_E1_montant"] > 0
+    if admis:
+        assert 0.04 < stationnaire.etat_stationnaire(p)["B"] / (n_a * e["PIB"]) < 0.045
+    else:
+        assert e["B"] < 0
+        with pytest.raises(stationnaire.HorsDomaine, match="B = .*dette brute"):
+            stationnaire.etat_stationnaire(p)
+
+
+def test_lv_0_6_calculer_refuse_sur_une_colonne_nu_G_1_15(stationnaire, base):
+    """`macro` : la grille complète à lv* = 0,6 est refusée, motif B < 0, sur la colonne retenue ν_G = 1,15
+    (calculée avant la colonne de référence)."""
+    with pytest.raises(stationnaire.HorsDomaine, match=r"colonne ν_G = 1\.15, .* : B = .*dette brute"):
+        stationnaire.calculer(replace(base, lv=0.6), nu_g_retenu=1.15)
+
+
+def test_plafond_de_E1_refuse_a_nu_G_superieur_a_un(stationnaire, base):
+    """Le plafond de E1 reste un refus sur les colonnes ν_G > 1 (lv* = 0,45, π̄ = 0, n_a = 4, ν_G = 1,001)."""
+    p = replace(base, lv=0.45, pi_cible=0.0, n_a=4, nu_G=1.001)
+    assert stationnaire.etat_stationnaire(p, controler=False)["marge_E1_montant"] <= 0
+    with pytest.raises(stationnaire.HorsDomaine, match="plafond de E1"):
+        stationnaire.etat_stationnaire(p)
+
+
+def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkeypatch, capsys):
+    """`macro` : lv* = 0,45 : plafond de E1 actif à ν_G = 1 en (0, 4) et (0, 12), toutes les colonnes ν_G > 1
+    admissibles ; code 0, constat publié, aucune valeur d'état ni résidu pour ces points de référence."""
+    variante = replace(base, lv=0.45)
+    hors = {(0.0, 4), (0.0, 12)}
+    for p in points(stationnaire, variante):
+        e = stationnaire.etat_stationnaire(p)  # aucun refus au point de référence
+        assert (e["marge_E1_montant"] <= 0) == ((p.pi_cible, p.n_a) in hors)
+    for nu in sorted(set(stationnaire.NU_G_PROPOSES) | {stationnaire.NU_G_RETENU}):
+        for p in points(stationnaire, variante, nu):
+            assert stationnaire.etat_stationnaire(p)["marge_E1_montant"] > 0
+    r = stationnaire.calculer(variante)
+    assert set(r["reference_hors_domaine"]) == hors
+    assert all(m < 0 for m in r["reference_hors_domaine"].values())
+    for pi, na in hors:
+        assert (1.0, pi, na) not in r["grille"] and (1.0, pi, na) not in r["controles"]
+        assert (pi, na) not in r["niveaux"]
+        assert (1.15, pi, na) in r["grille"]
+    assert (1.0, 0.0) not in r["republication"] and (1.15, 0.0) in r["republication"]
+    assert stationnaire.plus_grand_residu(r) <= TOL
+    non_publiees = [l for l in r["publiees"] if l["verdict"] == "non publiée"]
+    assert non_publiees and all(math.isnan(l["script"]) for l in non_publiees)
+    tampon = io.StringIO()
+    stationnaire.afficher(r, tampon)
+    texte = tampon.getvalue()
+    assert "point de référence hors domaine : plafond de E1 actif (marge = -0.00202929), état non publié" in texte
+    assert f"{len(non_publiees)} non publiées (point de référence hors domaine" in texte
+    monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
+    assert stationnaire.main([]) == 0
+    assert "état non publié" in capsys.readouterr().out
+
+
+def test_D2_sans_borne_a_taux_directeur_nul(stationnaire, base):
+    """r̄ = 0, π̄ = 0 : i_CB = 0, a = 0, D2 sans borne (ν_G maximal infini) ; calcul complet sans exception."""
+    r = stationnaire.calculer(replace(base, rbar=0.0))
+    assert r["grille"][(1.15, 0.0, 12)]["nu_G_max_D2"] == math.inf
+    assert stationnaire.plus_grand_residu(r) <= TOL
+
+
+def test_rachat_net_publie_comme_constat(stationnaire, base):
+    """γ̄ < 0 (g_pr = −0,1 %, π̄ = 0) : Em ≤ 0 sans refus, publié « rachat net » par `afficher`."""
+    r = stationnaire.calculer(replace(base, g_pr=-0.001))
+    negatifs = {k for k, v in r["grille"].items() if v["Em"] <= 0}
+    assert negatifs == {(nu, 0.0, na) for nu in (1.0, 1.15) for na in stationnaire.POINTS_NA}
+    tampon = io.StringIO()
+    stationnaire.afficher(r, tampon)
+    assert tampon.getvalue().count("rachat net (Em ≤ 0)") == len(negatifs)
+
+
+# --- Domaine des champs : valeurs non finies et normalisations (constat m1 de l'audit) -------
+
+
+@pytest.mark.parametrize("valeur", [math.nan, math.inf, -math.inf])
+def test_champ_non_fini_refuse(stationnaire, base, valeur):
+    for champ in fields(base):
+        if champ.name == "n_a":
+            continue
+        with pytest.raises(stationnaire.HorsDomaine):
+            stationnaire.controler_domaine(replace(base, **{champ.name: valeur}))
+
+
+@pytest.mark.parametrize("champs", [
+    {"p_0": 1e-300}, {"p_0": 1e300}, {"pr_0": 1e-300}, {"pr_0": 1e300}, {"N_pa_0": 1e-300}, {"N_pa_0": 1e300},
+    {"p_0": 1e60, "pr_0": 1e60}, {"p_0": 1e-60, "N_pa_0": 1e-60},
+])
+def test_normalisations_hors_borne_refusees(stationnaire, base, champs):
+    with pytest.raises(stationnaire.HorsDomaine, match="borne déclarée des normalisations"):
+        stationnaire.controler_domaine(replace(base, **champs))
+
+
+def test_valeurs_speciales_aucune_exception_hors_refus(stationnaire, base):
+    """Rejeu du balayage de l'audit : valeurs spéciales sur chaque champ ; seul `HorsDomaine` peut être levé."""
+    autres = []
+    for champ in fields(base):
+        if champ.name == "n_a":
+            continue
+        for x in (math.nan, math.inf, -math.inf, 0.0, -0.0, 1e-300, 1e300, -1.0):
+            p = replace(base, **{champ.name: x})
+            try:
+                stationnaire.controler_domaine(p)
+                e = stationnaire.etat_stationnaire(p)
+                stationnaire.valeurs(e, p)
+                stationnaire.max_controles(stationnaire.controles(e, p))
+            except stationnaire.HorsDomaine:
+                pass
+            except Exception as erreur:  # toute autre exception est l'objet du test
+                autres.append((champ.name, x, repr(erreur)))
+    assert autres == []
+
+
 # --- Explications établies des écarts publiés (#84), en propriétés --------------
 
 
@@ -550,6 +676,50 @@ def test_explication_marge_J_nu_sur_G_PB_a_nu_G_un(stationnaire, base):
     p11 = replace(p1, nu_G=1.1)
     v11 = stationnaire.valeurs(stationnaire.etat_stationnaire(p11), p11)
     assert not stationnaire.comparer("0,37", 100 * v11["marge_J_nu"])[2]
+
+
+def test_explications_des_ecarts_A_publiees_avec_leur_statut(stationnaire, resultat):
+    """Constat m3 : chaque écart de catégorie A porte son explication et son statut (établie après l'essai, ou
+    cause non établie) ; les écarts C gardent l'explication écrite avant l'essai."""
+    ecarts_A = {(l["section"], l["grandeur"]): l["explication"] for l in resultat["publiees"]
+                if l["verdict"] == "écart" and l["categorie"] == "A"}
+    assert set(ecarts_A) == set(stationnaire.EXPLICATIONS_ECARTS)
+    etablies = {k for k, x in ecarts_A.items() if x.startswith("établie après l'essai : ")}
+    assert {k[1] for k in etablies} == {"dette consolidée à 2 %, n_a = 4", "dette consolidée à 2 %, n_a = 52",
+                                       "Y^HS/PIB à 2 %", "marge J-ν à ν_G = 1,1, 0 %, %"}
+    for k, x in ecarts_A.items():
+        if k not in etablies:
+            assert x == "cause non établie : maquette perdue (visa du 05/10/2026)", k
+    for l in resultat["publiees"]:
+        if l["verdict"] == "écart" and l["categorie"] == "C":
+            assert l["explication"].startswith("écrite avant l'essai : ")
+    tampon = io.StringIO()
+    stationnaire.afficher(resultat, tampon)
+    texte = tampon.getvalue()
+    assert texte.count("— explication établie après l'essai : ") == 4
+    assert texte.count("— cause non établie : maquette perdue (visa du 05/10/2026)") == 4
+
+
+def test_racines_parasites_absentes_affichees_aucune(stationnaire, resultat):
+    """Libellé : une racine parasite inexistante se lit « aucune », non « sans objet »."""
+    lignes = [l for l in resultat["publiees"] if l["grandeur"] in stationnaire.SANS_RACINE]
+    assert len(lignes) == 3 and all(math.isnan(l["script"]) and l["libelle"] == "aucune" for l in lignes)
+    tampon = io.StringIO()
+    stationnaire.afficher(resultat, tampon)
+    for ligne in tampon.getvalue().splitlines():
+        if "racine parasite à" in ligne and "publié" in ligne:
+            assert "script aucune" in ligne and "sans objet" not in ligne
+
+
+def test_rho_IN_a_50_pourcent_lu_sur_la_configuration(stationnaire, base):
+    """Constat m4 : la ligne « ρ̄_IN à 50 % (forme) » lit σ et g de la configuration, non des constantes."""
+    def ligne(calc):
+        return next(float(f(calc)) for _, d, _, f, _ in stationnaire.VALEURS_PUBLIEES if d == "ρ̄_IN à 50 % (forme)")
+
+    calc = stationnaire.Calculs(base)
+    assert ligne(calc) == stationnaire.rho_IN(12, base.sigma, calc.etat()["g"], 0.50)
+    assert ligne(stationnaire.Calculs(replace(base, sigma=2 / 12))) != ligne(calc)
+    assert ligne(stationnaire.Calculs(replace(base, g_pr=0.03))) != ligne(calc)
 
 
 def test_seuil_derniere_decimale(stationnaire):
@@ -716,6 +886,24 @@ def test_alpha_allocations_independantes_de_zeta_seuil_monnaie(stationnaire, bas
         b = stationnaire.mesure_alpha(replace(base, zeta=8.0), pi, 12)
         for q in ("C/PIB", "G/PIB", "I/PIB", "ΔIN/PIB"):
             assert abs(a["allocations"][q] - b["allocations"][q]) <= 1e-10, (pi, q)
+
+
+def test_sensibilite_a_zeta_publiee(stationnaire, base, resultat):
+    """`macro` : verdict jugé à ζ = 4 ; étendue des allocations L2 publiée à ζ ∈ {4 ; 8} et à ζ = 2 (illustration) ;
+    les allocations dépendantes de ζ (mesurées) sont C/Y_o, ti et T^cou/PIB, exclues des tests d'invariance."""
+    assert base.zeta == 4.0 and stationnaire.ZETA_PLAGE == (4.0, 8.0) and stationnaire.ZETA_ILLUSTRATION == 2.0
+    sn = resultat["superneutralite"]
+    assert set(sn["zeta"]) == {2.0, 4.0, 8.0}
+    for q in stationnaire.ALLOCATIONS_VERDICT:  # à ζ du paramètre, l'étendue publiée est celle du verdict
+        assert sn["zeta"][4.0]["allocations"][q] == sn["allocations"][q]
+    assert sn["dependantes_de_zeta"] == ["C/Y_o", "ti", "T^cou/PIB"]
+    assert not set(sn["dependantes_de_zeta"]) & set(ALLOCATIONS_ZETA)
+    assert not set(sn["dependantes_de_zeta"]) & {"C/PIB", "G/PIB", "I/PIB", "ΔIN/PIB"}
+    tampon = io.StringIO()
+    stationnaire.afficher(resultat, tampon)
+    texte = tampon.getvalue()
+    assert "ζ = 2 (illustration, sans verdict)" in texte and "ζ = 8 (plage de la table)" in texte
+    assert "allocations dépendantes de ζ" in texte and ": C/Y_o, ti, T^cou/PIB" in texte
 
 
 def test_alpha_egale_la_forme_fermee(stationnaire, base):
