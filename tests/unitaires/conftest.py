@@ -43,3 +43,14 @@ def remesure():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="session")
+def stationnaire():
+    """Module `outils/etat_stationnaire.py`, chargé par son chemin."""
+    chemin = RACINE / "outils" / "etat_stationnaire.py"
+    spec = importlib.util.spec_from_file_location("etat_stationnaire", chemin)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
