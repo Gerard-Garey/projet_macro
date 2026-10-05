@@ -13,6 +13,7 @@ deux tests séparés, en échec attendu strict, avec renvoi à #80.
 import ast
 import io
 import math
+import re
 import subprocess
 import sys
 from dataclasses import fields, replace
@@ -575,8 +576,8 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
     assert all(m < 0 for m in r["reference_hors_domaine"].values())
     for pi, na in hors:
         assert (1.0, pi, na) not in r["grille"] and (1.0, pi, na) not in r["controles"]
-        assert (pi, na) not in r["niveaux"]
-        assert (1.15, pi, na) in r["grille"]
+        assert (1.0, pi, na) not in r["niveaux"]
+        assert (1.15, pi, na) in r["grille"] and (1.15, pi, na) in r["niveaux"]
     assert (1.0, 0.0) not in r["republication"] and (1.15, 0.0) in r["republication"]
     assert stationnaire.plus_grand_residu(r) <= TOL
     non_publiees = [l for l in r["publiees"] if l["verdict"] == "non publiée"]
@@ -589,6 +590,27 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
     monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
     assert stationnaire.main([]) == 0
     assert "état non publié" in capsys.readouterr().out
+
+
+def test_etat_initial_publie_a_nu_G_retenu_puis_a_la_reference(stationnaire, resultat):
+    """R1 et R3 de `macro` (rang 6) : l'état initial résolu est publié à ν_G retenu, l'état que lira `scenarios/`,
+    puis au point de référence ν_G = 1 ; θ_G n'en dépend pas, M^G_0 (= L^CB_0), B_0 et Π^CB en dépendent."""
+    nu = stationnaire.NU_G_RETENU
+    entetes = [(pi, na) for pi in stationnaire.POINTS_PI for na in stationnaire.POINTS_NA]
+    assert set(resultat["niveaux"]) == {(v, pi, na) for v in (nu, 1.0) for pi, na in entetes}
+    for pi, na in entetes:
+        retenu, reference = resultat["niveaux"][(nu, pi, na)], resultat["niveaux"][(1.0, pi, na)]
+        assert retenu["theta_G"] == reference["theta_G"]
+        assert retenu["L_CB"] == retenu["M_G"] and retenu["M_G"] > reference["M_G"]
+        assert retenu["B_0"] > reference["B_0"] and retenu["Pi_CB"] > reference["Pi_CB"]
+    tampon = io.StringIO()
+    stationnaire.afficher(resultat, tampon)
+    texte = tampon.getvalue()
+    retenu_, reference_ = f"ν_G = {stationnaire._f(nu)} (valeur retenue)", "ν_G = 1 (référence hors domaine"
+    ordre = [texte.index(f"## Grille, {retenu_}"), texte.index("## Forme fermée"),
+             texte.index(f"## Grille, {reference_}"), texte.index("## État initial résolu"),
+             texte.index(f"### {retenu_}"), texte.index(f"### {reference_}")]
+    assert ordre == sorted(ordre)
 
 
 def test_D2_sans_borne_a_taux_directeur_nul(stationnaire, base):
@@ -625,8 +647,36 @@ def test_champ_non_fini_refuse(stationnaire, base, valeur):
     {"p_0": 1e60, "pr_0": 1e60}, {"p_0": 1e-60, "N_pa_0": 1e-60},
 ])
 def test_normalisations_hors_borne_refusees(stationnaire, base, champs):
-    with pytest.raises(stationnaire.HorsDomaine, match="borne déclarée des normalisations"):
+    bas, haut = stationnaire.BORNE_ECHELLE
+    attendu = re.escape(f"dans [{bas:g} ; {haut:g}] attendu (borne déclarée des normalisations)")
+    with pytest.raises(stationnaire.HorsDomaine, match=attendu):
         stationnaire.controler_domaine(replace(base, **champs))
+
+
+@pytest.mark.parametrize("champs", [
+    {"p_0": 1e50, "pr_0": 1e50}, {"p_0": 1e-50, "pr_0": 1e-50}, {"p_0": 1e100}, {"N_pa_0": 1e-100},
+    {"p_0": 1e100, "pr_0": 1e-100, "N_pa_0": 1e100}, {"p_0": 1e34, "pr_0": 1e33, "N_pa_0": 1e33},
+])
+def test_normalisations_a_la_borne_admises(stationnaire, base, champs):
+    """Constat m-b de l'audit : une valeur égale à la borne à l'arrondi près (1e50 × 1e50 = 1,0000000000000002e100)
+    est admise ; l'état y tient ses contrôles, rapportés à l'échelle du bilan."""
+    p = replace(base, nu_G=stationnaire.NU_G_RETENU, **champs)
+    stationnaire.controler_domaine(p)
+    e = stationnaire.etat_stationnaire(p)
+    assert max(stationnaire.max_controles(stationnaire.controles(e, p)).values()) <= TOL
+
+
+def test_complementarite_res_L_CB_relative_a_l_echelle(stationnaire, base):
+    """R4 de `macro` : le contrôle Res · L^CB = 0 est écrit min(|Res|, |L^CB|)/S_CB, relatif à l'échelle du bilan
+    de la banque centrale : un écart de 1e−6 S_CB sur les deux encours se lit 1e−6 à toute échelle nominale."""
+    for echelle in (1e-100, 1.0, 1e100):
+        p = replace(base, nu_G=stationnaire.NU_G_RETENU, p_0=echelle)
+        e = stationnaire.etat_stationnaire(p)
+        assert stationnaire.controles(e, p)["identites"]["Res · L^CB = 0"] == 0.0
+        S_CB = e["B_CB"] + e["L_CB"] + e["M_G"]
+        fausse = dict(e, Res=1e-6 * S_CB)
+        lu = stationnaire.controles(fausse, p)["identites"]["Res · L^CB = 0"]
+        assert abs(lu - 1e-6 * S_CB / (S_CB + 1e-6 * S_CB)) <= 1e-12 * lu, echelle
 
 
 def test_valeurs_speciales_aucune_exception_hors_refus(stationnaire, base):
@@ -801,6 +851,20 @@ def test_r_alpha_independant_de_nu_G(stationnaire, base):
         a = stationnaire.mesure_alpha(base, pi, 12)
         b = stationnaire.mesure_alpha(replace(base, nu_G=1.15), pi, 12)
         assert abs(a["r_alpha"] - b["r_alpha"]) <= 1e-10
+
+
+def test_alpha_et_fermeture_identiques_a_nu_G_1(stationnaire, base, resultat):
+    """R2 de `macro` (rang 6) : la mesure de #80 (lecture (β) comprise) et la fermeture sont calculées à
+    ν_G = `NU_G_RETENU`, où le plafond de E1 est un refus ; elles sont identiques bit à bit à ν_G = 1 (C59 :
+    θ_G est fixé avant l'entrée de ν_G), là où ce plafond est inactif aux deux valeurs."""
+    retenu = replace(base, nu_G=stationnaire.NU_G_RETENU)
+    reference = replace(base, nu_G=1.0)
+    for p in points(stationnaire, base, 1.0) + points(stationnaire, base, stationnaire.NU_G_RETENU):
+        assert stationnaire.etat_stationnaire(p)["marge_E1_montant"] > 0  # plafond inactif aux deux valeurs
+    assert stationnaire.superneutralite(reference) == stationnaire.superneutralite(retenu)
+    assert stationnaire.sensibilite_fermeture(reference) == stationnaire.sensibilite_fermeture(retenu)
+    assert resultat["superneutralite"] == stationnaire.superneutralite(retenu)
+    assert resultat["fermeture"] == stationnaire.sensibilite_fermeture(retenu)
 
 
 @pytest.mark.xfail(
