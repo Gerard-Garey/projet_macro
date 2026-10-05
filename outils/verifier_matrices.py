@@ -298,6 +298,14 @@ def normaliser_terme(texte: str) -> str:
     commande et une lettre : `\\Delta{}D`, `\\Delta\\,D` et `\\Delta D` sont
     un même terme, `\\DeltaD` un autre (#74). Chaque passage qui change la
     chaîne la raccourcit : la boucle s'arrête.
+
+    Coût, limite déclarée : une passe par niveau d'imbrication des polices
+    et accolades, chaque passe linéaire en la longueur, soit un coût en
+    profondeur × longueur. Pire cas mesuré (`\\mathrm{` imbriqué p fois,
+    05/10/2026) : 0,004 s à p = 100, 0,39 s à p = 1 000, 6,3 s à
+    p = 4 000. Sur les trois tableaux de la spécification, au plus deux
+    passes par terme (termes d'au plus 38 caractères) : aucune borne de
+    profondeur n'est posée, l'entrée étant une cellule de matrice.
     """
     s = _compacter(ESPACES_FINS.sub(" ", texte))
     precedent = None
