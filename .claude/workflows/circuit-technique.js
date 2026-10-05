@@ -284,6 +284,8 @@ function consigneImplementation(base, constats) {
     INTERDITS,
     "Batteries : " + BATTERIES.join(' ; ') + ". En cas d'ecart aux references, produis le tableau avant / apres et explique chaque ligne, mais NE regenere PAS : mets decision_requise a vrai (visa et regeneration appartiennent a la session principale et au mainteneur).",
     "Mets aussi decision_requise a vrai si un resultat final ou un verdict change, si la tache exige un choix de fond, ou si elle semble exiger un acte interdit ; motif_decision le dit.",
+    "CLAUDE.md et .claude/ (domaine claude:) sont ecrits par la session principale, jamais par toi : si l'issue les touche, fais le reste de la tache, puis mets decision_requise a vrai et donne dans motif_decision le texte propose, fichier par fichier, pour que la session l'applique.",
+    "Tes fichiers d'essai vont dans un repertoire cree par mktemp -d, hors du depot.",
     "surface_documentaire : endroits de la documentation que docwriter devra rouvrir ; liste vide si aucun.",
     "commit_propose : message au format de CLAUDE.md (prefixe de domaine, renvoi a #" + issue + ", surface d'impact documentaire, tableau avant / apres s'il y a lieu). Il ne sera PAS execute par le workflow."
   )
@@ -327,6 +329,7 @@ function consigneAudit(depot, verif, reference, tour, aVerifier) {
     "Audit LEGER du workflow circuit-technique, issue #" + issue + ", tour " + tour + ". Applique ta fiche, section audit leger.",
     "Perimetre : " + perimetre + " Lis les fonctions touchees avec leurs appelants et appeles, pas les fichiers entiers. Ce n'est pas la revue finale complete (regle 10).",
     INTERDITS,
+    "- aucun fichier cree dans le depot, meme temporaire et meme supprime aussitot : tes essais vont dans un repertoire cree par mktemp -d, hors du depot.",
     "Resultats des batteries executees juste avant (ne les relance pas sauf besoin d'une mesure precise) :",
     JSON.stringify(verif.batteries, null, 2),
     "Chaque constat porte sa gravite, fichier:ligne, la mesure executee (commande et sortie) et releve_de : 'coder' s'il se corrige sans decision, sinon 'expert' (question de fond) ou 'mainteneur' (resultat final, verdict, reference a regenerer). Un constat sans mesure ni emplacement n'est pas recevable.",

@@ -43,7 +43,7 @@ uv run python outils/verifier_matrices.py --strict
 
 Règles des tests :
 - un défaut connu est codé en échec attendu, avec renvoi à l'issue ;
-- un succès inattendu fait échouer la batterie, et la marque est alors retirée pour en faire un test ordinaire ;
+- un succès inattendu fait échouer la batterie, et la marque est alors retirée pour en faire un test ordinaire ; quand le succès vient d'un commit `docs:`, le commit `tests:` qui retire la marque le suit immédiatement et les deux sont poussés ensemble ;
 - un test de mécanisme énonce une **propriété attendue** (signe, délai, ordre de grandeur), pas une valeur à reproduire ;
 - pour vérifier un point isolé, appeler directement la fonction concernée plutôt que tout le programme.
 

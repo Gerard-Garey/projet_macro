@@ -98,4 +98,13 @@ date: 2026-10-03
   - une variable d'état de bloc doit recevoir deux écritures dans le pas ;
   - une barrière entre pays (J5) doit s'intercaler entre le groupe des blocs et le passage à t + 1.
 
-Issues : #42 (constat 1, § 9.8 ; cet ADR répond à l'issue proposée n° 1 du § 9.9, non créée, fiche 6 § 9.10) ; #41 (H7, § 9.8, contrat 1) ; #60 (`menages.py`, J3 : H7 en phase 9) ; #61 (ADR 0010) ; #17 (ADR 0005 complété) ; #57 (montants exécutés au J6) ; issue « noyau » de la branche n° 5 (tests de J2, à créer).
+## Annotation du 04/10/2026 (ADR 0011)
+
+Rédigée par `architect-approfondi` (Opus) le 04/10/2026, à l'acceptation de l'ADR 0011 par le mainteneur (« accepté avec ses points de forme 3 et 4, lecture (i) de 19b » ; précisions de M32 et M33, fiche `docs/blocs/finances_publiques.md` § 8, commit `d66e21c`). **La décision M29 est inchangée** ; deux phrases du présent ADR, qui laissaient la phase 7 aux fiches 7 à 9, sont réglées par l'ADR 0011.
+
+- **§ Conséquences, `tab:phases`, ligne 7** (« État, banque, banque centrale (ordre à fixer par les fiches 7 à 9) ») et **§ « Ce que l'ADR ne règle pas »** (« l'ordre de la phase 7 (fiches 7 à 9) ») : au socle, l'**État est le seul écrivain de la phase 7**. Le bloc État et dette y propose les trois lignes 19a (A8, M33, décision citant M22 et M29), en lisant la part de la banque centrale θ_{CB,t} écrite par le bloc 8 en phase 1 ; la banque n'y siège plus, ses conditions étant publiées à l'ouverture ; la ligne 19b n'a **aucun proposant au socle** (lecture (i) : achats de la banque centrale sur le marché secondaire renvoyés au J6). La phase 7 n'a donc pas d'ordre interne.
+- **Point 3** : « comme celle des phases 1, 4, 5 et 7 » se lit « des phases 1, 4 et 5 » ; la l. 511 de la spécification est retouchée de même (ADR 0011, § Conséquences).
+- **Contexte, « l'ordre C25 (État, puis banque centrale, puis banque) »** : cet ordre est désormais interne à l'équation du bloc État et dette (besoin d'émission, puis part de la banque centrale, puis reliquat de la banque ; fiche 9 § 9.4), sans ordre entre blocs.
+- **Groupe de la phase 9 : inchangé.** La question de l'assiette de l'impôt des ménages (QM4 de la fiche 9 : le bloc État et dette dans le groupe, ou en phase 7 où il siège après toutes ses entrées, selon le point 4) est réglée par le point P3 de l'ADR 0011, confirmé par le mainteneur le 04/10/2026 : le bloc État et dette écrit Y^HS_t en phase 7, où il siège après toutes ses entrées (point 4), et n'entre pas dans le groupe.
+
+Issues : #42 (constat 1, § 9.8 ; cet ADR répond à l'issue proposée n° 1 du § 9.9, non créée, fiche 6 § 9.10) ; #41 (H7, § 9.8, contrat 1) ; #60 (`menages.py`, J3 : H7 en phase 9) ; #61 (ADR 0010) ; #17 (ADR 0005 complété) ; #57 (montants exécutés au J6) ; issue « noyau » de la branche n° 5 (tests de J2, à créer) ; #72 et #73 (annotation du 04/10/2026, ADR 0011).

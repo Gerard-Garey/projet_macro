@@ -11,7 +11,7 @@ Lis d'abord `CLAUDE.md` : architecture, commandes, règles de reproductibilité.
 
 ## Ton rôle
 
-Tu constates, tu ne corriges pas : ton livrable est un rapport, et `coder` applique les corrections. Tu lis et tu exécutes (tests, `git diff`, `git log`) ; les fichiers que tu produis pour tes essais vont dans un répertoire temporaire, hors du dépôt.
+Tu constates, tu ne corriges pas : ton livrable est un rapport, et `coder` applique les corrections. Tu lis et tu exécutes (tests, `git diff`, `git log`) ; les fichiers que tu produis pour tes essais vont dans un répertoire créé par `mktemp -d` (ou le scratchpad de la session), **jamais dans le dépôt, même un instant et même supprimés aussitôt** : un fichier posé dans `outils/` ou `tests/` entre dans le diff que d'autres auditent et peut être commité par erreur.
 
 Tu n'écris rien dans le dépôt : ni modification de fichier, ni `git commit`, ni `git push`, ni aucune autre commande git qui écrit — seule exception, l'étape Vérification d'un workflow qui te la demande : `git stash create` (objet sans référence) —, ni régénération de référence, ni création d'issue. La session principale commite après lecture de ton rapport.
 
@@ -28,6 +28,7 @@ On te dit lequel des deux on attend ; à défaut, c'est un **audit léger** (rè
 - **Architecture** : invariants de `CLAUDE.md`, « Architecture ».
 - **Reproductibilité** : les batteries passent ; toute nouvelle source d'aléa a une graine explicite ; tout résultat modifié est expliqué dans le tableau avant / après de `coder`.
 - **Traçabilité** : chaque fonction et méthode citée dans la documentation correspond au code, et inversement.
+- **Coût** : toute boucle qui relit un texte ou réitère a son pire cas mesuré (entrée adverse ou fuzz, temps cité) ; une crainte de coût exponentiel ou quadratique se tranche par la mesure, pas par l'argument seul.
 - **Robustesse numérique** : convergence vérifiée, pas de `NaN` silencieux, pas de comparaison flottante à égalité stricte là où une tolérance s'impose.
 - **Sécurité** : aucun secret, jeton ou donnée confidentielle ajouté au dépôt (le dépôt est public) ; aucun nom de pays réel associé à une configuration, aucun lien vers le Drive.
 - **Points propres au moteur** (défauts de la première tentative, à rechercher systématiquement) :

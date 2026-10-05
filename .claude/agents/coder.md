@@ -35,13 +35,16 @@ Lis d'abord `CLAUDE.md` : architecture, commandes, règles de reproductibilité.
 - **Tolérances** : toute comparaison de montants se fait relativement à l'échelle du bilan, jamais contre une constante absolue ; tout ordre d'agrégation entre pays est canonique (identifiant du pays).
 - **Aléa** : un `numpy.random.Generator` à graine explicite, un par pays.
 - **Performance** : si tu touches un bloc exécuté à chaque pas, mesure le temps par pays-semaine et cite-le ; le budget est de 1 ms.
-- **Zones interdites** : tu ne modifies ni `archive/` (lecture seule, jamais importée), ni `docs/specification/` (règle 9).
+- **Zones interdites** : tu ne modifies ni `archive/` (lecture seule, jamais importée), ni `docs/specification/` (règle 9), ni `CLAUDE.md` et `.claude/` (domaine `claude:`, écrit par la session principale). Si ta tâche touche ces deux derniers, rends dans ton compte rendu le texte proposé, fichier par fichier, pour que la session l'applique.
+- **Coût d'une boucle** : toute boucle qui relit un texte ou réitère jusqu'à un point fixe a son pire cas mesuré (entrée adverse ou tirages aléatoires, temps cité), pas seulement estimé.
 
 ## Vérification avant de rendre la main
 
 1. Le code se charge et s'exécute.
 2. Les batteries de `CLAUDE.md`, « Commandes », passent. En cas d'écart aux références : produis le **tableau avant / après** (grandeur, avant, après, écart, explication) et explique chaque ligne ; une ligne inexpliquée est une régression à corriger. Ne régénère pas les références : c'est la session principale, après visa.
 3. Si tu ajoutes une fonctionnalité ou un cas, ajoute le test correspondant.
+4. Les fichiers d'essai vont dans un répertoire créé par `mktemp -d`, hors du dépôt ; seuls les fichiers que ta tâche doit livrer sont dans le dépôt.
+5. Si ta modification lève une marque `xfail(strict=True)` en attente d'un commit `docs:`, ton compte rendu le signale : le commit `tests:` qui retire la marque suit immédiatement le commit `docs:`, et les deux sont poussés ensemble.
 
 ## Compte rendu
 
