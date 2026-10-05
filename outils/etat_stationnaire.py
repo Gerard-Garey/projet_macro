@@ -224,7 +224,14 @@ NU_G_PROPOSES = (1.1, 1.15)  # valeurs proposées par `jeu` (fiche 9, § 7 ; dé
 NU_G_RETENU = 1.15  # valeur retenue, troisième colonne ν_G de la grille (décision du mainteneur du 05/10/2026, #84)
 MARGE_J_NU = 0.03  # propriété J-ν (formulation de `jeu`)
 HAUSSE_J_NU = 1.10
-BORNE_ECHELLE = (1e-100, 1e100)  # borne déclarée des normalisations p_0, pr_0, N^pa_0 et de leur produit
+# Borne déclarée des normalisations p_0, pr_0, N^pa_0 et de leur produit p_0 pr_0 N^pa_0 (échelle nominale). C'est
+# une borne de l'outil numérique, non du modèle : l'état est homogène de degré un en ces échelles (propriété testée),
+# elle ne restreint donc aucun ratio. Elle reste nécessaire après le passage du contrôle « Res · L^CB » à une forme
+# relative : sans elle, chaque normalisation seule sort de la plage des flottants (encours sommés, multipliés par
+# n_a) vers 1e305 (valeurs publiées non finies, refus aux messages trompeurs) et perd la précision des contrôles dès
+# 1e−311 (nombres dénormaux) ; la borne garde plus de 200 ordres de grandeur de marge de part et d'autre.
+BORNE_ECHELLE = (1e-100, 1e100)
+TOL_BORNE_ECHELLE = 4 * sys.float_info.epsilon  # arrondi du produit de trois flottants (égalité à la borne admise)
 
 
 def controler_domaine(par: Parametres) -> list[str]:
@@ -308,14 +315,13 @@ def controler_domaine(par: Parametres) -> list[str]:
     for nom in ("p_0", "pr_0", "N_pa_0"):
         if not getattr(par, nom) > 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : > 0 attendu (normalisation)")
-    # Borne déclarée des normalisations : chacune, et l'échelle nominale p_0 pr_0 N^pa_0, dans [1e−100 ; 1e100].
-    # Au-delà, le contrôle « Res · L^CB », rapporté au carré de l'échelle, sort de la plage des flottants
-    # (mesuré sur p_0 seul : division par zéro dès 1e−162, dépassement dès 1e155) ; l'état est homogène de degré un
-    # en ces échelles (propriété testée), la borne ne restreint donc aucun résultat.
+    # Borne déclarée des normalisations (voir `BORNE_ECHELLE`) ; une valeur égale à la borne à l'arrondi près passe.
+    bas, haut = BORNE_ECHELLE
     for nom, val in (("p_0", par.p_0), ("pr_0", par.pr_0), ("N_pa_0", par.N_pa_0),
                      ("p_0 pr_0 N^pa_0", par.p_0 * par.pr_0 * par.N_pa_0)):
-        if not BORNE_ECHELLE[0] <= val <= BORNE_ECHELLE[1]:
-            raise HorsDomaine(f"{nom} = {val!r} : dans [1e−100 ; 1e100] attendu (borne déclarée des normalisations)")
+        if not bas * (1 - TOL_BORNE_ECHELLE) <= val <= haut * (1 + TOL_BORNE_ECHELLE):
+            raise HorsDomaine(f"{nom} = {val!r} : dans [{bas:g} ; {haut:g}] attendu "
+                              "(borne déclarée des normalisations)")
     return declares
 
 
@@ -889,7 +895,9 @@ def routes_doubles(e: dict[str, float], s: dict[str, float], par: Parametres) ->
             (1 - n * gam / (n * e["Pi_Bk"] / e["E_Bk"])) * e["Pi_Bk"] if e["E_Bk"] != 0 else e["Pi_Bk"])) / S_Bk,
         # Fonds propres par le stock et par les flux.
         "E^Bk de clôture : stock contre flux": abs(s["E_Bk_1_stock"] - s["E_Bk_1_flux"]) / S_Bk,
-        "Res · L^CB (ouverture)": abs(e["Res"] * e["L_CB"]) / S_CB ** 2,
+        # Complémentarité Res · L^CB = 0, écrite min(|Res|, |L^CB|)/S_CB : nulle si et seulement si l'un des deux
+        # encours l'est, rapportée à l'échelle du bilan (et non à son carré, qui sort de la plage des flottants).
+        "Res · L^CB (ouverture)": min(abs(e["Res"]), abs(e["L_CB"])) / S_CB,
     }
 
 
@@ -1493,7 +1501,10 @@ def allocations_alpha(e: dict[str, float], n_a: int) -> dict[str, float]:
 
 
 def superneutralite(par: Parametres) -> dict[str, object]:
-    """Critère 13 de la fiche 8 (#80), lecture (α) pour le verdict, (β) en mesure (part de `monnaie`, § 7)."""
+    """Critère 13 de la fiche 8 (#80), lecture (α) pour le verdict, (β) en mesure (part de `monnaie`, § 7).
+
+    Calculé au ν_G de `par` (`NU_G_RETENU` par `Calculs`), comme `mesure_alpha` et `sensibilite_fermeture`.
+    """
     grille = {pi: mesure_alpha(par, pi, 12) for pi in PROFIL_PI}
     autres = {n: {pi: mesure_alpha(par, pi, n) for pi in POINTS_PI} for n in (4, 52)}
 
@@ -1612,14 +1623,17 @@ class Calculs:
         # Variante des écarts : l et d_F ne dépendent pas des écarts (bloc 6) ; seules les formes du bloc 7 les lisent.
         return banque_formes(e, p, e["V_H"] / A if v_H is None else v_H, e["M_G"] / A if m is None else m)
 
+    # La mesure de #80 et la fermeture sont calculées à ν_G = `NU_G_RETENU`, dans le domaine ν_G > 1 où le
+    # plafond de E1 est un refus. Leurs sorties y sont identiques bit à bit à celles de ν_G = 1 : θ_G est fixé
+    # avant l'entrée de ν_G dans l'ordre triangulaire (C59 ; `test_alpha_et_fermeture_identiques_a_nu_G_1`).
     def alpha(self) -> dict[str, object]:
         if self._alpha is None:
-            self._alpha = superneutralite(self.base)
+            self._alpha = superneutralite(replace(self.base, nu_G=NU_G_RETENU))
         return self._alpha
 
     def fermeture(self) -> dict[str, float]:
         if self._fermeture is None:
-            self._fermeture = sensibilite_fermeture(self.par())
+            self._fermeture = sensibilite_fermeture(self.par(nu=NU_G_RETENU))
         return self._fermeture
 
 
@@ -2153,7 +2167,7 @@ def controles(e: dict[str, float], par: Parametres) -> dict[str, object]:
             abs(e["WB"] / e["PIB"] - e["y_sur_v"] / ((1 + par.mu_bar) + e["gam"] * e["rho_IN"] * n * par.sigma)),
         "i_CB = (1 + r̄)(1 + π*) − 1": abs(s["i_CB"] - ((1 + e["r_neutre"]) * (1 + par.pi_cible) - 1)),
         "T^cou = 0 (lecture (e))": abs(e["T_cou"]) / e["PIB"],
-        "Res · L^CB = 0": abs(e["Res"] * e["L_CB"]),
+        "Res · L^CB = 0": min(abs(e["Res"]), abs(e["L_CB"])) / (e["B_CB"] + e["L_CB"] + abs(e["Res"]) + e["M_G"]),
         "E^Bk = ϑ L": abs(e["E_Bk"] - par.vartheta * e["L"]) / A,
     }
     return {"residus_regles": res, "matrices": mat, "routes_doubles": rd, "identites": identites, "pas": s}
@@ -2194,6 +2208,10 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
     porte le nom de la colonne et du point où il survient. Sur la colonne de référence, un plafond de E1 actif
     n'est pas un refus : le point est publié comme constat déclaré (`reference_hors_domaine`, marge relative),
     sans valeur d'état ni résidu (décision de `macro`, option (b)) ; les autres refus y restent bloquants.
+
+    L'état initial résolu (`niveaux`, niveaux d'ouverture du pas 0) est publié pour chaque colonne : d'abord à
+    ν_G retenu, l'état que lira `scenarios/` (M^G_0, B_0, L^CB_0, B_Bk,0 et Π^CB dépendent de ν_G), puis au point
+    de référence ν_G = 1. La fermeture et la mesure de #80 sont calculées à `NU_G_RETENU` (voir `Calculs`).
     """
     declares = controler_domaine(base)
     if nu_g_retenu == 1.0:
@@ -2215,13 +2233,12 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
             p = calc.par(pi, na, nu)
             grille[(nu, pi, na)] = calc.v(pi, na, nu)
             ctrl[(nu, pi, na)] = max_controles(controles(e, p))
-            if nu == 1.0:
-                o = ouverture(e, p)
-                niveaux[(pi, na)] = {k: v for k, v in o.items() if k != "registre"} | {
-                    "P_m1": o["registre"][0], f"P_m{na + 1}": o["registre"][-1], "theta_G": e["theta_G"],
-                    "y_0": e["y"], "v_0": e["v"], "N_0": e["N"], "W_0": e["W"], "YD_0": e["YD"], "T_F_0": e["T_F"],
-                    "B_0": e["B"], "Pi_CB": e["Pi_CB"], "i_CB_0": e["i_CB"], "T_cou_0": e["T_cou"],
-                    "mu_tilde_0": math.log(1 + base.mu_bar)}
+            o = ouverture(e, p)  # état initial résolu : niveaux d'ouverture du pas 0 de chaque colonne
+            niveaux[(nu, pi, na)] = {k: v for k, v in o.items() if k != "registre"} | {
+                "P_m1": o["registre"][0], f"P_m{na + 1}": o["registre"][-1], "theta_G": e["theta_G"],
+                "y_0": e["y"], "v_0": e["v"], "N_0": e["N"], "W_0": e["W"], "YD_0": e["YD"], "T_F_0": e["T_F"],
+                "B_0": e["B"], "Pi_CB": e["Pi_CB"], "i_CB_0": e["i_CB"], "T_cou_0": e["T_cou"],
+                "mu_tilde_0": math.log(1 + base.mu_bar)}
     propositions = {}
     for nu in sorted(set(NU_G_PROPOSES) | ({nu_g_retenu} if nu_g_retenu is not None else set())):
         for pi, na in points:
@@ -2252,6 +2269,18 @@ def _f(x: float, chiffres: int = 10) -> str:
     return f"{x:.{chiffres}g}"
 
 
+def _rang_nu(nu: float) -> tuple[bool, float]:
+    """Ordre de publication des colonnes ν_G : valeurs de la table (ν_G > 1) d'abord, référence ν_G = 1 en dernier."""
+    return (nu == 1.0, nu)
+
+
+def _titre_nu(nu: float) -> str:
+    """Titre d'une colonne ν_G à la publication."""
+    if nu == 1.0:
+        return "ν_G = 1 (référence hors domaine : point de référence de la forme fermée, jamais valeur de table)"
+    return f"ν_G = {_f(nu)} (valeur retenue)"
+
+
 def afficher(r: dict[str, object], sortie=None) -> None:
     """Publie la grille complète, les contrôles et la comparaison aux valeurs publiées (texte déterministe)."""
     out = sortie or sys.stdout
@@ -2276,18 +2305,21 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     p()
     p("Normalisation : p_0 = 1 u.m./u.v., pr_0 = 1 u.v. par personne et par pas, N^pa_0 = 1 personne ; "
       "« ouverture » = stock d'ouverture du pas 0 ; « pas » = flux du pas 0, égal au rapport sur 12 tours.")
-    nus = [1.0] + ([r["nu_g_retenu"]] if r["nu_g_retenu"] is not None else [])
     entetes = [(pi, na) for pi in POINTS_PI for na in POINTS_NA]
-    for nu in nus:
+
+    def grille(nu: float) -> None:
         p()
-        titre = "ν_G = 1 (point de référence déclaré)" if nu == 1.0 else f"ν_G = {_f(nu)} (valeur retenue)"
-        p(f"## Grille, {titre}")
+        p(f"## Grille, {_titre_nu(nu)}")
         p("Colonnes : " + " | ".join(f"π̄ = {_f(100 * pi)} %, n_a = {na}" for pi, na in entetes))
         for gr in GRANDEURS:
             p(f"- {gr.ident} — {gr.definition} [{gr.unite} ; dénominateur : {gr.denominateur} ; fenêtre : "
               f"{gr.fenetre} ; {gr.source}]")
             p("  " + " | ".join(_f(r["grille"][(nu, pi, na)][gr.ident]) if (nu, pi, na) in r["grille"]
                                 else "non publié" for pi, na in entetes))
+
+    # Ordre de publication (R3 de `macro`) : colonne ν_G retenue, forme fermée en ν_G, puis la référence ν_G = 1.
+    if r["nu_g_retenu"] is not None:
+        grille(r["nu_g_retenu"])
     p()
     p("## Forme fermée en ν_G (n_a, π̄ du point ; a, c, x publiés ci-dessus)")
     p("m(ν_G) = M^G/(n_a PIB) = ν_G [x/(n_a Γ̄) + a c]/(1 − ν_G a) ; dette brute b(ν_G) = c + m(ν_G) ; "
@@ -2301,31 +2333,36 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     p("- ν_G minimal pour m_ν ≥ 0,03 : " + " | ".join(
         _f(nus_min[k], 7) if k in nus_min else "non publié" for k in entetes)
       + f" ; maximum {_f(max(nus_min.values()), 7) if nus_min else 'non publié'}")
+    grille(1.0)
     p()
     p("## Niveaux bancaires (#83), republication (B-2) à v_H résolu et m par E8")
     p(f"Explication écrite avant l'essai : {EXPL_B2}.")
-    for (nu, pi), b in sorted(r["republication"].items()):
+    for (nu, pi), b in sorted(r["republication"].items(), key=lambda kv: (_rang_nu(kv[0][0]), kv[0])):
         p(f"- ν_G = {_f(nu)}, π̄ = {_f(100 * pi)} %, n_a = 12 : " + " ; ".join(
             f"{k} = {_f(v, 8)}" for k, v in b.items()))
     for pi in POINTS_PI:
         if (pi, 12) in hors:
             p(f"- ν_G = 1, π̄ = {_f(100 * pi)} %, n_a = 12 : {constat_reference(hors[(pi, 12)])}")
     p()
-    p("## État initial résolu (ν_G = 1), niveaux d'ouverture du pas 0")
-    for (pi, na), niv in sorted(r["niveaux"].items()):
-        p(f"- π̄ = {_f(100 * pi)} %, n_a = {na} : " + " ; ".join(f"{k} = {_f(v)}" for k, v in niv.items()))
-    for (pi, na), marge in sorted(hors.items()):
-        p(f"- π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
+    p("## État initial résolu, niveaux d'ouverture du pas 0")
+    for nu in sorted({k[0] for k in r["niveaux"]} | ({1.0} if hors else set()), key=_rang_nu):
+        p(f"### {_titre_nu(nu)}")
+        for (nu_, pi, na), niv in sorted(r["niveaux"].items()):
+            if nu_ == nu:
+                p(f"- π̄ = {_f(100 * pi)} %, n_a = {na} : " + " ; ".join(f"{k} = {_f(v)}" for k, v in niv.items()))
+        if nu == 1.0:
+            for (pi, na), marge in sorted(hors.items()):
+                p(f"- π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
     p()
     p("## Contrôles (plus grand résidu par famille, relatif à l'échelle déclarée ; seuil 1e−12)")
-    for (nu, pi, na), c in sorted(r["controles"].items()):
+    for (nu, pi, na), c in sorted(r["controles"].items(), key=lambda kv: (_rang_nu(kv[0][0]), kv[0])):
         p(f"- ν_G = {_f(nu)}, π̄ = {_f(100 * pi)} %, n_a = {na} : " + " ; ".join(
             f"{k} {_f(v, 3)}" for k, v in c.items()))
     pire = plus_grand_residu(r)
     p(f"Plus grand résidu de la grille : {_f(pire, 3)} ({'tenu' if pire <= TOL_IDENTITE else 'NON TENU'}).")
     p()
     p("## Constats de domaine à l'état stationnaire")
-    for (nu, pi, na), v in sorted(r["grille"].items()):
+    for (nu, pi, na), v in sorted(r["grille"].items(), key=lambda kv: (_rang_nu(kv[0][0]), kv[0])):
         constats = []
         if v["caisse_DF4"] < 0:
             constats.append(f"q1 : D_F en fin de phase 4 négatif, marge {_f(v['caisse_DF4'], 6)} de D_F ; "
@@ -2341,7 +2378,8 @@ def afficher(r: dict[str, object], sortie=None) -> None:
         p(f"- ν_G = 1, π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
     p()
     fe = r["fermeture"]
-    p("## Fermeture (#44, lecture (e)) : sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12)")
+    p(f"## Fermeture (#44, lecture (e)) : sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12, ν_G = {_f(NU_G_RETENU)} ; "
+      "identique bit à bit à ν_G = 1, C59)")
     p(f"- dθ_G/dr̄ = {_f(fe['dtheta_G_dr'], 6)} (% de la production par point de r̄ ; différence centrée, "
       f"pas {fe['pas']:g} ; erreur déclarée {_f(fe['erreur'], 3)})")
     p(f"- d(G/PIB)/dr̄ = {_f(fe['dG_PIB_dr'], 6)} ; points de r̄ par point de PIB de dépense : "
@@ -2360,7 +2398,8 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     for n, d in sn["alpha_n_a"].items():
         p(f"- n_a = {n} : r̄_α = " + " | ".join(f"{100 * d[pi]['r_alpha']:.6f} %" for pi in POINTS_PI)
           + f" ; Δr̄_α = {100 * sn['delta_r_alpha_n_a'][n]:.6f} point")
-    p("- verdict : Δr̄_α = max − min sur {0 ; 2 ; 10 %}, n_a = 12, ν_G = 1 : "
+    p(f"- verdict : Δr̄_α = max − min sur {{0 ; 2 ; 10 %}}, n_a = 12, ν_G = {_f(NU_G_RETENU)} (identique bit à bit à "
+      "ν_G = 1, C59) : "
       f"{100 * sn['delta_r_alpha']:.6f} point ; "
       f"seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : "
       f"{'tenu' if sn['delta_r_alpha'] <= SEUIL_SUPERNEUTRALITE else 'non tenu (défaut connu, #80)'}")
@@ -2384,7 +2423,7 @@ def afficher(r: dict[str, object], sortie=None) -> None:
       f"écart de θ_G {100 * sn['beta_theta_G']:.6f} point ; "
       + " ; ".join(f"{q} {100 * v:.6f}" for q, v in sn["beta_allocations"].items()))
     p(f"- sensibilité à ζ (mesure, décision de `macro`) : verdict jugé à ζ = {_f(base.zeta)} ; étendue max − min sur "
-      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = 1, en point, sur la plage de la table ζ ∈ {"
+      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = " + _f(NU_G_RETENU) + ", en point, sur la plage de la table ζ ∈ {"
       + " ; ".join(_f(z) for z in ZETA_PLAGE) + f"}} et à ζ = {_f(ZETA_ILLUSTRATION)} en illustration, sans verdict")
     for z, d in sn["zeta"].items():
         statut = "plage de la table" if z in ZETA_PLAGE else "illustration, sans verdict"
