@@ -606,10 +606,12 @@ Aucune remesure V n'a été faite.
      | C-HS | n_a | π̄ = 0 | 2 % | 10 % |
      |---|---|---|---|---|
      | Dette brute B/(n_a PIB) | 12 | 0,11712 | 0,27564 | 0,53299 |
-     | Dette consolidée (B − M^G)/(n_a PIB) | 4 | 0,09466 | 0,25237 | 0,49978 |
+     | Dette consolidée (B − M^G)/(n_a PIB) | 4 | ~~0,09466~~ **0,09880** | ~~0,25237~~ **0,25726** | ~~0,49978~~ **0,51172** |
      | | 12 | **0,09884** | **0,25674** | **0,51013** |
-     | | 52 | 0,10045 | 0,25844 | 0,51438 |
+     | | 52 | ~~0,10045~~ **0,09886** | ~~0,25844~~ **0,25654** | ~~0,51438~~ **0,50952** |
      | M^G/(n_a PIB) | 12 | 0,018282 | 0,018904 | 0,022857 |
+
+     > Lignes n_a = 4 et 52 de la dette consolidée : *[remesure du script d'état stationnaire, 05/10/2026 (#84), visa du mainteneur du même jour : la maquette tenait σ en pas (même cause que les écarts à 2 %, reproduite en tenant σ en pas) ; point n_a = 4 hors domaine (#87)]*
      | Déficit / PIB (Domar) | 12 | 0,1959 % | 1,0185 % | 5,9005 % |
      | Solde primaire / PIB | 12 | −0,0971 % | −0,2432 % | −0,2381 % |
      | Charge d'intérêts brute / nette (PIB) | 12 | 0,1171 / 0,0988 % | 0,8324 / 0,7754 % | 5,9162 / 5,6625 % |
@@ -817,7 +819,7 @@ Ce tableau est mesuré en lecture (1) : ϱ̄_L est résolu à chaque π̄. Il ne
 - les trois canaux neutralisés **complètement** (C57, `c57.py`, `c57b.py`) : C-HS 1,004 / 0,985 %, soit **0,019 point** ; C-WB 1,017 / 0,936 % (0,081) ; C-Yhi 1,014 / 0,948 % (0,066) ; C-Y 2,396 / −4,654 % (impôt sur les intérêts nominaux).
 - valeurs de `18d2868`, neutralisation incomplète, maintenues barrées : ~~C-WB 0,978 / 1,078 % (0,100 point) ; C-HS 0,976 / 1,088 % (0,112 point) ; C-Yhi 0,913 / 1,311 % ; C-Y 2,369 / −4,526 %~~.
 - profil C-HS tel quel, r̄ à π\* = 0 / 1 / 2 / 3 / 4 / 6 / 10 % : ~~1,536 / 1,203 / 1,000 / 0,878 / 0,813 / 0,799 / 1,075 % ; non monotone ; écart maximal 0,74 point ; une marche de cible de 2 à 3 % déplace r̄ de −0,12 point~~ **1,632 / 1,264 / 1,000 / 0,818 / 0,706 / 0,656 / 1,146 % ; non monotone ; écart maximal 0,976 point ; écart du verdict (max − min sur {0 ; 2 ; 10 %}) 0,632 point ; une marche de cible de 2 à 3 % déplace r̄ de −0,18 point (−0,38 / −0,08 à ζ = 2 / 8)** *[remesure du script d'état stationnaire `outils/etat_stationnaire.py`, 05/10/2026 (#84, #80) : lecture (α), lecture A, norme ϱ̄_L tenue, ζ = 4, décisions du mainteneur du même jour ; valeur barrée : maquette perdue à la PR #77, non reproduite]*.
-- contribution de chaque source, les deux autres neutralisées, en r̄(10 %) − r̄(0) : C30 −1,30 ; conversion +0,43 ; écarts +0,11. Toute neutralisation partielle aggrave l'écart.
+- contribution de chaque source, les deux autres neutralisées, en r̄(10 %) − r̄(0) : C30 −1,30 ; conversion +0,43 ; écarts +0,11. Toute neutralisation partielle aggrave l'écart. *[05/10/2026 (#84, #80) : maquette perdue à la PR #77, non reproductible ; sous le script, seul le canal des écarts nominaux est isolé, +0,182 point sur r̄_α(10 %) − r̄_α(0) quel que soit ζ (canal dans le modèle complet, non source seule) ; attribution complète renvoyée à C61, au J3]*
 
 **Conclusion.**
 - Aucune règle de la fiche 9 qui garde la fermeture (i) ne tient le critère 13 au seuil adopté. La meilleure, C-HS, divise l'écart par 20 par rapport à C-WB nominal, mais le seuil demande de toucher la fiche 6 (C30), le cadre (ADR 0008) et la fiche 7 (écarts nominaux), toutes trois ensemble. Il serait alors tenu (0,019 point). ~~et encore il ne serait que frôlé~~ (corrigé, C57).
@@ -905,7 +907,7 @@ Abréviations : « ok » = tenu ; « échec » = non tenu ; « mesure » = crit�
 
 Voies au mainteneur, comme au § 6.3 de la fiche 8 :
 - (a) une correction prospective du critère 13, l'ancien verdict restant publié ;
-- (b) la réouverture conjointe de C30 (M28), de la conversion linéaire (M22, ADR 0008) et des écarts nominaux (M31, critère 4 (c) de la fiche 7) : résidu de 0,019 point. Toute réouverture partielle aggrave l'écart. ~~Même alors, l'écart est de 0,10 à 0,11 point : la voie (b) ne suffit pas seule.~~ (corrigé, C57).
+- (b) la réouverture conjointe de C30 (M28), de la conversion linéaire (M22, ADR 0008) et des écarts nominaux (M31, critère 4 (c) de la fiche 7) : résidu de 0,019 point *[05/10/2026 (#84, #80) : maquette perdue à la PR #77, non reproductible ; sous le script, seul le canal des écarts nominaux est isolé, +0,182 point sur r̄_α(10 %) − r̄_α(0) quel que soit ζ (canal dans le modèle complet, non source seule) ; attribution complète renvoyée à C61, au J3]*. Toute réouverture partielle aggrave l'écart. ~~Même alors, l'écart est de 0,10 à 0,11 point : la voie (b) ne suffit pas seule.~~ (corrigé, C57).
 - (c) voie de `monnaie` (§ 6.3) : critère gardé, échec déclaré comme défaut connu, codé en échec attendu au J3, issue. Avis de `macro` (relance du 04/10/2026) : favorable.
 
 Je ne propose aucun seuil nouveau.
@@ -1145,11 +1147,11 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 
 1. **Verdict (α) publié : échec.**
    - L'écart de r̄ vaut ~~0,461~~ **0,486** point entre π̄ = 0 et 10 %. Celui de C/PIB vaut ~~0,908~~ **0,921** point. *[remesure du script d'état stationnaire `outils/etat_stationnaire.py`, 05/10/2026 (#84, #80) : lecture (α), lecture A, norme ϱ̄_L tenue, ζ = 4, décisions du mainteneur du même jour ; valeur barrée : maquette perdue à la PR #77, non reproduite]*
-   - La lecture (β) échoue aussi, sur s_G (+0,110 point) et sur C/PIB (−0,662 point), mesures de `macro` non refaites : la lecture ne change pas le verdict.
+   - La lecture (β) échoue aussi, sur s_G (+0,110 point) et sur C/PIB (−0,662 point), remesurées par le script d'état stationnaire (lecture (β), 05/10/2026 : +0,110 et 0,662 point) : la lecture ne change pas le verdict.
    - **Avis : (α)**, seule lecture qui teste une statique comparative à paramètres structurels fixés. En (β), s_G, levier budgétaire, devient une variable de calibration.
 2. **Diagnostic de `macro` : accord sur l'attribution, désaccord sur le résidu.**
    - La dépendance vient entièrement de trois conventions hors des blocs 8 et 9 : C30 (M28), la conversion linéaire des taux de flux (M22, ADR 0005 point 4, confirmée par l'ADR 0008, I.2) et les écarts nominaux (M31).
-   - Une fois les trois complètement neutralisés, l'écart maximal de r̄ sur [0 ; 10 %] vaut 0,019 point (`qi.py`), et non 0,11. Ni C-HS ni la règle de la fiche 8 ne laissent de résidu matériel.
+   - Une fois les trois complètement neutralisés, l'écart maximal de r̄ sur [0 ; 10 %] vaut 0,019 point (`qi.py`), et non 0,11 *[05/10/2026 (#84, #80) : maquette perdue à la PR #77, non reproductible ; sous le script, seul le canal des écarts nominaux est isolé, +0,182 point sur r̄_α(10 %) − r̄_α(0) quel que soit ζ (canal dans le modèle complet, non source seule) ; attribution complète renvoyée à C61, au J3]*. Ni C-HS ni la règle de la fiche 8 ne laissent de résidu matériel.
 3. **Contribution de chaque source, les deux autres neutralisées** (r̄ à π\* = 0 / 1 / 2 / 3 / 4 / 10 %, `qj.py`) :
 
    | Source gardée | 0 | 1 % | 2 % | 3 % | 4 % | 10 % |
@@ -1158,8 +1160,8 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
    | Conversion seule | 0,973 | 0,983 | 1,000 | 1,025 | 1,057 | 1,402 |
    | Écarts seuls | 0,976 | 0,988 | 1,000 | 1,012 | 1,023 | 1,088 |
 
-   - C30 domine (−1,30 point). C'est une non-neutralité comptable porteuse de sens : le levier et les stocks sont à la valeur comptable.
-   - La conversion (+0,43) est un artefact de convention. Les écarts pèsent +0,11.
+   - C30 domine (−1,30 point) *[05/10/2026 (#84, #80) : maquette perdue à la PR #77, non reproductible ; attribution renvoyée à C61, au J3]*. C'est une non-neutralité comptable porteuse de sens : le levier et les stocks sont à la valeur comptable.
+   - La conversion (+0,43) est un artefact de convention. Les écarts pèsent +0,11. *[05/10/2026 (#84, #80) : maquette perdue à la PR #77, non reproductible ; sous le script, seul le canal des écarts nominaux est isolé, +0,182 point sur r̄_α(10 %) − r̄_α(0) quel que soit ζ (canal dans le modèle complet, non source seule) ; attribution complète renvoyée à C61, au J3]*
    - **Les effets se compensent.** Rouvrir une seule convention, ou deux, porte l'écart entre 0,43 et 1,30 point (tableau de la Q3).
 4. **Le critère, mesuré aux bornes, sous-estime la dépendance.** Le profil tel quel est non monotone (`qi.py`) :
    - r̄ = ~~1,536 / 1,203 / 1,000 / 0,878 / 0,813 / 0,799 / 1,075 %~~ **1,632 / 1,264 / 1,000 / 0,818 / 0,706 / 0,656 / 1,146 %** à π\* = 0 / 1 / 2 / 3 / 4 / 6 / 10 % *[remesure du script d'état stationnaire `outils/etat_stationnaire.py`, 05/10/2026 (#84, #80) : lecture (α), lecture A, norme ϱ̄_L tenue, ζ = 4, décisions du mainteneur du même jour ; valeur barrée : maquette perdue à la PR #77, non reproduite]* ;
@@ -1170,7 +1172,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
    - Le texte admet une seconde lecture, où le seuil fixerait ce qu'il faut attribuer. L'adopter après observation déplacerait le critère : je ne la soutiens pas.
 6. **Voies pour la décision par paire.**
    - **(a) Correction prospective**, l'ancien verdict restant publié : le seuil de 0,1 point porterait sur le résidu, une fois les conventions déclarées neutralisées dans le script de mesure.
-     - Elle serait tenue (0,019).
+     - Elle serait tenue (0,019) *[05/10/2026 (#84, #80) : maquette perdue à la PR #77, non reproductible ; attribution renvoyée à C61, au J3]*.
      - Mais elle change ce qui est testé et laisse une dépendance perceptible près de la référence (point 4).
    - **(b) Réouverture.** Seule la réouverture conjointe des trois conventions atteint le seuil :
      - M28 (C30, `macro`) ;
@@ -1960,7 +1962,7 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai : critère
 
 | Jalon | Test | Propriété | Seuil |
 |---|---|---|---|
-| **J1 (n° 4 bis, P16 (a))** | **Ratio dette/PIB stationnaire (critère 5 ; critère de passage de J1, M19)** | Le script d'état stationnaire publie la dette consolidée (B − M^G − E^CB) d'ouverture / (12 × PIB du pas), **en années de PIB** : 0,09466 / 0,25237 / 0,49978 (n_a = 4), **0,09884 / 0,25674 / 0,51013** (n_a = 12), 0,10045 / 0,25844 / 0,51438 (n_a = 52), à π̄ = π\* = 0 / 2 / 10 % ; avec le solde de Domar (0,1959 / 1,0185 / 5,9005 % du PIB à n_a = 12) et la décomposition ν_H·YD^HS/PIB − (L − D_F)/(12 PIB) + E^Bk/(12 PIB) (0,6505 − 0,4560 + 0,0622 à 2 %). La dette brute est publiée à la valeur de m retenue | égal aux chiffres publiés de la fiche ; au J3, égal au moteur à t = 0 à 1e−9 près (ADR 0005, point 20) |
+| **J1 (n° 4 bis, P16 (a))** | **Ratio dette/PIB stationnaire (critère 5 ; critère de passage de J1, M19)** | Le script d'état stationnaire publie la dette consolidée (B − M^G − E^CB) d'ouverture / (12 × PIB du pas), **en années de PIB** : ~~0,09466 / 0,25237 / 0,49978~~ **0,09880 / 0,25726 / 0,51172** (n_a = 4, hors domaine, #87), **0,09884 / 0,25674 / 0,51013** (n_a = 12), ~~0,10045 / 0,25844 / 0,51438~~ **0,09886 / 0,25654 / 0,50952** (n_a = 52) *[remesure du script d'état stationnaire, 05/10/2026 (#84), visa du mainteneur du même jour : la maquette tenait σ en pas (même cause que les écarts à 2 %, reproduite en tenant σ en pas) ; point n_a = 4 hors domaine (#87)]*, à π̄ = π\* = 0 / 2 / 10 % ; avec le solde de Domar (0,1959 / 1,0185 / 5,9005 % du PIB à n_a = 12) et la décomposition ν_H·YD^HS/PIB − (L − D_F)/(12 PIB) + E^Bk/(12 PIB) (0,6505 − 0,4560 + 0,0622 à 2 %). La dette brute est publiée à la valeur de m retenue | égal aux chiffres publiés de la fiche ; au J3, égal au moteur à t = 0 à 1e−9 près (ADR 0005, point 20) |
 | J1 (n° 4 bis), puis J3 | Critère 13 de la fiche 8 (#80) | r̄ en lecture (α) à π\* ∈ {0 ; 1 ; 2 ; 3 ; 4 ; 6 ; 10 %} : ~~1,536 / 1,203 / 1,000 / 0,878 / 0,813 / 0,799 / 1,075 %~~ **1,632 / 1,264 / 1,000 / 0,818 / 0,706 / 0,656 / 1,146 %** (script, 05/10/2026 ; verdict sur la liste L2, puis I^vol/y et C/PIB au J3) | **échec attendu**, avec renvoi à #80 ; un succès inattendu fait échouer la batterie |
 | J3 | État stationnaire (critère 4) | Un pas sans choc depuis l'état résolu laisse Y^HS sur son sentier, T^cou = 0, M^G\* = m·PB et les ratios du tableau du § 9.5 à leurs formes fermées, pour π̄ ∈ {0 ; 2 ; 10 %} et n_a ∈ {4 ; 12 ; 52} ; facteur de Domar 3,9802 / 3,9671 / 3,9620 % à 2 % | 1e−10 relatif |
 | J3 | Cas à la main (critère 1) | Appel direct, dépense +10 % sur un pas, s_CB = 0,5 : lignes 2, 6, 7, 11b, 11c, 16, 19a, 20 et 22 ; V_G par le stock et par les flux (référence de maquette : écart −2,8e−16, § 3.C-7) ; E^CB = 0 par le stock de clôture (C58) | 1e−12 × S |
