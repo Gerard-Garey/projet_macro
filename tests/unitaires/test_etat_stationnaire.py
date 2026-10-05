@@ -25,13 +25,14 @@ RACINE = Path(__file__).resolve().parents[2]
 SCRIPT = RACINE / "outils" / "etat_stationnaire.py"
 TOL = 1e-12
 
-# Écarts aux valeurs publiées (#84), publiés par le script et visés par le
-# mainteneur le 05/10/2026 : ils ne sont ni masqués ni marqués en échec
-# attendu. Le test vérifie que la liste est exacte : un écart nouveau, ou un
-# écart résorbé, fait échouer la batterie. Les explications établies sont des
-# propriétés testées (`test_explication_*`) ; les écarts de r̄_α, des
-# allocations (α) et des racines parasites relèvent de #80. La liste se vide
-# quand `docwriter` republie les valeurs visées (rang 7 de la branche).
+# Écarts historiques aux valeurs publiées avant le visa du 05/10/2026 (#84,
+# commit 9c8bdbd), publiés par le script et visés par le mainteneur : la
+# spécification (commit 8b9fa94) et les annotations de la fiche 9 les ont
+# republiés. Le script garde l'ancien verdict
+# (`table_historique`) ; le test vérifie que la liste est exacte. Les
+# explications établies sont des propriétés testées (`test_explication_*`) ;
+# les écarts de r̄_α, des allocations (α) et des racines parasites relèvent
+# de #80.
 ECARTS_PUBLIES = {
     ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4"),
     ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52"),
@@ -288,9 +289,19 @@ def test_ratios_ne_dependent_que_de_g(stationnaire, base):
         assert differents == {"hausse_salaire_pas", "hausse_salaire_an"}
 
 
-@pytest.mark.parametrize("champ, nominal", [("p_0", True), ("N_pa_0", False)])
-def test_homogeneite_de_degre_un(stationnaire, base, champ, nominal):
-    prix = ("p", "UC", "W")
+VOLUMES_PAR_TETE = ("y", "v", "IN_vol", "K_vol", "I_vol", "y_pot")
+
+
+@pytest.mark.parametrize(
+    "champ, proportionnels, invariants",
+    [
+        ("p_0", ("p", "UC", "W"), VOLUMES_PAR_TETE + ("N", "N_pa")),
+        ("N_pa_0", VOLUMES_PAR_TETE + ("N", "N_pa"), ("p", "UC", "W")),
+        # pr_0 : volumes et salaire par tête proportionnels, prix et effectifs invariants (réponse (a) de `macro`).
+        ("pr_0", VOLUMES_PAR_TETE + ("W", "pr"), ("p", "UC", "N", "N_pa")),
+    ],
+)
+def test_homogeneite_de_degre_un(stationnaire, base, champ, proportionnels, invariants):
     nominaux = (
         "WB",
         "IN",
@@ -319,13 +330,12 @@ def test_homogeneite_de_degre_un(stationnaire, base, champ, nominal):
         "X",
         "PB",
     )
-    volumes = ("y", "v", "IN_vol", "K_vol", "I_vol", "N", "N_pa", "y_pot")
     for p in points(stationnaire, base):
         q = replace(p, **{champ: 100 * getattr(p, champ)})
         e, f = stationnaire.etat_stationnaire(p), stationnaire.etat_stationnaire(q)
-        for k in nominaux + (prix if nominal else volumes):
+        for k in nominaux + proportionnels:
             assert relatif(f[k], 100 * e[k]) <= TOL, (champ, k)
-        for k in volumes if nominal else prix:
+        for k in invariants:
             assert relatif(f[k], e[k]) <= TOL, (champ, k)
         v, w = stationnaire.valeurs(e, p), stationnaire.valeurs(f, q)
         for k in v:
@@ -453,6 +463,27 @@ def test_refus_a_lv_0_6(stationnaire, base):
     # Les deux conditions sont violées séparément sur la grille (π̄ = 0, n_a = 12 : les deux à la fois).
     e = stationnaire.etat_stationnaire(replace(base, lv=0.6, pi_cible=0.0), controler=False)
     assert e["marge_E1_montant"] < 0 and e["B"] < 0 and e["B_Bk"] < 0
+
+
+def test_dividende_nul_admis_a_la_borne(stationnaire, base):
+    """Réponse (b) de `macro` : Div_F ≥ 0 est une inégalité large (plancher de F3 atteint, non contraignant).
+    Par bissection sur τ_F (π̄ = 2 %, n_a = 12), le dernier flottant où Div_F ≥ 0 donne Div_F = 0 exactement
+    (mesuré) : l'état y est admis ; au flottant suivant, Div_F < 0 est refusé."""
+    def dividende(tau_F):
+        return stationnaire.etat_stationnaire(replace(base, tau_F=tau_F), controler=False)["Div_F"]
+
+    bas, haut = base.tau_F, 0.9
+    assert dividende(bas) > 0 > dividende(haut)
+    while (milieu := (bas + haut) / 2) not in (bas, haut):
+        if dividende(milieu) >= 0:
+            bas = milieu
+        else:
+            haut = milieu
+    assert dividende(bas) == 0.0 and dividende(haut) < 0
+    stationnaire.controler_domaine(replace(base, tau_F=bas))
+    assert stationnaire.etat_stationnaire(replace(base, tau_F=bas))["Div_F"] == 0.0
+    with pytest.raises(stationnaire.HorsDomaine, match="Div_F"):
+        stationnaire.etat_stationnaire(replace(base, tau_F=haut))
 
 
 def test_refus_de_theta_G_nul(stationnaire, base):
@@ -729,9 +760,9 @@ def test_explication_marge_J_nu_sur_G_PB_a_nu_G_un(stationnaire, base):
 
 
 def test_explications_des_ecarts_A_publiees_avec_leur_statut(stationnaire, resultat):
-    """Constat m3 : chaque écart de catégorie A porte son explication et son statut (établie après l'essai, ou
-    cause non établie) ; les écarts C gardent l'explication écrite avant l'essai."""
-    ecarts_A = {(l["section"], l["grandeur"]): l["explication"] for l in resultat["publiees"]
+    """Constat m3 : chaque écart historique de catégorie A porte son explication et son statut (établie après
+    l'essai, ou cause non établie) ; les écarts C gardent l'explication écrite avant l'essai."""
+    ecarts_A = {(l["section"], l["grandeur"]): l["explication"] for l in resultat["historique"]
                 if l["verdict"] == "écart" and l["categorie"] == "A"}
     assert set(ecarts_A) == set(stationnaire.EXPLICATIONS_ECARTS)
     etablies = {k for k, x in ecarts_A.items() if x.startswith("établie après l'essai : ")}
@@ -740,7 +771,7 @@ def test_explications_des_ecarts_A_publiees_avec_leur_statut(stationnaire, resul
     for k, x in ecarts_A.items():
         if k not in etablies:
             assert x == "cause non établie : maquette perdue (visa du 05/10/2026)", k
-    for l in resultat["publiees"]:
+    for l in resultat["historique"]:
         if l["verdict"] == "écart" and l["categorie"] == "C":
             assert l["explication"].startswith("écrite avant l'essai : ")
     tampon = io.StringIO()
@@ -780,15 +811,38 @@ def test_seuil_derniere_decimale(stationnaire):
     assert not stationnaire.comparer("1,536", math.nan)[2]
 
 
-def test_valeurs_publiees_egales_sauf_ecarts_publies(resultat):
+def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
+    """Valeurs en vigueur (spécification et fiche 9 republiées) : toutes égales à la dernière décimale publiée."""
     lignes = resultat["publiees"]
-    assert {l["categorie"] for l in lignes} == {"A", "S", "B-1", "C", "D"}
+    assert len(lignes) == 289
+    assert {l["categorie"] for l in lignes} == {"A", "S", "B-1", "D"}
+    assert sum(1 for l in lignes if l["categorie"] == "S") == 7
     assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
-    ecarts = {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"}
-    assert ecarts == ECARTS_PUBLIES
+    assert [l for l in lignes if l["verdict"] != "égal"] == []
     for l in lignes:
-        if (l["section"], l["grandeur"]) not in ECARTS_PUBLIES:
+        if l["publie"] == stationnaire.AUCUNE:
+            assert math.isnan(l["script"]), l
+        else:
             assert abs(l["ecart"]) <= l["seuil"], l
+
+
+def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
+    """C4 de `macro` (rang 7) : les 25 valeurs visées et republiées (spécification, commit 8b9fa94 ; fiche 9) sont
+    égales au script ; l'historique (commit 9c8bdbd) garde les 25 anciennes valeurs, toutes en écart."""
+    historique = resultat["historique"]
+    assert len(historique) == len(ECARTS_PUBLIES) == 25
+    assert {(l["section"], l["grandeur"]) for l in historique if l["verdict"] == "écart"} == ECARTS_PUBLIES
+    en_vigueur = {(l["section"], l["grandeur"]): l for l in resultat["publiees"]}
+    for k in stationnaire._AVANT_VISA:
+        assert en_vigueur[k]["verdict"] == "égal", en_vigueur[k]
+        ancienne = stationnaire._AVANT_VISA[k]
+        assert en_vigueur[k]["publie"] != (ancienne if isinstance(ancienne, str) else ancienne[2]), k
+    tampon = io.StringIO()
+    stationnaire.afficher(resultat, tampon)
+    texte = tampon.getvalue()
+    assert ("Bilan : 289 valeurs comparées, 282 égales sur l'état résolu, 7 égales en arithmétique de la "
+            "spécification (catégorie S, sans état résolu), aucun écart.") in texte
+    assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
 
 
 def test_formes_de_83_republiees_a_un_milliardieme(stationnaire, base):
@@ -865,6 +919,34 @@ def test_alpha_et_fermeture_identiques_a_nu_G_1(stationnaire, base, resultat):
     assert stationnaire.sensibilite_fermeture(reference) == stationnaire.sensibilite_fermeture(retenu)
     assert resultat["superneutralite"] == stationnaire.superneutralite(retenu)
     assert resultat["fermeture"] == stationnaire.sensibilite_fermeture(retenu)
+
+
+@pytest.mark.parametrize("nu_g_retenu, attendu", [(None, 1.15), (1.15, 1.15), (1.1, 1.1)])
+def test_alpha_et_fermeture_lisent_la_valeur_retenue(stationnaire, base, resultat, monkeypatch, nu_g_retenu,
+                                                      attendu):
+    """Constat m2 : `calculer` passe à la mesure de #80 et à la fermeture le ν_G retenu effectif (l'argument, ou
+    `NU_G_RETENU` s'il vaut None), et la sortie l'annonce (constat m1). L'identité bit à bit du test précédent ne
+    distingue pas une lecture de `NU_G_RETENU` d'une lecture de l'argument : la garde enregistre le ν_G reçu."""
+    assert stationnaire.NU_G_RETENU == 1.15
+    recus = []
+
+    def superneutralite(par):
+        recus.append(("alpha", par.nu_G))
+        return resultat["superneutralite"]
+
+    def sensibilite_fermeture(par):
+        recus.append(("fermeture", par.nu_G))
+        return resultat["fermeture"]
+
+    monkeypatch.setattr(stationnaire, "superneutralite", superneutralite)
+    monkeypatch.setattr(stationnaire, "sensibilite_fermeture", sensibilite_fermeture)
+    r = stationnaire.calculer(base, nu_g_retenu)
+    assert sorted(recus) == [("alpha", attendu), ("fermeture", attendu)]
+    tampon = io.StringIO()
+    stationnaire.afficher(r, tampon)
+    texte = tampon.getvalue()
+    assert f"sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12, ν_G = {stationnaire._f(attendu)} ;" in texte
+    assert f"- verdict : Δr̄_α = max − min sur {{0 ; 2 ; 10 %}}, n_a = 12, ν_G = {stationnaire._f(attendu)} (" in texte
 
 
 @pytest.mark.xfail(
