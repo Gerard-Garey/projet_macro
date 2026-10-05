@@ -12,7 +12,7 @@ Travail en cours : jalons et périmètre de la branche courante dans `docs/feuil
 |---|---|
 | `src/nations/` | Moteur v3, en couches (ADR 0002) : `noyau` (comptes, seul lieu d'exécution des flux monétaires), `blocs` (un module par bloc de la spécification), `moteur` (ordonnanceur et paramètres typés), `etat` (schéma d'état, sauvegarde et reprise), `observation` (séries, sans effet sur la trajectoire), `scenarios` (état initial résolu, archétypes), `leviers` (commandes du joueur) |
 | `tests/unitaires/`, `tests/invariants/` | Batteries de vérification (propriétés, invariants d'architecture, budget de calcul) |
-| `outils/` | Scripts de contrôle : concordance spécification ↔ moteur, compilation de la spécification |
+| `outils/` | Scripts de contrôle : concordance spécification ↔ moteur, matrices, état stationnaire sous forme fermée, compilation de la spécification |
 | `docs/specification/` | Spécification LaTeX (`nations_et_marches.tex`, PDF versionné) et ses conventions (`CONVENTIONS.md`) |
 | `docs/blocs/` | Inventaire des blocs et fiches comparatives (origine de chaque approche) |
 | `docs/adr/` | Décisions d'architecture et d'organisation |
@@ -50,6 +50,14 @@ uv run python outils/verifier_matrices.py [--strict] [fichier.tex]
 ```
 
 Sans `--strict`, elle rend compte sans échouer, sauf si le fichier est absent, illisible ou non UTF-8 (code 1 dans les deux modes). En `--strict` sur la spécification, c'est une batterie à part entière (ci-dessus) et une étape de la CI (« Matrices strictes », travail « Concordance spécification-moteur ») ; la batterie `tests/unitaires` la lance aussi.
+
+État stationnaire du socle sous forme fermée (blocs 1 à 9, sans simulation ; grille π̄ × n_a × ν_G, ratios publiés avec définition, unité, dénominateur et fenêtre, comparaison aux valeurs publiées de la spécification ; contre-épreuve indépendante du moteur, qui n'importe ni `src/` ni `archive/` ; issue #84) :
+
+```bash
+uv run python outils/etat_stationnaire.py [--nu-g-retenu X] [--json fichier]
+```
+
+Codes de sortie : 0 si tout se résout et que le plus grand résidu des contrôles est au plus 1e−12 ; 1 sur un refus de domaine (paramètre hors domaine ou borne supposée inactive par les formes fermées, par exemple plafond de E1 ou dette brute négative) ; 2 si un résidu dépasse 1e−12 (la sortie est alors publiée en entier). Les tests de propriétés sont dans `tests/unitaires/test_etat_stationnaire.py`.
 
 Compilation de la spécification (XeLaTeX ; MiKTeX sur le poste local, TeX Live en session cloud et en CI) :
 
