@@ -1205,12 +1205,6 @@ FICHES = {
     "banque_centrale.md": RACINE / "docs" / "blocs" / "banque_centrale.md",
     "fiche 9": RACINE / "docs" / "blocs" / "finances_publiques.md",
 }
-# Anciennes valeurs de l'historique écrites en clair dans la fiche 9 (§ 3.C, tableau du critère 13 ; § 6.2),
-# gardées « comme trace de l'instruction » par l'annotation du 05/10/2026 : à barrer (#84).
-HISTORIQUE_NON_BARRE = {
-    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"),
-}
 
 
 def _partager_tex(texte: str) -> tuple[str, str]:
@@ -1271,20 +1265,9 @@ def test_valeurs_en_vigueur_ecrites_hors_barre_dans_leur_source(stationnaire):
 
 def test_valeurs_de_contre_epreuve_et_d_historique_barrees_dans_leur_source(stationnaire):
     """Chaque valeur de contre-épreuve et d'historique figure barrée dans au moins une des sources que cite sa
-    section (sauf `HISTORIQUE_NON_BARRE`, en échec attendu ci-dessous) : une valeur qui change de statut dans la
-    source sans que le script suive fait échouer la batterie."""
+    section : une valeur qui change de statut dans la source sans que le script suive fait échouer la batterie."""
     listes = stationnaire.VALEURS_CONTRE_EPREUVE + stationnaire.VALEURS_AVANT_VISA
     assert len(listes) == 47 + 29
     manquantes = [(section, grandeur, publie) for section, grandeur, publie, _, _ in listes
-                  if (section, grandeur) not in HISTORIQUE_NON_BARRE
-                  and not any(_figure(publie, dedans) for _, dedans, _ in _sources(section))]
+                  if not any(_figure(publie, dedans) for _, dedans, _ in _sources(section))]
     assert manquantes == []
-
-
-@pytest.mark.xfail(strict=True, reason="#84 : 0,435 et −0,473 écrites en clair dans la fiche 9 (§ 3.C, § 6.2), "
-                                       "à barrer par un commit docs:")
-def test_anciennes_valeurs_de_C_PIB_barrees_dans_la_fiche_9(stationnaire):
-    anciennes = [(section, publie) for section, grandeur, publie, _, _ in stationnaire.VALEURS_AVANT_VISA
-                 if (section, grandeur) in HISTORIQUE_NON_BARRE]
-    assert len(anciennes) == 2
-    assert all(any(_figure(publie, dedans) for _, dedans, _ in _sources(section)) for section, publie in anciennes)
