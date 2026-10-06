@@ -1736,6 +1736,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 
 **Réserves du § 5 et conditions de `monnaie`.** Elles sont tenues au § 9.6 :
 - **C51** : domaine de r̄ en `\limites`, et voisinage dynamique de la racine parasite mesuré au J3.
+  > *Annotation du 06/10/2026 (#88).* Critère J3 corrigé de façon prospective par deux décisions du mainteneur du 05/10/2026 (commits `6631f7d` et `bfb01f8`) : sous la lecture retenue (lecture A, norme ϱ̄_L tenue, φ = 1), racine unique mesurée au J1 par le script d'état stationnaire, sans racine parasite, mesure refaite au J3 à ζ calibré ; sous φ = 0, racines publiées avec le signe de dθ_G/dr̂\* en chacune, trajectoire du moteur classée sans présomption (arrivée à une racine à 0,01 point près, ou divergence), aucune arrivée exigée. Texte en vigueur : `sec:finances_publiques-conditions` de la spécification.
 - **C52** : θ_H republié aux deux sens, 0 (sens de la l. 1543) et 0,498 (part de la vente imprévue) ; la boucle de `sec:menages` (l. 1543) est refaite avec les impôts.
 - **C53** : mesures au J3 avec le plafond de caisse, Tr > 0 et τ_F > 0, jamais exécutés par la maquette.
 - **C54** : (d3) publié, soit +0,473 point au tour 12 sous la règle et +0,603 en pays joué, seuil inchangé.
@@ -1974,7 +1975,7 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai : critère
 | J3 | Vitesses et arrivée (critère 7 ; C36) | Le bloc 9 n'a aucune vitesse. Branches ×0,5 et ×2 des autres blocs : point fixe identique ; arrivée après trois chocs (dépense +1 % aux tours 1 à 12 ; marche de π\* +1 point ; π^e +1 point) ; G +1 % permanente : arrivée à moins de 1e−3 en 20 demi-vies (maquette : 1,9e−8 au tour 5 500) | 1e−6 relatif après H = max(720 ; 20 demi-vies), H déclaré avant l'essai |
 | J3 | Stabilité (critère 8 ; C36 (i)) | Rayon < 1 à la calibration (maquette 0,997486 à 2 %) et dans la grille (pire cas 0,998883) ; gain statique < 0 (maquette −0,2208 % de y par point) | exigence |
 | J3 | Pays joué (C62) | φ\* publié par π̄ (≤ 0 / 0,131 / 0,487) ; temps de doublement sous φ = 0 (382 et 63 tours) | publication |
-| J3 | Racine (C51) | r̄ > −5 % : racine unique dans le domaine ; voisinage dynamique de la racine parasite mesuré | publication |
+| J3 | Racine (C51) | ~~r̄ > −5 % : racine unique dans le domaine ; voisinage dynamique de la racine parasite mesuré~~ φ = 1 : racine unique, sans racine parasite, à ζ calibré ; φ = 0 : racines publiées avec le signe de dθ_G/dr̂\*, trajectoire classée sans présomption, aucune arrivée exigée (correction prospective du 05/10/2026, `6631f7d`, `bfb01f8`) | publication |
 | J3 | θ_H (C52 ; critère 14) | θ_H au sens de la l. 1543 (0 sous HS) et part de la vente imprévue (0,498) ; rayon de la boucle de `sec:menages` refait avec les impôts | publication |
 | J3 | Bornes (critère 16) | Placement raté de moitié pendant 12 tours ; dépense doublée pendant 12 tours (#53) | plafond de E1 désactivé au plus tard 12 tours après la fin du choc, sans réactivation |
 | J3 | Test zéro (critère 15) | 720 pas sans choc, moyennes par blocs de 60 pas, plusieurs graines | bandes à confirmer avec O1 (M19) : dette consolidée ±0,02 an de PIB ; solde ±0,2 point ; M^G\*/PIB ±2 % relatif ; B_CB/B ±1 point ; aucune part non payée |
