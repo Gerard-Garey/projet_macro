@@ -630,7 +630,7 @@ Aucune remesure V n'a été faite.
    | Δr̄/k_I, point-années | 36,7 | 36,7 | 3,9 | 12,9 | **3,8** |
    | Critère 13 : r̄ à π\* = 0 / 10 % (paramètres de 2 %) | −7,87 / −17,69 % | +5,73 / +2,60 % | +3,11 / −3,09 % | +3,55 / +1,92 % | ~~+1,536 / +1,075 %~~ **+1,632 / +1,146 %** |
    | Critère 13 : écart de C/PIB à 0 / 10 % | −5,80 / −16,02 pt | +2,55 / +0,34 pt | +1,27 / −2,99 pt | +1,49 / −0,01 pt | ~~+0,435 / −0,473 pt~~ **+0,487 / −0,434 pt** |
-   | Racines de r̄ dans [−60 ; 100 %] à 0 / 2 / 10 % | une / une / une | une / une / une | −21,53 et +3,11 / −26,95 et +1,00 / −40,80 et −3,09 | −7,54 et +3,55 / −14,79 et +1,00 / −39,04 et +1,92 | −20,63 et +1,54 / −26,65 et +1,00 / −40,49 et +1,08 |
+   | Racines de r̄ dans [−60 ; 100 %] à 0 / 2 / 10 % | une / une / une | une / une / une | −21,53 et +3,11 / −26,95 et +1,00 / −40,80 et −3,09 | −7,54 et +3,55 / −14,79 et +1,00 / −39,04 et +1,92 | ~~−20,63 et +1,54 / −26,65 et +1,00 / −40,49 et +1,08~~ **une / une / une** (1,632 / 1,000 / 1,146 %) |
    | Palier, taux tenu −1 point, tours 60 / 120 | +0,159 / +0,155 | idem | +0,367 / +0,402 | +0,104 / +0,100 | +0,363 / **+0,396** |
    | Rayon à 0 / 2 / 10 % (deux régimes) | 0,999270 / 0,999413 / 0,999814 | idem | 0,997497 / 0,997482 / 0,997537 | 0,999098 / 0,998517 (période 3 737) / 0,997761 | **0,997497 / 0,997486 / 0,997558** |
    | Demi-vie dominante | 1 181 tours | 1 181 | 275 | 467 | **275** |
@@ -639,7 +639,7 @@ Aucune remesure V n'a été faite.
    | φ\* (rayon = 1) à 0 / 2 / 10 % | — | 0,709 / 0,905 / 0,986 | ≤ 0 / 0,112 / 0,454 | 0,702 / 0,764 / 0,806 | ≤ 0 / **0,131** / **0,487** |
    | Pays joué (φ = 0) à 2 / 10 % | 1,007482 / 1,019719 | idem | 1,001642 / 1,010681 | 1,007929 / 1,018494 | 1,001818 / 1,011036 |
 
-   > *Annotation du 05/10/2026 (#84, #80).* Les chiffres de C-HS en lecture (α) de ce tableau viennent de la maquette perdue à la PR #77 et ne sont pas reproduits par le script d'état stationnaire (`outils/etat_stationnaire.py`, lecture A, norme ϱ̄_L tenue, ζ = 4) : r̄ = 1,632 / 1,146 % à π\* = 0 / 10 % ; écart de C/PIB +0,487 / −0,434 point ; une seule racine sur [−60 ; 100 %], aucune racine parasite ; marche de π\* de 2 à 3 % : r̄ = 0,818 % (stationnaire). Les autres colonnes (options non retenues) ne sont pas remesurées. Lignes « Critère 13 » de la colonne C-HS barrées et republiées en gras depuis le script (lecture (α), n_a = 12, décisions du mainteneur du même jour) ; les autres valeurs du tableau sont gardées comme trace de l'instruction.
+   > *Annotation du 05/10/2026 (#84, #80).* Les chiffres de C-HS en lecture (α) de ce tableau viennent de la maquette perdue à la PR #77 et ne sont pas reproduits par le script d'état stationnaire (`outils/etat_stationnaire.py`, lecture A, norme ϱ̄_L tenue, ζ = 4) : r̄ = 1,632 / 1,146 % à π\* = 0 / 10 % ; écart de C/PIB +0,487 / −0,434 point ; une seule racine sur [−60 ; 100 %], aucune racine parasite ; marche de π\* de 2 à 3 % : r̄ = 0,818 % (stationnaire). Les autres colonnes (options non retenues) ne sont pas remesurées. Lignes « Racines » et « Critère 13 » de la colonne C-HS barrées et republiées en gras depuis le script (lecture (α), n_a = 12, décisions du mainteneur du même jour) ; les autres valeurs du tableau sont gardées comme trace de l'instruction.
 
    - Les valeurs de la fiche 8 (§ 6.1 et 6.2) sont reproduites : −0,0259 ; +918 pb ; 36,7 ; −0,2216 ; +97 pb ; 3,9 ; 0,999413 ; 0,997482 ; −7,87 / −17,69 ; +5,73 / +2,60 ; 3,11 et −21,53.
    - **Sous C-HS** (`final_hs.py`) :
