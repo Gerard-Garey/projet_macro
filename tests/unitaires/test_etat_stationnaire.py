@@ -44,7 +44,7 @@ ANCIENNES_PUBLIEES = {
     ("sec:finances_publiques-depense", "G/PB à 10 %"): "0,78639",
     ("sec:finances_publiques-depense", "marge de E1 à 10 %"): "0,2060",
     ("sec:finances_publiques-emission", "borne de ν_G à 10 %"): "0,8734",
-    ("sec:finances_publiques-emission", "marge J-ν à ν_G = 1,1, 0 %, %"): "0,37",
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν à ν_G = 1,1, 0 %, %"): "0,37",
     ("sec:banque_centrale-stationnaire", "sensibilité de θ_G, % de la production par point de r̄ (|dθ_G/dr̄|)"):
         "0,026",
     ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense (|·|), environ"): "38",
@@ -839,9 +839,9 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
     """Valeurs en vigueur (spécification et fiches 8 et 9 republiées) : toutes égales à la dernière décimale
     publiée ; aucune valeur barrée n'y figure (catégories B-1 et N en contre-épreuve)."""
     lignes = resultat["publiees"]
-    assert len(lignes) == 429
+    assert len(lignes) == 433
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
-    assert sum(1 for l in lignes if l["categorie"] == "S") == 8
+    assert sum(1 for l in lignes if l["categorie"] == "S") == 7
     assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
     assert [l for l in lignes if l["verdict"] != "égal"] == []
     for l in lignes:
@@ -867,7 +867,7 @@ def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 429 valeurs comparées, 421 égales sur l'état résolu, 8 égales en arithmétique de la "
+    assert ("Bilan : 433 valeurs comparées, 426 égales sur l'état résolu, 7 égales en arithmétique de la "
             "spécification (catégorie S, sans état résolu), aucun écart.") in texte
     assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
@@ -1197,6 +1197,45 @@ def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
         assert stationnaire._delta_r_alpha(calc, zeta) > minimum, zeta
 
 
+def test_canal_ecarts_nominaux_egale_l_identite(stationnaire, base):
+    """`monnaie` (06/10/2026) : la part de ϖ_L dans r̄_α(10 %) − r̄_α(0), mesurée sur l'état résolu (catégorie D),
+    égale l'identité ϖ_L[1/1,02 − 1/1,10] − ϖ_L[1/1,02 − 1], en point, à 1e−9 près."""
+    identite = 100 * base.varpi_L * ((1 / 1.02 - 1 / 1.10) - (1 / 1.02 - 1))
+    mesure = stationnaire._canal_ecarts_nominaux(stationnaire.Calculs(base), 4.0)
+    assert abs(mesure - identite) <= 1e-9
+    assert stationnaire.comparer("0,182", mesure)[2]
+
+
+def test_canal_ecarts_nominaux_independant_de_zeta(stationnaire, base):
+    """La part de ϖ_L dans r̄_α(10 %) − r̄_α(0) ne dépend pas de ζ (2, 4, 8), à 1e−9 point près."""
+    calc = stationnaire.Calculs(base)
+    mesures = [stationnaire._canal_ecarts_nominaux(calc, zeta) for zeta in (2.0, 4.0, 8.0)]
+    assert max(mesures) - min(mesures) <= 1e-9
+
+
+def test_canal_ecarts_nominaux_seul_varpi_L_s_isole(stationnaire, base):
+    """Limite déclarée : ϖ_L et ϖ_D annulés ensemble sortent du domaine (existence du dividende de la banque) ;
+    ϖ_L seul annulé y reste."""
+    p = replace(base, nu_G=stationnaire.NU_G_RETENU)
+    with pytest.raises(stationnaire.HorsDomaine, match="dividende de la banque"):
+        stationnaire.mesure_alpha(replace(p, varpi_L=0.0, varpi_D=0.0), 0.0, 12)
+    assert math.isfinite(stationnaire.mesure_alpha(replace(p, varpi_L=0.0), 0.10, 12)["r_alpha"])
+
+
+@pytest.mark.parametrize("phi, zeta", [(1.0, 4.0), (1.0, 8.0), (0.0, 4.0), (0.0, 8.0)])
+def test_hausse_d_un_point_du_signe_de_la_derivee(stationnaire, base, phi, zeta):
+    """`monnaie` : l'effet d'un point fini sur θ_G (norme et i^ref tenus) a le signe de la dérivée publiée au même
+    (φ, ζ), et la dérivée à droite tend vers la dérivée centrée quand le pas se réduit."""
+    calc = stationnaire.Calculs(base)
+    derivee = stationnaire._derivee_norme_tenue(calc, phi, zeta)
+    point = stationnaire._hausse_d_un_point(calc, phi, zeta)
+    assert point * derivee > 0
+    r = base.rbar
+    petit = (stationnaire._theta_norme_tenue(calc, phi, zeta, r + 1e-5)
+             - stationnaire._theta_norme_tenue(calc, phi, zeta, r)) / 1e-5
+    assert abs(petit - derivee) < abs(point - derivee) + 1e-12
+
+
 # --- Valeurs publiées lues dans leur source (constat M1 du rang 8, décision A (iii)) ----
 
 SPECIFICATION = RACINE / "docs" / "specification" / "nations_et_marches.tex"
@@ -1208,7 +1247,8 @@ FICHES = {
 
 
 def _partager_tex(texte: str) -> tuple[str, str]:
-    """(texte dans les \\barre{…}, texte hors des \\barre{…}), accolades imbriquées comprises."""
+    """(texte dans les \\barre{…}, texte hors des \\barre{…}), accolades imbriquées comprises ; hors barre, chaque
+    \\barre{…} est remplacé par une espace, pour garder une ligne de tableau sur une ligne."""
     dedans, dehors, i = [], [], 0
     while (j := texte.find("\\barre{", i)) >= 0:
         dehors.append(texte[i:j])
@@ -1219,7 +1259,7 @@ def _partager_tex(texte: str) -> tuple[str, str]:
         dedans.append(texte[j + len("\\barre{"):k - 1])
         i = k
     dehors.append(texte[i:])
-    return "\n".join(dedans), "\n".join(dehors)
+    return "\n".join(dedans), " ".join(dehors)
 
 
 def _partager_md(texte: str) -> tuple[str, str]:
@@ -1246,26 +1286,95 @@ def _sources(section: str) -> list[tuple[str, str, str]]:
     return sources
 
 
+# Règle de lecture d'une valeur publiée dans sa source (constat mi-1 de l'audit) :
+# - frontière : ni chiffre, ni décimale collés (« 2 » ne se lit pas dans « 2,5 », ni « 5 » dans « 2,5 ») ; la virgule
+#   s'écrit « , » ou « {,} » (mode mathématique) ;
+# - signe : une valeur publiée négative (« -x » ou « −x ») se lit précédée d'un signe moins, « − » ou « - » (hors
+#   « -- », tiret d'intervalle, et hors « - » collé à une lettre ASCII ou à « } », trait d'union : « P-0,182 »),
+#   séparé du nombre au plus par des espaces, « $ », « ~ » ou « \, » (« $-0{,}058$ », « $-$0,058 »,
+#   « $0{,}6505 - 0{,}4560$ ») ; une valeur publiée positive (« x » ou « +x ») se lit sans signe moins
+#   devant (« + » admis) ;
+# - tableau (`tab:…`) : la valeur se lit dans la ligne que déclare `LIGNES_DE_TABLEAU` (première cellule), égale à la
+#   cellule de sa colonne, ou, colonne non déclarée, figurant dans une cellule de la ligne.
+_ENTRE_SIGNE_ET_NOMBRE = re.compile(r"(?:\s|\$|~|\\,)+$")
+_SIGNE_MOINS = re.compile(r"(?:−|(?<![-A-Za-z}])-)$")
+
+
 def _figure(publie: str, texte: str) -> bool:
-    """La valeur publiée (sans son signe) figure dans le texte, seule ou en mode mathématique ({,}), sans chiffre
-    collé avant ni après."""
+    """La valeur publiée figure dans le texte, signe compris, sans chiffre ni décimale collés (règle ci-dessus)."""
     absolu = publie.lstrip("-−+")
-    return any(re.search(r"(?<![0-9])" + re.escape(forme) + r"(?![0-9])", texte)
-               for forme in (absolu, absolu.replace(",", "{,}")))
+    formes = "|".join(re.escape(f) for f in (absolu, absolu.replace(",", "{,}")))
+    motif = r"(?<![0-9])(?<![0-9][,.])(?<![0-9]\{,\})(?:" + formes + r")(?![0-9])(?![,.][0-9])(?!\{,\}[0-9])"
+    negative = publie[0] in "-−"
+    for m in re.finditer(motif, texte):
+        avant = _ENTRE_SIGNE_ET_NOMBRE.sub("", texte[max(0, m.start() - 12):m.start()])
+        if (_SIGNE_MOINS.search(avant) is not None) == negative:
+            return True
+    return False
+
+
+def _cellules(texte: str, ligne: str) -> list[str]:
+    """Cellules de l'unique ligne de tableau dont la première cellule est `ligne`."""
+    rangs = [r for r in texte.split("\n") if re.split(r"(?<!\\)&", r)[0].strip() == ligne]
+    assert len(rangs) == 1, (ligne, len(rangs))
+    return [c.strip() for c in re.split(r"(?<!\\)&", rangs[0].strip().removesuffix("\\\\"))]
+
+
+def _normaliser(cellule: str) -> str:
+    return cellule.replace("$", "").replace("{,}", ",").replace("−", "-").strip().lstrip("+")
+
+
+def _lue(stationnaire, section: str, grandeur: str, publie: str, nom: str, dehors: str) -> bool:
+    """La valeur en vigueur se lit hors barre dans la source `nom` (règle ci-dessus)."""
+    if not nom.startswith("tab:"):
+        return _figure(publie, dehors)
+    ligne, colonne = stationnaire.LIGNES_DE_TABLEAU[(section, grandeur)]
+    cellules = _cellules(dehors, ligne)
+    if colonne is None:
+        return any(_figure(publie, c) for c in cellules[1:])
+    return _normaliser(cellules[colonne]) == _normaliser(publie.replace("−", "-"))
+
+
+def test_lecture_signe_frontiere_et_cellule():
+    """La règle de lecture refuse les faux succès du constat mi-1 : signe ignoré, « 2 » lu dans « 2,5 », cellule
+    lue ailleurs dans le tableau."""
+    assert _figure("-0,058", "$-0{,}058$") and _figure("-0,058", "−0,058") and _figure("-0,058", "$-$0,058")
+    assert not _figure("-0,058", "+0,058") and not _figure("-0,058", "0,058")
+    assert _figure("0,182", "+0,182") and _figure("+0,157", "+0,157") and _figure("0,182", "soit 0,182 point")
+    assert not _figure("0,182", "−0,182") and not _figure("0,182", "$-0{,}182$")
+    assert _figure("2", "1--2") and not _figure("-2", "1--2") and _figure("2", "de 1 à 2 %")
+    assert _figure("-0,4560", "$0{,}6505 - 0{,}4560$") and _figure("-0,05", "$-\\,0{,}05$")
+    assert not _figure("2", "2,5") and not _figure("5", "2,5") and not _figure("5", "2{,}5")
+    assert not _figure("0,18", "0,182") and not _figure("2", "12")
+    assert _figure("0,182", "P-0,182") and not _figure("-0,058", "P-0,058")
+    assert _figure("0,182", "\\mathrm{x}-0,182") and not _figure("-0,058", "\\mathrm{x}-0,058")
+    tab = "A & x & 1,00 & 2,000\\\\\nB & y & 2,000 & $-0{,}5$\\\\"
+    assert _cellules(tab, "B") == ["B", "y", "2,000", "$-0{,}5$"]
+    assert _normaliser(_cellules(tab, "B")[3]) == _normaliser("-0,5")
+    assert _normaliser(_cellules(tab, "A")[2]) != _normaliser("2,000")
 
 
 def test_valeurs_en_vigueur_ecrites_hors_barre_dans_leur_source(stationnaire):
     """Chaque valeur en vigueur figure hors de \\barre{…} (spécification) et de ~~…~~ (fiches) dans chacune des
-    sources que cite sa section : une valeur barrée ne peut être comptée en vigueur."""
+    sources que cite sa section, signe compris, sans décimale collée, et, dans un tableau, dans la cellule de sa
+    ligne et de sa colonne (`LIGNES_DE_TABLEAU`) : une valeur barrée ne peut être comptée en vigueur."""
     manquantes = [(section, grandeur, publie) for section, grandeur, publie, _, _ in stationnaire.VALEURS_PUBLIEES
                   if publie != stationnaire.AUCUNE
-                  and not all(_figure(publie, dehors) for _, _, dehors in _sources(section))]
+                  and not all(_lue(stationnaire, section, grandeur, publie, nom, dehors)
+                              for nom, _, dehors in _sources(section))]
     assert manquantes == []
+
+
+def test_chaque_valeur_de_tableau_a_sa_ligne(stationnaire):
+    """Toute valeur en vigueur lue dans un tableau a un rattachement déclaré, et tout rattachement sert."""
+    lues = {(section, grandeur) for section, grandeur, _, _, _ in stationnaire.VALEURS_PUBLIEES if "tab:" in section}
+    assert lues == set(stationnaire.LIGNES_DE_TABLEAU)
 
 
 def test_valeurs_de_contre_epreuve_et_d_historique_barrees_dans_leur_source(stationnaire):
     """Chaque valeur de contre-épreuve et d'historique figure barrée dans au moins une des sources que cite sa
-    section : une valeur qui change de statut dans la source sans que le script suive fait échouer la batterie."""
+    section, signe compris : une valeur qui change de statut dans la source sans que le script suive fait échouer la
+    batterie."""
     listes = stationnaire.VALEURS_CONTRE_EPREUVE + stationnaire.VALEURS_AVANT_VISA
     assert len(listes) == 47 + 29
     manquantes = [(section, grandeur, publie) for section, grandeur, publie, _, _ in listes
