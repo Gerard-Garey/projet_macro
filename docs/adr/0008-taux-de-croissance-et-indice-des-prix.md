@@ -270,5 +270,6 @@ Rédigée par `architect` sur décision du mainteneur du 07/10/2026 (P34 (a), `d
   - `eq:moteur-croissance-nominale-attendue` (ADR 0010, point 4, « posé au J2 ou au J3 ») : il demande g_pr, g_N et π\*, paramètres des blocs 2, 3 et 8 ; il est posé avec #61 et #91 ;
   - `eq:moteur-ratio-pib-annuel` : le radical d'`observation/` reste à fixer avant J3 (fiche 1, § 9.8, n° 7).
 - **Concordance.** Les balises sont posées par `coder` et les labels par `docwriter` au rang 6 de la branche J2, les deux commits d'une issue poussés ensemble (P32 (a)).
+- *Renvoi du 07/10/2026 (questions de `coder` sur #95)* : la liste de J2 passe à **18 labels**, avec `eq:noyau-caisse-nette` (douze labels `noyau`) ; décision du mainteneur consignée par l'annotation du 07/10/2026 de l'ADR 0012 (questions de `coder`, point 4).
 
 Issues : #24 (les deux volets : le volet « prix » est tranché ici, le volet « banque centrale » reste à la branche n° 4), #39 (M25), #40 (M26), #17 (ADR 0005, révisé en partie), #34 (M24 (f), révisée) ; #39 et #40 (annotation du 04/10/2026) ; #51, #61, #95, #97 et #98 (annotation du 07/10/2026).
