@@ -228,44 +228,70 @@ def test_type_faux_refuse_a_la_construction(champ, valeur):
         dataclasses.replace(etat_pays(), **{champ: valeur})
 
 
-# Champs hors de leur domaine (B-5 ; décision du mainteneur du 07/10/2026,
-# constats N-1 et N-2) : mêmes refus à la construction et à la reprise.
+# Champs hors de leur domaine (B-5 ; décisions du mainteneur du 07/10/2026,
+# constats N-1, N-2 et C-1, catégories Cf, Zl, Zp et forme NFC de l'identifiant) :
+# mêmes refus à la construction et à la reprise.
 HORS_DOMAINE = [
     ("graine", -1, "graine négative"), ("graine", -(2**70), "graine négative"),
     ("graine", schema.GRAINE_EXCLUE, "≥ 2\\^64"), ("graine", 2**70, "≥ 2\\^64"),
     ("t", -1, "t négatif"), ("t", -(2**70), "t négatif"),
+    ("t", schema.T_EXCLU, "≥ 2\\^63"), ("t", 2**64, "≥ 2\\^63"),
     ("identifiant", "", "identifiant vide"),
     ("identifiant", "\ud800", "UTF-8"), ("identifiant", "A\udfff", "UTF-8"),
     ("identifiant", "\x00", "contrôle"), ("identifiant", "A\x7fB", "contrôle"),
     ("identifiant", "A\x85", "contrôle"), ("identifiant", "\t", "contrôle"),
     ("identifiant", " A", "espace de bord"), ("identifiant", "A ", "espace de bord"),
-    ("identifiant", "\u00a0A", "espace de bord"), ("identifiant", "A\u2028", "espace de bord"),
+    ("identifiant", "\u00a0A", "espace de bord"),
+    ("identifiant", "A\u202eB", "de format \\(U\\+202E, Cf\\)"),
+    ("identifiant", "A\u200b", "de format \\(U\\+200B, Cf\\)"),
+    ("identifiant", "\ufeffA", "de format \\(U\\+FEFF, Cf\\)"),
+    ("identifiant", "A\u2028B", "séparateur de ligne \\(U\\+2028, Zl\\)"),
+    ("identifiant", "A\u2028", "séparateur de ligne"),
+    ("identifiant", "A\u2029B", "séparateur de paragraphe \\(U\\+2029, Zp\\)"),
+    ("identifiant", "e\u0301", "NFC"), ("identifiant", "\u212b", "NFC"),
 ]
 
 
 @pytest.mark.parametrize("champ, valeur, motif", HORS_DOMAINE)
 def test_hors_domaine_refuse_a_la_construction(champ, valeur, motif):
-    """Graine dans [0 ; 2^64[, t ≥ 0, identifiant non vide, UTF-8, sans contrôle ni espace de bord."""
+    """Graine dans [0 ; 2^64[, t dans [0 ; 2^63[, identifiant non vide, UTF-8, NFC, sans
+    caractère Cc, Cf, Zl ou Zp ni espace de bord."""
     with pytest.raises(ValueError, match=f"EtatPays.{champ} : .*{motif}"):
         dataclasses.replace(etat_pays(), **{champ: valeur})
 
 
 @pytest.mark.parametrize("champs", [
     {"graine": 0}, {"graine": schema.GRAINE_EXCLUE - 1}, {"graine": 2**63},
-    {"t": 0}, {"t": 10**6},
+    {"t": 0}, {"t": 10**6}, {"t": schema.T_EXCLU - 1},
     {"identifiant": "x"}, {"identifiant": "État-α"}, {"identifiant": "A B"},
-    {"identifiant": "\U0001F30D"},
+    {"identifiant": "\U0001F30D"}, {"identifiant": "\u00e9"},
 ])
 def test_valeurs_aux_bornes_du_domaine_admises(champs):
-    """Les bornes incluses (0, 2^64 − 1) et les identifiants Unicode réguliers passent l'aller-retour."""
+    """Les bornes incluses (0, 2^64 − 1, 2^63 − 1) et les identifiants Unicode réguliers
+    (« é » en NFC compris) passent l'aller-retour."""
     e = dataclasses.replace(etat_pays(), **champs)
     assert all(getattr(e, nom) == valeur for nom, valeur in champs.items())
     assert charger(sauvegarder([e])) == (e,)
 
 
 def test_bornes_declarees():
-    """Bornes nommées : graine dans [0 ; 2^64[, t ≥ 0."""
-    assert (schema.GRAINE_MINIMALE, schema.GRAINE_EXCLUE, schema.T_MINIMAL) == (0, 2**64, 0)
+    """Bornes nommées : graine dans [0 ; 2^64[, t dans [0 ; 2^63[."""
+    assert (schema.GRAINE_MINIMALE, schema.GRAINE_EXCLUE, schema.T_MINIMAL, schema.T_EXCLU) == (
+        0, 2**64, 0, 2**63)
+
+
+@pytest.mark.parametrize("champ, valeur, description", [
+    ("identifiant", 10**5000, "str attendu, entier de 16610 bits reçu"),
+    ("registre_prix", (10**5000,) * 13, "entier de 16610 bits, " * 12 + "entier de 16610 bits\\)"),
+    ("registre_prix", [-(10**5000)] * 13, "\\[-entier de 16610 bits"),
+    ("t", (10**5000,), "\\(entier de 16610 bits,\\) reçu"),
+], ids=["identifiant", "registre-tuple", "registre-liste", "t-tuple"])
+def test_type_faux_d_entier_geant_diagnostique_sans_repr(champ, valeur, description):
+    """C-2 : le diagnostic de type faux décrit un entier géant par sa taille, sans son `repr`
+    (qui lèverait `ValueError` au-delà de 4 300 chiffres)."""
+    with pytest.raises(TypeError, match=f"EtatPays.{champ} : .*{description}") as refus:
+        dataclasses.replace(etat_pays(), **{champ: valeur})
+    assert len(str(refus.value)) < 1000
 
 
 @pytest.mark.parametrize("signe", [1, -1])
