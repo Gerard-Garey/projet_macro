@@ -7,10 +7,14 @@ Deux contrôles complémentaires :
   aucun `importlib.import_module` ni `__import__` d'un nom dont le premier
   composant est `archive` ; aucun `spec_from_file_location`, `run_path`,
   `SourceFileLoader`, `site.addsitedir` ou `zipimport.zipimporter` dont un
-  argument littéral est un chemin qui passe par un dossier `archive` ; aucun
-  `exec` ni `compile` (fonctions natives, appelées par leur nom ou comme
-  `builtins.exec`, `builtins.compile`) dont un argument littéral contient le
-  mot `archive` (issue #33) ; aucun ajout de `archive` au
+  argument littéral est un chemin qui passe par un dossier `archive` ou par
+  un composant `archive.zip` (issue #75) ; aucun `exec` ni `compile`
+  (fonctions natives, appelées par leur nom ou comme attribut ou indiçage de
+  `builtins`, `__builtins__` ou d'un de leurs alias) dont un argument
+  littéral contient le mot `archive` (issue #33) ; chacun de ces appels est
+  aussi reconnu sous un alias de la fonction (`from … import … as`,
+  affectation `f = importlib.import_module`, `getattr(objet, 'nom')`), suivi
+  jusqu'à point fixe (issue #75) ; aucun ajout de `archive` au
   chemin de recherche des modules (`sys.path` : appel `append`, `insert`,
   `extend`, affectation, affectation augmentée ou par tranche) ; un nom (ou
   attribut) affecté depuis une expression qui contient un tel chemin, un tel
@@ -29,15 +33,19 @@ issue #9, sans issue de suivi) : un chemin vers `archive` n'est pas suivi
 à travers un retour de fonction, un paramètre ou sa valeur par défaut, un
 littéral découpé (`'arch' + 'ive'`), ni d'un module à l'autre ; la portée est
 ignorée (un nom marqué l'est dans tout le module : marquage prudent).
-Aucun appel contrôlé n'est reconnu sous un alias de la fonction elle-même
-(`from … import … as`), qu'il serve à importer (`import_module`), à charger un
-chemin (`run_path`, `addsitedir`, `zipimporter`…) ou à exécuter du code
-(`exec`, `compile`) ; un alias de module (`import runpy as r`, puis
-`r.run_path(…)`) reste relevé, l'appel étant reconnu par son seul nom
-d'attribut, sauf pour `exec` et `compile`, reconnues seulement comme attribut
-du nom `builtins` (`import builtins as b` et `__builtins__` ne sont pas
-suivis). Un chemin dont le composant est `archive.zip`, et non le dossier
-`archive`, n'est pas relevé (issue #33).
+Les alias de fonctions et du module `builtins` (issue #75) ont les mêmes
+limites ; un alias de module (`import runpy as r`, puis `r.run_path(…)`)
+reste relevé, l'appel étant reconnu par son seul nom d'attribut. Ne sont pas
+suivis (issue #75) : un nom de fonction ou d'attribut construit
+(`getattr(b, 'ex' + 'ec')`), un accès par `vars(…)` ou `__dict__`, un alias
+de `sys` ou de `sys.path` (`import sys as s`, `from sys import path`), un
+chemin dont le composant d'archive porte une autre extension que `.zip`,
+un alias par affectation déstructurée (`f, g = importlib.import_module,
+exec`), un `:=` employé comme fonction appelée, une boucle `for` sur des
+fonctions, une fonction passée en argument (`functools.partial`, `map`),
+`__builtins__.get('exec')`, un attribut de classe lu par la classe
+(`class C: imp = …`, puis `C.imp(…)`), un composant `archive.zip` écrit dans
+une autre casse (`ARCHIVE.ZIP`).
 """
 
 import ast
@@ -59,6 +67,10 @@ APPELS_PAR_CHEMIN = {
 }
 APPELS_DE_CODE = {"exec", "compile"}
 APPELS_SUR_LE_CHEMIN = {"append", "insert", "extend"}
+APPELS_CONTROLES = APPELS_PAR_NOM_DE_MODULE | APPELS_PAR_CHEMIN | APPELS_DE_CODE
+# Composant de chemin qui désigne l'archive : le dossier, ou son paquet zip,
+# importable par `zipimport` ou `sys.path` (issue #75).
+COMPOSANT_D_ARCHIVE = re.compile(r"archive(\.zip)?")
 
 
 def _cle(noeud: ast.AST) -> str | None:
@@ -119,10 +131,14 @@ def _cite_un_nom_marque(noeud: ast.AST, marques: frozenset[str]) -> bool:
 
 
 def _chemin_par_archive(noeud: ast.AST, marques: frozenset[str] = frozenset()) -> bool:
-    """Vrai si un littéral du nœud est un chemin qui passe par `archive`, ou si
-    le nœud lit un nom marqué."""
+    """Vrai si un littéral du nœud est un chemin qui passe par `archive` ou
+    `archive.zip`, ou si le nœud lit un nom marqué."""
     return (
-        any("archive" in re.split(r"[/\\]", s) for s in _litteraux(noeud))
+        any(
+            COMPOSANT_D_ARCHIVE.fullmatch(composant)
+            for s in _litteraux(noeud)
+            for composant in re.split(r"[/\\]", s)
+        )
         or _cite_un_nom_marque(noeud, marques)
     )
 
@@ -166,22 +182,120 @@ def _est_sys_path(noeud: ast.AST) -> bool:
     return ast.unparse(noeud) == "sys.path"
 
 
-def _est_native(fonction: ast.AST) -> bool:
-    """Vrai si la fonction appelée est désignée comme native : par son nom seul
-    (`exec`) ou comme attribut de `builtins` (`builtins.exec`), jamais comme
-    attribut d'un autre objet (`re.compile`)."""
-    return isinstance(fonction, ast.Name) or (
-        isinstance(fonction, ast.Attribute) and ast.unparse(fonction.value) == "builtins"
+def _texte(noeud: ast.AST) -> str | None:
+    """Valeur d'une chaîne littérale, sinon `None`."""
+    if isinstance(noeud, ast.Constant) and isinstance(noeud.value, str):
+        return noeud.value
+    return None
+
+
+Designation = tuple[str, bool]
+
+
+def _fonctions_designees(
+    noeud: ast.AST, alias: dict[str, set[Designation]], natifs: frozenset[str]
+) -> set[Designation]:
+    """Fonctions que peut désigner une expression : couples (nom d'origine,
+    native), native voulant dire « du module `builtins` » ; vide si
+    l'expression n'est pas reconnue.
+
+    Formes reconnues (issue #75) : un nom seul (`exec`, natif) ; un attribut
+    (`importlib.import_module`), natif si son objet est un nom de `natifs`
+    (`builtins`, `__builtins__` et leurs alias) ; un indiçage littéral d'un nom
+    de `natifs` (`__builtins__['exec']`) ; `getattr(objet, 'nom')` ; et, pour
+    un nom ou un attribut, les fonctions dont il est l'alias (`alias`). La
+    portée étant ignorée, un nom seul `compile` reste natif même s'il est aussi
+    importé d'un autre module (`from re import compile`) : lecture prudente.
+    """
+    designees = set(alias.get(_cle(noeud) or "", set()))
+    if isinstance(noeud, ast.Name):
+        designees.add((noeud.id, True))
+    elif isinstance(noeud, ast.Attribute):
+        designees.add((noeud.attr, ast.unparse(noeud.value) in natifs))
+    elif (
+        isinstance(noeud, ast.Subscript)
+        and ast.unparse(noeud.value) in natifs
+        and (nom := _texte(noeud.slice)) is not None
+    ):
+        designees.add((nom, True))
+    elif (
+        isinstance(noeud, ast.Call)
+        and ast.unparse(noeud.func) == "getattr"
+        and len(noeud.args) >= 2
+        and (nom := _texte(noeud.args[1])) is not None
+    ):
+        designees.add((nom, ast.unparse(noeud.args[0]) in natifs))
+    return designees
+
+
+def _designe_builtins(
+    noeud: ast.AST, alias: dict[str, set[Designation]], natifs: frozenset[str]
+) -> bool:
+    """Vrai si l'expression désigne le module `builtins` : un nom de `natifs`,
+    ou son importation par nom (`__import__('builtins')`)."""
+    if _cle(noeud) in natifs:
+        return True
+    return (
+        isinstance(noeud, ast.Call)
+        and any(
+            nom in APPELS_PAR_NOM_DE_MODULE
+            for nom, _ in _fonctions_designees(noeud.func, alias, natifs)
+        )
+        and len(noeud.args) >= 1
+        and _texte(noeud.args[0]) == "builtins"
     )
 
 
-def _nom_appele(appel: ast.Call) -> str:
-    fonction = appel.func
-    if isinstance(fonction, ast.Attribute):
-        return fonction.attr
-    if isinstance(fonction, ast.Name):
-        return fonction.id
-    return ""
+def alias_des_appels(
+    arbre: ast.AST,
+) -> tuple[dict[str, set[Designation]], frozenset[str]]:
+    """Alias des fonctions contrôlées et noms du module `builtins` (issue #75).
+
+    Rend `(alias, natifs)` :
+    - `alias` associe à un nom (ou attribut) les fonctions de
+      `APPELS_CONTROLES` qu'il désigne (voir `_fonctions_designees`) : par
+      `from importlib import import_module as f`, `from builtins import exec as
+      e`, ou par une affectation dont la valeur désigne une telle fonction (`f
+      = importlib.import_module`, `e = __builtins__['exec']`, `g = e`) ;
+    - `natifs` contient `builtins`, `__builtins__`, leurs alias d'importation
+      (`import builtins as b`) et les noms affectés depuis l'un d'eux (`b =
+      builtins`, `b = __import__('builtins')`).
+
+    Les deux ne font que croître, sur un domaine fini : le point fixe est
+    atteint. Mêmes limites que `noms_marques`, sauf les cibles déstructurées,
+    qui ne sont pas suivies (seules les cibles nom et attribut le sont) : portée ignorée (un nom qui
+    désigne deux fonctions dans le module les désigne toutes deux), aucun suivi
+    par un retour de fonction, un paramètre, ni d'un module à l'autre.
+    """
+    alias: dict[str, set[Designation]] = {}
+    natifs = {"builtins", "__builtins__"}
+    for noeud in ast.walk(arbre):
+        if isinstance(noeud, ast.Import):
+            natifs.update(a.asname for a in noeud.names if a.name == "builtins" and a.asname)
+        elif isinstance(noeud, ast.ImportFrom) and noeud.level == 0:
+            for a in noeud.names:
+                if a.name in APPELS_CONTROLES:
+                    alias.setdefault(a.asname or a.name, set()).add(
+                        (a.name, noeud.module == "builtins")
+                    )
+    affectations = [
+        (ast.unparse(cible), valeur)
+        for cible, valeur in _affectations(arbre)
+        if isinstance(cible, (ast.Name, ast.Attribute))
+    ]
+    while True:
+        taille = len(natifs) + sum(len(d) for d in alias.values())
+        for cle, valeur in affectations:
+            if _designe_builtins(valeur, alias, frozenset(natifs)):
+                natifs.add(cle)
+            designees = {
+                d for d in _fonctions_designees(valeur, alias, frozenset(natifs))
+                if d[0] in APPELS_CONTROLES
+            }
+            if designees:
+                alias.setdefault(cle, set()).update(designees)
+        if len(natifs) + sum(len(d) for d in alias.values()) == taille:
+            return alias, frozenset(natifs)
 
 
 def importations_d_archive(source: str) -> list[int]:
@@ -189,6 +303,7 @@ def importations_d_archive(source: str) -> list[int]:
     lignes = []
     arbre = ast.parse(source)
     marques = noms_marques(arbre)
+    alias, natifs = alias_des_appels(arbre)
     for noeud in ast.walk(arbre):
         if isinstance(noeud, ast.Import):
             if any(a.name.split(".")[0] == "archive" for a in noeud.names):
@@ -197,15 +312,15 @@ def importations_d_archive(source: str) -> list[int]:
             if noeud.level == 0 and (noeud.module or "").split(".")[0] == "archive":
                 lignes.append(noeud.lineno)
         elif isinstance(noeud, ast.Call):
-            nom = _nom_appele(noeud)
+            designees = _fonctions_designees(noeud.func, alias, natifs)
+            noms = {nom for nom, _ in designees}
             arguments = ast.Tuple(elts=[*noeud.args, *(k.value for k in noeud.keywords)])
-            if nom in APPELS_PAR_NOM_DE_MODULE and _module_d_archive(arguments, marques):
+            if noms & APPELS_PAR_NOM_DE_MODULE and _module_d_archive(arguments, marques):
                 lignes.append(noeud.lineno)
-            elif nom in APPELS_PAR_CHEMIN and _chemin_par_archive(arguments, marques):
+            elif noms & APPELS_PAR_CHEMIN and _chemin_par_archive(arguments, marques):
                 lignes.append(noeud.lineno)
             elif (
-                nom in APPELS_DE_CODE
-                and _est_native(noeud.func)
+                any(nom in APPELS_DE_CODE and natif for nom, natif in designees)
                 and (
                     any(re.search(r"\barchive\b", s) for s in _litteraux(arguments))
                     or _cite_un_nom_marque(arguments, marques)
@@ -213,8 +328,8 @@ def importations_d_archive(source: str) -> list[int]:
             ):
                 lignes.append(noeud.lineno)
             elif (
-                nom in APPELS_SUR_LE_CHEMIN
-                and isinstance(noeud.func, ast.Attribute)
+                isinstance(noeud.func, ast.Attribute)
+                and noeud.func.attr in APPELS_SUR_LE_CHEMIN
                 and _est_sys_path(noeud.func.value)
                 and _chemin_par_archive(arguments, marques)
             ):
@@ -328,6 +443,31 @@ def test_le_controle_dynamique_detecte_un_module_d_archive():
         "import site\nfrom pathlib import Path\nV2 = Path('archive') / 'v2.0'\nsite.addsitedir(str(V2))",
         "import zipimport\nZIP = 'archive/v2.0.zip'\nzipimport.zipimporter(ZIP).load_module('m')",
         "import builtins\nchemin = 'archive/v2.0/m.py'\nbuiltins.exec(open(chemin).read())",
+        # Formes non relevées avant l'issue #75 : alias de la fonction appelée.
+        "from importlib import import_module as f\nf('archive.v2_0.moteur')",
+        "from runpy import run_path as lancer\nlancer('archive/v2.0/moteur.py')",
+        "from site import addsitedir as ajouter\najouter('archive/v2.0')",
+        "from builtins import exec as e\ne(open('archive/v2.0/m.py').read())",
+        "import importlib\nf = importlib.import_module\nf('archive.v2_0')",
+        "e = exec\ng = e\ng(open('archive/v2.0/m.py').read())",
+        "import importlib\nf = getattr(importlib, 'import_module')\nf('archive.v2_0')",
+        # Alias du module `builtins` (issue #75).
+        "import builtins as b\nb.exec(open('archive/v2.0/m.py').read())",
+        "import builtins\nb = builtins\nb.compile(open('archive/v2.0/m.py').read(), 'm', 'exec')",
+        "b = __import__('builtins')\nb.exec(open('archive/v2.0/m.py').read())",
+        "import builtins\ngetattr(builtins, 'exec')(open('archive/v2.0/m.py').read())",
+        # `__builtins__`, module ou dictionnaire selon le contexte (issue #75).
+        "__builtins__.exec(open('archive/v2.0/m.py').read())",
+        "__builtins__['exec'](open('archive/v2.0/m.py').read())",
+        "e = __builtins__['compile']\ne(open('archive/v2.0/m.py').read(), 'm', 'exec')",
+        # Chemin par `archive.zip` (issue #75).
+        "import zipimport\nzipimport.zipimporter('archive.zip')",
+        "import sys\nsys.path.insert(0, 'archive.zip')",
+        "import sys\nsys.path.append('archive.zip/v2.0')",
+        "import runpy\nrunpy.run_path('../archive.zip')",
+        "import importlib\nclass Mesure:\n    def __init__(self):\n"
+        "        self.importer = importlib.import_module\n"
+        "    def lancer(self):\n        self.importer('archive.v2_0')",
     ],
 )
 def test_le_controle_detecte_une_importation(source):
@@ -359,6 +499,17 @@ def test_le_controle_detecte_une_importation(source):
         "import site\nsite.addsitedir('src')",
         "import zipimport\nzipimport.zipimporter('dist/nations.zip')",
         "import builtins\nbuiltins.exec('x = 1')",
+        # Formes de l'issue #75 hors d'`archive`, ou homonymes non natifs.
+        "from importlib import import_module as f\nf('nations.archive')",
+        "from re import compile as c\nmotif = c('archive')",
+        "import re\nc = re.compile\nmotif = c('archive')",
+        "import builtins as b\nb.exec('x = 1')",
+        "__builtins__['exec']('x = 1')",
+        "import zipimport\nzipimport.zipimporter('dist/archive_v2.zip')",
+        "open('archive.zip', 'rb')",
+        "import sys\nsys.path.append('archive.txt')",
+        # Alias circulaires sans fonction contrôlée : le point fixe est atteint.
+        "a = b\nb = a\na('archive')",
     ],
 )
 def test_le_controle_admet_ce_qui_n_importe_pas(source):

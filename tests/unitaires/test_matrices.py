@@ -75,6 +75,26 @@ def test_normalisation_des_termes(matrices):
     assert n("B_{Bk}") != n("B_{CB}")
 
 
+@pytest.mark.parametrize("gauche, droite", [
+    (r"\le q", r"\leq"), (r"\cdot b", r"\cdotb"), (r"\Delta\,D", r"\DeltaD"),
+    (r"\Delta{}D", r"\DeltaD"), (r"\Delta\mathit{Res}", r"\DeltaRes"),
+    (r"x_{\alpha}b", r"x_{\alphab}"),
+])
+def test_commande_non_fondue_avec_la_lettre_suivante(matrices, gauche, droite):
+    """Un nom de commande ne se fond pas avec la lettre qui suit (#74, cas 2)."""
+    assert matrices.normaliser_terme(gauche) != matrices.normaliser_terme(droite)
+
+
+@pytest.mark.parametrize("gauche, droite", [
+    (r"\Delta D", r"\Delta  D"), (r"\Delta{}D", r"\Delta D"), (r"\Delta\,D", r"\Delta D"),
+    (r"\Delta\mathit{Res}", r"\Delta Res"), (r"\Delta \mathrm{Res}", r"\Delta Res"),
+    (r"x_{\alpha}b", r"x_\alpha b"), (r"a \cdot b", r"a\cdot b"), (r"\Delta\{D", r"\Delta\{D"),
+])
+def test_ecritures_d_un_meme_terme_confondues(matrices, gauche, droite):
+    """Écritures qui ne diffèrent que par l'espacement ou les accolades : un même terme."""
+    assert matrices.normaliser_terme(gauche) == matrices.normaliser_terme(droite)
+
+
 def test_aucune_matrice_trouvee(matrices, tmp_path, capsys):
     tex = ecrire(tmp_path, "\\documentclass{article}\n\\begin{document}\nTexte.\n\\end{document}\n")
     code, sortie = executer(matrices, tex, capsys)
@@ -228,6 +248,62 @@ def test_tete_repetee_sans_ligne_d_en_tete(matrices, tmp_path, capsys):
     assert (f"[structure] {tmp_path / 'spec.tex'}:{ligne} : tab:matrice-bilans : tête répétée "
             "sans ligne d'en-tête") in sortie
     assert "1 écart(s)" in sortie
+
+
+# Légende de tab:matrice-bilans, suivie du premier filet de sa première tête.
+LEGENDE_BILANS = "\\label{tab:matrice-bilans}\\\\\n\\toprule\n"
+
+
+def test_ligne_d_une_cellule_avant_l_en_tete(matrices, tmp_path, capsys):
+    """Ligne d'une cellule hors note, avant l'en-tête de la première tête : relevée (#74, cas 1)."""
+    # Une note `\\multicolumn` à cet endroit reste ignorée.
+    texte = muter(LEGENDE_BILANS, LEGENDE_BILANS + NOTE_BILANS)
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 0, sortie
+    assert "Aucun écart." in sortie
+    texte = muter(LEGENDE_BILANS, LEGENDE_BILANS + "X1 $+a$\\\\\n")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    ligne = ligne_de(texte, "X1 $+a$")
+    assert (f"[structure] {tmp_path / 'spec.tex'}:{ligne} : tab:matrice-bilans : ligne d'une "
+            "cellule hors note \\multicolumn avant l'en-tête") in sortie
+    assert "1 écart(s)" in sortie
+    assert "tab:matrice-bilans : 9 lignes, 6 colonnes" in sortie
+
+
+def test_ligne_d_une_cellule_avant_l_en_tete_sans_marqueur(matrices):
+    """Sans marqueur de tête, la ligne d'une cellule avant l'en-tête est relevée aussi (#74)."""
+    texte = ("\\begin{longtable}{ll}\n\\caption{T.}\\label{tab:matrice-bilans}\\\\\n"
+             "X1 $+a$\\\\\n\\multicolumn{2}{l}{Note}\\\\\nPoste & Ménages\\\\\n"
+             "Dépôts & $+D_H$\\\\\n\\end{longtable}\n")
+    table, ecarts = matrices.lire_table(texte, matrices.LABEL_BILANS, "spec.tex")
+    assert [(e.regle, e.emplacement, e.message) for e in ecarts] == [
+        ("structure", "spec.tex:3", "tab:matrice-bilans : ligne d'une cellule hors note "
+                                    "\\multicolumn avant l'en-tête")]
+    assert [l.etiquette for l in table.lignes] == ["Dépôts"]
+
+
+def test_ligne_de_donnees_contenant_caption_lue(matrices, tmp_path, capsys):
+    """Une ligne qui contient `\\caption` n'est ignorée que si elle n'est qu'une légende (#74, cas 3)."""
+    # Légende seule dans le corps (avec `*` et argument optionnel) : ignorée.
+    avant = "Crédits & & $-L$ & $+L$ & & & \\\\\n"
+    texte = muter(avant, avant + "\\caption*[c]{Suite} \\label{tab:x}\\\\\n")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 0, sortie
+    assert "tab:matrice-bilans : 9 lignes, 6 colonnes" in sortie
+    # Ligne de données qui contient `\\caption` : lue, et ses écarts relevés.
+    texte = muter(avant, avant + "X1 & $+a$ & & & & & \\caption{t}\\\\\n")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert code == 1
+    assert "tab:matrice-bilans : 10 lignes, 6 colonnes" in sortie
+    ligne = ligne_de(texte, "X1 &")
+    assert (f"[format] {tmp_path / 'spec.tex'}:{ligne} : tab:matrice-bilans, ligne « X1 », "
+            "colonne « Réel » : cellule hors du mode mathématique") in sortie
+    assert "colonne « Ménages » : terme « a » : 1 fois en +, 0 fois en −" in sortie
+    # Ligne d'une cellule qui porte une légende et autre chose : lue aussi.
+    texte = muter(avant, avant + "\\caption{t} X2\\\\\n")
+    code, sortie = executer(matrices, ecrire(tmp_path, texte), capsys)
+    assert "tab:matrice-bilans : 10 lignes, 6 colonnes" in sortie
 
 
 # --------------------------------------------------------------------------
@@ -386,8 +462,8 @@ def test_exposant_signe_sans_accolades(matrices, cellule):
 
 
 @pytest.mark.parametrize("cellule, terme", [
-    ("$+\\leftarrow x$", "\\leftarrowx"),
-    ("$+a\\rightarrow b$", "a\\rightarrowb"),
+    ("$+\\leftarrow x$", "\\leftarrow x"),
+    ("$+a\\rightarrow b$", "a\\rightarrow b"),
     ("$+\\pmb{x}$", "\\pmb{x}"),
 ])
 def test_commande_comparee_par_son_nom_entier(matrices, cellule, terme):
