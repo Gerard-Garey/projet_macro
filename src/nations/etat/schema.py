@@ -8,13 +8,16 @@ champs tous obligatoires, est **engendrée depuis ces déclarations** : aucun
 champ n'existe sans déclaration, aucun attribut ne se crée à la volée, aucun
 champ n'a de valeur par défaut.
 
+Le vocabulaire des unités est celui de `nations.etat.unites`.
+
 Champs de `EtatPays`, dans l'ordre :
 
 - deux **champs d'identité**, qui ne sont pas des variables d'état (aucune
-  phase ne les écrit) : `identifiant` (chaîne non vide, clé de l'ordre
-  canonique des pays, comparée par point de code Unicode) et `graine` (entier
-  ≥ 0, graine explicite du pays ; aucun générateur n'est tiré au J2) ;
-- les variables du **moteur** : `t` (entier) et `registre_prix`, les 13
+  phase ne les écrit) : `identifiant` (chaîne non vide, encodable en UTF-8,
+  sans caractère de contrôle ni espace de bord ; clé de l'ordre canonique des
+  pays, comparée par point de code Unicode) et `graine` (entier de
+  [0 ; 2^64[, graine explicite du pays ; aucun générateur n'est tiré au J2) ;
+- les variables du **moteur** : `t` (entier ≥ 0) et `registre_prix`, les 13
   niveaux P_{t−1}, …, P_{t−13} de l'indice des prix à l'ouverture du pas t,
   en u.m. par u.v. (spécification, P4), `registre_prix[u − 1]` = P_{t−u}
   (ADR 0008, II.3) ; ensemble, l'**empreinte
@@ -38,34 +41,14 @@ liste des champs, d'un type, d'une unité ou d'une sémantique) :
 from __future__ import annotations
 
 import dataclasses
+import unicodedata
 from dataclasses import dataclass
 from enum import Enum
 
+from nations.etat.unites import UNITES
 from nations.noyau.catalogue import NOMS_POSTES, PHASES, SECTEURS, VALEUR_NETTE_FLUX
 
 VERSION_SCHEMA = 1
-
-# Vocabulaire fermé des unités, **unique** pour les variables d'état et les
-# paramètres (ADR 0012, F2, et annotation du 07/10/2026, point 2) : celui de
-# F2, complété de « pas » (unité de t), « u.v. », « u.v. par pas » et « u.m.
-# par u.v. » (unité de P_t). Une unité hors liste est un refus de déclaration ;
-# les paramètres du moteur (#97) importent ce tuple.
-UNITES = (
-    "pas par an",
-    "pas par tour",
-    "sans dimension",
-    "u.m.",
-    "u.m. par pas",
-    "par an, taux de flux",
-    "par an, taux de croissance",
-    "années",
-    "personnes",
-    "fraction",
-    "pas",
-    "u.v.",
-    "u.v. par pas",
-    "u.m. par u.v.",
-)
 
 # Types admis d'une variable d'état (C1) : entier, flottant, ou tuple de
 # flottants de longueur fixe déclarée.
@@ -178,18 +161,78 @@ if len(VARIABLE) != len(VARIABLES) or set(VARIABLE) & {n for n, _ in CHAMPS_D_ID
     raise ValueError("schéma d'état : nom de variable en double")
 
 _ANNOTATIONS = {int: int, float: float, tuple: tuple[float, ...]}
+_NOMS_D_IDENTITE = frozenset(n for n, _ in CHAMPS_D_IDENTITE)
+
+# Bornes déclarées des champs entiers (décision du mainteneur du 07/10/2026,
+# constat N-2 de l'audit de #96 ; ADR 0012, annotation du 07/10/2026, point 1) :
+# graine dans [GRAINE_MINIMALE ; GRAINE_EXCLUE[, t ≥ T_MINIMAL. La borne haute
+# de la graine tient aussi le document de sauvegarde loin de la limite de
+# conversion des entiers de Python (4 300 chiffres) : une graine de 2^64 − 1
+# s'écrit en 20 chiffres.
+GRAINE_MINIMALE = 0
+GRAINE_EXCLUE = 2**64
+T_MINIMAL = 0
+
+# Au-delà de ce nombre de bits, un entier est décrit par sa taille dans un
+# diagnostic, jamais écrit : son `repr` échouerait au-delà de 4 300 chiffres.
+_BITS_ECRITS = 128
+
+
+def _entier_en_clair(valeur: int) -> str:
+    """Entier écrit tel quel s'il est court, sinon décrit par son nombre de bits."""
+    if valeur.bit_length() <= _BITS_ECRITS:
+        return repr(valeur)
+    return f"{'-' if valeur < 0 else ''}entier de {valeur.bit_length()} bits"
 
 
 def defaut_d_identite(nom: str, valeur: str | int) -> str | None:
     """Motif de refus d'un champ d'identité de bon type hors de son domaine, sinon `None`.
 
-    Domaine (ADR 0012, annotation du 07/10/2026, point 1) : identifiant non
-    vide, graine ≥ 0. Partagé par la construction et la reprise.
+    Domaine (ADR 0012, annotation du 07/10/2026, point 1 ; décision du
+    mainteneur du 07/10/2026, constats N-1 et N-2) : identifiant non vide,
+    encodable en UTF-8 (aucun substitut isolé), sans caractère de contrôle
+    (catégorie Unicode `Cc`) ni espace de bord (`str.isspace`) ; graine dans
+    [0 ; 2^64[. Partagé par la construction et la reprise.
     """
-    if nom == "identifiant" and valeur == "":
-        return "identifiant vide"
-    if nom == "graine" and valeur < 0:
-        return f"graine négative {valeur!r} : entier ≥ 0 attendu"
+    if nom == "identifiant":
+        if valeur == "":
+            return "identifiant vide"
+        try:
+            valeur.encode("utf-8")
+        except UnicodeEncodeError:
+            return f"identifiant {valeur!r} non encodable en UTF-8 (substitut isolé)"
+        if any(unicodedata.category(c) == "Cc" for c in valeur):
+            return f"identifiant {valeur!r} avec un caractère de contrôle"
+        if valeur != valeur.strip():
+            return f"identifiant {valeur!r} avec un espace de bord"
+    if nom == "graine":
+        if valeur < GRAINE_MINIMALE:
+            return (f"graine négative {_entier_en_clair(valeur)} : entier de "
+                    "[0 ; 2^64[ attendu")
+        if valeur >= GRAINE_EXCLUE:
+            return (f"graine {_entier_en_clair(valeur)} ≥ 2^64 : entier de "
+                    "[0 ; 2^64[ attendu")
+    return None
+
+
+def defaut_de_t(valeur: int) -> str | None:
+    """Motif de refus d'un `t` entier hors de son domaine (t ≥ 0), sinon `None`."""
+    if valeur < T_MINIMAL:
+        return f"t négatif {_entier_en_clair(valeur)} : entier ≥ 0 attendu"
+    return None
+
+
+def defaut_de_domaine(nom: str, valeur: object) -> str | None:
+    """Motif de refus d'un champ de bon type hors de son domaine, sinon `None`.
+
+    Seule fonction de domaine de `EtatPays`, appelée par la construction et par
+    la reprise : champs d'identité (`defaut_d_identite`) et `t` (`defaut_de_t`) ;
+    les autres champs n'ont pas de domaine au-delà de leur type.
+    """
+    if nom in _NOMS_D_IDENTITE:
+        return defaut_d_identite(nom, valeur)
+    if nom == "t":
+        return defaut_de_t(valeur)
     return None
 
 
@@ -199,7 +242,7 @@ def _verifier_types(etat: object) -> None:
         valeur = getattr(etat, nom)
         if type(valeur) is not type_:
             raise TypeError(f"EtatPays.{nom} : {type_.__name__} attendu, {valeur!r} reçu")
-        motif = defaut_d_identite(nom, valeur)
+        motif = defaut_de_domaine(nom, valeur)
         if motif is not None:
             raise ValueError(f"EtatPays.{nom} : {motif}")
     for variable in VARIABLES:
@@ -207,6 +250,9 @@ def _verifier_types(etat: object) -> None:
         if not variable.admet(valeur):
             raise TypeError(f"EtatPays.{variable.nom} : {variable.description_du_type()} "
                             f"attendu, {valeur!r} reçu")
+        motif = defaut_de_domaine(variable.nom, valeur)
+        if motif is not None:
+            raise ValueError(f"EtatPays.{variable.nom} : {motif}")
 
 
 EtatPays = dataclasses.make_dataclass(
@@ -222,7 +268,8 @@ EtatPays.__doc__ = """État d'un pays à l'ouverture d'un pas (ADR 0012, D1), ge
 
 Champs engendrés depuis `CHAMPS_D_IDENTITE` et `VARIABLES`, tous obligatoires,
 sans valeur par défaut ; un champ de type faux est refusé à la construction
-(`TypeError`), un champ d'identité hors de son domaine aussi (`ValueError`).
+(`TypeError`), un champ hors de son domaine aussi (`ValueError`, par
+`defaut_de_domaine` : identifiant, graine, t).
 L'état d'un monde est une séquence d'`EtatPays` triée par identifiant, par
 point de code Unicode.
 """

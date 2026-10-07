@@ -15,10 +15,13 @@ flottant non fini, y compris un nombre qui déborde (`1e400`) ; un entier
 au-delà de la limite de conversion de Python ; une imbrication qui épuise la
 pile ; une version différente de `VERSION_SCHEMA` (aucune migration au J2) ;
 un champ manquant ou inconnu ; un type qui ne correspond pas exactement au
-schéma (un entier pour un flottant compris) ; un champ d'identité hors de son
-domaine (identifiant vide, graine négative) ; un pays en double ou hors de
-l'ordre canonique (identifiants comparés par point de code Unicode). L'aller-retour `sauvegarder(charger(document))` rend les mêmes
-octets qu'un document écrit par `sauvegarder`.
+schéma (un entier pour un flottant compris) ; un champ hors de son domaine
+(`schema.defaut_de_domaine` : identifiant vide, non encodable en UTF-8, avec
+un caractère de contrôle ou un espace de bord ; graine hors de [0 ; 2^64[ ;
+t négatif), les mêmes refus qu'à la construction ; un pays en double ou hors
+de l'ordre canonique (identifiants comparés par point de code Unicode).
+L'aller-retour `sauvegarder(charger(document))` rend les mêmes octets qu'un
+document écrit par `sauvegarder`.
 """
 
 from __future__ import annotations
@@ -34,7 +37,7 @@ from nations.etat.schema import (
     VARIABLE,
     VERSION_SCHEMA,
     EtatPays,
-    defaut_d_identite,
+    defaut_de_domaine,
 )
 
 _CLES_DU_DOCUMENT = ("version", "pays")
@@ -165,9 +168,11 @@ def charger(document: bytes) -> tuple[EtatPays, ...]:
         raise SauvegardeRefusee("liste des pays attendue", champ="pays")
     etats = []
     for rang, objet in enumerate(racine["pays"]):
-        # Le pays est nommé par son identifiant s'il est une chaîne non vide, sinon par son rang.
+        # Le pays est nommé par son identifiant s'il est une chaîne de son
+        # domaine, sinon par son rang.
         pays = rang
-        if type(objet) is dict and type(objet.get("identifiant")) is str and objet["identifiant"]:
+        if type(objet) is dict and type(objet.get("identifiant")) is str and defaut_de_domaine(
+                "identifiant", objet["identifiant"]) is None:
             pays = objet["identifiant"]
         champs = _champs_attendus(objet, CHAMPS, pays)
         valeurs = {}
@@ -185,7 +190,7 @@ def charger(document: bytes) -> tuple[EtatPays, ...]:
                            else VARIABLE[nom].description_du_type())
                 raise SauvegardeRefusee(f"type faux : {attendu} attendu, {valeur!r} lu",
                                         pays=pays, champ=nom)
-            motif = defaut_d_identite(nom, valeur) if nom in _TYPE_D_IDENTITE else None
+            motif = defaut_de_domaine(nom, valeur)
             if motif is not None:
                 raise SauvegardeRefusee(f"hors domaine : {motif}", pays=pays, champ=nom)
             valeurs[nom] = valeur
