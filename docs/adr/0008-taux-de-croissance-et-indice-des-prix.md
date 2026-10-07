@@ -252,4 +252,24 @@ Rédigée par `architect` sur décision du mainteneur du 04/10/2026. **La décis
   - **Responsable et échéance.** Le radical est fixé par `architect` au jalon J2, avec le registre, par une annotation du présent ADR. Un nouvel ADR n'est requis que si le contrat du registre change.
   - **Suivi.** Ce point s'ajoute à « Ce que l'ADR ne règle pas » et figure à la ligne de la branche J2 de `docs/feuille-de-route.md` (§ 2).
 
-Issues : #24 (les deux volets : le volet « prix » est tranché ici, le volet « banque centrale » reste à la branche n° 4), #39 (M25), #40 (M26), #17 (ADR 0005, révisé en partie), #34 (M24 (f), révisée) ; #39 et #40 (annotation du 04/10/2026).
+## Annotation du 07/10/2026
+
+Rédigée par `architect` sur décision du mainteneur du 07/10/2026 (P34 (a), `docs/feuille-de-route.md` § 4), à l'ouverture de la branche J2 (`claude/j2-noyau`). **La décision est inchangée** (parties I et II, point II.3 compris) et le contrat du registre ne change pas : aucun nouvel ADR n'est requis (annotation du 04/10/2026, « Responsable et échéance »). L'annotation ferme le point « Radical de P4 » de l'annotation du 04/10/2026 et arrête la liste des labels du jalon J2.
+
+- **Radical de P4 (indice des prix) : `prix`**, label `eq:prix-indice`.
+  - **Pourquoi `prix`.** Sous J = 1, P_t ≡ p_{j,t} est écrit par le bloc prix en phase 5 : l'équation est une identité du bloc prix. Le moteur n'en fait qu'entrer la valeur dans le registre en phase 9 (`eq:moteur-registre-prix`). `CONVENTIONS.md` § 2.1 lie le radical au module qui porte la balise : ici `src/nations/blocs/prix.py`. L'indice se calcule ainsi là où p_{j,t} est écrit (localité).
+  - **Pose.** Le label est posé au jalon **J3**, avec sa balise, dans `prix.py` (#51), et non au J2 : en J2, aucun bloc prix n'existe, et le générateur de flux des tests d'invariants fournit P_t en phase 5.
+  - **Option écartée.** Radical `moteur` : l'indice serait calculé ailleurs que dans le module qui écrit p_{j,t}, et le moteur porterait une équation de bloc.
+  - **Inchangé.** L'agrégat à J ≥ 2 n'est toujours pas défini : il relèvera du bloc prix ou d'une décision de fiche (§ Conséquences, « Ce que l'ADR ne règle pas »).
+- **Labels du jalon J2 : 17**, une balise chacun.
+  - **Source.** La liste de la fiche « temps et comptabilité », § 9.1 (15 labels, `docs/blocs/temps_comptabilite.md` l. 754-768), corrigée par le présent ADR : `eq:moteur-conversion-croissance` ajouté (partie I) ; `eq:moteur-glissement` ajouté (annotation du 04/10/2026) ; `eq:moteur-registre-prix` porte l'avance d'un registre de n_a + 1 niveaux (point II.3), et non « longueur n_a ; glissement P_t / P_{t−12} − 1 » comme l'écrit encore la fiche (l. 757). Ce retard de la fiche est repris par l'annotation datée prévue au rang 1b de la branche J2.
+  - **Six labels `moteur`** : `eq:moteur-calendrier-date`, `eq:moteur-date-decision`, `eq:moteur-conversion-taux`, `eq:moteur-conversion-croissance`, `eq:moteur-registre-prix`, `eq:moteur-glissement`.
+  - **Onze labels `noyau`** : `eq:noyau-cloture-poste`, `eq:noyau-somme-ligne`, `eq:noyau-somme-colonne`, `eq:noyau-valeur-nette-stock`, `eq:noyau-valeur-nette-flux`, `eq:noyau-echelle-bilan`, `eq:noyau-tolerance-pas`, `eq:noyau-tolerance-cumulee`, `eq:noyau-reserves-cloture`, `eq:noyau-variation-monnaie`, `eq:noyau-variation-monnaie-centrale`.
+- **Trois labels renvoyés au J3** :
+  - `eq:prix-indice` (#51, ci-dessus) ;
+  - `eq:moteur-croissance-nominale-attendue` (ADR 0010, point 4, « posé au J2 ou au J3 ») : il demande g_pr, g_N et π\*, paramètres des blocs 2, 3 et 8 ; il est posé avec #61 et #91 ;
+  - `eq:moteur-ratio-pib-annuel` : le radical d'`observation/` reste à fixer avant J3 (fiche 1, § 9.8, n° 7).
+- **Concordance.** Les balises sont posées par `coder` et les labels par `docwriter` au rang 6 de la branche J2, les deux commits d'une issue poussés ensemble (P32 (a)).
+- *Renvoi du 07/10/2026 (questions de `coder` sur #95)* : la liste de J2 passe à **18 labels**, avec `eq:noyau-caisse-nette` (douze labels `noyau`) ; décision du mainteneur consignée par l'annotation du 07/10/2026 de l'ADR 0012 (questions de `coder`, point 4).
+
+Issues : #24 (les deux volets : le volet « prix » est tranché ici, le volet « banque centrale » reste à la branche n° 4), #39 (M25), #40 (M26), #17 (ADR 0005, révisé en partie), #34 (M24 (f), révisée) ; #39 et #40 (annotation du 04/10/2026) ; #51, #61, #95, #97 et #98 (annotation du 07/10/2026).
