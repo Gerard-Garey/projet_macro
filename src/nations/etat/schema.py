@@ -42,6 +42,7 @@ liste des champs, d'un type, d'une unité ou d'une sémantique) :
 from __future__ import annotations
 
 import dataclasses
+import itertools
 import unicodedata
 from dataclasses import dataclass
 from enum import Enum
@@ -187,6 +188,14 @@ _CATEGORIES_REFUSEES = {"Cc": "de contrôle", "Cf": "de format",
 # diagnostic, jamais écrit : son `repr` échouerait au-delà de 4 300 chiffres.
 _BITS_ECRITS = 128
 
+# Borne du diagnostic d'une valeur dont le `repr` a échoué (constats M-1 et M-2 de
+# l'audit de b9c3fe8 sur #96) : éléments au plus écrits d'un tuple ou d'une liste par
+# `_valeur_en_clair`.
+_ELEMENTS_ECRITS = 32
+# Conteneurs décrits sans `repr` dans l'écriture élément par élément d'un tuple ou d'une
+# liste : leur `repr` pourrait coûter autant que celui qui vient d'échouer.
+_CONTENEURS = (tuple, list, set, frozenset, dict)
+
 
 def _entier_en_clair(valeur: int) -> str:
     """Entier écrit tel quel s'il est court, sinon décrit par son nombre de bits."""
@@ -195,17 +204,53 @@ def _entier_en_clair(valeur: int) -> str:
     return f"{'-' if valeur < 0 else ''}entier de {valeur.bit_length()} bits"
 
 
+def _description_sure(valeur: object) -> str:
+    """Valeur dont le `repr` a échoué, décrite sans la parcourir : type et, si elle en a une, longueur."""
+    try:
+        return f"<{type(valeur).__name__} de longueur {len(valeur)}>"
+    except TypeError:
+        return f"<{type(valeur).__name__}>"
+
+
 def _valeur_en_clair(valeur: object) -> str:
-    """Valeur reçue, écrite pour un diagnostic : entiers par `_entier_en_clair`, tuples et
-    listes élément par élément, le reste par son `repr`."""
+    """Valeur reçue, écrite pour un diagnostic sans lever d'autre exception que celle du
+    diagnostic lui-même.
+
+    Un entier passe par `_entier_en_clair` ; toute autre valeur par son `repr`, qui gère
+    les structures autoréférentes. Si ce `repr` échoue (`ValueError` d'un entier de plus
+    de 4 300 chiffres, `RecursionError` d'une imbrication trop profonde), un tuple ou une
+    liste est écrit élément par élément sur un seul niveau (au plus `_ELEMENTS_ECRITS`
+    éléments, suivis du nombre des autres) : un élément entier par `_entier_en_clair`, un
+    élément conteneur par `_description_sure` (son `repr` pourrait coûter autant que celui
+    qui vient d'échouer), un autre élément par son `repr`, ou par `_description_sure` si
+    ce `repr` échoue aussi. Toute autre valeur est décrite par `_description_sure`.
+    """
     if isinstance(valeur, int):
         return _entier_en_clair(valeur)
-    if type(valeur) in (tuple, list):
-        elements = ", ".join(_valeur_en_clair(x) for x in valeur)
-        if type(valeur) is list:
-            return f"[{elements}]"
-        return f"({elements},)" if len(valeur) == 1 else f"({elements})"
-    return repr(valeur)
+    try:
+        return repr(valeur)
+    except (ValueError, RecursionError):
+        pass
+    if type(valeur) not in (tuple, list):
+        return _description_sure(valeur)
+    morceaux = []
+    for x in itertools.islice(valeur, _ELEMENTS_ECRITS):
+        if isinstance(x, int):
+            morceaux.append(_entier_en_clair(x))
+            continue
+        if type(x) in _CONTENEURS:
+            morceaux.append(_description_sure(x))
+            continue
+        try:
+            morceaux.append(repr(x))
+        except (ValueError, RecursionError):
+            morceaux.append(_description_sure(x))
+    if len(valeur) > _ELEMENTS_ECRITS:
+        morceaux.append(f"… {len(valeur) - _ELEMENTS_ECRITS} autres éléments")
+    elements = ", ".join(morceaux)
+    if type(valeur) is list:
+        return f"[{elements}]"
+    return f"({elements},)" if len(valeur) == 1 else f"({elements})"
 
 
 def defaut_d_identite(nom: str, valeur: str | int) -> str | None:
