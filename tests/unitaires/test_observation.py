@@ -73,7 +73,9 @@ def plan_du_pas(etat):
 def pas_d_essai(etat, observateur):
     """Un pas : onze clôtures relevées, puis l'état t + 1 assemblé et relevé.
 
-    Tient le rôle de l'ordonnanceur (#97) ; le registre n'est pas avancé (#97).
+    Tient le rôle de l'ordonnanceur (#97, testé dans `test_moteur_ordonnanceur.py`) ; le
+    registre n'est pas avancé. Sans bloc ni moteur, la fin du pas ne porte ni variable du
+    pas ni grandeur calculée à l'ouverture (n-uplets vides).
     """
     gl = ouvrir_pas(etat, CADRE)
     plan = plan_du_pas(etat)
@@ -92,7 +94,7 @@ def pas_d_essai(etat, observateur):
         observateur.relever(gl.clore_phase(phase))
     fin = gl.clore_pas()
     suivant = dataclasses.replace(etat, t=fin.t, **fin.variables)
-    observateur.relever(FinDePas(etat.t, suivant))
+    observateur.relever(FinDePas(etat.t, suivant, (), ()))
     return suivant
 
 
@@ -116,7 +118,7 @@ def test_observateurs_satisfont_le_protocole():
     """E1 : une méthode, `relever`, qui ne rend rien ; aucun attribut créé à la volée."""
     observateurs: list[Observateur] = [ObservateurNul(), ReleveDesResidus()]
     for observateur in observateurs:
-        assert observateur.relever(FinDePas(0, etat_initial())) is None
+        assert observateur.relever(FinDePas(0, etat_initial(), (), ())) is None
         assert not hasattr(observateur, "__dict__")
 
 
@@ -125,9 +127,11 @@ def test_evenements_immuables():
     releve = ReleveDesResidus()
     e = etat_initial()
     pas_d_essai(e, releve)
-    fin = FinDePas(0, e)
+    fin = FinDePas(0, e, (("x", 1.0),), (("mois", 1),))
     with pytest.raises(dataclasses.FrozenInstanceError):
         fin.t = 1
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        fin.variables_du_pas = ()
     with pytest.raises(dataclasses.FrozenInstanceError):
         fin.etat.K = 0.0
     cloture = ClotureDePhase(0, "3", (("r", "", 0.0),), ())
