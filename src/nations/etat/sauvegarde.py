@@ -17,8 +17,9 @@ pile ; une version différente de `VERSION_SCHEMA` (aucune migration au J2) ;
 un champ manquant ou inconnu ; un type qui ne correspond pas exactement au
 schéma (un entier pour un flottant compris) ; un champ hors de son domaine
 (`schema.defaut_de_domaine` : identifiant vide, non encodable en UTF-8, avec
-un caractère de contrôle ou un espace de bord ; graine hors de [0 ; 2^64[ ;
-t négatif), les mêmes refus qu'à la construction ; un pays en double ou hors
+un caractère de catégorie Unicode `Cc`, `Cf`, `Zl` ou `Zp`, avec un espace de
+bord ou hors de la forme normale NFC ; graine hors de [0 ; 2^64[ ; t hors de
+[0 ; 2^63[), les mêmes refus qu'à la construction ; un pays en double ou hors
 de l'ordre canonique (identifiants comparés par point de code Unicode).
 L'aller-retour `sauvegarder(charger(document))` rend les mêmes octets qu'un
 document écrit par `sauvegarder`.

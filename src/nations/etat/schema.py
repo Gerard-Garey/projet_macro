@@ -14,10 +14,11 @@ Champs de `EtatPays`, dans l'ordre :
 
 - deux **champs d'identité**, qui ne sont pas des variables d'état (aucune
   phase ne les écrit) : `identifiant` (chaîne non vide, encodable en UTF-8,
-  sans caractère de contrôle ni espace de bord ; clé de l'ordre canonique des
-  pays, comparée par point de code Unicode) et `graine` (entier de
+  en forme normale NFC, sans caractère de contrôle, de format ni séparateur
+  de ligne ou de paragraphe, sans espace de bord ; clé de l'ordre canonique
+  des pays, comparée par point de code Unicode) et `graine` (entier de
   [0 ; 2^64[, graine explicite du pays ; aucun générateur n'est tiré au J2) ;
-- les variables du **moteur** : `t` (entier ≥ 0) et `registre_prix`, les 13
+- les variables du **moteur** : `t` (entier de [0 ; 2^63[) et `registre_prix`, les 13
   niveaux P_{t−1}, …, P_{t−13} de l'indice des prix à l'ouverture du pas t,
   en u.m. par u.v. (spécification, P4), `registre_prix[u − 1]` = P_{t−u}
   (ADR 0008, II.3) ; ensemble, l'**empreinte
@@ -165,13 +166,22 @@ _NOMS_D_IDENTITE = frozenset(n for n, _ in CHAMPS_D_IDENTITE)
 
 # Bornes déclarées des champs entiers (décision du mainteneur du 07/10/2026,
 # constat N-2 de l'audit de #96 ; ADR 0012, annotation du 07/10/2026, point 1) :
-# graine dans [GRAINE_MINIMALE ; GRAINE_EXCLUE[, t ≥ T_MINIMAL. La borne haute
-# de la graine tient aussi le document de sauvegarde loin de la limite de
-# conversion des entiers de Python (4 300 chiffres) : une graine de 2^64 − 1
-# s'écrit en 20 chiffres.
+# graine dans [GRAINE_MINIMALE ; GRAINE_EXCLUE[, t dans [T_MINIMAL ; T_EXCLU[.
+# La borne haute de la graine tient aussi le document de sauvegarde loin de la
+# limite de conversion des entiers de Python (4 300 chiffres) : une graine de
+# 2^64 − 1 s'écrit en 20 chiffres.
 GRAINE_MINIMALE = 0
 GRAINE_EXCLUE = 2**64
 T_MINIMAL = 0
+# Borne haute de t, exclue (décision du mainteneur du 07/10/2026, constat C-1
+# de l'audit de 1f8917a sur #96) : t dans [0 ; 2^63[, 2^63 − 1 admis.
+T_EXCLU = 2**63
+
+# Catégories Unicode refusées à toute position d'un identifiant (décision du
+# mainteneur du 07/10/2026 sur #96) : contrôle (`Cc`), format (`Cf`, dont
+# U+200B et U+202E), séparateurs de ligne (`Zl`) et de paragraphe (`Zp`).
+_CATEGORIES_REFUSEES = {"Cc": "de contrôle", "Cf": "de format",
+                        "Zl": "séparateur de ligne", "Zp": "séparateur de paragraphe"}
 
 # Au-delà de ce nombre de bits, un entier est décrit par sa taille dans un
 # diagnostic, jamais écrit : son `repr` échouerait au-delà de 4 300 chiffres.
@@ -185,14 +195,29 @@ def _entier_en_clair(valeur: int) -> str:
     return f"{'-' if valeur < 0 else ''}entier de {valeur.bit_length()} bits"
 
 
+def _valeur_en_clair(valeur: object) -> str:
+    """Valeur reçue, écrite pour un diagnostic : entiers par `_entier_en_clair`, tuples et
+    listes élément par élément, le reste par son `repr`."""
+    if isinstance(valeur, int):
+        return _entier_en_clair(valeur)
+    if type(valeur) in (tuple, list):
+        elements = ", ".join(_valeur_en_clair(x) for x in valeur)
+        if type(valeur) is list:
+            return f"[{elements}]"
+        return f"({elements},)" if len(valeur) == 1 else f"({elements})"
+    return repr(valeur)
+
+
 def defaut_d_identite(nom: str, valeur: str | int) -> str | None:
     """Motif de refus d'un champ d'identité de bon type hors de son domaine, sinon `None`.
 
     Domaine (ADR 0012, annotation du 07/10/2026, point 1 ; décision du
-    mainteneur du 07/10/2026, constats N-1 et N-2) : identifiant non vide,
-    encodable en UTF-8 (aucun substitut isolé), sans caractère de contrôle
-    (catégorie Unicode `Cc`) ni espace de bord (`str.isspace`) ; graine dans
-    [0 ; 2^64[. Partagé par la construction et la reprise.
+    mainteneur du 07/10/2026, constats N-1 et N-2, puis complément du même
+    jour) : identifiant non vide, encodable en UTF-8 (aucun substitut isolé),
+    sans caractère de catégorie Unicode `Cc`, `Cf`, `Zl` ou `Zp` à aucune
+    position, sans espace de bord (`str.isspace`), en forme normale NFC
+    (`unicodedata.normalize("NFC", x) == x`) ; graine dans [0 ; 2^64[.
+    Partagé par la construction et la reprise.
     """
     if nom == "identifiant":
         if valeur == "":
@@ -201,10 +226,15 @@ def defaut_d_identite(nom: str, valeur: str | int) -> str | None:
             valeur.encode("utf-8")
         except UnicodeEncodeError:
             return f"identifiant {valeur!r} non encodable en UTF-8 (substitut isolé)"
-        if any(unicodedata.category(c) == "Cc" for c in valeur):
-            return f"identifiant {valeur!r} avec un caractère de contrôle"
+        for c in valeur:
+            categorie = unicodedata.category(c)
+            if categorie in _CATEGORIES_REFUSEES:
+                return (f"identifiant {valeur!r} avec un caractère "
+                        f"{_CATEGORIES_REFUSEES[categorie]} (U+{ord(c):04X}, {categorie})")
         if valeur != valeur.strip():
             return f"identifiant {valeur!r} avec un espace de bord"
+        if unicodedata.normalize("NFC", valeur) != valeur:
+            return f"identifiant {valeur!r} hors de la forme normale NFC"
     if nom == "graine":
         if valeur < GRAINE_MINIMALE:
             return (f"graine négative {_entier_en_clair(valeur)} : entier de "
@@ -216,9 +246,11 @@ def defaut_d_identite(nom: str, valeur: str | int) -> str | None:
 
 
 def defaut_de_t(valeur: int) -> str | None:
-    """Motif de refus d'un `t` entier hors de son domaine (t ≥ 0), sinon `None`."""
+    """Motif de refus d'un `t` entier hors de son domaine [0 ; 2^63[, sinon `None`."""
     if valeur < T_MINIMAL:
-        return f"t négatif {_entier_en_clair(valeur)} : entier ≥ 0 attendu"
+        return f"t négatif {_entier_en_clair(valeur)} : entier de [0 ; 2^63[ attendu"
+    if valeur >= T_EXCLU:
+        return f"t {_entier_en_clair(valeur)} ≥ 2^63 : entier de [0 ; 2^63[ attendu"
     return None
 
 
@@ -241,7 +273,8 @@ def _verifier_types(etat: object) -> None:
     for nom, type_ in CHAMPS_D_IDENTITE:
         valeur = getattr(etat, nom)
         if type(valeur) is not type_:
-            raise TypeError(f"EtatPays.{nom} : {type_.__name__} attendu, {valeur!r} reçu")
+            raise TypeError(f"EtatPays.{nom} : {type_.__name__} attendu, "
+                            f"{_valeur_en_clair(valeur)} reçu")
         motif = defaut_de_domaine(nom, valeur)
         if motif is not None:
             raise ValueError(f"EtatPays.{nom} : {motif}")
@@ -249,7 +282,7 @@ def _verifier_types(etat: object) -> None:
         valeur = getattr(etat, variable.nom)
         if not variable.admet(valeur):
             raise TypeError(f"EtatPays.{variable.nom} : {variable.description_du_type()} "
-                            f"attendu, {valeur!r} reçu")
+                            f"attendu, {_valeur_en_clair(valeur)} reçu")
         motif = defaut_de_domaine(variable.nom, valeur)
         if motif is not None:
             raise ValueError(f"EtatPays.{variable.nom} : {motif}")
