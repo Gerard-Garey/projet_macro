@@ -106,8 +106,12 @@ PHASES = (
     # 07/10/2026 ; `tab:phases` à corriger au rang 6).
     Phase(6, "Revenus et impôts",
           (_etape("6", ("finances_publiques", "banque", "investissement")),), (1, 2, 3, 4, 5)),
-    # Écrivain unique, aucun ordre interne (ADR 0011).
-    Phase(7, "Titres publics", (_etape("7", ("finances_publiques",)),), (1, 4, 5, 6)),
+    # Écrivain unique, aucun ordre interne (ADR 0011). Phase 2 lue : le bloc
+    # État lit en phase 7 la couverture des intérêts T^cou_t, calculée en
+    # phase 2 (E4), pour son assiette Y^HS_t (E12 ; spécification, entrées de
+    # la phase 7 du bloc État) ; décision du 07/10/2026 ; `tab:phases` à
+    # corriger au rang 6.
+    Phase(7, "Titres publics", (_etape("7", ("finances_publiques",)),), (1, 2, 4, 5, 6)),
     # Trois sous-phases ordonnées ; en 8 (b), banque centrale et État ne se
     # lisent pas (ADR 0011, P1).
     Phase(8, "Monnaie centrale",

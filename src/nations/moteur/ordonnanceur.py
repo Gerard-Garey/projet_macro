@@ -19,10 +19,13 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
   antérieure, ou dans la même étape par un groupe antérieur dans l'ordre
   « puis » (jamais le même groupe) ; une lecture du montant exécuté d'une
   ligne exige que l'étape de la ligne soit close avant l'étape lectrice ;
-  **colonne « Lisent »**, normative : une variable du pas d'une autre phase
-  n'est lisible que si cette phase figure parmi les phases lues de la phase
-  lectrice (`Phase.lisent`), la phase 0 (ouverture) étant toujours lisible et
-  la phase lectrice elle-même relevant de la seule triangularité. En
+  **colonne « Lisent »**, normative : une variable du pas ou le montant
+  exécuté d'une ligne d'une autre phase (phase de la ligne au catalogue ; 8
+  pour les contreparties) n'est lisible que si cette phase figure parmi les
+  phases lues de la phase lectrice (`Phase.lisent`), la phase 0 (ouverture)
+  étant toujours lisible et la phase lectrice elle-même relevant de la seule
+  triangularité ; les lectures de l'ouverture, du registre et des positions
+  courantes en sont exemptées. En
   phase 9, un bloc n'écrit que des variables d'état. L'ordre d'appel des
   blocs d'un groupe est l'ordre canonique des radicaux (`_ordre_du_groupe`),
   sans effet par construction : un groupe ne se lit pas, et le noyau exécute
@@ -489,14 +492,16 @@ def _controler_lecture(source: str, nom: str, etape: str, groupe: int, lecteur: 
                        rang: dict[str, int], ecrivains: dict[str, tuple[str, int, str]],
                        phase_de: dict[str, Phase]) -> None:
     """Une lecture déclarée (B3) : source connue et, pour une variable du pas ou le montant
-    exécuté d'une ligne, triangularité ; pour une variable du pas, colonne « Lisent ».
+    exécuté d'une ligne, triangularité et colonne « Lisent ».
 
     Une variable du pas est lisible si elle est écrite dans une étape antérieure,
     ou dans la même étape par un groupe antérieur (jamais le même groupe), et si
     sa phase est la phase 0, la phase lectrice ou l'une de ses phases lues ; le
     montant exécuté d'une ligne, si l'étape de la ligne est close avant l'étape
-    lectrice ; un champ de l'ouverture, une lecture du registre et une
-    position courante, toujours.
+    lectrice et si la phase de la ligne au catalogue (8 pour les contreparties
+    17, 20 et 22, rattachées à 8 (c)) est la phase lectrice ou l'une de ses
+    phases lues (décision du mainteneur du 07/10/2026) ; un champ de
+    l'ouverture, une lecture du registre et une position courante, toujours.
     """
     if source == OUVERTURE:
         if nom not in schema.CHAMPS:
@@ -512,6 +517,7 @@ def _controler_lecture(source: str, nom: str, etape: str, groupe: int, lecteur: 
             if not rang[etape_de_la_ligne] < rang[etape]:
                 raise _defaut(f"montant exécuté de la ligne lu avant la clôture de la phase "
                               f"{etape_de_la_ligne}", etape=etape, bloc=lecteur, nom=nom)
+            _controler_colonne_lisent(etape_de_la_ligne, nom, etape, lecteur, phase_de)
         elif nom not in NOMS_POSTES:
             raise _defaut("lecture inconnue du grand livre", etape=etape, bloc=lecteur, nom=nom)
     elif source in rang:
@@ -528,14 +534,21 @@ def _controler_lecture(source: str, nom: str, etape: str, groupe: int, lecteur: 
             raise _defaut(f"triangularité : variable écrite par {ecrivain} en phase "
                           f"{etape_ecrite}, groupe {groupe_ecrivain}, lue en phase {etape}, "
                           f"groupe {groupe}", etape=etape, bloc=lecteur, nom=nom)
-        phase_source, phase_lectrice = phase_de[source], phase_de[etape]
-        if phase_source.numero not in (0, phase_lectrice.numero) + phase_lectrice.lisent:
-            raise _defaut(f"phase {phase_source.numero} hors de la colonne « Lisent » de la "
-                          f"phase {phase_lectrice.numero} ({phase_lectrice.lisent!r})",
-                          etape=etape, bloc=lecteur, nom=nom)
+        _controler_colonne_lisent(source, nom, etape, lecteur, phase_de)
     else:
         raise _defaut(f"source de lecture inconnue : {source!r}", etape=etape, bloc=lecteur,
                       nom=nom)
+
+
+def _controler_colonne_lisent(etape_source: str, nom: str, etape: str, lecteur: str,
+                              phase_de: dict[str, Phase]) -> None:
+    """Colonne « Lisent », normative : la phase de l'étape source est la phase 0, la phase
+    lectrice ou l'une de ses phases lues (`Phase.lisent`)."""
+    phase_source, phase_lectrice = phase_de[etape_source], phase_de[etape]
+    if phase_source.numero not in (0, phase_lectrice.numero) + phase_lectrice.lisent:
+        raise _defaut(f"phase {phase_source.numero} hors de la colonne « Lisent » de la "
+                      f"phase {phase_lectrice.numero} ({phase_lectrice.lisent!r})",
+                      etape=etape, bloc=lecteur, nom=nom)
 
 
 def _controler_attributs_d_instance(bloc: object, radical: str) -> None:
