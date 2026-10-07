@@ -1223,7 +1223,8 @@ def test_etat_charge_non_flottant_refuse(valeur):
 
 
 @pytest.mark.parametrize("cadre", [CadreDouble(0.0, EPS), CadreDouble(EPS, -EPS),
-                                   CadreDouble(1, EPS), CadreDouble(math.nan, EPS)])
+                                   CadreDouble(1, EPS), CadreDouble(math.nan, EPS),
+                                   CadreDouble(math.inf, EPS), CadreDouble(EPS, math.inf)])
 def test_tolerances_hors_domaine_refusees(cadre):
     with pytest.raises(RefusDeProposition, match="tolérance"):
         ouvrir_pas(etat(), cadre)
@@ -1651,3 +1652,124 @@ def test_cloture_sans_ligne_egale_au_calcul_complet(monkeypatch, graine):
         assert {r[0] for r in clotures[-1].rapports} >= {
             "eq:noyau-tolerance-cumulee", "eq:noyau-variation-monnaie",
             "eq:noyau-variation-monnaie-centrale"}
+
+
+# --------------------------------------------------------------------------
+# Réserves M1 à M4 de l'audit de #95
+# --------------------------------------------------------------------------
+
+
+def v_flux_decalee(e, facteur, cadre=CADRE, secteurs=cat.SECTEURS):
+    """V^flux de l'état e, décalée de facteur × S de chaque secteur nommé (S lue à l'ouverture)."""
+    gl = ouvrir_pas(e, cadre)
+    return {cat.VALEUR_NETTE_FLUX[s]: getattr(e, cat.VALEUR_NETTE_FLUX[s]) + facteur * gl.echelle(s)
+            for s in secteurs}
+
+
+def test_v_flux_suivante_au_bit_quand_v_flux_differe_de_v_stock():
+    """M1 : V^flux_{t+1} = V^flux_t + résultat du pas, au bit, sur trois pas.
+
+    V^flux est décalée une fois, à t = 0, de 0,5 ε S dans chaque secteur : le
+    décalage est conservé (V^flux ≠ V^stock à chaque clôture), et V^flux_{t+1}
+    se déduit de V^flux_t, jamais de V^stock. Le résultat est recomposé par
+    les lectures publiques, dans l'ordre du catalogue.
+    """
+    rng = np.random.default_rng(20261009)
+    e = etat(v_flux=v_flux_decalee(etat(), 0.5 * EPS))
+    for _ in range(3):
+        gl = ouvrir_pas(e, CADRE)
+        _, fin = derouler(gl, plan_aleatoire(rng, echelle=3.0))
+        for s in cat.SECTEURS:
+            nom = cat.VALEUR_NETTE_FLUX[s]
+            resultat = 0.0
+            for ligne in cat.LIGNES:
+                if ligne.resultat:
+                    resultat += gl.montant_execute(ligne.identifiant, cat.COLONNE_DE_RESULTAT[s])
+            attendu = getattr(e, nom) + resultat
+            assert empreinte(fin.variables[nom]) == empreinte(attendu)
+            assert empreinte(gl.valeur_nette_flux(s)) == empreinte(attendu)
+            ecart = gl.valeur_nette_stock(s) - fin.variables[nom]
+            assert 0.25 * EPS * gl.echelle(s) < abs(ecart) <= EPS * gl.echelle(s)
+        e = etat_suivant(fin)
+
+
+@pytest.mark.parametrize("facteur, defaut", [(0.6, True), (0.4, False)])
+def test_identite_cumulee_accumule_les_decalages_d_un_pas_a_l_autre(facteur, defaut):
+    """M1 : un décalage de f ε S injecté à chaque pas s'accumule dans V^flux.
+
+    Plan nul et L^CB = 0 : aucune position ne bouge, S est la même aux deux
+    pas. À t = 0 l'écart vaut f ε S, à t = 1 il vaut 2 f ε S : 0,6 tombe à
+    t = 1 (1,2 ε S), 0,4 passe (0,8 ε S). Si V^flux_{t+1} était tirée de
+    V^stock, l'écart repartirait de zéro à chaque pas et 0,6 passerait.
+    """
+    e = etat(L_CB=0.0)
+    s_banque = ouvrir_pas(e, CADRE).echelle("banque")
+    for t in range(2):
+        assert ouvrir_pas(e, CADRE).echelle("banque") == s_banque
+        e = dataclasses.replace(e, **v_flux_decalee(e, facteur * EPS, secteurs=("banque",)))
+        assert e.t == t
+        if t == 1 and defaut:
+            with pytest.raises(DefautComptable) as erreur:
+                derouler(ouvrir_pas(e, CADRE), plan_nul())
+            assert erreur.value.regle == "eq:noyau-tolerance-cumulee"
+            assert (erreur.value.t, erreur.value.phase, erreur.value.secteur) == (1, "9", "banque")
+            return
+        _, fin = derouler(ouvrir_pas(e, CADRE), plan_nul())
+        e = etat_suivant(fin)
+    assert e.t == 2
+
+
+@pytest.mark.parametrize("eps, eps_v, defaut", [(1e-12, 1e-6, False), (1e-6, 1e-12, True)])
+def test_identite_cumulee_a_eps_v_distincte_de_eps(eps, eps_v, defaut):
+    """M2 : l'identité cumulée se contrôle à ε_V, jamais à ε.
+
+    Écart de V^flux de 2 × 10⁻¹² × S^Bk : il passe sous ε_V = 10⁻⁶ même si
+    ε = 10⁻¹², et il est un défaut sous ε_V = 10⁻¹² même si ε = 10⁻⁶.
+    """
+    cadre = CadreDouble(eps, eps_v)
+    e = etat(v_flux=v_flux_decalee(etat(), 2e-12, cadre=cadre, secteurs=("banque",)))
+    gl = ouvrir_pas(e, cadre)
+    if defaut:
+        with pytest.raises(DefautComptable) as erreur:
+            derouler(gl, plan_nul())
+        assert erreur.value.regle == "eq:noyau-tolerance-cumulee"
+        assert erreur.value.secteur == "banque" and erreur.value.tolerance == eps_v
+        return
+    clotures, _ = derouler(gl, plan_nul())
+    rapports = {(r[0], r[1]): r[2] for r in clotures[-1].rapports}
+    # Le rapport dépasse ε : seul ε_V le laisse passer.
+    assert eps < rapports[("eq:noyau-tolerance-cumulee", "banque")] <= eps_v
+
+
+def test_echelle_alpha_exclut_le_secteur_d_un_terme_nul(monkeypatch):
+    """M4 : un terme nul ne fait pas entrer son secteur dans l'échelle (α) de la ligne.
+
+    Double du catalogue : le terme T_F de la ligne 7 est versé par la banque
+    centrale (plus petit S) au lieu des entreprises, et proposé nul ; la
+    signature de la ligne est faussée pour que la porte ΔM la relève. L'échelle
+    du diagnostic est min(S_H, S_G), sans S^CB.
+    """
+    origine = cat.LIGNE["7"]
+    t_h, t_f = origine.termes
+    t_f_bc = dataclasses.replace(
+        t_f, colonne_moins="banque_centrale",
+        reglement=cat.chemin_de_reglement("banque_centrale", "etat"))
+    faussee = dataclasses.replace(origine, termes=(t_h, t_f_bc), signature=(0, -1))
+    phase6 = tuple(faussee if l.identifiant == "7" else l for l in cat.LIGNES_DE_LA_PHASE["6"])
+    monkeypatch.setitem(gl_module.LIGNES_DE_LA_PHASE, "6", phase6)
+    gl = ouvrir_pas(etat(), CADRE)
+    s_cb = gl.echelle("banque_centrale")
+    echelle_ligne = min(gl.echelle("menages"), gl.echelle("etat"))
+    assert s_cb == min(gl.echelle(s) for s in cat.SECTEURS) and s_cb < echelle_ligne
+    plan = plan_nul()
+    plan["7"] = flux("7", 1.0, 0.0)
+    with pytest.raises(DefautComptable) as erreur:
+        derouler(gl, plan)
+    assert erreur.value.regle == "eq:noyau-variation-monnaie"
+    assert (erreur.value.ligne, erreur.value.phase) == ("7", "6")
+    assert erreur.value.echelle == echelle_ligne
+    # Même propriété sur la fonction isolée : cellule nulle de la BC ignorée.
+    echelles = {s: gl.echelle(s) for s in cat.SECTEURS}
+    cellules = {"menages": -1.0, "etat": 1.0, "banque_centrale": 0.0}
+    assert gl_module._echelle_de_ligne(cellules, echelles) == echelle_ligne
+    assert gl_module._echelle_de_ligne({"banque_centrale": -0.0, "etat": 0.0}, echelles) == 0.0
