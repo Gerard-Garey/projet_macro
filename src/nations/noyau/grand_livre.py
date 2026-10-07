@@ -118,10 +118,12 @@ _CELLULES_DE_RESULTAT = tuple((ligne.identifiant, _cellules_de_resultat(ligne))
 
 
 class EtatOuverture(Protocol):
-    """Ce que le noyau lit de l'état d'ouverture (schéma complet : #96).
+    """Ce que le noyau lit de l'état d'ouverture.
 
     `t`, les onze positions (noms de `catalogue.NOMS_POSTES`) et les cinq
-    V^flux (noms de `catalogue.VALEUR_NETTE_FLUX`), en `float`.
+    V^flux (noms de `catalogue.VALEUR_NETTE_FLUX`), en `float`. Le schéma
+    d'état `nations.etat.schema.EtatPays` (#96) satisfait ce protocole ; le
+    noyau ne l'importe pas (il n'importe rien d'autre de `nations`).
     """
 
     t: int
