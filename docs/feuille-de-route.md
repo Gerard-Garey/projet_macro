@@ -2,7 +2,7 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail.
 
-**Dernière mise à jour** : 07/10/2026, rang 2 de J2 fait, rang 3 en reprise — branche `claude/j2-noyau`, tête `f36fcbb` ; par `architect` (Opus, effort `medium`, consignation) : § 1 (rangs 2 et 3, surface documentaire du rang 6), § 4 (décisions du mainteneur du 07/10/2026 sur les questions de `coder` pour #96) ; ADR 0012 annoté (questions de `coder` sur #96).
+**Dernière mise à jour** : 07/10/2026, rang 3 de J2 fait (#96, `1bfe179`, `0f3d2f6`), lot de correction en cours — branche `claude/j2-noyau`, tête `0f3d2f6` ; par `architect` (Opus, effort `medium`, consignation) : § 1 (rang 3), § 4 (décisions du mainteneur du 07/10/2026 sur les constats N-1 et N-2 de #96) ; ADR 0012 annoté (compléments du 07/10/2026 à l'annotation sur #96).
 
 **Mise à jour précédente** : 07/10/2026, rangs 1a et 1b de J2 faits — branche `claude/j2-noyau`, tête `8a2dfd3` avant le commit d'acceptation ; par `architect` (Opus, effort `medium`, consignation) : § 1 (rangs 1a et 1b, budget Fable, surface documentaire du rang 6), § 4 (décisions du mainteneur du 07/10/2026 sur les rangs 1a et 1b), § 6 ; ADR 0012 accepté ; ADR 0005 annoté (points 10 et 19) ; `CONTEXT.md`.
 
@@ -41,7 +41,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
   | 1b | Critères complémentaires écrits avant l'essai : date d'évaluation de S (P33), propriétés du générateur de flux de #98 (couverture des 28 lignes, découvert intra-pas, ligne 16 négative avec part déclarée), confirmation des seuils ; annotation datée de la fiche 1, § 9.1, 9.2 et 9.6 (registre de n_a + 1 niveaux, 14 variables, `eq:moteur-glissement` ; M^G\* sous M33). **Validation du mainteneur** | #95, #98 | `macro-approfondi`, `monnaie-approfondi` (bilans de la banque et de la banque centrale) ; mainteneur | commentaires sur les issues ; annotation de la fiche par la session | **fait (07/10/2026)** : P33 (a) confirmée avec trois précisions ; critères complémentaires en commentaires sur #95 à #98 ; annotation § 9.9 de la fiche 1 (`8a2dfd3`) |
   | 1c | Test de source, indépendant, en parallèle des rangs 1a et 1b | #93 | `coder` → `audit` (workflow `circuit-technique`) | `tests:` | à faire |
   | 2 | Noyau | #95 | `coder` → `audit` (une reprise au plus) | `code:`, `tests:` | **fait (07/10/2026)** : `1a3f852` (`code:`), `a914561` (`tests:`), `f36fcbb` (`tests:`, réserves M1 à M4 de l'`audit`, audit conforme) ; validation de fond de `macro` sans réserve |
-  | 3 | Schéma d'état, sauvegarde, observation | #96 | `coder` → `audit` (une reprise au plus) | `code:`, `tests:` | **en reprise (07/10/2026)** : premier passage de `coder` (non commité), `audit` (constat majeur B-1 ; constat B-5) ; questions de `coder` tranchées par le mainteneur le 07/10/2026 (§ 4), consignées par l'annotation du même jour (questions de `coder` sur #96) de l'ADR 0012 ; reprise `coder` → `audit` |
+  | 3 | Schéma d'état, sauvegarde, observation | #96 | `coder` → `audit` (une reprise au plus) | `code:`, `tests:` | **fait (07/10/2026)** : `1bfe179` (`code:`), `0f3d2f6` (`tests:`) ; circuit `coder` → `audit` (constat majeur B-1 ; constat B-5) → reprise unique → `audit` « conforme avec réserves » (N-1, N-2, mineurs) ; questions de `coder` tranchées par le mainteneur le 07/10/2026 (§ 4), consignées par l'annotation du même jour (questions de `coder` sur #96) de l'ADR 0012 et ses compléments. **Lot de correction en cours** (`coder` → `audit`) : N-1 (domaine de l'identifiant), N-2 (bornes de la graine et de `t`), module `nations.etat.unites` ; `VERSION_SCHEMA` reste à 1 |
   | 4 | Moteur : calendrier, conversions, paramètres, ordonnanceur, registre | #97 | `coder` → `audit` | `code:`, `tests:` | à faire |
   | 5 | Invariants et mesures du jalon ; coût du noyau seul **mesuré sur la plateforme de référence** (CI, M16) | #98 | `coder` → `audit` | `tests:` (et `code:` si le générateur vit dans `src/`) | à faire |
   | 6 | Concordance (P32 (a)) : balises posées par `coder` (un commit `code:` par issue) ; labels, encadrés `lecture`, noms de `tab:calibration`, encadrés `proposee` levés, coût et accumulation publiés, par `docwriter` en un seul passage (un commit `docs:` par issue). Les deux commits d'une issue sont **poussés ensemble** | #95 à #98 | `coder` ; `docwriter` ; validation de `macro` (et de `monnaie` pour la banque et la banque centrale) | `code:`, `docs:` | à faire |
@@ -405,6 +405,14 @@ Sans numéro M (précisions de forme de l'ADR 0012 accepté ; aucun résultat ch
 3. **E2, nom** : `ReleveDesResidus` (identifiants ASCII) ; `RelevéDesRésidus` est une coquille.
 4. **E1, `FinDePas`** : montants exécutés relevés par les `ClotureDePhase`, non recopiés ; variables du pas et grandeurs d'ouverture ajoutées par #97 sous types immuables sans import de `moteur`.
 5. **G1, question ouverte** : lieu d'assemblage du schéma avec les variables de bloc, options (a), (b), (c) ; à trancher avant le premier bloc à variable d'état du J3 (#61).
+
+### Décisions du mainteneur du 07/10/2026 sur les constats N-1 et N-2 de l'`audit` de #96 (après reprise)
+
+Sans numéro M (précisions de forme de l'ADR 0012 accepté ; aucun résultat changé). Elles complètent les décisions précédentes et sont consignées par les compléments du 07/10/2026 à l'annotation (questions de `coder` sur #96) de l'ADR 0012 ; mises en œuvre par le lot de correction du rang 3 :
+1. **Bornes déclarées** (N-2) : la graine appartient à [0 ; 2^64[ et `t` est un entier ≥ 0 ; une valeur hors de ces bornes est refusée à la construction et à la reprise.
+2. **Identifiant** (N-1) : encodable en UTF-8, sans caractère de contrôle, sans espace de bord, non vide ; refusé sinon, à la construction et à la reprise.
+3. **Vocabulaire des unités** : module à part, `nations.etat.unites`, qui n'importe rien de `nations` ; importé par `nations.etat.schema` et `nations.moteur.parametres` (#97).
+4. **Version du schéma** (D2) : `VERSION_SCHEMA` reste à 1 ; aucune version 1 n'a été publiée avant `1bfe179`, et D2 ne protège que les sauvegardes déjà produites (avis technique de l'`audit`).
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 
