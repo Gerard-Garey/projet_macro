@@ -294,6 +294,62 @@ def test_type_faux_d_entier_geant_diagnostique_sans_repr(champ, valeur, descript
     assert len(str(refus.value)) < 1000
 
 
+def _liste_autoreferente():
+    liste = []
+    liste.append(liste)
+    return liste
+
+
+def _tuple_imbrique(profondeur, fond=()):
+    valeur = fond
+    for _ in range(profondeur):
+        valeur = (valeur,)
+    return valeur
+
+
+def _liste_autoreferente_a_entier_geant():
+    liste = [10**5000]
+    liste.append(liste)
+    return liste
+
+
+def _liste_large_autoreferente():
+    """100 000 références à la liste elle-même, puis un entier géant au-delà des éléments écrits."""
+    liste = []
+    liste.extend([liste] * 100_000)
+    liste.append(10**5000)
+    return liste
+
+
+@pytest.mark.parametrize("champ, valeur, description", [
+    ("registre_prix", _liste_autoreferente(), "\\[\\[\\.\\.\\.\\]\\] reçu"),
+    ("registre_prix", _tuple_imbrique(500), "\\(\\(\\(\\(\\(.*\\),\\),\\) reçu"),
+    ("registre_prix", _tuple_imbrique(100_000), "\\(<tuple de longueur 1>,\\) reçu"),
+    ("t", {1: 10**5000}, "<dict de longueur 1> reçu"),
+    ("t", {10**5000}, "<set de longueur 1> reçu"),
+    ("registre_prix", frozenset({10**5000}), "<frozenset de longueur 1> reçu"),
+    ("registre_prix", _liste_autoreferente_a_entier_geant(),
+     "\\[entier de 16610 bits, <list de longueur 2>\\] reçu"),
+    ("registre_prix", _tuple_imbrique(500, 10**5000), "\\(<tuple de longueur 1>,\\) reçu"),
+    ("registre_prix", _liste_large_autoreferente(),
+     "\\[(<list de longueur 100001>, ){32}… 99969 autres éléments\\] reçu"),
+    ("registre_prix", [1.5, np.array([10**5000], dtype=object)],
+     "\\[1.5, <ndarray de longueur 1>\\] reçu"),
+    ("registre_prix", [10**5000, (1.0, 2.0)], "\\[entier de 16610 bits, <tuple de longueur 2>\\] reçu"),
+], ids=["liste-autoreferente", "tuple-profondeur-500", "tuple-profondeur-100000", "dict-geant",
+        "set-geant", "frozenset-geant", "liste-autoreferente-geant", "geant-a-profondeur-500",
+        "liste-large-autoreferente", "element-a-repr-en-echec", "element-conteneur-decrit"])
+def test_type_faux_cyclique_profond_ou_ensembliste_diagnostique(champ, valeur, description):
+    """M-1 et M-2 (audit de b9c3fe8, #96) : une structure autoréférente, très profonde, ou un
+    dictionnaire ou ensemble contenant un entier géant lève le `TypeError` du type faux, avec
+    son diagnostic, sans `RecursionError` ni `ValueError`. Une valeur dont le `repr` échoue
+    est décrite par son type et sa longueur, sans être parcourue ; un tuple ou une liste
+    n'est écrit que sur un niveau et ses `_ELEMENTS_ECRITS` premiers éléments."""
+    with pytest.raises(TypeError, match=f"EtatPays.{champ} : .*{description}") as refus:
+        dataclasses.replace(etat_pays(), **{champ: valeur})
+    assert len(str(refus.value)) < 5000
+
+
 @pytest.mark.parametrize("signe", [1, -1])
 def test_graine_de_4301_chiffres_refusee_avant_la_sauvegarde(signe):
     """N-2 : la construction refuse, avec un diagnostic qui n'écrit pas l'entier (son repr échouerait)."""
