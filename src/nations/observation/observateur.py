@@ -22,15 +22,26 @@ from nations.noyau.grand_livre import ClotureDePhase
 
 @dataclass(frozen=True, slots=True)
 class FinDePas:
-    """Fin du pas t : l'état t + 1 assemblé (ADR 0012, B5.3 et E1).
+    """Fin du pas t : l'état t + 1 assemblé, les variables du pas et les grandeurs calculées à
+    l'ouverture (ADR 0012, B5.3 et E1 ; annotation du 07/10/2026, point 2).
 
-    Le moteur (#97) y ajoutera les variables du pas et les grandeurs calculées
-    à l'ouverture ; les montants exécutés des lignes sont déjà dans les
+    - `etat` : état d'ouverture du pas t + 1 ;
+    - `variables_du_pas` : (nom, valeur) des variables du pas écrites
+      (entrées du tour, variables des blocs, valeurs du pas suivant des
+      variables d'état sous `<nom>_suivant`), grandeurs d'ouverture exclues ;
+    - `grandeurs_ouverture` : (nom, valeur) des grandeurs calculées à
+      l'ouverture du pas t.
+
+    Valeurs de types de base (`float`, `int`, `bool`, n-uplet de `float`),
+    dans l'ordre d'inscription à l'assemblage, qui ne dépend pas de l'ordre
+    de la liste de blocs. Les montants exécutés des lignes sont dans les
     clôtures de phase relevées.
     """
 
     t: int
     etat: EtatPays
+    variables_du_pas: tuple[tuple[str, object], ...]
+    grandeurs_ouverture: tuple[tuple[str, object], ...]
 
 
 Evenement = ClotureDePhase | FinDePas
