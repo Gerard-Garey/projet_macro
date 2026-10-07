@@ -10,11 +10,13 @@ import dataclasses
 import json
 import math
 import struct
+import subprocess
+import sys
 
 import numpy as np
 import pytest
 
-from nations.etat import schema
+from nations.etat import schema, unites
 from nations.etat.sauvegarde import SauvegardeRefusee, charger, sauvegarder
 from nations.etat.schema import (
     CHAMPS,
@@ -118,9 +120,20 @@ def test_vocabulaire_unique_des_unites():
     f2 = ("pas par an", "pas par tour", "sans dimension", "u.m.", "u.m. par pas",
           "par an, taux de flux", "par an, taux de croissance", "années", "personnes", "fraction")
     complements = ("pas", "u.v.", "u.v. par pas", "u.m. par u.v.")
-    assert schema.UNITES == f2 + complements
-    assert len(set(schema.UNITES)) == len(schema.UNITES)
-    assert {v.unite for v in VARIABLES} <= set(schema.UNITES)
+    assert unites.UNITES == f2 + complements
+    assert len(set(unites.UNITES)) == len(unites.UNITES)
+    assert {v.unite for v in VARIABLES} <= set(unites.UNITES)
+    # Un seul vocabulaire : le schéma utilise celui de `unites`, il n'en a pas de copie.
+    assert schema.UNITES is unites.UNITES
+
+
+def test_unites_ne_charge_aucun_autre_module_de_nations():
+    """`nations.etat.unites` s'importe sans charger le noyau ni le schéma (moteur/parametres, #97)."""
+    code = ("import sys, nations.etat.unites\n"
+            "print(sorted(m for m in sys.modules if m == 'nations' or m.startswith('nations.')))")
+    sortie = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                            check=True)
+    assert sortie.stdout.strip() == str(["nations", "nations.etat", "nations.etat.unites"])
 
 
 def test_variables_du_noyau_positions_et_v_flux():
@@ -215,20 +228,54 @@ def test_type_faux_refuse_a_la_construction(champ, valeur):
         dataclasses.replace(etat_pays(), **{champ: valeur})
 
 
-@pytest.mark.parametrize("champ, valeur, motif", [
+# Champs hors de leur domaine (B-5 ; décision du mainteneur du 07/10/2026,
+# constats N-1 et N-2) : mêmes refus à la construction et à la reprise.
+HORS_DOMAINE = [
     ("graine", -1, "graine négative"), ("graine", -(2**70), "graine négative"),
+    ("graine", schema.GRAINE_EXCLUE, "≥ 2\\^64"), ("graine", 2**70, "≥ 2\\^64"),
+    ("t", -1, "t négatif"), ("t", -(2**70), "t négatif"),
     ("identifiant", "", "identifiant vide"),
-])
-def test_identite_hors_domaine_refusee_a_la_construction(champ, valeur, motif):
-    """B-5 : graine entière ≥ 0, identifiant non vide (ADR 0012, annotation du 07/10/2026, point 1)."""
-    with pytest.raises(ValueError, match=motif):
+    ("identifiant", "\ud800", "UTF-8"), ("identifiant", "A\udfff", "UTF-8"),
+    ("identifiant", "\x00", "contrôle"), ("identifiant", "A\x7fB", "contrôle"),
+    ("identifiant", "A\x85", "contrôle"), ("identifiant", "\t", "contrôle"),
+    ("identifiant", " A", "espace de bord"), ("identifiant", "A ", "espace de bord"),
+    ("identifiant", "\u00a0A", "espace de bord"), ("identifiant", "A\u2028", "espace de bord"),
+]
+
+
+@pytest.mark.parametrize("champ, valeur, motif", HORS_DOMAINE)
+def test_hors_domaine_refuse_a_la_construction(champ, valeur, motif):
+    """Graine dans [0 ; 2^64[, t ≥ 0, identifiant non vide, UTF-8, sans contrôle ni espace de bord."""
+    with pytest.raises(ValueError, match=f"EtatPays.{champ} : .*{motif}"):
         dataclasses.replace(etat_pays(), **{champ: valeur})
 
 
-def test_identite_aux_bornes_du_domaine_admise():
-    e = dataclasses.replace(etat_pays(), graine=0, identifiant="x")
-    assert (e.graine, e.identifiant) == (0, "x")
+@pytest.mark.parametrize("champs", [
+    {"graine": 0}, {"graine": schema.GRAINE_EXCLUE - 1}, {"graine": 2**63},
+    {"t": 0}, {"t": 10**6},
+    {"identifiant": "x"}, {"identifiant": "État-α"}, {"identifiant": "A B"},
+    {"identifiant": "\U0001F30D"},
+])
+def test_valeurs_aux_bornes_du_domaine_admises(champs):
+    """Les bornes incluses (0, 2^64 − 1) et les identifiants Unicode réguliers passent l'aller-retour."""
+    e = dataclasses.replace(etat_pays(), **champs)
+    assert all(getattr(e, nom) == valeur for nom, valeur in champs.items())
     assert charger(sauvegarder([e])) == (e,)
+
+
+def test_bornes_declarees():
+    """Bornes nommées : graine dans [0 ; 2^64[, t ≥ 0."""
+    assert (schema.GRAINE_MINIMALE, schema.GRAINE_EXCLUE, schema.T_MINIMAL) == (0, 2**64, 0)
+
+
+@pytest.mark.parametrize("signe", [1, -1])
+def test_graine_de_4301_chiffres_refusee_avant_la_sauvegarde(signe):
+    """N-2 : la construction refuse, avec un diagnostic qui n'écrit pas l'entier (son repr échouerait)."""
+    graine = signe * 10**4300  # 4 301 chiffres, au-delà de la limite de conversion (4 300)
+    assert sys.get_int_max_str_digits() == 4300
+    with pytest.raises(ValueError, match="EtatPays.graine : .*entier de 14285 bits") as refus:
+        dataclasses.replace(etat_pays(), graine=graine)
+    assert len(str(refus.value)) < 200
 
 
 @pytest.mark.parametrize("modification, motif", [
@@ -335,10 +382,14 @@ def test_sauvegarde_refuse_un_objet_autre_qu_un_etat_pays():
 
 
 def document_modifie(modifier):
-    """Document valide de deux pays, modifié sur son arbre JSON puis réécrit."""
+    """Document valide de deux pays, modifié sur son arbre JSON puis réécrit.
+
+    Réécrit en échappements ASCII : un substitut isolé ne peut entrer dans un
+    document UTF-8 que par un échappement JSON (`"\\ud800"`).
+    """
     racine = json.loads(sauvegarder([etat_pays("A"), etat_pays("B")]).decode("utf-8"))
     modifier(racine)
-    return json.dumps(racine, ensure_ascii=False, indent=1).encode("utf-8")
+    return json.dumps(racine, ensure_ascii=True, indent=1).encode("utf-8")
 
 
 def remplacer(cle, valeur):
@@ -406,14 +457,21 @@ def test_type_faux_refuse(champ, valeur):
     assert (refus.value.pays, refus.value.champ) == (1 if champ == "identifiant" else "B", champ)
 
 
-@pytest.mark.parametrize("champ, valeur, pays", [
-    ("graine", -1, "B"), ("graine", -(2**70), "B"), ("identifiant", "", 1),
-])
-def test_identite_hors_domaine_refusee_a_la_reprise(champ, valeur, pays):
-    """B-5 : graine négative ou identifiant vide refusés avec diagnostic (rang si l'identifiant est vide)."""
-    with pytest.raises(SauvegardeRefusee, match="hors domaine") as refus:
+@pytest.mark.parametrize("champ, valeur, motif", HORS_DOMAINE)
+def test_hors_domaine_refuse_a_la_reprise(champ, valeur, motif):
+    """Mêmes refus qu'à la construction ; le pays est nommé par son rang si l'identifiant est en cause."""
+    with pytest.raises(SauvegardeRefusee, match=f"hors domaine : .*{motif}") as refus:
         charger(document_modifie(remplacer_champ(champ, valeur)))
-    assert (refus.value.pays, refus.value.champ) == (pays, champ)
+    assert (refus.value.pays, refus.value.champ) == (1 if champ == "identifiant" else "B", champ)
+
+
+def test_graine_de_4300_chiffres_refusee_a_la_reprise_avec_diagnostic():
+    """Une graine lisible (4 300 chiffres, à la limite de conversion) mais hors borne : refus nommé."""
+    texte = sauvegarder([etat_pays("B")]).decode("utf-8")
+    assert texte.count('"graine": 1') == 1
+    with pytest.raises(SauvegardeRefusee, match="hors domaine : .*entier de 14285 bits") as refus:
+        charger(texte.replace('"graine": 1', '"graine": ' + "9" * 4300).encode("utf-8"))
+    assert (refus.value.pays, refus.value.champ) == ("B", "graine")
 
 
 @pytest.mark.parametrize("identifiants, motif", [(["B", "A"], "ordre"), (["A", "A"], "double")])
@@ -454,6 +512,7 @@ def test_constante_non_finie_refusee_a_la_reprise(constante):
 @pytest.mark.parametrize("remplacement, motif", [
     (('"t": 0', '"t": ' + "9" * 5000), "entier de 5000 caractères"),
     (('"graine": 1', '"graine": -' + "1" * 5000), "entier de 5001 caractères"),
+    (('"graine": 1', '"graine": 1' + "0" * 4300), "entier de 4301 caractères"),
     (('"K": 900.0', '"K": ' + "[" * 100_000 + "]" * 100_000), "imbriqué"),
 ])
 def test_entier_illisible_ou_imbrication_profonde_refuse(remplacement, motif):
