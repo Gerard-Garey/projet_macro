@@ -370,35 +370,38 @@ def phases_declarees(phases):
                        {e.identifiant: e.lignes for e in p.etapes}, p.lisent) for p in phases}
 
 
-# Seul point de `PHASES` en avance sur `tab:phases` : la phase 6 lit la phase 2
-# (décision du mainteneur du 07/10/2026 ; spécification, ligne 6 des plans de
-# la phase 2 et `sec:finances_publiques-impots`). La comparaison stricte le
-# retire des deux côtés, et de lui seul ; le test en échec attendu ci-dessous
-# compare tout, ce point compris. Au rang 6 (`docwriter`), quand `tab:phases`
-# le portera, ce test réussira : retirer sa marque, cette constante et
-# `_sans_le_point_en_attente`.
-POINT_EN_ATTENTE_DE_TAB_PHASES = (6, 2)
+# Seuls points de `PHASES` en avance sur `tab:phases` : les phases 6 et 7
+# lisent la phase 2 (décisions du mainteneur du 07/10/2026 ; spécification,
+# ligne 6 des plans de la phase 2 et `sec:finances_publiques-impots` pour la
+# phase 6 ; T^cou_t (E4) lue par E12 en phase 7, entrées de la phase 7 du bloc
+# État). La comparaison stricte les retire des deux côtés, et eux seuls ; le
+# test en échec attendu ci-dessous compare toute la table, ces points compris.
+# Au rang 6 (`docwriter`), quand `tab:phases` les portera, ce test réussira :
+# retirer sa marque, cette constante et `_sans_les_points_en_attente`.
+POINTS_EN_ATTENTE_DE_TAB_PHASES = ((6, 2), (7, 2))
 
 
-def _sans_le_point_en_attente(phases):
-    numero, lue = POINT_EN_ATTENTE_DE_TAB_PHASES
-    nom, ecrivains, lignes, lisent = phases[numero]
-    return {**phases, numero: (nom, ecrivains, lignes, tuple(p for p in lisent if p != lue))}
+def _sans_les_points_en_attente(phases):
+    phases = dict(phases)
+    for numero, lue in POINTS_EN_ATTENTE_DE_TAB_PHASES:
+        nom, ecrivains, lignes, lisent = phases[numero]
+        phases[numero] = (nom, ecrivains, lignes, tuple(p for p in lisent if p != lue))
+    return phases
 
 
 def test_declaration_egale_a_tab_phases(table_des_phases):
     """B1 : écrivains, groupes, ordre « puis », sous-phases, couches, lignes et phases lues,
-    hors du seul point en attente de `tab:phases`."""
-    numero, lue = POINT_EN_ATTENTE_DE_TAB_PHASES
-    assert lue in PHASES[numero].lisent
-    assert (_sans_le_point_en_attente(phases_declarees(PHASES))
-            == _sans_le_point_en_attente(phases_lues(table_des_phases)))
+    hors des seuls points en attente de `tab:phases`."""
+    for numero, lue in POINTS_EN_ATTENTE_DE_TAB_PHASES:
+        assert lue in PHASES[numero].lisent
+    assert (_sans_les_points_en_attente(phases_declarees(PHASES))
+            == _sans_les_points_en_attente(phases_lues(table_des_phases)))
 
 
-@pytest.mark.xfail(strict=True, reason="tab:phases à corriger au rang 6 (docwriter), décision "
-                   "du 07/10/2026")
-def test_declaration_egale_a_tab_phases_point_en_attente_compris(table_des_phases):
-    """B1, comparaison entière : la phase 6 lit la phase 2 dans `tab:phases` aussi."""
+@pytest.mark.xfail(strict=True, reason="#97 : tab:phases à corriger au rang 6 (docwriter), "
+                   "phases 6 et 7 qui lisent la phase 2, décisions du 07/10/2026")
+def test_declaration_egale_a_tab_phases_points_en_attente_compris(table_des_phases):
+    """B1, comparaison entière : les phases 6 et 7 lisent la phase 2 dans `tab:phases` aussi."""
     assert phases_declarees(PHASES) == phases_lues(table_des_phases)
 
 
@@ -428,8 +431,8 @@ def test_la_comparaison_a_tab_phases_sait_echouer(table_des_phases, mutation):
         phases[7] = dataclasses.replace(phases[7], lisent=(1, 4, 5))
     else:
         phases[3] = dataclasses.replace(phases[3], nom="Crédits")
-    assert (_sans_le_point_en_attente(phases_declarees(tuple(phases)))
-            != _sans_le_point_en_attente(phases_lues(table_des_phases)))
+    assert (_sans_les_points_en_attente(phases_declarees(tuple(phases)))
+            != _sans_les_points_en_attente(phases_lues(table_des_phases)))
 
 
 def test_lecteur_des_lignes():
@@ -544,6 +547,9 @@ REFUS_D_ASSEMBLAGE = {
     "phase hors de la colonne Lisent": (
         _retirer("investissement", "3", "lit", (Lecture("1", "i_CB"),)),
         "phase 1 hors de la colonne « Lisent » de la phase 3"),
+    "ligne d'une phase hors de la colonne Lisent": (
+        _retirer("production", "5", "lit", (Lecture(GRAND_LIVRE, "18"),)),
+        "phase 3 hors de la colonne « Lisent » de la phase 5"),
     "indice des prix écrit par un autre bloc": (
         lambda s: (s.__setitem__("prix", {"5": siege("5")}),
                    s["production"].__setitem__("5", siege("5", ecrit=("P",), propose=("4",)))),
@@ -582,6 +588,58 @@ def test_lectures_admises(lecture, etape, lecteur):
     assembler(PHASES, blocs_d_essai(plans_nuls(1), remplacer=remplacer), CADRE, SANS_ENTREES)
 
 
+# Lectures de montants exécutés prévues par la spécification : (lecteur, étape, lignes).
+LECTURES_DU_GRAND_LIVRE_PREVUES = [
+    # Investissement en phase 6 : la ligne 3 (phase 5).
+    ("investissement", "6", ("3",)),
+    # Ménages en phase 9 : les lignes 5 à 15 (phases 4, 6 et 8 (a)).
+    ("menages", "9", ("5", "6", "7", "8", "9", "10", "11a", "11b", "11c", "12", "13", "14",
+                      "15")),
+    # État en phase 7 : les lignes des phases 4 à 6 (spécification, entrées de la phase 7
+    # du bloc État).
+    ("finances_publiques", "7", ("2", "5", "6", "7", "10", "11a", "11b", "11c", "14", "15")),
+]
+
+
+@pytest.mark.parametrize("lecteur, etape, lignes", LECTURES_DU_GRAND_LIVRE_PREVUES)
+def test_lectures_du_grand_livre_prevues_admises(lecteur, etape, lignes):
+    """Décision du 07/10/2026 : la colonne « Lisent » borne aussi les montants exécutés lus
+    au grand livre ; les lectures prévues par la spécification restent admises."""
+    lectures = tuple(Lecture(GRAND_LIVRE, ligne) for ligne in lignes)
+
+    def remplacer(sieges):
+        s = sieges[lecteur][etape]
+        sieges[lecteur][etape] = dataclasses.replace(s, lit=s.lit + lectures)
+    assembler(PHASES, blocs_d_essai(plans_nuls(1), remplacer=remplacer), CADRE, SANS_ENTREES)
+
+
+@pytest.mark.parametrize("lecteur, etape, ligne, retiree", [
+    ("finances_publiques", "7", "5", 4),   # ligne de la phase 4
+    ("investissement", "6", "3", 5),       # ligne de la phase 5
+    ("menages", "9", "17", 8),             # contrepartie, rattachée à 8 (c)
+])
+def test_colonne_lisent_borne_les_montants_executes(lecteur, etape, ligne, retiree):
+    """Une lecture admise du montant exécuté d'une ligne est refusée si l'on retire la phase de
+    la ligne (8 pour une contrepartie) de la colonne « Lisent » de la phase lectrice. Dans
+    l'étape lectrice, cette lecture est la seule déclarée."""
+    def remplacer(sieges):
+        for radical in sieges:
+            if etape in sieges[radical]:
+                sieges[radical][etape] = dataclasses.replace(sieges[radical][etape], lit=())
+        sieges[lecteur][etape] = dataclasses.replace(sieges[lecteur][etape],
+                                                     lit=(Lecture(GRAND_LIVRE, ligne),))
+    blocs = blocs_d_essai(plans_nuls(1), remplacer=remplacer)
+    assembler(PHASES, blocs, CADRE, SANS_ENTREES)
+    numero = int(etape)
+    phases = list(PHASES)
+    phases[numero] = dataclasses.replace(
+        phases[numero], lisent=tuple(p for p in phases[numero].lisent if p != retiree))
+    with pytest.raises(DefautDeDeclaration, match=f"phase {retiree} hors de la colonne "
+                       f"« Lisent » de la phase {numero}") as refus:
+        assembler(tuple(phases), blocs, CADRE, SANS_ENTREES)
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (etape, lecteur, ligne)
+
+
 def _plan_de_la_phase_2(sieges):
     s = sieges["menages"]["2"]
     sieges["menages"]["2"] = dataclasses.replace(s, ecrit=s.ecrit + ("T_H_plan",))
@@ -604,6 +662,30 @@ def test_colonne_lisent_normative():
         assembler(tuple(phases), blocs, CADRE, SANS_ENTREES)
     assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
         "6", "finances_publiques", "T_H_plan")
+
+
+def _couverture_de_la_phase_2(sieges):
+    s = sieges["finances_publiques"]["2"]
+    sieges["finances_publiques"]["2"] = dataclasses.replace(s, ecrit=s.ecrit + ("T_cou",))
+    s = sieges["finances_publiques"]["7"]
+    sieges["finances_publiques"]["7"] = dataclasses.replace(
+        s, lit=s.lit + (Lecture("2", "T_cou"),))
+
+
+def test_phase_7_lit_la_phase_2():
+    """Décision du 07/10/2026 : la phase 7 lit la phase 2 (couverture des intérêts T^cou_t,
+    calculée en phase 2 (E4), lue par E12 en phase 7) ; sans la phase 2 dans sa colonne
+    « Lisent », la même déclaration est refusée."""
+    blocs = blocs_d_essai(plans_nuls(1), remplacer=_couverture_de_la_phase_2)
+    assert 2 in PHASES[7].lisent
+    assembler(PHASES, blocs, CADRE, SANS_ENTREES)
+    phases = list(PHASES)
+    phases[7] = dataclasses.replace(phases[7], lisent=(1, 4, 5, 6))
+    with pytest.raises(DefautDeDeclaration, match="phase 2 hors de la colonne « Lisent » de la "
+                       "phase 7") as refus:
+        assembler(tuple(phases), blocs, CADRE, SANS_ENTREES)
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        "7", "finances_publiques", "T_cou")
 
 
 def test_bloc_sans_declaration_ni_methode():
