@@ -6,7 +6,8 @@ résultat du moteur.
 
 Modules (ADR 0012, Conséquences) :
 - `observateur` : protocole `Observateur`, `ObservateurNul`, événement `FinDePas` ;
-- `residus` : `ReleveDesResidus`, relevé des résidus / S des identités du noyau.
+- `residus` : `ReleveDesResidus`, relevé des résidus / S des identités du noyau ;
+- `cout` : `ReleveDuCout`, relevé du coût de calcul par pas.
 
 `observation` n'importe de `nations` que `etat` et `noyau`, pour les types ; seul
 le moteur l'importe, et seulement son protocole (`observateur`).

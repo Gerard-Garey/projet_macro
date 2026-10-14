@@ -23,8 +23,9 @@ suivant (C1, C2). Sources d'une lecture :
 - `"grand_livre"` : le montant exécuté d'une ligne (identifiant du
   catalogue), admis si l'étape de la ligne est close avant l'étape lectrice
   et si la phase de la ligne figure dans la colonne « Lisent » de la phase
-  lectrice (ou est la phase lectrice), ou la position courante d'un poste
-  (toujours admise) ;
+  lectrice (ou est la phase lectrice), la phase des contreparties de
+  règlement 17, 20 et 22 étant la phase 8 (elles sont rattachées à la
+  sous-phase 8 (c)) ; ou la position courante d'un poste (toujours admise) ;
 - l'identifiant d'une étape (`"0"` à `"9"`, `"8a"`…) : une variable du pas
   écrite dans cette étape (grandeur d'ouverture et entrée de scénario en
   `"0"`, levier en `"1"`, variable d'un bloc ; valeur du pas suivant d'une

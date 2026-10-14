@@ -90,6 +90,17 @@ class ReleveDesResidus:
         return tuple((t, rapport) for t, phase, nom, objet, rapport in self._releves
                      if nom == IDENTITE_CUMULEE and objet == secteur)
 
+    def accumulation_maximale(self) -> tuple[float, int | None, str | None]:
+        """Accumulation de la fenêtre : max, sur les secteurs et les pas, de |V^stock − V^flux| / S.
+
+        Rend (rapport, t, secteur) du premier relevé qui atteint le maximum ;
+        un rapport nul et deux `None` si tous sont nuls ou s'il n'y en a aucun.
+        C'est, pour une graine, la grandeur A du jalon J2 (#98) : sans
+        dimension, S à l'ouverture du pas, fenêtre des pas relevés.
+        """
+        rapport, t, _, secteur = self.maximum(IDENTITE_CUMULEE)
+        return rapport, t, secteur
+
     def grandeurs(self) -> tuple[Grandeur, Grandeur]:
         """Les deux grandeurs publiées, avec la fenêtre effectivement relevée."""
         if self._pas:
