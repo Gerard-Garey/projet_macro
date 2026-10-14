@@ -62,7 +62,9 @@ ANCIENNES_PUBLIEES = {
     ("sec:finances_publiques-impots", "racine parasite à 10 %, %"): "-40,49",
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"): "0,435",
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"): "-0,473",
-    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point"): "0,908",
+    # Libellé corrigé le 14/10/2026 (« fiche 9 § 3.C » → « fiche 9 § 6.3 »), décision du mainteneur ; valeur et
+    # verdict inchangés.
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point"): "0,908",
     ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"): "0,09466",
     ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 4"): "0,49978",
     ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 52"): "0,10045",
@@ -1248,7 +1250,8 @@ FICHES = {
 
 def _partager_tex(texte: str) -> tuple[str, str]:
     """(texte dans les \\barre{…}, texte hors des \\barre{…}), accolades imbriquées comprises ; hors barre, chaque
-    \\barre{…} est remplacé par une espace, pour garder une ligne de tableau sur une ligne."""
+    \\barre{…} est remplacé par « ¦ », pour garder une ligne de tableau sur une ligne et couper la lecture d'un signe
+    placé devant le passage barré (« ¦ » est hors de `_ENTRE_SIGNE_ET_NOMBRE` ; constat m2, #93)."""
     dedans, dehors, i = [], [], 0
     while (j := texte.find("\\barre{", i)) >= 0:
         dehors.append(texte[i:j])
@@ -1259,13 +1262,14 @@ def _partager_tex(texte: str) -> tuple[str, str]:
         dedans.append(texte[j + len("\\barre{"):k - 1])
         i = k
     dehors.append(texte[i:])
-    return "\n".join(dedans), " ".join(dehors)
+    return "\n".join(dedans), " ¦ ".join(dehors)
 
 
 def _partager_md(texte: str) -> tuple[str, str]:
-    """(texte dans les ~~…~~, texte hors des ~~…~~), sur une ligne ; hors barre, chaque ~~…~~ est remplacé par une
-    espace, pour garder un paragraphe ou une ligne de tableau sur une ligne."""
-    return "\n".join(re.findall(r"~~(.+?)~~", texte)), re.sub(r"~~(.+?)~~", " ", texte)
+    """(texte dans les ~~…~~, texte hors des ~~…~~), sur une ligne ; hors barre, chaque ~~…~~ est remplacé par
+    « ¦ », pour garder un paragraphe ou une ligne de tableau sur une ligne, et couper la lecture d'un signe placé
+    devant le passage barré (« ¦ » est hors de `_ENTRE_SIGNE_ET_NOMBRE` ; constat m2, #93)."""
+    return "\n".join(re.findall(r"~~(.+?)~~", texte)), re.sub(r"~~(.+?)~~", " ¦ ", texte)
 
 
 def _section_tex(texte: str, label: str) -> str:
@@ -1296,11 +1300,15 @@ def _sources(section: str) -> list[tuple[str, str, str]]:
 #   hors « -- » (tiret d'intervalle) ; un « - » collé à une lettre ASCII n'est un signe qu'en mode mathématique
 #   (nombre impair de « $ » non échappés avant lui sur sa ligne : « $x-0{,}058$ », « $P_{t-1}$ »), et reste hors de
 #   ce mode un trait d'union (« P-0,182 ») ; collé à « } », c'est un signe (« \,}-0{,}058 », « {}-0,058 », constat
-#   mi-C). Limite déclarée : les environnements d'équation sans « $ » ne sont pas lus en mode mathématique ;
+#   mi-C). Limites déclarées : les environnements d'équation sans « $ » ne sont pas lus en mode mathématique ; le
+#   mode est compté sur la ligne seule, si bien qu'un « $…$ » ouvert sur une ligne et fermé sur la suivante, ou un
+#   « $$ », fausserait la parité (constat m3) : précondition figée par `test_sources_sans_mode_mathematique_a_cheval` ;
+#   un signe placé devant un passage barré ne s'attache pas au nombre qui le suit (constat m2) ;
 # - ligne (`PARAGRAPHES_DE_SOURCE`, #93) : une valeur rattachée se lit dans chacun de ses passages, et non dans le
 #   reste de la source ; le passage est le fragment déclaré s'il contient la valeur au signe près (« soit 1 pour
 #   $\bar\pi = 0$ », dont la ligne écrit aussi « $\bar\rho_K - 1$ »), sinon l'unique ligne de la source qui le
-#   contient ; toute valeur lue dans une fiche est rattachée ;
+#   contient ; le signe d'un nombre du fragment se lit dans sa ligne (« 0,110 point » dans « : −0,110 point » est
+#   négatif, constat m1) ; toute valeur lue dans une fiche est rattachée ;
 # - tableau (`tab:…`) : la valeur se lit dans la ligne que déclare `LIGNES_DE_TABLEAU` (première cellule), égale à la
 #   cellule de sa colonne, ou, colonne non déclarée, figurant dans une cellule de la ligne.
 _ENTRE_SIGNE_ET_NOMBRE = re.compile(r"(?:\s|\$|~|\\,)+$")
@@ -1321,13 +1329,15 @@ def _signe_moins(ligne: str) -> bool:
     return len(_DOLLAR.findall(ligne, 0, position)) % 2 == 1
 
 
-def _signes(publie: str, texte: str) -> list[bool]:
-    """Pour chaque occurrence de la valeur absolue de `publie` dans le texte, sans chiffre ni décimale collés : vrai si
-    elle est précédée d'un signe moins (règle ci-dessus)."""
+def _signes(publie: str, texte: str, debut: int = 0, fin: int | None = None) -> list[bool]:
+    """Pour chaque occurrence de la valeur absolue de `publie` dans le texte, sans chiffre ni décimale collés, comprise
+    dans texte[debut:fin] : vrai si elle est précédée d'un signe moins, lu dans le texte entier (règle ci-dessus)."""
+    fin = len(texte) if fin is None else fin
     absolu = publie.lstrip("-−+")
     formes = "|".join(re.escape(f) for f in (absolu, absolu.replace(",", "{,}")))
     motif = r"(?<![0-9])(?<![0-9][,.])(?<![0-9]\{,\})(?:" + formes + r")(?![0-9])(?![,.][0-9])(?!\{,\}[0-9])"
-    return [_signe_moins(texte[texte.rfind("\n", 0, m.start()) + 1:m.start()]) for m in re.finditer(motif, texte)]
+    return [_signe_moins(texte[texte.rfind("\n", 0, m.start()) + 1:m.start()]) for m in re.finditer(motif, texte)
+            if debut <= m.start() and m.end() <= fin]
 
 
 def _figure(publie: str, texte: str) -> bool:
@@ -1335,12 +1345,16 @@ def _figure(publie: str, texte: str) -> bool:
     return (publie[0] in "-−") in _signes(publie, texte)
 
 
-def _passage(texte: str, fragment: str, publie: str) -> str:
-    """Passage où se lit une valeur rattachée : le fragment, s'il contient la valeur au signe près, sinon l'unique
-    ligne du texte qui le contient (règle ci-dessus)."""
+def _passage(texte: str, fragment: str, publie: str) -> tuple[str, int, int]:
+    """Passage où se lit une valeur rattachée, (ligne, début, fin) : le fragment dans l'unique ligne du texte qui le
+    contient, s'il contient la valeur au signe près, sinon la ligne entière ; le signe se lit dans la ligne, jamais
+    dans le fragment seul (constat m1 ; règle ci-dessus)."""
     lignes = [l for l in texte.split("\n") if fragment in l]
     assert len(lignes) == 1, (fragment, len(lignes))
-    return fragment if _signes(publie, fragment) else lignes[0]
+    ligne = lignes[0]
+    debut = ligne.index(fragment)
+    fin = debut + len(fragment)
+    return (ligne, debut, fin) if _signes(publie, ligne, debut, fin) else (ligne, 0, len(ligne))
 
 
 def _cellules(texte: str, ligne: str) -> list[str]:
@@ -1351,13 +1365,13 @@ def _cellules(texte: str, ligne: str) -> list[str]:
 
 
 def _normaliser(cellule: str) -> str:
-    return cellule.replace("$", "").replace("{,}", ",").replace("−", "-").strip().lstrip("+")
+    return cellule.replace("¦", "").replace("$", "").replace("{,}", ",").replace("−", "-").strip().lstrip("+")
 
 
 def _lue(stationnaire, section: str, grandeur: str, publie: str, nom: str, dehors: str) -> bool:
     """La valeur en vigueur se lit hors barre dans la source `nom` (règle ci-dessus)."""
     if (fragments := stationnaire.PARAGRAPHES_DE_SOURCE.get((section, grandeur, nom))) is not None:
-        return all(_figure(publie, _passage(dehors, f, publie)) for f in fragments)
+        return all((publie[0] in "-−") in _signes(publie, *_passage(dehors, f, publie)) for f in fragments)
     if not nom.startswith("tab:"):
         return _figure(publie, dehors)
     ligne, colonne = stationnaire.LIGNES_DE_TABLEAU[(section, grandeur)]
@@ -1384,6 +1398,8 @@ def test_lecture_signe_frontiere_et_cellule():
     assert _cellules(tab, "B") == ["B", "y", "2,000", "$-0{,}5$"]
     assert _normaliser(_cellules(tab, "B")[3]) == _normaliser("-0,5")
     assert _normaliser(_cellules(tab, "A")[2]) != _normaliser("2,000")
+    barre = _partager_tex("L & \\barre{0,1} 0,2 & x\\\\")[1]
+    assert _normaliser(_cellules(barre, "L")[1]) == _normaliser("0,2")
 
 
 @pytest.mark.parametrize("texte", ["$a\\,}-0{,}058$", "${}-0,058$", "{}-0,058", "\\mathrm{x}-0,058",
@@ -1406,23 +1422,59 @@ def test_valeur_rattachee_lue_dans_sa_seule_ligne(stationnaire, monkeypatch):
     seulement ; une valeur écrite ailleurs, signe inversé compris, ne la fait pas compter ; un fragment ambigu
     (plusieurs lignes) est refusé."""
     dehors = "ligne A : +0,110 point\nligne B : −0,110 %\nligne C : 2,5"
-    cle = ("fiche 9 § 3.Q", "g", "fiche 9")
+    cle = ("fiche 9 § 6.3", "g", "fiche 9")
     monkeypatch.setattr(stationnaire, "PARAGRAPHES_DE_SOURCE", {cle: ("ligne A",)})
-    assert _lue(stationnaire, "fiche 9 § 3.Q", "g", "0,110", "fiche 9", dehors)
-    assert not _lue(stationnaire, "fiche 9 § 3.Q", "g", "-0,110", "fiche 9", dehors)
+    assert _lue(stationnaire, "fiche 9 § 6.3", "g", "0,110", "fiche 9", dehors)
+    assert not _lue(stationnaire, "fiche 9 § 6.3", "g", "-0,110", "fiche 9", dehors)
     assert _figure("-0,110", dehors)
     monkeypatch.setattr(stationnaire, "PARAGRAPHES_DE_SOURCE", {cle: ("ligne A", "ligne C")})
-    assert not _lue(stationnaire, "fiche 9 § 3.Q", "g", "0,110", "fiche 9", dehors)
+    assert not _lue(stationnaire, "fiche 9 § 6.3", "g", "0,110", "fiche 9", dehors)
     monkeypatch.setattr(stationnaire, "PARAGRAPHES_DE_SOURCE", {cle: ("ligne B : −0,1",)})
     assert _figure("0,1", "ligne A : soit 0,1 et $x - 0{,}1$")
     dehors_1 = "ligne A : soit 0,1 et $x - 0{,}1$\nligne B : −0,1"
-    assert _lue(stationnaire, "fiche 9 § 3.Q", "g", "-0,1", "fiche 9", dehors_1)
+    assert _lue(stationnaire, "fiche 9 § 6.3", "g", "-0,1", "fiche 9", dehors_1)
     monkeypatch.setattr(stationnaire, "PARAGRAPHES_DE_SOURCE", {cle: ("soit 0,1 et",)})
-    assert _lue(stationnaire, "fiche 9 § 3.Q", "g", "0,1", "fiche 9", dehors_1)
-    assert not _lue(stationnaire, "fiche 9 § 3.Q", "g", "-0,1", "fiche 9", dehors_1)
+    assert _lue(stationnaire, "fiche 9 § 6.3", "g", "0,1", "fiche 9", dehors_1)
+    assert not _lue(stationnaire, "fiche 9 § 6.3", "g", "-0,1", "fiche 9", dehors_1)
     monkeypatch.setattr(stationnaire, "PARAGRAPHES_DE_SOURCE", {cle: ("ligne",)})
     with pytest.raises(AssertionError):
-        _lue(stationnaire, "fiche 9 § 3.Q", "g", "0,110", "fiche 9", dehors)
+        _lue(stationnaire, "fiche 9 § 6.3", "g", "0,110", "fiche 9", dehors)
+
+
+def test_signe_du_fragment_lu_dans_sa_ligne(stationnaire, monkeypatch):
+    """Constat m1 (#93) : un fragment qui commence au nombre ne coupe pas le signe qui le précède dans sa ligne."""
+    cle = ("fiche 9 § 6.3", "g", "fiche 9")
+    monkeypatch.setattr(stationnaire, "PARAGRAPHES_DE_SOURCE", {cle: ("0,110 point",)})
+    dehors = "ligne A : −0,110 point"
+    assert not _lue(stationnaire, "fiche 9 § 6.3", "g", "0,110", "fiche 9", dehors)
+    assert _lue(stationnaire, "fiche 9 § 6.3", "g", "-0,110", "fiche 9", dehors)
+
+
+def test_signe_devant_un_passage_barre_coupe():
+    """Constat m2 (#93) : un signe placé devant un passage barré ne s'attache pas au nombre qui suit la barre."""
+    dedans, dehors = _partager_md("écart −~~0,2~~ 0,110 point")
+    assert dedans == "0,2" and "\n" not in dehors
+    assert _figure("0,110", dehors) and not _figure("-0,110", dehors)
+    assert _figure("-0,110", _partager_md("écart ~~−0,2~~ −0,110 point")[1])
+
+
+@pytest.mark.parametrize("texte", ["écart −\\barre{0,2} 0,110 point", "$-\\barre{0{,}2}\\,0{,}110$"])
+def test_signe_devant_un_barre_tex_coupe(texte):
+    """Constat m2 (#93), côté spécification : un signe placé devant un \\barre{…} ne s'attache pas au nombre qui le
+    suit."""
+    dedans, dehors = _partager_tex(texte)
+    assert dedans in ("0,2", "0{,}2") and "\n" not in dehors
+    assert _figure("0,110", dehors) and not _figure("-0,110", dehors)
+
+
+def test_sources_sans_mode_mathematique_a_cheval():
+    """Constat m3 (#93) : le mode mathématique se compte sur la ligne seule (règle ci-dessus) ; précondition : aucune
+    ligne de la spécification ni des fiches n'a un nombre impair de « $ » non échappés, ni de « $$ »."""
+    for chemin in (SPECIFICATION, *dict.fromkeys(FICHES.values())):
+        lignes = chemin.read_text(encoding="utf-8").split("\n")
+        impaires = [n for n, l in enumerate(lignes, 1) if len(_DOLLAR.findall(l)) % 2]
+        doubles = [n for n, l in enumerate(lignes, 1) if "$$" in l]
+        assert (impaires, doubles) == ([], []), chemin.name
 
 
 def _inverser(publie: str) -> str:
