@@ -19,8 +19,12 @@ schéma (un entier pour un flottant compris) ; un champ hors de son domaine
 (`schema.defaut_de_domaine` : identifiant vide, non encodable en UTF-8, avec
 un caractère de catégorie Unicode `Cc`, `Cf`, `Zl` ou `Zp`, avec un espace de
 bord ou hors de la forme normale NFC ; graine hors de [0 ; 2^64[ ; t hors de
-[0 ; 2^63[), les mêmes refus qu'à la construction ; un pays en double ou hors
-de l'ordre canonique (identifiants comparés par point de code Unicode).
+[0 ; 2^63[ ; niveau du registre qui n'est pas un float fini > 0), les mêmes
+refus de domaine qu'à la construction ; un pays en double ou hors de l'ordre
+canonique (identifiants comparés par point de code Unicode). Les domaines des
+positions (Res ≥ 0 ; D_H, D_F, M^G ≥ −ε × S) ne sont contrôlés ni à la
+construction ni à la reprise : ε et S relèvent du noyau, qui les contrôle à
+l'ouverture du pas (`DefautComptable` en phase 0).
 L'aller-retour `sauvegarder(charger(document))` rend les mêmes octets qu'un
 document écrit par `sauvegarder`.
 """
@@ -137,7 +141,11 @@ def _champs_attendus(objet: object, attendus: Sequence[str], pays: str | int | N
 
 
 def charger(document: bytes) -> tuple[EtatPays, ...]:
-    """État d'un monde relu d'un document de sauvegarde, ou refus avec diagnostic."""
+    """État d'un monde relu d'un document de sauvegarde, ou refus avec diagnostic.
+
+    Refus : ceux de la docstring du module ; les domaines des positions ne sont
+    pas contrôlés ici, mais par le noyau à l'ouverture du pas (phase 0).
+    """
     if type(document) is not bytes:
         raise SauvegardeRefusee(f"document en octets attendu, {type(document).__name__} reçu")
     try:

@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
+import math
 import unicodedata
 from dataclasses import dataclass
 from enum import Enum
@@ -57,6 +58,9 @@ VERSION_SCHEMA = 1
 TYPES = (int, float, tuple)
 
 # Longueur du registre de l'indice des prix : n_a + 1 niveaux (ADR 0008, II.3).
+# Copie de `nations.moteur.registre.NIVEAUX` (= PAS_PAR_AN.valeur + 1), que
+# `etat` ne peut pas importer (graphe des couches) ; l'égalité est figée par
+# `test_registre_du_schema_de_n_a_plus_un_niveaux` (tests/unitaires/test_moteur_temps.py).
 NIVEAUX_DU_REGISTRE = 13
 
 
@@ -299,17 +303,34 @@ def defaut_de_t(valeur: int) -> str | None:
     return None
 
 
+def defaut_du_registre(valeur: tuple[float, ...]) -> str | None:
+    """Motif de refus d'un registre de bon type dont un niveau n'est pas un float fini > 0.
+
+    Un indice non fini ou non positif est refusé (spécification, lecture de
+    `eq:moteur-registre-prix`) : `registre.glissement` divise par un niveau.
+    Le premier niveau fautif est nommé, `registre_prix[u − 1]` = P_{t−u}.
+    """
+    for u, niveau in enumerate(valeur, start=1):
+        if not (math.isfinite(niveau) and niveau > 0.0):
+            return (f"niveau {u} (P_{{t−{u}}}) {niveau!r} : float fini > 0 attendu")
+    return None
+
+
 def defaut_de_domaine(nom: str, valeur: object) -> str | None:
     """Motif de refus d'un champ de bon type hors de son domaine, sinon `None`.
 
     Seule fonction de domaine de `EtatPays`, appelée par la construction et par
-    la reprise : champs d'identité (`defaut_d_identite`) et `t` (`defaut_de_t`) ;
-    les autres champs n'ont pas de domaine au-delà de leur type.
+    la reprise : champs d'identité (`defaut_d_identite`), `t` (`defaut_de_t`) et
+    `registre_prix` (`defaut_du_registre`) ; les autres champs n'ont pas de
+    domaine au-delà de leur type ici (les domaines des positions, Res ≥ 0 et
+    D_H, D_F, M^G ≥ −ε × S, sont contrôlés par le noyau à l'ouverture du pas).
     """
     if nom in _NOMS_D_IDENTITE:
         return defaut_d_identite(nom, valeur)
     if nom == "t":
         return defaut_de_t(valeur)
+    if nom == "registre_prix":
+        return defaut_du_registre(valeur)
     return None
 
 
@@ -347,7 +368,7 @@ EtatPays.__doc__ = """État d'un pays à l'ouverture d'un pas (ADR 0012, D1), ge
 Champs engendrés depuis `CHAMPS_D_IDENTITE` et `VARIABLES`, tous obligatoires,
 sans valeur par défaut ; un champ de type faux est refusé à la construction
 (`TypeError`), un champ hors de son domaine aussi (`ValueError`, par
-`defaut_de_domaine` : identifiant, graine, t).
+`defaut_de_domaine` : identifiant, graine, t, niveaux du registre).
 L'état d'un monde est une séquence d'`EtatPays` triée par identifiant, par
 point de code Unicode.
 """
