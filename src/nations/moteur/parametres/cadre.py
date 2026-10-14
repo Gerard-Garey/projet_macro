@@ -45,7 +45,7 @@ PAS_PAR_TOUR = Parametre(
 TOLERANCE_IDENTITE_PAS = Parametre(
     "tolerance_identite_pas", "ε", 1e-12, "sans dimension",
     "décision M22, pt 14, Q4 (a) (ADR 0005, points 14 et 18)",
-    ("eq:noyau-tolerance-pas",),
+    ("eq:noyau-tolerance-pas", "eq:noyau-caisse-nette"),
     FLOTTANT_STRICTEMENT_POSITIF)
 
 TOLERANCE_IDENTITE_CUMULEE = Parametre(
