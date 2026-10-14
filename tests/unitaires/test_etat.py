@@ -78,9 +78,15 @@ def etats_tires(rng, n=3):
         signe = -1.0 if rng.integers(0, 2) else 1.0
         return signe * float(rng.uniform(1.0, 2.0)) * 2.0 ** float(rng.integers(-1000, 1000))
 
+    def tirage_positif():
+        # Niveau du registre : float fini > 0 (domaine de `registre_prix`).
+        if rng.integers(0, 6) == 0:
+            return math.ulp(0.0) * float(rng.integers(1, 1000))
+        return float(rng.uniform(1.0, 2.0)) * 2.0 ** float(rng.integers(-1000, 1000))
+
     etats = []
     for k in range(n):
-        champs = {v.nom: (tuple(tirage() for _ in range(v.longueur)) if v.type is tuple
+        champs = {v.nom: (tuple(tirage_positif() for _ in range(v.longueur)) if v.type is tuple
                           else int(rng.integers(0, 10**6)) if v.type is int else tirage())
                   for v in VARIABLES}
         etats.append(EtatPays(identifiant=f"pays-{k:02d}", graine=int(rng.integers(0, 2**63)),
@@ -260,6 +266,30 @@ def test_hors_domaine_refuse_a_la_construction(champ, valeur, motif):
         dataclasses.replace(etat_pays(), **{champ: valeur})
 
 
+def _registre_avec(u, niveau):
+    """Registre stationnaire d'essai dont le niveau u (P_{t−u}) est remplacé."""
+    registre = [1.02 ** (-k / 12) for k in range(1, 14)]
+    registre[u - 1] = niveau
+    return tuple(registre)
+
+
+# Niveaux du registre hors de leur domaine, float fini > 0 (spécification, lecture
+# de `eq:moteur-registre-prix` : « Un indice non fini ou non positif est refusé »).
+REGISTRE_HORS_DOMAINE = [
+    (1, float("nan")), (13, float("nan")), (1, 0.0), (13, 0.0), (7, -0.0),
+    (1, -1.0), (13, -1e-300), (1, float("inf")), (13, float("-inf")),
+]
+
+
+@pytest.mark.parametrize("u, niveau", REGISTRE_HORS_DOMAINE)
+def test_registre_hors_domaine_refuse_a_la_construction(u, niveau):
+    """Un niveau du registre non fini ou non positif est refusé ; le diagnostic nomme le
+    champ et le niveau."""
+    with pytest.raises(ValueError,
+                       match=f"EtatPays.registre_prix : niveau {u} .*float fini > 0 attendu"):
+        etat_pays(registre=_registre_avec(u, niveau))
+
+
 @pytest.mark.parametrize("champs", [
     {"graine": 0}, {"graine": schema.GRAINE_EXCLUE - 1}, {"graine": 2**63},
     {"t": 0}, {"t": 10**6}, {"t": schema.T_EXCLU - 1},
@@ -417,7 +447,10 @@ def test_sauvegarde_refuse_un_etat_non_fini():
     """D3 : un état qui contient inf ou NaN n'est pas sauvegardable, et le diagnostic nomme le champ."""
     for champ, valeur in (("K", math.inf), ("V_flux_etat", math.nan),
                           ("registre_prix", (math.nan,) + (1.0,) * 12)):
-        e = dataclasses.replace(etat_pays(identifiant="B"), **{champ: valeur})
+        e = etat_pays(identifiant="B")
+        # Le registre non fini est refusé dès la construction (domaine de
+        # `registre_prix`) : il est forcé ici pour éprouver la défense de `sauvegarder`.
+        object.__setattr__(e, champ, valeur)
         with pytest.raises(SauvegardeRefusee, match="non sauvegardable") as refus:
             sauvegarder([e])
         assert (refus.value.pays, refus.value.champ) == ("B", champ)
@@ -545,6 +578,30 @@ def test_hors_domaine_refuse_a_la_reprise(champ, valeur, motif):
     with pytest.raises(SauvegardeRefusee, match=f"hors domaine : .*{motif}") as refus:
         charger(document_modifie(remplacer_champ(champ, valeur)))
     assert (refus.value.pays, refus.value.champ) == (1 if champ == "identifiant" else "B", champ)
+
+
+@pytest.mark.parametrize("u, niveau", [(u, x) for u, x in REGISTRE_HORS_DOMAINE
+                                         if math.isfinite(x)])
+def test_registre_non_positif_refuse_a_la_reprise(u, niveau):
+    """Mêmes refus qu'à la construction, le pays et le champ nommés."""
+    def modifier(racine):
+        racine["pays"][1]["registre_prix"][u - 1] = niveau
+    with pytest.raises(SauvegardeRefusee, match=f"hors domaine : niveau {u} .*float fini > 0"
+                       ) as refus:
+        charger(document_modifie(modifier))
+    assert (refus.value.pays, refus.value.champ) == ("B", "registre_prix")
+
+
+@pytest.mark.parametrize("constante", ["NaN", "Infinity", "-Infinity", "1e400"])
+def test_registre_non_fini_refuse_a_la_reprise(constante):
+    """Un niveau non fini est refusé dès la lecture JSON (B-1), avant le domaine du champ."""
+    texte = sauvegarder([etat_pays()]).decode("utf-8")
+    debut = texte.index('"registre_prix": [')
+    fin = texte.index(",", debut)
+    texte = texte[:debut] + '"registre_prix": [' + constante + texte[fin:]
+    assert f"[{constante}," in texte
+    with pytest.raises(SauvegardeRefusee, match="non finie"):
+        charger(texte.encode("utf-8"))
 
 
 def test_graine_de_4300_chiffres_refusee_a_la_reprise_avec_diagnostic():

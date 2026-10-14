@@ -404,6 +404,15 @@ def test_la_comparaison_a_tab_phases_sait_echouer(table_des_phases, mutation):
     assert phases_declarees(tuple(phases)) != phases_lues(table_des_phases)
 
 
+def test_etape_des_contreparties_lue_au_grand_livre():
+    """L'étape des contreparties 17, 20 et 22 a une seule source, le grand livre : la dernière
+    clôture du catalogue qui exécute des lignes."""
+    from nations.noyau import grand_livre
+    assert ordo._ETAPE_DES_CONTREPARTIES == grand_livre.DERNIERE_EXECUTION
+    phases_executees = {ligne.phase for ligne in cat.LIGNE.values()} - {None}
+    assert grand_livre.DERNIERE_EXECUTION == max(phases_executees, key=cat.PHASES.index)
+
+
 def test_lecteur_des_lignes():
     assert lire_lignes("6 à 10, 11a à 11c, 14, 15", 6) == {"6": (
         "6", "7", "8", "9", "10", "11a", "11b", "11c", "14", "15")}
@@ -1118,6 +1127,25 @@ def test_variable_d_etat_de_mauvais_type_refusee(schema_avec_variables_de_bloc, 
         executer_pas(schema_avec_variables_de_bloc, ENTREES_VIDES, o, ObservateurNul())
     assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
         "1", "banque_centrale", "pi_cible")
+
+
+def test_variable_d_etat_non_finie_refusee_sans_rien_enregistrer(schema_avec_variables_de_bloc):
+    """Un refus de `ecrire_etat` (valeur non finie) laisse tout inchangé : une écriture
+    légitime qui suit passe, et l'état t + 1 porte sa valeur (validation avant
+    enregistrement)."""
+    motifs = []
+
+    def cible(vue):
+        action_d_essai("banque_centrale", "1", plans_nuls(1), 0.02)(vue)
+        with pytest.raises(RefusDuMoteur, match="non finie") as refus:
+            vue.ecrire_etat("pi_cible", float("nan"))
+        motifs.append(refus.value.nom)
+        vue.ecrire_etat("pi_cible", 0.03)
+    actions = {**_actions_d_etat([]), ("banque_centrale", "1"): cible}
+    o = ordonnanceur_d_essai(plans_nuls(1), remplacer=_sieges_d_etat, actions=actions)
+    suivant = executer_pas(schema_avec_variables_de_bloc, ENTREES_VIDES, o, ObservateurNul())
+    assert motifs == ["pi_cible_suivant"]
+    assert suivant.pi_cible == 0.03
 
 
 @pytest.mark.parametrize("doubler, oublier, motif", [
