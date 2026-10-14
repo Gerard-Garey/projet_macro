@@ -370,38 +370,8 @@ def phases_declarees(phases):
                        {e.identifiant: e.lignes for e in p.etapes}, p.lisent) for p in phases}
 
 
-# Seuls points de `PHASES` en avance sur `tab:phases` : les phases 6 et 7
-# lisent la phase 2 (décisions du mainteneur du 07/10/2026 ; spécification,
-# ligne 6 des plans de la phase 2 et `sec:finances_publiques-impots` pour la
-# phase 6 ; T^cou_t (E4) lue par E12 en phase 7, entrées de la phase 7 du bloc
-# État). La comparaison stricte les retire des deux côtés, et eux seuls ; le
-# test en échec attendu ci-dessous compare toute la table, ces points compris.
-# Au rang 6 (`docwriter`), quand `tab:phases` les portera, ce test réussira :
-# retirer sa marque, cette constante et `_sans_les_points_en_attente`.
-POINTS_EN_ATTENTE_DE_TAB_PHASES = ((6, 2), (7, 2))
-
-
-def _sans_les_points_en_attente(phases):
-    phases = dict(phases)
-    for numero, lue in POINTS_EN_ATTENTE_DE_TAB_PHASES:
-        nom, ecrivains, lignes, lisent = phases[numero]
-        phases[numero] = (nom, ecrivains, lignes, tuple(p for p in lisent if p != lue))
-    return phases
-
-
 def test_declaration_egale_a_tab_phases(table_des_phases):
-    """B1 : écrivains, groupes, ordre « puis », sous-phases, couches, lignes et phases lues,
-    hors des seuls points en attente de `tab:phases`."""
-    for numero, lue in POINTS_EN_ATTENTE_DE_TAB_PHASES:
-        assert lue in PHASES[numero].lisent
-    assert (_sans_les_points_en_attente(phases_declarees(PHASES))
-            == _sans_les_points_en_attente(phases_lues(table_des_phases)))
-
-
-@pytest.mark.xfail(strict=True, reason="#97 : tab:phases à corriger au rang 6 (docwriter), "
-                   "phases 6 et 7 qui lisent la phase 2, décisions du 07/10/2026")
-def test_declaration_egale_a_tab_phases_points_en_attente_compris(table_des_phases):
-    """B1, comparaison entière : les phases 6 et 7 lisent la phase 2 dans `tab:phases` aussi."""
+    """B1 : écrivains, groupes, ordre « puis », sous-phases, couches, lignes et phases lues."""
     assert phases_declarees(PHASES) == phases_lues(table_des_phases)
 
 
@@ -431,8 +401,7 @@ def test_la_comparaison_a_tab_phases_sait_echouer(table_des_phases, mutation):
         phases[7] = dataclasses.replace(phases[7], lisent=(1, 4, 5))
     else:
         phases[3] = dataclasses.replace(phases[3], nom="Crédits")
-    assert (_sans_les_points_en_attente(phases_declarees(tuple(phases)))
-            != _sans_les_points_en_attente(phases_lues(table_des_phases)))
+    assert phases_declarees(tuple(phases)) != phases_lues(table_des_phases)
 
 
 def test_lecteur_des_lignes():
