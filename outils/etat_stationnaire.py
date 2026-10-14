@@ -2168,13 +2168,13 @@ VALEURS_PUBLIEES += tuple(
     ("sec:finances_publiques-impots", "racine parasite à 0 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.0), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 2 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.02), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 10 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.10), "D"),
-    ("fiche 9 § 3.Q", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,110",
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,110",
      lambda c: 100 * c.alpha()["beta_theta_G"], "D"),
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "0,487",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.0], "D"),
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "-0,434",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.10], "D"),
-    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point", "0,921", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "0,921", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
      "D"),
 )
 
@@ -2467,11 +2467,11 @@ PARAGRAPHES_DE_SOURCE: dict[tuple[str, str, str], tuple[str, ...]] = {
         ("- profil C-HS tel quel, r̄ à π\\* = 0 / 1 / 2 / 3 / 4 / 6 / 10 %",)
     for pi in ("0", "1", "2", "3", "4", "6", "10")
 } | {
-    ("fiche 9 § 3.Q", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "fiche 9"): ("La lecture (β) échoue aussi",),
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "fiche 9"): ("La lecture (β) échoue aussi",),
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "fiche 9"): ("| Critère 13 : écart de C/PIB à 0 / 10 %",),
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "fiche 9"):
         ("| Critère 13 : écart de C/PIB à 0 / 10 %",),
-    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point", "fiche 9"): ("Celui de C/PIB vaut",),
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "fiche 9"): ("Celui de C/PIB vaut",),
 } | {
     ("fiche 9 § 3.C ; § 9.6", f"dette consolidée à {pi} %, n_a = {na}", "fiche 9"): (ligne, _FICHE_9_DETTE)
     for na, ligne in ((4, "| Dette consolidée (B − M^G)/(n_a PIB) | 4 |"), (52, "| | 52 |")) for pi in ("0", "10")
@@ -2511,7 +2511,9 @@ _AVANT_VISA: dict[tuple[str, str], object] = {
     ("sec:finances_publiques-impots", "racine parasite à 10 %, %"): "-40,49",
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"): "0,435",
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"): "-0,473",
-    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point"): "0,908",
+    # Libellé corrigé le 14/10/2026 (« fiche 9 § 3.C » → « fiche 9 § 6.3 »), décision du mainteneur ; valeur et
+    # verdict inchangés.
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point"): "0,908",
     # Fiche 9, § 3.C et critère 5 du § 9.6 : visées après la revue finale (décision du mainteneur du 05/10/2026,
     # point B), même cause que les deux écarts à 2 %.
     ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"): "0,09466",
