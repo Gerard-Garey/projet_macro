@@ -83,7 +83,12 @@ from nations.noyau.catalogue import (
     NOMS_POSTES,
 )
 from nations.noyau.catalogue import PHASES as CLOTURES_DU_NOYAU
-from nations.noyau.grand_livre import FluxPropose, GrandLivre, ouvrir_pas
+from nations.noyau.grand_livre import (
+    DERNIERE_EXECUTION,
+    FluxPropose,
+    GrandLivre,
+    ouvrir_pas,
+)
 from nations.observation.observateur import FinDePas, Observateur
 
 # Indice des prix du pas, P_t : variable du pas écrite par le bloc prix en
@@ -94,8 +99,8 @@ ECRIVAIN_DE_L_INDICE = ("5", "prix")
 
 # Étape des contreparties de règlement (17, 20, 22), sans phase propre au
 # catalogue : leur montant du pas se lit après la dernière clôture qui
-# exécute des lignes (comme au grand livre).
-_ETAPE_DES_CONTREPARTIES = "8c"
+# exécute des lignes, constante unique du grand livre.
+_ETAPE_DES_CONTREPARTIES = DERNIERE_EXECUTION
 
 # Variables d'état du moteur, que la couche moteur de la phase 9 écrit.
 _VARIABLES_DU_MOTEUR = ("t", "registre_prix")
@@ -333,8 +338,10 @@ class Vue:
         variable = schema.VARIABLE[nom]
         if not variable.admet(valeur):
             raise self._refus(f"valeur {valeur!r} : {variable.description_du_type()} attendu", nom)
-        etat_suivant[nom] = valeur
+        # Validation d'abord (finitude, par l'espace du pas), enregistrement
+        # ensuite : un refus laisse `etat_suivant` inchangé.
         self._pas.espace.ecrire(nom + SUFFIXE_SUIVANT, valeur)
+        etat_suivant[nom] = valeur
 
     def _ligne_non_declaree(self, ligne: str) -> RefusDuMoteur:
         precision = " ; aucun flux en phase 9" if self._droits.etape == "9" else ""

@@ -67,8 +67,9 @@ MOYENS_DE_PAIEMENT = tuple(t.poste_regle for ligne in CONTREPARTIES for t in lig
 # Objets des diagnostics des sommes de colonnes, dans l'ordre de SECTEURS.
 _OBJETS_SECTEURS = [(s, None, None) for s in SECTEURS]
 # Dernière clôture qui exécute des lignes : les contreparties de règlement,
-# cumulées sur le pas, se lisent après elle.
-_DERNIERE_EXECUTION = "8c"
+# cumulées sur le pas, se lisent après elle. Publique : l'ordonnanceur la lit
+# pour contrôler les lectures déclarées des contreparties (source unique).
+DERNIERE_EXECUTION = "8c"
 # Postes des deux identités de la monnaie, dont la variation sur le pas est
 # contrôlée en phase 9.
 _POSTES_DES_PORTES = POSTES_MONNAIE + POSTES_MONNAIE_CENTRALE
@@ -684,7 +685,7 @@ class GrandLivre:
     def _lecture_executee(self, ligne: str) -> dict[str, float]:
         if ligne not in LIGNE:
             raise self._refus("ligne inconnue du catalogue", ligne=ligne)
-        phase = LIGNE[ligne].phase if LIGNE[ligne].phase is not None else _DERNIERE_EXECUTION
+        phase = LIGNE[ligne].phase if LIGNE[ligne].phase is not None else DERNIERE_EXECUTION
         if not self._phase_close(phase):
             raise self._refus(f"montant exécuté lu avant la clôture de la phase {phase} : "
                               "refusé, jamais un zéro", ligne=ligne)

@@ -26,7 +26,9 @@ import math
 
 from nations.moteur.parametres.cadre import PAS_PAR_AN, PAS_PAR_TOUR
 
-# n_a + 1 niveaux (ADR 0008, II.3).
+# n_a + 1 niveaux (ADR 0008, II.3). Recopié dans `schema.NIVEAUX_DU_REGISTRE`
+# (la couche `etat` n'importe pas `moteur`) ; l'égalité est figée par
+# `test_registre_du_schema_de_n_a_plus_un_niveaux` (tests/unitaires/test_moteur_temps.py).
 NIVEAUX = PAS_PAR_AN.valeur + 1
 
 
