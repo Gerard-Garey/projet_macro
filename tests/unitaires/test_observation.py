@@ -22,6 +22,7 @@ from nations.etat.schema import EtatPays
 from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
 from nations.noyau.grand_livre import ClotureDePhase, FluxPropose, ouvrir_pas
+from nations.observation.cout import ReleveDuCout
 from nations.observation.observateur import FinDePas, Observateur, ObservateurNul
 from nations.observation.residus import IDENTITE_CUMULEE, ReleveDesResidus
 
@@ -116,7 +117,9 @@ def bits(releves):
 
 def test_observateurs_satisfont_le_protocole():
     """E1 : une méthode, `relever`, qui ne rend rien ; aucun attribut créé à la volée."""
-    observateurs: list[Observateur] = [ObservateurNul(), ReleveDesResidus()]
+    cout = ReleveDuCout()
+    cout.demarrer()
+    observateurs: list[Observateur] = [ObservateurNul(), ReleveDesResidus(), cout]
     for observateur in observateurs:
         assert observateur.relever(FinDePas(0, etat_initial(), (), ())) is None
         assert not hasattr(observateur, "__dict__")
@@ -183,6 +186,19 @@ def test_releve_par_cloture_et_accumulation_par_pas():
     rapport, t, phase, objet = releve.maximum(IDENTITE_CUMULEE)
     assert 0.25 * EPS < rapport <= EPS and phase == "9" and objet in cat.SECTEURS
     assert releve.maximum("règle absente") == (0.0, None, None, None)
+
+
+def test_accumulation_maximale_sur_les_secteurs_et_les_pas():
+    """A d'une graine (#98) : max de |V^stock − V^flux| / S sur les secteurs et les pas, premier
+    relevé qui l'atteint ; rapport nul et deux `None` sans relevé."""
+    releve = ReleveDesResidus()
+    assert releve.accumulation_maximale() == (0.0, None, None)
+    trajectoire(etat_initial(decalage=0.5 * EPS), 6, releve)
+    rapport, t, secteur = releve.accumulation_maximale()
+    assert rapport == max(r for s in cat.SECTEURS for _, r in releve.accumulation(s))
+    maximum, t_max, phase, objet = releve.maximum(IDENTITE_CUMULEE)
+    assert (rapport, t, secteur) == (maximum, t_max, objet) and phase == "9"
+    assert 0.25 * EPS < rapport <= EPS and secteur in cat.SECTEURS
 
 
 def test_maximum_ex_aequo_rend_le_premier_releve():
@@ -313,3 +329,61 @@ def test_calcul_charge_sans_observation():
     sortie = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
                             check=True)
     assert sortie.stdout.strip() == "[]"
+
+
+# --------------------------------------------------------------------------
+# Relevé du coût (#98)
+# --------------------------------------------------------------------------
+
+
+class HorlogeDEssai:
+    """Horloge déterministe : chaque lecture avance de `pas` secondes."""
+
+    def __init__(self, pas):
+        self.instant = 0.0
+        self.pas = pas
+
+    def __call__(self):
+        self.instant += self.pas
+        return self.instant
+
+
+def test_releve_du_cout_moyenne_par_pas():
+    """Coût par pas = (dernière fin de pas − démarrage) / nombre de pas, en ms ; les clôtures de
+    phase ne lisent pas l'horloge."""
+    horloge = HorlogeDEssai(0.002)
+    releve = ReleveDuCout(horloge)
+    releve.demarrer()
+    trajectoire(etat_initial(), 4, releve)
+    # Démarrage à 2 ms, fins de pas à 4, 6, 8 et 10 ms : (10 − 2) / 4 = 2 ms par pas.
+    assert releve.cout_par_pas() == pytest.approx(2.0, rel=1e-12)
+    assert releve.pas() == (0, 1, 2, 3)
+    g = releve.grandeur()
+    assert g.unite == "ms par pas mensuel, pour un pays"
+    assert g.fenetre == "pas 0 à 3 (4 pas clos relevés)" and g.definition and g.denominateur
+
+
+def test_releve_du_cout_refuse_un_usage_mal_ordonne():
+    """Fin de pas avant le démarrage, second démarrage, coût sans pas : refusés."""
+    releve = ReleveDuCout(HorlogeDEssai(1.0))
+    with pytest.raises(RuntimeError, match="avant le démarrage"):
+        releve.relever(FinDePas(0, etat_initial(), (), ()))
+    releve.demarrer()
+    with pytest.raises(RuntimeError, match="déjà démarré"):
+        releve.demarrer()
+    with pytest.raises(RuntimeError, match="aucun pas"):
+        releve.cout_par_pas()
+    assert releve.grandeur().fenetre == "aucun pas clos relevé"
+    with pytest.raises(TypeError, match="inconnu"):
+        releve.relever({"t": 0})
+    releve.relever(ClotureDePhase(0, "3", (), ()))
+    assert releve.pas() == ()
+
+
+def test_releve_du_cout_sans_effet_sur_la_trajectoire():
+    """E1 : avec le relevé du coût ou sans observation, la sauvegarde est la même à l'octet."""
+    e = etat_initial()
+    releve = ReleveDuCout()
+    releve.demarrer()
+    assert sauvegarder([trajectoire(e, 12, releve)]) == sauvegarder(
+        [trajectoire(e, 12, ObservateurNul())])
