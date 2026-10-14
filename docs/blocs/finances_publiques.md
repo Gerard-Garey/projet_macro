@@ -1147,7 +1147,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 
 1. **Verdict (α) publié : échec.**
    - L'écart de r̄ vaut ~~0,461~~ **0,486** point entre π̄ = 0 et 10 %. Celui de C/PIB vaut ~~0,908~~ **0,921** point. *[remesure du script d'état stationnaire `outils/etat_stationnaire.py`, 05/10/2026 (#84, #80) : lecture (α), lecture A, norme ϱ̄_L tenue, ζ = 4, décisions du mainteneur du même jour ; valeur barrée : maquette perdue à la PR #77, non reproduite]*
-   - La lecture (β) échoue aussi, sur s_G (+0,110 point) et sur C/PIB (−0,662 point), remesurées par le script d'état stationnaire (lecture (β), 05/10/2026 : +0,110 et 0,662 point) : la lecture ne change pas le verdict.
+   - La lecture (β) échoue aussi, sur s_G (+0,110 point) et sur C/PIB (−0,662 point), remesurées par le script d'état stationnaire (lecture (β), 05/10/2026, étendues max − min : 0,110 et 0,662 point) : la lecture ne change pas le verdict.
    - **Avis : (α)**, seule lecture qui teste une statique comparative à paramètres structurels fixés. En (β), s_G, levier budgétaire, devient une variable de calibration.
 2. **Diagnostic de `macro` : accord sur l'attribution, désaccord sur le résidu.**
    - La dépendance vient entièrement de trois conventions hors des blocs 8 et 9 : C30 (M28), la conversion linéaire des taux de flux (M22, ADR 0005 point 4, confirmée par l'ADR 0008, I.2) et les écarts nominaux (M31).
