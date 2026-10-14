@@ -121,11 +121,13 @@ def controle_de_signe(x: float, regle: Regle, epsilon: float, echelle: float) ->
 
 def dans_la_tolerance(residu: float, echelle: float, epsilon: float) -> bool:
     """Forme commune des identités par pas : |résidu| ≤ ε × S (NaN : faux)."""
+    # eq:noyau-tolerance-pas
     return abs(residu) <= epsilon * echelle
 
 
 def valeur_nette_stock(positions: Mapping[str, float], secteur: str) -> float:
     """V par le stock : actifs moins passifs du bilan du secteur, dans l'ordre des postes."""
+    # eq:noyau-valeur-nette-stock
     v = 0.0
     for poste, signe in POSTES_DU_BILAN[secteur]:
         v += signe * positions[poste]
@@ -139,11 +141,13 @@ def valeur_nette_flux(v_flux: float, resultat: float) -> float:
     (sous-colonne courante pour les entreprises) : les lignes 17 à 22 sont
     des échanges d'actifs, sans effet sur la valeur nette.
     """
+    # eq:noyau-valeur-nette-flux
     return v_flux + resultat
 
 
 def echelle_bilan(positions: Mapping[str, float], secteur: str) -> float:
     """S d'un secteur : somme des valeurs absolues de ses postes, valeur nette comprise."""
+    # eq:noyau-echelle-bilan
     s = 0.0
     for poste, _ in POSTES_DU_BILAN[secteur]:
         s += abs(positions[poste])
@@ -152,6 +156,7 @@ def echelle_bilan(positions: Mapping[str, float], secteur: str) -> float:
 
 def residu_somme_ligne(cellules: Mapping[str, float]) -> float:
     """Somme des cellules d'une ligne exécutée, dans l'ordre des colonnes."""
+    # eq:noyau-somme-ligne
     r = 0.0
     for v in cellules.values():
         r += v
@@ -160,11 +165,13 @@ def residu_somme_ligne(cellules: Mapping[str, float]) -> float:
 
 def residu_somme_colonne(courant: float, capital: float) -> float:
     """Somme d'une colonne de secteur (les deux sous-colonnes des entreprises réunies)."""
+    # eq:noyau-somme-colonne
     return courant + capital
 
 
 def residu_cloture_poste(position: float, ouverture: float, cumul: float) -> float:
     """Clôture moins (ouverture plus somme des lignes exécutées qui touchent le poste)."""
+    # eq:noyau-cloture-poste
     return position - (ouverture + cumul)
 
 
@@ -178,6 +185,7 @@ def residu_variation_monnaie(signes_et_montants: Iterable[tuple[tuple[int, int],
     Une ligne seule donne la porte ligne par ligne ; toutes les lignes du pas
     et la variation depuis l'ouverture donnent le contrôle du pas.
     """
+    # eq:noyau-variation-monnaie
     recompose = 0.0
     for signature, montant in signes_et_montants:
         recompose += signature[0] * montant
@@ -192,6 +200,7 @@ def residu_variation_monnaie_centrale(
         signes_et_montants: Iterable[tuple[tuple[int, int], float]],
         variations: Mapping[str, float]) -> float:
     """ΔH : Σ sgn_H × montant, moins ΔRes (mêmes arguments que `residu_variation_monnaie`)."""
+    # eq:noyau-variation-monnaie-centrale
     recompose = 0.0
     for signature, montant in signes_et_montants:
         recompose += signature[1] * montant
@@ -239,12 +248,14 @@ def verifier_identites(regle: Regle, residus: list[float], echelles: list[float]
 def verifier_tolerance_cumulee(v_stock: float, v_flux: float, echelle: float,
                                epsilon_v: float, *, t: int, secteur: str) -> float:
     """|V^stock − V^flux| ≤ ε_V × S, S à l'ouverture du pas ; rend l'écart / S."""
+    # eq:noyau-tolerance-cumulee
     return verifier_identite(v_stock - v_flux, echelle, epsilon_v, TOLERANCE_CUMULEE,
                              t=t, phase="9", secteur=secteur)
 
 
 def verifier_reserves_cloture(reserves: float, echelle_banque: float, *, t: int) -> None:
     """Res_{t+1} ≥ 0, strict, sans tolérance ; un découvert de clôture est un défaut."""
+    # eq:noyau-reserves-cloture
     if not controle_de_signe(reserves, RESERVES_CLOTURE, 0.0, echelle_banque):
         raise DefautComptable(
             "réserves de clôture négatives : le refinancement de la phase 8 (c) ne couvre "
@@ -268,6 +279,7 @@ def verifier_caisse(positions: Mapping[str, float], echelles: Mapping[str, float
     (`mouvements_par_ligne`, ligne → poste → mouvement) est strictement
     négatif, relevées seulement en cas de défaut.
     """
+    # eq:noyau-caisse-nette
     for moyen, payeur in MOYENS_LECTURE_NETTE:
         position = positions[moyen]
         echelle_payeur = echelles[payeur]
