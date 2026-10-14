@@ -17,15 +17,26 @@ Contrat : ADR 0012, F2, et annotation du 07/10/2026 (questions de `coder` sur
 Un nom est lié à n_a (ou n_m) par une **affectation simple** (`=`, affectation
 annotée, affectation de n-uplet terme à terme, `:=`), par un **import renommé**
 (`from … import PAS_PAR_AN as N`) ou par la **valeur par défaut d'un
-paramètre** ; une conversion `float(n_a)` ou `int(n_a)` est traversée ;
-`n_a ** -1` (puissance négative constante) est une division par n_a.
+paramètre** ; un **attribut** l'est par une affectation simple ou annotée
+(`self.n = PAS_PAR_AN.valeur`, puis `x / self.n`) ; une liaison vaut quel que
+soit son ordre dans le texte (`M = N` écrit avant `N = PAS_PAR_AN.valeur`) ;
+une conversion `float(n_a)` ou `int(n_a)` est traversée ; `n_a ** -1`
+(puissance négative constante) est une division par n_a.
 
-**Hors du critère** : le littéral `12` (ou `12.0`). Le critère écrit avant
-l'essai nomme n_a par son paramètre (`PAS_PAR_AN.valeur`, `pas_par_an`, `n_a`) ;
-un diviseur littéral ne se distingue pas, sur l'arbre, d'un autre 12, et un n_a
-écrit en dur est un autre défaut (paramètre non typé, ADR 0012, F1). Mesure du
-14/10/2026 : aucune division, puissance ni division entière par un littéral 12
-dans `src/` (`grep -rnE` des opérateurs suivis de 12).
+**Hors du critère**, déclarés (et fixés par `test_formes_hors_du_critere`) :
+- la liaison par une boucle (`for n in (PAS_PAR_AN.valeur,)`), ou par toute
+  autre construction que celles qui précèdent ;
+- un exposant `Fraction(1, PAS_PAR_AN.valeur)` (ou tout appel qui construit
+  1/n_a sans `/` ni puissance négative) ;
+- les arguments nommés des fonctions de division (`np.divide(x1=x,
+  x2=PAS_PAR_AN.valeur)`) : seul le second argument positionnel est lu ;
+- le littéral `12` (ou `12.0`). Le critère écrit avant l'essai nomme n_a par son
+  paramètre (`PAS_PAR_AN.valeur`, `pas_par_an`, `n_a`) ; un diviseur littéral ne
+  se distingue pas, sur l'arbre, d'un autre 12, et un n_a écrit en dur est un
+  autre défaut (paramètre non typé, ADR 0012, F1). Ce défaut est contrôlé à
+  part par `test_aucun_douze_litteral_dans_src` : aucun littéral 12 ni 12.0
+  n'est opérande de `/`, `//`, `%`, `**` (ni de leur forme augmentée), ni
+  argument de `divmod`, dans `src/`.
 
 Le **calcul de date sur l'entier t** (`divmod`, `//`, `%` par n_a ou n_m) est
 admis dans `nations.moteur.calendrier` seulement, par la liste d'exemptions
@@ -77,9 +88,15 @@ class Detecteur(ast.NodeVisitor):
     """Relève les divisions et puissances par n_a (ou n_m) d'un module, avec leur fonction.
 
     Les alias (affectations simple, annotée, de n-uplet et `:=`, imports
-    renommés, valeurs par défaut des paramètres) sont relevés en une passe, dans
-    l'ordre du texte, avant le parcours : aucun point fixe. La portée n'est pas
-    suivie : un alias vaut dans tout le module (au plus strict).
+    renommés, valeurs par défaut des paramètres, attributs affectés) sont
+    relevés avant le parcours, par un point fixe sur les liaisons du module :
+    l'ordre du texte n'importe pas. Les fermetures de n_a et de n_m avancent en
+    parallèle, chacune indépendamment de l'autre ; après k tours, chacune
+    contient au moins les noms liés par une chaîne de k liaisons, et une chaîne
+    a au plus L liaisons : chacune se stabilise en au plus L tours, et un
+    dernier tour sans ajout l'atteste, soit au plus L + 1 tours de L liaisons. La portée n'est pas suivie :
+    un alias vaut dans tout le module (au plus strict) ; un attribut lié
+    (`self.n`) vaut pour tout attribut de même nom (`autre.n`), noté `.n`.
     """
 
     def __init__(self, module, arbre):
@@ -89,14 +106,15 @@ class Detecteur(ast.NodeVisitor):
         # Divisions de l'exposant d'une puissance relevée : relevées avec elle.
         self.absorbees = set()
         self.alias_n_a, self.alias_n_m = set(), set()
-        liaisons = sorted(((n.lineno, n.col_offset, nom, valeur)
-                           for n in ast.walk(arbre) for nom, valeur in _liaisons(n)),
-                          key=lambda x: x[:2])
-        for _, _, nom, valeur in liaisons:
-            if self._mention(valeur, NOMS_N_A, self.alias_n_a):
-                self.alias_n_a.add(nom)
-            if self._mention(valeur, NOMS_N_M, self.alias_n_m):
-                self.alias_n_m.add(nom)
+        liaisons = [liaison for n in ast.walk(arbre) for liaison in _liaisons(n)]
+        nouveau = True
+        while nouveau:
+            nouveau = False
+            for nom, valeur in liaisons:
+                for noms, alias in ((NOMS_N_A, self.alias_n_a), (NOMS_N_M, self.alias_n_m)):
+                    if nom not in alias and self._mention(valeur, noms, alias):
+                        alias.add(nom)
+                        nouveau = True
 
     @staticmethod
     def _mention(noeud, noms, alias):
@@ -108,7 +126,7 @@ class Detecteur(ast.NodeVisitor):
         if isinstance(noeud, ast.Name):
             return noeud.id in noms or noeud.id in alias
         if isinstance(noeud, ast.Attribute):
-            if noeud.attr in noms:
+            if noeud.attr in noms or "." + noeud.attr in alias:
                 return True
             return noeud.attr == "valeur" and Detecteur._mention(noeud.value, noms, alias)
         return False
@@ -232,9 +250,12 @@ def _liaisons(noeud):
 
 
 def _cibles(cible, valeur):
-    """Nom simple, ou n-uplet terme à terme quand la valeur est un n-uplet de même longueur."""
+    """Nom simple, attribut (noté `.attr`), ou n-uplet terme à terme quand la valeur est un
+    n-uplet de même longueur."""
     if isinstance(cible, ast.Name):
         yield cible.id, valeur
+    elif isinstance(cible, ast.Attribute):
+        yield "." + cible.attr, valeur
     elif isinstance(cible, (ast.Tuple, ast.List)) and isinstance(valeur, (ast.Tuple, ast.List)) \
             and len(cible.elts) == len(valeur.elts):
         for c, v in zip(cible.elts, valeur.elts):
@@ -307,6 +328,16 @@ def test_exemptions_fermees_et_nommees():
     ("def f(x):\n    return (1 + x) ** (PAS_PAR_AN.valeur ** -1)\n", "puissance en n_a"),
     ("def f(t, n=PAS_PAR_TOUR.valeur):\n    return t % int(n)\n",
      "division entière par n_a ou n_m"),
+    # Attributs liés par affectation simple, annotée ou de n-uplet ; alias à ordre inversé.
+    ("def f(o, x):\n    o.n = PAS_PAR_AN.valeur\n    return x / o.n\n", "division par n_a"),
+    ("def f(o, x):\n    o.n: int = PAS_PAR_AN.valeur\n    return x / o.n\n", "division par n_a"),
+    ("def f(o, x):\n    o.a, o.n = 1.0, PAS_PAR_AN.valeur\n    return x / o.n\n",
+     "division par n_a"),
+    ("M = N\nN = PAS_PAR_AN.valeur\ndef f(x):\n    return x / M\n", "division par n_a"),
+    # Ordre inversé à même profondeur (`ast.walk` parcourt en largeur) : `o.m = M` est vu
+    # avant `M = …`.
+    ("def f(t, o):\n    o.m = M\n    M = PAS_PAR_TOUR.valeur\n    return t % o.m\n",
+     "division entière par n_a ou n_m"),
 ])
 def test_le_detecteur_releve_les_ecarts(texte, nature):
     """Chaque forme d'écart est relevée, avec sa nature et sa fonction."""
@@ -323,6 +354,8 @@ def test_le_detecteur_releve_les_ecarts(texte, nature):
     "def f(x):\n    return x * PAS_PAR_AN.valeur ** 2\n",
     "def f(x, n=PAS_PAR_AN.valeur + 1):\n    return x / n\n",
     "def f(x):\n    return x / 12\n",
+    "def f(o, x):\n    o.n = PAS_PAR_AN.valeur + 1\n    return x / o.n\n",
+    "M = N\nN = PAS_PAR_AN.valeur + 1\ndef f(x):\n    return x / M\n",
 ])
 def test_le_detecteur_ne_releve_pas_le_reste(texte):
     """Division par un élément indexé par n_a, par n_a + 1, produit, autres puissances : admis."""
@@ -338,3 +371,93 @@ def test_un_ecart_hors_des_exemptions_est_signale():
     texte = "def date(t):\n    return (1 + t) ** (1 / PAS_PAR_AN.valeur)\n"
     assert ecarts(releves_du_texte("nations.moteur.calendrier", texte)) == [
         ("nations.moteur.calendrier", "date", "puissance en n_a", 2)]
+
+
+def test_un_attribut_lie_dans_une_methode_est_releve_avec_sa_classe():
+    """`self.n` lié dans `__init__`, divisé dans une autre méthode : relevé dans `C.f`."""
+    texte = ("class C:\n    def __init__(self):\n        self.n = PAS_PAR_AN.valeur\n"
+             "    def f(self, x):\n        return x / self.n\n")
+    assert [(f, n) for _, f, n, _ in releves_du_texte("m", texte)] == [("C.f",
+                                                                         "division par n_a")]
+
+
+@pytest.mark.parametrize("texte", [
+    "def f(x):\n    for n in (PAS_PAR_AN.valeur,):\n        return x / n\n",
+    "def f(x):\n    return (1 + x) ** Fraction(1, PAS_PAR_AN.valeur)\n",
+    "def f(x):\n    return np.divide(x1=x, x2=PAS_PAR_AN.valeur)\n",
+])
+def test_formes_hors_du_critere(texte):
+    """Formes déclarées hors du critère dans la docstring du module : non relevées. Si l'une
+    d'elles vient à l'être, la docstring est à mettre à jour avec ce test."""
+    assert releves_du_texte("m", texte) == []
+
+
+# --------------------------------------------------------------------------
+# Littéral 12 : hors du critère « conversion unique », contrôlé à part
+# --------------------------------------------------------------------------
+
+_OPERATEURS_DOUZE = (ast.Div, ast.FloorDiv, ast.Mod, ast.Pow)
+
+
+def _douze(noeud):
+    """Le nœud est-il le littéral 12 ou 12.0 (signe unaire compris) ?"""
+    if isinstance(noeud, ast.UnaryOp) and isinstance(noeud.op, (ast.USub, ast.UAdd)):
+        noeud = noeud.operand
+    return (isinstance(noeud, ast.Constant) and type(noeud.value) in (int, float)
+            and noeud.value == 12)
+
+
+def douzes_du_texte(texte):
+    """Lignes où un littéral 12 est opérande direct de `/`, `//`, `%`, `**` (forme augmentée
+    comprise) ou argument positionnel de `divmod`."""
+    lignes = []
+    for n in ast.walk(ast.parse(texte)):
+        if isinstance(n, ast.BinOp) and isinstance(n.op, _OPERATEURS_DOUZE):
+            operandes = (n.left, n.right)
+        elif isinstance(n, ast.AugAssign) and isinstance(n.op, _OPERATEURS_DOUZE):
+            operandes = (n.value,)
+        elif isinstance(n, ast.Call) and _nom_appele(n) == "divmod":
+            operandes = n.args
+        else:
+            continue
+        if any(_douze(o) for o in operandes):
+            lignes.append(n.lineno)
+    return sorted(lignes)
+
+
+def test_aucun_douze_litteral_dans_src():
+    """Aucun n_a écrit en dur : aucun littéral 12 ni 12.0 opérande de `/`, `//`, `%`, `**`, ni
+    argument de `divmod`, dans `src/` (ADR 0012, F1)."""
+    trouves = [(chemin.relative_to(RACINE).as_posix(), ligne)
+               for chemin in sorted(SRC.rglob("*.py"))
+               for ligne in douzes_du_texte(chemin.read_text(encoding="utf-8"))]
+    assert trouves == []
+
+
+@pytest.mark.parametrize("texte", [
+    "def f(x):\n    return x / 12\n",
+    "def f(x):\n    return x / 12.0\n",
+    "def f(x):\n    return x / -12\n",
+    "def f(t):\n    return t // 12\n",
+    "def f(t):\n    return t % 12\n",
+    "def f(x):\n    return (1 + x) ** 12 - 1\n",
+    "def f(x):\n    x /= 12\n    return x\n",
+    "def f(t):\n    return divmod(t, 12)\n",
+])
+def test_le_controle_du_douze_releve_les_formes_adverses(texte):
+    """Chaque forme est relevée, à sa ligne."""
+    assert douzes_du_texte(texte) == [2]
+
+
+@pytest.mark.parametrize("texte", [
+    "def f(x):\n    return x * 12\n",
+    "def f(x):\n    return x + 12\n",
+    "def f(r, x):\n    return r[12] / x\n",
+    "def f(x):\n    return x / 13\n",
+    "def f(x):\n    return x / PAS_PAR_AN.valeur\n",
+    "def f(t):\n    return divmod(t, 7)\n",
+    "def f(x):\n    return x / True\n",
+])
+def test_le_controle_du_douze_ne_releve_pas_le_reste(texte):
+    """Produit, somme, indice 12, autre diviseur, n_a nommé : non relevés."""
+    assert douzes_du_texte(texte) == []

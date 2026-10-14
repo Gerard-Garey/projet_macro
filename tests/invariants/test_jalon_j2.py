@@ -901,7 +901,8 @@ def test_capitalisation_annuelle(generateur, monkeypatch, publier):
                 if ligne == "11a":
                     montants["iB_BH"] = par_pas(TauxDeFlux(i_b)) * vue.ouverture.B_H
                 elif ligne == "10":
-                    montants["iD_DF"] = par_pas(TauxDeFlux(i_d)) * vue.ouverture.D_F
+                    # D_F à l'ouverture se lit en max(0 ; ·) (contrat de poussière, A8).
+                    montants["iD_DF"] = par_pas(TauxDeFlux(i_d)) * max(0.0, vue.ouverture.D_F)
                 vue.proposer(ligne, montants)
             for nom in siege.ecrit:
                 vue.ecrire_pas(nom, vue.dernier_prix() if nom == ordo.INDICE_DES_PRIX else 1.0)
