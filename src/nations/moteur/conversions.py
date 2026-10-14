@@ -28,6 +28,7 @@ def par_pas(taux: TauxDeFlux) -> float:
     """Taux de flux par pas : x^pas = x^an / n_a (conversion linéaire)."""
     if type(taux) is not TauxDeFlux:
         raise TypeError(f"par_pas : TauxDeFlux attendu, {type(taux).__name__} reçu")
+    # eq:moteur-conversion-taux
     return taux.valeur / PAS_PAR_AN.valeur
 
 
@@ -35,4 +36,5 @@ def facteur_par_pas(taux: TauxDeCroissance) -> float:
     """Facteur de croissance par pas : 1 + x^pas = (1 + x^an)^{1/n_a} (conversion géométrique)."""
     if type(taux) is not TauxDeCroissance:
         raise TypeError(f"facteur_par_pas : TauxDeCroissance attendu, {type(taux).__name__} reçu")
+    # eq:moteur-conversion-croissance
     return (1.0 + taux.valeur) ** (1.0 / PAS_PAR_AN.valeur)

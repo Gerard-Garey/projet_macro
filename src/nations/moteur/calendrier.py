@@ -37,6 +37,7 @@ def date(t: int) -> tuple[int, int]:
     """Date affichée du pas t : (année, mois), année et mois comptés à partir de 1."""
     if type(t) is not int or t < 0:
         raise ValueError(f"pas {t!r} : entier ≥ 0 attendu")
+    # eq:moteur-calendrier-date
     annee, rang = divmod(t, PAS_PAR_AN.valeur)
     return annee + 1, rang + 1
 
@@ -48,4 +49,5 @@ def est_date_de_decision(t: int) -> bool:
     """
     if type(t) is not int or t < 0:
         raise ValueError(f"pas {t!r} : entier ≥ 0 attendu")
+    # eq:moteur-date-decision
     return t % PAS_PAR_TOUR.valeur == 0

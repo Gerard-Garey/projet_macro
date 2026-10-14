@@ -41,6 +41,7 @@ def avancer(registre: tuple[float, ...], prix: float) -> tuple[float, ...]:
     _verifier(registre)
     if type(prix) is not float or not math.isfinite(prix) or not prix > 0.0:
         raise ValueError(f"indice des prix {prix!r} : float fini > 0 attendu")
+    # eq:moteur-registre-prix
     return (prix,) + registre[:-1]
 
 
@@ -53,6 +54,7 @@ def dernier_prix(registre: tuple[float, ...]) -> float:
 def glissement(registre: tuple[float, ...]) -> float:
     """Glissement annuel du tour précédent : π_{t−1} = P_{t−1} / P_{t−1−n_a} − 1."""
     _verifier(registre)
+    # eq:moteur-glissement
     return registre[0] / registre[PAS_PAR_AN.valeur] - 1.0
 
 
