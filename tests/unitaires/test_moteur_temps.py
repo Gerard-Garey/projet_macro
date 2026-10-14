@@ -65,7 +65,7 @@ def test_quatre_parametres_du_cadre():
         assert "M22" in p.source
         assert p.etiquettes and all(e.startswith("eq:") for e in p.etiquettes)
         assert p.unite in UNITES
-    assert TOLERANCE_IDENTITE_PAS.etiquettes == ("eq:noyau-tolerance-pas",)
+    assert TOLERANCE_IDENTITE_PAS.etiquettes == ("eq:noyau-tolerance-pas", "eq:noyau-caisse-nette")
     assert TOLERANCE_IDENTITE_CUMULEE.etiquettes == ("eq:noyau-tolerance-cumulee",)
     assert PAS_PAR_TOUR.etiquettes == ("eq:moteur-date-decision",)
     assert set(PAS_PAR_AN.etiquettes) == {
