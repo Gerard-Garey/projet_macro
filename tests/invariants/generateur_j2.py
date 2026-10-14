@@ -148,7 +148,11 @@ NOMS_DES_TIRAGES = (
 # position nulle à la cible a une bande de part et d'autre de zéro.
 # Les bornes hautes de B_CB / S et de L_CB / S ne contraignent pas : quand
 # E^CB ≥ 0, S_CB = 2 (B_CB + L_CB), si bien que chaque rapport est au plus 0,5
-# (structurel, déclaré ; les bandes ne sont pas modifiées).
+# (structurel, déclaré ; ces bornes hautes ne sont pas modifiées).
+# Révision prospective de B_CB / S (#98) : borne basse −0,2 jusqu'au 14/10/2026,
+# portée à 0 (décision du mainteneur, avis de macro : une détention négative de
+# titres par la banque centrale n'a pas de sens) ; mesure à la date de la
+# révision : min 0,118.
 BANDES = {
     ("D_H", "menages"): (0.2, 0.6),
     ("B_H", "menages"): (0.0, 0.2),
@@ -158,7 +162,7 @@ BANDES = {
     ("L", "banque"): (0.1, 0.5),
     ("B_Bk", "banque"): (0.0, 0.3),
     ("Res", "banque"): (0.0, 0.1),
-    ("B_CB", "banque_centrale"): (-0.2, 0.6),
+    ("B_CB", "banque_centrale"): (0.0, 0.6),
     ("L_CB", "banque_centrale"): (0.0, 0.5),
     ("M_G", "etat"): (-1e-12, 0.3),
 }
