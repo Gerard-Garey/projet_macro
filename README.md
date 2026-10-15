@@ -12,7 +12,7 @@ Travail en cours : jalons et périmètre de la branche courante dans `docs/feuil
 |---|---|
 | `src/nations/` | Moteur v3, en couches (ADR 0002) : `noyau` (comptes, seul lieu d'exécution des flux monétaires), `blocs` (un module par bloc de la spécification), `moteur` (ordonnanceur et paramètres typés), `etat` (schéma d'état, sauvegarde et reprise), `observation` (séries, sans effet sur la trajectoire), `scenarios` (état initial résolu, archétypes), `leviers` (commandes du joueur) |
 | `tests/unitaires/`, `tests/invariants/` | Batteries de vérification (propriétés, invariants d'architecture, budget de calcul) |
-| `outils/` | Scripts de contrôle : concordance spécification ↔ moteur, matrices, état stationnaire sous forme fermée, compilation de la spécification |
+| `outils/` | Scripts de contrôle : concordance spécification ↔ moteur, matrices, état stationnaire sous forme fermée, compilation de la spécification ; relevé du coût du noyau dans les journaux de la CI |
 | `docs/specification/` | Spécification LaTeX (`nations_et_marches.tex`, PDF versionné) et ses conventions (`CONVENTIONS.md`) |
 | `docs/blocs/` | Inventaire des blocs et fiches comparatives (origine de chaque approche) |
 | `docs/adr/` | Décisions d'architecture et d'organisation |
@@ -58,6 +58,12 @@ uv run python outils/etat_stationnaire.py [--nu-g-retenu X] [--json fichier]
 ```
 
 Codes de sortie : 0 si tout se résout et que le plus grand résidu des contrôles est au plus 1e−12 ; 1 sur un refus de domaine (paramètre hors domaine ou borne supposée inactive par les formes fermées, par exemple plafond de E1 ou dette brute négative) ; 2 si un résidu dépasse 1e−12 (la sortie est alors publiée en entier). Les tests de propriétés sont dans `tests/unitaires/test_etat_stationnaire.py`.
+
+Relevé du coût du noyau seul dans des journaux bruts du job « Tests » de la CI (un fichier `run_<run>_job_<job>.txt` par job, ou un répertoire de tels fichiers) : run, commit, image, coût et ses cinq répétitions par exécution, puis minimum, médiane, maximum et rapport max / min, sur l'ensemble et par image ; refus (code 2) d'un journal incomplet ou ambigu, de commits différents, de deux journaux au même run ; bibliothèque standard seulement ; issue #105) :
+
+```bash
+uv run python outils/releve_cout_ci.py <journaux…> [--commit SHA] [--json]
+```
 
 Compilation de la spécification (XeLaTeX ; MiKTeX sur le poste local, TeX Live en session cloud et en CI) :
 
