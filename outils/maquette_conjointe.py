@@ -103,7 +103,8 @@ Hypothèses de maquette que la spécification ne définit pas, déclarées
 
 Usage : `uv run python outils/maquette_conjointe.py [--json FICHIER]`.
 Codes de sortie : 0 si chaque carte tient son point fixe (résidu ≤
-`TOL_POINT_FIXE`), chaque racine nominale attendue est trouvée, la variété
+`TOL_POINT_FIXE` ; au socle, sur chaque carte de `cas_controles`), chaque
+racine nominale attendue est trouvée, la variété
 des identités est invariante (≤ `TOL_GAUCHE`, socle et variantes), aucun
 coude n'est franchi par les différences finies (≤ `TOL_COUDE`) et les
 racines en 1/Γ̄ de la variété sont celles des stocks `TENUS_ATTENDUS`
@@ -997,6 +998,31 @@ def marge_conjointe() -> dict[str, object]:
     return {"facteur": f, "x2": regimes}
 
 
+@lru_cache(maxsize=None)
+def frontiere_marge(regime: str) -> float:
+    """Facteur commun de β, a_π et η_r où la lecture (c) d'un seul régime de l'emploi passe 1 (π̄ = 2 %),
+    bissection sur `BORNES_MARGE`."""
+    return frontiere(lambda x: lectures(_ensemble(x), regime).rayon_c, *BORNES_MARGE)
+
+
+def _ensemble_sans_aI(f_aI: float = 1e-3):
+    """β, a_π et η_r ×2 et a_I ×`f_aI` (0,001 par défaut), π̄ = 2 % : branche où la boucle proportionnelle
+    subsiste quand a_I tend vers 0."""
+    return parametres_socle(0.02, facteurs={nom: 2.0 for nom in GAINS_ENSEMBLE} | {"a_I": f_aI})
+
+
+def ecart_racine_reelle(f_aI: float) -> float | None:
+    """1 − racine (c) du régime de hausse, β, a_π et η_r ×2 et a_I ×`f_aI`, π̄ = 2 % ; sans objet (None) si
+    cette racine n'est pas réelle positive (mode nominal lent, proportionnel à a_I quand a_I tend vers 0)."""
+    z = lectures(_ensemble_sans_aI(f_aI), "hausse").suivante
+    return 1 - z.real if nature_racine(z)[0] == "réelle positive" else None
+
+
+def module_paire(valeurs) -> float | None:
+    """Module de la plus grande paire complexe (|Im λ| > 1e−12) ; sans objet (None) si le spectre est réel."""
+    return max((abs(z) for z in valeurs if abs(z.imag) > 1e-12), default=None)
+
+
 # --- Couverture des intérêts φ (bloc 9, E4) -----------------------------------------------------
 
 PHI_TABLE = (0.0, 0.1, 0.25, 0.5)  # φ de la table de la fiche 9 (finances_publiques.md, § 7), φ = 1 : socle
@@ -1063,8 +1089,9 @@ def cas_controles() -> tuple[tuple[str, object, str, str, str, str], ...]:
     """Cartes du socle dont la lecture (c) est publiée, pour les contrôles du code de sortie (`controles_tenus`).
 
     (étiquette, paramètres, régime, taux, financement, B6) : six cas du socle (π̄ = 0, 2 et 10 %), grille G
-    augmentée, mesures complémentaires, table φ et φ* (π̄ = 2 et 10 %), marge conjointe (frontière et ×2),
-    variantes de F. Ordre fixe ; un cas présent dans deux familles est contrôlé deux fois.
+    augmentée (π̄ = 2 %), mesures complémentaires, table φ et φ* (π̄ = 2 et 10 %), marge conjointe (frontière
+    des deux régimes, frontière du régime de hausse, ×2, ×2 avec a_I ×0,001 et ×0,01), grille G augmentée à
+    π̄ = 0 et 10 %, variantes de F. Ordre fixe ; un cas présent dans deux familles est contrôlé deux fois.
     """
     cas = []
     regimes = ("hausse", "baisse")
@@ -1077,8 +1104,14 @@ def cas_controles() -> tuple[tuple[str, object, str, str, str, str], ...]:
         for phi in PHI_TABLE + (phi_star(pi),):
             cas += [(f"φ = {phi:g}, π̄ = {pi:g}", replace(parametres_socle(pi), phi=phi), r, "regle", "F", "regle")
                     for r in regimes]
-    for f in (marge_conjointe()["facteur"], 2.0):
+    for f in (marge_conjointe()["facteur"], frontiere_marge("hausse"), 2.0):
         cas += [(f"marge ×{f:g}", _ensemble(f), r, "regle", "F", "regle") for r in regimes]
+    for f_aI, nom in ((1e-3, "0,001"), (1e-2, "0,01")):
+        cas += [(f"marge ×2, a_I ×{nom}", _ensemble_sans_aI(f_aI), r, "regle", "F", "regle") for r in regimes]
+    for pi in (0.0, 0.10):
+        for nom, fac in branches_grille() + branches_ajoutees():
+            cas += [(f"grille {nom}, π̄ = {pi:g}", parametres_socle(pi, facteurs=dict(fac)), r, "regle", "F", "regle")
+                    for r in regimes]
     for config, parametres in CONFIGURATIONS_F.items():
         for f_ti in LAMBDA_TI_F:
             par = parametres(0.02)
@@ -1104,6 +1137,12 @@ def tenus_et_nominales() -> tuple[int, list[str], float]:
     return len(cas), hors, nominale
 
 
+def residu_cas_controles() -> float:
+    """Plus grand résidu du point fixe (`residu_point_fixe`) sur les cartes de `cas_controles`."""
+    return max(residu_point_fixe(carte_socle(par, regime, taux, financement, B6))
+               for _, par, regime, taux, financement, B6 in cas_controles())
+
+
 # --- Relevé des chiffres cités --------------------------------------------------------------
 
 
@@ -1114,7 +1153,7 @@ class Chiffre:
     ident: str
     publie: str  # tel qu'écrit dans la spécification, virgule décimale
     motif: str  # chaîne cherchée dans le texte LaTeX
-    nature: str  # rayon, période, demi-vie, frontière, marge
+    nature: str  # rayon, période, demi-vie, frontière, marge, écart à 1
     maquette: str
     hypothese: str
     calcul: object  # () -> float
@@ -1137,6 +1176,11 @@ M4 = (0.5, 0.6, 0.7, 0.8)
 
 def _moins(a: float, b: float | None) -> float | None:
     return None if b is None else a - b
+
+
+def _mise_a_echelle(x: float | None, exposant: int) -> float | None:
+    """x en unités de 10^-exposant ; sans objet (None) reste sans objet."""
+    return None if x is None else x * 10 ** exposant
 
 
 def _extremes(fonction, valeurs, quel):
@@ -1369,6 +1413,9 @@ def releve() -> list[Chiffre]:
     ajouter("socle.marge_conjointe.facteur", "1,7135", "frontière", "socle",
             f"facteur commun de {', '.join(GAINS_ENSEMBLE)} où la lecture (c) passe 1, pire des deux régimes, "
             "π̄ = 2 %", lambda: marge_conjointe()["facteur"])
+    ajouter("socle.marge_conjointe.facteur.hausse", "1,9921", "frontière", "socle",
+            f"facteur commun de {', '.join(GAINS_ENSEMBLE)} où la lecture (c) du régime de hausse passe 1, "
+            "π̄ = 2 %", lambda: frontiere_marge("hausse"))
     for regime, pub, per in (("baisse", "1,027785", "19,3"), ("hausse", "1,000644", "17,0")):
         ajouter(f"socle.marge_conjointe.x2.{regime}", pub, "rayon", "socle",
                 f"{', '.join(GAINS_ENSEMBLE)} ×2, régime de {regime}, lecture (c), π̄ = 2 %",
@@ -1381,15 +1428,25 @@ def releve() -> list[Chiffre]:
             lambda: rayon_c(_ensemble(0.5)), ou=socle_bc)
     ajouter("socle.marge_conjointe.x2.a_I÷1000", "1,0265", "rayon", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, pire des deux régimes, lecture (c), π̄ = 2 %",
-            lambda: rayon_c(parametres_socle(0.02, facteurs={nom: 2.0 for nom in GAINS_ENSEMBLE} | {"a_I": 1e-3})),
-            ou=socle_bc)
+            lambda: rayon_c(_ensemble_sans_aI()), ou=socle_bc)
+    ajouter("socle.marge_conjointe.x2.a_I÷1000.hausse", "0,999994", "rayon", "socle",
+            f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, régime de hausse, π̄ = 2 %, lecture (c), racine "
+            "réelle",
+            lambda: lectures(_ensemble_sans_aI(), "hausse").rayon_c, ou=socle_bc)
+    # Écart à 1 de cette racine réelle, publié en 10⁻⁶ (a_I ÷ 1000) et en 10⁻⁵ (a_I ÷ 100) : remesure mise
+    # à l'échelle de la puissance de dix publiée.
+    for nom, f_aI, exposant in (("a_I÷1000", 1e-3, 6), ("a_I÷100", 1e-2, 5)):
+        ajouter(f"socle.marge_conjointe.x2.{nom}.hausse.ecart", "6,2", "écart à 1", "socle",
+                f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×{f_aI:g}, régime de hausse, π̄ = 2 % : "
+                f"1 − racine réelle de la lecture (c), en 10^-{exposant}",
+                lambda f_aI=f_aI, exposant=exposant: _mise_a_echelle(ecart_racine_reelle(f_aI), exposant),
+                motif=f"6{{,}}2 \\cdot 10^{{-{exposant}}}", ou=socle_bc)
     # Module de la paire complexe, non le rayon (c) : celui-ci est porté par une racine réelle (0,999994).
-    par_aI = lambda: parametres_socle(0.02, facteurs={nom: 2.0 for nom in GAINS_ENSEMBLE} | {"a_I": 1e-3})
     ajouter("socle.marge_conjointe.x2.a_I÷1000.hausse.paire", "0,9993", "racine", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, régime de hausse, π̄ = 2 % : module de la plus grande "
             "paire complexe du spectre restreint à la variété des identités",
-            lambda: max(abs(z) for z in np.linalg.eigvals(
-                jacobiennes_carte(carte_socle(par_aI(), "hausse"), par_aI())[1]) if abs(z.imag) > 1e-12),
+            lambda: module_paire(np.linalg.eigvals(
+                jacobiennes_carte(carte_socle(_ensemble_sans_aI(), "hausse"), _ensemble_sans_aI())[1])),
             ou=socle_bc)
 
     # sec:finances_publiques-impots, sec:ecartees et fiche 9 (finances_publiques.md, § 7) : couverture φ (E4).
@@ -1682,6 +1739,7 @@ def calculer() -> dict[str, object]:
         "socle": max(residu_point_fixe(carte_socle(parametres_socle(pi), r)) for pi in (0.0, 0.02, 0.10)
                      for r in ("hausse", "baisse")),
         "variantes_F": max(v["residu"] for v in variantes),
+        "cas_controles": residu_cas_controles(),
     }
     n_cas, hors_tenus, nominale_cas = tenus_et_nominales()
     nominales = {
