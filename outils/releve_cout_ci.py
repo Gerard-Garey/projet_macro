@@ -17,7 +17,10 @@ GitHub Actions, un par job). Les horodatages en tête de ligne
   (`run_<run_id>_job_<job_id>.txt`), sinon absent ;
 - `commit` : SHA imprimé par l'étape de checkout, ligne qui suit
   `git log -1 --format=%H` ; à défaut, ligne `fetch … +<sha>:refs/…` ; à
-  défaut, la valeur de `--commit` ;
+  défaut, la valeur de `--commit`. Pour une exécution déclenchée par
+  `pull_request`, ce commit est le commit de fusion (`refs/pull/<N>/merge`)
+  que l'étape de checkout extrait, non la tête de la branche ; `--commit`
+  désigne alors ce commit de fusion ;
 - `image` : ligne `ImageOS=<os> ImageVersion=<version>` de l'étape « Image de
   l'exécuteur » (publiée `<os> <version>`) ;
 - `C` et ses répétitions : ligne
@@ -106,8 +109,8 @@ def lire_journal(chemin: Path, commit_declare: str | None = None) -> Releve:
     images = [m for m in (LIGNE_IMAGE.match(l) for l in lignes) if m]
     if not images:
         raise JournalRefuse(f"{chemin} : aucune ligne « ImageOS=… ImageVersion=… »")
-    if len({m.groups() for m in images}) > 1:
-        raise JournalRefuse(f"{chemin} : plusieurs images différentes")
+    if len(images) > 1:
+        raise JournalRefuse(f"{chemin} : plusieurs images ({len(images)} lignes d'image), relevé ambigu")
 
     lignes_c = [m for m in (LIGNE_C.match(l) for l in lignes) if m]
     if not lignes_c:
