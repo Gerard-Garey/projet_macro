@@ -83,7 +83,8 @@ nomme la sienne :
   (#66), depuis les définitions de la fiche ; configurations « socle » et
   « fiche » (i_L = i_D = 3 %, ϑ = 0, τ_H = τ_F = 0), taux directeur selon
   BC1 ou tenu (avec ou sans π^e ancré), deux régimes de T4, λ_ti de base et
-  ×2. L'état stationnaire d'une variante est celui d'`etat_stationnaire` au
+  ×2 ; les variantes sont les quatre écritures du levier sur p K^vol, les
+  dépôts sur les ventes du pas et leur combinaison (`FINANCEMENTS`). L'état stationnaire d'une variante est celui d'`etat_stationnaire` au
   levier comptable (ou à ν_F) qui donne la cible de la variante
   (`parametres_etat`). Dans « fiche », B6 est à son coude (E^Bk = Π^Bk = 0) :
   ses deux branches sont linéarisées séparément, comme les deux régimes de
@@ -105,7 +106,8 @@ Codes de sortie : 0 si chaque carte tient son point fixe (résidu ≤
 des identités est invariante (≤ `TOL_GAUCHE`, socle et variantes), aucun
 coude n'est franchi par les différences finies (≤ `TOL_COUDE`) et les
 racines en 1/Γ̄ de la variété sont celles des stocks `TENUS_ATTENDUS`
-(`controles_tenus`), quels que soient les écarts aux valeurs publiées (ils
+et la racine nominale est trouvée sur chaque carte du socle dont une
+lecture (c) est publiée (`cas_controles`, `controles_tenus`), quels que soient les écarts aux valeurs publiées (ils
 sont publiés : le visa relève de l'expert pilote et du mainteneur) ; 2
 sinon. Déterministe : deux
 exécutions donnent une sortie identique à l'octet.
@@ -532,11 +534,25 @@ def etat_socle(par) -> tuple[dict, dict]:
 # lv*·p_lu·K_lu au lieu de lv*·[(1 − δ/n_a)K + p̂ I^{vol,plan}], selon les quatre écritures de la fiche :
 # prix p̂_t = p_{t−1}(1 + π*)^{1/n_a} ou p_{t−1}, capital d'ouverture K^vol_t ou après investissement
 # (1 − δ/n_a)K^vol_t + I^{vol,plan}_t. « Dépôts sur les ventes du pas » : la cible de F2 est ν_F n_a p_t v_t
-# au lieu de ν_F n_a p_{t−1}(1 + π*)^{2/n_a} v^e_{t+1}, levier comptable.
+# au lieu de ν_F n_a p_{t−1}(1 + π*)^{2/n_a} v^e_{t+1}, levier comptable. Combinaison des deux (première ligne du
+# tableau de la fiche, 1,4925) : levier sur p K^vol dans l'écriture de la précision de la fiche (L^cible =
+# lv*·p̂_t·K^vol_t d'ouverture) et dépôts sur les ventes du pas.
 LEVIERS_PK = {"levier_pK.p_hat.ouverture": ("p_hat", "ouverture"),
               "levier_pK.p_prec.ouverture": ("p_prec", "ouverture"),
               "levier_pK.p_hat.apres": ("p_hat", "apres"), "levier_pK.p_prec.apres": ("p_prec", "apres")}
-FINANCEMENTS = ("F",) + tuple(LEVIERS_PK) + ("depots_ventes",)
+LEVIER_PK_DEPOTS_VENTES = "levier_pK.p_hat.ouverture+depots_ventes"
+FINANCEMENTS = ("F",) + tuple(LEVIERS_PK) + ("depots_ventes", LEVIER_PK_DEPOTS_VENTES)
+
+
+def ecritures_financement(financement: str) -> tuple[str | None, bool]:
+    """Écriture du levier sur p K^vol (clé de `LEVIERS_PK`, None : F1 retenue) et dépôts sur les ventes du pas."""
+    if financement == LEVIER_PK_DEPOTS_VENTES:
+        return "levier_pK.p_hat.ouverture", True
+    if financement in LEVIERS_PK:
+        return financement, False
+    if financement in ("F", "depots_ventes"):
+        return None, financement == "depots_ventes"
+    raise ValueError(f"financement {financement!r}")
 TAUX_SOCLE = ("regle", "exogene", "exogene_ancre")
 # B6 : « regle », max(0, ·) tel qu'écrit ; « verse », argument sans plancher ; « plancher », dividende nul.
 # Les deux dernières sont les deux branches du coude de B6, linéarisées séparément là où il est atteint à
@@ -553,18 +569,20 @@ def parametres_etat(par, financement: str = "F"):
     K, K^vol, p et v ne dépendent ni de lv ni de ν_F (formes fermées, étapes 2 et 3). Le résidu du point
     fixe de la carte contrôle cette résolution.
     """
+    levier, depots_ventes = ecritures_financement(financement)
     if financement == "F":
         return par
     e = es.etat_stationnaire(par)
     c = _cadre(par)
-    if financement in LEVIERS_PK:
-        prix, capital = LEVIERS_PK[financement]
+    etat = par
+    if levier is not None:
+        prix, capital = LEVIERS_PK[levier]
         p_lu = e["p"] if prix == "p_hat" else e["p"] / c["Pp"]  # P_{t−1} = p/(1 + π̄)^{1/n_a}
         K_lu = e["K_vol"] if capital == "ouverture" else (1 - par.delta / par.n_a) * e["K_vol"] + e["I_vol"]
-        return replace(par, lv=par.lv * p_lu * K_lu / (c["Gam"] * e["K"]))
-    if financement == "depots_ventes":
-        return replace(par, nu_F=par.nu_F / c["Gam"])  # D_{F,t+1} = ν_F n_a p v, D_{F,t} = D_{F,t+1}/Γ̄
-    raise ValueError(f"financement {financement!r}")
+        etat = replace(etat, lv=par.lv * p_lu * K_lu / (c["Gam"] * e["K"]))
+    if depots_ventes:
+        etat = replace(etat, nu_F=par.nu_F / c["Gam"])  # D_{F,t+1} = ν_F n_a p v, D_{F,t} = D_{F,t+1}/Γ̄
+    return etat
 
 
 @lru_cache(maxsize=None)
@@ -586,6 +604,7 @@ def carte_socle(par, regime: str = "hausse", taux: str = "regle", financement: s
     if regime not in ("hausse", "baisse") or taux not in TAUX_SOCLE or financement not in FINANCEMENTS \
             or B6 not in BRANCHES_B6:
         raise ValueError(f"régime {regime!r}, taux {taux!r}, financement {financement!r}, B6 {B6!r}")
+    levier, depots_ventes = ecritures_financement(financement)
     e, o = etat_socle(parametres_etat(par, financement))
     n = par.n_a
     c = _cadre(par)
@@ -650,8 +669,8 @@ def carte_socle(par, regime: str = "hausse", taux: str = "regle", financement: s
         Tr_lev = P[0] * (1 + pis) * par.theta_Tr * y_pot
         Tr = min(Tr_lev, max(0.0, s["M_G"] + T_H - i_CB * B / n - G_plan))  # E6
         # Phase 3 : crédit (F1), sans refus.
-        if financement in LEVIERS_PK:
-            prix, capital = LEVIERS_PK[financement]
+        if levier is not None:
+            prix, capital = LEVIERS_PK[levier]
             p_hat = P[0] * (1 + pis)
             p_lu = p_hat if prix == "p_hat" else P[0]
             K_lu = s["K_vol"] if capital == "ouverture" else (1 - par.delta / n) * s["K_vol"] + I_plan / p_hat
@@ -689,7 +708,7 @@ def carte_socle(par, regime: str = "hausse", taux: str = "regle", financement: s
         l9 = s["i_L"] * s["L"] / n  # B3
         l10_H, l10_F = s["i_D"] * s["D_H"] / n, s["i_D"] * s["D_F"] / n  # B4
         T_F = par.tau_F * (C + G + I + dIN - WB - amort - l9 + l10_F)  # E5
-        if financement == "depots_ventes":
+        if depots_ventes:
             D_F_star = par.nu_F * n * p * v  # variante écartée : dépôts visés sur les ventes du pas
         else:
             D_F_star = par.nu_F * n * P[0] * (1 + pis) ** 2 * ve_1  # F2
@@ -789,6 +808,7 @@ class LecturesSocle:
     tenus_en_niveau: tuple[str, ...]  # cause des racines en 1/Γ̄ de la variété : stocks tenus en niveau
     residu_gauche: float  # max |g J − g/Γ̄|/|g| : gradient vecteur propre à gauche, la variété est invariante
     residu_identites: float  # max |g·x0|/(|g| PIB) à l'état initial
+    ecart_nominal: float  # |λ − 1| de la racine nominale exclue du spectre de la variété
 
     @property
     def rayon_c(self) -> float:
@@ -858,14 +878,16 @@ def lectures(par, regime: str = "hausse", taux: str = "regle", financement: str 
     PIB = etat_socle(parametres_etat(par, financement))[0]["PIB"]
     residu_identites = float(np.max(np.abs(G @ carte.x0) / np.linalg.norm(G, axis=1)) / PIB)
     residu_gauche = float(np.max(np.linalg.norm(Gs @ J - Gs * inv, axis=1) / np.linalg.norm(Gs, axis=1)))
-    brutes, variete = _sans_nominale(np.linalg.eigvals(J)), _sans_nominale(np.linalg.eigvals(J_var))
+    valeurs_variete = np.linalg.eigvals(J_var)
+    ecart_nominal = float(np.min(np.abs(valeurs_variete - 1)))
+    brutes, variete = _sans_nominale(np.linalg.eigvals(J)), _sans_nominale(valeurs_variete)
     multiple = lambda vs: sum(abs(z - inv) <= TOL_RACINE_MULTIPLE for z in vs)  # noqa: E731
     noyau = int(np.sum(np.linalg.svd(J - inv * np.eye(k), compute_uv=False) <= TOL_NOYAU))
     suivante = next(z for z in variete if abs(z - inv) > TOL_RACINE_MULTIPLE)
     tenus = tuple(sorted(nom for i, nom in enumerate(carte.noms)
                          if np.max(np.abs(J[i] - inv * np.eye(k)[i])) <= TOL_NOYAU))
     return LecturesSocle(inv, abs(brutes[0]), multiple(brutes), noyau, abs(variete[0]), multiple(variete),
-                         complex(suivante), tenus, residu_gauche, residu_identites)
+                         complex(suivante), tenus, residu_gauche, residu_identites, ecart_nominal)
 
 
 def lectures_socle(pi: float, regime: str) -> LecturesSocle:
@@ -1034,6 +1056,51 @@ def variantes_F() -> tuple[dict[str, object], ...]:
                                     carte_socle(par, regime, taux, financement, "regle"))
                             sortie.append(ligne)
     return tuple(sortie)
+
+
+def cas_controles() -> tuple[tuple[str, object, str, str, str, str], ...]:
+    """Cartes du socle dont la lecture (c) est publiée, pour les contrôles du code de sortie (`controles_tenus`).
+
+    (étiquette, paramètres, régime, taux, financement, B6) : six cas du socle (π̄ = 0, 2 et 10 %), grille G
+    augmentée, mesures complémentaires, table φ et φ* (π̄ = 2 et 10 %), marge conjointe (frontière et ×2),
+    variantes de F. Ordre fixe ; un cas présent dans deux familles est contrôlé deux fois.
+    """
+    cas = []
+    regimes = ("hausse", "baisse")
+    for pi in (0.0, 0.02, 0.10):
+        cas += [(f"socle π̄ = {pi:g}", parametres_socle(pi), r, "regle", "F", "regle") for r in regimes]
+    for nom, fac in branches_grille() + branches_ajoutees() + branches_complementaires():
+        cas += [(f"grille {nom}", parametres_socle(0.02, facteurs=dict(fac)), r, "regle", "F", "regle")
+                for r in regimes]
+    for pi in (0.02, 0.10):
+        for phi in PHI_TABLE + (phi_star(pi),):
+            cas += [(f"φ = {phi:g}, π̄ = {pi:g}", replace(parametres_socle(pi), phi=phi), r, "regle", "F", "regle")
+                    for r in regimes]
+    for f in (marge_conjointe()["facteur"], 2.0):
+        cas += [(f"marge ×{f:g}", _ensemble(f), r, "regle", "F", "regle") for r in regimes]
+    for config, parametres in CONFIGURATIONS_F.items():
+        for f_ti in LAMBDA_TI_F:
+            par = parametres(0.02)
+            par = replace(par, lambda_ti=par.lambda_ti * f_ti)
+            for taux in TAUX_SOCLE:
+                for B6 in B6_CONFIGURATION[config]:
+                    for financement in FINANCEMENTS:
+                        cas += [(f"variante {config} λ_ti = {par.lambda_ti:g} {taux} B6 {B6} {financement}", par, r,
+                                 taux, financement, B6) for r in regimes]
+    return tuple(cas)
+
+
+def tenus_et_nominales() -> tuple[int, list[str], float]:
+    """Sur `cas_controles` : nombre de cas, cas dont les racines en 1/Γ̄ de la variété ne sont pas celles de
+    `TENUS_ATTENDUS` (multiplicité comprise), plus grand |λ − 1| de la racine nominale."""
+    cas = cas_controles()
+    hors, nominale = [], 0.0
+    for etiquette, par, regime, taux, financement, B6 in cas:
+        x = lectures(par, regime, taux, financement, B6)
+        nominale = max(nominale, x.ecart_nominal)
+        if x.tenus_en_niveau != TENUS_ATTENDUS or x.multiplicite_variete != len(TENUS_ATTENDUS):
+            hors.append(f"{etiquette} {regime} : {x.multiplicite_variete} en 1/Γ̄, tenus {list(x.tenus_en_niveau)}")
+    return len(cas), hors, nominale
 
 
 # --- Relevé des chiffres cités --------------------------------------------------------------
@@ -1479,9 +1546,11 @@ def calculer() -> dict[str, object]:
                      for r in ("hausse", "baisse")),
         "variantes_F": max(v["residu"] for v in variantes),
     }
+    n_cas, hors_tenus, nominale_cas = tenus_et_nominales()
     nominales = {
         "socle": max(s.ecart_nominal for pi in (0.0, 0.02, 0.10) for s in rayon_socle(pi).values()),
         "menages": max(spectre(carte_menages(th, r)).ecart_nominal for th in (0.8, 1.0) for r in ("hausse", "baisse")),
+        "variete_cas_controles": nominale_cas,
     }
     socle = {f"{pi:g}": {r: {"rayon": s.rayon, "racine": [s.racine.real, s.racine.imag], "periode": s.periode,
                             "demi_vie": s.demi_vie} for r, s in rayon_socle(pi).items()} for pi in (0.0, 0.02, 0.10)}
@@ -1495,6 +1564,8 @@ def calculer() -> dict[str, object]:
         "coude_variantes": max(v["coude"] for v in variantes),
         "tenus_en_niveau": sorted({tuple(x["tenus_en_niveau"]) for regimes in lect.values()
                                    for x in regimes.values()}),
+        "cas_controles": n_cas,
+        "tenus_hors_attendus": hors_tenus,
     }
     marge = marge_conjointe()
     return {"releve": resultats, "residus": residus, "racines_nominales": nominales, "socle": socle,
@@ -1510,7 +1581,7 @@ def _lectures_dict(x: LecturesSocle) -> dict[str, object]:
             "noyau_brut": x.noyau_brut, "rayon_variete": x.rayon_variete,
             "multiplicite_variete": x.multiplicite_variete, "suivante": [x.suivante.real, x.suivante.imag],
             "rayon_c": x.rayon_c, "tenus_en_niveau": list(x.tenus_en_niveau), "residu_gauche": x.residu_gauche,
-            "residu_identites": x.residu_identites}
+            "residu_identites": x.residu_identites, "ecart_nominal": x.ecart_nominal}
 
 
 def controles_tenus(r: dict[str, object]) -> list[str]:
@@ -1533,6 +1604,8 @@ def controles_tenus(r: dict[str, object]) -> list[str]:
             if tuple(x["tenus_en_niveau"]) != TENUS_ATTENDUS or x["multiplicite_variete"] != len(TENUS_ATTENDUS):
                 echecs.append(f"racines en 1/Γ̄ de la variété à π̄ = {pi}, {regime} : {x['multiplicite_variete']} "
                               f"pour les stocks tenus en niveau {x['tenus_en_niveau']} (attendu {TENUS_ATTENDUS})")
+    for cas in c["tenus_hors_attendus"]:
+        echecs.append(f"racines en 1/Γ̄ de la variété hors des stocks tenus attendus {TENUS_ATTENDUS} : {cas}")
     return echecs
 
 
@@ -1559,6 +1632,9 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     p(f"Variété invariante, max |gJ − g/Γ̄|/|g| : socle {c['residu_gauche']:.1e}, variantes de F "
       f"{c['residu_gauche_variantes']:.1e} (≤ {TOL_GAUCHE:g}) ; coudes, max |J⁺ − J⁻| : socle {c['coude']:.1e}, "
       f"variantes de F {c['coude_variantes']:.1e} (≤ {TOL_COUDE:g})")
+    p(f"Stocks tenus en niveau ({', '.join(TENUS_ATTENDUS)}, multiplicité {len(TENUS_ATTENDUS)}) et racine nominale "
+      f"de la variété, contrôlés sur {c['cas_controles']} cartes (socle, grille, compléments, φ, marge, variantes "
+      f"de F) : {len(c['tenus_hors_attendus'])} hors attendu")
     p("")
     p(f"{'chiffre':58} {'publié':>9} {'remesuré':>12} {'écart':>12}  verdict   lignes")
     for x in r["releve"]:
