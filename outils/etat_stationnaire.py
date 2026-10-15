@@ -1708,6 +1708,17 @@ def _racine_parasite(calc: Calculs, pi: float) -> float:
     return 100 * hors[0] if hors else math.nan
 
 
+def _fisher_hors_cible(par: Parametres, pi_bar: float, varpi_L: float) -> dict[str, float]:
+    """Illustration de `sec:investissement-taux` (limites) : glissement stationnaire π̄ distinct de la cible π* de
+    `par`, taux du crédit de Fisher au taux réel r̄ de `par`, écart ϖ_L donné. Rend, en % par an : i_L, ϱ_L (S1,
+    lu sur π*) et Δϱ = ϱ_L − ϱ̄_L, ϱ̄_L étant lu à π̄ = π* ; arithmétique sans état résolu (catégorie S)."""
+    def rho(pi: float) -> tuple[float, float]:
+        i_L = (1 + par.rbar) * (1 + pi) - 1 + varpi_L
+        return i_L, (1 + i_L) / (1 + par.pi_cible) - 1
+    i_L, rho_L = rho(pi_bar)
+    return {"i_L": 100 * i_L, "rho_L": 100 * rho_L, "d_rho": 100 * (rho_L - rho(par.pi_cible)[1])}
+
+
 # (section, description, valeur publiée, fonction de calcul dans l'unité publiée, catégorie)
 # Catégories : A (à reproduire, lue sur l'état résolu), S (arithmétique de la spécification : formule ou limite
 # sans état résolu, sur des entrées d'illustration de la spécification ou sur les paramètres de la configuration ;
@@ -1897,6 +1908,19 @@ VALEURS_PUBLIEES: tuple[tuple[str, str, str, object, str], ...] = (
     ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (R), %", "5,06",
      lambda c: c.v(pi=0.10)["Div_F_sur_ventes"], "A"),
     ("sec:investissement-taux", "ϱ̄_L sans écart (Fisher), 2 %, %", "1,000", lambda c: c.v(cfg="C-F")["rho_L"], "A"),
+    # Valeurs de `sec:investissement-taux` vérifiées à la main par `monnaie` (#93, point 3), désormais comparées.
+    ("sec:investissement-taux", "i_L,0 à 2 %, %", "5,02", lambda c: c.v()["i_L"], "A"),
+    ("sec:investissement-taux", "ϱ̄_L à 2 %, %", "2,961", lambda c: c.v()["rho_L"], "A"),
+    ("sec:investissement-taux", "i_L à π̄ = 10 %, π* = 2 %, %", "13,10",
+     lambda c: _fisher_hors_cible(c.base, 0.10, c.base.varpi_L)["i_L"], "S"),
+    ("sec:investissement-taux", "ϱ_L à π̄ = 10 %, π* = 2 %, %", "10,88",
+     lambda c: _fisher_hors_cible(c.base, 0.10, c.base.varpi_L)["rho_L"], "S"),
+    ("sec:investissement-taux", "Δϱ à π̄ = 10 %, π* = 2 %, point", "7,92",
+     lambda c: _fisher_hors_cible(c.base, 0.10, c.base.varpi_L)["d_rho"], "S"),
+    ("sec:investissement-taux", "i_L sans écart (Fisher) à π̄ = 10 %, π* = 2 %, %", "11,10",
+     lambda c: _fisher_hors_cible(c.base, 0.10, 0.0)["i_L"], "S"),
+    ("sec:investissement-taux", "ϱ_L sans écart (Fisher) à π̄ = 10 %, π* = 2 %, %", "8,92",
+     lambda c: _fisher_hors_cible(c.base, 0.10, 0.0)["rho_L"], "S"),
     ("sec:banque-taux", "ϱ̄_L à 0 %, %", "3,000", lambda c: c.v(pi=0.0)["rho_L"], "A"),
     ("sec:banque-taux", "ϱ̄_L à 2 % (tab:calibration), %", "2,961", lambda c: c.v()["rho_L"], "A"),
     ("sec:banque-taux", "ϱ̄_L à 10 %, %", "2,818", lambda c: c.v(pi=0.10)["rho_L"], "A"),
@@ -2144,13 +2168,13 @@ VALEURS_PUBLIEES += tuple(
     ("sec:finances_publiques-impots", "racine parasite à 0 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.0), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 2 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.02), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 10 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.10), "D"),
-    ("fiche 9 § 3.Q", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,110",
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,110",
      lambda c: 100 * c.alpha()["beta_theta_G"], "D"),
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "0,487",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.0], "D"),
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "-0,434",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.10], "D"),
-    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point", "0,921", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "0,921", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
      "D"),
 )
 
@@ -2421,6 +2445,37 @@ LIGNES_DE_TABLEAU: dict[tuple[str, str], tuple[str, int | None]] = {
     for description in ("marge J-ν à ν_G = 1,1, 0 %, %", "ν_G minimal pour la marge J-ν (n_a = 4, 0 %)",
                         "marge J-ν au pire point à ν_G = 1,15")
 }
+# Rattachement des valeurs publiées à leur passage de source hors tableau de la spécification (#93, point 1) :
+# (section, description, source) → fragments, chacun écrit dans une seule ligne de la source hors barre (paragraphe,
+# élément de liste ou ligne de tableau Markdown, écrits sur une ligne). La valeur se lit dans chaque fragment qui la
+# contient au signe près, sinon dans sa ligne. Source : label de la spécification ou fiche telle que le test de source
+# la nomme (« fiche 8 », « fiche 9 », « banque_centrale.md »). Toute valeur lue dans une fiche y est rattachée ; dans
+# la spécification, seulement là où la source entière lirait la valeur ailleurs, signe inversé compris.
+_FICHE_9_DETTE = "| **J1 (n° 4 bis, P16 (a))** | **Ratio dette/PIB stationnaire"
+PARAGRAPHES_DE_SOURCE: dict[tuple[str, str, str], tuple[str, ...]] = {
+    ("sec:production-capital", "ρ̄_K à 0 %", "sec:production-capital"): ("soit 1 pour $\\bar\\pi = 0$",),
+} | {
+    ("docs/blocs/banque_centrale.md § 2, critère 13 (b)", f"{nom} à {pi} %, %", "banque_centrale.md"):
+        ("| 13 | Superneutralité (C15",)
+    for nom in ("taux réel exact", "taux réel Haig-Simons (sur i_CB)") for pi in ("0", "2", "10")
+} | {
+    ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %", "fiche 8"):
+        ("| J3 | Cible relevée (critère 10 (b) (i))",),
+    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %", "fiche 8"): ("| J3 | Cible relevée (critère 10 (b) (i))",),
+} | {
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", f"r̄_α à π* = {pi} %, %", "fiche 9"):
+        ("- profil C-HS tel quel, r̄ à π\\* = 0 / 1 / 2 / 3 / 4 / 6 / 10 %",)
+    for pi in ("0", "1", "2", "3", "4", "6", "10")
+} | {
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "fiche 9"): ("La lecture (β) échoue aussi",),
+    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "fiche 9"): ("| Critère 13 : écart de C/PIB à 0 / 10 %",),
+    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "fiche 9"):
+        ("| Critère 13 : écart de C/PIB à 0 / 10 %",),
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "fiche 9"): ("Celui de C/PIB vaut",),
+} | {
+    ("fiche 9 § 3.C ; § 9.6", f"dette consolidée à {pi} %, n_a = {na}", "fiche 9"): (ligne, _FICHE_9_DETTE)
+    for na, ligne in ((4, "| Dette consolidée (B − M^G)/(n_a PIB) | 4 |"), (52, "| | 52 |")) for pi in ("0", "10")
+}
 
 
 # Historique : valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd), toutes en écart, visées puis
@@ -2456,7 +2511,9 @@ _AVANT_VISA: dict[tuple[str, str], object] = {
     ("sec:finances_publiques-impots", "racine parasite à 10 %, %"): "-40,49",
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"): "0,435",
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"): "-0,473",
-    ("fiche 9 § 3.C", "(α) : max − min de C/PIB, point"): "0,908",
+    # Libellé corrigé le 14/10/2026 (« fiche 9 § 3.C » → « fiche 9 § 6.3 »), décision du mainteneur ; valeur et
+    # verdict inchangés.
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point"): "0,908",
     # Fiche 9, § 3.C et critère 5 du § 9.6 : visées après la revue finale (décision du mainteneur du 05/10/2026,
     # point B), même cause que les deux écarts à 2 %.
     ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"): "0,09466",

@@ -953,6 +953,35 @@ Ces points sont une convention d'écriture, pas un changement des matrices du §
 8. à 10. Fiche « production et stocks » : critères ; instruction et avis ; décision et section proposée.
 11. Catalogue des leviers du socle (`sec:leviers`), complété fiche par fiche.
 
+### 9.9 Annotation du 07/10/2026 (ADR 0005 annoté, ADR 0008, 0010 et 0011, M33, P34 ; branche J2, rang 1b)
+
+*Rédigée par `macro` (expert pilote) au rang 1b de la branche J2 (`claude/j2-noyau`, PR #99), validée par le mainteneur le 07/10/2026. Annotation datée : les § 9.1 à 9.8 ne sont pas réécrits ; ils se lisent avec les corrections ci-dessous, qui reportent des décisions déjà prises (M25, M26, M30, M32, M33, P34) sans en prendre aucune. Sources : ADR 0005 (annotations du 03/10/2026 et du 04/10/2026), ADR 0008 (parties I et II ; annotations du 04/10/2026 et du 07/10/2026), ADR 0010, ADR 0011 ; `sec:cadre-calendrier` et `sec:cadre-caisse` de la spécification, qui font foi.*
+
+**§ 9.1 — Labels du jalon J2 : 17, et non 15** (ADR 0008, annotation du 07/10/2026).
+- l. 757, `eq:moteur-registre-prix` : « mise à jour du registre en phase 9 (longueur n_a) ; glissement annuel P_t / P_{t−12} − 1 » se lit « avance en phase 9, par le moteur, du registre de **n_a + 1 = 13 niveaux** P_{t−1}, …, P_{t−13} : P_t y entre, P_{t−13} en sort » ; provenance : M22, pt 16, et M26 (ADR 0008, II.3 et II.4). Le glissement a son propre label (ci-dessous).
+- Deux labels `moteur` s'ajoutent :
+  - `eq:moteur-conversion-croissance` : 1 + x^pas = (1 + x^an)^{1/n_a}, pour les taux de croissance et d'inflation ; choix de conception ; M25, lecture (b) (ADR 0008, I.1 et I.3) ; `moteur/` ;
+  - `eq:moteur-glissement` : π_t = P_t / P_{t−n_a} − 1, fonction du registre calculée à la lecture, jamais une variable d'état ; choix de conception ; M26 (ADR 0008, II.2 et II.3 ; annotation du 04/10/2026) ; `moteur/`.
+- l. 756, `eq:moteur-conversion-taux` : la règle linéaire reste celle des trois natures nommées, mais ce n'est plus la seule conversion : c'est « la seule conversion des taux de flux et des vitesses » (ADR 0005, annotation du 03/10/2026, point 4).
+- Liste arrêtée : six labels `moteur` (`calendrier-date`, `date-decision`, `conversion-taux`, `conversion-croissance`, `registre-prix`, `glissement`) et les onze labels `noyau` du tableau, inchangés.
+- l. 770, labels du J3 : à `eq:moteur-ratio-pib-annuel` (radical d'`observation/` à fixer avant J3) s'ajoutent `eq:prix-indice` (radical `prix`, P34 (a), posé avec `prix.py`, #51) et `eq:moteur-croissance-nominale-attendue` (ADR 0010, point 4 ; posé avec #61 et #91).
+
+**§ 9.2 — Paramètres et grandeurs dérivées.**
+- l. 784, ligne n_a, colonne « Équation » : s'y ajoutent `eq:moteur-conversion-croissance` et `eq:moteur-glissement`.
+- l. 790 : « la longueur du registre (= n_a) » se lit « (= n_a + 1) ».
+- l. 792 : sous la conversion géométrique (ADR 0008, partie I), le facteur entre les deux ratios au PIB annuel vaut, à n_a = 12, **1,0108** pour un ratio en volume (g = 2 %) et **1,0216** pour un ratio en u.m. (g = π̄ = 2 %) ; 1,0109 était sa valeur sous la conversion linéaire de la croissance (ADR 0005, annotations du 03/10/2026 et du 04/10/2026, point 17 ; `sec:cadre-calendrier`). Il est publié par le script d'état stationnaire.
+- l. 793 : « les deux grandeurs dépendantes de n_a (pt 5) » se lit « les trois grandeurs du cadre qui dépendent de n_a, la troisième étant un ratio stationnaire qui combine un taux de flux et une croissance (ADR 0008, I.6), et l'encaisse visée du Trésor, dont le ratio au PIB annuel dépend de n_a par construction (ADR 0005, annotation du 04/10/2026, point 5) ».
+- l. 795, M^G\* (M33, décision citant M22 ; ADR 0005, annotation du 04/10/2026, point 13) : M^G\* n'est plus une variable de l'état initial résolu, ni une grandeur bornée par le cadre. C'est l'**encaisse visée**, grandeur du pas M^G\*_t = ν_G × PB_t, où PB_t = G_t + Tr_t + i_{B,t} B_t / n_a sont les paiements bruts exécutés du pas et ν_G > 1 un paramètre sans dimension du bloc État et dette ; elle est calculée par ce bloc en phase 7, n'est ni un paramètre ni une variable d'état, et sa valeur stationnaire est publiée par le script d'état stationnaire (`outils/etat_stationnaire.py`). La borne « au plus (G + Tr + i_B B)/n_a » est caduque (ν_G > 1). Le cadre exige toujours qu'à l'état stationnaire M^G de clôture égale M^G\*_t à chaque pas, hors placement raté.
+
+**§ 9.6 — Tests attendus du jalon J2.**
+- l. 870, « Invariance d'unité » : le test s'étend au registre ; glissement identique à 1e−10 près en relatif (ADR 0008, § Conséquences).
+- l. 873, « Conversion unique » : « aucune division par n_a hors de `eq:moteur-conversion-taux` » se lit « hors des deux conversions, `eq:moteur-conversion-taux` et `eq:moteur-conversion-croissance` » ; s'y ajoute « le produit de n_a facteurs (1 + x)^{1/n_a} vaut 1 + x, à 1e−12 près en relatif » (#97).
+- l. 880, « Registre » : « longueur n_a, aucun autre historique (13 variables calendaires) » se lit « n_a + 1 = 13 niveaux, aucun autre historique (**14 variables calendaires** : t et 13 niveaux) » (ADR 0008, II.4).
+- Aucun seuil du tableau n'a bougé depuis l'ADR 0005, point 19 (vérification du rang 1b, 07/10/2026).
+- Tests ajoutés par les ADR postérieurs, portés par les issues #95 à #98 : écriture unique et phase 9 (ADR 0009, tests (1) à (6)) ; permutation des deux blocs de la sous-phase 8 (b), clôture identique bit à bit (ADR 0011) ; ligne 16 négative exécutée nette de la part déclarée par le payeur (ADR 0011, P1) ; violation d'un moyen de paiement d'un payeur non bancaire, arrêt avec diagnostic (ADR 0011, P4). Leurs critères complémentaires sont ceux du rang 1b de la branche J2, validés par le mainteneur.
+
+**§ 9.4 — Tableau des lignes et phases par bloc (l. 829 à 838) : retard signalé, sans correction ligne à ligne.** `tab:phases` et les sections des blocs font foi. En particulier : la banque ne siège plus ni en phase 3 (M31) ni en phase 7, les trois lignes 19a sont proposées par le bloc État et dette et la ligne 19b n'a aucun proposant au socle (M33, ADR 0011) ; les ménages ne siègent plus en phase 7 (M29, ADR 0009) ; le bloc prix n'écrit plus en phase 1 (ADR 0008, II.1). Dans le tableau des leviers, « k = 0 » se lit « délai du premier flux d'intérêt nul » (ADR 0005, annotation du 02/10/2026, point 11).
+
 ## 10. Historique de la fiche
 
 | Date | Événement | Auteur |
@@ -969,3 +998,4 @@ Ces points sont une convention d'écriture, pas un changement des matrices du §
 | 30/09/2026 | Convention d'écriture des matrices fixée (§ 9.7, relue par `monnaie`) ; signe de la contrainte de la BC corrigé (§ 3.N-Q3) | `monnaie` ; mainteneur ; session principale |
 | 30/09/2026 | Section `sec:cadre` de la spécification proposée (issue #18, `5ab629c`) ; script de vérification des matrices (issue #19) | `docwriter` ; `coder`, `audit` |
 | 02/10/2026 | Validation de fond de `sec:cadre` : validé avec corrections (omission de ΔL^CB dans la contrainte de la BC en prose, triangularité de Π^CB, échelle S, valeur comptable de K et IN) ; facteur des ratios (1,0109), borne d'arrondi et Q5 corrigés dans la fiche (`19b6f0a`) ; M^G\* renvoyée à la fiche 9 (#26) ; issues #23 à #26 | `macro`, `monnaie` ; mainteneur ; session principale |
+| 07/10/2026 | Annotation datée du § 9 (§ 9.9) : 17 labels de J2, registre de n_a + 1 niveaux et 14 variables, conversion géométrique, facteur 1,0108 / 1,0216, encaisse visée sous M33 ; seuils de J2 confirmés (branche J2, rang 1b) | `macro` ; mainteneur ; session principale |
