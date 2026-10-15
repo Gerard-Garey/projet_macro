@@ -100,7 +100,64 @@ def test_homogeneite_nominale_et_racine_retiree(ce, credit, depots):
     assert res["residu_stationnaire"] <= ce.TOL_NEWTON
     assert sp.homogeneite <= ce.TOL_HOMOGENEITE
     assert abs(sp.racine_retiree - 1) <= ce.TOL_RACINE_NOMINALE
+    assert sp.racine_restante is None
     assert res["planchers_actifs"] == 0
+
+
+def test_une_racine_restee_pres_de_1_apres_deflation_echoue(ce, monkeypatch):
+    """Racine 1 double : la déflation n'en retire qu'une, l'autre reste et le contrôle de la racine retirée
+    échoue, dans `spectre` comme dans `calculer`."""
+    sp = ce.spectre(np.diag([1.0, 1.0, 0.5]), np.array([1.0, 0.0, 0.0]), 0)
+    assert abs(sp.racine_retiree - 1) <= ce.TOL_RACINE_NOMINALE
+    assert sp.racine_restante is not None and abs(sp.racine_restante - 1) <= ce.TOL_RACINE_NOMINALE
+    assert ce.spectre(np.diag([1.0, 0.9, 0.5]), np.array([1.0, 0.0, 0.0]), 0).racine_restante is None
+    spectre = ce.spectre
+    monkeypatch.setattr(ce, "spectre", lambda *a: replace(spectre(*a), racine_restante=complex(1.0)))
+    r = ce.calculer()
+    assert not ce.controles_passent(r)
+    assert all(not math.isfinite(v) for k, v in r["controles"].items() if k.startswith("racine retirée"))
+
+
+def test_seuil_lambda_ti_refuse_un_rayon_deja_explosif_au_premier_point(ce, monkeypatch):
+    """Rayon ≥ 1 dès λ_ti = 0,002 : le plus petit seuil n'est pas encadré, la fonction refuse au lieu de rendre
+    un franchissement ultérieur ou « jamais » ; un franchissement encadré reste trouvé."""
+    def boucle(rayons):
+        return lambda par, m: ce.Spectre(rayons(par.lambda_ti), 0j, 0.0, complex(math.nan), None, None, None)
+    monkeypatch.setattr(ce, "rayon_boucle_reduite", boucle(lambda l: 1.5 if l < 0.003 else (1.2 if l > 0.5 else 0.5)))
+    with pytest.raises(ValueError):
+        ce.seuil_lambda_ti(ce.Parametres(), 0.8)
+    monkeypatch.setattr(ce, "rayon_boucle_reduite", boucle(lambda l: 1.5))
+    with pytest.raises(ValueError):
+        ce.seuil_lambda_ti(ce.Parametres(), 0.8)
+    monkeypatch.setattr(ce, "rayon_boucle_reduite", boucle(lambda l: 0.9 + l / 2))
+    assert ce.seuil_lambda_ti(ce.Parametres(), 0.8) == pytest.approx(0.2, abs=1e-9)
+    monkeypatch.setattr(ce, "rayon_boucle_reduite", boucle(lambda l: 0.5))
+    assert ce.seuil_lambda_ti(ce.Parametres(), 0.8) is None
+
+
+def test_seuil_non_encadre_fait_echouer_les_controles(ce, monkeypatch, capsys, tmp_path):
+    """Un seuil de λ_ti refusé (non encadré par la grille) ne lève pas d'exception hors du script : il est publié
+    sans mesure, et le contrôle en échec donne le code de sortie 2, documenté, y compris après passage par JSON ;
+    les seuils encadrés ne créent aucun contrôle (sortie inchangée)."""
+    assert not any(k.startswith("seuil") for k in ce.calculer()["controles"])
+    seuil = ce.seuil_lambda_ti
+
+    def refus_a_m_07(par, m):
+        if m == 0.7:
+            raise ValueError("seuil non encadré (essai)")
+        return seuil(par, m)
+
+    monkeypatch.setattr(ce, "seuil_lambda_ti", refus_a_m_07)
+    chemin = tmp_path / "ce.json"
+    assert ce.main(["--json", str(chemin)]) == 2
+    sortie = capsys.readouterr().out
+    assert "Contrôles : ÉCHEC" in sortie
+    assert sum(l.startswith("| boucle réduite, seuil de λ_ti (par an), m = 0.7") and "| — |" in l
+               for l in sortie.splitlines()) == 2
+    r = json.loads(chemin.read_text(encoding="utf-8"))
+    assert [k for k in r["controles"] if k.startswith("seuil")] == ["seuil de λ_ti encadré, m = 0.7, 2 ans",
+                                                                     "seuil de λ_ti encadré, m = 0.7, 3 ans"]
+    assert not ce.controles_passent(r)
 
 
 def test_f_retenue_est_deja_stationnaire(ce):
