@@ -346,7 +346,7 @@ Contrôles de la maquette (`chk1.py`, `chk3.py`) :
 - toutes les vitesses ×0,5, puis ×2 ;
 - deux régimes de l'emploi.
 
-*Annotation du 15/10/2026 (#65, #107 ; décision du mainteneur du 15/10/2026 sur S1).* Sous l'option retenue (M32, règle sans terme d'activité), a_U est sans objet : la grille G compte 29 branches au socle. Le critère S1 du jalon J3 y ajoute ζ ×0,5 et ×2, de façon prospective (31 branches), avec des verdicts publiés sur les deux (`tab:criteres-j3` de la spécification), et publie la marge conjointe de β, a_π et η_r comme mesure (frontière au facteur 1,7135 sur la maquette).
+*Annotation du 15/10/2026 (#65, #107 ; décision du mainteneur du 15/10/2026 sur S1).* Sous l'option retenue (M32, règle sans terme d'activité), a_U est sans objet : la grille G compte 29 branches au socle. Le critère S1 du jalon J3 y ajoute ζ ×0,5 et ×2, de façon prospective (31 branches), avec des verdicts publiés sur les deux (`tab:criteres-j3` de la spécification), et publie la marge conjointe de β, a_π et η_r comme mesure (frontière au facteur 1,7135 sur la maquette, en régime de baisse de l'emploi à π̄ = 2 % ; 1,9921 en régime de hausse).
 
 **Littérature.**
 
@@ -1322,7 +1322,7 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 | #56 (B) : P_120 ; glissement | −1,81 % ; −0,151 | −3,72 % ; −0,385 |
 | Pays joué (φ = 0) à 2 / 10 % | 1,007482 / 1,019719 | 1,001818 / 1,011036 ; doublement de l'écart en 382 / 63 tours (fiche 9 § 6.4) |
 
-*Annotation du 15/10/2026 (#65 ; visa du mainteneur du 15/10/2026).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, fiche 9 § 8), la maquette conjointe de la spécification (`outils/maquette_conjointe.py`, lecture (c) du rayon) donne sous C-HS : rayons 0,997390 / 0,997118 / 0,997045 à 0 / 2 / 10 %, demi-vie 240 tours à 2 %, grille G de 29 branches (a_U sans objet) toutes sous 1, pire 0,998732 ; ζ = 8 : 0,996922. La colonne « Sous C-HS » a été mesurée avant l'amendement (sans −T^cou, la maquette reproduit ses rayons à la sixième décimale) et reste publiée ; 0,996234 (ζ = 8) est reproduit sans −T^cou en lecture (c) (0,996234 ; variante de travail sans −T^cou, non versionnée) ; 0,996705 est le rayon brut, égal à 1/Γ̄ à 2 %, racine déclarée qui domine ce spectre ; la cause de l'écart est celle des autres chiffres, l'amendement de E12.
+*Annotation du 15/10/2026 (#65 ; visa du mainteneur du 15/10/2026).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, fiche 9 § 8), la maquette conjointe de la spécification (`outils/maquette_conjointe.py`, lecture (c) du rayon) donne sous C-HS : rayons 0,997390 / 0,997118 / 0,997045 à 0 / 2 / 10 %, demi-vie 240 tours à 2 %, grille G de 29 branches (a_U sans objet) toutes sous 1, pire 0,998732 à π̄ = 2 % ; ζ = 8 : 0,996922. La colonne « Sous C-HS » a été mesurée avant l'amendement (sans −T^cou, la maquette reproduit ses rayons à la sixième décimale) et reste publiée ; 0,996234 (ζ = 8) est reproduit sans −T^cou en lecture (c) (0,996234 ; variante de travail sans −T^cou, non versionnée) ; 0,996705 est le rayon brut, égal à 1/Γ̄ à 2 %, racine déclarée qui domine ce spectre ; la cause de l'écart est celle des autres chiffres, l'amendement de E12.
 
 **Non mesurés sous C-HS**, à remesurer au J3 :
 - la paire complexe (cycle de 18,8 et 20,8 tours sous T9, § 3.C-4) ;
