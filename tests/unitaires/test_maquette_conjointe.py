@@ -8,11 +8,18 @@ ajoutent deux contrôles de la méthode : la carte du socle est une seconde
 transcription des règles, qui rend la même clôture qu'`etat_stationnaire.un_pas`
 sur l'état résolu et sur des états perturbés ; la jacobienne redonne les
 valeurs propres analytiques de la boucle propre du bloc production
-(`sec:production-conditions`). Aucun test ne fige une valeur publiée : leur
-reproduction est publiée par le script et relève du visa de `macro`.
+(`sec:production-conditions`). Lot de correction de #65 (décisions du
+15/10/2026) : contenu des identités de bilan contre `etat_stationnaire`,
+liste « Grille G » de la fiche lue ligne à ligne, invariance de la variété
+dans les six cas et code de sortie qui en dépend, lecture (c) et cause des
+racines déclarées, verdicts des deux grilles, frontières φ* et marge
+conjointe, contrôle avant/arrière des coudes, méthode de la seconde écriture
+des variantes de F (#66). Aucun test ne fige une valeur publiée : leur
+reproduction est publiée par le script et relève du visa de l'expert pilote.
 """
 
 import ast
+import dataclasses
 import importlib.util
 import math
 import subprocess
@@ -68,8 +75,11 @@ def test_deterministe_et_rapide():
 def test_releve_couvre_chaque_chiffre_recense(maquette):
     lignes = maquette.lire_spec()
     publies = {c.publie.replace("{,}", ",") for c in maquette.releve()}
-    recenses = maquette.recenser(lignes)
+    recenses = maquette.recenser(lignes) + maquette.recenser_fiches(maquette.lire_fiches())
     assert recenses
+    # Chaque paragraphe et chaque ligne de fiche déclarés sont recensés.
+    assert {label for label, _ in maquette.PARAGRAPHES} | {f for f, _ in maquette.LIGNES_FICHES} \
+        <= {label for label, _, _ in recenses}
     manquants = [x for x in recenses if x[2] not in publies and (x[0], x[2]) not in maquette.EXCLUS]
     assert manquants == []
     # Aucune exclusion périmée : chacune désigne un nombre encore écrit dans son paragraphe.
@@ -78,8 +88,9 @@ def test_releve_couvre_chaque_chiffre_recense(maquette):
 
 
 def test_chaque_chiffre_releve_a_sa_ligne(maquette):
-    lignes = maquette.lire_spec()
-    sans_ligne = [c.ident for c in maquette.releve() if not maquette.lignes_du_motif(lignes, c.motif)]
+    lignes, fiches = maquette.lire_spec(), maquette.lire_fiches()
+    sans_ligne = [c.ident for c in maquette.releve() if not maquette.lignes_du_motif(lignes, c.motif)
+                  and not maquette.lignes_du_motif_fiches(fiches, c.motif)]
     assert sans_ligne == []
     idents = [c.ident for c in maquette.releve()]
     assert len(idents) == len(set(idents))
@@ -89,6 +100,7 @@ def test_points_fixes_et_racine_nominale(maquette):
     r = maquette.calculer()
     assert max(r["residus"].values()) <= maquette.TOL_POINT_FIXE
     assert max(r["racines_nominales"].values()) <= maquette.TOL_RACINE_NOMINALE
+    assert maquette.controles_tenus(r) == []
     for x in r["releve"]:
         assert x["verdict"] in ("reproduit", "écart", "sans objet")
         assert (x["remesure"] is None) == (x["verdict"] == "sans objet")
@@ -167,43 +179,82 @@ def test_remesure_sans_objet_publiee(maquette, capsys):
 SYMBOLES = {"λ_v": "lambda_v", "λ_IN": "lambda_IN", "λ_w": "lambda_w", "λ_N": "lambda_N", "λ_μ": "lambda_mu",
             "λ_H": "lambda_H", "λ_ti": "lambda_ti", "λ_e": "lambda_e", "k_I": "a_I", "a_π": "a_pi", "a_U": "a_U",
             "ψ_ξ": "psi_xi", "β": "beta", "η_r": "eta_r"}
+# Lignes de la liste « Grille G » dont le texte fixe la composition des branches sans liste de symboles.
+LIGNES_FIXES = ("- calibration indicative ;", "- toutes les vitesses ×0,5, puis ×2 ;", "- deux régimes de l'emploi.")
 
 
-def _liste_de_la_fiche(debut):
+def _grille_de_la_fiche():
+    """Liste « Grille G » de la fiche, ligne à ligne, jusqu'à la ligne vide : (vitesses, gains, lignes fixes)."""
     texte = (RACINE / "docs" / "blocs" / "banque_centrale.md").read_text(encoding="utf-8").splitlines()
-    i = texte.index("**Grille G** :")
-    ligne = next(l for l in texte[i:i + 8] if l.startswith(debut))
-    return [SYMBOLES[s.strip().rstrip(";").strip()] for s in ligne.split(":", 1)[1].split(",")]
+    i = texte.index("**Grille G** :") + 1
+    bloc = []
+    while texte[i].strip():
+        bloc.append(texte[i])
+        i += 1
+    listes, fixes = {}, []
+    for ligne in bloc:
+        for debut in ("- chaque vitesse ×0,5 et ×2", "- chaque gain ×0,5 et ×2"):
+            if ligne.startswith(debut):
+                listes[debut] = [SYMBOLES[x.strip().rstrip(";").strip()] for x in ligne.split(":", 1)[1].split(",")]
+                break
+        else:
+            fixes.append(ligne)
+    return listes["- chaque vitesse ×0,5 et ×2"], listes["- chaque gain ×0,5 et ×2"], fixes
 
 
 def test_grille_conforme_a_la_fiche(maquette):
-    import dataclasses
-    vitesses = _liste_de_la_fiche("- chaque vitesse ×0,5 et ×2")
-    gains = _liste_de_la_fiche("- chaque gain ×0,5 et ×2")
+    vitesses, gains, fixes = _grille_de_la_fiche()
+    # Toute ligne de la liste est lue : une ligne qui change (« toutes les vitesses et les gains », une branche
+    # ajoutée) fait échouer le test, au lieu d'une composition codée en dur.
+    assert fixes == list(LIGNES_FIXES)
     champs = {f.name for f in dataclasses.fields(maquette.BASE)}
     assert list(maquette.VITESSES_GRILLE) == vitesses
     assert set(maquette.GAINS_GRILLE) | set(maquette.ABSENTS_GRILLE) == set(gains)
     assert not set(maquette.GAINS_GRILLE) & set(maquette.ABSENTS_GRILLE)
-    # Un paramètre absent de la grille codée l'est du socle ; un paramètre ajouté est publié hors grille.
+    # Un paramètre absent de la grille codée l'est du socle ; un paramètre ajouté n'est pas dans la fiche.
     assert not set(maquette.ABSENTS_GRILLE) & champs
-    assert set(maquette.VITESSES_GRILLE + maquette.GAINS_GRILLE + maquette.HORS_GRILLE) <= champs
-    assert not set(maquette.HORS_GRILLE) & set(vitesses + gains)
+    assert set(maquette.VITESSES_GRILLE + maquette.GAINS_GRILLE + maquette.AJOUTS_GRILLE) <= champs
+    assert not set(maquette.AJOUTS_GRILLE) & set(vitesses + gains)
     branches = dict(maquette.branches_grille())
     attendues = {"calibration": ()}
     for nom in vitesses + list(maquette.GAINS_GRILLE):
         for f in (0.5, 2.0):
             attendues[f"{nom} ×{f:g}"] = ((nom, f),)
-    for f in (0.5, 2.0):  # « toutes les vitesses » : les gains n'y entrent pas
+    for f in (0.5, 2.0):  # « toutes les vitesses ×0,5, puis ×2 » : la liste de la ligne des vitesses
         attendues[f"vitesses ×{f:g}"] = tuple((nom, f) for nom in vitesses)
     assert branches == attendues
     assert len(branches) == 1 + 2 * (len(vitesses) + len(gains)) + 2 - 2 * len(maquette.ABSENTS_GRILLE)
-    # Les mesures complémentaires (ζ, gains ensemble) n'entrent ni dans la grille ni dans le relevé.
+    ajoutees = dict(maquette.branches_ajoutees())
+    assert ajoutees == {f"{nom} ×{f:g}": ((nom, f),) for nom in maquette.AJOUTS_GRILLE for f in (0.5, 2.0)}
+    # Les mesures complémentaires (gains ensemble) n'entrent ni dans la grille ni dans le relevé.
     complements = dict(maquette.branches_complementaires())
-    assert not set(complements) & set(branches)
-    assert all(nom in maquette.HORS_GRILLE + maquette.GAINS_ENSEMBLE
-               for fac in complements.values() for nom, _ in fac)
+    assert not set(complements) & (set(branches) | set(ajoutees))
+    assert all(nom in maquette.GAINS_ENSEMBLE for fac in complements.values() for nom, _ in fac)
     releve = {c.ident: c for c in maquette.releve()}
     assert "socle.grille.vitesses÷2" in releve and "socle.grille.toutes÷2" not in releve
+
+
+def test_verdicts_des_deux_grilles(maquette):
+    """Grille G, puis G augmentée de ζ : décompte des branches, des branches stables et pire branche."""
+    grille = maquette.grille_socle()
+    n_G = len(maquette.branches_grille())
+    assert [nom for nom, _ in grille] == [nom for nom, _ in maquette.branches_grille() + maquette.branches_ajoutees()]
+    v = maquette.verdicts_grille()
+    for cle, partie in (("G", grille[:n_G]), ("G + zeta", grille)):
+        assert v[cle]["branches"] == len(partie)
+        assert v[cle]["stables"] == sum(r < 1 for _, r in partie)
+        assert (v[cle]["branche_pire"], v[cle]["pire"]) == max(partie, key=lambda x: x[1])
+    releve = {c.ident: c.calcul for c in maquette.releve()}
+    assert releve["socle.grille.pire"]() == v["G"]["pire"]
+    # Grille synthétique : une branche instable de G, une de ζ ; le pire et le décompte suivent.
+    synthetique = tuple((nom, 0.9) for nom, _ in grille)
+    synthetique = ((grille[0][0], 1.5),) + synthetique[1:-1] + ((grille[-1][0], 1.2),)
+    w = maquette.verdicts_grille(synthetique)
+    assert (w["G"]["stables"], w["G"]["pire"], w["G"]["branche_pire"]) == (n_G - 1, 1.5, grille[0][0])
+    assert (w["G + zeta"]["stables"], w["G + zeta"]["branches"]) == (len(grille) - 2, len(grille))
+    # Chaque branche est la lecture (c), pire des deux régimes, de ses paramètres.
+    nom, fac = maquette.branches_ajoutees()[0]
+    assert dict(grille)[nom] == maquette.rayon_c(maquette.parametres_socle(0.02, facteurs=dict(fac)))
 
 
 def _retirer(brutes, variete, tol):
@@ -216,21 +267,182 @@ def _retirer(brutes, variete, tol):
     return restantes
 
 
-@pytest.mark.parametrize("pi", [0.0, 0.02])
-def test_spectre_restreint_retire_les_racines_des_identites(maquette, pi):
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+@pytest.mark.parametrize("regime", ["hausse", "baisse"])
+def test_spectre_restreint_retire_les_racines_des_identites(maquette, pi, regime):
     """Sur la variété des identités, les gradients ne portent plus de valeur propre : la restriction retire
-    exactement une racine en 1/Γ̄ par identité et garde toutes les autres, racine nominale comprise."""
-    J, J_var, Gs, inv = maquette.jacobiennes_socle(pi, "hausse")
+    exactement une racine en 1/Γ̄ par identité et garde toutes les autres, racine nominale comprise. Les
+    racines en 1/Γ̄ qui restent sont celles des stocks tenus en niveau (lecture (c))."""
+    J, J_var, Gs, inv = maquette.jacobiennes_socle(pi, regime)
     n_id = len(maquette.IDENTITES_SOCLE)
     assert J_var.shape == (len(J) - n_id, len(J) - n_id)
     # Chaque gradient est vecteur propre à gauche de valeur propre 1/Γ̄ : la variété est invariante.
-    assert np.max(np.linalg.norm(Gs @ J - Gs * inv, axis=1) / np.linalg.norm(Gs, axis=1)) <= 1e-6
+    assert np.max(np.linalg.norm(Gs @ J - Gs * inv, axis=1) / np.linalg.norm(Gs, axis=1)) <= maquette.TOL_GAUCHE
+    assert maquette.TOL_GAUCHE <= 1e-8
     tol = maquette.TOL_RACINE_MULTIPLE
     retirees = _retirer(np.linalg.eigvals(J), np.linalg.eigvals(J_var), tol)
     assert len(retirees) == n_id and all(abs(z - inv) <= tol for z in retirees)
-    s = maquette.lectures_socle(pi, "hausse")
+    s = maquette.lectures_socle(pi, regime)
+    assert s.residu_gauche <= maquette.TOL_GAUCHE
     assert s.multiplicite_brute - s.multiplicite_variete == n_id
     assert s.noyau_brut == s.multiplicite_brute  # racines en 1/Γ̄ semi-simples
+    # Cause déclarée : une racine en 1/Γ̄ de la variété par stock dont la ligne de la jacobienne est e_i/Γ̄.
+    carte = maquette.carte_socle(maquette.parametres_socle(pi), regime)
+    tenus = [nom for i, nom in enumerate(carte.noms) if np.max(np.abs(J[i] - inv * np.eye(len(J))[i])) <= 1e-8]
+    assert tuple(sorted(tenus)) == s.tenus_en_niveau == maquette.TENUS_ATTENDUS
+    assert s.multiplicite_variete == len(s.tenus_en_niveau)
     assert abs(s.suivante - inv) > tol and abs(s.suivante) <= s.rayon_variete
-    assert s.rayon_variete <= s.rayon_brut + tol
+    assert s.rayon_c == abs(s.suivante) <= s.rayon_brut + tol
     assert s.residu_identites <= 1e-12
+
+
+@pytest.mark.parametrize("pi", [0.0, 0.10])
+def test_identites_conformes_a_etat_stationnaire(maquette, pi):
+    """Contenu de `IDENTITES_SOCLE` : sur des états perturbés (E^CB ≠ 0 compris), le gradient appliqué aux postes
+    de clôture d'`etat_stationnaire.un_pas` vaut E_1_stock − E_1_flux tels que `un_pas` les définit."""
+    es = maquette.es
+    par = maquette.parametres_socle(pi)
+    _, o = maquette.etat_socle(par)
+    carte = maquette.carte_socle(par, "hausse")
+    n = par.n_a
+    G = maquette.gradients_identites(carte)
+    noms = [nom for nom, _ in maquette.IDENTITES_SOCLE]
+    capitaux = {"bilan de la banque centrale": "E_CB", "bilan des banques": "E_Bk"}
+    assert sorted(noms) == sorted(capitaux)
+    rng = np.random.default_rng(65)
+    i_res, i_LCB = carte.noms.index("Res"), carte.noms.index("L_CB")
+    regimes_B7 = set()
+    for k in range(10):
+        x = carte.x0 + 1e-3 * carte.echelle * rng.standard_normal(len(carte.x0))
+        # Deux côtés de B7, une perturbation d'un PIB : refinancement au-delà des réserves (Res_1 = 0,
+        # L^CB_1 > 0), puis réserves au-delà du refinancement (L^CB_1 = 0, Res_1 > 0).
+        if k % 2:
+            x[i_res] = 2 * x[i_LCB] + carte.echelle[i_res]
+        else:
+            x[i_res], x[i_LCB] = 0.0, x[i_LCB] + carte.echelle[i_LCB]
+        o2 = dict(o)
+        o2["registre"] = list(x[:n + 1])
+        o2.update({nom: x[n + 1 + i] for i, nom in enumerate(carte.noms[n + 1:])})
+        s = es.un_pas(o2, par)
+        regimes_B7.add(s["Res_1"] > 0)
+        cloture = np.array([s[CLOTURE[nom]] if nom in CLOTURE else 0.0 for nom in carte.noms])
+        for ligne, nom in enumerate(noms):
+            k = capitaux[nom]
+            attendu = s[f"{k}_1_stock"] - s[f"{k}_1_flux"]
+            assert abs(attendu) > 1e-6 * o["L"]  # l'état perturbé viole l'identité : le test discrimine
+            assert abs(G[ligne] @ cloture - attendu) <= 1e-12 * o["L"], (nom, G[ligne] @ cloture, attendu)
+    assert regimes_B7 == {False, True}  # chaque coefficient est sollicité : Res_1 > 0 et L^CB_1 > 0 sont vus
+
+
+def test_code_de_sortie_depend_des_controles(maquette, monkeypatch, capsys):
+    """`main` rend 2 dès qu'un contrôle de `controles_tenus` échoue : variété (≤ TOL_GAUCHE), coudes, racines."""
+    r = maquette.calculer()
+    assert maquette.controles_tenus(r) == []
+    for cle, valeur in (("residu_gauche", 10 * maquette.TOL_GAUCHE), ("residu_gauche_variantes", 1.0),
+                        ("coude", 10 * maquette.TOL_COUDE), ("coude_variantes", 1.0)):
+        r2 = dict(r, controles=dict(r["controles"], **{cle: valeur}))
+        assert maquette.controles_tenus(r2), cle
+        monkeypatch.setattr(maquette, "calculer", lambda r2=r2: r2)
+        assert maquette.main([]) == 2, cle
+    lect = {pi: dict(reg) for pi, reg in r["lectures_socle"].items()}
+    lect["0"] = dict(lect["0"], hausse=dict(lect["0"]["hausse"], tenus_en_niveau=["E_CB"]))
+    assert maquette.controles_tenus(dict(r, lectures_socle=lect))
+    monkeypatch.setattr(maquette, "calculer", lambda: r)
+    assert maquette.main([]) == 0
+    capsys.readouterr()
+
+
+def test_controle_avant_arriere_detecte_un_coude(maquette):
+    """Une carte à coude au point fixe (|x|) donne un écart d'ordre 1 ; une carte lisse, d'ordre h."""
+    lisse = maquette._carte([("x", 1.0, 1.0, False, 1.0)], lambda x: [1.0 + 0.5 * (x[0] - 1) ** 2], False)
+    coude = maquette._carte([("x", 1.0, 1.0, False, 1.0)], lambda x: [1.0 + abs(x[0] - 1)], False)
+    assert maquette.ecart_avant_arriere(lisse) <= 10 * maquette.PAS_RELATIF
+    assert maquette.ecart_avant_arriere(coude) > maquette.TOL_COUDE
+
+
+def test_couverture_phi(maquette):
+    """φ* est la frontière de la lecture (c) entre φ = 0 (pays joué) et φ = 1 (règle de référence) ; elle
+    monte avec l'inflation ; le doublement est ln 2/ln du rayon à φ = 0."""
+    phis = {}
+    for pi in (0.02, 0.10):
+        bas, haut = maquette.rayon_phi(pi, 0.0), maquette.rayon_phi(pi, 1.0)
+        assert bas > 1 > haut
+        f = phis[pi] = maquette.phi_star(pi)
+        assert 0 < f < 1
+        assert maquette.rayon_phi(pi, f - 1e-6) > 1 > maquette.rayon_phi(pi, f + 1e-6)
+        assert maquette.doublement(bas) == pytest.approx(math.log(2) / math.log(bas), rel=1e-15)
+        # L'état résolu ne dépend pas de φ : seule la règle E4 change.
+        e0 = maquette.etat_socle(maquette.parametres_socle(pi))[0]
+        e1 = maquette.etat_socle(maquette.replace(maquette.parametres_socle(pi), phi=0.0))[0]
+        assert e0["D_H"] == e1["D_H"] and e0["T_cou"] == e1["T_cou"] == 0.0
+    assert phis[0.10] > phis[0.02]
+    assert maquette.doublement(0.999) is None
+
+
+def test_marge_conjointe_est_une_frontiere(maquette):
+    m = maquette.marge_conjointe()
+    f = m["facteur"]
+    base, ens = maquette.parametres_socle(0.02), maquette._ensemble(1.5)
+    modifies = {c.name for c in dataclasses.fields(base) if getattr(base, c.name) != getattr(ens, c.name)}
+    assert modifies == set(maquette.GAINS_ENSEMBLE) == {"beta", "a_pi", "eta_r"}
+    assert all(getattr(ens, nom) == 1.5 * getattr(base, nom) for nom in modifies)
+    assert maquette.BORNES_MARGE[0] < f < maquette.BORNES_MARGE[1]
+    assert maquette.rayon_c(maquette._ensemble(f - 1e-6)) < 1 < maquette.rayon_c(maquette._ensemble(f + 1e-6))
+    assert max(x["rayon"] for x in m["x2"].values()) == maquette.rayon_c(maquette._ensemble(2.0))
+
+
+def _ligne_de(carte, nom):
+    return carte.noms.index(nom)
+
+
+def test_variantes_de_F_methode(maquette):
+    """Seconde écriture des variantes de F : point stationnaire propre, règle effectivement changée, taux tenu
+    (lignes nulles), branches de B6 et contrôle des coudes."""
+    par = maquette.parametres_socle(0.02)
+    J_F = maquette.jacobienne(maquette.carte_socle(par, "hausse"))
+    for financement in maquette.FINANCEMENTS:
+        etat = maquette.parametres_etat(par, financement)
+        carte = maquette.carte_socle(par, "hausse", "regle", financement)
+        assert maquette.residu_point_fixe(carte) <= maquette.TOL_POINT_FIXE
+        if financement == "F":
+            assert etat == par and np.array_equal(maquette.jacobienne(carte), J_F)
+            continue
+        assert etat != par
+        assert np.max(np.abs(maquette.jacobienne(carte) - J_F)) > 1e-3  # la variante change la carte
+        # Le point fixe de la variante n'est pas celui de F : l'état de F n'est pas stationnaire sous la variante.
+        decalee = dataclasses.replace(carte, x0=maquette.carte_socle(par, "hausse").x0)
+        assert maquette.residu_point_fixe(decalee) > 1e3 * maquette.TOL_POINT_FIXE
+    for taux, figes in (("exogene", ("i_L", "i_D", "r_hat")), ("exogene_ancre", ("i_L", "i_D", "r_hat", "pi_e"))):
+        carte = maquette.carte_socle(par, "hausse", taux)
+        J = maquette.jacobienne(carte)
+        assert all(np.max(np.abs(J[_ligne_de(carte, nom)])) == 0.0 for nom in figes)
+        libres = set(("i_L", "i_D", "r_hat", "pi_e")) - set(figes)
+        assert all(np.max(np.abs(J[_ligne_de(carte, nom)])) > 0 for nom in libres)
+    # Au socle (ϑ > 0), le plancher de B6 est inactif : la règle écrite et la branche « verse » coïncident.
+    assert np.array_equal(maquette.jacobienne(maquette.carte_socle(par, "hausse", B6="verse")), J_F)
+    # Dans « fiche », B6 est à son coude : la règle écrite le franchit, chaque branche non.
+    fiche = maquette.parametres_fiche(0.02)
+    e = maquette.etat_socle(fiche)[0]
+    assert e["E_Bk"] == 0.0 and e["Pi_Bk"] == 0.0 and abs(e["i_L"] - 0.03) < 1e-15 and abs(e["i_D"] - 0.03) < 1e-15
+    assert maquette.ecart_avant_arriere(maquette.carte_socle(fiche, "hausse", B6="regle")) > maquette.TOL_COUDE
+    for B6 in maquette.B6_CONFIGURATION["fiche"]:
+        assert maquette.ecart_avant_arriere(maquette.carte_socle(fiche, "hausse", B6=B6)) <= maquette.TOL_COUDE
+    with pytest.raises(ValueError):
+        maquette.carte_socle(par, "hausse", "regle", "inconnu")
+
+
+def test_variantes_de_F_publiees(maquette):
+    """Chaque combinaison déclarée est publiée une fois, avec un point fixe tenu et une nature cohérente."""
+    v = maquette.variantes_F()
+    cles = [(x["configuration"], x["lambda_ti"], x["taux"], x["B6"], x["financement"], x["regime"]) for x in v]
+    assert len(cles) == len(set(cles))
+    attendu = sum(len(maquette.LAMBDA_TI_F) * len(maquette.TAUX_SOCLE) * len(b6) * len(maquette.FINANCEMENTS) * 2
+                  for b6 in maquette.B6_CONFIGURATION.values())
+    assert len(v) == attendu
+    for x in v:
+        assert x["residu"] <= maquette.TOL_POINT_FIXE and x["coude"] <= maquette.TOL_COUDE
+        z = complex(*x["racine"])
+        assert x["rayon"] == abs(z)
+        assert (x["nature"], x["periode"]) == maquette.nature_racine(z)
+    assert maquette.nature_racine(complex(-1.5, 0.0)) == ("réelle négative", 2.0)
+    assert maquette.nature_racine(complex(0.5, 0.0)) == ("réelle positive", None)
