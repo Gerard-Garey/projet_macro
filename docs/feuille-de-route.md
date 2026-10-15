@@ -2,9 +2,9 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail.
 
-**Dernière mise à jour** : 15/10/2026, consignation de la branche J3-a après les rangs 1 à 6 — `main` = `2e643a2` ; **branche de travail** `claude/j3-maquette-criteres` (PR brouillon #109) ; par `architect` (Opus, effort `medium`, consignation), sur les décisions de fond du mainteneur du 15/10/2026 (§ 4, décisions sur les rangs 1 à 4 de J3-a) : § 1 (rangs 0 à 6 faits, avec leurs SHA ; rangs 7 à 9 à faire), § 3 (#110, #111 ; 47 issues ouvertes), § 4 (D1–D13, G1, F2, S1, socle, grille, `tab:instabilites`, issues), § 6 (ligne J3 : `tab:criteres-j3`, D12). Version précédente (point d'étape après la PR #99, rang 0) : `b393052` ; dernière version non condensée : `8511ba3`.
+**Dernière mise à jour** : 15/10/2026, consignation des rangs 7 et 8 de J3-a, avant la sortie du brouillon — `main` = `2e643a2` ; **branche de travail** `claude/j3-maquette-criteres` (PR brouillon #109), tête `13146ff` ; par `architect` (Opus, effort `medium`, consignation) : § 1 (rangs 7 et 8 faits, avec leurs SHA ; rang 9 à faire ; issues proposées, non créées ; budget Fable), § 4 (ligne « Grille » : régime et π̄ de la frontière de la marge conjointe).
 
-**Mise à jour précédente** : 14/10/2026, rangs 1c (#93), 6, 7 et 8 de J2 faits, rang 9 à faire — branche `claude/j2-noyau`, tête `55dda6d` ; par `architect` (Opus, effort `medium`, consignation) : § 1, § 4 (décisions 5 à 9 du 14/10/2026), § 6 ; ADR 0012 annoté (domaine des niveaux du registre des prix, étape « 8c »).
+**Mise à jour précédente** : 15/10/2026, consignation de la branche J3-a après les rangs 1 à 6 — `main` = `2e643a2` ; par `architect` (Opus, effort `medium`, consignation), sur les décisions de fond du mainteneur du 15/10/2026 (§ 4, décisions sur les rangs 1 à 4 de J3-a) : § 1, § 3 (#110, #111 ; 47 issues ouvertes), § 4 (D1–D13, G1, F2, S1, socle, grille, `tab:instabilites`, issues), § 6 (ligne J3 : `tab:criteres-j3`, D12). Version précédente (point d'étape après la PR #99, rang 0) : `b393052` ; dernière version non condensée : `8511ba3`.
 
 Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-route.md`).
 
@@ -14,7 +14,7 @@ Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-ro
 
 - **Branche** : `claude/j3-maquette-criteres`, ouverte le 15/10/2026 depuis `main` à `2e643a2` (fusion de la PR #99). Issues : #107, #105, #65, #66, #100, toutes avec `Closes` (P39 (a)). Plan d'`architect-approfondi` du 15/10/2026 (point d'étape après la PR #99), décidé par le mainteneur le même jour (P38 à P48, § 4). La fiche de J2 reste dans le corps de la PR #99, au § 7 et dans Git (`8511ba3`).
 - **Délégation technique** reconduite pour J3-a (P47 (a)) ; #11 et #14 attendent toujours le mainteneur.
-- **Budget Fable** de J3-a : 0 sur 3 ; la consultation proposée au seuil « macro » est reportée au plan de J3-b et comptera pour J3-b (§ 4, décision Fable ; § 8).
+- **Budget Fable** de J3-a : 0 sur 3 au terme du rang 8 (aucune consultation Fable sur la branche) ; la consultation proposée au seuil « macro » est reportée au plan de J3-b et comptera pour J3-b (§ 4, décision Fable ; § 8). Relance sur la branche : une reprise `docwriter` → `coder` après les validations du rang 7, sans Fable (tracée dans la PR #109).
 
 | Rang | Étape | Agent | Circuit | État |
 |---|---|---|---|---|
@@ -25,9 +25,25 @@ Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-ro
 | 4 | #66 : contre-épreuve écrite sans lire la maquette du rang 3 (consigne explicite au brief) | `coder` (nouveau contexte) → `audit` ; `macro` | 3 | **fait** : `85f86f1`, `6075055` |
 | 5 | #100, à tout moment après le rang 2 | `coder` → `audit` (`circuit-technique 100`) | 3 | **fait** : `90ff036`, `198310d` (circuit 3 mené à la main, sans le workflow) |
 | 6 | Un seul passage de `docwriter` : chiffres de la maquette, lignes de `tab:instabilites` (#66), portée de la colonne « Lisent » (#100), dispersion du coût ; radical `observation` dans `CONVENTIONS.md` (P44) | `docwriter` ; validation de `macro` | règle 9 | **fait** : `f80c34a` (#107), `855f128` (#105), `be523d4` (#100), `1e24ba3` (#65), `f2d6291` (#66) ; correctif du relevé de la maquette `4c4beec`, `b43dea6` et `docs:` `3120b6d` |
-| 7 | Revue de fond des chiffres de la maquette | `macro-approfondi`, `monnaie` | — | à faire |
-| 8 | Revue finale complète et `/code-review` | `audit` | règle 10 | à faire |
+| 7 | Revue de fond des chiffres de la maquette | `macro-approfondi`, `monnaie` | — | **fait** : diff de correction `70c3ec6..8c9fd58` « validé avec réserves » par les deux experts ; réserves corrigées en `054782b` (#65), `f25990c` (#66), `e2ab2e0` (#100), `13146ff` (#107) ; diff de ces corrections validé par les deux experts, trois réserves mineures reprises dans les mêmes commits (détail ci-dessous) |
+| 8 | Revue finale complète et `/code-review` | `audit` | règle 10 | **fait** : revue finale sur `2e643a2...8c9fd58` « conforme avec réserves » (M1, m1 à m4) ; `/code-review` : 9 points, 6 corrigés, 3 écartés ; corrections `649d6a8`, `80f718b` (#65), `7ab613b`, `921d1e0`, `8743c08` (#105), `21eaed5`, `b57a074` (#66) ; audit léger du lot puis de sa reprise « conforme » ; batteries vertes à `13146ff` |
 | 9 | Validation du mainteneur, puis fusion | mainteneur | — | à faire |
+
+**Rang 7, détail** (15/10/2026). Réserves mineures de la seconde validation, reprises dans les commits ci-dessus :
+- publier la racine réelle 0,999994 (lecture (c) au facteur 2, a_I ÷ 1000, en régime de hausse) ;
+- poser la convention « rayon = plus grand des deux régimes » ;
+- indiquer la frontière de la marge conjointe : ×1,7135 en régime de baisse de l'emploi, ×1,9921 en hausse, à π̄ = 2 %.
+
+Le relevé de la maquette passe à 148 chiffres : 139 reproduits, 9 écarts. *Désaccord entre experts* sur le vecteur propre du mode lent (composante dominante r̂ selon `monnaie`, niveaux nominaux selon `macro`, vraisemblablement une question de normalisation) : la session ne publie que le fait admis par les deux, la racine vaut exactement 1 à a_I = 0, la ligne de r̂ étant la ligne unité. Le constat 5 de `macro` (gain statique −0,22 % et arrivée au tour 5 500, non remesurés) est versé en commentaire sur #111.
+
+**Rang 8, détail** (15/10/2026). Revue finale d'`audit` : M1 (décompte périmé), m1 à m4. `/code-review`, six points corrigés : `module_paire` sans paire ; point fixe contrôlé sur toutes les cartes publiées (478) ; `seuil_lambda_ti` non encadré, devenu un contrôle en échec (code 2) ; racine restante après la déflation ; ligne d'image répétée ; commit de fusion documenté. Trois points écartés : allocation de `LectureDuGrandLivre` par `Vue` (aucun écart de coût mesuré par l'audit, C = 0,4253 ms en CI à la tête) ; fixture de chargement dupliquée dans `tests/unitaires/conftest.py` (nettoyage hors périmètre) ; chiffre 0,99934 du message de `8c9fd58` (historique, non modifiable). Deux états intermédiaires sont rouges par construction, `054782b` et `649d6a8`, poussés ensemble. Batteries à `13146ff` : unitaires 1178 passed, 1 skipped, 2 xfailed ; invariants 198 passed, 2 skipped ; concordance et matrices « Aucun écart ».
+
+**Reste** : rang 9, validation du mainteneur, sortie du brouillon et fusion par commit de fusion.
+
+**Issues proposées pendant les rangs 7 et 8, non créées** (à soumettre au mainteneur) :
+- recenser les annotations des fiches dans le relevé de la maquette (`LIGNES_FICHES`) ; exemple : `banque_centrale.md:349`, qui cite 1,9921, n'est pas relevé ;
+- contrôler le résidu du point fixe des cartes `offre`, `investissement` et `menages` aux variantes publiées ;
+- cache de `lectures`, qui distingue les appels avec et sans arguments par défaut (environ 0,9 s).
 
 **Effet sur les résultats** : aucun pour le moteur. Si la maquette ne reproduit pas un rayon publié, la spécification change, avec tableau avant / après et visa du mainteneur. *Constat du 15/10/2026* : la maquette ne reproduit pas les chiffres de stabilité publiés du socle (mesurés avant l'amendement de E12 du 04/10/2026) ; remesures publiées sur visa du mainteneur (§ 4, décisions du 15/10/2026 sur les rangs 1 à 4), tableau avant / après dans le corps de la PR #109 et au commit `docs:` de #65 (`1e24ba3`).
 
@@ -393,7 +409,7 @@ Décisions de fond prises par le mainteneur le 15/10/2026 pendant la branche J3-
 | G1 | Budget du socle complet : N = 10 exécutions, marge m = 0,60, max_k C_k ≤ 2,708 ms (commentaire 6186123808 sur #107, 06:39 UTC), sur proposition de `macro` (option A) et mesure de #105 (C = 0,2698 à 0,4308 ms, deux modes). |
 | F2, S1 | Décidés après mesure sur les maquettes (#65, #66), **avant tout essai sur le moteur** ; lecture des bandes « ± x = demi-largeur » (commentaire 6187825407 sur #107, 08:26 UTC). |
 | Socle | Stabilité du socle des blocs 2 à 9 : **publier les remesures** (visa du mainteneur). Cause établie par `monnaie`, confirmée par `macro` : chiffres mesurés avant l'ajout de −T^cou à E12 (amendement du 04/10/2026) ; sans −T^cou, la maquette reproduit les chiffres publiés à la 6e décimale. Lecture (c) du rayon à π̄ = 0 (variété des identités, hors des deux racines des stocks de la banque centrale tenus en niveau, déclarées). Anciennes valeurs barrées, tableau avant / après au commit `docs:` de #65 (`1e24ba3`). |
-| Grille | Grille de 29 branches (a_U sans objet sous M32, BC1 sans terme d'activité), plus ζ ∈ {2 ; 4 ; 8} en prospectif (31 branches) ; verdicts publiés sur 29 et 31 ; **marge conjointe publiée** (β, a_π, η_r ensemble ; frontière ×1,71), qui limite la phrase « rayon < 1 sur toute la grille » à la stabilité un paramètre à la fois et toutes vitesses ensemble. |
+| Grille | Grille de 29 branches (a_U sans objet sous M32, BC1 sans terme d'activité), plus ζ ∈ {2 ; 4 ; 8} en prospectif (31 branches) ; verdicts publiés sur 29 et 31 ; **marge conjointe publiée** (β, a_π, η_r ensemble ; frontière ×1,71 en régime de baisse de l'emploi, à π̄ = 2 % (1,9921 en hausse)), qui limite la phrase « rayon < 1 sur toute la grille » à la stabilité un paramètre à la fois et toutes vitesses ensemble. |
 | `tab:instabilites` | Variantes écartées de F (#66) : **seconde écriture indépendante d'abord**, dans la maquette de #65 sans lire la contre-épreuve ; ligne versée seulement si concordance au 4e chiffre avec #66. Concordance établie (`50daa4c`) ; **ligne 18 versée** et `sec:ecartees` chiffrée et nuancée (`f2d6291`). |
 | Issues | Création de #110 (processeur de l'exécuteur en CI) et #111 (trajectoires C-HS publiées avant l'amendement de E12, à remesurer) ; rattachement au point d'étape suivant (§ 3). L'issue proposée par `coder` sur #100 (positions, ouverture, échelles, valeurs nettes hors du filtre de lecture) n'est pas créée : à soumettre au mainteneur (annotation du 15/10/2026 de l'ADR 0012, #100). |
 
