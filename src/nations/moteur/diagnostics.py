@@ -8,7 +8,8 @@ Contrat : ADR 0012, B3, B4 et F1 ; même forme que les diagnostics du noyau
   de bloc refusée par le contrôle statique de l'assemblage (B3) ;
 - `RefusDuMoteur`, levée **au moment de l'appel**, pendant un pas : écriture
   d'une variable du pas non déclarée ou déjà écrite, lecture d'une variable
-  non déclarée ou non encore écrite, écriture d'une variable d'état hors de
+  non déclarée ou non encore écrite, lecture du montant exécuté d'une ligne
+  non déclarée (#100), écriture d'une variable d'état hors de
   son propriétaire, de sa phase ou de son type, variable d'état non écrite à
   la couche moteur de la phase 9, entrées du tour non déclarées (B4, C2, B5).
 
