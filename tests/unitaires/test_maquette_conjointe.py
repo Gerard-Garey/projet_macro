@@ -56,8 +56,14 @@ def test_n_importe_ni_src_ni_archive():
     assert not modules & {"nations", "archive", "src"}
     assert modules <= {"__future__", "argparse", "dataclasses", "functools", "importlib", "json", "math",
                        "pathlib", "re", "sys", "numpy"}
-    # Seul module du dépôt chargé par son chemin : le script d'état stationnaire.
+    # Seul module du dépôt chargé par son chemin : le script d'état stationnaire. Aucun autre chargement
+    # dynamique (indépendance de la contre-épreuve #66, symétrique de son propre test).
     assert '"etat_stationnaire"' in SCRIPT.read_text(encoding="utf-8")
+    appels = [n.func.attr if isinstance(n.func, ast.Attribute) else getattr(n.func, "id", None)
+              for n in ast.walk(arbre) if isinstance(n, ast.Call)]
+    assert appels.count("spec_from_file_location") == 1 and appels.count("module_from_spec") == 1
+    natifs = {n.func.id for n in ast.walk(arbre) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    assert "import_module" not in appels and not {"__import__", "exec", "eval", "compile"} & natifs
 
 
 def test_deterministe_et_rapide():
@@ -347,9 +353,62 @@ def test_code_de_sortie_depend_des_controles(maquette, monkeypatch, capsys):
     lect = {pi: dict(reg) for pi, reg in r["lectures_socle"].items()}
     lect["0"] = dict(lect["0"], hausse=dict(lect["0"]["hausse"], tenus_en_niveau=["E_CB"]))
     assert maquette.controles_tenus(dict(r, lectures_socle=lect))
+    # Une racine en 1/Γ̄ de plus que les stocks tenus attendus, stocks tenus inchangés.
+    lect = {pi: dict(reg) for pi, reg in r["lectures_socle"].items()}
+    lect["0"] = dict(lect["0"], hausse=dict(lect["0"]["hausse"], multiplicite_variete=3))
+    assert maquette.controles_tenus(dict(r, lectures_socle=lect))
+    # Stocks tenus hors des six cas du socle (grille, compléments, φ, marge, variantes de F).
+    r2 = dict(r, controles=dict(r["controles"], tenus_hors_attendus=["grille beta ×2 hausse"]))
+    assert maquette.controles_tenus(r2)
+    monkeypatch.setattr(maquette, "calculer", lambda r2=r2: r2)
+    assert maquette.main([]) == 2
+    r2 = dict(r, racines_nominales=dict(r["racines_nominales"], variete_cas_controles=1e-3))
+    assert maquette.controles_tenus(r2)
     monkeypatch.setattr(maquette, "calculer", lambda: r)
     assert maquette.main([]) == 0
     capsys.readouterr()
+
+
+def test_stocks_tenus_et_racine_nominale_sur_chaque_carte_publiee(maquette, monkeypatch):
+    """Les contrôles des stocks tenus en niveau et de la racine nominale portent sur chaque carte du socle dont
+    une lecture (c) est publiée : six cas, grille augmentée, compléments, table φ et φ*, marge, variantes de F."""
+    cas = maquette.cas_controles()
+    branches = maquette.branches_grille() + maquette.branches_ajoutees() + maquette.branches_complementaires()
+    attendu = 6 + 2 * len(branches) + 2 * 2 * (len(maquette.PHI_TABLE) + 1) + 2 * 2 + len(maquette.variantes_F())
+    assert len(cas) == attendu
+    variantes = {(v["configuration"], v["lambda_ti"], v["taux"], v["B6"], v["financement"], v["regime"])
+                 for v in maquette.variantes_F()}
+    assert variantes <= {(e.split()[1], par.lambda_ti, t, B6, f, r) for e, par, r, t, f, B6 in cas
+                         if e.startswith("variante")}
+    n, hors, nominale = maquette.tenus_et_nominales()
+    assert (n, hors) == (len(cas), []) and 0 < nominale <= maquette.TOL_RACINE_NOMINALE
+    # Le contrôle discrimine : attendu faux, chaque carte est signalée.
+    monkeypatch.setattr(maquette, "TENUS_ATTENDUS", ("E_CB",))
+    assert len(maquette.tenus_et_nominales()[1]) == len(cas)
+    # Une racine en 1/Γ̄ de plus, stocks tenus attendus : chaque carte est signalée aussi.
+    monkeypatch.undo()
+    lectures = maquette.lectures
+    monkeypatch.setattr(maquette, "lectures", lambda *a: dataclasses.replace(lectures(*a), multiplicite_variete=3))
+    assert len(maquette.tenus_et_nominales()[1]) == len(cas)
+
+
+def test_combinaison_levier_pK_et_depots_ventes(maquette):
+    """La combinaison (fiche 6, § 3.N, première ligne) porte les deux écritures : état et carte."""
+    combinaison, levier = maquette.LEVIER_PK_DEPOTS_VENTES, "levier_pK.p_hat.ouverture"
+    assert maquette.ecritures_financement(combinaison) == (levier, True)
+    assert maquette.ecritures_financement(levier) == (levier, False)
+    assert maquette.ecritures_financement("depots_ventes") == (None, True)
+    assert maquette.ecritures_financement("F") == (None, False)
+    with pytest.raises(ValueError):
+        maquette.ecritures_financement("inconnu")
+    for par in (maquette.parametres_socle(0.02), maquette.parametres_fiche(0.02)):
+        etat = maquette.parametres_etat(par, combinaison)
+        assert etat.lv == maquette.parametres_etat(par, levier).lv != par.lv
+        assert etat.nu_F == maquette.parametres_etat(par, "depots_ventes").nu_F != par.nu_F
+        J = maquette.jacobienne(maquette.carte_socle(par, "hausse", "exogene", combinaison, "verse"))
+        for seule in (levier, "depots_ventes"):
+            J_seule = maquette.jacobienne(maquette.carte_socle(par, "hausse", "exogene", seule, "verse"))
+            assert np.max(np.abs(J - J_seule)) > 1e-3
 
 
 def test_controle_avant_arriere_detecte_un_coude(maquette):
