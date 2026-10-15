@@ -73,7 +73,7 @@ Contre-épreuve indépendante des boucles de la fiche « investissement et finan
 uv run python outils/contre_epreuve_financement.py [--json FICHIER] [--chrono]
 ```
 
-Code de sortie 0 si les contrôles internes (sentier stationnaire, homogénéité, convergence de Newton, dérivabilité) passent, 2 sinon ; les écarts aux valeurs publiées sont publiés, jamais bloquants ; sortie identique à l'octet hors `--chrono`. La concordance des deux écritures des variantes est vérifiée par `tests/unitaires/test_concordance_maquettes.py`.
+Code de sortie 0 si les contrôles internes (sentier stationnaire, homogénéité, convergence de Newton, dérivabilité, seuil de λ_ti encadré par sa grille) passent, 2 sinon ; les écarts aux valeurs publiées sont publiés, jamais bloquants ; sortie identique à l'octet hors `--chrono`. La concordance des deux écritures des variantes est vérifiée par `tests/unitaires/test_concordance_maquettes.py`.
 
 Relevé du coût du noyau seul dans des journaux bruts du job « Tests » de la CI (un fichier `run_<run>_job_<job>.txt` par job, ou un répertoire de tels fichiers) : run, commit, image, coût et ses cinq répétitions par exécution, puis minimum, médiane, maximum et rapport max / min, sur l'ensemble et par image ; refus (code 2) d'un journal incomplet ou ambigu, de commits différents, de deux journaux au même run ; bibliothèque standard seulement ; issue #105). Pour une exécution déclenchée par `pull_request`, le commit relevé est le commit de fusion (`refs/pull/N/merge`), non la tête de la branche :
 
