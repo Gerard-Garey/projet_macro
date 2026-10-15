@@ -93,7 +93,8 @@ BC3) ; la règle de taux active est publiée en mesure complémentaire.
 Usage : `uv run python outils/contre_epreuve_financement.py [--json FICHIER]
 [--chrono]`. Déterministe : deux exécutions donnent la même sortie à l'octet
 (hors `--chrono`). Code de sortie 0 si les contrôles internes (sentier
-stationnaire, homogénéité, convergence de Newton, dérivabilité) passent, 2 sinon ; les écarts
+stationnaire, homogénéité, convergence de Newton, dérivabilité, seuil de λ_ti
+encadré par sa grille) passent, 2 sinon ; les écarts
 aux valeurs publiées sont publiés, jamais bloquants (le verdict relève de
 `macro` et du mainteneur).
 """
@@ -417,13 +418,14 @@ class Spectre:
     valeur: complex  # valeur propre dominante
     homogeneite: float  # ‖J h − h‖∞
     racine_retiree: complex  # valeur propre retirée (contrôle : ≈ 1)
+    racine_restante: complex | None  # racine de J déflatée à |λ − 1| ≤ TOL_RACINE_NOMINALE (contrôle : aucune)
     periode: float | None  # en pas, si la dominante est complexe
     demi_vie: float | None  # en pas, si rayon < 1
 
 
 def spectre(J: np.ndarray, h: np.ndarray | None, i_pivot: int | None) -> Spectre:
     """Spectre de J, racine nominale retirée par déflation de Wielandt si h est donné."""
-    homog, retiree = 0.0, complex(math.nan)
+    homog, retiree, restante = 0.0, complex(math.nan), None
     if h is not None:
         homog = float(np.max(np.abs(J @ h - h)))
         w = np.zeros_like(h)
@@ -433,6 +435,9 @@ def spectre(J: np.ndarray, h: np.ndarray | None, i_pivot: int | None) -> Spectre
         lam = np.linalg.eigvals(J)
         # Contrôle : la valeur propre disparue (remplacée par 0) est celle la plus proche de 1.
         retiree = complex(lam_avant[np.argmin(np.abs(lam_avant - 1))])
+        # Contrôle : la déflation n'a retiré qu'une racine, aucune autre ne reste à |λ − 1| sous la tolérance.
+        proche = complex(lam[np.argmin(np.abs(lam - 1))])
+        restante = proche if abs(proche - 1) <= TOL_RACINE_NOMINALE else None
     else:
         lam = np.linalg.eigvals(J)
     # Ordre canonique : module décroissant, puis partie imaginaire positive d'abord.
@@ -442,7 +447,7 @@ def spectre(J: np.ndarray, h: np.ndarray | None, i_pivot: int | None) -> Spectre
     arg = abs(cmath.phase(dom))
     periode = 2 * math.pi / arg if dom.imag != 0 and arg > 1e-12 else None
     demi_vie = math.log(0.5) / math.log(rayon) if 0 < rayon < 1 else None
-    return Spectre(rayon, dom, homog, retiree, periode, demi_vie)
+    return Spectre(rayon, dom, homog, retiree, restante, periode, demi_vie)
 
 
 def residu_sentier(o0, par, cfg) -> float:
@@ -596,12 +601,20 @@ def rayon_boucle_reduite(par: Parametres, m: float) -> Spectre:
 
 
 def seuil_lambda_ti(par: Parametres, m: float) -> float | None:
-    """Plus petite λ_ti (par an) où le rayon de la boucle réduite atteint 1 : balayage puis bissection."""
+    """Plus petite λ_ti (par an) où le rayon de la boucle réduite atteint 1 : balayage puis bissection.
+
+    None si le rayon reste sous 1 sur toute la grille ; refus (ValueError) si le rayon atteint déjà 1 au
+    premier point de la grille : le seuil, inférieur à ce point, n'y est pas encadré. `calculer` publie alors
+    le seuil sans mesure et en fait un contrôle en échec (code de sortie 2).
+    """
     grille = [0.002 * k for k in range(1, 501)]  # 0,002 à 1 par an
     precedent = None
     for lam in grille:
         r = rayon_boucle_reduite(replace(par, lambda_ti=lam), m).rayon
-        if r >= 1 and precedent is not None:
+        if r >= 1:
+            if precedent is None:
+                raise ValueError(f"rayon {r!r} ≥ 1 dès le premier point de la grille (λ_ti = {lam}) : seuil non "
+                                 "encadré")
             bas, haut = precedent, lam
             for _ in range(40):
                 mil = 0.5 * (bas + haut)
@@ -610,7 +623,7 @@ def seuil_lambda_ti(par: Parametres, m: float) -> float | None:
                 else:
                     bas = mil
             return 0.5 * (bas + haut)
-        precedent = lam if r < 1 else None
+        precedent = lam
     return None
 
 
@@ -681,8 +694,9 @@ def calculer(par: Parametres | None = None) -> dict[str, object]:
                         res = rayon_conjoint(p_v, Config(credit=cr, depots=dep, regime=reg, taux=taux))
                         sp = res["spectre"]
                         controles[f"homogénéité {nom_conf} {vitesse} {cr} {dep} {reg} {taux}"] = sp.homogeneite
+                        # Une racine restée près de 1 après déflation fait échouer le contrôle (valeur infinie).
                         controles[f"racine retirée − 1 {nom_conf} {vitesse} {cr} {dep} {reg} {taux}"] = abs(
-                            sp.racine_retiree - 1)
+                            sp.racine_retiree - 1) if sp.racine_restante is None else math.inf
                         controles[f"Newton {nom_conf} {vitesse} {cr} {dep} {reg} {taux}"] = res[
                             "residu_stationnaire"]
                         controles[f"coude {nom_conf} {vitesse} {cr} {dep} {reg} {taux}"] = res["coude"]
@@ -754,8 +768,14 @@ def calculer(par: Parametres | None = None) -> dict[str, object]:
                             "sec:investissement-conditions"))
     for p_, ans, m, pub in ((par, 2, 0.6, "0,157"), (par, 2, 0.7, "0,097"), (par, 2, 0.8, "0,036"),
                             (par3, 3, 0.6, "0,077"), (par3, 3, 0.7, "0,037")):
-        lignes.append(ligne(f"boucle réduite, seuil de λ_ti (par an), m = {m}, {ans} ans", pub,
-                            seuil_lambda_ti(p_, m), "sec:investissement-conditions"))
+        try:
+            seuil = seuil_lambda_ti(p_, m)
+        except ValueError:
+            # Seuil non encadré : contrôle en échec (valeur infinie), seuil publié sans mesure.
+            seuil = None
+            controles[f"seuil de λ_ti encadré, m = {m}, {ans} ans"] = math.inf
+        lignes.append(ligne(f"boucle réduite, seuil de λ_ti (par an), m = {m}, {ans} ans", pub, seuil,
+                            "sec:investissement-conditions"))
 
     # 4. Racine lente du capital comptable et du crédit, sans levier (forme fermée de la spécification).
     Pp = (1 + par.pi_cible) ** (1 / n)
