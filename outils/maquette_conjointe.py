@@ -1,0 +1,1240 @@
+"""Maquette linéarisée de la boucle conjointe des blocs 2 à 9 : rayons et périodes cités (issue #65).
+
+Contrat : issue #65 et son amendement du 05/10/2026 (P23 (a) : blocs 2 à 9,
+une seule maquette conjointe, linéarisée autour de l'état stationnaire de
+`outils/etat_stationnaire.py`). Pour chaque rayon spectral, période, demi-vie
+et frontière de stabilité que la spécification
+(`docs/specification/nations_et_marches.tex`) cite pour une boucle conjointe,
+le script rend la valeur publiée, la valeur remesurée, l'écart et les lignes
+de la spécification où le chiffre est écrit.
+
+**Indépendance.** Le script n'importe ni `src/` ni `archive/`. Les cartes
+d'un pas sont écrites depuis les règles des encadrés de la spécification,
+repérées par leur identifiant (N1 à N11, T1 à T6, P1 à P4, H2 à H7, S1 à S7,
+F1 à F4, B1 à B7, BC1 à BC9, E1 à E13) ; seuls l'état stationnaire du socle
+complet, les paramètres de la table de calibration et la règle de
+comparaison aux valeurs publiées viennent de `outils/etat_stationnaire.py`.
+La carte du socle est une seconde transcription des règles, indépendante de
+`etat_stationnaire.un_pas` : un test vérifie que les deux rendent la même
+clôture depuis l'état initial résolu.
+
+**Méthode.** Chaque maquette est une carte d'un pas x_t ↦ x_{t+1} sur les
+variables d'état d'ouverture, évaluée au pas 0 depuis l'état stationnaire.
+Les grandeurs qui croissent sur le sentier sont ramenées à la tendance : une
+grandeur en u.m. est divisée par Γ̄ = [(1 + g)(1 + π̄)]^{1/n_a}, un volume
+par (1 + g)^{1/n_a}, un prix par (1 + π̄)^{1/n_a} (un logarithme est diminué
+du logarithme du facteur) ; les taux, les parts et le chômage ne le sont
+pas. L'état stationnaire est alors un point fixe de la carte détendue, ce
+que le script contrôle (résidu publié). La jacobienne est calculée par
+différences finies centrées, pas relatif `PAS_RELATIF` = 1e−6 de l'échelle
+de chaque variable (son module, avec un plancher par famille : PIB du pas
+pour les montants, production pour les volumes, 0,01 pour les taux), puis
+mise à l'échelle (S⁻¹ J S, mêmes valeurs propres). Le rayon spectral est le
+plus grand module des valeurs propres, hors de la racine nominale quand la
+maquette la porte (une valeur propre telle que |λ − 1| ≤ 1e−8,
+`sec:prix-conditions`), exclue une fois et contrôlée. La période d'une
+racine complexe est 2π/|arg λ| tours ; la demi-vie d'une racine de module
+inférieur à 1 est ln 0,5/ln |λ| tours. Une frontière de stabilité est
+cherchée par bissection déterministe (`ITERATIONS_BISSECTION` pas) sur un
+intervalle encadrant déclaré, le rayon y changeant de côté de 1 une seule
+fois (contrôlé aux bornes). Coude de la règle d'emploi T4 : à l'état
+stationnaire, N* égale la rétention, et les deux régimes de l'emploi sont
+linéarisés séparément (hausse : N = N* ; baisse : N = rétention), comme le
+fait la spécification ; N ≥ N* donne y = y* dans les deux (N5). Les autres
+bornes (min et max) sont inactives à l'état stationnaire et gardées telles
+quelles dans les cartes.
+
+**Maquettes.** Les chiffres cités ont été mesurés sur des maquettes dont les
+hypothèses sont écrites dans le paragraphe qui les cite ; chaque relevé
+nomme la sienne :
+- `offre` : production N1 à N7, emploi égal à la demande de travail, demande
+  d_t = A + m y_{t−1} (`sec:travail-conditions`) ; avec la règle de prix P1
+  à P3 à coût unitaire exogène, plans en u.m. au prix du pas précédent
+  prolongé de la cible (`sec:prix-conditions`) ; avec les règles de salaire
+  T2 et T3, anticipation exogène égale à π̄ (boucle salaires -- prix) ;
+- `investissement` : N1 à N7, S3 et S6, demande A + m y_{t−1} + I^{vol,plan},
+  prix et taux exogènes (`sec:investissement-conditions`) ;
+- `menages` : N1 à N7, T2 à T4 (deux régimes), P1 à P3, H2 à H6,
+  anticipation exogène égale à π̄, dépense autonome en u.m. au prix du pas
+  précédent prolongé de la cible, sans impôts ni transferts, i_D = 3 %
+  (`sec:menages-conditions`, `sec:menages-inflation`, instabilité 17) ;
+- `socle` : blocs 2 à 9 complets, linéarisés autour de l'état initial résolu
+  d'`etat_stationnaire.etat_stationnaire` à ν_G = `NU_G` (valeur retenue),
+  sous la règle budgétaire de référence (φ = 1)
+  (`sec:banque_centrale-conditions`, `sec:finances_publiques-conditions`).
+  E^CB et E^Bk y sont des états clos par les flux : la carte porte des
+  directions qui violent les identités de bilan (`IDENTITES_SOCLE`), dont
+  les gradients sont vecteurs propres à gauche de valeur propre 1/Γ̄. Le
+  script publie deux lectures du rayon sans en écarter aucune racine hors de
+  la racine nominale : le rayon brut (relevé) et le rayon restreint à la
+  variété des identités, chacun avec sa multiplicité en 1/Γ̄, et la racine
+  suivante hors de 1/Γ̄ (`lectures_socle`). La grille du socle est la grille G
+  de `docs/blocs/banque_centrale.md` (l. 340-345), écarts déclarés en
+  `ABSENTS_GRILLE` et `HORS_GRILLE`.
+
+Hypothèses de maquette que la spécification ne définit pas, déclarées
+(questions à l'expert pilote dans le compte rendu de #65) :
+- θ_H = 1 (« résultat courant des entreprises versé dans le pas ») se lit
+  YD = p v + UC (y − v) + i_D V_H/n_a, stock valorisé au coût unitaire du
+  pas ; la lecture au coût moyen pondéré de N8 est publiée à côté ;
+- la lecture (a) (« glissement mesuré dans le terme d'entretien ») lit le
+  glissement π_{t−1} dans γ^e et donc aussi dans Γ^e = 1 + γ^e de H2 ; la
+  lecture de l'entretien seul est publiée à côté.
+
+Usage : `uv run python outils/maquette_conjointe.py [--json FICHIER]`.
+Codes de sortie : 0 si chaque carte tient son point fixe (résidu ≤
+`TOL_POINT_FIXE`) et chaque racine nominale attendue est trouvée, quels que
+soient les écarts aux valeurs publiées (ils sont publiés : le visa relève
+de l'expert pilote et du mainteneur) ; 2 sinon. Déterministe : deux
+exécutions donnent une sortie identique à l'octet.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import math
+import re
+import sys
+from dataclasses import dataclass, replace
+from functools import lru_cache
+from pathlib import Path
+
+import numpy as np
+
+RACINE = Path(__file__).resolve().parents[1]
+SPEC = RACINE / "docs" / "specification" / "nations_et_marches.tex"
+
+
+def _charger_etat_stationnaire():
+    """Module `etat_stationnaire`, voisin de ce script, chargé par son chemin (`outils/` n'est pas un paquet)."""
+    nom = "etat_stationnaire"
+    if nom in sys.modules:
+        return sys.modules[nom]
+    chemin = Path(__file__).resolve().parent / (nom + ".py")
+    spec = importlib.util.spec_from_file_location(nom, chemin)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[nom] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+es = _charger_etat_stationnaire()
+
+# --- Méthode commune --------------------------------------------------------------
+
+PAS_RELATIF = 1e-6  # pas des différences finies centrées, relatif à l'échelle de la variable
+TOL_RACINE_NOMINALE = 1e-8  # |λ − 1| de la racine nominale (sec:prix-conditions, sec:menages-conditions)
+TOL_POINT_FIXE = 1e-10  # résidu du point fixe de la carte détendue, relatif à l'échelle de chaque variable
+ITERATIONS_BISSECTION = 40
+NU_G = es.NU_G_RETENU  # ν_G retenu (décision du mainteneur du 05/10/2026, #84)
+PLANCHER_TAUX = 0.01  # échelle plancher d'un taux ou d'une part, par an ou fraction
+
+# Familles de variables : (nature, facteur de tendance sur un pas). « mult » : la valeur est divisée par le
+# facteur ; « log » : le logarithme est diminué du logarithme du facteur.
+
+
+@dataclass(frozen=True)
+class Carte:
+    """Carte d'un pas sur les variables d'état, avec son point stationnaire et sa détendance."""
+
+    noms: tuple[str, ...]
+    x0: np.ndarray  # état d'ouverture du pas 0, sur le sentier stationnaire
+    echelle: np.ndarray  # échelle de chaque variable (pas des différences finies, résidus)
+    log: np.ndarray  # booléens : variable en logarithme
+    facteur: np.ndarray  # facteur de tendance d'un pas, par variable
+    pas: object  # x_t ↦ x_{t+1}, en niveaux (ou logarithmes), au pas 0
+    racine_nominale: bool  # la maquette porte une racine nominale (niveau des prix et des montants)
+
+    def detendue(self, x: np.ndarray) -> np.ndarray:
+        """x_{t+1} ramené à la tendance du pas 0."""
+        y = np.asarray(self.pas(x), dtype=float)
+        return np.where(self.log, y - np.log(self.facteur), y / self.facteur)
+
+
+def residu_point_fixe(carte: Carte) -> float:
+    """Plus grand écart du point fixe, relatif à l'échelle de chaque variable."""
+    return float(np.max(np.abs(carte.detendue(carte.x0) - carte.x0) / carte.echelle))
+
+
+def jacobienne(carte: Carte) -> np.ndarray:
+    """Jacobienne de la carte détendue au point stationnaire, différences centrées, mise à l'échelle S⁻¹ J S."""
+    k = len(carte.x0)
+    J = np.empty((k, k))
+    for j in range(k):
+        h = PAS_RELATIF * carte.echelle[j]
+        e = np.zeros(k)
+        e[j] = h
+        J[:, j] = (carte.detendue(carte.x0 + e) - carte.detendue(carte.x0 - e)) / (2 * h)
+    return J * carte.echelle[None, :] / carte.echelle[:, None]
+
+
+@dataclass(frozen=True)
+class Spectre:
+    rayon: float
+    racine: complex  # racine dominante, hors racine nominale
+    periode: float | None  # tours, si la racine dominante est complexe
+    demi_vie: float | None  # tours, si |λ| < 1
+    ecart_nominal: float | None  # |λ − 1| de la racine nominale exclue
+    residu: float  # résidu du point fixe
+
+
+def spectre(carte: Carte) -> Spectre:
+    """Rayon spectral, hors racine nominale si la maquette la porte, avec période et demi-vie."""
+    valeurs = np.linalg.eigvals(jacobienne(carte))
+    valeurs = sorted(valeurs, key=lambda z: (-abs(z), z.real, z.imag))
+    ecart_nominal = None
+    if carte.racine_nominale:
+        i = min(range(len(valeurs)), key=lambda q: abs(valeurs[q] - 1))
+        ecart_nominal = float(abs(valeurs[i] - 1))
+        valeurs = valeurs[:i] + valeurs[i + 1:]
+    lam = complex(valeurs[0])
+    rayon = abs(lam)
+    periode = 2 * math.pi / abs(math.atan2(lam.imag, lam.real)) if abs(lam.imag) > 1e-12 else None
+    demi_vie = math.log(0.5) / math.log(rayon) if 0 < rayon < 1 else None
+    return Spectre(rayon, lam, periode, demi_vie, ecart_nominal, residu_point_fixe(carte))
+
+
+def frontiere(rayon_de, bas: float, haut: float) -> float:
+    """Valeur du paramètre où le rayon passe 1, par bissection sur [bas ; haut] encadrant (contrôlé)."""
+    r_bas, r_haut = rayon_de(bas), rayon_de(haut)
+    if not (r_bas - 1) * (r_haut - 1) < 0:
+        raise ValueError(f"intervalle non encadrant : rayon {r_bas!r} et {r_haut!r} aux bornes {bas} et {haut}")
+    stable_en_bas = r_bas < 1
+    for _ in range(ITERATIONS_BISSECTION):
+        milieu = 0.5 * (bas + haut)
+        if (rayon_de(milieu) < 1) == stable_en_bas:
+            bas = milieu
+        else:
+            haut = milieu
+    return 0.5 * (bas + haut)
+
+
+def _carte(variables: list[tuple[str, float, float, bool, float]], pas, racine_nominale: bool) -> Carte:
+    """Assemble une carte depuis (nom, valeur, échelle plancher, en logarithme, facteur de tendance)."""
+    noms = tuple(v[0] for v in variables)
+    x0 = np.array([v[1] for v in variables], dtype=float)
+    plancher = np.array([v[2] for v in variables], dtype=float)
+    log = np.array([v[3] for v in variables], dtype=bool)
+    facteur = np.array([v[4] for v in variables], dtype=float)
+    echelle = np.where(log, 1.0, np.maximum(np.abs(x0), plancher))
+    return Carte(noms, x0, echelle, log, facteur, pas, racine_nominale)
+
+
+BASE = es.Parametres()
+
+
+def _cadre(par, n_a: int | None = None) -> dict[str, float]:
+    """Facteurs du cadre (sec:cadre-calendrier) : croissance g, facteurs par pas, à la cible de `par`."""
+    n = par.n_a if n_a is None else n_a
+    g = (1 + par.g_pr) * (1 + par.g_N) - 1
+    Gr = (1 + g) ** (1 / n)
+    Pp = (1 + par.pi_cible) ** (1 / n)
+    return {"n": n, "g": g, "Gr": Gr, "Pp": Pp, "Gam": Gr * Pp, "gam": Gr * Pp - 1, "pis": Pp - 1}
+
+
+# --- Maquette « offre » : production, stocks, emploi, prix, salaires ---------------------
+
+
+@lru_cache(maxsize=None)
+def carte_offre(m: float, prix: str = "fige", salaires: bool = False, lambda_v: float = BASE.lambda_v,
+                lambda_IN: float = BASE.lambda_IN, lambda_mu: float = BASE.lambda_mu,
+                psi_xi: float = BASE.psi_xi, lambda_w: float = BASE.lambda_w) -> Carte:
+    """Production N1 à N7, emploi égal à la demande de travail, demande induite d_t = A + m y_{t−1}.
+
+    `prix` : « fige » (prix tenu sur la tendance, sec:travail-conditions), « regle » (P1 à P3,
+    sec:prix-conditions) ou « marge » (marge constante μ̄, comparaison de la boucle salaires -- prix).
+    Sous un prix endogène, les plans sont en u.m. au prix du pas précédent prolongé de la cible,
+    P_{t−1}(1 + π^pas)(A + m y_{t−1}), et la demande en volume est le plan divisé par p_t (N6).
+    `salaires` : règles T2 et T3, anticipation exogène π^e = π* ; sinon coût unitaire exogène.
+    """
+    par = BASE
+    c = _cadre(par)
+    n, Gr, Pp, Gam = c["n"], c["Gr"], c["Pp"], c["Gam"]
+    sig, mub, Ueq = par.sigma, par.mu_bar, par.U_eq
+    v = 1.0
+    y = v * (1 + n * sig * (Gr - 1))
+    IN = n * sig * v
+    y_m1 = y / Gr
+    A = v - m * y_m1  # demande autonome en volume, résolue pour d = v
+    pr = par.pr_0
+    p = par.p_0
+    W = p / (1 + mub) * pr
+    N_pa = (y / pr) / (1 - Ueq)  # U = U^eq à l'état stationnaire
+    variables = [("ve", v, v, False, Gr), ("IN_vol", IN, v, False, Gr), ("y_m1", y_m1, v, False, Gr)]
+    if prix != "fige":
+        variables.append(("lnP_m1", math.log(p / Pp), 1.0, True, Pp))
+    if salaires:
+        variables += [("lnW_m1", math.log(W / Gam), 1.0, True, Gam), ("U_m1", Ueq, PLANCHER_TAUX, False, 1.0)]
+    idx = {nom: i for i, (nom, *_) in enumerate(variables)}
+
+    def pas(x):
+        ve, IN_vol, ym1 = x[idx["ve"]], x[idx["IN_vol"]], x[idx["y_m1"]]
+        IN_star = n * sig * ve  # N2
+        y_star = ve + (Gr - 1) * IN_star + lambda_IN / n * (IN_star - IN_vol)  # N3
+        yy = y_star  # N4, N5 : emploi égal à la demande de travail
+        sortie = {}
+        if salaires:
+            lW_m1, U_m1 = x[idx["lnW_m1"]], x[idx["U_m1"]]
+            pr_m1 = pr / Gr
+            omega = math.exp(lW_m1 - x[idx["lnP_m1"]]) / pr_m1  # T2
+            lW = (lW_m1 + (math.log(1 + par.g_pr) + math.log(1 + par.pi_cible)) / n
+                  + lambda_w / n * (math.log(1 / (1 + mub) / omega) - par.beta * (U_m1 - Ueq)))  # T3
+            sortie["lnW_m1"] = lW
+            sortie["U_m1"] = 1 - (yy / pr) / N_pa  # T4 (régime de hausse), T5
+            lUC, lUC_m1 = lW - math.log(pr), lW_m1 - math.log(pr_m1)
+        else:
+            lUC = math.log(W / pr)
+            lUC_m1 = lUC - math.log(Pp)
+        if prix == "fige":
+            d = A + m * ym1
+        else:
+            lP_m1 = x[idx["lnP_m1"]]
+            if prix == "regle":
+                xi = 1 - IN_vol / IN_star  # P1
+                mu_t = (1 - lambda_mu / n) * (lP_m1 - lUC_m1) + lambda_mu / n * (math.log(1 + mub) + psi_xi * xi)  # P2
+                lp = lUC + mu_t  # P3
+            else:
+                lp = lUC + math.log(1 + mub)
+            d = math.exp(lP_m1) * Pp * (A + m * ym1) / math.exp(lp)  # N6 : plan en u.m. divisé par p_t
+            sortie["lnP_m1"] = lp  # P4
+        v_t = d  # N6, disponibilité inactive
+        sortie["ve"] = Gr * ((1 - lambda_v / n) * ve + lambda_v / n * d)  # N1
+        sortie["IN_vol"] = IN_vol + yy - v_t  # N7
+        sortie["y_m1"] = yy
+        return [sortie[nom] for nom, *_ in variables]
+
+    return _carte(variables, pas, racine_nominale=salaires)
+
+
+# --- Maquette « investissement » : boucle réduite investissement -- demande ---------------------
+
+
+@lru_cache(maxsize=None)
+def carte_investissement(m: float, ans: float = 2.0, lambda_ti: float = BASE.lambda_ti) -> Carte:
+    """N1 à N7, S3 et S6 ; demande A + m y_{t−1} + I^{vol,plan} ; prix et taux exogènes (ϱ_L = ϱ̄_L).
+
+    `ans` : capital en années de production, κ/t̄u ; σ = 1,4/12 an (sec:investissement-conditions).
+    """
+    par = BASE
+    c = _cadre(par)
+    n, Gr = c["n"], c["Gr"]
+    sig, delta, tub = par.sigma, par.delta, par.tu_bar
+    kappa = ans * tub
+    v = 1.0
+    y = v * (1 + n * sig * (Gr - 1))
+    IN = n * sig * v
+    y_m1 = y / Gr
+    K_vol = n * kappa * y / tub  # tu = t̄u
+    I_vol = (Gr - 1 + delta / n) * K_vol  # N10 sur le sentier
+    ti = I_vol / y  # S3 : I^{vol,plan} = ti Gr y_{t−1} = I_vol
+    A = v - m * y_m1 - I_vol
+    variables = [("ve", v, v, False, Gr), ("IN_vol", IN, v, False, Gr), ("y_m1", y_m1, v, False, Gr),
+                 ("K_vol", K_vol, v, False, Gr), ("ti", ti, PLANCHER_TAUX, False, 1.0)]
+
+    def pas(x):
+        ve, IN_vol, ym1, Kv, ti_t = x
+        IN_star = n * sig * ve  # N2
+        yy = ve + (Gr - 1) * IN_star + par.lambda_IN / n * (IN_star - IN_vol)  # N3, N5
+        I_plan = ti_t * Gr * ym1  # S3, ϱ_L = ϱ̄_L
+        d = A + m * ym1 + I_plan
+        tu = yy / (Kv / (n * kappa))  # N11
+        return [Gr * ((1 - par.lambda_v / n) * ve + par.lambda_v / n * d),  # N1
+                IN_vol + yy - d,  # N7
+                yy,
+                (1 - delta / n) * Kv + I_plan,  # N10
+                ti_t * math.exp(lambda_ti / n * (tu - tub))]  # S6, t̄u* = t̄u
+
+    return _carte(variables, pas, racine_nominale=False)
+
+
+# --- Maquette « ménages » : production, travail, prix et ménages -----------------------------
+
+LECTURES = ("cible", "a", "a_entretien", "hs_glissement", "hs_glissement_pas")
+RESULTATS = ("cout_unitaire", "cout_moyen")
+
+
+@lru_cache(maxsize=None)
+def carte_menages(theta_H: float = 0.8, regime: str = "hausse", lecture: str = "cible", h: float = 1.0,
+                  nu_H: float = BASE.nu_H, n_a: int = 12, vitesses: float = 1.0, i_D: float = 0.03,
+                  resultat: str = "cout_unitaire") -> Carte:
+    """Blocs production (N1 à N8), travail (T2 à T6), prix (P1 à P3) et ménages (H2 à H6), sec:menages-conditions.
+
+    Anticipation exogène π^e = π* ; dépense autonome (État et investissement) en u.m. au prix du pas
+    précédent prolongé de la cible ; sans impôts ni transferts ; i_D exogène. `theta_H` : 0,8, les ménages
+    reçoivent les salaires et les intérêts de leurs dépôts ; 1, aussi le résultat courant des entreprises,
+    p v + UC (y − v) − WB (`resultat` = « cout_unitaire ») ou p v + ΔIN − WB au coût moyen de N8
+    (« cout_moyen »). `lecture` : « cible » (H2 à H4 de la spécification) ; « a », richesse visée sur le
+    revenu nominal, V* = ν_H n_a YD^e, et inflation lue sur le glissement π_{t−1} dans γ^e, donc dans
+    Γ^e = 1 + γ^e de H2, avec un poids `h` (correction partielle) ; « a_entretien », même chose, le
+    glissement n'entrant que dans le terme d'entretien de H4 ; « hs_glissement », richesse de Haig-Simons,
+    π^{*,pas} de H3 et γ^e (H2, H4) lus sur le glissement ; « hs_glissement_pas », π^{*,pas} de H3 seul lu
+    sur le glissement. `vitesses` multiplie λ_v, λ_IN, λ_w, λ_N, λ_μ et λ_H.
+    """
+    if lecture not in LECTURES or resultat not in RESULTATS or regime not in ("hausse", "baisse"):
+        raise ValueError(f"maquette ménages : lecture {lecture!r}, résultat {resultat!r}, régime {regime!r}")
+    par = BASE
+    c = _cadre(par, n_a)
+    n, g, Gr, Pp, Gam, gam, pis = c["n"], c["g"], c["Gr"], c["Pp"], c["Gam"], c["gam"], c["pis"]
+    pi = par.pi_cible
+    sig, mub, Ueq = par.sigma, par.mu_bar, par.U_eq
+    lv, lIN, lw, lN = (vitesses * par.lambda_v, vitesses * par.lambda_IN, vitesses * par.lambda_w,
+                       vitesses * par.lambda_N)
+    lmu, lH = vitesses * par.lambda_mu, vitesses * par.lambda_H
+    distribue = theta_H == 1.0
+    if theta_H not in (0.8, 1.0):
+        raise ValueError(f"θ_H = {theta_H!r} : 0,8 ou 1 attendu")
+    # État stationnaire de la maquette (formes fermées).
+    v = 1.0
+    y = v * (1 + n * sig * (Gr - 1))
+    IN_vol = n * sig * v
+    p = 1.0
+    UC = p / (1 + mub)
+    pr = 1.0
+    W = UC * pr
+    N = y / pr
+    N_pa = N / (1 - Ueq)
+    IN = es.rho_IN(n, sig, g, pi) * UC * IN_vol  # valeur comptable des stocks (N8)
+    dIN = gam * IN
+    WB = W * N
+    if distribue:
+        Y_o = p * v + UC * (y - v) if resultat == "cout_unitaire" else p * v + dIN
+    else:
+        Y_o = WB
+    # Richesse stationnaire : C = YD − γ̄ V (entretien) égale à la règle H4, YD = Y_o + i_D V/n_a.
+    if lecture in ("a", "a_entretien"):
+        D_H = nu_H * n * Y_o / (1 - nu_H * i_D)  # V* = ν_H n_a YD
+    else:
+        D_H = nu_H * n * Y_o / (1 + nu_H * n * pis - nu_H * i_D)  # V* = ν_H n_a (YD − π^pas V)
+    YD = Y_o + i_D * D_H / n
+    C = YD - gam * D_H
+    autonome = p * v - C  # dépense autonome en u.m. au pas 0
+    registre = [math.log(p) - u * math.log(Pp) for u in range(1, n + 2)]  # ln P_{t−u}
+    variables = [("ve", v, v, False, Gr), ("IN_vol", IN_vol, v, False, Gr)]
+    variables += [(f"lnP_{u}", registre[u - 1], 1.0, True, Pp) for u in range(1, n + 2)]
+    variables += [("lnW_m1", math.log(W / Gam), 1.0, True, Gam), ("N_m1", N, N, False, 1.0),
+                  ("D_H", D_H, D_H, False, Gam), ("YD_m1", YD / Gam, YD, False, Gam), ("IN", IN, IN, False, Gam)]
+    idx = {nom: i for i, (nom, *_) in enumerate(variables)}
+    i_P = idx["lnP_1"]
+
+    def pas(x):
+        ve, INv = x[idx["ve"]], x[idx["IN_vol"]]
+        lP = x[i_P:i_P + n + 1]
+        lW_m1, N_m1, DH, YD_m1, IN_nom = (x[idx[k]] for k in ("lnW_m1", "N_m1", "D_H", "YD_m1", "IN"))
+        # Phase 1 : salaires (T2, T3), π^e = π*.
+        U_m1 = 1 - N_m1 / N_pa
+        pr_m1 = pr / Gr
+        omega = math.exp(lW_m1 - lP[0]) / pr_m1  # T2
+        lW = (lW_m1 + (math.log(1 + par.g_pr) + math.log(1 + pi)) / n
+              + lw / n * (math.log(1 / (1 + mub) / omega) - par.beta * (U_m1 - Ueq)))  # T3
+        Wt = math.exp(lW)
+        # Phase 2 : plans (N2 à N4, N8, H2 à H5).
+        IN_star = n * sig * ve  # N2
+        y_star = ve + (Gr - 1) * IN_star + lIN / n * (IN_star - INv)  # N3
+        N_star = y_star / pr  # N4
+        UCt = Wt / pr  # N8
+        pi_m = math.exp(lP[0] - lP[n]) - 1  # glissement du tour précédent (registre)
+        pi_lu = pi + h * (pi_m - pi)
+        gam_lu = ((1 + g) * (1 + pi_lu)) ** (1 / n) - 1
+        pis_lu = (1 + pi_lu) ** (1 / n) - 1
+        if lecture == "cible":
+            YDe = Gam * YD_m1  # H2
+            V_star = nu_H * n * (YDe - pis * DH)  # H3
+            entretien = gam
+        elif lecture == "a":
+            YDe = (1 + gam_lu) * YD_m1
+            V_star = nu_H * n * YDe
+            entretien = gam_lu
+        elif lecture == "a_entretien":
+            YDe = Gam * YD_m1
+            V_star = nu_H * n * YDe
+            entretien = gam_lu
+        elif lecture == "hs_glissement":
+            YDe = (1 + gam_lu) * YD_m1
+            V_star = nu_H * n * (YDe - pis_lu * DH)
+            entretien = gam_lu
+        else:  # hs_glissement_pas
+            YDe = Gam * YD_m1
+            V_star = nu_H * n * (YDe - pis_lu * DH)
+            entretien = gam
+        C_plan = min(DH, max(0.0, YDe - entretien * DH - lH / n * (V_star - DH)))  # H4, H5
+        # Phase 4 : emploi (T4, un régime), production (N5 : y = y*, N ≥ N*).
+        N_t = N_star if regime == "hausse" else (1 - lN / n) * N_m1 + lN / n * N_star  # T4, g_N = 0
+        y_t = y_star
+        WB_t = Wt * N_t  # T6
+        # Phase 5 : prix (P1 à P3), ventes (N6, N7), consommation (H6).
+        xi = 1 - INv / IN_star  # P1
+        lUC_m1 = lW_m1 - math.log(pr_m1)
+        mu_t = (1 - lmu / n) * (lP[0] - lUC_m1) + lmu / n * (math.log(1 + mub) + par.psi_xi * xi)  # P2
+        lp = math.log(UCt) + mu_t  # P3
+        p_t = math.exp(lp)
+        A_plan = math.exp(lP[0]) * Pp * autonome  # plan autonome en u.m., au prix précédent prolongé
+        d = (C_plan + A_plan) / p_t  # N6
+        v_t = min(d, INv + y_t)
+        C_t = p_t * v_t * C_plan / (C_plan + A_plan)  # H6
+        cm = (IN_nom + UCt * y_t) / (INv + y_t)  # N8
+        dIN_t = UCt * y_t - cm * v_t
+        # Phase 6 et 9 : revenu disponible (H7).
+        if distribue:
+            Y_o_t = p_t * v_t + (UCt * (y_t - v_t) if resultat == "cout_unitaire" else dIN_t)
+        else:
+            Y_o_t = WB_t
+        YD_t = Y_o_t + i_D * DH / n
+        sortie = [Gr * ((1 - lv / n) * ve + lv / n * d),  # N1
+                  INv + y_t - v_t]  # N7
+        sortie += [lp] + list(lP[:n])  # P4, avancée du registre
+        sortie += [lW, N_t, DH + YD_t - C_t, YD_t, IN_nom + dIN_t]
+        return sortie
+
+    return _carte(variables, pas, racine_nominale=True)
+
+
+# --- Maquette « socle » : blocs 2 à 9 -------------------------------------------------------
+
+NOMINAUX = ("W_m1", "IN", "K", "T_F_m1", "L", "D_F", "YD_m1", "D_H", "E_Bk", "L_CB", "Res", "B_Bk", "B_CB",
+            "M_G", "E_CB", "Y_HS_m1")
+VOLUMES = ("ve", "IN_vol", "K_vol", "y_m1")
+TAUX = ("U_m1", "ti", "i_L", "i_D", "r_hat", "pi_e")
+
+
+@lru_cache(maxsize=None)
+def etat_socle(par) -> tuple[dict, dict]:
+    """État résolu d'`etat_stationnaire` et ouverture du pas 0 (`ouverture`), pour `par`."""
+    e = es.etat_stationnaire(par)
+    return e, es.ouverture(e, par)
+
+
+@lru_cache(maxsize=None)
+def carte_socle(par, regime: str = "hausse") -> Carte:
+    """Blocs 2 à 9 du socle, sur l'ouverture de l'état initial résolu (`etat_stationnaire.ouverture`).
+
+    Variables d'état : registre de l'indice (n_a + 1 niveaux), N_{t−1}, U_{t−1}, W_{t−1}, v^e, IN^vol,
+    IN, K^vol, K, ti, y_{t−1}, T_{F,t−1}, L, D_F, YD_{t−1}, D_H, i_L, i_D, E^Bk, L^CB, Res, B_Bk, B_CB,
+    M^G, E^CB, r̂*, π^e, Y^HS_{t−1}. Exogènes, tenues sur leur sentier : pr, N^pa (T1, N9), la cible
+    (BC4, levier fermé), θ_G (levier), ϱ̄_L (constante de l'état), B_H ≡ 0 (C42).
+    """
+    if regime not in ("hausse", "baisse"):
+        raise ValueError(f"régime {regime!r}")
+    e, o = etat_socle(par)
+    n = par.n_a
+    c = _cadre(par)
+    Gr, Pp, Gam = c["Gr"], c["Pp"], c["Gam"]
+    G_N = (1 + par.g_N) ** (1 / n)
+    echelle_nom = e["PIB"]
+    variables = [(f"P_{u}", o["registre"][u - 1], o["registre"][u - 1], False, Pp) for u in range(1, n + 2)]
+    variables.append(("N_m1", o["N_m1"], o["N_m1"], False, G_N))
+    for nom in ("U_m1", "W_m1", "ve", "IN_vol", "IN", "K_vol", "K", "ti", "y_m1", "T_F_m1", "L", "D_F",
+                "YD_m1", "D_H", "i_L", "i_D", "E_Bk", "L_CB", "Res", "B_Bk", "B_CB", "M_G", "E_CB", "r_hat",
+                "pi_e", "Y_HS_m1"):
+        if nom in NOMINAUX:
+            variables.append((nom, o[nom], echelle_nom, False, Gam))
+        elif nom in VOLUMES:
+            variables.append((nom, o[nom], e["y"], False, Gr))
+        else:
+            variables.append((nom, o[nom], PLANCHER_TAUX, False, 1.0))
+    idx = {nom: i for i, (nom, *_) in enumerate(variables)}
+    pr, N_pa, pi_c, theta_G, rho_bar = o["pr"], o["N_pa"], o["pi_cible"], o["theta_G"], o["rho_bar_L"]
+
+    def pas(x):
+        s = {nom: x[i] for nom, i in idx.items()}
+        P = [s[f"P_{u}"] for u in range(1, n + 2)]
+        # Phase 0 : facteurs du moteur sur la cible d'ouverture (sec:cadre-calendrier).
+        Gam_e = ((1 + c["g"]) * (1 + pi_c)) ** (1 / n)
+        gam_e, pis = Gam_e - 1, (1 + pi_c) ** (1 / n) - 1
+        # Phase 1 : salaire (T2, T3) ; règle de taux et anticipation (BC1 à BC3, BC6).
+        pi_prec = P[0] / P[n] - 1
+        pr_m1 = pr / ((1 + par.g_pr) ** (1 / n))
+        omega = s["W_m1"] / (P[0] * pr_m1)  # T2
+        W = math.exp(math.log(s["W_m1"]) + (math.log(1 + par.g_pr) + math.log(1 + s["pi_e"])) / n
+                     + par.lambda_w / n * (math.log(1 / (1 + par.mu_bar) / omega)
+                                           - par.beta * (s["U_m1"] - par.U_eq)))  # T3
+        i_CB = (1 + s["r_hat"]) * (1 + pi_c) + par.a_pi * (pi_prec - pi_c) - 1  # BC1
+        r_hat_1 = s["r_hat"] + par.a_I / n * (pi_prec - pi_c)  # BC2
+        pi_e_1 = s["pi_e"] + par.lambda_e / n * (pi_prec - s["pi_e"])  # BC3
+        Pi_CB = i_CB * (s["B_CB"] + s["L_CB"] - s["Res"]) / n  # BC6, i_B = i_res = i_CB
+        # Phase 2 : plans (N2 à N4, N8, H2 à H5, S1 à S4, E1, E3, E4, E6).
+        IN_star = n * par.sigma * s["ve"]  # N2
+        y_star = max(0.0, s["ve"] + (Gr - 1) * IN_star + par.lambda_IN / n * (IN_star - s["IN_vol"]))  # N3
+        N_star = y_star / pr  # N4
+        UC = W / pr  # N8
+        YD_e = Gam_e * s["YD_m1"]  # H2
+        V_H = s["D_H"]  # B_H ≡ 0
+        V_star = par.nu_H * n * (YD_e - pis * V_H)  # H3
+        C_plan = min(s["D_H"], max(0.0, YD_e - gam_e * V_H - par.lambda_H / n * (V_star - V_H)))  # H4, H5
+        rho_L = (1 + s["i_L"]) / (1 + pi_c) - 1  # S1
+        tu_star = par.tu_bar * math.exp(par.zeta * (rho_L - rho_bar))  # S2
+        I_plan = P[0] * (1 + pis) * s["ti"] * Gr * s["y_m1"] * math.exp(-par.eta_r * (rho_L - rho_bar))  # S3, S4
+        y_pot = pr * (1 - par.U_eq) * N_pa
+        G_plan = min(s["M_G"], P[0] * (1 + pis) * theta_G * y_pot)  # E1
+        B = s["B_Bk"] + s["B_CB"]  # B_H ≡ 0
+        i_ref = (1 + par.rbar) * (1 + pi_c) - 1
+        T_cou = par.phi * (i_CB - i_ref) * (B - s["M_G"] - s["E_CB"]) / n  # E4
+        T_H = par.tau_H * Gam_e * s["Y_HS_m1"] + T_cou  # E3
+        Tr_lev = P[0] * (1 + pis) * par.theta_Tr * y_pot
+        Tr = min(Tr_lev, max(0.0, s["M_G"] + T_H - i_CB * B / n - G_plan))  # E6
+        # Phase 3 : crédit (F1), sans refus.
+        dL_d = par.lv * ((1 - par.delta / n) * s["K"] + I_plan) - s["L"]
+        dL = (1 - par.varsigma_L) * max(dL_d, 0.0) + min(dL_d, 0.0)
+        # Phase 4 : emploi (T4, un régime ; borne N^pa inactive), production (N5 : y = y*), N11.
+        if regime == "hausse":
+            N = N_star
+        else:
+            N = G_N * (1 - par.lambda_N / n) * s["N_m1"] + par.lambda_N / n * N_star
+        N = min(N_pa, N)
+        U = 1 - N / N_pa  # T5
+        WB = W * N  # T6
+        y = y_star
+        tu = y / (s["K_vol"] / (n * par.kappa))  # N11
+        # Phase 5 : prix (P1 à P4), ventes (N6, N7), acheteurs (H6, S5, E2), N1, N8 à N10, S6.
+        xi = 1 - s["IN_vol"] / IN_star  # P1
+        UC_m1 = s["W_m1"] / pr_m1
+        mu_t = ((1 - par.lambda_mu / n) * math.log(P[0] / UC_m1)
+                + par.lambda_mu / n * (math.log(1 + par.mu_bar) + par.psi_xi * xi))  # P2
+        p = UC * math.exp(mu_t)  # P3
+        d_H, d_F, d_G = C_plan / p, I_plan / p, G_plan / p  # N6
+        d = d_H + d_F + d_G
+        v = min(d, s["IN_vol"] + y)
+        C, I, G = p * v / d * d_H, p * v / d * d_F, p * v / d * d_G  # H6, S5, E2
+        cm = (s["IN"] + UC * y) / (s["IN_vol"] + y)  # N8
+        dIN = UC * y - cm * v
+        ve_1 = Gr * ((1 - par.lambda_v / n) * s["ve"] + par.lambda_v / n * d)  # N1
+        K_vol_1 = (1 - par.delta / n) * s["K_vol"] + v / d * d_F  # N10
+        ti_1 = s["ti"] * math.exp(par.lambda_ti / n * (tu - tu_star))  # S6
+        # Phase 6 : amortissement, intérêts, impôt des entreprises, dividendes (S7, B3 à B6, E5, F2 à F4).
+        amort = par.delta * s["K"] / n  # S7
+        l9 = s["i_L"] * s["L"] / n  # B3
+        l10_H, l10_F = s["i_D"] * s["D_H"] / n, s["i_D"] * s["D_F"] / n  # B4
+        T_F = par.tau_F * (C + G + I + dIN - WB - amort - l9 + l10_F)  # E5
+        D_F_star = par.nu_F * n * P[0] * (1 + pis) ** 2 * ve_1  # F2
+        T_F_e = Gam_e * s["T_F_m1"]  # F4
+        Div_F = max(0.0, s["D_F"] + dL + C + G - WB - l9 + l10_F - T_F_e - D_F_star)  # F3
+        L_1 = s["L"] + dL
+        Pi_Bk = (s["i_L"] * s["L"] + i_CB * s["B_Bk"] + i_CB * s["Res"] - s["i_D"] * (s["D_H"] + s["D_F"])
+                 - i_CB * s["L_CB"]) / n  # B5
+        Div_Bk = max(0.0, s["E_Bk"] + Pi_Bk - par.vartheta * L_1)  # B6
+        l11b, l11c = i_CB * s["B_Bk"] / n, i_CB * s["B_CB"] / n  # E7, ligne 11a nulle
+        # Phase 7 : émission (E8 à E11), revenu de Haig-Simons (E12).
+        PB = G + Tr + i_CB * B / n  # E8
+        Em = G + Tr + i_CB * B / n - T_H - T_F - Pi_CB + par.nu_G * PB - s["M_G"]  # E9
+        dB_CB = par.theta_CB * Em  # E10
+        dB_Bk = (1 - par.varsigma_B) * (Em - dB_CB)  # E11
+        Y_HS = WB + l10_H + Div_F + Div_Bk - pis * s["D_H"] - T_cou  # E12
+        # Phase 8 : compte du Trésor, réserves et refinancement (BC7 à BC9, B7), taux du pas suivant (B1, B2).
+        M_G_8a = s["M_G"] - G - Tr + T_H + T_F - l11b - l11c + dB_Bk + dB_CB
+        Res_8b = s["Res"] + G + Tr - T_H - T_F + l11b + i_CB * s["Res"] / n - i_CB * s["L_CB"] / n - dB_Bk
+        L_CB_1 = max(s["L_CB"] - Res_8b, 0.0)  # B7
+        Res_1 = Res_8b + (L_CB_1 - s["L_CB"])
+        # Phase 9 : revenu disponible (H7), registre, postes de clôture par les flux.
+        YD = WB + Tr - T_H + l10_H + Div_F + Div_Bk  # H7
+        suivant = {
+            "N_m1": N, "U_m1": U, "W_m1": W, "ve": ve_1, "IN_vol": s["IN_vol"] + y - v, "IN": s["IN"] + dIN,
+            "K_vol": K_vol_1, "K": s["K"] + I - amort, "ti": ti_1, "y_m1": y, "T_F_m1": T_F, "L": L_1,
+            "D_F": s["D_F"] + dL - WB + C + G - l9 + l10_F - T_F - Div_F, "YD_m1": YD,
+            "D_H": s["D_H"] + YD - C, "i_L": i_CB + par.varpi_L, "i_D": i_CB - par.varpi_D,
+            "E_Bk": s["E_Bk"] + Pi_Bk - Div_Bk, "L_CB": L_CB_1, "Res": Res_1, "B_Bk": s["B_Bk"] + dB_Bk,
+            "B_CB": s["B_CB"] + dB_CB, "M_G": M_G_8a + Pi_CB, "E_CB": s["E_CB"], "r_hat": r_hat_1,
+            "pi_e": pi_e_1, "Y_HS_m1": Y_HS,
+        }
+        registre = [p] + P[:n]
+        return registre + [suivant[nom] for nom, *_ in variables[n + 1:]]
+
+    return _carte(variables, pas, racine_nominale=True)
+
+
+def parametres_socle(pi: float = 0.02, n_a: int = 12, facteurs: dict[str, float] | None = None):
+    """Paramètres du socle : calibration indicative, ν_G retenu, π* = π̄ et vitesses multipliées."""
+    par = replace(BASE, pi_cible=pi, n_a=n_a, nu_G=NU_G)
+    if facteurs:
+        par = replace(par, **{k: getattr(par, k) * f for k, f in sorted(facteurs.items())})
+    return par
+
+
+# Grille G de la fiche du bloc banque centrale (docs/blocs/banque_centrale.md, l. 340-345) : calibration
+# indicative ; chaque vitesse ×0,5 et ×2 ; chaque gain ×0,5 et ×2 ; toutes les vitesses ×0,5, puis ×2 (les
+# gains n'y entrent pas) ; deux régimes de l'emploi. k_I de la fiche est `a_I` (BC2).
+VITESSES_GRILLE = ("lambda_v", "lambda_IN", "lambda_w", "lambda_N", "lambda_mu", "lambda_H", "lambda_ti",
+                   "lambda_e")
+GAINS_GRILLE = ("a_I", "a_pi", "psi_xi", "beta", "eta_r")
+# Écarts déclarés à la grille de la fiche (question à `monnaie`) : a_U n'est pas un paramètre du socle
+# (absent de `etat_stationnaire.Parametres` ; BC1 sans terme de chômage), ses deux branches manquent ; ζ (S2)
+# n'est pas dans la liste de la fiche et est publié à part, hors du pire cas relevé.
+ABSENTS_GRILLE = ("a_U",)
+HORS_GRILLE = ("zeta",)
+# Mesure complémentaire, hors relevé : gains de la boucle salaire -- taux réel multipliés ensemble.
+GAINS_ENSEMBLE = ("beta", "a_pi", "eta_r")
+
+
+def rayon_socle(pi: float = 0.02, facteurs: tuple[tuple[str, float], ...] = ()) -> dict[str, Spectre]:
+    """Spectre du socle dans les deux régimes de l'emploi."""
+    par = parametres_socle(pi, facteurs=dict(facteurs))
+    return {regime: spectre(carte_socle(par, regime)) for regime in ("hausse", "baisse")}
+
+
+# Identités de bilan portées par les états du socle (sec:cadre-identites), coefficients sur les stocks
+# d'ouverture : bilan de la banque centrale (actif B_CB + L^CB, passif Res + M^G + E^CB) et bilan des banques
+# (actif L + B_Bk + Res, passif D_H + D_F + L^CB + E^Bk). E^CB et E^Bk sont des états de la carte, clos par
+# les flux : la jacobienne contient donc des directions qui violent ces identités.
+IDENTITES_SOCLE = (
+    ("bilan de la banque centrale", (("B_CB", 1.0), ("L_CB", 1.0), ("Res", -1.0), ("M_G", -1.0), ("E_CB", -1.0))),
+    ("bilan des banques", (("L", 1.0), ("B_Bk", 1.0), ("Res", 1.0), ("D_H", -1.0), ("D_F", -1.0), ("L_CB", -1.0),
+                           ("E_Bk", -1.0))),
+)
+TOL_RACINE_MULTIPLE = 1e-7  # |λ − 1/Γ̄| d'une valeur propre comptée en 1/Γ̄ (dispersion mesurée ≤ 3e−9 à h = 1e−6)
+TOL_NOYAU = 1e-8  # valeur singulière de S⁻¹JS − I/Γ̄ comptée dans le noyau (multiplicité géométrique)
+
+
+@dataclass(frozen=True)
+class LecturesSocle:
+    """Deux lectures du rayon du socle, sans écarter de racine : brute et sur la variété des identités."""
+
+    inv_gamma: float  # 1/Γ̄, racine d'un stock nominal tenu en niveau, ramené à la tendance
+    rayon_brut: float  # spectre de la carte entière, hors racine nominale
+    multiplicite_brute: int  # valeurs propres telles que |λ − 1/Γ̄| ≤ TOL_RACINE_MULTIPLE
+    noyau_brut: int  # valeurs singulières de S⁻¹JS − I/Γ̄ inférieures à TOL_NOYAU
+    rayon_variete: float  # spectre restreint au noyau des gradients des identités, hors racine nominale
+    multiplicite_variete: int
+    suivante: complex  # plus grande racine de la variété hors de 1/Γ̄ et de la racine nominale
+    residu_gauche: float  # max |g J − g/Γ̄|/|g| : gradient vecteur propre à gauche, la variété est invariante
+    residu_identites: float  # max |g·x0|/(|g| PIB) à l'état initial
+
+
+def gradients_identites(carte: Carte) -> np.ndarray:
+    """Gradients des identités de bilan (une ligne par identité), sur les variables de la carte du socle."""
+    G = np.zeros((len(IDENTITES_SOCLE), len(carte.x0)))
+    for ligne, (_, coefs) in enumerate(IDENTITES_SOCLE):
+        for nom, a in coefs:
+            G[ligne, carte.noms.index(nom)] = a
+    return G
+
+
+def jacobiennes_socle(pi: float, regime: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    """S⁻¹JS, sa restriction Qᵀ(S⁻¹JS)Q au noyau des gradients mis à l'échelle, ces gradients et 1/Γ̄.
+
+    La restriction est exacte si le noyau est invariant, c'est-à-dire si chaque gradient est vecteur propre
+    à gauche (contrôlé par `LecturesSocle.residu_gauche`).
+    """
+    par = parametres_socle(pi)
+    carte = carte_socle(par, regime)
+    J = jacobienne(carte)
+    Gs = gradients_identites(carte) * carte.echelle[None, :]  # coordonnées mises à l'échelle
+    _, _, Vt = np.linalg.svd(Gs)
+    Q = Vt[len(IDENTITES_SOCLE):].T  # base orthonormée du noyau des gradients
+    return J, Q.T @ J @ Q, Gs, 1 / _cadre(par)["Gam"]
+
+
+def lectures_socle(pi: float, regime: str) -> LecturesSocle:
+    """Spectre brut et spectre restreint à la variété des identités de bilan, avec multiplicités en 1/Γ̄."""
+    par = parametres_socle(pi)
+    carte = carte_socle(par, regime)
+    J, J_var, Gs, inv = jacobiennes_socle(pi, regime)
+    k = len(carte.x0)
+    G = gradients_identites(carte)
+    residu_identites = float(np.max(np.abs(G @ carte.x0) / np.linalg.norm(G, axis=1)) / etat_socle(par)[0]["PIB"])
+    residu_gauche = float(np.max(np.linalg.norm(Gs @ J - Gs * inv, axis=1) / np.linalg.norm(Gs, axis=1)))
+
+    def sans_nominale(valeurs):
+        valeurs = sorted(valeurs, key=lambda z: (-abs(z), z.real, z.imag))
+        i = min(range(len(valeurs)), key=lambda q: abs(valeurs[q] - 1))
+        return valeurs[:i] + valeurs[i + 1:]
+
+    brutes, variete = sans_nominale(np.linalg.eigvals(J)), sans_nominale(np.linalg.eigvals(J_var))
+    multiple = lambda vs: sum(abs(z - inv) <= TOL_RACINE_MULTIPLE for z in vs)  # noqa: E731
+    noyau = int(np.sum(np.linalg.svd(J - inv * np.eye(k), compute_uv=False) <= TOL_NOYAU))
+    suivante = next(z for z in variete if abs(z - inv) > TOL_RACINE_MULTIPLE)
+    return LecturesSocle(inv, abs(brutes[0]), multiple(brutes), noyau, abs(variete[0]), multiple(variete),
+                         complex(suivante), residu_gauche, residu_identites)
+
+
+def branches_grille() -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]:
+    """Branches de la grille G (banque_centrale.md, l. 340-345), sans a_U (absent du socle)."""
+    branches: list[tuple[str, tuple[tuple[str, float], ...]]] = [("calibration", ())]
+    for nom in VITESSES_GRILLE + GAINS_GRILLE:
+        for f in (0.5, 2.0):
+            branches.append((f"{nom} ×{f:g}", ((nom, f),)))
+    for f in (0.5, 2.0):
+        branches.append((f"vitesses ×{f:g}", tuple((nom, f) for nom in VITESSES_GRILLE)))
+    return tuple(branches)
+
+
+def branches_complementaires() -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]:
+    """Mesures hors grille et hors relevé : ζ ×0,5 et ×2 ; β, a_π, η_r ensemble ×0,5 et ×2."""
+    branches = [(f"{nom} ×{f:g}", ((nom, f),)) for nom in HORS_GRILLE for f in (0.5, 2.0)]
+    branches += [(f"{', '.join(GAINS_ENSEMBLE)} ×{f:g}", tuple((nom, f) for nom in GAINS_ENSEMBLE))
+                 for f in (0.5, 2.0)]
+    return tuple(branches)
+
+
+def _pire(branches) -> tuple[tuple[str, float], ...]:
+    return tuple((nom, max(s.rayon for s in rayon_socle(0.02, fac).values())) for nom, fac in branches)
+
+
+@lru_cache(maxsize=None)
+def grille_socle() -> tuple[tuple[str, float], ...]:
+    """Grille G à π̄ = 2 % : pire rayon brut des deux régimes, par branche."""
+    return _pire(branches_grille())
+
+
+@lru_cache(maxsize=None)
+def complements_socle() -> tuple[tuple[str, float], ...]:
+    """Mesures complémentaires à π̄ = 2 %, hors relevé : pire rayon brut des deux régimes, par branche."""
+    return _pire(branches_complementaires())
+
+
+# --- Relevé des chiffres cités --------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Chiffre:
+    """Un chiffre cité par la spécification et sa remesure."""
+
+    ident: str
+    publie: str  # tel qu'écrit dans la spécification, virgule décimale
+    motif: str  # chaîne cherchée dans le texte LaTeX
+    nature: str  # rayon, période, demi-vie, frontière, marge
+    maquette: str
+    hypothese: str
+    calcul: object  # () -> float
+
+
+def _r(carte_de):
+    return lambda: spectre(carte_de()).rayon
+
+
+def _per(carte_de):
+    return lambda: spectre(carte_de()).periode
+
+
+M4 = (0.5, 0.6, 0.7, 0.8)
+
+
+def _moins(a: float, b: float | None) -> float | None:
+    return None if b is None else a - b
+
+
+def _extremes(fonction, valeurs, quel):
+    """Extrême sur `valeurs` ; sans objet (None) si une valeur l'est (racine réelle, rayon ≥ 1)."""
+    def calcul():
+        xs = [fonction(x) for x in valeurs]
+        return None if any(x is None for x in xs) else (min if quel == "min" else max)(xs)
+    return calcul
+
+
+def releve() -> list[Chiffre]:
+    """Liste des chiffres cités, dans l'ordre de la spécification, avec leur calcul."""
+    L: list[Chiffre] = []
+
+    def ajouter(ident, publie, nature, maquette, hypothese, calcul, motif=None):
+        L.append(Chiffre(ident, publie, motif or publie, nature, maquette, hypothese, calcul))
+
+    # sec:travail-conditions : boucle combinée production -- stocks -- emploi, prix figé.
+    for m, r, per in zip(M4, ("0,9279", "0,9452", "0,9612", "0,9762"), ("68,9", "72,9", "80,7", "95,8")):
+        ajouter(f"travail.rayon.m{m}", r, "rayon", "offre", f"prix figé, m = {m}", _r(lambda m=m: carte_offre(m)))
+        ajouter(f"travail.periode.m{m}", per, "période", "offre", f"prix figé, m = {m}",
+                _per(lambda m=m: carte_offre(m)))
+    ajouter("travail.marge_bande.m0.8", "0,16", "marge", "offre", "96 tours moins la période à m = 0,8",
+            lambda: _moins(96, spectre(carte_offre(0.8)).periode), motif="marge de 0,16")
+    for quel, pub in (("min", "141,9"), ("max", "184,5")):
+        ajouter(f"travail.periode.vitesses÷2.{quel}", pub, "période", "offre", "λ_v, λ_IN ÷ 2, m = 0,5 à 0,8",
+                _extremes(lambda m: spectre(carte_offre(m, lambda_v=1.5, lambda_IN=0.75)).periode, M4, quel))
+    for quel, pub in (("min", "34,3"), ("max", "52,2")):
+        ajouter(f"travail.periode.vitesses×2.{quel}", pub, "période", "offre", "λ_v, λ_IN × 2, m = 0,5 à 0,8",
+                _extremes(lambda m: spectre(carte_offre(m, lambda_v=6.0, lambda_IN=3.0)).periode, M4, quel))
+
+    # sec:prix-conditions : boucle prix -- stocks -- demande.
+    for m, r, per in zip(M4, ("0,9420", "0,9535", "0,9658", "0,9783"), ("93,8", "94,3", "100,4", "115,5")):
+        ajouter(f"prix.rayon.m{m}", r, "rayon", "offre", f"règle P1 à P3, coût exogène, m = {m}",
+                _r(lambda m=m: carte_offre(m, "regle")))
+        ajouter(f"prix.periode.m{m}", per, "période", "offre", f"règle P1 à P3, coût exogène, m = {m}",
+                _per(lambda m=m: carte_offre(m, "regle")))
+    variantes_prix = (
+        ("vitesses÷2", {"lambda_v": 1.5, "lambda_IN": 0.75}, ("0,9700", "0,9878"), ("169", "218")),
+        ("vitesses×2", {"lambda_v": 6.0, "lambda_IN": 3.0}, ("0,8791", "0,9647"), ("43", "60")),
+        ("psi×2", {"psi_xi": 1.0}, ("0,9534", "0,9813"), None),
+        ("lambda_mu÷2", {"lambda_mu": 0.6}, ("0,9400", "0,9733"), None),
+        ("lambda_mu×2", {"lambda_mu": 2.4}, ("0,9477", "0,9808"), None),
+    )
+    for nom, kw, rayons, periodes in variantes_prix:
+        for quel, pub in zip(("min", "max"), rayons):
+            ajouter(f"prix.rayon.{nom}.{quel}", pub, "rayon", "offre", f"règle P1 à P3, {nom}, m = 0,5 à 0,8",
+                    _extremes(lambda m, kw=kw: spectre(carte_offre(m, "regle", **kw)).rayon, M4, quel))
+        if periodes:
+            for quel, pub in zip(("min", "max"), periodes):
+                ajouter(f"prix.periode.{nom}.{quel}", pub, "période", "offre",
+                        f"règle P1 à P3, {nom}, m = 0,5 à 0,8",
+                        _extremes(lambda m, kw=kw: spectre(carte_offre(m, "regle", **kw)).periode, M4, quel),
+                        motif=f"{periodes[0]} à {periodes[1]}")
+    ajouter("prix.frontiere_psi", "13{,}0", "frontière", "offre", "ψ_ξ où le rayon passe 1, m = 0,8",
+            lambda: frontiere(lambda p: spectre(carte_offre(0.8, "regle", psi_xi=p)).rayon, 10.0, 20.0))
+    ajouter("prix.frontiere_psi.vitesses×2", "4{,}875", "frontière", "offre",
+            "ψ_ξ où le rayon passe 1, m = 0,8, λ_v et λ_IN × 2",
+            lambda: frontiere(lambda p: spectre(carte_offre(0.8, "regle", lambda_v=6.0, lambda_IN=3.0,
+                                                            psi_xi=p)).rayon, 2.0, 8.0))
+    ajouter("prix.rayon.psi10.m0.8", "0,9949", "rayon", "offre", "ψ_ξ = 10, m = 0,8",
+            _r(lambda: carte_offre(0.8, "regle", psi_xi=10.0)))
+
+    # sec:prix-conditions : boucle salaires -- prix.
+    for m, r in zip(M4, ("0,8969", "0,9068", "0,9225", "0,9385")):
+        ajouter(f"salaires_prix.rayon.m{m}", r, "rayon", "offre", f"P1 à P3, T2, T3, π^e = π̄, m = {m}",
+                _r(lambda m=m: carte_offre(m, "regle", True)))
+    variantes_sp = (
+        ("toutes÷2", {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6, "lambda_w": 0.5}, ("0,9479", "0,9714")),
+        ("toutes×2", {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4, "lambda_w": 2.0}, ("0,8070", "0,8583")),
+        ("lambda_w×2", {"lambda_w": 2.0}, ("0,9322", "0,9351")),
+        ("psi×2", {"psi_xi": 1.0}, ("0,9163", "0,9346")),
+    )
+    for nom, kw, rayons in variantes_sp:
+        for quel, pub in zip(("min", "max"), rayons):
+            ajouter(f"salaires_prix.rayon.{nom}.{quel}", pub, "rayon", "offre",
+                    f"P1 à P3, T2, T3, {nom}, m = 0,5 à 0,8",
+                    _extremes(lambda m, kw=kw: spectre(carte_offre(m, "regle", True, **kw)).rayon, M4, quel))
+    ajouter("salaires_prix.rayon.marge_constante.m0.6", "0,9172", "rayon", "offre",
+            "marge constante μ̄, T2, T3, m = 0,6", _r(lambda: carte_offre(0.6, "marge", True)))
+    ajouter("salaires_prix.racine_nominale", "10^{-9}", "racine nominale", "offre",
+            "plus grand |λ − 1| de la racine nominale, m = 0,5 à 0,8",
+            lambda: max(spectre(carte_offre(m, "regle", True)).ecart_nominal for m in M4),
+            motif="au plus $10^{-9}$")
+
+    # sec:menages-conditions : boucle conjointe (lecture de la cible).
+    for th, pubs in ((0.8, ("0,9640", "0,9617")), (1.0, ("0,9564", "0,9537"))):
+        for regime, pub in zip(("hausse", "baisse"), pubs):
+            ajouter(f"menages.rayon.theta{th}.{regime}", pub, "rayon", "menages",
+                    f"lecture de la cible, θ_H = {th}, régime de {regime}",
+                    _r(lambda th=th, regime=regime: carte_menages(th, regime)))
+
+    # sec:menages-inflation et instabilité 17 : lectures sur le glissement.
+    for lecture, th, pubs in (("hs_glissement", 0.8, ("0,9967", "0,9742")), ("hs_glissement", 1.0, ("1,0231", "1,0271")),
+                              ("hs_glissement_pas", 0.8, ("0,9823", "0,9748")),
+                              ("hs_glissement_pas", 1.0, ("1,0223", "1,0218"))):
+        for regime, pub in zip(("hausse", "baisse"), pubs):
+            ajouter(f"menages_inflation.{lecture}.theta{th}.{regime}", pub, "rayon", "menages",
+                    f"{lecture}, θ_H = {th}, régime de {regime}",
+                    _r(lambda lecture=lecture, th=th, regime=regime: carte_menages(th, regime, lecture)))
+    hs_pas = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
+    for quel, pub in (("min", "49"), ("max", "60")):
+        ajouter(f"menages_inflation.hs_glissement_pas.periode.{quel}", pub, "période", "menages",
+                "hs_glissement_pas, deux θ_H, deux régimes",
+                _extremes(lambda a: spectre(carte_menages(a[0], a[1], "hs_glissement_pas")).periode, hs_pas, quel),
+                motif="49 à 60")
+    lect_a = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
+    for quel, pub in (("min", "17"), ("max", "19")):
+        ajouter(f"menages_inflation.a.periode.{quel}", pub, "période", "menages",
+                "lecture (a), deux θ_H, deux régimes",
+                _extremes(lambda a: spectre(carte_menages(a[0], a[1], "a")).periode, lect_a, quel),
+                motif="17 à 19 tours")
+    for th, pubs in ((0.8, ("1,0275", "1,0029")), (1.0, ("1,0561", "1,0580"))):
+        for regime, pub in zip(("hausse", "baisse"), pubs):
+            ajouter(f"instabilite17.a.theta{th}.{regime}", pub, "rayon", "menages",
+                    f"lecture (a), θ_H = {th}, régime de {regime}",
+                    _r(lambda th=th, regime=regime: carte_menages(th, regime, "a")))
+    ajouter("instabilite17.frontiere_nu_H", "0{,}586", "frontière", "menages",
+            "ν_H où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
+            lambda: frontiere(lambda nu: spectre(carte_menages(0.8, "hausse", "a", nu_H=nu)).rayon, 0.3, 1.0))
+    ajouter("instabilite17.frontiere_h", "0{,}604", "frontière", "menages",
+            "poids h où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
+            lambda: frontiere(lambda h: spectre(carte_menages(0.8, "hausse", "a", h=h)).rayon, 0.3, 1.0))
+    ajouter("instabilite17.a.n_a4.hausse", "1,0415", "rayon", "menages",
+            "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (valeur de la fiche ; la spécification cite aussi "
+            "la contre-épreuve, ligne suivante ; la valeur à retenir revient à macro)",
+            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)))
+    ajouter("instabilite17.a.n_a4.hausse.contre_epreuve", "1,09", "rayon", "menages",
+            "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (contre-épreuve citée par la spécification)",
+            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="1,09 contre")
+
+    # sec:investissement-conditions : boucle investissement -- demande (boucle réduite).
+    M3 = (0.6, 0.7, 0.8)
+    for nom, lti, pubs in (("calibration", BASE.lambda_ti, ("0,9975", "0,9977", "0,9986")),
+                           ("lambda_ti÷2", BASE.lambda_ti / 2, ("0,9992", "0,9991", "0,9987")),
+                           ("lambda_ti×2", BASE.lambda_ti * 2, ("0,9978", "0,9983", "1,0003"))):
+        for m, pub in zip(M3, pubs):
+            ajouter(f"investissement.rayon.{nom}.m{m}", pub, "rayon", "investissement",
+                    f"2 ans de capital, {nom}, m = {m}", _r(lambda m=m, lti=lti: carte_investissement(m, 2.0, lti)))
+    for ans, ms, pubs in ((2.0, M3, ("0,157", "0,097", "0,036")), (3.0, (0.6, 0.7), ("0,077", "0,037"))):
+        for m, pub in zip(ms, pubs):
+            ajouter(f"investissement.frontiere_lambda_ti.{ans:g}ans.m{m}", pub, "frontière", "investissement",
+                    f"λ_ti où le rayon passe 1, {ans:g} ans de capital, m = {m}",
+                    lambda m=m, ans=ans: frontiere(lambda l: spectre(carte_investissement(m, ans, l)).rayon,
+                                                   0.005, 0.5))
+    ajouter("investissement.racine_lente", "0{,}99255", "rayon", "forme fermée",
+            "(1 − δ/n_a)/[(1 + g)^{1/n_a}(1 + π̄)^{1/n_a}], π̄ = 2 % (non une maquette)",
+            lambda: (1 - BASE.delta / 12) / (_cadre(BASE)["Gam"]))
+
+    # sec:banque_centrale-conditions et sec:finances_publiques-conditions : socle, blocs 2 à 9.
+    for pi, pub in ((0.0, "0,997497"), (0.02, "0,997486"), (0.10, "0,997558")):
+        for regime in ("hausse", "baisse"):
+            ajouter(f"socle.rayon.pi{pi:g}.{regime}", pub, "rayon", "socle",
+                    f"blocs 2 à 9, π̄ = π* = {pi:.0%}, ν_G = {NU_G:g}, régime de {regime}, rayon brut (lecture "
+                    "sur la variété des identités publiée à part)",
+                    lambda pi=pi, regime=regime: rayon_socle(pi)[regime].rayon)
+    ajouter("socle.demi_vie.pi0.02", "275", "demi-vie", "socle", "ln 0,5/ln du rayon à 2 % (régime de hausse)",
+            lambda: rayon_socle(0.02)["hausse"].demi_vie, motif="275")
+    ajouter("socle.grille.pire", "0,998883", "rayon", "socle",
+            f"pire branche de la grille G (banque_centrale.md, l. 340-345 : {len(VITESSES_GRILLE)} vitesses et "
+            f"{len(GAINS_GRILLE)} gains ×0,5 et ×2, toutes les vitesses ×0,5 et ×2 ; {len(branches_grille())} "
+            f"branches, sans {', '.join(ABSENTS_GRILLE)} ; deux régimes ; rayon brut)",
+            lambda: max(r for _, r in grille_socle()))
+    ajouter("socle.grille.vitesses÷2", "0,998883", "rayon", "socle",
+            "toutes les vitesses de la grille G ×0,5 (pire cas attribué par finances_publiques.md, l. 651), "
+            "pire des deux régimes, rayon brut", lambda: dict(grille_socle())["vitesses ×0.5"])
+    return L
+
+
+# --- Lignes de la spécification et recensement ------------------------------------------------
+
+# Paragraphes où la spécification cite des rayons et des périodes de boucles conjointes : (section ou
+# tableau, en-tête qui identifie la ligne du paragraphe dans le source LaTeX).
+PARAGRAPHES = (
+    ("sec:travail-conditions", r"\textbf{Boucle combinée production"),
+    ("sec:prix-conditions", r"\textbf{Boucle prix -- stocks -- demande.}"),
+    ("sec:prix-conditions", r"\textbf{Boucle salaires -- prix.}"),
+    ("sec:menages-inflation", r"\item \textbf{Stabilité.}"),
+    ("sec:menages-conditions", r"\textbf{Boucle conjointe.}"),
+    ("sec:investissement-conditions", r"\textbf{Boucle investissement -- demande.}"),
+    ("sec:banque_centrale-conditions", r"\textbf{Stabilité, mesurée en maquette}"),
+    ("sec:finances_publiques-conditions", r"\textbf{Stabilité, mesurée en maquette}"),
+    ("tab:calibration", r"$\lambda_{\mathit{ti}}$ &"),
+    ("tab:instabilites", "17 & "),
+    ("sec:changements-v3x", "1,0415"),
+)
+
+# Nombres recensés dans ces paragraphes qui ne sont ni un rayon, ni une période, ni une demi-vie, ni une
+# frontière de boucle conjointe : valeurs d'entrée de la maquette, autres grandeurs (trajectoires simulées,
+# gains statiques, formes fermées), hors objet de #65. Clé : (section ou tableau, nombre tel que recensé).
+_ENTREE_M = "entrée de la maquette : propension m"
+EXCLUS: dict[tuple[str, str], str] = {
+    ("sec:travail-conditions", "0,5"): _ENTREE_M,
+    ("sec:travail-conditions", "0,6"): _ENTREE_M,
+    ("sec:travail-conditions", "0,7"): _ENTREE_M,
+    ("sec:travail-conditions", "0,8"): _ENTREE_M,
+    ("sec:travail-conditions", "96"): "borne de la bande de périodes exigée (critère), non une mesure",
+    ("sec:prix-conditions", "0,5"): _ENTREE_M,
+    ("sec:prix-conditions", "0,6"): _ENTREE_M,
+    ("sec:prix-conditions", "0,7"): _ENTREE_M,
+    ("sec:prix-conditions", "0,8"): _ENTREE_M,
+    ("sec:prix-conditions", "96"): "borne de la bande de périodes exigée (critère), non une mesure",
+    ("sec:prix-conditions", "1,7"): "écart de la période relevée à m = 0,6 à la borne de 96 tours (96 − 94,3)",
+    ("sec:menages-inflation", "0,93"): "effet d'un point de glissement sur le budget, non une valeur propre",
+    ("sec:menages-conditions", "0,8"): "entrée de la maquette : θ_H",
+    ("sec:menages-conditions", "0,498"): "part d'une vente imprévue versée aux ménages, non remesurée ici (fiche 9)",
+    ("sec:investissement-conditions", "1,4"): "entrée de la maquette : σ = 1,4/12 an",
+    ("sec:investissement-conditions", "0,6"): _ENTREE_M,
+    ("sec:investissement-conditions", "0,7"): _ENTREE_M,
+    ("sec:investissement-conditions", "0,8"): _ENTREE_M,
+    ("sec:investissement-conditions", "0,1396"): "gain de basse fréquence, forme fermée, non une valeur propre",
+    ("sec:investissement-conditions", "0,834"): "trajectoire simulée du taux d'utilisation, non une valeur propre",
+    ("sec:investissement-conditions", "0,836"): "trajectoire simulée du taux d'utilisation, non une valeur propre",
+    ("sec:investissement-conditions", "0,788"): "trajectoire simulée du taux d'utilisation, non une valeur propre",
+    ("sec:investissement-conditions", "0,7985"): "trajectoire simulée du taux d'utilisation, non une valeur propre",
+    ("sec:investissement-conditions", "0,861"): "part de la production versée aux ménages, cas à la main",
+    ("sec:banque_centrale-conditions", "0,5"): "constante ln 0,5 de la demi-vie",
+    ("sec:banque_centrale-conditions", "0,22"): "gain statique de la demande au taux réel (C36, #88), non un rayon",
+    ("sec:banque_centrale-conditions", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
+    ("sec:banque_centrale-conditions", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
+    ("sec:banque_centrale-conditions", "1,01"): "entrée : part de la dépense visée multipliée par 1,01",
+    ("sec:banque_centrale-conditions", "1,15"): "entrée : ν_G retenu",
+    ("sec:banque_centrale-conditions", "0,214"): "écart du glissement à la cible au tour 60, trajectoire simulée",
+    ("sec:banque_centrale-conditions", "0,161"): "écart du glissement à la cible au tour 120, trajectoire simulée",
+    ("sec:finances_publiques-conditions", "0,2208"): "gain statique de la demande au taux réel (C36, #88)",
+    ("sec:finances_publiques-conditions", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
+    ("sec:finances_publiques-conditions", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
+    ("sec:finances_publiques-conditions", "1,01"): "entrée : part de la dépense visée multipliée par 1,01",
+    ("sec:finances_publiques-conditions", "1,15"): "entrée : ν_G retenu",
+    ("sec:finances_publiques-conditions", "1,9"): "écart d'arrivée simulé au tour 5 500 (1,9e−8), trajectoire",
+    ("sec:finances_publiques-conditions", "0,396"): "palier du glissement sous un taux tenu, trajectoire simulée",
+    ("sec:finances_publiques-conditions", "0,596"): "palier du glissement sous un taux tenu, trajectoire simulée",
+    ("tab:calibration", "0,02"): "entrée : λ_ti indicative",
+    ("tab:calibration", "0,6"): _ENTREE_M,
+    ("tab:calibration", "0,7"): _ENTREE_M,
+    ("tab:calibration", "0,8"): _ENTREE_M,
+    ("tab:instabilites", "0,4"): "entrée : λ_H",
+}
+
+
+def lire_spec() -> list[str]:
+    return SPEC.read_text(encoding="utf-8").splitlines()
+
+
+def bornes_section(lignes: list[str], label: str) -> tuple[int, int]:
+    """Lignes (indices 0) de la section ou du tableau `label`.
+
+    Un tableau long va de son label (dans sa légende, en tête) à sa fin ; une section, de son titre à la
+    section suivante de même niveau ou de niveau supérieur.
+    """
+    debut = next(i for i, l in enumerate(lignes) if f"\\label{{{label}}}" in l)
+    if label.startswith("tab:"):
+        fin = next(i for i in range(debut, len(lignes)) if "\\end{longtable}" in lignes[i])
+        return debut, fin + 1
+    titre = next(i for i in range(debut, -1, -1) if re.match(r"\\(sub)*section", lignes[i]))
+    niveau = re.match(r"\\((?:sub)*)section", lignes[titre]).group(1).count("sub")
+    fin_motif = re.compile(r"^\\(?:sub){0,%d}section" % niveau)
+    fin = next((i for i in range(debut + 1, len(lignes)) if fin_motif.match(lignes[i])), len(lignes))
+    return debut, fin
+
+
+def lignes_paragraphes(lignes: list[str]) -> list[tuple[str, int]]:
+    """(section, numéro de ligne, base 1) de chaque paragraphe de `PARAGRAPHES`."""
+    sortie = []
+    for label, entete in PARAGRAPHES:
+        debut, fin = bornes_section(lignes, label)
+        trouve = [i for i in range(debut, fin) if entete in lignes[i]]
+        if label.startswith("tab:instabilites"):
+            trouve = [i for i in trouve if lignes[i].startswith(entete)]
+        if not trouve:
+            raise LookupError(f"paragraphe introuvable : {label}, {entete!r}")
+        sortie.append((label, trouve[0] + 1))
+    return sortie
+
+
+def recenser(lignes: list[str]) -> list[tuple[str, int, str]]:
+    """Nombres décimaux et périodes en tours des paragraphes de `PARAGRAPHES` : (section, ligne, nombre)."""
+    sortie = []
+    for label, num in lignes_paragraphes(lignes):
+        texte = lignes[num - 1]
+        for m in re.finditer(r"\d+(?:\{,\}|,)\d+", texte):
+            sortie.append((label, num, m.group(0).replace("{,}", ",")))
+        for m in re.finditer(r"(\d+(?:\{,\}|,)?\d*)(?:\s|~|\\,)+tours", texte):
+            sortie.append((label, num, m.group(1).replace("{,}", ",")))
+    vus = set()
+    return [x for x in sortie if not (x in vus or vus.add(x))]
+
+
+def lignes_du_motif(lignes: list[str], motif: str) -> list[int]:
+    """Numéros de ligne (base 1) des paragraphes recensés où le motif est écrit, comme nombre entier.
+
+    Un motif qui commence ou finit par un chiffre ne se lit pas à l'intérieur d'un autre nombre
+    (« 275 » ne se trouve pas dans « 1,0275 »).
+    """
+    expression = re.compile(r"(?<![\d,])" + re.escape(motif.replace("{,}", ",")) + r"(?!\d)")
+    return [num for _, num in lignes_paragraphes(lignes)
+            if expression.search(lignes[num - 1].replace("{,}", ","))]
+
+
+# --- Calcul et affichage ----------------------------------------------------------------------
+
+
+def evaluer(c: Chiffre, lignes: list[str]) -> dict[str, object]:
+    """Remesure d'un chiffre ; une remesure sans objet (None : racine réelle, rayon ≥ 1) est publiée telle quelle."""
+    valeur = c.calcul()
+    if valeur is None:
+        ecart, verdict = None, "sans objet"
+    else:
+        valeur = float(valeur)
+        if c.nature == "racine nominale":
+            ok, ecart = valeur <= 1e-9, valeur - 1e-9
+        else:
+            ecart, _, ok = es.comparer(c.publie.replace("{,}", ","), valeur)
+        verdict = "reproduit" if ok else "écart"
+    return {
+        "ident": c.ident, "nature": c.nature, "maquette": c.maquette, "hypothese": c.hypothese,
+        "publie": c.publie.replace("{,}", ","), "remesure": valeur, "ecart": ecart, "verdict": verdict,
+        "reproduit": verdict == "reproduit", "lignes": sorted(set(lignes_du_motif(lignes, c.motif))),
+    }
+
+
+def calculer() -> dict[str, object]:
+    lignes = lire_spec()
+    resultats = [evaluer(c, lignes) for c in releve()]
+    residus = {
+        "offre": max(residu_point_fixe(carte_offre(m, p, s)) for m in M4 for p, s in
+                     (("fige", False), ("regle", False), ("regle", True), ("marge", True))),
+        "investissement": max(residu_point_fixe(carte_investissement(m, a)) for m in (0.6, 0.7, 0.8)
+                              for a in (2.0, 3.0)),
+        "menages": max(residu_point_fixe(carte_menages(th, r, l)) for th in (0.8, 1.0)
+                       for r in ("hausse", "baisse") for l in LECTURES),
+        "socle": max(residu_point_fixe(carte_socle(parametres_socle(pi), r)) for pi in (0.0, 0.02, 0.10)
+                     for r in ("hausse", "baisse")),
+    }
+    nominales = {
+        "socle": max(s.ecart_nominal for pi in (0.0, 0.02, 0.10) for s in rayon_socle(pi).values()),
+        "menages": max(spectre(carte_menages(th, r)).ecart_nominal for th in (0.8, 1.0) for r in ("hausse", "baisse")),
+    }
+    socle = {f"{pi:g}": {r: {"rayon": s.rayon, "racine": [s.racine.real, s.racine.imag], "periode": s.periode,
+                            "demi_vie": s.demi_vie} for r, s in rayon_socle(pi).items()} for pi in (0.0, 0.02, 0.10)}
+    lectures = {f"{pi:g}": {r: _lectures_dict(lectures_socle(pi, r)) for r in ("hausse", "baisse")}
+                for pi in (0.0, 0.02, 0.10)}
+    return {"releve": resultats, "residus": residus, "racines_nominales": nominales, "socle": socle,
+            "lectures_socle": lectures, "grille_socle": grille_socle(), "complements_socle": complements_socle(),
+            "absents_grille": ABSENTS_GRILLE, "recensement": recenser(lignes)}
+
+
+def _lectures_dict(x: LecturesSocle) -> dict[str, object]:
+    return {"inv_gamma": x.inv_gamma, "rayon_brut": x.rayon_brut, "multiplicite_brute": x.multiplicite_brute,
+            "noyau_brut": x.noyau_brut, "rayon_variete": x.rayon_variete,
+            "multiplicite_variete": x.multiplicite_variete, "suivante": [x.suivante.real, x.suivante.imag],
+            "residu_gauche": x.residu_gauche, "residu_identites": x.residu_identites}
+
+
+def _f(x: float | None, chiffres: int = 6) -> str:
+    if x is None:
+        return "—"
+    return f"{x:.{chiffres}f}".replace(".", ",")
+
+
+def afficher(r: dict[str, object], sortie=None) -> None:
+    sortie = sortie or sys.stdout
+    p = lambda *a: print(*a, file=sortie)  # noqa: E731
+    p("Maquette linéarisée de la boucle conjointe (issue #65)")
+    p(f"Pas des différences finies : {PAS_RELATIF:g} relatif ; racine nominale |λ − 1| ≤ {TOL_RACINE_NOMINALE:g} ; "
+      f"ν_G = {NU_G:g}")
+    p("")
+    p("Résidus du point fixe (relatifs) : " + " ; ".join(f"{k} {v:.1e}" for k, v in r["residus"].items()))
+    p("Racine nominale, plus grand |λ − 1| : " + " ; ".join(f"{k} {v:.1e}" for k, v in r["racines_nominales"].items()))
+    p("")
+    p(f"{'chiffre':58} {'publié':>9} {'remesuré':>12} {'écart':>12}  verdict   lignes")
+    for x in r["releve"]:
+        verdict = {"reproduit": "reproduit", "écart": "ÉCART"}.get(x["verdict"], x["verdict"])
+        lignes = ", ".join(str(n) for n in x["lignes"]) or "—"
+        remesure = "sans objet" if x["remesure"] is None else _f(x["remesure"])
+        p(f"{x['ident']:58} {x['publie']:>9} {remesure:>12} {_f(x['ecart']):>12}  {verdict:10} {lignes}")
+    p("")
+    p("Socle (blocs 2 à 9) : racine dominante, période et demi-vie")
+    for pi, regimes in r["socle"].items():
+        for regime, s in regimes.items():
+            p(f"  π̄ = {float(pi):>4.0%} {regime:7} rayon {_f(s['rayon'])} racine {_f(s['racine'][0])} "
+              f"{'+' if s['racine'][1] >= 0 else '−'} {_f(abs(s['racine'][1]))} i  période {_f(s['periode'], 1)} "
+              f"demi-vie {_f(s['demi_vie'], 1)}")
+    p("Socle : deux lectures du rayon, aucune racine écartée hors de la racine nominale (choix à `monnaie`)")
+    p(f"  multiplicité : |λ − 1/Γ̄| ≤ {TOL_RACINE_MULTIPLE:g} ; noyau : valeurs singulières de S⁻¹JS − I/Γ̄ "
+      f"≤ {TOL_NOYAU:g} ; variété : noyau des gradients de « "
+      + " » et « ".join(nom for nom, _ in IDENTITES_SOCLE) + " »")
+    for pi, regimes in r["lectures_socle"].items():
+        for regime, s in regimes.items():
+            p(f"  π̄ = {float(pi):>4.0%} {regime:7} 1/Γ̄ {_f(s['inv_gamma'])} | brut : rayon {_f(s['rayon_brut'])}, "
+              f"{s['multiplicite_brute']} en 1/Γ̄ (noyau {s['noyau_brut']}) | variété : rayon "
+              f"{_f(s['rayon_variete'])}, {s['multiplicite_variete']} en 1/Γ̄ | suivante {_f(s['suivante'][0])} "
+              f"{'+' if s['suivante'][1] >= 0 else '−'} {_f(abs(s['suivante'][1]))} i | |gJ − g/Γ̄| "
+              f"{s['residu_gauche']:.1e}, |g·x0| {s['residu_identites']:.1e}")
+    p(f"Grille G du socle à π̄ = 2 % (banque_centrale.md, l. 340-345 ; pire rayon brut des deux régimes ; "
+      f"absents du socle : {', '.join(r['absents_grille'])}) :")
+    for nom, rayon in r["grille_socle"]:
+        p(f"  {nom:24} {_f(rayon)}")
+    p("Mesures complémentaires hors grille et hors relevé (pire rayon brut des deux régimes, π̄ = 2 %) :")
+    for nom, rayon in r["complements_socle"]:
+        p(f"  {nom:24} {_f(rayon)}")
+    ecarts = [x for x in r["releve"] if x["verdict"] == "écart"]
+    sans_objet = [x for x in r["releve"] if x["verdict"] == "sans objet"]
+    p("")
+    p(f"{len(r['releve'])} chiffres relevés ; {sum(x['reproduit'] for x in r['releve'])} reproduits à la dernière "
+      f"décimale publiée ; {len(ecarts)} écarts : {', '.join(x['ident'] for x in ecarts) or 'aucun'} ; "
+      f"{len(sans_objet)} sans objet : {', '.join(x['ident'] for x in sans_objet) or 'aucun'}")
+
+
+def main(arguments: list[str] | None = None) -> int:
+    analyseur = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    analyseur.add_argument("--json", default=None, help="écrit aussi les résultats en JSON dans ce fichier")
+    args = analyseur.parse_args(arguments)
+    r = calculer()
+    afficher(r)
+    if args.json:
+        with open(args.json, "w", encoding="utf-8") as f:
+            json.dump(r, f, ensure_ascii=False, indent=1, sort_keys=True, default=str)
+            f.write("\n")
+    pire = max(r["residus"].values())
+    if not pire <= TOL_POINT_FIXE or not max(r["racines_nominales"].values()) <= TOL_RACINE_NOMINALE:
+        print(f"Point fixe ou racine nominale non tenus : résidu {pire!r}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
