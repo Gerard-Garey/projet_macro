@@ -48,7 +48,8 @@ se lit sur l'écart des jacobiennes avant et arrière (`TOL_COUDE`).
 
 **Maquettes.** Les chiffres cités ont été mesurés sur des maquettes dont les
 hypothèses sont écrites dans le paragraphe qui les cite ; chaque relevé
-nomme la sienne :
+nomme la sienne, et les paragraphes où il est cité (`Chiffre.ou`) ; une
+valeur barrée (`\\barre`) n'est plus un chiffre publié (`sans_barres`) :
 - `offre` : production N1 à N7, emploi égal à la demande de travail, demande
   d_t = A + m y_{t−1} (`sec:travail-conditions`) ; avec la règle de prix P1
   à P3 à coût unitaire exogène, plans en u.m. au prix du pas précédent
@@ -919,7 +920,7 @@ ABSENTS_GRILLE = ("a_U",)
 # Ajout prospectif à la grille (décision du mainteneur du 15/10/2026) : ζ ×0,5 et ×2 (ζ ∈ {2 ; 4 ; 8}), verdicts
 # publiés sur la grille G (29 branches) et sur la grille G augmentée (31 branches).
 AJOUTS_GRILLE = ("zeta",)
-# Marge conjointe (mesure publiée, hors relevé) : gains de la boucle salaire -- taux réel multipliés ensemble.
+# Marge conjointe (mesure publiée, relevée depuis sa citation) : gains de la boucle salaire -- taux réel multipliés ensemble.
 GAINS_ENSEMBLE = ("beta", "a_pi", "eta_r")
 BORNES_MARGE = (1.0, 2.0)  # intervalle encadrant du facteur commun (contrôlé par `frontiere`)
 
@@ -941,7 +942,7 @@ def branches_ajoutees() -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]
 
 
 def branches_complementaires() -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]:
-    """Mesures hors grille et hors relevé : β, a_π, η_r ensemble ×0,5 et ×2."""
+    """Mesures hors grille : β, a_π, η_r ensemble ×0,5 et ×2."""
     return tuple((f"{', '.join(GAINS_ENSEMBLE)} ×{f:g}", tuple((nom, f) for nom in GAINS_ENSEMBLE))
                  for f in (0.5, 2.0))
 
@@ -973,7 +974,7 @@ def verdicts_grille(grille: tuple[tuple[str, float], ...] | None = None) -> dict
 
 @lru_cache(maxsize=None)
 def complements_socle() -> tuple[tuple[str, float], ...]:
-    """Mesures complémentaires à π̄ = 2 %, hors relevé : lecture (c), pire des deux régimes, par branche."""
+    """Mesures complémentaires à π̄ = 2 %, hors grille : lecture (c), pire des deux régimes, par branche."""
     return _pire(branches_complementaires())
 
 
@@ -1117,6 +1118,10 @@ class Chiffre:
     maquette: str
     hypothese: str
     calcul: object  # () -> float
+    # Paragraphes (labels de `PARAGRAPHES`) et fiches (fichiers de `LIGNES_FICHES`) où le chiffre est cité :
+    # le motif n'est cherché que là, et un nombre recensé n'est couvert que par un chiffre qui y déclare son
+    # paragraphe (un nombre égal cité ailleurs, pour une autre grandeur, ne passe pas par coïncidence).
+    ou: tuple[str, ...] = ()
 
 
 def _r(carte_de):
@@ -1145,15 +1150,21 @@ def _extremes(fonction, valeurs, quel):
 def releve() -> list[Chiffre]:
     """Liste des chiffres cités, dans l'ordre de la spécification, avec leur calcul."""
     L: list[Chiffre] = []
+    courant: list[tuple[str, ...]] = [()]  # paragraphes de citation du groupe en cours (`ou` par défaut)
 
-    def ajouter(ident, publie, nature, maquette, hypothese, calcul, motif=None):
-        L.append(Chiffre(ident, publie, motif or publie, nature, maquette, hypothese, calcul))
+    def ajouter(ident, publie, nature, maquette, hypothese, calcul, motif=None, ou=None):
+        L.append(Chiffre(ident, publie, motif or publie, nature, maquette, hypothese, calcul,
+                         courant[0] if ou is None else ou))
 
-    # sec:travail-conditions : boucle combinée production -- stocks -- emploi, prix figé.
+    # sec:travail-conditions : boucle combinée production -- stocks -- emploi, prix figé ; les bornes (m = 0,5
+    # et 0,8) sont rappelées par sec:prix-conditions.
+    courant[0] = ("sec:travail-conditions",)
     for m, r, per in zip(M4, ("0,9279", "0,9452", "0,9612", "0,9762"), ("68,9", "72,9", "80,7", "95,8")):
-        ajouter(f"travail.rayon.m{m}", r, "rayon", "offre", f"prix figé, m = {m}", _r(lambda m=m: carte_offre(m)))
+        ou = ("sec:travail-conditions", "sec:prix-conditions") if m in (0.5, 0.8) else None
+        ajouter(f"travail.rayon.m{m}", r, "rayon", "offre", f"prix figé, m = {m}", _r(lambda m=m: carte_offre(m)),
+                ou=ou)
         ajouter(f"travail.periode.m{m}", per, "période", "offre", f"prix figé, m = {m}",
-                _per(lambda m=m: carte_offre(m)))
+                _per(lambda m=m: carte_offre(m)), ou=ou)
     ajouter("travail.marge_bande.m0.8", "0,16", "marge", "offre", "96 tours moins la période à m = 0,8",
             lambda: _moins(96, spectre(carte_offre(0.8)).periode), motif="marge de 0,16")
     for quel, pub in (("min", "141,9"), ("max", "184,5")):
@@ -1164,6 +1175,7 @@ def releve() -> list[Chiffre]:
                 _extremes(lambda m: spectre(carte_offre(m, lambda_v=6.0, lambda_IN=3.0)).periode, M4, quel))
 
     # sec:prix-conditions : boucle prix -- stocks -- demande.
+    courant[0] = ("sec:prix-conditions",)
     for m, r, per in zip(M4, ("0,9420", "0,9535", "0,9658", "0,9783"), ("93,8", "94,3", "100,4", "115,5")):
         ajouter(f"prix.rayon.m{m}", r, "rayon", "offre", f"règle P1 à P3, coût exogène, m = {m}",
                 _r(lambda m=m: carte_offre(m, "regle")))
@@ -1218,32 +1230,46 @@ def releve() -> list[Chiffre]:
             motif="au plus $10^{-9}$")
 
     # sec:menages-conditions : boucle conjointe (lecture de la cible).
+    courant[0] = ("sec:menages-conditions",)
     for th, pubs in ((0.8, ("0,9640", "0,9617")), (1.0, ("0,9564", "0,9537"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages.rayon.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture de la cible, θ_H = {th}, régime de {regime}",
                     _r(lambda th=th, regime=regime: carte_menages(th, regime)))
+    for regime, pub in (("hausse", "0,9563"), ("baisse", "0,9535")):
+        ajouter(f"menages.rayon.theta1.0.cout_moyen.{regime}", pub, "rayon", "menages",
+                f"lecture de la cible, θ_H = 1, stocks au coût moyen pondéré de N8, régime de {regime}",
+                _r(lambda regime=regime: carte_menages(1.0, regime, resultat="cout_moyen")))
 
     # sec:menages-inflation et instabilité 17 : lectures sur le glissement.
+    courant[0] = ("sec:menages-inflation",)
+    for th, pubs in ((0.8, ("1,030357", "1,005801")), (1.0, ("1,059130", "1,060998"))):
+        for regime, pub in zip(("hausse", "baisse"), pubs):
+            ajouter(f"menages_inflation.a_entretien.theta{th}.{regime}", pub, "rayon", "menages",
+                    f"lecture (a), glissement dans le seul terme d'entretien de H4, θ_H = {th}, régime de {regime}",
+                    _r(lambda th=th, regime=regime: carte_menages(th, regime, "a_entretien")))
+    ins = ("sec:menages-inflation", "tab:instabilites")
     for lecture, th, pubs in (("hs_glissement", 0.8, ("0,9967", "0,9742")), ("hs_glissement", 1.0, ("1,0231", "1,0271")),
                               ("hs_glissement_pas", 0.8, ("0,9823", "0,9748")),
                               ("hs_glissement_pas", 1.0, ("1,0223", "1,0218"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages_inflation.{lecture}.theta{th}.{regime}", pub, "rayon", "menages",
                     f"{lecture}, θ_H = {th}, régime de {regime}",
-                    _r(lambda lecture=lecture, th=th, regime=regime: carte_menages(th, regime, lecture)))
+                    _r(lambda lecture=lecture, th=th, regime=regime: carte_menages(th, regime, lecture)),
+                    ou=ins if (lecture, th) == ("hs_glissement_pas", 1.0) else None)
     hs_pas = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
     for quel, pub in (("min", "49"), ("max", "60")):
         ajouter(f"menages_inflation.hs_glissement_pas.periode.{quel}", pub, "période", "menages",
                 "hs_glissement_pas, deux θ_H, deux régimes",
                 _extremes(lambda a: spectre(carte_menages(a[0], a[1], "hs_glissement_pas")).periode, hs_pas, quel),
-                motif="49 à 60")
+                motif="49 à 60", ou=ins)
     lect_a = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
     for quel, pub in (("min", "17"), ("max", "19")):
         ajouter(f"menages_inflation.a.periode.{quel}", pub, "période", "menages",
                 "lecture (a), deux θ_H, deux régimes",
                 _extremes(lambda a: spectre(carte_menages(a[0], a[1], "a")).periode, lect_a, quel),
-                motif="17 à 19 tours")
+                motif="17 à 19 tours", ou=ins)
+    courant[0] = ("tab:instabilites",)
     for th, pubs in ((0.8, ("1,0275", "1,0029")), (1.0, ("1,0561", "1,0580"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"instabilite17.a.theta{th}.{regime}", pub, "rayon", "menages",
@@ -1258,12 +1284,13 @@ def releve() -> list[Chiffre]:
     ajouter("instabilite17.a.n_a4.hausse", "1,0415", "rayon", "menages",
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (valeur de la fiche ; la spécification cite aussi "
             "la contre-épreuve, ligne suivante ; la valeur à retenir revient à macro)",
-            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)))
+            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), ou=("sec:changements-v3x",))
     ajouter("instabilite17.a.n_a4.hausse.contre_epreuve", "1,09", "rayon", "menages",
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (contre-épreuve citée par la spécification)",
-            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="1,09 contre")
+            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="1,09 contre", ou=("sec:changements-v3x",))
 
     # sec:investissement-conditions : boucle investissement -- demande (boucle réduite).
+    courant[0] = ("sec:investissement-conditions",)
     M3 = (0.6, 0.7, 0.8)
     for nom, lti, pubs in (("calibration", BASE.lambda_ti, ("0,9975", "0,9977", "0,9986")),
                            ("lambda_ti÷2", BASE.lambda_ti / 2, ("0,9992", "0,9991", "0,9987")),
@@ -1276,47 +1303,101 @@ def releve() -> list[Chiffre]:
             ajouter(f"investissement.frontiere_lambda_ti.{ans:g}ans.m{m}", pub, "frontière", "investissement",
                     f"λ_ti où le rayon passe 1, {ans:g} ans de capital, m = {m}",
                     lambda m=m, ans=ans: frontiere(lambda l: spectre(carte_investissement(m, ans, l)).rayon,
-                                                   0.005, 0.5))
+                                                   0.005, 0.5),
+                    ou=("sec:investissement-conditions", "tab:calibration") if ans == 2.0 else None)
     ajouter("investissement.racine_lente", "0{,}99255", "rayon", "forme fermée",
             "(1 − δ/n_a)/[(1 + g)^{1/n_a}(1 + π̄)^{1/n_a}], π̄ = 2 % (non une maquette)",
             lambda: (1 - BASE.delta / 12) / (_cadre(BASE)["Gam"]))
 
     # sec:banque_centrale-conditions et sec:finances_publiques-conditions : socle, blocs 2 à 9, lecture (c).
-    for pi, pub in ((0.0, "0,997497"), (0.02, "0,997486"), (0.10, "0,997558")):
+    # Les valeurs barrées (\barre, anciennes E12) ne sont pas recensées ; la fiche 9 garde les siennes (φ = 1).
+    socle_bc, socle_fp = ("sec:banque_centrale-conditions",), ("sec:finances_publiques-conditions",)
+    courant[0] = socle_bc + socle_fp
+    for pi, pub in ((0.0, "0,997390"), (0.02, "0,997118"), (0.10, "0,997045")):
         for regime in ("hausse", "baisse"):
             ajouter(f"socle.rayon.pi{pi:g}.{regime}", pub, "rayon", "socle",
                     f"blocs 2 à 9, π̄ = π* = {pi:.0%}, ν_G = {NU_G:g}, régime de {regime}, lecture (c) : variété des "
                     f"identités, hors des racines en 1/Γ̄ des stocks tenus en niveau ({', '.join(TENUS_ATTENDUS)}, "
                     "déclarées à part)",
                     lambda pi=pi, regime=regime: lectures_socle(pi, regime).rayon_c)
-    ajouter("socle.demi_vie.pi0.02", "275", "demi-vie", "socle",
+    # Racine dominante à 10 % : paire complexe, relevée en régime de hausse (période de la spécification).
+    ajouter("socle.racine.pi0.1.hausse.reelle", "0,997043", "racine", "socle",
+            "partie réelle de la racine dominante (c), π̄ = 10 %, régime de hausse",
+            lambda: lectures_socle(0.10, "hausse").suivante.real, ou=socle_bc)
+    ajouter("socle.racine.pi0.1.hausse.imaginaire", "0,001732", "racine", "socle",
+            "|partie imaginaire| de la racine dominante (c), π̄ = 10 %, régime de hausse",
+            lambda: abs(lectures_socle(0.10, "hausse").suivante.imag), ou=socle_bc)
+    ajouter("socle.periode.pi0.1.hausse", "3617", "période", "socle",
+            "2π/|arg λ| de la racine dominante (c), π̄ = 10 %, régime de hausse",
+            lambda: nature_racine(lectures_socle(0.10, "hausse").suivante)[1], motif="3\\,617", ou=socle_bc)
+    ajouter("socle.demi_vie.pi0.02", "240", "demi-vie", "socle",
             "ln 0,5/ln du rayon à 2 % (lecture (c), régime de hausse)",
-            lambda: math.log(0.5) / math.log(lectures_socle(0.02, "hausse").rayon_c), motif="275")
-    ajouter("socle.grille.pire", "0,998883", "rayon", "socle",
+            lambda: math.log(0.5) / math.log(lectures_socle(0.02, "hausse").rayon_c), motif="240")
+    ajouter("socle.demi_vie.pi0", "265", "demi-vie", "socle",
+            "ln 0,5/ln du rayon à 0 % (lecture (c), régime de hausse)",
+            lambda: math.log(0.5) / math.log(lectures_socle(0.0, "hausse").rayon_c), motif="265", ou=socle_bc)
+    for pi, pub in ((0.0, "0,998351"), (0.02, "0,996705"), (0.10, "0,990453")):
+        ajouter(f"socle.inv_gamma.pi{pi:g}", pub, "racine", "socle",
+                f"1/Γ̄ à π̄ = {pi:.0%}, racine double des stocks tenus en niveau ({', '.join(TENUS_ATTENDUS)})",
+                lambda pi=pi: lectures_socle(pi, "hausse").inv_gamma, ou=socle_bc)
+    ajouter("socle.grille.pire", "0,998732", "rayon", "socle",
             f"pire branche de la grille G (banque_centrale.md, l. 340-345 : {len(VITESSES_GRILLE)} vitesses et "
             f"{len(GAINS_GRILLE)} gains ×0,5 et ×2, toutes les vitesses ×0,5 et ×2 ; {len(branches_grille())} "
             f"branches, sans {', '.join(ABSENTS_GRILLE)} ; deux régimes ; lecture (c))",
             lambda: verdicts_grille()["G"]["pire"])
-    ajouter("socle.grille.vitesses÷2", "0,998883", "rayon", "socle",
-            "toutes les vitesses de la grille G ×0,5 (pire cas attribué par finances_publiques.md, l. 651), "
-            "pire des deux régimes, lecture (c)", lambda: dict(grille_socle())["vitesses ×0.5"])
+    ajouter("socle.grille.vitesses÷2", "0,998437", "rayon", "socle",
+            "toutes les vitesses de la grille G ×0,5, pire des deux régimes, lecture (c)",
+            lambda: dict(grille_socle())["vitesses ×0.5"], ou=socle_bc)
+    ajouter("socle.grille_zeta.pire", "0,998802", "rayon", "socle",
+            f"pire branche de la grille G augmentée de {', '.join(AJOUTS_GRILLE)} ×0,5 et ×2 "
+            f"({len(grille_socle())} branches, deux régimes, lecture (c))",
+            lambda: verdicts_grille()["G + zeta"]["pire"])
+    ajouter("socle.marge_conjointe.facteur", "1,7135", "frontière", "socle",
+            f"facteur commun de {', '.join(GAINS_ENSEMBLE)} où la lecture (c) passe 1, pire des deux régimes, "
+            "π̄ = 2 %", lambda: marge_conjointe()["facteur"])
+    for regime, pub, per in (("baisse", "1,027785", "19,3"), ("hausse", "1,000644", "17,0")):
+        ajouter(f"socle.marge_conjointe.x2.{regime}", pub, "rayon", "socle",
+                f"{', '.join(GAINS_ENSEMBLE)} ×2, régime de {regime}, lecture (c), π̄ = 2 %",
+                lambda regime=regime: marge_conjointe()["x2"][regime]["rayon"], ou=socle_bc)
+        ajouter(f"socle.marge_conjointe.x2.{regime}.periode", per, "période", "socle",
+                f"{', '.join(GAINS_ENSEMBLE)} ×2, régime de {regime}, période de la paire complexe (c)",
+                lambda regime=regime: marge_conjointe()["x2"][regime]["periode"], ou=socle_bc)
+    ajouter("socle.marge_conjointe.x0.5", "0,998047", "rayon", "socle",
+            f"{', '.join(GAINS_ENSEMBLE)} ×0,5, pire des deux régimes, lecture (c), π̄ = 2 %",
+            lambda: rayon_c(_ensemble(0.5)), ou=socle_bc)
+    ajouter("socle.marge_conjointe.x2.a_I÷1000", "1,0265", "rayon", "socle",
+            f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, pire des deux régimes, lecture (c), π̄ = 2 %",
+            lambda: rayon_c(parametres_socle(0.02, facteurs={nom: 2.0 for nom in GAINS_ENSEMBLE} | {"a_I": 1e-3})),
+            ou=socle_bc)
 
     # sec:finances_publiques-impots, sec:ecartees et fiche 9 (finances_publiques.md, § 7) : couverture φ (E4).
-    for pi, pub in ((0.02, "0,131"), (0.10, "0,487")):
+    # La table de la fiche 9 est antérieure à l'amendement de E12 du 04/10/2026 : ses valeurs non nulles en φ
+    # sont des écarts déclarés par la spécification (valeurs barrées) ; la fiche ne les barre pas.
+    impots, ecartees = ("sec:finances_publiques-impots",), ("sec:ecartees",)
+    fiche9 = ("docs/blocs/finances_publiques.md",)
+    for pi, pub in ((0.02, "0,174"), (0.10, "0,650")):
         ajouter(f"finances.phi_star.pi{pi:g}", pub, "frontière", "socle",
                 f"couverture φ de E4 où la lecture (c) passe 1, pire des deux régimes, π̄ = {pi:.0%}",
-                lambda pi=pi: phi_star(pi))
-    table_phi = {0.02: ("1,001818", "1,000575", "0,999076", "0,997792"),
-                 0.10: ("1,011036", "1,008794", "1,005564", "0,999488")}
+                lambda pi=pi: phi_star(pi), ou=impots + ecartees)
+    table_phi = {0.02: ("1,001818", "1,000575", "0,999076", "0,997792", "0,997486"),
+                 0.10: ("1,011036", "1,008794", "1,005564", "0,999488", "0,997558")}
     for pi, pubs in table_phi.items():
-        for phi, pub in zip(PHI_TABLE, pubs):
+        for phi, pub in zip(PHI_TABLE + (1.0,), pubs):
             ajouter(f"finances.rayon.phi{phi:g}.pi{pi:g}", pub, "rayon", "socle",
-                    f"couverture φ = {phi:g} (E4), π̄ = {pi:.0%}, pire des deux régimes, lecture (c)",
-                    lambda pi=pi, phi=phi: rayon_phi(pi, phi))
+                    f"couverture φ = {phi:g} (E4), π̄ = {pi:.0%}, pire des deux régimes, lecture (c)"
+                    + ("" if phi == 0.0 else " ; valeur de la fiche 9, mesurée avant l'amendement de E12"),
+                    lambda pi=pi, phi=phi: rayon_phi(pi, phi), ou=fiche9 + (impots if phi == 0.0 else ()))
+    for pi, pub in ((0.02, "0,998471"), (0.10, "1,002898")):
+        ajouter(f"finances.rayon.phi0.5.pi{pi:g}.specification", pub, "rayon", "socle",
+                f"couverture φ = 0,5 (E4), π̄ = {pi:.0%}, pire des deux régimes, lecture (c)",
+                lambda pi=pi: rayon_phi(pi, 0.5), ou=impots)
+    ajouter("finances.rayon.phi0.5.pi0.1.ecartees", "1,0029", "rayon", "socle",
+            "couverture φ = 0,5 (E4), π̄ = 10 %, pire des deux régimes, lecture (c)",
+            lambda: rayon_phi(0.10, 0.5), motif="rayon 1,0029", ou=ecartees)
     for pi, pub, motif in ((0.02, "382", "382"), (0.10, "63", "63 tours")):
         ajouter(f"finances.doublement.phi0.pi{pi:g}", pub, "doublement", "socle",
                 f"ln 2/ln du rayon à φ = 0, π̄ = {pi:.0%} (pays joué, lecture (c))",
-                lambda pi=pi: doublement(rayon_phi(pi, 0.0)), motif=motif)
+                lambda pi=pi: doublement(rayon_phi(pi, 0.0)), motif=motif, ou=impots)
     return L
 
 
@@ -1377,7 +1458,7 @@ EXCLUS: dict[tuple[str, str], str] = {
     ("sec:investissement-conditions", "0,788"): "trajectoire simulée du taux d'utilisation, non une valeur propre",
     ("sec:investissement-conditions", "0,7985"): "trajectoire simulée du taux d'utilisation, non une valeur propre",
     ("sec:investissement-conditions", "0,861"): "part de la production versée aux ménages, cas à la main",
-    ("sec:banque_centrale-conditions", "0,5"): "constante ln 0,5 de la demi-vie",
+    ("sec:banque_centrale-conditions", "0,5"): "constante ln 0,5 de la demi-vie ; entrée : facteur commun 0,5",
     ("sec:banque_centrale-conditions", "0,22"): "gain statique de la demande au taux réel (C36, #88), non un rayon",
     ("sec:banque_centrale-conditions", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:banque_centrale-conditions", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
@@ -1385,6 +1466,8 @@ EXCLUS: dict[tuple[str, str], str] = {
     ("sec:banque_centrale-conditions", "1,15"): "entrée : ν_G retenu",
     ("sec:banque_centrale-conditions", "0,214"): "écart du glissement à la cible au tour 60, trajectoire simulée",
     ("sec:banque_centrale-conditions", "0,161"): "écart du glissement à la cible au tour 120, trajectoire simulée",
+    ("sec:banque_centrale-conditions", "1,034773"): "mesure hors outil, ancienne E12 (sans −T^cou, script de la "
+                                                    "rédaction non versionné) : la maquette n'a pas cette variante",
     ("sec:finances_publiques-conditions", "0,2208"): "gain statique de la demande au taux réel (C36, #88)",
     ("sec:finances_publiques-conditions", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:finances_publiques-conditions", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
@@ -1401,18 +1484,13 @@ EXCLUS: dict[tuple[str, str], str] = {
     ("sec:finances_publiques-impots", "1,632"): "taux réel neutre de l'état stationnaire, forme fermée (#80)",
     ("sec:finances_publiques-impots", "1,146"): "taux réel neutre de l'état stationnaire, forme fermée (#80)",
     ("sec:finances_publiques-impots", "0,976"): "écart du taux réel neutre sur l'intervalle, forme fermée (#80)",
-    ("sec:finances_publiques-impots", "1,536"): "valeur barrée de la maquette perdue (taux réel neutre)",
-    ("sec:finances_publiques-impots", "1,075"): "valeur barrée de la maquette perdue (taux réel neutre)",
-    ("sec:finances_publiques-impots", "0,74"): "valeur barrée de la maquette perdue (écart du taux réel neutre)",
     ("sec:finances_publiques-impots", "0,253"): "dette consolidée stationnaire, forme fermée",
     ("sec:finances_publiques-impots", "0,28"): "couverture hors de l'état de référence, non remesurée (#88)",
     ("sec:finances_publiques-impots", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:finances_publiques-impots", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:finances_publiques-impots", "1,01"): "entrée : part de la dépense visée multipliée par 1,01",
     ("sec:finances_publiques-impots", "1,15"): "entrée : ν_G retenu",
-    ("sec:finances_publiques-impots", "20,63"): "valeur barrée : racine parasite de la fermeture, en %",
-    ("sec:finances_publiques-impots", "26,65"): "valeur barrée : racine parasite de la fermeture, en %",
-    ("sec:finances_publiques-impots", "40,49"): "valeur barrée : racine parasite de la fermeture, en %",
+    ("sec:finances_publiques-impots", "0,5"): "entrée : couverture φ = 0,5",
     ("sec:finances_publiques-impots", "0,1"): "pas du balayage de la fonction de fermeture, en point",
     ("sec:finances_publiques-impots", "0,05"): "pas d'une grille de balayage citée auparavant, en point",
 }
@@ -1420,6 +1498,32 @@ EXCLUS: dict[tuple[str, str], str] = {
 
 def lire_spec() -> list[str]:
     return SPEC.read_text(encoding="utf-8").splitlines()
+
+
+BARRE = "\\barre{"
+
+
+def sans_barres(ligne: str) -> str:
+    """Ligne dont chaque valeur barrée, `\\barre{…}` (CONVENTIONS.md, § 3 et § 4.3), est remplacée par des blancs.
+
+    Une valeur barrée a été remplacée par une remesure : elle n'est plus un chiffre publié, ni recensée ni
+    cherchée. Les accolades sont appariées (`\\barre{$-20{,}63$}`) ; une accolade échappée (`\\{`, `\\}`) ne
+    compte pas. Un seul parcours de la ligne, de gauche à droite. Un `\\barre{` non refermé est une erreur.
+    """
+    morceaux, i = [], 0
+    while (j := ligne.find(BARRE, i)) >= 0:
+        k, profondeur = j + len(BARRE), 1
+        while k < len(ligne) and profondeur:
+            if ligne[k] == "\\":
+                k += 2
+                continue
+            profondeur += {"{": 1, "}": -1}.get(ligne[k], 0)
+            k += 1
+        if profondeur:
+            raise ValueError(f"\\barre non refermé à la colonne {j + 1} : {ligne[j:j + 40]!r}")
+        morceaux += [ligne[i:j], " " * (k - j)]
+        i = k
+    return "".join(morceaux) + ligne[i:]
 
 
 def bornes_section(lignes: list[str], label: str) -> tuple[int, int]:
@@ -1454,14 +1558,18 @@ def lignes_paragraphes(lignes: list[str]) -> list[tuple[str, int]]:
 
 
 def recenser(lignes: list[str]) -> list[tuple[str, int, str]]:
-    """Nombres décimaux et périodes en tours des paragraphes de `PARAGRAPHES` : (section, ligne, nombre)."""
+    """Nombres décimaux et périodes en tours des paragraphes de `PARAGRAPHES` : (section, ligne, nombre).
+
+    Les valeurs barrées ne sont pas recensées (`sans_barres`).
+    """
     sortie = []
     for label, num in lignes_paragraphes(lignes):
-        texte = lignes[num - 1]
+        texte = sans_barres(lignes[num - 1])
         for m in re.finditer(r"\d+(?:\{,\}|,)\d+", texte):
             sortie.append((label, num, m.group(0).replace("{,}", ",")))
-        for m in re.finditer(r"(\d+(?:\{,\}|,)?\d*)(?:\s|~|\\,)+tours", texte):
-            sortie.append((label, num, m.group(1).replace("{,}", ",")))
+        # Période en tours ; séparateur des milliers « \, » (3\,617 tours, recensé 3617).
+        for m in re.finditer(r"(\d+(?:\\,\d{3})*(?:\{,\}|,)?\d*)(?:\s|~|\\,)+tours", texte):
+            sortie.append((label, num, m.group(1).replace("{,}", ",").replace("\\,", "")))
     vus = set()
     return [x for x in sortie if not (x in vus or vus.add(x))]
 
@@ -1487,20 +1595,24 @@ def recenser_fiches(fiches: dict[str, list[str]]) -> list[tuple[str, int, str]]:
             for m in re.finditer(r"\d+,\d+", fiches[f][num - 1])]
 
 
-def lignes_du_motif_fiches(fiches: dict[str, list[str]], motif: str) -> list[str]:
-    """« fichier:ligne » des lignes de `LIGNES_FICHES` où le motif est écrit (même règle que `lignes_du_motif`)."""
+def lignes_du_motif_fiches(fiches: dict[str, list[str]], motif: str, ou: tuple[str, ...]) -> list[str]:
+    """« fichier:ligne » des lignes de `LIGNES_FICHES` des fichiers de `ou` où le motif est écrit (même règle
+    que `lignes_du_motif`)."""
     expression = re.compile(r"(?<![\d,])" + re.escape(motif.replace("{,}", ",")) + r"(?!\d)")
-    return [f"{Path(f).name}:{num}" for f, num in lignes_fiches(fiches) if expression.search(fiches[f][num - 1])]
+    return [f"{Path(f).name}:{num}" for f, num in lignes_fiches(fiches)
+            if f in ou and expression.search(fiches[f][num - 1])]
 
 
-def lignes_du_motif(lignes: list[str], motif: str) -> list[int]:
-    """Numéros de ligne (base 1) des paragraphes recensés où le motif est écrit, comme nombre entier.
+def lignes_du_motif(lignes: list[str], motif: str, ou: tuple[str, ...]) -> list[tuple[str, int]]:
+    """(section, numéro de ligne, base 1) des paragraphes recensés des sections de `ou` où le motif est écrit,
+    comme nombre entier, hors valeurs barrées (`sans_barres`).
 
     Un motif qui commence ou finit par un chiffre ne se lit pas à l'intérieur d'un autre nombre
     (« 275 » ne se trouve pas dans « 1,0275 »).
     """
     expression = re.compile(r"(?<![\d,])" + re.escape(motif.replace("{,}", ",")) + r"(?!\d)")
-    return [num for _, num in _paragraphes(tuple(lignes)) if expression.search(lignes[num - 1].replace("{,}", ","))]
+    return [(label, num) for label, num in _paragraphes(tuple(lignes))
+            if label in ou and expression.search(sans_barres(lignes[num - 1]).replace("{,}", ","))]
 
 
 @lru_cache(maxsize=4)
@@ -1526,8 +1638,9 @@ def evaluer(c: Chiffre, lignes: list[str], fiches: dict[str, list[str]] | None =
     return {
         "ident": c.ident, "nature": c.nature, "maquette": c.maquette, "hypothese": c.hypothese,
         "publie": c.publie.replace("{,}", ","), "remesure": valeur, "ecart": ecart, "verdict": verdict,
-        "reproduit": verdict == "reproduit", "lignes": sorted(set(lignes_du_motif(lignes, c.motif))),
-        "lignes_fiches": lignes_du_motif_fiches(lire_fiches() if fiches is None else fiches, c.motif),
+        "reproduit": verdict == "reproduit",
+        "lignes": sorted({num for _, num in lignes_du_motif(lignes, c.motif, c.ou)}),
+        "lignes_fiches": lignes_du_motif_fiches(lire_fiches() if fiches is None else fiches, c.motif, c.ou),
     }
 
 
@@ -1668,7 +1781,7 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     for nom, v in r["verdicts_grille"].items():
         p(f"  verdict, grille {nom} : {v['stables']} branches sur {v['branches']} de rayon < 1, pire "
           f"{_f(v['pire'])} ({v['branche_pire']})")
-    p("Mesures complémentaires hors grille et hors relevé (lecture (c), pire des deux régimes, π̄ = 2 %) :")
+    p("Mesures complémentaires hors grille (lecture (c), pire des deux régimes, π̄ = 2 %) :")
     for nom, rayon in r["complements_socle"]:
         p(f"  {nom:24} {_f(rayon)}")
     m = r["marge_conjointe"]
