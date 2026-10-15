@@ -159,6 +159,32 @@ def test_points_fixes_et_racine_nominale(maquette):
         assert x["remesure"] is None or math.isfinite(x["remesure"])
 
 
+# Chiffres du relevé en écart, liste exacte (#65) : la valeur de la fiche 5 à n_a = 4 (cause non établie) et les
+# 8 rayons de la table φ de la fiche 9, mesurés avant l'amendement de E12 (historique de la spécification,
+# ligne 30). Aucun chiffre en vigueur de la spécification n'y figure : un chiffre en vigueur qui passe en écart,
+# ou en « sans objet », fait échouer la batterie ; un écart qui se résorbe aussi, la liste est alors à revoir.
+ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"} | {
+    f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)})
+
+
+def test_ensemble_des_ecarts_fige(maquette):
+    r = maquette.calculer()
+    assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == ECARTS_ATTENDUS
+    assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
+
+
+def test_ecart_a_1_de_la_racine_reelle_proportionnel_a_a_I(maquette):
+    """Branche ×2 sans a_I, régime de hausse : la lecture (c) est une racine réelle sous 1 dont l'écart à 1 est
+    à peu près proportionnel à a_I (a_I ÷ 1000 et ÷ 100) ; en régime de baisse, la lecture (c) est une paire."""
+    e3, e2 = maquette.ecart_racine_reelle(1e-3), maquette.ecart_racine_reelle(1e-2)
+    assert 0 < e3 < e2 < 1e-3
+    assert 9 < e2 / e3 < 11
+    assert e3 == 1 - maquette.lectures(maquette._ensemble_sans_aI(), "hausse").rayon_c
+    baisse = maquette.lectures(maquette._ensemble_sans_aI(), "baisse").suivante
+    assert maquette.nature_racine(baisse)[0] == "complexe"
+    assert maquette._mise_a_echelle(None, 6) is None
+
+
 CLOTURE = {
     "N_m1": "N", "U_m1": "U", "W_m1": "W", "ve": "ve_1", "IN_vol": "IN_vol_1", "IN": "IN_1", "K_vol": "K_vol_1",
     "K": "K_1", "ti": "ti_1", "y_m1": "y", "T_F_m1": "T_F", "L": "L_1", "D_F": "D_F_1", "YD_m1": "YD",
@@ -420,7 +446,11 @@ def test_stocks_tenus_et_racine_nominale_sur_chaque_carte_publiee(maquette, monk
     une lecture (c) est publiée : six cas, grille augmentée, compléments, table φ et φ*, marge, variantes de F."""
     cas = maquette.cas_controles()
     branches = maquette.branches_grille() + maquette.branches_ajoutees() + maquette.branches_complementaires()
-    attendu = 6 + 2 * len(branches) + 2 * 2 * (len(maquette.PHI_TABLE) + 1) + 2 * 2 + len(maquette.variantes_F())
+    grille = maquette.branches_grille() + maquette.branches_ajoutees()
+    # Marge : frontière des deux régimes, frontière du régime de hausse, ×2, ×2 avec a_I ×0,001 et ×0,01 ;
+    # grille G augmentée aussi à π̄ = 0 et 10 % (pires branches publiées).
+    attendu = (6 + 2 * len(branches) + 2 * 2 * (len(maquette.PHI_TABLE) + 1) + 2 * 5 + 2 * 2 * len(grille)
+               + len(maquette.variantes_F()))
     assert len(cas) == attendu
     variantes = {(v["configuration"], v["lambda_ti"], v["taux"], v["B6"], v["financement"], v["regime"])
                  for v in maquette.variantes_F()}
@@ -494,6 +524,50 @@ def test_marge_conjointe_est_une_frontiere(maquette):
     assert maquette.BORNES_MARGE[0] < f < maquette.BORNES_MARGE[1]
     assert maquette.rayon_c(maquette._ensemble(f - 1e-6)) < 1 < maquette.rayon_c(maquette._ensemble(f + 1e-6))
     assert max(x["rayon"] for x in m["x2"].values()) == maquette.rayon_c(maquette._ensemble(2.0))
+
+
+def test_frontiere_de_la_marge_en_regime_de_hausse(maquette):
+    """La frontière du régime de hausse sépare la lecture (c) de ce régime de part et d'autre de 1, et n'est pas
+    en deçà de la frontière du pire des deux régimes ; à a_I ×0,001, la lecture (c) en hausse est une racine
+    réelle, sous laquelle se trouve la paire complexe relevée à côté."""
+    f_h = maquette.frontiere_marge("hausse")
+    assert maquette.BORNES_MARGE[0] < f_h < maquette.BORNES_MARGE[1]
+    rayon = lambda f: maquette.lectures(maquette._ensemble(f), "hausse").rayon_c  # noqa: E731
+    assert rayon(f_h - 1e-6) < 1 < rayon(f_h + 1e-6)
+    assert f_h >= maquette.marge_conjointe()["facteur"]
+    par = maquette._ensemble_sans_aI()
+    assert par == maquette.parametres_socle(0.02, facteurs={"beta": 2.0, "a_pi": 2.0, "eta_r": 2.0, "a_I": 1e-3})
+    z = maquette.lectures(par, "hausse").suivante
+    assert maquette.nature_racine(z)[0] == "réelle positive"
+    J_var = maquette.jacobiennes_carte(maquette.carte_socle(par, "hausse"), par)[1]
+    assert maquette.module_paire(np.linalg.eigvals(J_var)) < abs(z)
+
+
+def test_module_paire_sans_paire_est_sans_objet(maquette):
+    """Un spectre sans paire complexe rend « sans objet » (None), sans lever d'erreur ni perdre le relevé."""
+    assert maquette.module_paire(np.array([0.5 + 0j, 0.9 + 0j])) is None
+    assert maquette.module_paire(np.array([0.99, 0.9 + 0.1j, 0.9 - 0.1j])) == abs(0.9 + 0.1j)
+    c = maquette.Chiffre("essai.paire", "0,9993", "0,9993", "racine", "socle", "essai",
+                         lambda: maquette.module_paire(np.array([0.5 + 0j])))
+    assert maquette.evaluer(c, maquette.lire_spec())["verdict"] == "sans objet"
+
+
+def test_point_fixe_controle_sur_chaque_carte_publiee(maquette, monkeypatch):
+    """Le résidu du point fixe est contrôlé sur chaque carte de `cas_controles`, dont celles de la grille aux
+    trois π̄, de la marge conjointe (frontières, ×2, a_I ×0,001), et entre dans le code de sortie."""
+    etiquettes = [e for e, *_ in maquette.cas_controles()]
+    assert {"marge ×2, a_I ×0,001", "marge ×2, a_I ×0,01", f"marge ×{maquette.frontiere_marge('hausse'):g}",
+            "grille zeta ×0.5, π̄ = 0", "grille eta_r ×2, π̄ = 0.1"} <= set(etiquettes)
+    r = maquette.calculer()
+    assert r["residus"]["cas_controles"] == maquette.residu_cas_controles() <= maquette.TOL_POINT_FIXE
+    # Chaque carte compte : un résidu sur la seule carte a_I ×0,001 remonte au contrôle.
+    visee = maquette.carte_socle(maquette._ensemble_sans_aI(), "hausse", "regle", "F", "regle")
+    residu = maquette.residu_point_fixe
+    monkeypatch.setattr(maquette, "residu_point_fixe", lambda c: 1.0 if c is visee else residu(c))
+    assert maquette.residu_cas_controles() == 1.0
+    monkeypatch.undo()
+    r2 = dict(r, residus=dict(r["residus"], cas_controles=1.0))
+    assert maquette.controles_tenus(r2)
 
 
 def _ligne_de(carte, nom):

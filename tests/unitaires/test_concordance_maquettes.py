@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 RACINE = Path(__file__).resolve().parents[2]
-TOL_MODULE = 1e-7  # |écart| admis sur le module de la racine retenue ; mesuré ≤ 2,7e-9 (pas relatif 1e-6)
+TOL_MODULE = 1e-7  # |écart| admis sur le module de la racine retenue ; mesuré ≤ 2,6e-9, 84 paires (pas rel. 1e-6)
 
 # Financement de #65 pour (crédit, dépôts) de #66.
 CREDIT_66 = {"pK_phat_ouv": "levier_pK.p_hat.ouverture", "pK_phat_apres": "levier_pK.p_hat.apres",
