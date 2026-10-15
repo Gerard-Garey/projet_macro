@@ -641,6 +641,8 @@ Aucune remesure V n'a été faite.
 
    > *Annotation du 05/10/2026 (#84, #80).* Les chiffres de C-HS en lecture (α) de ce tableau viennent de la maquette perdue à la PR #77 et ne sont pas reproduits par le script d'état stationnaire (`outils/etat_stationnaire.py`, lecture A, norme ϱ̄_L tenue, ζ = 4) : r̄ = 1,632 / 1,146 % à π\* = 0 / 10 % ; écart de C/PIB +0,487 / −0,434 point ; une seule racine sur [−60 ; 100 %], aucune racine parasite ; marche de π\* de 2 à 3 % : r̄ = 0,818 % (stationnaire). Les autres colonnes (options non retenues) ne sont pas remesurées. Lignes « Racines » et « Critère 13 » de la colonne C-HS barrées et republiées en gras depuis le script (lecture (α), n_a = 12, décisions du mainteneur du même jour) ; les autres valeurs du tableau sont gardées comme trace de l'instruction.
 
+   > *Annotation du 15/10/2026 (#65, remesure ; visa du mainteneur du 15/10/2026 ; décision inchangée).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), la maquette conjointe de la spécification (`outils/maquette_conjointe.py`, lecture (c) du rayon : variété des identités de bilan, hors des deux racines en 1/Γ̄ des stocks de la banque centrale tenus en niveau, déclarées) donne pour la colonne C-HS : rayons 0,997390 / 0,997118 / 0,997045 à 0 / 2 / 10 % (paire complexe à 10 %, période d'environ 3 617 tours), demi-vie 240 tours à 2 %, φ\* ≤ 0 / 0,174 / 0,650 ; pays joué (φ = 0) inchangé, 1,001818 / 1,011036, T^cou y étant nul. Les chiffres en gras du tableau ont été mesurés avant l'amendement : sans −T^cou, la maquette les reproduit à la sixième décimale. Ils restent publiés ; la spécification publie les remesures.
+
    - Les valeurs de la fiche 8 (§ 6.1 et 6.2) sont reproduites : −0,0259 ; +918 pb ; 36,7 ; −0,2216 ; +97 pb ; 3,9 ; 0,999413 ; 0,997482 ; −7,87 / −17,69 ; +5,73 / +2,60 ; 3,11 et −21,53.
    - **Sous C-HS** (`final_hs.py`) :
      - après G +1 % permanent, arrivée sur i à 1,9e−8 en relatif au tour 5 500 (20 demi-vies) ;
@@ -649,6 +651,7 @@ Aucune remesure V n'a été faite.
      - marche de π\* de 2 à 3 % : glissement 2,949 % au tour 120, 3,0000 au tour 2 400 ; r̄ de Fisher 0,8788 % ;
      - taux tenu −1 point : +0,014 au tour 3, +0,580 au tour 12, +0,396 au tour 120, +0,596 au tour 2 400. C'est un **nouveau palier**.
    - **Grille G sous C-HS** (`grid.py`), 31 branches, chaque vitesse et chaque gain ×0,5 et ×2, deux régimes : toutes sous 1, pire cas 0,998883 (toutes vitesses ×0,5). ζ = 8 : 0,996234.
+     - *Annotation du 15/10/2026 (#65).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8) : 29 branches exécutées par le socle (a_U sans objet sous M32), toutes sous 1, pire cas 0,998732 (η_r ×2) ; toutes vitesses ×0,5 : 0,998437 ; avec ζ ×0,5 et ×2, 31 branches, pire cas 0,998802 (ζ = 2) ; ζ = 8 : 0,996922. La valeur 0,996234 n'est pas reproduite, même sans −T^cou (0,996705), cause non établie (`outils/maquette_conjointe.py`).
    - **θ_H (C50)**, sous les deux définitions (`jeu9.py`, `final_hs.py`) :
      - part d'une vente imprévue qui atteint les ménages (ΔDiv_F/ΔG au tour 1) : 0,4983, quelle que soit l'assiette ;
      - θ_H au sens de la l. 1543 (ΔYD/Δ(p·y), production marginale non vendue) : −0,2000 sous C-WB, −τ·UC/p ; 0,0000 sous C-Y et C-HS. F2 finance la masse salariale d'une production invendue sur le dividende : ΔWB/Δ(py) = 0,80, ΔDiv_F/Δ(py) = −0,80.
@@ -874,6 +877,8 @@ Abréviations : « ok » = tenu ; « échec » = non tenu ; « mesure » = crit�
 | 23 statut des faits | § 3.0 | § 3.0 | — | — | — | — | — |
 | **13 de la fiche 8 (C15)** | n. m. | **échec** (r̄ −1,03 % à 3 %) | **échec** : 0,46 point (§ 3.Q) | échec : de 3,1 à 9,2 points | échec | idem C | **ok** par construction (F-3) |
 
+*Annotation du 15/10/2026 (#65).* Ligne 8 (c), colonne C (retenue) : sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), 0,997118 à 2 %, pire cas 0,998732 sur 29 branches (`outils/maquette_conjointe.py`) ; les valeurs du tableau ont été mesurées avant l'amendement et restent publiées.
+
 
 ## 5. Avis de l'expert pilote
 
@@ -888,6 +893,7 @@ Abréviations : « ok » = tenu ; « échec » = non tenu ; « mesure » = crit�
 - **Motifs, critère par critère** :
   - critère 9 : gain statique −0,2208 % de y par point de taux, Δr̄ +96 pb, traîne d'inflation de 3,8 point-années (contre 36,7) ;
   - critère 8 : rayon 0,997486, stable à 0, 2 et 10 %, pire cas de la grille 0,998883 ;
+    - *Annotation du 15/10/2026 (#65 ; verdict inchangé).* Remesuré sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8) : rayons 0,997390 / 0,997118 / 0,997045 à 0 / 2 / 10 %, pire cas 0,998732 sur 29 branches (`outils/maquette_conjointe.py`).
   - critère 18 : #56 tenue ;
   - critère 7 : aucun gain du bloc 9 ;
   - critère 13 : la plus faible dépendance à π̄ des options sûres, et aucun impôt sur les intérêts nominaux (critère 13 (c)) ;
@@ -1207,6 +1213,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 - **P2 : (i)**, garder M^G\* au sens d'encaisse visée.
 - **Stabilité du pays joué.**
   - φ\* est confirmé : ≤ 0 / 0,1305 / 0,4871 à π̄ = 0 / 2 / 10 %.
+    - *Annotation du 15/10/2026 (#65).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), φ\* = 0,174 / 0,650 à 2 / 10 % (≤ 0 à 0 %) (`outils/maquette_conjointe.py`) ; 0,1305 / 0,4871 ont été mesurés avant l'amendement.
   - Sans reprise (E-HS), l'écart double en 382 tours (≈ 32 ans) à 2 % et en **63 tours (≈ 5 ans) à 10 %** (`qg.py`).
   - Recommandation, en trois points :
     - la reprise est automatique (φ = 1), et le levier d'impôt du joueur est τ_H, T9 s'y ajoutant ;
@@ -1410,6 +1417,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
      | π̄ = 10 % : P_36 | +0,463 % | +0,327 % | +0,164 % | −0,015 % | −0,248 % |
 
    - Un curseur φ aurait une zone dangereuse qui se déplace avec l'inflation, sans signal. À φ = 0,5 et 10 %, le taux directeur devient presque inerte (P_36 −0,015 %) : le budget désactiverait en silence le levier monétaire.
+   - *Annotation du 15/10/2026 (#65, remesure ; décision inchangée, motif renforcé).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), rayons (lecture (c)) à φ = 0 / 0,1 / 0,25 / 0,5 / 1 : 1,001818 / 1,000927 / 0,999364 / 0,998471 / 0,997118 à 2 % et 1,011036 / 1,009342 / 1,006885 / 1,002898 / 0,997045 à 10 % (`outils/maquette_conjointe.py`). À φ = 0,5 et 10 %, la boucle diverge : le taux directeur n'y est pas « presque inerte », il cesse de stabiliser. Les P_36 ne sont pas remesurés (trajectoires, #111). Le refus d'un curseur continu en est renforcé (M33) ; à porter à `jeu`.
    - **Préférence** : la couverture des intérêts est un **levier propre**, distinct du barème, à deux valeurs.
      - « Couverture intégrale » (φ = 1) : valeur de la règle et valeur par défaut.
      - « Aucune couverture : intérêts financés par le déficit » (φ = 0) : écart déclaré, avec la mention et deux précurseurs, l'écart au solde primaire stabilisant et l'écart de r̂\* à sa valeur initiale.
@@ -1577,6 +1585,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
   - **QM3, QM4 et QM8** : qualifiés par `architect`, points P1 à P4 de l'ADR 0011, **confirmés** par le mainteneur le même jour : perte non couverte de la banque centrale, État écrivain de 8 (b) sans ordre interne (P1) ; transferts et impôt des ménages planifiés en phase 2 (P2) ; assiette Y^HS écrite **en phase 7**, non dans le groupe de la phase 9 (P3 ; la lecture du § 9.4 est ainsi remplacée) ; impôt non recouvré : vérification seule du noyau, une violation est un défaut, la part non payée relève du **bloc payeur** (l. 482), non du bloc 9 (P4 ; E13 du § 9.1 est à lire ainsi) ;
   - **symboles fixés** (ADR 0011, note de notation) : θ_CB (ex-s_CB), ν_G (ex-m), PB_t (ex-P), θ_G (ex-s_G, part de dépense du potentiel) et θ_Tr (ex-s_Tr) ; au § 9.2, le ratio G/PB (0,99467 dans la borne de ν_G) n'est **pas** θ_G et reçoit un nom distinct dans `sec:finances_publiques`.
   - **assiette de l'impôt des ménages nette de la couverture** (décision du mainteneur du 04/10/2026, citant M33, sur la revue finale de `macro` et de `monnaie`) : E12 gagne −T^cou_t, pour que la couverture soit exactement intégrale à tous les tours (sans quoi le supplément d'intérêts serait repris deux fois, par T^cou au tour n puis à τ_H par l'assiette au tour n + 1) ; état stationnaire inchangé (T^cou = 0), aucun chiffre du J1 ne change ; trajectoires après un choc de taux modifiées.
+    - *Annotation du 15/10/2026 (#65 ; cause établie par `monnaie`, confirmée par `macro`, visa du mainteneur du 15/10/2026).* « Aucun chiffre du J1 ne change » est exact pour l'état stationnaire, T^cou y étant nul, mais non pour la stabilité : les rayons de la boucle conjointe publiés aux § 3.C-4, § 6.4 et § 7, mesurés avant cet amendement, ne sont pas reproduits sous l'assiette amendée (sans −T^cou, la maquette conjointe les reproduit à la sixième décimale). Remesures publiées dans la spécification (`outils/maquette_conjointe.py`) : 0,997390 / 0,997118 / 0,997045 à 0 / 2 / 10 %, φ\* 0,174 / 0,650.
 - **Motifs** : le mainteneur a retenu la recommandation de `macro`, à laquelle `monnaie` (§ 6) et `jeu` (§ 7, sous deux conditions, toutes deux retenues) se rangent. Motifs dans ses propres mots : à compléter par le mainteneur s'il le souhaite.
 - **Conditions et réserves** : réserves du § 5 ; C51 à C56 ; C57 et C58 intégrées ; C59 à C63 (`monnaie`, C62 amendée) ; conditions 1 à 9 de `jeu`.
 - **Ce qui est écarté et pourquoi** : A (instable dans la boucle conjointe), B (dette ancre du taux réel), C-WB (traîne de 36,7 point-années), C-Y (impôt sur les intérêts nominaux), D (arrivée réglée par un gain), E comme valeur par défaut (divergence), F (instabilité 4 réintroduite par le budget), V (J6).
@@ -1987,6 +1996,8 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai : critère
 | J4 | Seuils de `jeu` (critère 17 (d), (h)) | (d1) τ_H +1 point : solde +0,2 point au tour 12, production 0,1 % (maquette : +0,791 ; −0,838 %) ; (d2) +1 % : 0,1 % ; +5 % : 0,5 % ; (d3) publié sous la règle et en pays joué, archétype à 10 % compris | seuils du § 2, inchangés |
 | J4 | Fenêtre longue (condition 9) | G −5 % permanente, 600 tours : consommation, part d'investissement et taux directeur publiés ; hypothèse du § 9.5 confrontée | publication |
 | J4 | Restitution (#82) | Niveaux normaux restitués égaux à ceux du script ; scénario O2 (G +5 % pendant 12 tours, à 2 % et à 10 %), écarts aux tours 12, 60 et 120 | 1e−9 relatif |
+
+*Annotation du 15/10/2026 (#65, #107 ; décision inchangée).* Lignes « Stabilité » et « Pays joué » : sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), la maquette conjointe de la spécification (`outils/maquette_conjointe.py`, lecture (c) du rayon) donne 0,997118 à 2 %, pire cas 0,998732 sur les 29 branches de la grille G que le socle exécute, et φ\* ≤ 0 / 0,174 / 0,650 ; les valeurs de ces lignes ont été mesurées avant l'amendement et restent publiées. Les critères du jalon J3 sont arrêtés dans `tab:criteres-j3` de la spécification (S1).
 
 ### 9.7 Conditions transmises
 

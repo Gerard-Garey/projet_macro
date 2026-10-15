@@ -335,6 +335,8 @@ Contrôles de la maquette (`chk1.py`, `chk3.py`) :
 
 **Méthode spectrale.** Le jacobien est calculé par différences centrées sur l'état normalisé (nominaux divisés par P̄_t·Ȳ_t). En sont retirés les états exogènes (pr, N^pa, π\*) et les états inutilisés par l'option. La racine nominale (|λ − 1| ≤ 1e−11) est écartée. Les deux régimes de T4 (hausse, baisse) sont linéarisés séparément ; en baisse, N ≥ N\* par construction, donc y = y\*. *(Précisé le 04/10/2026, C48 : avant cette date, la paire complexe et le rayon en pays joué à 10 % venaient d'une dérivée au coude de T4 (régime « automatique »), et la linéarisation de la baisse gardait un second coude, y = min{y\*, pr·N} pris à l'égalité ; les rayons réels dominants, insensibles au régime, sont inchangés.)*
 
+*Annotation du 15/10/2026 (#65).* « États inutilisés par l'option » se lit « états sans dynamique propre sous l'option ». La maquette conjointe de la spécification (`outils/maquette_conjointe.py`) ne retire aucun état : elle lit le rayon sur la variété des identités de bilan, hors de la racine nominale et des deux racines en 1/Γ̄ des stocks de la banque centrale tenus en niveau (E^CB, B_CB), déclarées (lecture (c), décision du mainteneur du 15/10/2026).
+
 **Domaine D du critère 12**, écrit dans `run5.py` avant tout calcul de ρ_b : a_π ∈ {0,5 ; 1,5} × k_I ∈ {0,1 ; 0,25 ; 0,5}/an × a_U ∈ {0 ; 0,5} × mesure lue ∈ {glissement π_{t−1} ; variation du tour annualisée géométriquement}, soit 24 calibrations.
 
 **Grille G** :
@@ -343,6 +345,8 @@ Contrôles de la maquette (`chk1.py`, `chk3.py`) :
 - chaque gain ×0,5 et ×2 : k_I, a_π, a_U, ψ_ξ, β, η_r ;
 - toutes les vitesses ×0,5, puis ×2 ;
 - deux régimes de l'emploi.
+
+*Annotation du 15/10/2026 (#65, #107 ; décision du mainteneur du 15/10/2026 sur S1).* Sous l'option retenue (M32, règle sans terme d'activité), a_U est sans objet : la grille G compte 29 branches au socle. Le critère S1 du jalon J3 y ajoute ζ ×0,5 et ×2, de façon prospective (31 branches), avec des verdicts publiés sur les deux (`tab:criteres-j3` de la spécification), et publie la marge conjointe de β, a_π et η_r comme mesure (frontière au facteur 1,7135 sur la maquette).
 
 **Littérature.**
 
@@ -1317,6 +1321,8 @@ Les chiffres nouveaux de cet avis viennent des mêmes scripts. Ce sont des résu
 | #56 (A) : cumul des tours 1 à 12 ; P_36 | −0,160 ; −0,138 % | −0,216 ; −0,226 % |
 | #56 (B) : P_120 ; glissement | −1,81 % ; −0,151 | −3,72 % ; −0,385 |
 | Pays joué (φ = 0) à 2 / 10 % | 1,007482 / 1,019719 | 1,001818 / 1,011036 ; doublement de l'écart en 382 / 63 tours (fiche 9 § 6.4) |
+
+*Annotation du 15/10/2026 (#65 ; visa du mainteneur du 15/10/2026).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, fiche 9 § 8), la maquette conjointe de la spécification (`outils/maquette_conjointe.py`, lecture (c) du rayon) donne sous C-HS : rayons 0,997390 / 0,997118 / 0,997045 à 0 / 2 / 10 %, demi-vie 240 tours à 2 %, grille G de 29 branches (a_U sans objet) toutes sous 1, pire 0,998732 ; ζ = 8 : 0,996922. La colonne « Sous C-HS » a été mesurée avant l'amendement (sans −T^cou, la maquette reproduit ses rayons à la sixième décimale) et reste publiée ; 0,996234 (ζ = 8) n'est reproduit ni sous l'assiette amendée ni sans −T^cou (0,996705), cause non établie.
 
 **Non mesurés sous C-HS**, à remesurer au J3 :
 - la paire complexe (cycle de 18,8 et 20,8 tours sous T9, § 3.C-4) ;
