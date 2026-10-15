@@ -14,14 +14,18 @@ liste « Grille G » de la fiche lue ligne à ligne, invariance de la variété
 dans les six cas et code de sortie qui en dépend, lecture (c) et cause des
 racines déclarées, verdicts des deux grilles, frontières φ* et marge
 conjointe, contrôle avant/arrière des coudes, méthode de la seconde écriture
-des variantes de F (#66). Aucun test ne fige une valeur publiée : leur
-reproduction est publiée par le script et relève du visa de l'expert pilote.
+des variantes de F (#66). Republication du 15/10/2026 : un nombre recensé
+n'est couvert que par un chiffre qui déclare son paragraphe, et une valeur
+barrée n'est ni recensée ni cherchée. Aucun test ne fige une valeur publiée :
+leur reproduction est publiée par le script et relève du visa de l'expert
+pilote.
 """
 
 import ast
 import dataclasses
 import importlib.util
 import math
+import re
 import subprocess
 import sys
 import time
@@ -80,26 +84,68 @@ def test_deterministe_et_rapide():
 
 def test_releve_couvre_chaque_chiffre_recense(maquette):
     lignes = maquette.lire_spec()
-    publies = {c.publie.replace("{,}", ",") for c in maquette.releve()}
+    releve = maquette.releve()
+    # Un nombre recensé n'est couvert que par un chiffre du relevé qui déclare son paragraphe (`ou`) : un
+    # nombre égal relevé pour une autre grandeur, dans un autre paragraphe, ne le couvre pas.
+    couverts = {(label, c.publie.replace("{,}", ",")) for c in releve for label in c.ou}
     recenses = maquette.recenser(lignes) + maquette.recenser_fiches(maquette.lire_fiches())
     assert recenses
     # Chaque paragraphe et chaque ligne de fiche déclarés sont recensés.
     assert {label for label, _ in maquette.PARAGRAPHES} | {f for f, _ in maquette.LIGNES_FICHES} \
         <= {label for label, _, _ in recenses}
-    manquants = [x for x in recenses if x[2] not in publies and (x[0], x[2]) not in maquette.EXCLUS]
+    manquants = [x for x in recenses if (x[0], x[2]) not in couverts and (x[0], x[2]) not in maquette.EXCLUS]
     assert manquants == []
-    # Aucune exclusion périmée : chacune désigne un nombre encore écrit dans son paragraphe.
+    # Aucune exclusion périmée : chacune désigne un nombre encore écrit, non barré, dans son paragraphe.
     cles = {(label, nombre) for label, _, nombre in recenses}
     assert set(maquette.EXCLUS) <= cles
+    # Une exclusion ne double pas un chiffre relevé.
+    assert not set(maquette.EXCLUS) & couverts
 
 
 def test_chaque_chiffre_releve_a_sa_ligne(maquette):
+    """Chaque chiffre est écrit, hors valeur barrée, dans chacun des paragraphes et fiches qu'il déclare."""
     lignes, fiches = maquette.lire_spec(), maquette.lire_fiches()
-    sans_ligne = [c.ident for c in maquette.releve() if not maquette.lignes_du_motif(lignes, c.motif)
-                  and not maquette.lignes_du_motif_fiches(fiches, c.motif)]
-    assert sans_ligne == []
+    paragraphes = {label for label, _ in maquette.PARAGRAPHES} | {f for f, _ in maquette.LIGNES_FICHES}
+    absents = []
+    for c in maquette.releve():
+        assert c.ou and set(c.ou) <= paragraphes, c.ident
+        trouves = {label for label, _ in maquette.lignes_du_motif(lignes, c.motif, c.ou)}
+        trouves |= {f for f in c.ou if maquette.lignes_du_motif_fiches(fiches, c.motif, (f,))}
+        absents += [(c.ident, label) for label in c.ou if label not in trouves]
+    assert absents == []
     idents = [c.ident for c in maquette.releve()]
     assert len(idents) == len(set(idents))
+
+
+def test_valeurs_barrees_ni_recensees_ni_cherchees(maquette):
+    """Une valeur barrée (`\\barre{…}`, CONVENTIONS.md, § 4.3) sort du recensement et de la recherche des motifs."""
+    s = maquette.sans_barres
+    ligne = r"vaut \barre{0,997497} 0,997390, \barre{$-20{,}63$} et \barre{$\{2\}$ 0,5} ; fin"
+    propre = s(ligne)
+    assert len(propre) == len(ligne)
+    assert "0,997390" in propre and "fin" in propre
+    assert not any(x in propre for x in ("0,997497", "20{,}63", "0,5", "barre"))
+    assert s("sans barre, 0,5") == "sans barre, 0,5"
+    # Accolade échappée : ne ferme ni n'ouvre la valeur barrée.
+    assert s(r"\barre{$\}$} 0,1 \barre{\{} 0,2") == " " * 12 + " 0,1 " + " " * 10 + " 0,2"
+    with pytest.raises(ValueError):
+        s(r"ouvert \barre{0,1 et rien")
+    # Sur la spécification, seconde écriture (un niveau d'accolades) : un nombre écrit seulement dans une
+    # valeur barrée n'est pas recensé dans son paragraphe ; il y en a (anciens rayons du socle et φ*).
+    lignes = maquette.lire_spec()
+    recenses = maquette.recenser(lignes)
+    seulement_barres = set()
+    for label, num in maquette.lignes_paragraphes(lignes):
+        texte = lignes[num - 1]
+        barres = {n for m in re.finditer(r"\\barre\{((?:[^{}]|\{[^{}]*\})*)\}", texte) for n in _nombres(m.group(1))}
+        seulement_barres |= {(label, num, n) for n in barres - _nombres(maquette.sans_barres(texte))}
+    assert {("sec:finances_publiques-impots", "0,131"), ("sec:banque_centrale-conditions", "0,997497")} \
+        <= {(label, n) for label, _, n in seulement_barres}
+    assert not seulement_barres & set(recenses)
+
+
+def _nombres(texte):
+    return {x.replace("{,}", ",") for x in re.findall(r"\d+(?:\{,\}|,)\d+", texte)}
 
 
 def test_points_fixes_et_racine_nominale(maquette):
