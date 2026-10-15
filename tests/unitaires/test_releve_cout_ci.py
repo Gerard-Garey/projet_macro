@@ -104,8 +104,10 @@ def test_refus_de_c_qui_n_est_pas_la_meilleure_repetition(releve_cout, tmp_path)
     [
         (f"{H}  C = 0.3000 ms par pas (répétitions : 0.3000)\n", "lignes C"),
         (f"{H}ImageOS=ubuntu24 ImageVersion=20261004.327.1\n", "plusieurs images"),
+        # Ligne d'image répétée à l'identique : refusée comme une ligne C répétée (docstring du script).
+        (f"{H}ImageOS=ubuntu24 ImageVersion=20261012.334.1\n", "plusieurs images"),
     ],
-    ids=["deux_lignes_C", "deux_images"],
+    ids=["deux_lignes_C", "deux_images", "deux_images_identiques"],
 )
 def test_refus_d_un_journal_ambigu(releve_cout, tmp_path, ajout, motif):
     chemin = ecrire(tmp_path, "run_1.txt", journal(0.3) + ajout)
