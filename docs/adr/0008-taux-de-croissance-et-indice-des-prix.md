@@ -272,4 +272,13 @@ Rédigée par `architect` sur décision du mainteneur du 07/10/2026 (P34 (a), `d
 - **Concordance.** Les balises sont posées par `coder` et les labels par `docwriter` au rang 6 de la branche J2, les deux commits d'une issue poussés ensemble (P32 (a)).
 - *Renvoi du 07/10/2026 (questions de `coder` sur #95)* : la liste de J2 passe à **18 labels**, avec `eq:noyau-caisse-nette` (douze labels `noyau`) ; décision du mainteneur consignée par l'annotation du 07/10/2026 de l'ADR 0012 (questions de `coder`, point 4).
 
-Issues : #24 (les deux volets : le volet « prix » est tranché ici, le volet « banque centrale » reste à la branche n° 4), #39 (M25), #40 (M26), #17 (ADR 0005, révisé en partie), #34 (M24 (f), révisée) ; #39 et #40 (annotation du 04/10/2026) ; #51, #61, #95, #97 et #98 (annotation du 07/10/2026).
+## Annotation du 15/10/2026
+
+Rédigée par `architect` (Opus, effort `medium`, consignation) sur **décision du mainteneur du 15/10/2026** (P44 (b), `docs/feuille-de-route.md` § 4), au rang 0 de la branche J3-a (`claude/j3-maquette-criteres`). **La décision est inchangée** (parties I et II) ; le texte ci-dessus n'est pas réécrit. Aucun résultat n'est changé. L'annotation ferme le point « radical d'`observation/` » de l'annotation du 07/10/2026 (troisième label renvoyé au J3).
+
+- **Ratio au PIB annuel : radical `observation`**, label **`eq:observation-ratio-pib-annuel`**, au lieu de `eq:moteur-ratio-pib-annuel` (fiche 1, `docs/blocs/temps_comptabilite.md` § 9.8, n° 7).
+  - **Pourquoi `observation`.** `CONVENTIONS.md` § 2.1 lie le radical au module qui porte la balise ; le ratio au PIB annuel est une grandeur de restitution, calculée hors de l'état et sans effet sur la trajectoire (couche `observation/`, ADR 0002), et non une règle de l'ordonnanceur.
+  - **Option écartée.** Radical `moteur` (nom de la fiche 1 et de l'annotation du 07/10/2026) : il placerait dans le moteur la balise d'une grandeur que le moteur ne calcule pas.
+  - **Suite.** `docwriter` ajoute le radical `observation` à `CONVENTIONS.md` § 2.1 à son passage (rang 6 de J3-a), avec le label s'il est posé dans la branche. Les deux autres labels renvoyés au J3 (`eq:prix-indice`, `eq:moteur-croissance-nominale-attendue`) sont inchangés.
+
+Issues : #24 (les deux volets : le volet « prix » est tranché ici, le volet « banque centrale » reste à la branche n° 4), #39 (M25), #40 (M26), #17 (ADR 0005, révisé en partie), #34 (M24 (f), révisée) ; #39 et #40 (annotation du 04/10/2026) ; #51, #61, #95, #97 et #98 (annotation du 07/10/2026) ; P44 (b), radical `observation` (annotation du 15/10/2026).

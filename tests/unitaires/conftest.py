@@ -54,3 +54,14 @@ def stationnaire():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="session")
+def releve_cout():
+    """Module `outils/releve_cout_ci.py`, chargé par son chemin."""
+    chemin = RACINE / "outils" / "releve_cout_ci.py"
+    spec = importlib.util.spec_from_file_location("releve_cout_ci", chemin)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module

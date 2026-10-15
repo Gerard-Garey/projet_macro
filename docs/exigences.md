@@ -51,6 +51,8 @@ Critères de la première tentative (16/09/2026), point de départ proposé pour
 
 Toutes ces valeurs s'entendent **par blocs de cinq ans**.
 
+*Annotation du 15/10/2026 (décisions du mainteneur sur l'issue #107, avant tout essai de J3).* La liste du 16/09/2026 ci-dessus reste publiée telle quelle. Les critères du jalon J3, dont ceux de O1, sont arrêtés dans la spécification, tableau `tab:criteres-j3` de `sec:calibration` (point D12) : stationnarité exacte et bandes du test zéro par blocs de 60 pas, sur une fenêtre de partie de 120 pas et une fenêtre longue de 720 pas (points D1 et D7). Les niveaux de O1 deviennent des contrôles de calibration à t = 0, adossés à une source lue, la dérive étant jugée par les bandes du taux réel et du taux neutre retenu par la règle (point D3) ; le verdict « O1 non tenu à r̄ = 1 % » est publié et conservé : le taux réel restitué de l'état initial résolu, 1,02 % par an (`uv run python outils/etat_stationnaire.py`), est sous l'intervalle de 1,5 à 3 % de la liste.
+
 ## 2. Exigences de fond
 
 ### 2.1 Principes de conception (non négociables)
