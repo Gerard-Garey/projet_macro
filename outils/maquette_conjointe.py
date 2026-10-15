@@ -1327,6 +1327,9 @@ def releve() -> list[Chiffre]:
     ajouter("socle.racine.pi0.1.hausse.imaginaire", "0,001732", "racine", "socle",
             "|partie imaginaire| de la racine dominante (c), π̄ = 10 %, régime de hausse",
             lambda: abs(lectures_socle(0.10, "hausse").suivante.imag), ou=socle_bc)
+    ajouter("socle.racine.pi0.1.baisse.imaginaire", "0,001731", "racine", "socle",
+            "|partie imaginaire| de la racine dominante (c), π̄ = 10 %, régime de baisse",
+            lambda: abs(lectures_socle(0.10, "baisse").suivante.imag), ou=socle_bc)
     ajouter("socle.periode.pi0.1.hausse", "3617", "période", "socle",
             "2π/|arg λ| de la racine dominante (c), π̄ = 10 %, régime de hausse",
             lambda: nature_racine(lectures_socle(0.10, "hausse").suivante)[1], motif="3\\,617", ou=socle_bc)
@@ -1352,6 +1355,17 @@ def releve() -> list[Chiffre]:
             f"pire branche de la grille G augmentée de {', '.join(AJOUTS_GRILLE)} ×0,5 et ×2 "
             f"({len(grille_socle())} branches, deux régimes, lecture (c))",
             lambda: verdicts_grille()["G + zeta"]["pire"])
+    # Les deux grilles jugées aux trois π̄ (décision du mainteneur du 15/10/2026) : π̄ = 2 % ci-dessus.
+    for pi, pub_g, pub_z in ((0.0, "0,998702", "0,998742"), (0.10, "0,998772", "0,998885")):
+        grille_pi = lambda pi=pi: tuple((nom, rayon_c(parametres_socle(pi, facteurs=dict(fac))))
+                                        for nom, fac in branches_grille() + branches_ajoutees())
+        ajouter(f"socle.grille.pire.pi{pi:g}", pub_g, "rayon", "socle",
+                f"pire branche de la grille G, π̄ = π* = {pi:.0%}, deux régimes, lecture (c)",
+                lambda g=grille_pi: verdicts_grille(g())["G"]["pire"], ou=socle_bc)
+        ajouter(f"socle.grille_zeta.pire.pi{pi:g}", pub_z, "rayon", "socle",
+                f"pire branche de la grille G augmentée de {', '.join(AJOUTS_GRILLE)} ×0,5 et ×2, "
+                f"π̄ = π* = {pi:.0%}, deux régimes, lecture (c)",
+                lambda g=grille_pi: verdicts_grille(g())["G + zeta"]["pire"], ou=socle_bc)
     ajouter("socle.marge_conjointe.facteur", "1,7135", "frontière", "socle",
             f"facteur commun de {', '.join(GAINS_ENSEMBLE)} où la lecture (c) passe 1, pire des deux régimes, "
             "π̄ = 2 %", lambda: marge_conjointe()["facteur"])
@@ -1368,6 +1382,14 @@ def releve() -> list[Chiffre]:
     ajouter("socle.marge_conjointe.x2.a_I÷1000", "1,0265", "rayon", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, pire des deux régimes, lecture (c), π̄ = 2 %",
             lambda: rayon_c(parametres_socle(0.02, facteurs={nom: 2.0 for nom in GAINS_ENSEMBLE} | {"a_I": 1e-3})),
+            ou=socle_bc)
+    # Module de la paire complexe, non le rayon (c) : celui-ci est porté par une racine réelle (0,999994).
+    par_aI = lambda: parametres_socle(0.02, facteurs={nom: 2.0 for nom in GAINS_ENSEMBLE} | {"a_I": 1e-3})
+    ajouter("socle.marge_conjointe.x2.a_I÷1000.hausse.paire", "0,9993", "racine", "socle",
+            f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, régime de hausse, π̄ = 2 % : module de la plus grande "
+            "paire complexe du spectre restreint à la variété des identités",
+            lambda: max(abs(z) for z in np.linalg.eigvals(
+                jacobiennes_carte(carte_socle(par_aI(), "hausse"), par_aI())[1]) if abs(z.imag) > 1e-12),
             ou=socle_bc)
 
     # sec:finances_publiques-impots, sec:ecartees et fiche 9 (finances_publiques.md, § 7) : couverture φ (E4).
@@ -1468,6 +1490,8 @@ EXCLUS: dict[tuple[str, str], str] = {
     ("sec:banque_centrale-conditions", "0,161"): "écart du glissement à la cible au tour 120, trajectoire simulée",
     ("sec:banque_centrale-conditions", "1,034773"): "mesure hors outil, ancienne E12 (sans −T^cou, script de la "
                                                     "rédaction non versionné) : la maquette n'a pas cette variante",
+    ("sec:banque_centrale-conditions", "1,009006"): "mesure hors outil, ancienne E12 (sans −T^cou, variante non "
+                                                    "versionnée)",
     ("sec:finances_publiques-conditions", "0,2208"): "gain statique de la demande au taux réel (C36, #88)",
     ("sec:finances_publiques-conditions", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:finances_publiques-conditions", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
