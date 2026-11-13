@@ -358,7 +358,7 @@ def blocs_reels() -> tuple[object, ...]:
     """Les blocs réels de `src/nations/blocs/`, dans l'ordre des radicaux : un module par
     radical, dont l'unique classe déclarée sous ce radical est instanciée (ADR 0012, annotation
     du 13/11/2026, point 5 : chaque module porte un seul bloc, dont le radical est le nom du
-    module). Aucun en J3-b avant #113."""
+    module). En J3-b : la production (#113), puis le travail (#50) et les prix (#51)."""
     dossier = RACINE / "src" / "nations" / "blocs"
     rendus = []
     for radical in RADICAUX:
