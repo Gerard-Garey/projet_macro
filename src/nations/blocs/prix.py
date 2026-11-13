@@ -50,6 +50,7 @@ from nations.moteur.conversions import par_pas
 def tension_sur_les_stocks(IN_vol: float, IN_vol_etoile: float) -> float:
     """P1 : ξ_t = 1 − IN^vol_t/IN^vol*_t, fraction du stock cible ; IN^vol* lu dans N2, sans
     recalcul."""
+    # eq:prix-tension-stocks
     return 1.0 - IN_vol / IN_vol_etoile
 
 
@@ -57,6 +58,7 @@ def marge(mu_tilde_prec: float, xi: float, lambda_mu_pas: float, mu_bar: float,
           psi_xi: float) -> float:
     """P2 (P54, option (ii)) : μ̃_t = (1 − λ_μ/n_a) μ̃_{t−1} + (λ_μ/n_a)[ln(1 + μ̄) + ψ_ξ ξ_t],
     sans dimension ; `lambda_mu_pas` = λ_μ/n_a."""
+    # eq:prix-marge
     return ((1.0 - lambda_mu_pas) * mu_tilde_prec
             + lambda_mu_pas * (math.log(1.0 + mu_bar) + psi_xi * xi))
 
@@ -64,11 +66,13 @@ def marge(mu_tilde_prec: float, xi: float, lambda_mu_pas: float, mu_bar: float,
 def prix_du_pas(UC: float, mu_tilde: float) -> float:
     """P3 : ln p_t = ln UC_t + μ̃_t, soit p_t = UC_t exp(μ̃_t), u.m. par u.v. ; p > 0 par la
     forme exponentielle, sans plancher."""
+    # eq:prix-prix-du-pas
     return UC * math.exp(mu_tilde)
 
 
 def indice_des_prix(p: float) -> float:
     """P4 : P_t ≡ p_t (J = 1), u.m. par u.v. ; entré au registre par le moteur en phase 9."""
+    # eq:prix-indice
     return p
 
 
