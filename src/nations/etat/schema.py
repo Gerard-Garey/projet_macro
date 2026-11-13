@@ -266,12 +266,13 @@ def defaut_de_domaine(nom: str, valeur: object) -> str | None:
     Seule fonction de domaine de `EtatPays`, appelée par la construction (état
     initial, état de clôture de chaque pas) et par la reprise : champs
     d'identité (`defaut_d_identite`), `t` (`defaut_de_t`), `registre_prix`
-    (`defaut_du_registre`) et variables des blocs (`DOMAINES_DES_BLOCS`,
+    (`defaut_du_registre`), variables des blocs (`DOMAINES_DES_BLOCS`,
     refus sous la forme « non (condition) », qui refuse aussi `NaN`, sans
-    écrêtage ; annotation du 13/11/2026, points 1.6 et 1.7) ; les autres champs
-    n'ont pas de domaine au-delà de leur type ici (les domaines des positions,
-    Res ≥ 0 et D_H, D_F, M^G ≥ −ε × S, sont contrôlés par le noyau à
-    l'ouverture du pas).
+    écrêtage ; annotation du 13/11/2026, points 1.6 et 1.7) et **finitude** de
+    toute variable `float` (positions, V^flux, variables des blocs) : `inf`,
+    `-inf` et `NaN` sont refusés (décision du mainteneur du 13/11/2026, point
+    Q2 de l'audit de #112). Les domaines de signe des positions sont contrôlés
+    par le noyau à l'ouverture du pas (`ouvrir_pas`).
     """
     if nom in _NOMS_D_IDENTITE:
         return defaut_d_identite(nom, valeur)
@@ -283,6 +284,10 @@ def defaut_de_domaine(nom: str, valeur: object) -> str | None:
         condition, predicat = DOMAINES_DES_BLOCS[nom]
         if not predicat(valeur):
             return f"{valeur!r} hors du domaine {condition}"
+    # Finitude (Q2 de l'audit de #112) : un `float` infini passerait un domaine de signe
+    # (v^e > 0, IN^vol ≥ 0…) et un champ sans domaine (positions, V^flux) accepterait `NaN`.
+    if type(valeur) is float and not math.isfinite(valeur):
+        return f"{valeur!r} non fini : float fini attendu"
     return None
 
 
