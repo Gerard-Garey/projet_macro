@@ -337,6 +337,56 @@ def test_hors_domaine_refuse_a_la_construction(champ, valeur, motif):
         dataclasses.replace(etat_pays(), **{champ: valeur})
 
 
+# Finitude de toute variable `float` (décision du mainteneur du 13/11/2026, point Q2 de
+# l'audit de #112) : positions, V^flux et variables des blocs, `inf`, `-inf` et `NaN`.
+VARIABLES_FLOTTANTES = [v.nom for v in schema.VARIABLES if v.type is float]
+NON_FINIS = (math.inf, -math.inf, math.nan)
+
+
+def test_toutes_les_variables_flottantes_sont_couvertes():
+    """Les variables `float` du schéma v2 : onze positions, cinq V^flux, dix variables des
+    blocs ; aucune autre variable numérique que `t` (entier) et le registre (n-uplet)."""
+    assert len(VARIABLES_FLOTTANTES) == 26
+    assert set(VARIABLES_FLOTTANTES) == (set(cat.NOMS_POSTES) | set(cat.VALEUR_NETTE_FLUX.values())
+                                         | {v.nom for v in schema.VARIABLES_DES_BLOCS})
+    assert {v.nom for v in schema.VARIABLES if v.type is not float} == {"t", "registre_prix"}
+
+
+@pytest.mark.parametrize("nom", VARIABLES_FLOTTANTES)
+def test_defaut_de_domaine_refuse_toute_valeur_non_finie(nom):
+    """Appel direct : `defaut_de_domaine` rend un motif pour `inf`, `-inf` et `NaN` de toute
+    variable `float` ; « non fini » quand aucun domaine propre ne la refuse avant (positions,
+    V^flux, μ̃, v^e = +inf…)."""
+    for x in NON_FINIS:
+        motif = schema.defaut_de_domaine(nom, x)
+        assert motif is not None, (nom, x)
+        if nom not in schema.DOMAINES_DES_BLOCS:
+            assert motif == f"{x!r} non fini : float fini attendu"
+    # Une valeur finie quelconque d'une position ou d'une V^flux reste sans motif.
+    if nom not in schema.DOMAINES_DES_BLOCS:
+        for x in (0.0, -1e300, 1e300, 5e-324):
+            assert schema.defaut_de_domaine(nom, x) is None
+
+
+@pytest.mark.parametrize("nom", VARIABLES_FLOTTANTES)
+def test_etat_non_fini_refuse_a_la_construction(nom):
+    """`EtatPays` refuse à la construction toute variable `float` non finie, le diagnostic
+    nommant le champ (état initial, état de clôture de chaque pas, reprise)."""
+    for x in NON_FINIS:
+        with pytest.raises(ValueError, match=f"EtatPays.{nom} : "):
+            dataclasses.replace(etat_pays(), **{nom: x})
+
+
+def test_plus_l_infini_d_une_variable_a_domaine_ouvert_est_non_fini():
+    """v^e > 0, K^vol > 0, W > 0 admettaient `+inf` avant le contrôle de finitude ; μ̃, sans
+    domaine propre, admettait `NaN` : refusés désormais sous le motif « non fini »."""
+    for nom in ("v_e", "K_vol", "W", "IN_vol", "N"):
+        with pytest.raises(ValueError, match=f"EtatPays.{nom} : inf non fini"):
+            dataclasses.replace(etat_pays(), **{nom: math.inf})
+    with pytest.raises(ValueError, match="EtatPays.mu_tilde : nan non fini"):
+        dataclasses.replace(etat_pays(), mu_tilde=math.nan)
+
+
 def _registre_avec(u, niveau):
     """Registre stationnaire d'essai dont le niveau u (P_{t−u}) est remplacé."""
     registre = [1.02 ** (-k / 12) for k in range(1, 14)]
