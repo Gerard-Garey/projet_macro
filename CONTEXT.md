@@ -102,6 +102,9 @@ Vocabulaire à employer tel quel dans le code, la documentation, les issues et l
 - **Configuration** : archétype anonymisé de pays servant à la validation (dix dans la v1.5) ; jamais associé à un pays réel.
 - **État stationnaire résolu** : état initial calculé comme équilibre des règles en vigueur, sans préparation cachée. *Ne pas dire* : état préparé (réservé à l'état D1 de la v2.0, obtenu par 150 ans de simulation).
 - **Test zéro** : 60 ans de simulation sans choc depuis l'état stationnaire résolu ; les ratios de stocks doivent rester dans leurs bandes.
+- **Socle partiel d'essai** : assemblage du moteur où les blocs non encore implémentés sont remplacés, dans `tests/` seulement, par des **blocs d'essai sur le sentier** ; il sert à éprouver un bloc réel dans le moteur avant que le socle soit complet (P52, 13/11/2026). *Ne pas dire* : socle, pour cet assemblage (le socle est l'ensemble des blocs réels).
+- **Bloc d'essai sur le sentier** : doublure de test d'un bloc, qui propose ses lignes et écrit ses variables aux valeurs du sentier stationnaire tirées de `outils/etat_stationnaire.py` ; inconnue de `src/` (P52, 13/11/2026).
+- **Stationnarité partielle** : propriété d'un socle partiel d'essai dont toutes les variables restent sur le sentier à 1e−9 relatif sur 720 pas, aux trois π\* ; critère d'acceptation de J3-b, J3-c et J3-d (P52, 13/11/2026). Elle ne vaut pas test zéro, qui se mesure sur le socle complet depuis l'état stationnaire résolu.
 - **Fenêtre de partie / fenêtre longue** : horizon d'une partie depuis l'état initial / horizon de 60 ans ; les verdicts se publient sur les deux.
 - **Scénario** : simulation définie par un état initial, des paramètres, une graine et une suite de leviers ; reproductible.
 - **Contrôle apparié** : simulation de référence partant du même état et de la même graine qu'une branche, pour mesurer l'effet d'une intervention.
