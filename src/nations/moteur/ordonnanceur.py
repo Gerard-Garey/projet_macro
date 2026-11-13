@@ -44,7 +44,8 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
   l'ouverture et perdu à la fin du pas (B4) : ce n'est pas l'état.
 - Un bloc reçoit une **vue** (`Vue`) par appel : l'état d'ouverture, les
   paramètres, les variables du pas qu'il a déclaré lire, le grand livre en
-  lecture seule, `proposer` et `declarer_montant_couvert` pour ses seules
+  lecture seule (montants exécutés des seules lignes qu'il a déclaré lire,
+  #100), `proposer` et `declarer_montant_couvert` pour ses seules
   lignes déclarées dans l'étape (le proposant et le payeur apposés par la
   vue ; aucune en phase 9, où tout flux est refusé), les lectures du
   registre, et l'écriture de ses seules variables déclarées.
@@ -227,18 +228,57 @@ class VariablesDuPas:
 # --------------------------------------------------------------------------
 
 
+@dataclass(frozen=True, slots=True)
+class _Droits:
+    """Droits d'un bloc dans une étape, arrêtés à l'assemblage.
+
+    `lectures` : variables du pas lues ; `lignes_lues` : lignes dont le montant
+    exécuté est lu au grand livre ; `lignes` et `couvertes` : lignes proposées
+    et montants couverts déclarés.
+    """
+
+    radical: str
+    etape: str
+    lectures: frozenset[str]
+    ecritures: frozenset[str]
+    etat: frozenset[str]
+    lignes: frozenset[str]
+    couvertes: frozenset[str]
+    lignes_lues: frozenset[str]
+
+
 class LectureDuGrandLivre:
-    """Le grand livre du pas en lecture seule (ADR 0012, A3.3, « Lectures seules »)."""
+    """Le grand livre du pas en lecture seule, pour un bloc dans une étape (ADR 0012, A3.3,
+    « Lectures seules »).
 
-    __slots__ = ("_livre",)
+    Le montant exécuté d'une ligne n'est rendu que si le bloc a déclaré sa
+    lecture dans son siège (`_Droits.lignes_lues`, arrêtées à l'assemblage
+    après triangularité et colonne « Lisent ») ; une lecture non déclarée est
+    un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et la ligne (#100).
+    Positions, ouverture, échelles et valeurs nettes ne sont pas filtrées.
+    """
 
-    def __init__(self, livre: GrandLivre) -> None:
+    __slots__ = ("_droits", "_livre", "_t")
+
+    def __init__(self, livre: GrandLivre, droits: _Droits, t: int) -> None:
         self._livre = livre
+        self._droits = droits
+        self._t = t
+
+    def _verifier_ligne(self, ligne: str) -> None:
+        d = self._droits
+        # Une ligne hors catalogue garde le refus du noyau (« ligne inconnue »).
+        if ligne in LIGNE and ligne not in d.lignes_lues:
+            raise RefusDuMoteur("lecture du montant exécuté d'une ligne non déclarée par le "
+                                "bloc dans cette étape", t=self._t, etape=d.etape,
+                                bloc=d.radical, nom=ligne)
 
     def montant_execute(self, ligne: str, colonne: str) -> float:
+        self._verifier_ligne(ligne)
         return self._livre.montant_execute(ligne, colonne)
 
     def montant_execute_ligne(self, ligne: str) -> float:
+        self._verifier_ligne(ligne)
         return self._livre.montant_execute_ligne(ligne)
 
     def position(self, poste: str) -> float:
@@ -257,23 +297,10 @@ class LectureDuGrandLivre:
         return self._livre.valeur_nette_flux(secteur)
 
 
-@dataclass(frozen=True, slots=True)
-class _Droits:
-    """Droits d'un bloc dans une étape, arrêtés à l'assemblage."""
-
-    radical: str
-    etape: str
-    lectures: frozenset[str]
-    ecritures: frozenset[str]
-    etat: frozenset[str]
-    lignes: frozenset[str]
-    couvertes: frozenset[str]
-
-
 class _Pas:
     """Contexte d'un pas, créé par `executer_pas` et perdu avec lui."""
 
-    __slots__ = ("espace", "etat", "etat_suivant", "livre", "parametres", "t", "vue_du_livre")
+    __slots__ = ("espace", "etat", "etat_suivant", "livre", "parametres", "t")
 
     def __init__(self, etat: schema.EtatPays, parametres: object, espace: VariablesDuPas,
                  livre: GrandLivre) -> None:
@@ -282,7 +309,6 @@ class _Pas:
         self.parametres = parametres
         self.espace = espace
         self.livre = livre
-        self.vue_du_livre = LectureDuGrandLivre(livre)
         # Valeurs du pas suivant des variables d'état des blocs (C2).
         self.etat_suivant: dict[str, object] = {}
 
@@ -290,11 +316,12 @@ class _Pas:
 class Vue:
     """Ce qu'un bloc voit et peut faire dans une étape (B2), et rien d'autre."""
 
-    __slots__ = ("_droits", "_pas")
+    __slots__ = ("_droits", "_lecture_du_livre", "_pas")
 
     def __init__(self, pas: _Pas, droits: _Droits) -> None:
         self._pas = pas
         self._droits = droits
+        self._lecture_du_livre = LectureDuGrandLivre(pas.livre, droits, pas.t)
 
     def _refus(self, message: str, nom: str) -> RefusDuMoteur:
         d = self._droits
@@ -312,8 +339,9 @@ class Vue:
 
     @property
     def grand_livre(self) -> LectureDuGrandLivre:
-        """Grand livre en lecture seule."""
-        return self._pas.vue_du_livre
+        """Grand livre en lecture seule, aux montants exécutés déclarés par le bloc dans cette
+        étape."""
+        return self._lecture_du_livre
 
     def lire(self, nom: str) -> object:
         """Variable du pas déclarée en lecture par le bloc dans cette étape."""
@@ -678,15 +706,18 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
     for radical, (_, sieges, _) in sorted(par_radical.items()):
         for identifiant, siege in sieges.items():
             groupe = places[identifiant][radical]
-            lectures = set()
+            lectures, lignes_lues = set(), set()
             for lecture in siege.lit:
                 _controler_lecture(lecture.source, lecture.nom, identifiant, groupe,
                                    radical, rang, ecrivains, phase_de)
                 if lecture.source in rang:
                     lectures.add(lecture.nom)
+                elif lecture.source == GRAND_LIVRE and lecture.nom in LIGNE:
+                    lignes_lues.add(lecture.nom)
             droits[(radical, identifiant)] = _Droits(
                 radical, identifiant, frozenset(lectures), frozenset(siege.ecrit),
-                frozenset(siege.etat), frozenset(siege.propose), frozenset(siege.couvre))
+                frozenset(siege.etat), frozenset(siege.propose), frozenset(siege.couvre),
+                frozenset(lignes_lues))
     _controler_lecture(ECRIVAIN_DE_L_INDICE[0], INDICE_DES_PRIX, "9", places["9"][MOTEUR],
                        MOTEUR, rang, ecrivains, phase_de)
     if ecrivains[INDICE_DES_PRIX][2] != ECRIVAIN_DE_L_INDICE[1]:

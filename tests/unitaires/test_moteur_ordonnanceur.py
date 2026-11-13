@@ -33,6 +33,7 @@ from nations.moteur.contrat_bloc import (
 )
 from nations.moteur.conversions import facteur_par_pas
 from nations.moteur.diagnostics import DefautDeDeclaration, RefusDuMoteur
+from nations.noyau.diagnostics import RefusDeProposition
 from nations.moteur.ordonnanceur import (
     INDICE_DES_PRIX,
     DeclarationDesEntrees,
@@ -979,6 +980,61 @@ def test_lecture_d_une_variable_non_ecrite_refusee():
     o = ordonnanceur_d_essai(plans_nuls(1), actions={("travail", "4"): lambda vue: None})
     with pytest.raises(RefusDuMoteur, match="avant son écriture"):
         executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+
+
+@pytest.mark.parametrize("radical, etape, lire, ligne", [
+    # Ligne close, de la colonne « Lisent » de la phase 7, mais non déclarée par le siège.
+    ("finances_publiques", "7", lambda livre: livre.montant_execute_ligne("5"), "5"),
+    ("finances_publiques", "7", lambda livre: livre.montant_execute("5", "menages"), "5"),
+    # Ligne déclarée par le même bloc dans un autre siège (phase 7) : droits par siège.
+    ("finances_publiques", "8b", lambda livre: livre.montant_execute_ligne("6"), "6"),
+    # Ligne non close : la vue refuse avant le noyau.
+    ("production", "4", lambda livre: livre.montant_execute_ligne("5"), "5"),
+    ("menages", "9", lambda livre: livre.montant_execute("6", "menages"), "6"),
+], ids=["ligne", "colonne", "autre_siege", "ligne_non_close", "phase_9"])
+def test_montant_execute_non_declare_refuse_a_l_execution(radical, etape, lire, ligne):
+    """#100 : la vue du grand livre ne rend le montant exécuté d'une ligne qu'au siège (bloc ×
+    étape) qui en a déclaré la lecture ; sinon un refus qui nomme le bloc, l'étape et la
+    ligne, jamais une valeur."""
+    lus = []
+    o = ordonnanceur_d_essai(plans_nuls(1), actions=_remplacer_action(
+        radical, etape, lambda vue, base: (base(vue), lus.append(lire(vue.grand_livre)))))
+    with pytest.raises(RefusDuMoteur, match="ligne non déclarée par le bloc") as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, etape, radical, ligne)
+    assert lus == []
+
+
+def test_montant_execute_ligne_hors_catalogue_refusee_par_le_noyau():
+    """#100 : une ligne hors du catalogue n'est pas confondue avec une ligne non déclarée ;
+    le refus reste celui du noyau, sans valeur rendue."""
+    lus = []
+    o = ordonnanceur_d_essai(plans_nuls(1), actions=_remplacer_action(
+        "finances_publiques", "7",
+        lambda vue, base: (base(vue), lus.append(vue.grand_livre.montant_execute_ligne("zz")))))
+    with pytest.raises(RefusDeProposition, match="ligne inconnue du catalogue"):
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert lus == []
+
+
+def test_montant_execute_declare_admis_a_l_execution():
+    """#100 : une lecture déclarée reste admise et rend le montant exécuté relevé à la
+    clôture de la phase de la ligne (ligne 6, lue en phase 7 par l'État qui la déclare)."""
+    plans = tirer_plans(1)
+    lus = []
+
+    def lire(vue, base):
+        base(vue)
+        livre = vue.grand_livre
+        lus.append((livre.montant_execute_ligne("6"), livre.montant_execute("6", "menages")))
+    o = ordonnanceur_d_essai(plans, actions=_remplacer_action("finances_publiques", "7", lire))
+    releve = Enregistreur()
+    executer_pas(etat_initial(), ENTREES_VIDES, o, releve)
+    cloture_6 = next(e for e in releve.evenements
+                     if type(e) is ClotureDePhase and e.phase == "6")
+    attendu = dict(cloture_6.montants)["6"]
+    assert lus == [(sum(x for _, x in attendu), sum(x for _, x in attendu))]
 
 
 def test_indice_des_prix_non_ecrit_refuse():
