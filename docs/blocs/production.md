@@ -1158,6 +1158,11 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
 
 **Précision sur le § 3.N-8 (a)** : sous J = 1, les instabilités 1 et 9, ainsi que les parties « équipement » des 10, 11 et 14, n'ont pas d'objet, puisqu'il n'y a ni construction ni prix relatif du capital. En revanche, la règle de prix sans terme de demande (14) et l'amortissement dans le coût (10 et 11) restent des risques des fiches 4 et 6. `tab:instabilites` ne doit donc pas les dire « écartées par construction ».
 
+*Précision du 13/11/2026, écrite avant l'essai (P72, P73 ; décisions du mainteneur du 13/11/2026, sur avis de `macro`, rang 1b de J3-b ; ADR 0012, annotation du 13/11/2026, point 1.8)* :
+- **Valorisation** : le seuil « 1e−12 relatif » de la ligne se lit rapporté à la valeur du stock disponible IN_t + UC_t·y_t, soit |IN_{t+1} − cm_t·IN^vol_{t+1}| ≤ 1e−12·(IN_t + UC_t·y_t). Rapporté à la grandeur elle-même, il n'est pas tenable sous forte annulation (5,3e−12 mesuré sous la forme B ; bornes mesurées rapportées au stock disponible : 2e−16 à 4e−16). Aucun code n'existait : c'est une précision, non un déplacement de critère.
+- **Forme de N8** : la ligne 4 s'écrit ΔIN = cm·IN^vol_{t+1} − IN_t (forme B), algébriquement équivalente par N7 à UC·y − cm·v. Elle tient IN ≥ 0 exactement en double précision et IN_{t+1} = 0 exactement quand le stock est épuisé (sondes de `macro` du 13/11/2026 : 0 cas négatif sur 1 440 000 pas enchaînés, contre 28 % des pas d'épuisement sous la forme d'origine). La ligne « Disponibilité » se lit donc avec IN = 0 **exactement** à la clôture d'un pas d'épuisement, et le domaine IN ≥ 0 est contrôlé strictement par le noyau à l'ouverture de chaque pas.
+- Seuils et texte d'origine des lignes inchangés ; aucun verdict n'existe.
+
 ### 9.7 Remesure S1 : spécification et critères écrits avant l'essai
 
 *Écrits par `macro` le 02/10/2026 et commités avant toute exécution du script.*

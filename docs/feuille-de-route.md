@@ -21,8 +21,8 @@ Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-ro
 |---|---|---|---|---|
 | 0 | Consignation, PR brouillon, issues créées, `CONTEXT.md` | `architect`, session | `docs:` | fait : `ddb7a5a` (PR #117) |
 | 1a | Critères et lectures avant le code : classement des lignes « J3 » des § 9.6 des fiches 2 à 4, T2 (b), part d'un bloc dans le coût, unités, option μ̃, g_N, stationnarité partielle | `macro-approfondi` ; `monnaie` ; validation du mainteneur | 4 | fait : avis favorables, P65 à P67 décidées (§ 4) ; P56 versée aux fiches 3 et 4 |
-| 1b | Annotation de l'ADR 0012 : nomenclature des blocs 2 à 4, tables de paramètres, contrôle statique des lectures | `architect-approfondi` (Opus) | § 4.2 | à faire |
-| 2 | #104 : vocabulaire fermé étendu | `coder` → `audit` | 3 | à faire |
+| 1b | Annotation de l'ADR 0012 : nomenclature des blocs 2 à 4, tables de paramètres, contrôle statique des lectures | `architect-approfondi` (Opus) | § 4.2 | fait : `22e31b8` ; P68 à P73 |
+| 2 | #104 : vocabulaire fermé étendu | `coder` → `audit` | 3 | fait : `d5206d5`, `7f927ac` ; audit léger conforme |
 | 3 | #112 : schéma v2, tables, socle partiel d'essai, linéarisation, part d'un bloc | `coder` → `audit` ; `macro` | 3 | à faire |
 | 4 | #113 : `production.py` | `coder` → `audit` | 1 | à faire |
 | 5 | #50 : `travail.py` | `coder` → `audit` ; `monnaie` consulté | 1 | à faire |
@@ -458,8 +458,10 @@ Seuil § 4.3 : le redécoupage de la queue de J3 (P61) relève du critère 2 ; i
 | P69 | `executer_pas` passe `parametres.cadre` à `ouvrir_pas` (lettre de A3.1, signature d'`assembler` inchangée) ; les appels d'`assembler` des tests passent l'ensemble des tables de référence. Réalisé dans #112. |
 | P70 | Domaine de λ_v : 0 < λ_v < n_a, strict (avec λ_v = n_a et d_t = 0, v^e = 0 et P1 n'est pas défini au pas suivant ; avis de `macro`). Correction prospective de « 0 < λ_v ≤ n_a » de `sec:production-visee`, au passage de `docwriter`. Les autres vitesses restent 0 < λ ≤ n_a. |
 | P71 | U^eq > 0 et μ̄ > 0 requalifiés en conditions de conception et d'existence de l'état stationnaire (non en domaines de définition) ; `outils/etat_stationnaire.py` aligné pour les refuser dès le chargement de ses paramètres (commit `code:` dans #112, résultats identiques à la calibration). |
+| P72 | Domaine de la position `IN` (ADR 0012, annotation du 13/11/2026, point 1.8), option (c) de `macro` : N8 réécrite ΔIN = cm·IN^vol_{t+1} − IN_t (forme B, algébriquement équivalente ; IN ≥ 0 exact au bit, zéro exact à l'épuisement ; aucun résultat publié changé, ≤ 7e−16) ; domaine **strict** IN ≥ 0 contrôlé dans `ouvrir_pas` du noyau, à côté de Res (A3.1 (ii) étendu), sans tolérance. Lecture retenue : lire la position d'ouverture dans le montant de la ligne 4 n'est pas un solde résiduel au sens de l'ADR 0005, point 8 (A8, règle 1). Réalisation dans #113 (bloc 2, et contrôle du noyau) ; `outils/etat_stationnaire.py` aligné sur la forme B ; spécification (N8, l. 912-919 ; domaines de l'ouverture) au passage de `docwriter`. Options écartées : (a) forme A et contrôle tolérant IN + ε·S^F ≥ 0 (recommandation d'`architect`) ; (b) aucun contrôle, max(0 ; IN) (déconseillée : borne au lieu d'un mécanisme). Position K : même domaine strict en J3-c, sans réécriture (S7 tient K ≥ 0 au bit). |
+| P73 | Critère « Valorisation » de la fiche 2, § 9.6 : 1e−12 rapporté à la valeur du stock disponible IN_t + UC_t·y_t (précision écrite avant l'essai, versée à la fiche). |
 
-**Points ouverts au 13/11/2026** : #11 et #14 (mainteneur, hors branche) ; lieu du contrôle π^e_0 > −1 (schéma v2 ou chargement de l'état initial, #112, rang 1b) ; confirmation de la branche de calibration au point d'étape de J3-d (P43 (a)) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2). Sortie de la liste : consultation Fable au plan de J3-b (faite le 13/11/2026, § 8).
+**Points ouverts au 13/11/2026** : #11 et #14 (mainteneur, hors branche) ; confirmation de la branche de calibration au point d'étape de J3-d (P43 (a)) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2). Sortie de la liste : consultation Fable au plan de J3-b (faite le 13/11/2026, § 8).
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 
