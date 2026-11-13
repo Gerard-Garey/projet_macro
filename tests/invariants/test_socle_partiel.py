@@ -33,6 +33,7 @@ from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
 from nations.moteur.phases import ETAPES, MOTEUR, NOYAU
 from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
+from nations.noyau.diagnostics import DefautComptable
 from nations.noyau.grand_livre import ClotureDePhase
 from nations.observation.observateur import FinDePas, ObservateurNul
 from nations.observation.residus import ReleveDesResidus
@@ -494,6 +495,19 @@ def test_observateur_nul_meme_trajectoire(socle):
 # --------------------------------------------------------------------------
 
 
+# Positions de la carte du cas d'essai : intérieures à leur domaine sur le sentier (non nulles).
+POSTES_LINEARISES = ("D_H", "D_F", "L", "B_Bk", "L_CB", "M_G", "K", "IN")
+
+
+def _regle_n1(socle):
+    """Règle d'essai de v^e : N1, demande d exogène sur le sentier, λ_v lue dans la table."""
+    def n1(vue, sentier, t):
+        lam = par_pas(vue.parametres.production.lambda_v)
+        demande = sentier.valeur("v", socle.VOLUME, t)
+        return sentier.facteurs[socle.VOLUME] * ((1.0 - lam) * vue.ouverture.v_e + lam * demande)
+    return n1
+
+
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 @pytest.mark.parametrize("lambda_v", [3.0, 6.0, 1.5])
 def test_linearisation_retrouve_une_valeur_propre_connue(socle, linearisation, pi, lambda_v,
@@ -507,14 +521,8 @@ def test_linearisation_retrouve_une_valeur_propre_connue(socle, linearisation, p
     sentier = socle.sentier(pi)
     p = socle.PARAMETRES_DE_REFERENCE
     parametres = dataclasses.replace(p, production=varier(p.production, lambda_v=lambda_v))
-
-    def n1(vue, sentier, t):
-        lam = par_pas(vue.parametres.production.lambda_v)
-        demande = sentier.valeur("v", socle.VOLUME, t)
-        return sentier.facteurs[socle.VOLUME] * ((1.0 - lam) * vue.ouverture.v_e + lam * demande)
-
-    o = socle.ordonnanceur(sentier, parametres, regles={"v_e": n1})
-    postes = ("D_H", "D_F", "L", "B_Bk", "L_CB", "M_G", "K", "IN")
+    o = socle.ordonnanceur(sentier, parametres, regles={"v_e": _regle_n1(socle)})
+    postes = POSTES_LINEARISES
     noms = tuple(v.nom for v in schema.VARIABLES_DES_BLOCS) + postes
     carte = linearisation.carte_du_moteur(socle.etat_initial(sentier), o, noms, pi)
     assert linearisation.residu_point_fixe(carte) <= SEUIL_NUL
@@ -529,3 +537,52 @@ def test_linearisation_retrouve_une_valeur_propre_connue(socle, linearisation, p
             f"1/Γ̄ = {1.0 / sentier.facteurs[socle.NOMINAL]:.12f} (multiplicité {len(postes)}) ; "
             f"écart maximal aux formes fermées {ecart_max:.1e} (seuil 1e−8)"])
 
+
+def test_linearisation_tendance_lue_dans_l_unite_a_croissance_demographique(socle, linearisation,
+                                                                            publier):
+    """Q2 de `macro` (#112) : à g_N = 0,005 (constructeur validé, sentier du script au même
+    g_N) et π* = 2 %, pr, N et N^pa, W et v^e ont des facteurs de tendance distincts ; la
+    tendance lue d'après l'unité ramène chaque variable au point fixe (résidu ≤ 1e−12) et donne
+    les valeurs propres de la forme fermée à 1e−8 (1 − λ_v/n_a, 1/Γ̄, 0). Facteurs attendus,
+    mesurés par `macro` : 1,001651581302 (pr), 1,000415714845 (N, N^pa), 1,003305890325 (W)."""
+    pi, g_n = 0.02, 0.005
+    sentier = socle.sentier(pi, g_N=g_n)
+    p = socle.PARAMETRES_DE_REFERENCE
+    parametres = dataclasses.replace(p, travail=varier(p.travail, g_N=g_n))
+    o = socle.ordonnanceur(sentier, parametres, regles={"v_e": _regle_n1(socle)})
+    facteurs = {n: linearisation.facteur_de_tendance(schema.VARIABLE[n].unite, parametres, pi)
+                for n in ("pr", "N", "N_pa", "W", "v_e")}
+    attendus = {"pr": 1.001651581302, "N": 1.000415714845, "N_pa": 1.000415714845,
+                "W": 1.003305890325}
+    for nom, attendu in attendus.items():
+        assert abs(facteurs[nom] - attendu) <= 1e-12, nom
+    # v^e croît au taux g : (1 + g_pr)(1 + g_N), distinct de pr seule.
+    assert facteurs["v_e"] == pytest.approx(facteurs["pr"] * facteurs["N"], rel=1e-14, abs=0.0)
+    assert facteurs["v_e"] - facteurs["pr"] > 4e-4
+    postes = POSTES_LINEARISES
+    noms = tuple(v.nom for v in schema.VARIABLES_DES_BLOCS) + postes
+    carte = linearisation.carte_du_moteur(socle.etat_initial(sentier), o, noms, pi)
+    residu = linearisation.residu_point_fixe(carte)
+    assert residu <= SEUIL_NUL
+    valeurs = linearisation.valeurs_propres(carte)
+    attendues = sorted([1.0 - 3.0 / N_A] + [1.0 / sentier.facteurs[socle.NOMINAL]]
+                       * len(postes) + [0.0] * (len(noms) - len(postes) - 1), reverse=True)
+    ecart_max = float(max(abs(valeurs - attendues)))
+    assert ecart_max <= 1e-8
+    publier("Linéarisation à g_N = 0,005, π* = 2 %, λ_v = 3 (#112, Q2 de `macro`)", [
+        f"facteurs par pas : pr {facteurs['pr']:.12f}, N et N^pa {facteurs['N']:.12f}, "
+        f"W {facteurs['W']:.12f}, v^e {facteurs['v_e']:.12f} ; résidu du point fixe "
+        f"{residu:.1e} ; écart maximal aux formes fermées {ecart_max:.1e} (seuil 1e−8)"])
+
+
+def test_linearisation_refuse_franchement_une_variable_au_bord_de_son_domaine(socle,
+                                                                             linearisation):
+    """C3 (#112) : la différence centrée n'est pas définie au bord d'un domaine strict. Res = 0
+    sur le sentier, perturbée de −h, fait arrêter le noyau (`DefautComptable`) : refus franc,
+    jamais une valeur propre. Le traitement de Res, B_H et B_CB revient à S1 (J3-f)."""
+    sentier = socle.sentier(0.02)
+    etat = socle.etat_initial(sentier)
+    assert etat.Res == 0.0
+    carte = linearisation.carte_du_moteur(etat, socle.ordonnanceur(sentier), ("Res",), 0.02)
+    with pytest.raises(DefautComptable):
+        linearisation.jacobienne(carte)

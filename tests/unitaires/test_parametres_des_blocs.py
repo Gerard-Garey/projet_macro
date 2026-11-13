@@ -222,3 +222,16 @@ def test_domaines_des_tables_et_du_script_refusent_le_meme_ensemble(stationnaire
                 varier(table, **{nom: valeur})
             with pytest.raises(stationnaire.HorsDomaine):
                 stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
+
+
+def test_lambda_v_strict_dans_le_script_comme_dans_la_table(stationnaire):
+    """P70 : λ_v = n_a est refusée par le script comme par la table (domaine strict) ; λ_v =
+    11,999 est admise par les deux."""
+    base = dataclasses.replace(stationnaire.Parametres(), nu_G=1.15)
+    assert base.n_a == N_A
+    with pytest.raises(DefautDeDeclaration, match="strict"):
+        varier(production.PRODUCTION, lambda_v=float(N_A))
+    with pytest.raises(stationnaire.HorsDomaine, match="domaine strict, P70"):
+        stationnaire.controler_domaine(dataclasses.replace(base, lambda_v=float(N_A)))
+    varier(production.PRODUCTION, lambda_v=11.999)
+    stationnaire.controler_domaine(dataclasses.replace(base, lambda_v=11.999))

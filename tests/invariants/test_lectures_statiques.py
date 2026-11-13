@@ -16,12 +16,14 @@ dont le radical est le nom du module.
    déclaré, source par source ; une méthode sans siège ou un siège sans méthode
    est un écart.
 3. **Refus**, partout dans le module : `getattr`, `setattr`, `delattr`, `vars`,
-   `globals`, `locals`, `eval`, `exec`, `__import__`, `__dict__` ; un nom qui
-   n'est pas un littéral ; la vue, `vue.ouverture` ou `vue.grand_livre` hors
-   d'un accès relevé ; `vue.grand_livre.ouverture`, `.echelle`,
+   `globals`, `locals`, `eval`, `exec`, `__import__`, comme nom, comme
+   attribut ou comme nom importé ; `__dict__` ; un nom qui n'est pas un
+   littéral ; la vue, `vue.ouverture` ou `vue.grand_livre` hors d'un accès
+   relevé ; `vue.grand_livre.ouverture`, `.echelle`,
    `.valeur_nette_stock`, `.valeur_nette_flux` ; l'importation d'un module de
-   `nations.moteur` autre que `contrat_bloc` et `conversions`, de `tests` ou
-   d'`outils` ; `global`, `nonlocal` et toute affectation dont la cible est un
+   `nations.moteur` autre que `contrat_bloc` et `conversions` (`from base
+   import X` jugé sur `base.X`), de `tests`, d'`outils`, d'`importlib` ou de
+   `builtins` ; `global`, `nonlocal` et toute affectation dont la cible est un
    attribut.
 4. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
    déclare pas).
@@ -58,6 +60,8 @@ METHODES_DU_GRAND_LIVRE = ("position", "montant_execute", "montant_execute_ligne
 REFUSES_DU_GRAND_LIVRE = ("ouverture", "echelle", "valeur_nette_stock", "valeur_nette_flux")
 NOMS_REFUSES = frozenset({"getattr", "setattr", "delattr", "vars", "globals", "locals", "eval",
                           "exec", "__import__"})
+# `importlib` et `builtins` rendraient `getattr` ou un module du moteur sous un autre nom.
+RACINES_REFUSEES = frozenset({"tests", "outils", "importlib", "builtins"})
 MOTEUR_ADMIS = frozenset({"nations.moteur.contrat_bloc", "nations.moteur.conversions"})
 CATEGORIES = ("ouverture", "grand_livre", "registre", "pas", "ecrit", "etat", "propose",
               "couvre")
@@ -84,12 +88,14 @@ def _module_importe(noeud: ast.AST, paquet: str) -> list[str]:
     if noeud.level:
         parties = paquet.split(".")
         base = ".".join(parties[:len(parties) - noeud.level + 1] + ([base] if base else []))
-    return [base] + [f"{base}.{a.name}" for a in noeud.names]
+    # `from base import X` est jugé sur `base.X` (X module ou nom de `base`), non sur `base`
+    # seule : `from nations.moteur import contrat_bloc` est admis, `… import ordonnanceur` refusé.
+    return [f"{base}.{a.name}" for a in noeud.names]
 
 
 def _import_refuse(nom: str) -> bool:
     racine = nom.split(".")[0]
-    if racine in ("tests", "outils"):
+    if racine in RACINES_REFUSEES:
         return True
     if nom == "nations.moteur":
         return True
@@ -185,6 +191,10 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
             ecarts.append(f"ligne {noeud.lineno} : {noeud.id} refusé")
         elif isinstance(noeud, ast.Attribute) and noeud.attr == "__dict__":
             ecarts.append(f"ligne {noeud.lineno} : accès à __dict__ refusé")
+        elif isinstance(noeud, ast.Attribute) and noeud.attr in NOMS_REFUSES:
+            ecarts.append(f"ligne {noeud.lineno} : attribut {noeud.attr} refusé")
+        elif isinstance(noeud, ast.alias) and noeud.name in NOMS_REFUSES:
+            ecarts.append(f"ligne {noeud.lineno} : importation du nom {noeud.name} refusée")
         elif isinstance(noeud, (ast.Global, ast.Nonlocal)):
             ecarts.append(f"ligne {noeud.lineno} : {type(noeud).__name__.lower()} refusé")
         elif isinstance(noeud, (ast.Import, ast.ImportFrom)):
@@ -379,7 +389,8 @@ MUTATIONS = [
     ("import math\n", "import math\n\n\ndef _jamais():\n    import tests.invariants\n",
      "importation de tests.invariants refusée"),
     ("import math\n", "import math\n\n\ndef _jamais():\n"
-     "    from outils import etat_stationnaire\n", "importation de outils refusée"),
+     "    from outils import etat_stationnaire\n",
+     "importation de outils.etat_stationnaire refusée"),
     ("import math\n", "import math\nimport nations.moteur\n",
      "importation de nations.moteur refusée"),
     ("import math\n", "import math\nfrom nations import moteur\n",
@@ -399,6 +410,18 @@ MUTATIONS = [
     ("        vue.ecrire_pas(\"xi\", xi)\n",
      "        vue.ecrire_pas(\"xi\", xi)\n        livre = vue.grand_livre\n",
      "vue.grand_livre utilisée hors d'un accès relevé"),
+    # Contournements par un autre nom (audit léger de #112, C1) : chacun est jugé par sa règle.
+    ("import math\n", "import math\n\n\ndef _jamais():\n    import importlib\n"
+     "    return importlib.import_module('nations.moteur.parametres.prix')\n",
+     "importation de importlib refusée"),
+    ("import math\n", "import math\n\n\ndef _jamais(o):\n    import builtins\n"
+     "    return builtins.getattr(o, 'real')\n", "attribut getattr refusé"),
+    ("import math\n", "import math\n\n\ndef _jamais(o):\n"
+     "    from builtins import getattr as lire_attr\n    return lire_attr(o, 'real')\n",
+     "importation du nom getattr refusée"),
+    # `from base import X` jugé sur `base.X` (C2) : un module du moteur hors des admis.
+    ("import math\n", "import math\nfrom nations.moteur import parametres\n",
+     "importation de nations.moteur.parametres refusée"),
 ]
 
 
@@ -412,6 +435,19 @@ def test_le_controle_statique_sait_echouer(avant, apres, motif):
     texte = texte.replace("class Prix:", "def aide(v):\n    return v\n\n\nclass Prix:", 1)
     ecarts = analyser_texte(texte)
     assert any(motif in e for e in ecarts), ecarts
+
+
+def test_from_moteur_import_module_admis_juge_sur_base_point_nom():
+    """C2 : `from nations.moteur import contrat_bloc` est admis (jugé sur
+    `nations.moteur.contrat_bloc`, non sur `nations.moteur`) ; `from nations.moteur import
+    ordonnanceur` est refusé sous son nom complet, et lui seul."""
+    admis = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
+                             "contrat_bloc, conversions\n", 1)
+    assert analyser_texte(admis) == []
+    refuse = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
+                              "contrat_bloc, ordonnanceur\n", 1)
+    assert [e for e in analyser_texte(refuse) if "importation" in e] == [
+        "ligne 4 : importation de nations.moteur.ordonnanceur refusée"]
 
 
 def test_module_sans_bloc_ou_de_radical_faux():
