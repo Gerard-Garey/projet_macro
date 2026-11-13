@@ -295,10 +295,15 @@ def controler_domaine(par: Parametres) -> list[str]:
     for nom in ("eta_r", "zeta"):
         if not getattr(par, nom) >= 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : ≥ 0 attendu (sec:investissement-conditions)")
-    if not 0 <= par.U_eq < 1:
-        raise HorsDomaine(f"U_eq = {par.U_eq!r} : 0 ≤ U^eq < 1 attendu")
-    if not 1 + par.mu_bar > 0:
-        raise HorsDomaine(f"mu_bar = {par.mu_bar!r} : 1 + μ̄ > 0 attendu (μ̃ = ln(1 + μ̄))")
+    # U^eq > 0 et μ̄ > 0 : conditions de conception et d'existence de l'état stationnaire, non domaines de
+    # définition (décision du mainteneur du 13/11/2026, P71) ; refusées ici comme dans les tables du moteur
+    # (`nations.moteur.parametres.travail` et `.prix`), de sorte que script et tables refusent le même ensemble.
+    if not 0 < par.U_eq < 1:
+        raise HorsDomaine(f"U_eq = {par.U_eq!r} : 0 < U^eq < 1 attendu (condition de conception et d'existence de "
+                          "l'état stationnaire, P71)")
+    if not par.mu_bar > 0:
+        raise HorsDomaine(f"mu_bar = {par.mu_bar!r} : μ̄ > 0 attendu (condition de conception et d'existence de "
+                          "l'état stationnaire, P71 ; elle contient 1 + μ̄ > 0, μ̃ = ln(1 + μ̄))")
     if not par.vartheta > 0:
         raise HorsDomaine(f"vartheta = {par.vartheta!r} : ϑ > 0 attendu (sec:banque-conditions)")
     if not 0 < par.a_pi < 1.5:
