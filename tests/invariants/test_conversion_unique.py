@@ -34,9 +34,10 @@ une conversion `float(n_a)` ou `int(n_a)` est traversée ; `n_a ** -1`
   paramètre (`PAS_PAR_AN.valeur`, `pas_par_an`, `n_a`) ; un diviseur littéral ne
   se distingue pas, sur l'arbre, d'un autre 12, et un n_a écrit en dur est un
   autre défaut (paramètre non typé, ADR 0012, F1). Ce défaut est contrôlé à
-  part par `test_aucun_douze_litteral_dans_src` : aucun littéral 12 ni 12.0
-  n'est opérande de `/`, `//`, `%`, `**` (ni de leur forme augmentée), ni
-  argument de `divmod`, dans `src/`.
+  part par `test_aucun_douze_litteral_dans_src` (#102) : aucun littéral 12 ni
+  12.0, à quelque place de l'arbre que ce soit (opérande, argument d'appel,
+  constante de module, facteur non direct), dans `src/` hors de
+  `EXEMPTION_DOUZE` (la déclaration de n_a).
 
 Le **calcul de date sur l'entier t** (`divmod`, `//`, `%` par n_a ou n_m) est
 admis dans `nations.moteur.calendrier` seulement, par la liste d'exemptions
@@ -393,71 +394,89 @@ def test_formes_hors_du_critere(texte):
 
 
 # --------------------------------------------------------------------------
-# Littéral 12 : hors du critère « conversion unique », contrôlé à part
+# Littéral 12 : hors du critère « conversion unique », contrôlé à part (#102)
 # --------------------------------------------------------------------------
 
-_OPERATEURS_DOUZE = (ast.Div, ast.FloorDiv, ast.Mod, ast.Pow)
+# Seul fichier de `src/` où un littéral 12 est admis : la déclaration typée de n_a
+# (`pas_par_an`). L'exemption est fermée et doit servir.
+EXEMPTION_DOUZE = "src/nations/moteur/parametres/cadre.py"
 
 
 def _douze(noeud):
-    """Le nœud est-il le littéral 12 ou 12.0 (signe unaire compris) ?"""
-    if isinstance(noeud, ast.UnaryOp) and isinstance(noeud.op, (ast.USub, ast.UAdd)):
-        noeud = noeud.operand
+    """Le nœud est-il le littéral 12 ou 12.0, quelle que soit son écriture (`0xC`, `1.2e1`) ?
+    Un booléen n'en est pas un ; le signe unaire est porté par un nœud parent."""
     return (isinstance(noeud, ast.Constant) and type(noeud.value) in (int, float)
             and noeud.value == 12)
 
 
 def douzes_du_texte(texte):
-    """Lignes où un littéral 12 est opérande direct de `/`, `//`, `%`, `**` (forme augmentée
-    comprise) ou argument positionnel de `divmod`."""
-    lignes = []
-    for n in ast.walk(ast.parse(texte)):
-        if isinstance(n, ast.BinOp) and isinstance(n.op, _OPERATEURS_DOUZE):
-            operandes = (n.left, n.right)
-        elif isinstance(n, ast.AugAssign) and isinstance(n.op, _OPERATEURS_DOUZE):
-            operandes = (n.value,)
-        elif isinstance(n, ast.Call) and _nom_appele(n) == "divmod":
-            operandes = n.args
-        else:
-            continue
-        if any(_douze(o) for o in operandes):
-            lignes.append(n.lineno)
-    return sorted(lignes)
+    """Lignes de tous les littéraux 12 ou 12.0 du texte, quelle que soit leur place dans
+    l'arbre : opérande, argument d'appel (positionnel ou nommé), constante de module,
+    facteur non direct, indice, valeur par défaut."""
+    return sorted(n.lineno for n in ast.walk(ast.parse(texte)) if _douze(n))
+
+
+def _douzes_de_src():
+    return [(chemin.relative_to(RACINE).as_posix(), ligne)
+            for chemin in sorted(SRC.rglob("*.py"))
+            for ligne in douzes_du_texte(chemin.read_text(encoding="utf-8"))]
 
 
 def test_aucun_douze_litteral_dans_src():
-    """Aucun n_a écrit en dur : aucun littéral 12 ni 12.0 opérande de `/`, `//`, `%`, `**`, ni
-    argument de `divmod`, dans `src/` (ADR 0012, F1)."""
-    trouves = [(chemin.relative_to(RACINE).as_posix(), ligne)
-               for chemin in sorted(SRC.rglob("*.py"))
-               for ligne in douzes_du_texte(chemin.read_text(encoding="utf-8"))]
-    assert trouves == []
+    """Aucun n_a écrit en dur : aucun littéral 12 ni 12.0 dans `src/` hors de
+    `EXEMPTION_DOUZE` (ADR 0012, F1 ; critère de #102, écrit avant l'essai)."""
+    assert [(f, n) for f, n in _douzes_de_src() if f != EXEMPTION_DOUZE] == []
 
 
-@pytest.mark.parametrize("texte", [
-    "def f(x):\n    return x / 12\n",
-    "def f(x):\n    return x / 12.0\n",
-    "def f(x):\n    return x / -12\n",
-    "def f(t):\n    return t // 12\n",
-    "def f(t):\n    return t % 12\n",
-    "def f(x):\n    return (1 + x) ** 12 - 1\n",
-    "def f(x):\n    x /= 12\n    return x\n",
-    "def f(t):\n    return divmod(t, 12)\n",
+def test_l_exemption_du_douze_sert():
+    """L'exemption a un objet : le fichier existe et porte au moins un littéral 12."""
+    assert (RACINE / EXEMPTION_DOUZE).is_file()
+    assert any(f == EXEMPTION_DOUZE for f, _ in _douzes_de_src())
+
+
+@pytest.mark.parametrize("texte, ligne", [
+    # Opérandes directs (#98).
+    ("def f(x):\n    return x / 12\n", 2),
+    ("def f(x):\n    return x / 12.0\n", 2),
+    ("def f(x):\n    return x / -12\n", 2),
+    ("def f(t):\n    return t // 12\n", 2),
+    ("def f(t):\n    return t % 12\n", 2),
+    ("def f(x):\n    return (1 + x) ** 12 - 1\n", 2),
+    ("def f(x):\n    x /= 12\n    return x\n", 2),
+    ("def f(t):\n    return divmod(t, 12)\n", 2),
+    # Formes de #102 : constante de module, appels, conversion, argument nommé,
+    # facteurs non directs.
+    ("DOUZE = 12\ndef f(x):\n    return x / DOUZE\n", 1),
+    ("import numpy as np\nnp.divide(y, 12)\n", 2),
+    ("import operator\noperator.truediv(y, 12)\n", 2),
+    ("import math\nmath.pow(y, 12)\n", 2),
+    ("import math\nmath.fmod(t, 12)\n", 2),
+    ("def f(y):\n    return y / float(12)\n", 2),
+    ("def f(t):\n    return divmod(t, b=12)\n", 2),
+    ("def f(x):\n    return x / (2 * 12)\n", 2),
+    ("def f(x, y):\n    return 12 * x / y\n", 2),
+    # Autres places et écritures.
+    ("def f(x):\n    return x * 12\n", 2),
+    ("def f(x):\n    return x + 12\n", 2),
+    ("def f(r, x):\n    return r[12] / x\n", 2),
+    ("def f(x, n=12):\n    return x / n\n", 1),
+    ("def f(x):\n    return x / 0xC\n", 2),
+    ("def f(x):\n    return x / 1.2e1\n", 2),
 ])
-def test_le_controle_du_douze_releve_les_formes_adverses(texte):
+def test_le_controle_du_douze_releve_les_formes_adverses(texte, ligne):
     """Chaque forme est relevée, à sa ligne."""
-    assert douzes_du_texte(texte) == [2]
+    assert douzes_du_texte(texte) == [ligne]
 
 
 @pytest.mark.parametrize("texte", [
-    "def f(x):\n    return x * 12\n",
-    "def f(x):\n    return x + 12\n",
-    "def f(r, x):\n    return r[12] / x\n",
     "def f(x):\n    return x / 13\n",
     "def f(x):\n    return x / PAS_PAR_AN.valeur\n",
     "def f(t):\n    return divmod(t, 7)\n",
     "def f(x):\n    return x / True\n",
+    "def f(x):\n    return abs(x) < 1e-12\n",
+    "LIGNE = \"12\"\n",
+    "# 12 en commentaire\nx = 1\n",
 ])
 def test_le_controle_du_douze_ne_releve_pas_le_reste(texte):
-    """Produit, somme, indice 12, autre diviseur, n_a nommé : non relevés."""
+    """Autre nombre, n_a nommé, booléen, 1e-12, chaîne « 12 », commentaire : non relevés."""
     assert douzes_du_texte(texte) == []
