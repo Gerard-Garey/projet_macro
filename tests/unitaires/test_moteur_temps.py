@@ -122,6 +122,21 @@ def test_domaines_du_cadre(parametre, valeur):
                   parametre.etiquettes, parametre.domaine)
 
 
+@pytest.mark.parametrize("unite", ["u.m. par personne et par pas",
+                                   "u.v. par personne et par pas"])
+def test_unites_par_personne_et_par_pas_acceptees_hors_taux(unite):
+    """#104 (P65) : les unités du salaire et de la productivité sont déclarables ; ce ne sont pas
+    des taux annuels, et une variante hors du vocabulaire fermé reste refusée."""
+    parametre = _taux(unite)
+    assert parametre.unite in UNITES
+    with pytest.raises(DefautDeDeclaration, match="pas un taux"):
+        taux_du_parametre(parametre)
+    for variante in (unite.replace(" et par pas", ""), unite.replace("personne", "personnes"),
+                     unite.upper(), unite + " "):
+        with pytest.raises(DefautDeDeclaration, match="vocabulaire"):
+            _taux(variante)
+
+
 def _taux(unite):
     return Parametre("i", "i", 0.04, unite, "essai", ("eq:moteur-conversion-taux",),
                      Domaine("float", lambda x: type(x) is float))

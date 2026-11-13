@@ -122,11 +122,13 @@ def test_empreinte_calendaire_de_14_variables():
 
 
 def test_vocabulaire_unique_des_unites():
-    """ADR 0012, F2 et annotation du 07/10/2026 (point 2) : F2 complété de quatre unités, sans double."""
+    """ADR 0012, F2, annotations du 07/10/2026 (point 2) et du 13/11/2026 (#104, P65) : F2
+    complété de quatre unités, puis de deux unités par personne et par pas, sans double."""
     f2 = ("pas par an", "pas par tour", "sans dimension", "u.m.", "u.m. par pas",
           "par an, taux de flux", "par an, taux de croissance", "années", "personnes", "fraction")
     complements = ("pas", "u.v.", "u.v. par pas", "u.m. par u.v.")
-    assert unites.UNITES == f2 + complements
+    complements_j3 = ("u.m. par personne et par pas", "u.v. par personne et par pas")
+    assert unites.UNITES == f2 + complements + complements_j3
     assert len(set(unites.UNITES)) == len(unites.UNITES)
     assert {v.unite for v in VARIABLES} <= set(unites.UNITES)
     # Un seul vocabulaire : le schéma utilise celui de `unites`, il n'en a pas de copie.
