@@ -19,8 +19,8 @@ Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-ro
 
 | Rang | Étape | Agent | Circuit | État |
 |---|---|---|---|---|
-| 0 | Consignation, PR brouillon, issues créées, `CONTEXT.md` | `architect`, session | `docs:` | à faire |
-| 1a | Critères et lectures avant le code : classement des lignes « J3 » des § 9.6 des fiches 2 à 4, T2 (b), part d'un bloc dans le coût, unités, option μ̃, g_N, stationnarité partielle | `macro-approfondi` ; `monnaie` ; validation du mainteneur | 4 | à faire |
+| 0 | Consignation, PR brouillon, issues créées, `CONTEXT.md` | `architect`, session | `docs:` | fait : `ddb7a5a` (PR #117) |
+| 1a | Critères et lectures avant le code : classement des lignes « J3 » des § 9.6 des fiches 2 à 4, T2 (b), part d'un bloc dans le coût, unités, option μ̃, g_N, stationnarité partielle | `macro-approfondi` ; `monnaie` ; validation du mainteneur | 4 | fait : avis favorables, P65 à P67 décidées (§ 4) ; P56 versée aux fiches 3 et 4 |
 | 1b | Annotation de l'ADR 0012 : nomenclature des blocs 2 à 4, tables de paramètres, contrôle statique des lectures | `architect-approfondi` (Opus) | § 4.2 | à faire |
 | 2 | #104 : vocabulaire fermé étendu | `coder` → `audit` | 3 | à faire |
 | 3 | #112 : schéma v2, tables, socle partiel d'essai, linéarisation, part d'un bloc | `coder` → `audit` ; `macro` | 3 | à faire |
@@ -444,7 +444,15 @@ Points soumis par `architect-approfondi` (Fable, consultation accordée par le m
 
 Seuil § 4.3 : le redécoupage de la queue de J3 (P61) relève du critère 2 ; instruit par la consultation Fable accordée. Aucun nouvel ADR d'architecture ; tension T2 (b) / ADR 0005 et ADR 0012 F1 levée par P56 ; question ouverte de l'annotation du 15/10 de l'ADR 0012 (point 4) fermée par P58 (annotation au rang 1b).
 
-**Points ouverts au 13/11/2026** : #11 et #14 (mainteneur, hors branche) ; avis de `macro` attendu au rang 1a de J3-b sur P54, P56, P57 et P63 (retour au mainteneur seulement s'il est contraire) ; confirmation de la branche de calibration au point d'étape de J3-d (P43 (a)) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2). Sortie de la liste : consultation Fable au plan de J3-b (faite le 13/11/2026, § 8).
+**Rang 1a de J3-b (13/11/2026)** : avis de `macro-approfondi` **favorable** à P54 (sous conditions : invariant |μ̃_t − ln(p_t/UC_t)| ≤ 1e−12 ; `\limites` sur ω = exp(−μ̃), valable sous J = 1 et sans intrants), P56 (correction prospective versée aux § 9.6 des fiches 3 et 4), P57 (part d'un bloc = durée cumulée des méthodes d'étape du bloc, socle partiel d'essai, π\* = 2 %, 720 pas, min sur 5 répétitions ; projection cumulée publiée sans seuil) et P63 (g_N = 0,005 gardée comme valeur d'essai de la ligne « Cohérence des conversions » de la fiche 3) : les quatre décisions tiennent sans retour au mainteneur. Avis de `monnaie` sur π^e lue par le bloc 3 : cinq points confirmés ; réserves : π^e > −1 est un invariant de BC3 sous 0 < λ_e ≤ n_a, π^e_0 > −1 (à contrôler au chargement d'un état, #112) et P > 0 ; hors du sentier, le bloc d'essai à π^e = π\* coupe la boucle T3 ↔ BC3 et toute mesure dynamique de J3-b est étiquetée « π^e exogène (bloc d'essai) ». Synthèse complète : commentaire de la PR #117 du 13/11/2026.
+
+| N° | Décision du mainteneur (13/11/2026, lectures ouvertes par le rang 1a) |
+|---|---|
+| P65 | Unité des vitesses d'ajustement (λ_v, λ_IN, λ_w, λ_N, λ_μ) et de δ : « par an, taux de flux » (`sec:cadre-calendrier`, M22) ; « vitesse » passe dans la description de `tab:calibration` ; domaine 0 < λ ≤ n_a déclaré par paramètre (F1). Option écartée : unité « par an, vitesse » (contrat partagé). Deux unités ajoutées à `UNITES` (#104) : « u.m. par personne et par pas », « u.v. par personne et par pas ». |
+| P66 | Stationnarité partielle et A2 : une grandeur de valeur résolue nulle (B7 à π\* = 0, ξ ; plus tard B8, B25, B26) se juge en valeur absolue, \|x_t\| ≤ 1e−12 (lecture « grandeurs nulles à 1e−12 près » de A2, S = 1 pour une grandeur sans dimension). |
+| P67 | Stationnarité partielle de J3-b : B1 à B7, **B12, B13** et B24, à 1e−9 relatif sur 720 pas, aux trois π\*, depuis l'état résolu, sans choc ; B4 à B7 et B24 dès le pas 11 (D13). |
+
+**Points ouverts au 13/11/2026** : #11 et #14 (mainteneur, hors branche) ; lieu du contrôle π^e_0 > −1 (schéma v2 ou chargement de l'état initial, #112, rang 1b) ; confirmation de la branche de calibration au point d'étape de J3-d (P43 (a)) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2). Sortie de la liste : consultation Fable au plan de J3-b (faite le 13/11/2026, § 8).
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
 

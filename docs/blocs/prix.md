@@ -1338,6 +1338,8 @@ W/(p·pr) n'est pas une ligne du tableau de bord (= 1/(1 + marge) sous J = 1). L
 | J4 et J7 | Prix administré | Scénario apparié gel contre sans gel, critères écrits avant l'essai | levier ouvert seulement si le coût est perceptible |
 | — | Remesure P1 | Proposée, non lancée ; sans effet sur M26 | — |
 
+*Correction prospective du 13/11/2026, avant l'essai (P56 ; même décision)* : la ligne T2 renvoie à la fiche 3, § 9.6. Sa partie (b) se lit sur le moteur à n_a = 12 seulement, pour π̄ ∈ {0 ; 2 % ; 10 %}, et la dépendance à n_a reste éprouvée par la partie (a), sur le script (correction prospective de la fiche 3, de même date). Seuils inchangés. Le texte d'origine de la ligne reste publié ; aucun verdict n'existe.
+
 ### 9.7 Contrats partagés touchés, surface de spécification
 
 **Contrats partagés** :
