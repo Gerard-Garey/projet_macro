@@ -264,15 +264,16 @@ def defaut_de_domaine(nom: str, valeur: object) -> str | None:
     """Motif de refus d'un champ de bon type hors de son domaine, sinon `None`.
 
     Seule fonction de domaine de `EtatPays`, appelée par la construction (état
-    initial, état de clôture de chaque pas) et par la reprise : champs
-    d'identité (`defaut_d_identite`), `t` (`defaut_de_t`), `registre_prix`
-    (`defaut_du_registre`), variables des blocs (`DOMAINES_DES_BLOCS`,
-    refus sous la forme « non (condition) », qui refuse aussi `NaN`, sans
-    écrêtage ; annotation du 13/11/2026, points 1.6 et 1.7) et **finitude** de
-    toute variable `float` (positions, V^flux, variables des blocs) : `inf`,
-    `-inf` et `NaN` sont refusés (décision du mainteneur du 13/11/2026, point
-    Q2 de l'audit de #112). Les domaines de signe des positions sont contrôlés
-    par le noyau à l'ouverture du pas (`ouvrir_pas`).
+    initial, état de clôture de chaque pas), par la reprise et, pour une
+    variable d'état d'un bloc, par `Vue.ecrire_etat` : champs d'identité
+    (`defaut_d_identite`), `t` (`defaut_de_t`), `registre_prix`
+    (`defaut_du_registre`), variables des blocs (`DOMAINES_DES_BLOCS`, refus
+    sous la forme « <valeur> hors du domaine <condition> », qui refuse aussi
+    `NaN`, sans écrêtage ; annotation du 13/11/2026, points 1.6 et 1.7) et
+    **finitude** de toute variable `float` (positions, V^flux, variables des
+    blocs) : `inf`, `-inf` et `NaN` sont refusés (décision du mainteneur du
+    13/11/2026, point Q2 de l'audit de #112). Les domaines de signe des
+    positions sont contrôlés par le noyau à l'ouverture du pas (`ouvrir_pas`).
     """
     if nom in _NOMS_D_IDENTITE:
         return defaut_d_identite(nom, valeur)

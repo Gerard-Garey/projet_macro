@@ -369,8 +369,15 @@ class Vue:
         variable = schema.VARIABLE[nom]
         if not variable.admet(valeur):
             raise self._refus(f"valeur {valeur!r} : {variable.description_du_type()} attendu", nom)
-        # Validation d'abord (finitude, par l'espace du pas), enregistrement
-        # ensuite : un refus laisse `etat_suivant` inchangé.
+        # Domaine de la variable, par la seule fonction de domaine du schéma, dès l'écriture
+        # plutôt qu'à la construction de l'état de clôture (qui le contrôle encore) ; une
+        # valeur non finie est refusée par l'espace du pas, ci-dessous.
+        if _est_finie(valeur):
+            motif = schema.defaut_de_domaine(nom, valeur)
+            if motif is not None:
+                raise self._refus(f"valeur {motif}", nom)
+        # Validation d'abord (domaine ci-dessus, finitude par l'espace du pas),
+        # enregistrement ensuite : un refus laisse `etat_suivant` inchangé.
         self._pas.espace.ecrire(nom + SUFFIXE_SUIVANT, valeur)
         etat_suivant[nom] = valeur
 

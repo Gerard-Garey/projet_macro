@@ -10,9 +10,10 @@ variables du bloc 8 s'ajoutent au J3-c.
 
 Domaine au chargement (point 1.6) : 1 + π^e > 0, domaine du type « par an,
 taux de croissance » (condition de `TauxDeCroissance` et de ln(1 + π^e) dans
-T3), refusé par `schema.defaut_de_domaine` sous la forme « non (1 + π^e > 0) »,
-qui refuse aussi `NaN`, sans écrêtage. Au fil des pas, π^e > −1 est un
-invariant de BC3, éprouvé par les tests du bloc 8 (J3-c), non par le moteur.
+T3), refusé par `schema.defaut_de_domaine` sous la forme « <valeur> hors du
+domaine 1 + π^e > 0 (…) », qui refuse aussi `NaN`, sans écrêtage. Au fil des
+pas, π^e > −1 est un invariant de BC3, éprouvé par les tests du bloc 8 (J3-c),
+non par le moteur.
 """
 
 from __future__ import annotations

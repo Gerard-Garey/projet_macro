@@ -8,8 +8,8 @@ valent W_{t−1}, U_{t−1} et N_{t−1}, `N_pa` vaut N^pa_t. Valeurs
 stationnaires : `sec:travail-stationnaire`.
 
 Domaines au chargement (point 1.7, visa de `macro`), refusés par
-`schema.defaut_de_domaine` sous la forme « non (condition) », qui refuse aussi
-`NaN`, sans écrêtage :
+`schema.defaut_de_domaine` sous la forme « <valeur> hors du domaine
+<condition> », qui refuse aussi `NaN`, sans écrêtage :
 
 - W > 0 : UC = W/pr (N8) ;
 - 0 ≤ U ≤ 1 : U = 0 et U = 1 sont atteignables par la dynamique (T4, T5) ;

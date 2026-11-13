@@ -7,8 +7,8 @@ valeur du pas suivant sous `<nom>_suivant`), toutes `float`, d'invariance
 `sec:production-stationnaire` (`outils/etat_stationnaire.py`, `ouverture`).
 
 Domaines au chargement (point 1.7, visa de `macro`), refusés par
-`schema.defaut_de_domaine` sous la forme « non (condition) », qui refuse aussi
-`NaN`, sans écrêtage :
+`schema.defaut_de_domaine` sous la forme « <valeur> hors du domaine
+<condition> », qui refuse aussi `NaN`, sans écrêtage :
 
 - v^e > 0 : IN^vol* = n_a σ v^e est le dénominateur de ξ (P1) ;
 - IN^vol ≥ 0 : invariant de conservation (N6, N7), jamais borné pendant un pas ;
