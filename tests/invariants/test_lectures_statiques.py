@@ -22,7 +22,12 @@ dont le radical est le nom du module.
    relevé ; `vue.grand_livre.ouverture`, `.echelle`,
    `.valeur_nette_stock`, `.valeur_nette_flux` ; l'importation d'un module de
    `nations.moteur` autre que `contrat_bloc` et `conversions` (`from base
-   import X` jugé sur `base.X`), de `tests`, d'`outils`, d'`importlib` ou de
+   import X` jugé sur `base.X`) ; depuis `conversions`, tout nom hors de la
+   **liste fermée** `NOMS_DE_CONVERSIONS` (les deux conversions et les deux
+   types de taux qu'elles acceptent), ce qui refuse aussi le module importé
+   entier (`import nations.moteur.conversions`, `from nations.moteur import
+   conversions`) et toute réexportation (`PAS_PAR_AN`, constat M2 de l'audit
+   du rang 4, #112) ; l'importation de `tests`, d'`outils`, d'`importlib` ou de
    `builtins` (une importation relative est résolue contre le paquet
    `nations.blocs` ; au-delà de `nations`, elle est refusée) ; `global`,
    `nonlocal` et toute affectation dont la cible est un attribut.
@@ -64,6 +69,12 @@ NOMS_REFUSES = frozenset({"getattr", "setattr", "delattr", "vars", "globals", "l
 # `importlib` et `builtins` rendraient `getattr` ou un module du moteur sous un autre nom.
 RACINES_REFUSEES = frozenset({"tests", "outils", "importlib", "builtins"})
 MOTEUR_ADMIS = frozenset({"nations.moteur.contrat_bloc", "nations.moteur.conversions"})
+# Noms admis depuis `nations.moteur.conversions` (liste fermée, constat M2 de l'audit du rang 4,
+# #112) : les deux conversions et les deux types qu'elles acceptent. Toute autre importation du
+# module (lui-même, ou un nom qu'il réexporte, comme `PAS_PAR_AN`) est refusée : n_a ne se lit
+# que par la vue (`vue.parametres.cadre`), et un taux ne se convertit que par ces deux fonctions.
+CONVERSIONS = "nations.moteur.conversions"
+NOMS_DE_CONVERSIONS = frozenset({"par_pas", "facteur_par_pas", "TauxDeFlux", "TauxDeCroissance"})
 # Paquet contre lequel se résout une importation relative d'un module de bloc.
 PAQUET_DES_BLOCS = "nations.blocs"
 CATEGORIES = ("ouverture", "grand_livre", "registre", "pas", "ecrit", "etat", "propose",
@@ -109,6 +120,8 @@ def _import_refuse(nom: str) -> bool:
         return True
     if nom == "nations.moteur":
         return True
+    if nom == CONVERSIONS or nom.startswith(CONVERSIONS + "."):
+        return nom.removeprefix(CONVERSIONS + ".") not in NOMS_DE_CONVERSIONS
     if nom.startswith("nations.moteur."):
         return not any(nom == m or nom.startswith(m + ".") for m in MOTEUR_ADMIS)
     return False
@@ -461,10 +474,15 @@ def test_le_controle_statique_sait_echouer(avant, apres, motif):
 def test_from_moteur_import_module_admis_juge_sur_base_point_nom():
     """C2 : `from nations.moteur import contrat_bloc` est admis (jugé sur
     `nations.moteur.contrat_bloc`, non sur `nations.moteur`) ; `from nations.moteur import
-    ordonnanceur` est refusé sous son nom complet, et lui seul."""
+    ordonnanceur` est refusé sous son nom complet, et lui seul. `conversions` importé comme
+    module est refusé (liste fermée de ses noms, constat M2 du rang 4, #112)."""
     admis = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
-                             "contrat_bloc, conversions\n", 1)
+                             "contrat_bloc\n", 1)
     assert analyser_texte(admis) == []
+    module = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
+                              "contrat_bloc, conversions\n", 1)
+    assert [e for e in analyser_texte(module) if "importation" in e] == [
+        "ligne 4 : importation de nations.moteur.conversions refusée"]
     refuse = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
                               "contrat_bloc, ordonnanceur\n", 1)
     assert [e for e in analyser_texte(refuse) if "importation" in e] == [
@@ -475,12 +493,70 @@ def test_importation_relative_admise_resolue_contre_nations_blocs():
     """A1 : `from ..moteur import contrat_bloc` désigne `nations.moteur.contrat_bloc`, admis ;
     `from . import travail` désigne `nations.blocs.travail`, hors du contrôle d'importation."""
     admis = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
-                             "    from ..moteur import contrat_bloc, conversions\n"
+                             "    from ..moteur import contrat_bloc\n"
+                             "    from ..moteur.conversions import facteur_par_pas\n"
                              "    from . import travail\n"
-                             "    return contrat_bloc, conversions, travail\n", 1)
+                             "    return contrat_bloc, facteur_par_pas, travail\n", 1)
     assert analyser_texte(admis) == []
 
 
 def test_module_sans_bloc_ou_de_radical_faux():
     assert analyser_texte("X = 1\n") == ["aucun bloc déclaré dans le module"]
     assert any("nom du module" in e for e in analyser_texte(CONFORME, radical="travail"))
+
+
+# --------------------------------------------------------------------------
+# Liste fermée des noms de `conversions` (constat M2 de l'audit du rang 4, #112)
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("importation", [
+    "from nations.moteur.conversions import PAS_PAR_AN",
+    "from nations.moteur.conversions import par_pas, PAS_PAR_AN",
+    "from nations.moteur.conversions import PAS_PAR_AN as N",
+    "from nations.moteur.conversions import *",
+    "import nations.moteur.conversions",
+    "import nations.moteur.conversions as conv",
+    "from nations.moteur import conversions",
+    "from ..moteur.conversions import PAS_PAR_AN",
+    "from ..moteur import conversions",
+    "from nations.moteur.conversions.x import y",
+])
+def test_conversions_hors_de_la_liste_fermee_refusees(importation):
+    """Depuis `nations.moteur.conversions`, seuls les noms de `NOMS_DE_CONVERSIONS` sont admis :
+    un nom réexporté (`PAS_PAR_AN`, sous son nom ou renommé), l'étoile, le module entier (sous
+    toute forme, relative comprise) sont refusés, ce qui ferme la lecture de n_a hors de la
+    vue (placés dans une fonction jamais appelée : le module fictif s'exécute sans les
+    résoudre ; l'étoile, admise au seul niveau du module, y est placée)."""
+    if importation.endswith("*"):
+        texte = CONFORME.replace("import math\n", f"import math\n{importation}\n", 1)
+    else:
+        texte = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
+                                 f"    {importation}\n", 1)
+    ecarts = [e for e in analyser_texte(texte) if "importation" in e]
+    assert ecarts and all("nations.moteur.conversions" in e for e in ecarts), ecarts
+
+
+def test_conversions_noms_de_la_liste_fermee_admis():
+    """Les quatre noms de la liste fermée sont admis, sous leur nom ou renommés."""
+    texte = CONFORME.replace(
+        "from nations.moteur.conversions import par_pas\n",
+        "from nations.moteur.conversions import (\n    TauxDeCroissance,\n    TauxDeFlux,\n"
+        "    facteur_par_pas,\n    par_pas,\n)\n"
+        "from nations.moteur.conversions import par_pas as pp\n", 1)
+    assert analyser_texte(texte) == []
+    assert NOMS_DE_CONVERSIONS == {"par_pas", "facteur_par_pas", "TauxDeFlux",
+                                   "TauxDeCroissance"}
+
+
+def test_les_blocs_du_moteur_n_importent_de_conversions_que_la_liste_fermee():
+    """Mesure sur `src/nations/blocs/` : chaque nom importé de `conversions` par un bloc est dans
+    la liste fermée (le contrôle d'ensemble le refuserait sinon) ; la liste ne contient que des
+    noms définis ou réexportés par le module."""
+    import nations.moteur.conversions as module
+
+    assert all(hasattr(module, nom) for nom in NOMS_DE_CONVERSIONS)
+    for chemin in modules_de_blocs():
+        for noeud in ast.walk(ast.parse(chemin.read_text(encoding="utf-8"))):
+            if isinstance(noeud, ast.ImportFrom) and noeud.module == CONVERSIONS:
+                assert {a.name for a in noeud.names} <= NOMS_DE_CONVERSIONS, chemin.name
