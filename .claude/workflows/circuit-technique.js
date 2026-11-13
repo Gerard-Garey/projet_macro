@@ -15,7 +15,7 @@ export const meta = {
 
 // ---------------------------------------------------------------------------
 //  Workflow circuit-technique : circuit 3 de CLAUDE.md (coder -> audit),
-//  selon les huit principes de CLAUDE.md, « Sous-agents », « Workflows ».
+//  selon les huit principes de .claude/workflows/README.md (resume dans CLAUDE.md, « Sous-agents »).
 //
 //  Garde-fous et leurs limites :
 //  - Principe 2 : un script de workflow ne peut pas retirer d'outils a un
@@ -62,7 +62,7 @@ const ZONES_PROTEGEES = [
 
 // Consigne commune a tous les agents du workflow (principe 2)
 const INTERDITS = [
-  "INTERDICTIONS ABSOLUES dans ce workflow (CLAUDE.md, principe 2 des workflows) :",
+  "INTERDICTIONS ABSOLUES dans ce workflow (.claude/workflows/README.md, principe 2 ; resume dans CLAUDE.md) :",
   "- aucune commande git qui ecrit, notamment (liste non limitative) : git commit, git push, git add, git rm, git mv, git stash (sauf git stash create a l'etape Verification du tour 1), git reset, git checkout, git restore, git switch, git clean, git apply, git cherry-pick, git merge, git rebase, git tag, git update-ref, git branch <nom> / -d / -D ;",
   "- aucune regeneration ni modification des references de non-regression ;",
   "- aucune creation ni modification d'issue ou de commentaire GitHub ;",

@@ -32,7 +32,7 @@ Le dépôt de référence est `https://github.com/Gerard-Garey/projet_macro` (pu
 
 Les commandes courantes (installer, lancer, tester, compiler) sont dans `README.md` : s'y reporter plutôt que de les recopier ici. Python s'exécute toujours par `uv run` ; sur le poste Windows, `python` seul désigne l'alias du Microsoft Store.
 
-Batteries de vérification, lancées par `coder`, `audit` et le workflow `circuit-technique` (liste `BATTERIES` de `.claude/workflows/circuit-technique.js`, à tenir identique). Elles ont été mises en place par l'issue #4 ; la quatrième, `verifier_matrices.py --strict`, par l'issue #28. Un test (`tests/unitaires/test_batteries.py`) vérifie que les listes de `CLAUDE.md`, de `BATTERIES` et de `README.md` sont identiques et que chaque batterie est une étape de la CI.
+Batteries de vérification, lancées par `coder`, `audit` et le workflow `circuit-technique` (liste `BATTERIES` de `.claude/workflows/circuit-technique.js`, à tenir identique). Un test (`tests/unitaires/test_batteries.py`) vérifie que les listes de `CLAUDE.md`, de `BATTERIES` et de `README.md` sont identiques et que chaque batterie est une étape de la CI.
 
 ```
 uv run pytest -q tests/unitaires
@@ -137,7 +137,11 @@ Huit sous-agents de projet (`.claude/agents/` ; douze fiches : `architect`, `mac
 - `jeu` donne son avis sur chaque fiche comparative et sur toute question de jouabilité ; il ne tranche pas le fond économique.
 - Un sujet à la frontière consulte `macro` et `monnaie` : l'inflation (prix et salaires chez l'un, anticipations chez l'autre), le crédit, la dette publique. En cas de désaccord entre experts, le mainteneur tranche.
 
-**Routage du modèle et de l'effort** (`docs/agents/routage.md`, ADR 0006) — `architect`, `macro`, `monnaie` et `jeu` existent en deux fiches au même corps : la fiche de base (Opus, effort `medium`, routine) et la fiche `-approfondi` (Opus, effort `high`, jugement), générée par `bash .claude/outils/fiches_jumelles.sh` et contrôlée par la CI ; ne jamais modifier une fiche `-approfondi` à la main. La session principale choisit la fiche selon la matrice de `docs/agents/routage.md` (§ 3) et ne passe `model: "fable"` à l'appel que dans les cas du § 4.1 (échec documenté d'Opus `high`, désaccord entre agents, rédaction d'un ADR d'architecture) ou sur accord du mainteneur ; au plus une relance ciblée, une hausse d'effort et une consultation Fable par question, trois consultations Fable par branche, ADR compris, sans nouvel accord ; au-delà d'un plafond, arrêt et compte rendu au mainteneur ; un modèle indisponible arrête le circuit (aucun remplacement silencieux). Les agents signalent les critères rencontrés dans leur bloc « Retour », ils ne décident pas de leur escalade ; la session note chaque escalade, relance ciblée ou arrêt d'une ligne dans la PR (hors branche : `docs/feuille-de-route.md`, section « Escalades, relances et arrêts hors branche »).
+**Routage du modèle et de l'effort** (`docs/agents/routage.md`, ADR 0006) :
+- `architect`, `macro`, `monnaie` et `jeu` ont deux fiches au même corps : base (Opus, `medium`, routine) et `-approfondi` (Opus, `high`, jugement), générée par `bash .claude/outils/fiches_jumelles.sh` et contrôlée par la CI — ne jamais modifier une fiche `-approfondi` à la main ; la session choisit selon la matrice du § 3 ;
+- `model: "fable"` seulement dans les cas du § 4.1 (échec documenté d'Opus `high`, désaccord entre agents, rédaction d'un ADR d'architecture) ou sur accord du mainteneur ;
+- plafonds (§ 5.2) : par question, au plus une relance ciblée, une hausse d'effort et une consultation Fable ; trois consultations Fable par branche, ADR compris, sans nouvel accord ; au-delà, arrêt et compte rendu au mainteneur ; un modèle indisponible arrête le circuit (aucun remplacement silencieux) ;
+- les agents signalent les critères rencontrés dans leur bloc « Retour » sans décider de leur escalade ; la session note chaque escalade, relance ou arrêt d'une ligne dans la PR (hors branche : `docs/feuille-de-route.md`, « Escalades, relances et arrêts hors branche »).
 
 **Choix d'approche.** Pour chaque bloc, l'origine de l'approche retenue (v1.5, v2.0 ou nouvelle) est **décidée par le mainteneur** sur **fiche comparative** (`docs/blocs/<bloc>.md`, gabarit `docs/blocs/0000-gabarit.md`), jamais par un agent. La fiche est instruite par l'expert pilote et commentée par `jeu`. La décision est numérotée (M-n) dans `docs/feuille-de-route.md`.
 
@@ -158,18 +162,7 @@ Huit sous-agents de projet (`.claude/agents/` ; douze fiches : `architect`, `mac
 
 Un constat bloquant ou majeur d'un vérificateur renvoie à l'étape de réalisation. Quand la spécification ou une source admet deux lectures, l'expert pilote les décrit et donne son avis, le mainteneur tranche.
 
-**Workflows** (`.claude/workflows/`). Un workflow met en œuvre un circuit type et en fixe les appels d'agents, les sorties structurées et les conditions d'arrêt. Huit principes :
-
-1. lancement **sur commande explicite du mainteneur** uniquement ;
-2. **aucune écriture dans l'historique ni l'état partagé** par le workflow ou ses agents : ni `git commit`, ni `git push`, ni régénération de référence, ni création d'issue — interdiction portée par les consignes et les fiches, les permissions de `.claude/settings.json` ne l'imposant pas : la session principale vérifie `git status` et `git log` après chaque workflow ;
-3. **arrêt avec les rapports à tout point de décision** (question de fond, visa du mainteneur, contradiction entre vérificateurs) ;
-4. **au plus une reprise** `coder` → `audit` ;
-5. **vérificateurs ciblés sur le diff** (audit léger) ;
-6. **constats structurés** : gravité (bloquant / majeur / mineur), `fichier:ligne`, mesure exécutée ; un constat sans emplacement ni mesure n'est pas recevable ;
-7. **tout contrôle mécanique est un script**, jamais un agent : un agent lit la sortie d'un script, il ne refait pas le décompte ; un contrôle récurrent sans script en appelle un (issue) ;
-8. **effort réduit** pour les étapes mécaniques ; aucun `model` fixé dans un workflow (hérité de la session).
-
-Un **constat** (défaut du code) conduit à la reprise ou à l'arrêt ; une **question pour l'expert** (doute de `coder`, question de l'audit) ne relance pas `coder`. Trois statuts de fin : `termine`, `termine avec questions` (les seules remontées sont des questions : la session principale les porte à l'expert pilote avant tout commit), `arrete` ; une batterie en échec à la dernière vérification finit toujours par `arrete`.
+**Workflows** (`.claude/workflows/`) : un workflow met en œuvre un circuit type ; ses huit principes et ses statuts de fin sont dans `.claude/workflows/README.md` (« principe N des workflows »). En résumé : lancement **sur commande explicite du mainteneur** seulement (1) ; **aucune écriture dans l'historique ni l'état partagé** par le workflow ou ses agents — ni commit, ni push, ni régénération de référence, ni issue ; la session vérifie `git status` et `git log` après chaque workflow (2) ; arrêt à tout point de décision (3) ; au plus une reprise `coder` → `audit` (4) ; **tout contrôle mécanique est un script**, jamais un agent (7).
 
 **Règle 9 — un seul passage de `docwriter` par branche** : `docwriter` intervient une fois, en fin de branche, sur l'état final du code, avec **un commit `docs:` par issue** ; `coder` ne modifie pas la spécification et liste dans chaque commit proposé la **surface d'impact documentaire** (sections, tableaux, décomptes, fonctions citées), dont `docwriter` part ; l'expert pilote valide le diff de la spécification une fois, en fin de branche. Exceptions : commit `docs:` préparatoire qui protège la suite, branche où le document porte la décision et précède le code (spécification d'un bloc au jalon J1), écart de concordance qui ferait échouer la CI (commit `docs:` minimal, aussitôt).
 
