@@ -637,11 +637,12 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     p = UC * math.exp(mu_t)  # P3 ; P4 : P_t ≡ p
     d_H, d_F, d_G = C_plan / p, I_plan / p, G_plan / p  # N6
     d = d_H + d_F + d_G
-    v = min(d, o["IN_vol"] + y)
+    disponible = o["IN_vol"] + y  # calculé une fois : v et IN^vol_{t+1} sur la même valeur
+    v = min(d, disponible)
     v_H, v_F, v_G = v / d * d_H, v / d * d_F, v / d * d_G
-    IN_vol_1 = o["IN_vol"] + y - v  # N7
-    cm = (o["IN"] + UC * y) / (o["IN_vol"] + y)  # N8
-    dIN = UC * y - cm * v
+    IN_vol_1 = disponible - v  # N7
+    cm = (o["IN"] + UC * y) / disponible  # N8
+    dIN = cm * IN_vol_1 - o["IN"]  # N8, forme B (P72) : ΔIN = cm IN^vol_{t+1} − IN_t
     pr_1 = o["pr"] * (1 + par.g_pr) ** (1 / n)  # N9
     K_vol_1 = (1 - par.delta / n) * o["K_vol"] + v_F  # N10
     ve_1 = Gr * ((1 - par.lambda_v / n) * o["ve"] + par.lambda_v / n * d)  # N1
