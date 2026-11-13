@@ -23,8 +23,9 @@ dont le radical est le nom du module.
    `.valeur_nette_stock`, `.valeur_nette_flux` ; l'importation d'un module de
    `nations.moteur` autre que `contrat_bloc` et `conversions` (`from base
    import X` jugé sur `base.X`), de `tests`, d'`outils`, d'`importlib` ou de
-   `builtins` ; `global`, `nonlocal` et toute affectation dont la cible est un
-   attribut.
+   `builtins` (une importation relative est résolue contre le paquet
+   `nations.blocs` ; au-delà de `nations`, elle est refusée) ; `global`,
+   `nonlocal` et toute affectation dont la cible est un attribut.
 4. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
    déclare pas).
 5. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
@@ -63,6 +64,8 @@ NOMS_REFUSES = frozenset({"getattr", "setattr", "delattr", "vars", "globals", "l
 # `importlib` et `builtins` rendraient `getattr` ou un module du moteur sous un autre nom.
 RACINES_REFUSEES = frozenset({"tests", "outils", "importlib", "builtins"})
 MOTEUR_ADMIS = frozenset({"nations.moteur.contrat_bloc", "nations.moteur.conversions"})
+# Paquet contre lequel se résout une importation relative d'un module de bloc.
+PAQUET_DES_BLOCS = "nations.blocs"
 CATEGORIES = ("ouverture", "grand_livre", "registre", "pas", "ecrit", "etat", "propose",
               "couvre")
 
@@ -80,22 +83,29 @@ def declares(siege) -> dict[str, set[str]]:
     return rendus
 
 
-def _module_importe(noeud: ast.AST, paquet: str) -> list[str]:
+def _module_importe(noeud: ast.AST) -> list[str]:
     """Noms complets des modules qu'importe une instruction d'importation."""
     if isinstance(noeud, ast.Import):
         return [a.name for a in noeud.names]
     base = noeud.module or ""
     if noeud.level:
-        parties = paquet.split(".")
-        base = ".".join(parties[:len(parties) - noeud.level + 1] + ([base] if base else []))
+        # Résolution contre le paquet du module (`nations.blocs`), non contre le module lui-même :
+        # `from ..moteur import parametres` désigne `nations.moteur.parametres`. Au-delà de
+        # `nations`, le nom garde ses points de tête et `_import_refuse` le refuse.
+        parties = PAQUET_DES_BLOCS.split(".")
+        if noeud.level > len(parties):
+            base = "." * noeud.level + base
+        else:
+            base = ".".join(parties[:len(parties) - noeud.level + 1] + ([base] if base else []))
     # `from base import X` est jugé sur `base.X` (X module ou nom de `base`), non sur `base`
     # seule : `from nations.moteur import contrat_bloc` est admis, `… import ordonnanceur` refusé.
-    return [f"{base}.{a.name}" for a in noeud.names]
+    separateur = "" if base.endswith(".") else "."  # `from ... import X` : `...X`
+    return [f"{base}{separateur}{a.name}" for a in noeud.names]
 
 
 def _import_refuse(nom: str) -> bool:
     racine = nom.split(".")[0]
-    if racine in RACINES_REFUSEES:
+    if racine == "" or racine in RACINES_REFUSEES:
         return True
     if nom == "nations.moteur":
         return True
@@ -184,7 +194,6 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
     conforme. `declaration` : celle du bloc du module (`None` si le module n'en porte pas)."""
     arbre = ast.parse(texte)
     parents = {enfant: noeud for noeud in ast.walk(arbre) for enfant in ast.iter_child_nodes(noeud)}
-    paquet = f"nations.blocs.{radical}"
     ecarts = []
     for noeud in ast.walk(arbre):
         if isinstance(noeud, ast.Name) and noeud.id in NOMS_REFUSES:
@@ -198,7 +207,7 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
         elif isinstance(noeud, (ast.Global, ast.Nonlocal)):
             ecarts.append(f"ligne {noeud.lineno} : {type(noeud).__name__.lower()} refusé")
         elif isinstance(noeud, (ast.Import, ast.ImportFrom)):
-            for nom in _module_importe(noeud, paquet):
+            for nom in _module_importe(noeud):
                 if _import_refuse(nom):
                     ecarts.append(f"ligne {noeud.lineno} : importation de {nom} refusée")
         for cible in _cibles(noeud):
@@ -422,6 +431,18 @@ MUTATIONS = [
     # `from base import X` jugé sur `base.X` (C2) : un module du moteur hors des admis.
     ("import math\n", "import math\nfrom nations.moteur import parametres\n",
      "importation de nations.moteur.parametres refusée"),
+    # Importations relatives, résolues contre le paquet `nations.blocs` (audit de #112, A1) ;
+    # placées dans une fonction jamais appelée, comme ci-dessus.
+    ("import math\n", "import math\n\n\ndef _jamais():\n    from ..moteur import parametres\n",
+     "importation de nations.moteur.parametres refusée"),
+    ("import math\n", "import math\n\n\ndef _jamais():\n    from .. import moteur\n",
+     "importation de nations.moteur refusée"),
+    ("import math\n", "import math\n\n\ndef _jamais():\n"
+     "    from ..moteur.parametres import prix\n",
+     "importation de nations.moteur.parametres.prix refusée"),
+    ("import math\n", "import math\n\n\ndef _jamais():\n"
+     "    from ...outils import etat_stationnaire\n",
+     "importation de ...outils.etat_stationnaire refusée"),
 ]
 
 
@@ -448,6 +469,16 @@ def test_from_moteur_import_module_admis_juge_sur_base_point_nom():
                               "contrat_bloc, ordonnanceur\n", 1)
     assert [e for e in analyser_texte(refuse) if "importation" in e] == [
         "ligne 4 : importation de nations.moteur.ordonnanceur refusée"]
+
+
+def test_importation_relative_admise_resolue_contre_nations_blocs():
+    """A1 : `from ..moteur import contrat_bloc` désigne `nations.moteur.contrat_bloc`, admis ;
+    `from . import travail` désigne `nations.blocs.travail`, hors du contrôle d'importation."""
+    admis = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
+                             "    from ..moteur import contrat_bloc, conversions\n"
+                             "    from . import travail\n"
+                             "    return contrat_bloc, conversions, travail\n", 1)
+    assert analyser_texte(admis) == []
 
 
 def test_module_sans_bloc_ou_de_radical_faux():
