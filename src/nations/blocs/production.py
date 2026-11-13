@@ -61,11 +61,13 @@ from nations.moteur.conversions import TauxDeFlux, facteur_par_pas, par_pas
 def ventes_anticipees(v_e: float, d: float, facteur_g: float, lambda_v_pas: float) -> float:
     """N1 : v^e_{t+1} = (1 + g)^{1/n_a} [(1 − λ_v/n_a) v^e_t + (λ_v/n_a) d_t], u.v. par pas ;
     `lambda_v_pas` = λ_v/n_a."""
+    # eq:production-ventes-anticipees
     return facteur_g * ((1.0 - lambda_v_pas) * v_e + lambda_v_pas * d)
 
 
 def stock_cible(v_e: float, sigma: float, n_a: int) -> float:
     """N2 : IN^vol*_t = n_a σ v^e_t, u.v. (σ en années de ventes)."""
+    # eq:production-stock-cible
     return n_a * sigma * v_e
 
 
@@ -74,24 +76,28 @@ def production_visee(v_e: float, IN_vol_etoile: float, IN_vol: float, facteur_g:
     """N3 : y*_t = max{0 ; v^e + [(1 + g)^{1/n_a} − 1] IN^vol* + (λ_IN/n_a)(IN^vol* − IN^vol)},
     u.v. par pas ; `lambda_IN_pas` = λ_IN/n_a. Plancher y* ≥ 0 : borne physique déclarée,
     sans paramètre, inactive à l'état stationnaire."""
+    # eq:production-visee
     return max(0.0, v_e + (facteur_g - 1.0) * IN_vol_etoile
                + lambda_IN_pas * (IN_vol_etoile - IN_vol))
 
 
 def demande_de_travail(y_etoile: float, pr: float) -> float:
     """N4 : N*_t = y*_t/pr_t, personnes."""
+    # eq:production-demande-travail
     return y_etoile / pr
 
 
 def production_du_pas(y_etoile: float, pr: float, N: float) -> float:
     """N5 : y_t = min{y*_t ; pr_t N_t}, u.v. par pas. Technique y ≤ pr·N : borne déclarée,
     ses deux termes égaux à l'état stationnaire."""
+    # eq:production-realisee
     return min(y_etoile, pr * N)
 
 
 def capacite(K_vol: float, rendement_normal_pas: float) -> float:
     """N11 : y^cap_t = K^vol_t/(n_a κ), u.v. par pas ; `rendement_normal_pas` = (1/κ)/n_a,
     taux de flux 1/κ converti au pas."""
+    # eq:production-capacite
     return K_vol * rendement_normal_pas
 
 
@@ -115,6 +121,7 @@ def ventes(d: float, d_H: float, d_F: float, d_G: float,
     """N6 : (v, v_H, v_F, v_G) ; v = min{d ; IN^vol + y}, chaque acheteur servi au même taux
     v/d (rationnement proportionnel, sans priorité) ; ventes et volumes servis nuls si d = 0.
     Disponibilité v ≤ IN^vol + y : borne déclarée."""
+    # eq:production-ventes
     v = min(d, disponible_du_pas)
     if d == 0.0:
         return v, 0.0, 0.0, 0.0
@@ -123,11 +130,13 @@ def ventes(d: float, d_H: float, d_F: float, d_G: float,
 
 def stock_en_volume(disponible_du_pas: float, v: float) -> float:
     """N7 : IN^vol_{t+1} = (IN^vol_t + y_t) − v_t, u.v., sur le disponible calculé une fois."""
+    # eq:production-stock-volume
     return disponible_du_pas - v
 
 
 def cout_unitaire(W: float, pr: float) -> float:
     """N8 : UC_t = W_t/pr_t, u.m. par u.v. (coût salarial, J = 1, sans intrants)."""
+    # eq:production-cout-unitaire
     return W / pr
 
 
@@ -135,6 +144,7 @@ def variation_des_stocks(IN: float, UC: float, y: float, disponible_du_pas: floa
                          IN_vol_suivant: float) -> float:
     """N8, ligne 4, forme B (P72) : cm_t = (IN_t + UC_t y_t)/(IN^vol_t + y_t), puis
     ΔIN_t = cm_t IN^vol_{t+1} − IN_t, u.m. par pas ; ΔIN = 0 si IN^vol_t + y_t = 0."""
+    # eq:production-variation-stocks
     if disponible_du_pas == 0.0:
         return 0.0
     cm = (IN + UC * y) / disponible_du_pas
@@ -143,12 +153,14 @@ def variation_des_stocks(IN: float, UC: float, y: float, disponible_du_pas: floa
 
 def productivite_suivante(pr: float, facteur_pr: float) -> float:
     """N9 : pr_{t+1} = pr_t (1 + g_pr)^{1/n_a} ; `facteur_pr` = (1 + g_pr)^{1/n_a}."""
+    # eq:production-productivite
     return pr * facteur_pr
 
 
 def capital_en_volume(K_vol: float, delta_pas: float, I_vol: float) -> float:
     """N10 : K^vol_{t+1} = (1 − δ/n_a) K^vol_t + I^vol_t, u.v. ; `delta_pas` = δ/n_a ;
     I^vol_t : volume livré à l'investissement, après rationnement (N6)."""
+    # eq:production-capital-volume
     return (1.0 - delta_pas) * K_vol + I_vol
 
 
