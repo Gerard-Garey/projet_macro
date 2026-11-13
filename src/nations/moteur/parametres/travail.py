@@ -13,8 +13,8 @@ Domaines (point 3.2), refusés à toute construction de la table, jamais écrêt
 l'état stationnaire**, non domaine de définition (P71 : la borne N ≤ N^pa est
 inactive à l'état stationnaire avec une marge de U^eq).
 
-Les labels `eq:travail-…` sont ceux que la fiche 3 (§ 9.1) prévoit au J3 ;
-ils entrent dans la spécification au passage de `docwriter` (P62).
+Les labels `eq:travail-…` sont ceux de la fiche 3 (§ 9.1) ; ils sont dans la
+spécification depuis le rang 8 de J3-b (P62).
 """
 
 from __future__ import annotations

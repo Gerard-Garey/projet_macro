@@ -13,8 +13,8 @@ module, appelables directement, qui reçoivent des scalaires (taux déjà
 convertis au pas) ; la méthode de phase lit la vue, convertit λ_μ par
 `nations.moteur.conversions` seulement, appelle ces fonctions et écrit. Les
 labels `eq:prix-…` (fiche, § 9.1 ; `eq:prix-indice`, P34 (a)) et leurs balises
-sont posés ensemble au passage de `docwriter` (P62) : d'ici là, chaque
-équation est repérée par son identifiant P1 à P4.
+sont posés ensemble (P62, rang 8 de J3-b) ; chaque équation porte sa balise
+et garde son identifiant P1 à P4.
 
 **P2 sous P54, option (ii)** : la marge d'ouverture ln(p_{t−1}/UC_{t−1}) est la
 variable d'état μ̃_{t−1}, écrite au pas précédent par ce bloc : μ̃_t =

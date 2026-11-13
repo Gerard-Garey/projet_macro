@@ -11,8 +11,8 @@ Domaines (point 3.2), refusés à toute construction de la table, jamais écrêt
 0 < λ_v < n_a, strict (P70) ; 0 < λ_IN ≤ n_a (P65) ; 1 + g_pr > 0 (type) ;
 σ > 0 et κ > 0, domaines de définition (dénominateurs de N2 et N11).
 
-Les labels `eq:production-…` sont ceux que la fiche 2 (§ 9.1) prévoit au J3 ;
-ils entrent dans la spécification au passage de `docwriter` (P62).
+Les labels `eq:production-…` sont ceux de la fiche 2 (§ 9.1) ; ils sont dans
+la spécification depuis le rang 8 de J3-b (P62).
 """
 
 from __future__ import annotations

@@ -12,8 +12,8 @@ conception et d'existence de l'état stationnaire** (P71 : une marge nulle ou
 négative ne couvre pas l'amortissement), qui contient le domaine de définition
 1 + μ̄ > 0 (ln(1 + μ̄) et ω* = 1/(1 + μ̄) définis).
 
-Les labels `eq:prix-…` sont ceux que la fiche 4 (§ 9.1) prévoit au J3 ; ils
-entrent dans la spécification au passage de `docwriter` (P62).
+Les labels `eq:prix-…` sont ceux de la fiche 4 (§ 9.1) ; ils sont dans la
+spécification depuis le rang 8 de J3-b (P62).
 """
 
 from __future__ import annotations

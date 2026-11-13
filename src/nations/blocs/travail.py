@@ -12,8 +12,8 @@ module, appelables directement, qui reçoivent des scalaires (taux déjà
 convertis au pas) ; les méthodes de phase lisent la vue, convertissent les
 taux par `nations.moteur.conversions` seulement, appellent ces fonctions et
 écrivent. Les labels `eq:travail-…` (fiche, § 9.1) et leurs balises sont
-posés ensemble au passage de `docwriter` (P62) : d'ici là, chaque équation est
-repérée par son identifiant T1 à T6.
+posés ensemble (P62, rang 8 de J3-b) ; chaque équation porte sa balise et
+garde son identifiant T1 à T6.
 
 **T2 sous P54, option (ii)** : ω_{t−1} = exp(−μ̃_{t−1}), μ̃_{t−1} étant la marge
 en logarithme d'ouverture, variable d'état du bloc 4. Sous J = 1 sans intrants,

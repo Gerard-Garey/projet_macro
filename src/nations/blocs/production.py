@@ -10,8 +10,8 @@ module, appelables directement, qui reçoivent des scalaires (taux déjà
 convertis au pas) ; les méthodes de phase lisent la vue, convertissent les
 taux par `nations.moteur.conversions` seulement, appellent ces fonctions et
 écrivent. Les labels `eq:production-…` (fiche, § 9.1) et leurs balises sont
-posés ensemble au passage de `docwriter` (P62) : d'ici là, chaque équation est
-repérée par son identifiant N1 à N11.
+posés ensemble (P62, rang 8 de J3-b) ; chaque équation porte sa balise et
+garde son identifiant N1 à N11.
 
 **Phases** (`tab:production-phases` ; ADR 0012, annotation du 13/11/2026,
 points 2.2 et 2.5) :
