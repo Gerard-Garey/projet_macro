@@ -355,10 +355,15 @@ def test_phases_lecture_hors_ordre_refusee(socle, etape, lecture, motif):
 
 
 def test_le_bloc_reel_est_trouve_par_le_socle(socle):
-    """`blocs_reels` rend le bloc de `src/nations/blocs/production.py`, seul bloc réel en J3-b à
-    ce rang ; substitué à son bloc d'essai, il est assemblé avec les sept autres."""
+    """`blocs_reels` rend un bloc par module de `src/nations/blocs/`, dans l'ordre des
+    radicaux, dont celui de `production.py` en tête ; substitués à leurs blocs d'essai, ils sont
+    assemblés avec les autres."""
     reels = socle.blocs_reels()
-    assert [type(b) for b in reels] == [Production]
+    modules = sorted(p.stem for p in (socle.RACINE / "src" / "nations" / "blocs").glob("*.py")
+                     if p.name != "__init__.py")
+    assert sorted(b.declaration.radical for b in reels) == modules
+    assert type(reels[0]) is Production
     blocs = socle.blocs(socle.sentier(0.02), reels=reels)
     assert [b.declaration.radical for b in blocs] == list(socle.RADICAUX)
     assert type(blocs[0]) is Production
+    ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)

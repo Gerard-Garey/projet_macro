@@ -227,57 +227,14 @@ def test_positions_sur_le_sentier(trajectoires, socle, pi, publier):
 # --------------------------------------------------------------------------
 
 
-def grandeurs_b(tr):
-    """B1 à B7, B12, B13, B24 et ξ relevées sur la trajectoire du moteur, définitions de
-    `tab:criteres-j3` : (t, valeur) par grandeur ; fenêtres de 12 tours dès le pas 11."""
-    pas, initial = tr.releve.pas, tr.initial
-    ouvertures = [initial] + [p["etat"] for p in pas[:-1]]
-    g = {cle: [] for cle in ("B1", "B2", "B3", "B4", "B5", "B6", "B7", "B12", "B13", "B24",
-                              "xi")}
-    for t, p in enumerate(pas):
-        v, o = p["variables"], ouvertures[t]
-        pib = p["1"] + p["2"] + p["3"] + p["4"]
-        g["B1"].append((t, o.IN_vol / v["v"]))
-        g["B2"].append((t, v["y"] / v["y_cap"]))
-        g["B3"].append((t, v["U_suivant"]))
-        g["B12"].append((t, v["p"] * o.K_vol / (N_A * pib)))
-        g["xi"].append((t, v["xi"]))
-        if t < PREMIER_PAS_SUR_12_TOURS:
-            continue
-        fenetre = pas[t - N_A + 1:t + 1]
-        g["B4"].append((t, sum(q["5"] for q in fenetre)
-                        / sum(q["1"] + q["2"] + q["3"] + q["4"] for q in fenetre)))
-        if t - N_A >= 0:
-            w0, p0, y0 = (pas[t - N_A]["variables"][n] for n in ("W_suivant", "p", "y"))
-        else:  # t − 12 = −1 : salaire, prix et production d'ouverture du pas 0
-            w0, p0, y0 = initial.W, initial.registre_prix[0], float(tr.sentier.o["y_m1"])
-        g["B5"].append((t, (v["W_suivant"] / v["p"]) / (w0 / p0) - 1.0))
-        g["B6"].append((t, sum(q["variables"]["p"] / q["variables"]["UC"] - 1.0
-                               for q in fenetre) / N_A))
-        g["B7"].append((t, v["P"] / o.registre_prix[N_A - 1] - 1.0))
-        g["B13"].append((t, sum(q["3"] for q in fenetre)
-                         / sum(q["1"] + q["2"] + q["3"] + q["4"] for q in fenetre)))
-        g["B24"].append((t, v["y"] / y0 - 1.0))
-    return g
-
-
-def valeurs_resolues(socle, sentier):
-    """Valeurs résolues du script (`valeurs`, état `e`, paramètres), même définition."""
-    e, par = sentier.e, sentier.par
-    v = socle.script().valeurs(e, par)
-    return {"B1": v["IN_sur_v"], "B2": v["tu"], "B3": v["U"], "B4": v["part_salariale"],
-            "B5": par.g_pr, "B6": e["p"] / e["UC"] - 1.0, "B7": v["glissement"] / 100.0,
-            "B12": v["K_courant"], "B13": v["I_sur_PIB"] / 100.0, "B24": e["g"], "xi": 0.0}
-
-
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 def test_stationnarite_partielle(trajectoires, socle, pi, publier):
     """P67 : max sur 720 pas de |x_t/x̄ − 1| ≤ 1e−9 pour B1 à B7, B12, B13 et B24, depuis
     l'état résolu, sans choc ; P66 : une grandeur de valeur résolue nulle (B7 à π* = 0, ξ) se
     juge en valeur absolue, |x_t| ≤ 1e−12."""
     tr = trajectoires[pi]
-    releves = grandeurs_b(tr)
-    resolues = valeurs_resolues(socle, tr.sentier)
+    releves = socle.grandeurs_b(tr.releve.pas, tr.initial, tr.sentier)
+    resolues = socle.valeurs_resolues(tr.sentier)
     pires = {}
     for cle, serie in releves.items():
         assert serie and serie[-1][0] == NB_PAS - 1

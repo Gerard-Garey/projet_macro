@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import math
 import sys
 import types
 from collections.abc import Callable, Sequence
@@ -425,3 +426,83 @@ def valeur_d_ouverture(sentier: Sentier, nom: str, t: int, echelle: float = 1.0)
 def position_d_ouverture(sentier: Sentier, poste: str, t: int, echelle: float = 1.0) -> float:
     """Position sur le sentier à l'ouverture du pas t : position d'ouverture × Γ̄^t."""
     return float(sentier.o[poste]) * echelle * sentier.facteurs[NOMINAL] ** t
+
+
+# --------------------------------------------------------------------------
+# Stationnarité partielle (P66, P67) : grandeurs de `tab:criteres-j3`
+# --------------------------------------------------------------------------
+
+PAS_PAR_AN = PARAMETRES_DE_REFERENCE.cadre.pas_par_an
+# Premier pas jugé des grandeurs sur 12 tours (D13).
+PREMIER_PAS_SUR_12_TOURS = PAS_PAR_AN - 1
+# Grandeurs sur une fenêtre de 12 tours, jugées dès le pas 11 (P67, D13).
+SUR_12_TOURS = ("B4", "B5", "B6", "B7", "B13", "B24")
+
+
+def grandeurs_b(pas: list, initial: EtatPays, sentier: Sentier) -> dict:
+    """B1 à B7, B12, B13, B24 et ξ relevées sur une trajectoire du moteur, définitions de
+    `tab:criteres-j3` : (t, valeur) par grandeur ; fenêtres de 12 tours dès le pas 11. `pas` :
+    par pas, montants exécutés des lignes 1 à 5 (clés "1" à "5"), variables du pas
+    (`variables`) et état t + 1 (`etat`)."""
+    n_a = PAS_PAR_AN
+    ouvertures = [initial] + [p["etat"] for p in pas[:-1]]
+    g = {cle: [] for cle in ("B1", "B2", "B3", "B4", "B5", "B6", "B7", "B12", "B13", "B24",
+                              "xi")}
+    for t, p in enumerate(pas):
+        v, o = p["variables"], ouvertures[t]
+        pib = p["1"] + p["2"] + p["3"] + p["4"]
+        g["B1"].append((t, o.IN_vol / v["v"]))
+        g["B2"].append((t, v["y"] / v["y_cap"]))
+        g["B3"].append((t, v["U_suivant"]))
+        g["B12"].append((t, v["p"] * o.K_vol / (n_a * pib)))
+        g["xi"].append((t, v["xi"]))
+        if t < PREMIER_PAS_SUR_12_TOURS:
+            continue
+        fenetre = pas[t - n_a + 1:t + 1]
+        g["B4"].append((t, sum(q["5"] for q in fenetre)
+                        / sum(q["1"] + q["2"] + q["3"] + q["4"] for q in fenetre)))
+        if t - n_a >= 0:
+            w0, p0, y0 = (pas[t - n_a]["variables"][n] for n in ("W_suivant", "p", "y"))
+        else:  # t − 12 = −1 : salaire, prix et production d'ouverture du pas 0
+            w0, p0, y0 = initial.W, initial.registre_prix[0], float(sentier.o["y_m1"])
+        g["B5"].append((t, (v["W_suivant"] / v["p"]) / (w0 / p0) - 1.0))
+        g["B6"].append((t, sum(q["variables"]["p"] / q["variables"]["UC"] - 1.0
+                               for q in fenetre) / n_a))
+        g["B7"].append((t, v["P"] / o.registre_prix[n_a - 1] - 1.0))
+        g["B13"].append((t, sum(q["3"] for q in fenetre)
+                         / sum(q["1"] + q["2"] + q["3"] + q["4"] for q in fenetre)))
+        g["B24"].append((t, v["y"] / y0 - 1.0))
+    return g
+
+
+def valeurs_resolues(sentier: Sentier) -> dict:
+    """Valeurs résolues du script (`valeurs`, état `e`, paramètres), même définition."""
+    e, par = sentier.e, sentier.par
+    v = script().valeurs(e, par)
+    return {"B1": v["IN_sur_v"], "B2": v["tu"], "B3": v["U"], "B4": v["part_salariale"],
+            "B5": par.g_pr, "B6": e["p"] / e["UC"] - 1.0, "B7": v["glissement"] / 100.0,
+            "B12": v["K_courant"], "B13": v["I_sur_PIB"] / 100.0, "B24": e["g"], "xi": 0.0}
+
+
+# --------------------------------------------------------------------------
+# Règle d'essai du bloc prix : prix exogène sur le sentier, μ̃_t = ln(p_t/UC_t)
+# --------------------------------------------------------------------------
+
+
+def prix_exogene_marge_identite(echelle: float = 1.0) -> dict:
+    """Options de `blocs` : le bloc d'essai des prix garde p_t sur le sentier et écrit
+    μ̃_t = ln(p_t/UC_t), UC_t étant celui du bloc 2 réel (lu en phase 2), déclaration d'essai
+    complétée de cette lecture. C'est l'identité de P54 (« un prix administré écrit
+    μ̃_t = ln(p_t/UC_t) », synthèse du rang 1a, § 4) : sous un prix exogène, ω_{t−1} =
+    exp(−μ̃_{t−1}) lu par le bloc 3 vaut UC_{t−1}/p_{t−1}, et la boucle de correction du
+    salaire n'est pas coupée par le bloc d'essai (sans elle, μ̃ resterait à ln(1 + μ̄) et le
+    salaire nominal aurait une racine unitaire, propriété du socle, non du bloc 3)."""
+    propre = declaration_d_essai("prix")
+    sieges = tuple(replace(s, lit=s.lit + (Lecture("2", "UC"),)) if s.etape == "5" else s
+                   for s in propre.sieges)
+
+    def marge(vue, sentier, t):
+        return math.log(sentier.valeur("p", PRIX, t, echelle) / vue.lire("UC"))
+
+    return {"declarations": {"prix": replace(propre, sieges=sieges)},
+            "regles": {"mu_tilde": marge}}
