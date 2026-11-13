@@ -452,6 +452,13 @@ Seuil § 4.3 : le redécoupage de la queue de J3 (P61) relève du critère 2 ; i
 | P66 | Stationnarité partielle et A2 : une grandeur de valeur résolue nulle (B7 à π\* = 0, ξ ; plus tard B8, B25, B26) se juge en valeur absolue, \|x_t\| ≤ 1e−12 (lecture « grandeurs nulles à 1e−12 près » de A2, S = 1 pour une grandeur sans dimension). |
 | P67 | Stationnarité partielle de J3-b : B1 à B7, **B12, B13** et B24, à 1e−9 relatif sur 720 pas, aux trois π\*, depuis l'état résolu, sans choc ; B4 à B7 et B24 dès le pas 11 (D13). |
 
+| N° | Décision du mainteneur (13/11/2026, questions ouvertes par le rang 1b, annotation du 13/11/2026 de l'ADR 0012) |
+|---|---|
+| P68 | Maison de δ : table du bloc 6, `nations.moteur.parametres.investissement`, créée en J3-b avec δ seul (maison de la décision M28, Q11) ; ADR 0005, point 18, intact. Options écartées : (a) table du cadre (contrat de l'ADR 0005 modifié), (c) table de la production. |
+| P69 | `executer_pas` passe `parametres.cadre` à `ouvrir_pas` (lettre de A3.1, signature d'`assembler` inchangée) ; les appels d'`assembler` des tests passent l'ensemble des tables de référence. Réalisé dans #112. |
+| P70 | Domaine de λ_v : 0 < λ_v < n_a, strict (avec λ_v = n_a et d_t = 0, v^e = 0 et P1 n'est pas défini au pas suivant ; avis de `macro`). Correction prospective de « 0 < λ_v ≤ n_a » de `sec:production-visee`, au passage de `docwriter`. Les autres vitesses restent 0 < λ ≤ n_a. |
+| P71 | U^eq > 0 et μ̄ > 0 requalifiés en conditions de conception et d'existence de l'état stationnaire (non en domaines de définition) ; `outils/etat_stationnaire.py` aligné pour les refuser dès le chargement de ses paramètres (commit `code:` dans #112, résultats identiques à la calibration). |
+
 **Points ouverts au 13/11/2026** : #11 et #14 (mainteneur, hors branche) ; lieu du contrôle π^e_0 > −1 (schéma v2 ou chargement de l'état initial, #112, rang 1b) ; confirmation de la branche de calibration au point d'étape de J3-d (P43 (a)) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2). Sortie de la liste : consultation Fable au plan de J3-b (faite le 13/11/2026, § 8).
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
