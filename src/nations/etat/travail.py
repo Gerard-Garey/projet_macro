@@ -25,7 +25,8 @@ RADICAL = "travail"
 
 VARIABLES = (
     scalaire("W", RADICAL, "1", "u.m. par personne et par pas",
-             "W_{t−1} (sec:travail-stationnaire)", Invariance.NOMINAL),
+             "W_{t−1}, salaire par personne employée (sec:travail-stationnaire)",
+             Invariance.NOMINAL),
     scalaire("U", RADICAL, "4", "fraction", "U_{t−1} = U^eq (sec:travail-stationnaire)",
              Invariance.SANS_DIMENSION),
     scalaire("N", RADICAL, "4", "personnes", "N_{t−1} (sec:travail-stationnaire)",

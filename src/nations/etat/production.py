@@ -30,7 +30,8 @@ VARIABLES = (
              "IN^vol_t (sec:production-stationnaire ; outils/etat_stationnaire.py, ouverture)",
              Invariance.VOLUME),
     scalaire("pr", RADICAL, "5", "u.v. par personne et par pas",
-             "pr_t (sec:production-stationnaire ; outils/etat_stationnaire.py, ouverture)",
+             "pr_t, productivité par personne employée (sec:production-stationnaire ; "
+             "outils/etat_stationnaire.py, ouverture)",
              Invariance.VOLUME),
     scalaire("K_vol", RADICAL, "5", "u.v.",
              "K^vol_t (sec:production-stationnaire, sec:investissement-stationnaire ; "

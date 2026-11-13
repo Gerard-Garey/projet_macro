@@ -248,7 +248,10 @@ def controler_domaine(par: Parametres) -> list[str]:
     for champ in fields(par):  # NaN et ±∞ : refus avant tout calcul (aucune division par zéro ni dépassement)
         if not math.isfinite(getattr(par, champ.name)):
             raise HorsDomaine(f"{champ.name} = {getattr(par, champ.name)!r} : valeur finie attendue")
-    for nom in ("lambda_v", "lambda_IN", "lambda_w", "lambda_N", "lambda_mu", "lambda_H", "lambda_ti", "lambda_e"):
+    # λ_v : domaine strict, comme dans la table du moteur (`nations.moteur.parametres.production`, P70).
+    if not 0 < par.lambda_v < n:
+        raise HorsDomaine(f"lambda_v = {par.lambda_v!r} : 0 < λ_v < n_a = {n} attendu (domaine strict, P70)")
+    for nom in ("lambda_IN", "lambda_w", "lambda_N", "lambda_mu", "lambda_H", "lambda_ti", "lambda_e"):
         val = getattr(par, nom)
         if not 0 < val <= n:
             raise HorsDomaine(f"{nom} = {val!r} : 0 < λ ≤ n_a = {n} attendu (sec:cadre-calendrier)")

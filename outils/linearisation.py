@@ -126,7 +126,13 @@ def residu_point_fixe(carte: Carte) -> float:
 
 def jacobienne(carte: Carte, pas_relatif: float = PAS_RELATIF) -> np.ndarray:
     """Jacobienne de la carte ramenée au sentier au point x0, différences centrées, mise à
-    l'échelle S⁻¹ J S (mêmes valeurs propres que J)."""
+    l'échelle S⁻¹ J S (mêmes valeurs propres que J).
+
+    Limite : la différence centrée évalue la carte en x0 ± h ; elle n'est pas définie au bord
+    d'un domaine strict. La linéarisation porte sur des variables **intérieures à leur
+    domaine** : une variable nulle sur le sentier dont le domaine est x ≥ 0 (Res = 0, par
+    exemple), perturbée de −h, fait arrêter le noyau (`DefautComptable`), refus franc qui
+    remonte tel quel. Le traitement de Res, B_H et B_CB revient au critère S1 (J3-f)."""
     k = len(carte.x0)
     jac = np.empty((k, k))
     for j in range(k):
