@@ -1164,13 +1164,14 @@ def test_chaque_grandeur_publiee_porte_sa_definition(stationnaire, resultat):
 # --- Domaine : facteur de croissance avant la racine n_a-ième (/code-review du rang 8) ------
 
 
-@pytest.mark.parametrize("champs", [{"g_N": -1.5}, {"g_pr": -2.0}])
+@pytest.mark.parametrize("champs", [{"g_N": -1.5}, {"g_pr": -2.0}, {"g_pr": -1.5, "g_N": -1.5}])
 def test_facteur_de_croissance_negatif_refuse_avant_la_racine(stationnaire, base, champs, capsys):
-    """(1 + g_pr)(1 + g_N) ≤ 0 : refus de domaine (`HorsDomaine`, code de sortie 1), non `TypeError` sur le
-    complexe que donnerait la racine n_a-ième d'une base négative."""
-    with pytest.raises(stationnaire.HorsDomaine, match=r"\(1 \+ g_pr\)\(1 \+ g_N\) > 0"):
+    """1 + g_pr ≤ 0 ou 1 + g_N ≤ 0 : refus de domaine (`HorsDomaine`, code de sortie 1), non `TypeError` sur
+    le complexe que donnerait la racine n_a-ième d'une base négative ; g_pr = g_N = −1,5, de produit
+    (1 + g_pr)(1 + g_N) > 0, compris."""
+    with pytest.raises(stationnaire.HorsDomaine, match=r"1 \+ g_(pr|N) > 0"):
         stationnaire.controler_domaine(replace(base, **champs))
-    with pytest.raises(stationnaire.HorsDomaine, match=r"\(1 \+ g_pr\)\(1 \+ g_N\) > 0"):
+    with pytest.raises(stationnaire.HorsDomaine, match=r"1 \+ g_(pr|N) > 0"):
         stationnaire.calculer(replace(base, **champs))
 
 

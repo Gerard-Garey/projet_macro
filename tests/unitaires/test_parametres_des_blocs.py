@@ -225,6 +225,23 @@ def test_domaines_des_tables_et_du_script_refusent_le_meme_ensemble(stationnaire
                 stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
 
 
+def test_taux_de_croissance_refuses_un_a_un_par_le_script_comme_par_les_tables(stationnaire):
+    """1 + g_pr > 0 et 1 + g_N > 0, chacun (`TAUX_DE_CROISSANCE_ANNUEL`) : g_pr = g_N = −1,5,
+    de produit (1 + g_pr)(1 + g_N) > 0, est refusé par le script comme par les tables ; un
+    taux à −1 ou en deçà aussi."""
+    base = dataclasses.replace(stationnaire.Parametres(), nu_G=1.15)
+    for champs in ({"g_pr": -1.5, "g_N": -1.5}, {"g_pr": -1.0}, {"g_N": -1.0}, {"g_N": -2.0}):
+        with pytest.raises(stationnaire.HorsDomaine, match=r"1 \+ g_(pr|N) > 0"):
+            stationnaire.controler_domaine(dataclasses.replace(base, **champs))
+        for nom, valeur in champs.items():
+            table = production.PRODUCTION if nom == "g_pr" else travail.TRAVAIL
+            with pytest.raises(DefautDeDeclaration, match=f"« {nom} »"):
+                varier(table, **{nom: valeur})
+    stationnaire.controler_domaine(dataclasses.replace(base, g_pr=-0.5, g_N=-0.5))
+    varier(production.PRODUCTION, g_pr=-0.5)
+    varier(travail.TRAVAIL, g_N=-0.5)
+
+
 def test_lambda_v_strict_dans_le_script_comme_dans_la_table(stationnaire):
     """P70 : λ_v = n_a est refusée par le script comme par la table (domaine strict) ; λ_v =
     11,999 est admise par les deux."""
