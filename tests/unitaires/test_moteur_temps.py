@@ -7,6 +7,7 @@ C97-3). Chaque test énonce une propriété. Le registre sur une trajectoire
 """
 
 import ast
+import dataclasses
 import math
 import struct
 from pathlib import Path
@@ -26,6 +27,7 @@ from nations.moteur.parametres import (
     TauxDeCroissance,
     TauxDeFlux,
     taux_du_parametre,
+    varier,
 )
 from nations.moteur.parametres.cadre import (
     CADRE,
@@ -35,6 +37,9 @@ from nations.moteur.parametres.cadre import (
     TOLERANCE_IDENTITE_CUMULEE,
     TOLERANCE_IDENTITE_PAS,
 )
+from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
+from nations.moteur.parametres.production import PRODUCTION
+from nations.moteur.parametres.travail import TRAVAIL
 
 RACINE = Path(__file__).resolve().parents[2]
 MOTEUR = RACINE / "src" / "nations" / "moteur"
@@ -266,21 +271,46 @@ def test_calendrier_refuse_un_pas_hors_domaine(fonction, t):
 
 
 def test_grandeurs_d_ouverture_du_j2():
-    """C3 : date affichée et prédicat de date de décision, chacun avec label et unité."""
+    """C3 : date affichée et prédicat de date de décision, chacun avec label et unité ; puis
+    (J3-b) croissance tendancielle g et son facteur par pas (annotation du 13/11/2026,
+    point 4), calculés une fois depuis les tables de la production et du travail."""
     assert [(g.nom, g.label) for g in GRANDEURS_OUVERTURE] == [
         ("annee", "eq:moteur-calendrier-date"), ("mois", "eq:moteur-calendrier-date"),
-        ("date_de_decision", "eq:moteur-date-decision")]
+        ("date_de_decision", "eq:moteur-date-decision"), ("g", None),
+        ("facteur_g", "eq:moteur-conversion-croissance")]
     # Rangs et prédicat : « sans dimension », le type portant la nature ; le
     # vocabulaire des unités n'est pas étendu (annotation du 07/10/2026, point 6).
-    assert {g.unite for g in GRANDEURS_OUVERTURE} == {"sans dimension"}
+    assert {g.unite for g in GRANDEURS_OUVERTURE[:3]} == {"sans dimension"}
+    assert [g.unite for g in GRANDEURS_OUVERTURE[3:]] == ["par an, taux de croissance",
+                                                          "sans dimension"]
 
     class Ouverture:
         t = 25
 
     valeurs = {}
     for g in GRANDEURS_OUVERTURE:
-        valeurs[g.nom] = g.fonction(Ouverture(), CADRE, valeurs)
-    assert valeurs == {"annee": 3, "mois": 2, "date_de_decision": True}
+        valeurs[g.nom] = g.fonction(Ouverture(), PARAMETRES_DE_REFERENCE, valeurs)
+    g = (1.0 + PRODUCTION.g_pr.valeur) * (1.0 + TRAVAIL.g_N.valeur) - 1.0
+    assert valeurs == {"annee": 3, "mois": 2, "date_de_decision": True, "g": g,
+                       "facteur_g": facteur_par_pas(TauxDeCroissance(g))}
+    assert all(type(valeurs[nom]) is float for nom in ("g", "facteur_g"))
+
+
+def test_croissance_tendancielle_lit_les_deux_tables():
+    """g combine g_pr (table de la production) et g_N (table du travail), lues dans
+    l'ensemble passé, jamais dans un module de table : une variation des tables la change."""
+    ensemble = dataclasses.replace(
+        PARAMETRES_DE_REFERENCE, production=varier(PRODUCTION, g_pr=0.03),
+        travail=varier(TRAVAIL, g_N=0.005))
+
+    class Ouverture:
+        t = 0
+
+    valeurs = {}
+    for g in GRANDEURS_OUVERTURE:
+        valeurs[g.nom] = g.fonction(Ouverture(), ensemble, valeurs)
+    assert valeurs["g"] == 1.03 * 1.005 - 1.0
+    assert valeurs["facteur_g"] == facteur_par_pas(TauxDeCroissance(1.03 * 1.005 - 1.0))
     with pytest.raises(ValueError, match="unité"):
         GrandeurOuverture("x", lambda e, p, g: 0, None, "mois")
 

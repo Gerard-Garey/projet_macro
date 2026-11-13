@@ -164,6 +164,18 @@ def test_glissement_stationnaire_egal_a_la_cible(stationnaire, base):
         assert s["pi_cible_1"] == p.pi_cible  # BC4
 
 
+def test_marge_en_logarithme_publiee_a_l_ouverture(stationnaire, base):
+    """P54 (#112) : `ouverture` publie μ̃_{−1} = ln(1 + μ̄), égale à ln(P_{−1}/UC_{−1}) que lit P2
+    dans `un_pas` (à 1e−15 près), et P2 rend μ̃_0 = μ̃_{−1} au point fixe (ξ = 0)."""
+    for p in points(stationnaire, base):
+        e = stationnaire.etat_stationnaire(p)
+        o = stationnaire.ouverture(e, p)
+        assert o["mu_tilde_m1"] == math.log(1 + p.mu_bar)
+        pr_m1 = o["pr"] * (1 + p.g_pr) ** (-1 / p.n_a)
+        assert abs(o["mu_tilde_m1"] - math.log(o["registre"][0] / (o["W_m1"] / pr_m1))) <= 1e-15
+        assert abs(stationnaire.un_pas(o, p)["mu_tilde"] - o["mu_tilde_m1"]) <= 1e-15
+
+
 def test_taux_directeur_fisher_sur_la_cible(stationnaire, base):
     for p in points(stationnaire, base):
         e = stationnaire.etat_stationnaire(p)
@@ -434,12 +446,28 @@ def test_fermeture_explicite_et_derivee_declaree(stationnaire, base):
         ("varsigma_B", 1.5),
         ("pi_cible", -1.0),
         ("U_eq", 1.0),
+        ("U_eq", 0.0),
+        ("U_eq", -0.01),
+        ("mu_bar", 0.0),
+        ("mu_bar", -0.1),
+        ("mu_bar", -1.0),
         ("p_0", 0.0),
     ],
 )
 def test_refus_explicite_hors_domaine(stationnaire, base, champ, valeur):
     with pytest.raises(stationnaire.HorsDomaine):
         stationnaire.controler_domaine(replace(base, **{champ: valeur}))
+
+
+@pytest.mark.parametrize("champ, valeur, motif", [
+    ("U_eq", 0.0, "0 < U\\^eq < 1 .*existence"), ("mu_bar", 0.0, "μ̄ > 0 .*existence")])
+def test_conditions_d_existence_p71_nommees(stationnaire, base, champ, valeur, motif):
+    """P71 : U^eq ≤ 0 et μ̄ ≤ 0 refusés dès le chargement des paramètres, le motif les nommant
+    comme conditions de conception et d'existence de l'état stationnaire ; la calibration
+    (U^eq = 0,05, μ̄ = 0,25) n'est pas refusée."""
+    with pytest.raises(stationnaire.HorsDomaine, match=motif):
+        stationnaire.controler_domaine(replace(base, **{champ: valeur}))
+    stationnaire.controler_domaine(replace(base, nu_G=1.15))
 
 
 def test_nu_G_egal_a_un_admis_et_declare(stationnaire, base):
