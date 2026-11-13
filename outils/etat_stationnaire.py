@@ -532,7 +532,12 @@ def controler_etat(e: dict[str, float], par: Parametres) -> None:
 
 
 def ouverture(e: dict[str, float], par: Parametres) -> dict[str, object]:
-    """État d'ouverture du pas 0, tel que les sections le résolvent (« État initial résolu »)."""
+    """État d'ouverture du pas 0, tel que les sections le résolvent (« État initial résolu »).
+
+    `mu_tilde_m1` est la marge en logarithme d'ouverture μ̃_{−1} = ln(1 + μ̄), variable d'état du bloc 4 du
+    schéma v2 (ADR 0012, annotation du 13/11/2026, point 1.4 ; P54, #112) ; `un_pas` ne la lit pas (P2 y garde
+    ln(P_{t−1}/UC_{t−1}), égal à 1e−15 près).
+    """
     n = par.n_a
     Gr, Gam = e["Gr"], e["Gam"]
     pr_m1 = e["pr"] * (1 + par.g_pr) ** (-1 / n)
@@ -540,7 +545,7 @@ def ouverture(e: dict[str, float], par: Parametres) -> dict[str, object]:
     return {
         "registre": P,
         "pr": e["pr"], "N_pa": e["N_pa"], "N_m1": e["N"] * (1 + par.g_N) ** (-1 / n), "U_m1": par.U_eq,
-        "W_m1": P[0] * pr_m1 / (1 + par.mu_bar),
+        "W_m1": P[0] * pr_m1 / (1 + par.mu_bar), "mu_tilde_m1": math.log(1 + par.mu_bar),
         "ve": e["ve"], "IN_vol": e["IN_vol"], "IN": e["IN"], "K_vol": e["K_vol"], "K": e["K"],
         "ti": e["ti"], "y_m1": e["y"] / Gr, "T_F_m1": e["T_F"] / Gam, "rho_bar_L": e["rho_bar_L"],
         "L": e["L"], "D_F": e["D_F"], "YD_m1": e["YD"] / Gam, "D_H": e["D_H"], "B_H": 0.0,

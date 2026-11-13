@@ -13,14 +13,16 @@ entrées identiques.
 pas du JSON UTF-8 strict (clé en double, `NaN` ou `Infinity` compris) ; un
 flottant non fini, y compris un nombre qui déborde (`1e400`) ; un entier
 au-delà de la limite de conversion de Python ; une imbrication qui épuise la
-pile ; une version différente de `VERSION_SCHEMA` (aucune migration au J2) ;
+pile ; une version différente de `VERSION_SCHEMA` (aucune migration : une
+sauvegarde v1 est refusée sous le schéma v2, ADR 0012, D4) ;
 un champ manquant ou inconnu ; un type qui ne correspond pas exactement au
 schéma (un entier pour un flottant compris) ; un champ hors de son domaine
 (`schema.defaut_de_domaine` : identifiant vide, non encodable en UTF-8, avec
 un caractère de catégorie Unicode `Cc`, `Cf`, `Zl` ou `Zp`, avec un espace de
 bord ou hors de la forme normale NFC ; graine hors de [0 ; 2^64[ ; t hors de
-[0 ; 2^63[ ; niveau du registre qui n'est pas un float fini > 0), les mêmes
-refus de domaine qu'à la construction ; un pays en double ou hors de l'ordre
+[0 ; 2^63[ ; niveau du registre qui n'est pas un float fini > 0 ; variable
+d'un bloc hors de son domaine, par exemple 1 + π^e ≤ 0 ou U hors de [0 ; 1]),
+les mêmes refus de domaine qu'à la construction ; un pays en double ou hors de l'ordre
 canonique (identifiants comparés par point de code Unicode). Les domaines des
 positions (Res ≥ 0 ; D_H, D_F, M^G ≥ −ε × S) ne sont contrôlés ni à la
 construction ni à la reprise : ε et S relèvent du noyau, qui les contrôle à

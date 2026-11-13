@@ -9,8 +9,12 @@ par tout bloc dès la phase 1 (source `"0"`). Ce n'est **jamais une variable
 d'état** : elle n'est pas sauvegardée.
 
 Au J2, la séquence porte la date affichée (année, mois) et le prédicat de date
-de décision ; au J3, #61 y ajoute Γ^e_t, γ^e_t et π^{∗,pas}_t, sans changer
-aucune signature.
+de décision. En J3-b (ADR 0012, annotation du 13/11/2026, point 4 ; P63), elle
+reçoit, en tête des grandeurs économiques, la croissance tendancielle
+g = (1 + g_pr)(1 + g_N) − 1, qui combine les tables de deux blocs et
+n'appartient à aucun, et son facteur par pas (1 + g)^{1/n_a}, calculés une
+fois par pas et lus par les blocs sans recalcul ; #61 (J3-c) y ajoute ensuite
+Γ^e_t, γ^e_t et π^{∗,pas}_t, sans changer aucune signature.
 """
 
 from __future__ import annotations
@@ -20,6 +24,8 @@ from dataclasses import dataclass
 
 from nations.etat.unites import UNITES
 from nations.moteur import calendrier
+from nations.moteur.conversions import facteur_par_pas
+from nations.moteur.parametres import TauxDeCroissance
 
 # Préfixe d'un label d'équation (`CONVENTIONS.md` § 2.1).
 _PREFIXE_DE_LABEL = "eq:"
@@ -61,6 +67,19 @@ def _date_de_decision(etat: object, parametres: object, grandeurs: Mapping[str, 
     return calendrier.est_date_de_decision(etat.t)
 
 
+def _croissance_tendancielle(etat: object, parametres: object,
+                             grandeurs: Mapping[str, object]) -> float:
+    """g = (1 + g_pr)(1 + g_N) − 1, par an, des tables de la production et du travail
+    (définition de `sec:production-visee`, sans label propre)."""
+    return ((1.0 + parametres.production.g_pr.valeur)
+            * (1.0 + parametres.travail.g_N.valeur) - 1.0)
+
+
+def _facteur_g(etat: object, parametres: object, grandeurs: Mapping[str, object]) -> float:
+    """(1 + g)^{1/n_a}, par la seule conversion géométrique (F2), sur g déjà calculée."""
+    return facteur_par_pas(TauxDeCroissance(grandeurs["g"]))
+
+
 GRANDEURS_OUVERTURE = (
     # Année et mois affichés : des rangs, non des durées (« années » reste l'unité
     # des durées et des horizons) ; leur type porte la nature (annotation du
@@ -68,5 +87,12 @@ GRANDEURS_OUVERTURE = (
     GrandeurOuverture("annee", _annee, "eq:moteur-calendrier-date", "sans dimension"),
     GrandeurOuverture("mois", _mois, "eq:moteur-calendrier-date", "sans dimension"),
     GrandeurOuverture("date_de_decision", _date_de_decision, "eq:moteur-date-decision",
+                      "sans dimension"),
+    # Croissance tendancielle et son facteur par pas, en tête des grandeurs
+    # économiques, avant Γ^e (#61). Le label de `facteur_g` est un renvoi à la
+    # conversion qu'il appelle, non une balise (annotation du 07/10/2026 sur #97,
+    # point 7).
+    GrandeurOuverture("g", _croissance_tendancielle, None, "par an, taux de croissance"),
+    GrandeurOuverture("facteur_g", _facteur_g, "eq:moteur-conversion-croissance",
                       "sans dimension"),
 )
