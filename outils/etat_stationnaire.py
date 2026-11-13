@@ -263,10 +263,13 @@ def controler_domaine(par: Parametres) -> list[str]:
         raise HorsDomaine(f"pi_cible = {par.pi_cible!r} : π* > −1 attendu (sec:menages-conditions)")
     if not 0 < par.nu_H * par.lambda_H < 1:
         raise HorsDomaine(f"ν_H λ_H = {par.nu_H * par.lambda_H!r} : 0 < ν_H λ_H < 1 attendu (sec:menages-conditions)")
-    # Facteur de croissance contrôlé avant toute racine n_a-ième : une base négative donnerait un complexe
-    # (`TypeError` à la comparaison suivante) au lieu d'un refus.
-    if not (1 + par.g_pr) * (1 + par.g_N) > 0:
-        raise HorsDomaine("(1 + g_pr)(1 + g_N) > 0 attendu")
+    # Facteurs de croissance contrôlés avant toute racine n_a-ième : une base négative donnerait un complexe
+    # (`TypeError` à la comparaison suivante) au lieu d'un refus. Chaque taux séparément, comme le domaine
+    # `TAUX_DE_CROISSANCE_ANNUEL` des tables (`nations.moteur.parametres.production` et `.travail`) : le
+    # produit (1 + g_pr)(1 + g_N) > 0 admettrait g_pr = g_N = −1,5, que les tables refusent.
+    for nom in ("g_pr", "g_N"):
+        if not 1 + getattr(par, nom) > 0:
+            raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : 1 + {nom} > 0 attendu (taux de croissance)")
     gamma_e = ((1 + par.g_pr) * (1 + par.g_N) * (1 + par.pi_cible)) ** (1 / n) - 1
     pis = (1 + par.pi_cible) ** (1 / n) - 1
     coefficient = par.lambda_H / n + par.nu_H * par.lambda_H * pis - gamma_e
