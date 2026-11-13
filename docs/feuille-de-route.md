@@ -23,7 +23,8 @@ Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-ro
 | 1a | Critères et lectures avant le code : classement des lignes « J3 » des § 9.6 des fiches 2 à 4, T2 (b), part d'un bloc dans le coût, unités, option μ̃, g_N, stationnarité partielle | `macro-approfondi` ; `monnaie` ; validation du mainteneur | 4 | fait : avis favorables, P65 à P67 décidées (§ 4) ; P56 versée aux fiches 3 et 4 |
 | 1b | Annotation de l'ADR 0012 : nomenclature des blocs 2 à 4, tables de paramètres, contrôle statique des lectures | `architect-approfondi` (Opus) | § 4.2 | fait : `22e31b8` ; P68 à P73 |
 | 2 | #104 : vocabulaire fermé étendu | `coder` → `audit` | 3 | fait : `d5206d5`, `7f927ac` ; audit léger conforme |
-| 3 | #112 : schéma v2, tables, socle partiel d'essai, linéarisation, part d'un bloc | `coder` → `audit` ; `macro` | 3 | à faire |
+| 3 | #112 : schéma v2, tables, socle partiel d'essai, linéarisation, part d'un bloc | `coder` → `audit` ; `macro` | 3 | fait : `a8eae65`, `b10c9a7`, `d79fbcd` ; audit léger conforme avec réserves (3 mineurs) ; avis de `macro` (2 corrections) ; reprise unique en cours |
+| 3b | Allègement de `CLAUDE.md` (rang ajouté le 13/11/2026, accord du mainteneur) ; principes des workflows dans `.claude/workflows/README.md` | session | `claude:` | fait : `2b836dc` (22 741 → 21 393 octets, aucune règle changée) ; condensation de la feuille de route et de l'ADR 0012 : issue #119, hors périmètre |
 | 4 | #113 : `production.py` | `coder` → `audit` | 1 | à faire |
 | 5 | #50 : `travail.py` | `coder` → `audit` ; `monnaie` consulté | 1 | à faire |
 | 6 | #51 : `prix.py`, `eq:prix-indice` | `coder` → `audit` | 1 | à faire |
@@ -450,7 +451,7 @@ Seuil § 4.3 : le redécoupage de la queue de J3 (P61) relève du critère 2 ; i
 |---|---|
 | P65 | Unité des vitesses d'ajustement (λ_v, λ_IN, λ_w, λ_N, λ_μ) et de δ : « par an, taux de flux » (`sec:cadre-calendrier`, M22) ; « vitesse » passe dans la description de `tab:calibration` ; domaine 0 < λ ≤ n_a déclaré par paramètre (F1). Option écartée : unité « par an, vitesse » (contrat partagé). Deux unités ajoutées à `UNITES` (#104) : « u.m. par personne et par pas », « u.v. par personne et par pas ». |
 | P66 | Stationnarité partielle et A2 : une grandeur de valeur résolue nulle (B7 à π\* = 0, ξ ; plus tard B8, B25, B26) se juge en valeur absolue, \|x_t\| ≤ 1e−12 (lecture « grandeurs nulles à 1e−12 près » de A2, S = 1 pour une grandeur sans dimension). |
-| P67 | Stationnarité partielle de J3-b : B1 à B7, **B12, B13** et B24, à 1e−9 relatif sur 720 pas, aux trois π\*, depuis l'état résolu, sans choc ; B4 à B7 et B24 dès le pas 11 (D13). |
+| P67 | Stationnarité partielle de J3-b : B1 à B7, **B12, B13** et B24, à 1e−9 relatif sur 720 pas, aux trois π\*, depuis l'état résolu, sans choc ; B4 à B7 et B24 dès le pas 11 (D13). *Rédaction corrigée le 13/11/2026 (avis de `macro`, rang 3) : « B4 à B7, B13 et B24 dès le pas 11 » ; B13 est une grandeur de 12 tours, que D13 couvre (spécification l. 3463) ; le test la juge ainsi depuis `d79fbcd`.* |
 
 | N° | Décision du mainteneur (13/11/2026, questions ouvertes par le rang 1b, annotation du 13/11/2026 de l'ADR 0012) |
 |---|---|
