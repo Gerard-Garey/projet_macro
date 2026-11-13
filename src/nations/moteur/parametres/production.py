@@ -9,7 +9,8 @@ lit dans cette table, par la vue (point 3.3).
 
 Domaines (point 3.2), refusés à toute construction de la table, jamais écrêtés :
 0 < λ_v < n_a, strict (P70) ; 0 < λ_IN ≤ n_a (P65) ; 1 + g_pr > 0 (type) ;
-σ > 0 et κ > 0, domaines de définition (dénominateurs de N2 et N11).
+σ > 0 et κ > 0 avec 1/κ fini, domaines de définition (dénominateurs de N2 et
+N11).
 
 Les labels `eq:production-…` sont ceux de la fiche 2 (§ 9.1) ; ils sont dans
 la spécification depuis le rang 8 de J3-b (P62).
@@ -17,6 +18,7 @@ la spécification depuis le rang 8 de J3-b (P62).
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -66,7 +68,10 @@ KAPPA = Parametre(
     "kappa", "κ", 1.6, "années",
     "tab:calibration (indicative) ; unité P65",
     ("eq:production-capacite",),
-    domaine("κ > 0 (domaine de définition : y^cap = K^vol/(n_a κ), N11)", lambda x: x > 0.0))
+    # 1/κ fini : un κ > 0 sous-normal (1e−320) donnerait 1/κ infini, refusé au premier pas
+    # par `TauxDeFlux(1/κ)` (N11) plutôt qu'à la construction de la table (#113).
+    domaine("κ > 0 et 1/κ fini (domaine de définition : y^cap = K^vol/(n_a κ), N11)",
+            lambda x: x > 0.0 and math.isfinite(1.0 / x)))
 
 PARAMETRES_DE_LA_PRODUCTION = (LAMBDA_V, LAMBDA_IN, SIGMA, G_PR, KAPPA)
 
