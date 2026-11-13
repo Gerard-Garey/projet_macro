@@ -306,6 +306,63 @@ def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
         f"registre : {pire_registre:.1e} (seuil 1e−10)"])
 
 
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_reprise_avec_les_blocs_reels(socle, pi):
+    """D4, blocs réels (`blocs_reels` ; en J3-b, blocs 2 à 4) substitués à leurs blocs
+    d'essai : sauvegarde v2 rechargée, reprise à la frontière de tour des pas 1, 359 et 361
+    (la reprise du bloc d'essai est au pas 360) : clôtures et états identiques au bit à ceux d'une
+    trajectoire continue de 720 pas."""
+    reels = socle.blocs_reels()
+    assert reels
+    sentier = socle.sentier(pi)
+    o = socle.ordonnanceur(sentier, reels=reels)
+    continu = Empreinte()
+    fin_continue = socle.derouler(socle.etat_initial(sentier), NB_PAS, o, continu)
+    for k in (1, NB_PAS // 2 - 1, NB_PAS // 2 + 1):
+        avant, apres = Empreinte(), Empreinte()
+        milieu = socle.derouler(socle.etat_initial(sentier), k, o, avant)
+        repris, = charger(sauvegarder([milieu]))
+        assert repris == milieu
+        fin_reprise = socle.derouler(repris, NB_PAS - k, o, apres)
+        assert sauvegarder([fin_reprise]) == sauvegarder([fin_continue]), k
+        assert avant.evenements + apres.evenements == continu.evenements, k
+
+
+def test_invariance_sous_100_avec_les_blocs_reels(socle, publier):
+    """ADR 0005, point 19, blocs réels (`blocs_reels` ; en J3-b, blocs 2 à 4) substitués à
+    leurs blocs d'essai : sous une redénomination × 100, W est multipliée par 100 et les neuf
+    autres variables nouvelles sont inchangées, à 1e−10 relatif sur 720 pas ; positions et
+    registre × 100 à 1e−10 relatif."""
+    reels = socle.blocs_reels()
+    assert reels
+    sentier = socle.sentier(0.02)
+    un, cent = Releve(), Releve()
+    socle.derouler(socle.etat_initial(sentier), NB_PAS,
+                   socle.ordonnanceur(sentier, reels=reels), un)
+    socle.derouler(socle.etat_initial(sentier, echelle=100.0), NB_PAS,
+                   socle.ordonnanceur(sentier, echelle=100.0, reels=reels), cent)
+    pire_nouvelles = pire_positions = pire_registre = 0.0
+    for p1, p100 in zip(un.pas, cent.pas, strict=True):
+        e1, e100 = p1["etat"], p100["etat"]
+        for v in schema.VARIABLES_DES_BLOCS:
+            facteur = 100.0 if v.invariance is schema.Invariance.NOMINAL else 1.0
+            pire_nouvelles = max(pire_nouvelles,
+                                 ecart(getattr(e100, v.nom), facteur * getattr(e1, v.nom)))
+        for poste in cat.NOMS_POSTES:
+            if getattr(e1, poste) != 0.0:
+                pire_positions = max(pire_positions,
+                                     ecart(getattr(e100, poste), 100.0 * getattr(e1, poste)))
+            else:
+                assert getattr(e100, poste) == 0.0
+        for x100, x1 in zip(e100.registre_prix, e1.registre_prix, strict=True):
+            pire_registre = max(pire_registre, ecart(x100, 100.0 * x1))
+    assert pire_nouvelles <= SEUIL_UN_PAS
+    assert pire_positions <= SEUIL_UN_PAS and pire_registre <= SEUIL_UN_PAS
+    publier("Invariance ×100, blocs réels 2 à 4 substitués, π* = 2 %, 720 pas", [
+        f"variables nouvelles : {pire_nouvelles:.1e} ; positions : {pire_positions:.1e} ; "
+        f"registre : {pire_registre:.1e} (seuil 1e−10)"])
+
+
 def test_permutation_des_blocs_d_un_groupe_identique_au_bit(socle, monkeypatch):
     """B5.2 : l'ordre d'appel des blocs d'un groupe (ordre canonique inversé) laisse clôtures,
     variables du pas et états identiques au bit sur 120 pas ; l'ordre de la liste passée à

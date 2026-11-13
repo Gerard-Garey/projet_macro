@@ -322,7 +322,8 @@ HORS_DOMAINE = [
 ]
 
 # Valeurs non finies des variables des blocs : refusées à la construction par le domaine
-# (forme « non (condition) ») ; à la reprise, le JSON strict les refuse avant le domaine.
+# (forme « <valeur> hors du domaine <condition> ») ; à la reprise, le JSON strict les
+# refuse avant le domaine.
 HORS_DOMAINE_NON_FINIS = [
     (nom, x, "hors du domaine") for nom in schema.DOMAINES_DES_BLOCS
     for x in (float("nan"), float("-inf"))

@@ -1239,6 +1239,35 @@ def test_variable_d_etat_non_finie_refusee_sans_rien_enregistrer(schema_avec_var
     assert suivant.pi_cible == 0.03
 
 
+@pytest.mark.parametrize("radical, etape, nom, valeur, condition", [
+    ("banque_centrale", "1", "pi_e", -1.5, "1 + π^e > 0"),
+    ("travail", "4", "U", 1.2, "0 ≤ U ≤ 1"),
+    ("production", "5", "IN_vol", -1.0, "IN^vol ≥ 0"),
+])
+def test_variable_d_etat_hors_domaine_refusee_a_l_ecriture(radical, etape, nom, valeur,
+                                                           condition):
+    """`ecrire_etat` refuse une valeur finie hors du domaine de la variable (fonction de domaine
+    du schéma, `defaut_de_domaine`) par un `RefusDuMoteur` qui porte t, étape, bloc et nom,
+    sans rien enregistrer : la reconduction qui suit passe, et l'état t + 1 est celui d'un pas
+    sans écriture fautive."""
+    refus = []
+    base = action_d_essai(radical, etape, plans_nuls(1), 0.02)
+
+    def fautif(vue):
+        with pytest.raises(RefusDuMoteur, match="hors du domaine") as r:
+            vue.ecrire_etat(nom, valeur)
+        refus.append(r.value)
+        base(vue)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={(radical, etape): fautif})
+    suivant = executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    temoin = executer_pas(etat_initial(), ENTREES_VIDES, ordonnanceur_d_essai(plans_nuls(1)),
+                          ObservateurNul())
+    r, = refus
+    assert (r.t, r.etape, r.bloc, r.nom) == (0, etape, radical, nom)
+    assert condition in str(r) and repr(valeur) in str(r)
+    assert suivant == temoin
+
+
 @pytest.mark.parametrize("doubler, oublier, motif", [
     (True, False, "seconde écriture d'une variable d'état"),
     (False, True, "non écrite par son propriétaire"),
