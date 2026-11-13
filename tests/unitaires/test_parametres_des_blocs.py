@@ -96,6 +96,7 @@ HORS_DOMAINE = [
     (production.PRODUCTION, "lambda_IN", 0.0), (production.PRODUCTION, "lambda_IN", N_A + 1e-9),
     (production.PRODUCTION, "sigma", 0.0), (production.PRODUCTION, "sigma", -0.1),
     (production.PRODUCTION, "kappa", 0.0), (production.PRODUCTION, "kappa", math.inf),
+    (production.PRODUCTION, "kappa", 1e-320),
     (production.PRODUCTION, "g_pr", -1.0), (production.PRODUCTION, "g_pr", -2.0),
     (travail.TRAVAIL, "lambda_w", 0.0), (travail.TRAVAIL, "lambda_w", 13.0),
     (travail.TRAVAIL, "lambda_N", -3.5), (travail.TRAVAIL, "beta", 0.0),
