@@ -61,12 +61,14 @@ from nations.moteur.conversions import TauxDeCroissance, facteur_par_pas, par_pa
 
 def population_active_suivante(N_pa: float, facteur_N: float) -> float:
     """T1 : N^pa_{t+1} = N^pa_t (1 + g_N)^{1/n_a}, personnes ; `facteur_N` = (1 + g_N)^{1/n_a}."""
+    # eq:travail-population-active
     return N_pa * facteur_N
 
 
 def salaire_relatif(mu_tilde_prec: float) -> float:
     """T2 : ω_{t−1} = W_{t−1}/(P_{t−1} pr_{t−1}) = exp(−μ̃_{t−1}), sans dimension (J = 1, sans
     intrants ; P54, option (ii))."""
+    # eq:travail-salaire-relatif
     return math.exp(-mu_tilde_prec)
 
 
@@ -82,6 +84,7 @@ def salaire(W_prec: float, facteur_pr: float, facteur_pi_e: float, lambda_w_pas:
     + (λ_w/n_a)[ln(ω*/ω_{t−1}) − β(U_{t−1} − U^eq)], u.m. par personne et par pas ;
     `facteur_pr` = (1 + g_pr)^{1/n_a}, `facteur_pi_e` = (1 + π^e_t)^{1/n_a},
     `lambda_w_pas` = λ_w/n_a. Forme exponentiée : W_t = W_{t−1} exp(Δ)."""
+    # eq:travail-salaire
     delta = (math.log(facteur_pr) + math.log(facteur_pi_e)
              + lambda_w_pas * (math.log(omega_etoile / omega_prec) - beta * (U_prec - U_eq)))
     return W_prec * math.exp(delta)
@@ -92,17 +95,20 @@ def emploi(N_etoile: float, N_prec: float, N_pa: float, facteur_N: float,
     """T4 : N_t = min{N^pa_t ; max{N*_t ; (1 + g_N)^{1/n_a}(1 − λ_N/n_a) N_{t−1}
     + (λ_N/n_a) N*_t}}, personnes ; `lambda_N_pas` = λ_N/n_a. N ≤ N^pa : contrainte de
     conservation, déclarée, sans paramètre, inactive à l'état stationnaire."""
+    # eq:travail-emploi
     retenu = facteur_N * (1.0 - lambda_N_pas) * N_prec + lambda_N_pas * N_etoile
     return min(N_pa, max(N_etoile, retenu))
 
 
 def chomage(N: float, N_pa: float) -> float:
     """T5 : U_t = 1 − N_t/N^pa_t, fraction de la population active."""
+    # eq:travail-chomage
     return 1.0 - N / N_pa
 
 
 def masse_salariale(W: float, N: float) -> float:
     """T6 : WB_t = W_t N_t, u.m. par pas (ligne 5)."""
+    # eq:travail-masse-salariale
     return W * N
 
 

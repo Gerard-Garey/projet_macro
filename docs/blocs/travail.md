@@ -338,7 +338,7 @@ Avec g = 2 %, on trouve 0,9452 et 72,9 ; 0,9762 et 95,8. **Observation transmise
 
 #### 3.N-3 Anticipation consommée (critère 9 (a) ; Q3)
 
-- **Variable** : π^e_t, glissement annuel anticipé de l'indice des prix P (J = 1 : p) sur les 12 tours à venir. Fraction par an. Valeur stationnaire requise : π̄. La loi de formation et la crédibilité relèvent de la fiche 8.
+- **Variable** : π^e_t, glissement annuel anticipé de l'indice des prix P (J = 1 : p) sur les n_a tours à venir (un an). Fraction par an. Valeur stationnaire requise : π̄. La loi de formation et la crédibilité relèvent de la fiche 8.
 - **Lecture (a), à l'ouverture** : π^e formée au pas t − 1. Aucun ordre interne de la phase 1 n'est requis. Délai anticipation → salaire : 1 tour.
 - **Lecture (b), après le bloc 8 dans la phase 1** : ordre « banque centrale, puis travail », engagement de la fiche 8 (amendement Q3). Délai : 0 tour. La lecture reste triangulaire si le bloc 8 ne lit pas W_t (il lit U_{t−1} à l'ouverture).
 - Les états stationnaires sont identiques. Seule la dynamique diffère, d'un tour.
