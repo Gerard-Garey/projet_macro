@@ -1,0 +1,191 @@
+---
+status: accepted
+date: 2026-11-14
+---
+
+# Document de lecture de l'ADR 0012 : état en vigueur au 14/11/2026 des interfaces du noyau, de l'ordonnanceur et du schéma d'état, consolidé sans décision nouvelle ; les annotations futures vont ici
+
+> **Statut « accepté » le 14/11/2026, par décision du mainteneur** (P76, option (b), #119), sans Fable (seuil § 4.3 de `docs/agents/routage.md` atteint, consultation déclinée). Rédigé par `architect-approfondi` (Opus, effort `high`) au rang 1b de J3-c (`claude/j3-monnaie`, PR #129, tête `d246c28`).
+
+## Contexte
+
+L'ADR 0012 (rédigé sous P31 (a), accepté le 07/10/2026) fixe les trois contrats partagés de J2 : noyau, interface bloc → noyau, schéma d'état, sous les critères de J2 (M19). Huit annotations datées l'ont précisé jusqu'au 13/11/2026 ; il compte 157 184 octets et 449 lignes (`wc -c`, tête `d246c28`) et presque chaque agent le lit. #119 rattache à la taille des documents lus deux arrêts d'agents à 40 tours au J2 (P48). P76 (b) : un ADR de consolidation **sans décision nouvelle**, de 40 ko au plus ; l'ADR 0012 reste intact ; les annotations futures vont à l'ADR 0013.
+
+## Décision
+
+1. **Rôle.** Ce document rassemble, contrat par contrat, la règle **en vigueur** de l'ADR 0012 et de ses annotations, chacune avec son origine, sous les étiquettes de l'ADR 0012 (A1 à G5, points soumis 1 à 11) ; l'annotation du 13/11/2026 est rangée sous **H1 à H6** (ses §§ 1 à 6). Un renvoi existant « ADR 0012, A3.2 » (`CONTEXT.md`, code, spécification) se lit ici sous la même étiquette.
+2. **Ce qui fait foi.** L'ADR 0012 annoté reste la source des règles consolidées ici, avec leurs motifs, mesures et options écartées. Ce document n'ajoute, ne retire ni ne modifie aucune règle ; un écart entre les deux est un défaut de ce document, corrigé par annotation datée ci-dessous.
+3. **Annotations futures.** Toute précision de ces contrats est une **annotation datée de l'ADR 0013**, en fin de fichier ; pour le point qu'elle touche, elle l'emporte sur l'état consolidé (convention de l'ADR 0012 : « là où il diverge, l'annotation l'emporte », a95, a97). L'ADR 0012 ne reçoit plus d'annotation. Modifier un contrat au-delà d'une précision demande un nouvel ADR (point 6).
+4. **Sigles d'origine.** **Acc** : texte accepté, décision du mainteneur du 07/10/2026, et ses points soumis (« pt n ») ; **a95**, **a96**, **a97** : annotations du 07/10/2026 (questions de `coder` sur #95, #96 avec ses compléments, #97 avec R1 à R3) ; **a98** : annotation du 14/10/2026 ; **c14** : second complément du 14/10/2026 ; **g15** : annotation du 15/10/2026, G1 tranchée (P40 (a)) ; **a100** : annotation du 15/10/2026 (#100) ; **a13** : annotation du 13/11/2026 (rang 1b de J3-b), avec ses mentions datées du rang 10. « a95.2 » : point 2 de a95. M1 à M8 : mesures de l'instruction du point 8 (Contexte de l'ADR 0012) ; M95-n : propositions de `monnaie` ; C95-n, C97-n : de `macro`.
+5. **État en vigueur** : sections A à H. Toutes les règles sont des **choix de conception**, sauf les identités (dérivées, ADR 0005) ; l'ADR 0012 applique les ADR 0002 et 0005 et met en forme les ADR 0007 à 0011 sans les rouvrir ; un nom de code peut changer s'il est signalé, jamais une signature, unité, propriétaire, phase, lecture ni règle de refus (Acc ; a13).
+6. **Conditions de réouverture** (Acc, Conséquences, avec l'ajout du pt 8) : nouvel ADR citant l'ADR 0012, M22 et M29 si un bloc ne peut pas exprimer un flux par les termes d'une ligne du catalogue (rouvrir la matrice, citant M22) ; si le contrôle statique de B3 ne garantit pas la triangularité ; si le coût du noyau seul dépasse 0,5 ms sur la plateforme de référence sous A7 (mesure d'abord) ; si une barrière (J5) doit lire ou écrire le grand livre d'un autre pays ; si une sauvegarde doit être relue par une version antérieure ; si une règle de bloc ne peut pas tenir Res_{t+1} ≥ 0 sous forme exacte (alors (ii) pour Res, citant M22) ; si une saturation à une ligne n'admet pas d'écriture en min/max (A8.1) ; si la poussière de la lecture nette devient perceptible dans la restitution (J4, avis de `jeu`).
+
+### A. Noyau (#95)
+
+**A1. Catalogue** (`nations.noyau.catalogue`, seule source des lignes ; Acc A1, pt 2). **28 lignes** (1 à 10, 11a à 11c, 12 à 18, 19a-ménages, 19a-banque, 19a-BC, 19b-ménages, 19b-banque, 20 à 22), **six colonnes** dans l'ordre de `tab:matrice-flux`, **onze positions** : D_H, D_F, L, B_H, B_Bk, B_CB, Res, L^CB, M^G, K, IN. Chaque ligne est décrite par ses **termes simples** ; chaque cellule a une nature : revenu, actif réel (K : lignes 3, 8 ; IN : ligne 4) ou variation d'instrument. Phase : 18 en 3 ; 5 en 4 ; 1 à 4 en 5 ; 6 à 10, 11a à 11c, 14, 15 en 6 ; 19a en 7 ; 12, 13 en 8a ; 16 en 8b ; 21 en 8c ; 19b au J6. Pas de proposant au socle pour 19b-ménages et 19b-banque (ADR 0011, lecture (i)). **17, 20, 22** : contreparties de règlement, non proposables (A4). Signatures (ΔM, ΔH), cellules 17, 20, 22 et sommes de colonnes **dérivées**, comparées par test à `tab:portes-monnaie` et `tab:matrice-flux` (`lire_table` d'`outils/verifier_matrices.py` ; M95-1).
+
+**A2. Flux proposé** (Acc A2, pt 1 (b)). `FluxPropose` immuable : ligne ; montant de chaque terme (u.m. par pas) ; **proposant apposé par la vue** (M95-10 (a)). Le noyau développe les termes : somme nulle **par construction**. **Montant négatif admis** pour les lignes 4, 7, 9, 10, 11a à 11c, 12, 13, 16, 18, 19a, 19b, 21 seulement, la ligne 7 par ligne (liste fermée, a95.1). Montant de la ligne : somme **signée** des cellules à terme symbolique positif (M95-2). Ni date ni phase.
+
+**A3. Grand livre** (`nations.noyau.grand_livre`, `GrandLivre`, un par pays).
+1. **`ouvrir_pas(etat_ouverture, parametres_cadre)`**, seul constructeur (a95.5) : copie les onze positions (ADR 0009, pt 1), remet à zéro les montants exécutés, évalue **une échelle S par secteur à l'ouverture** (`eq:noyau-echelle-bilan`, |Res| et |E| compris ; P33 (a)), valable pour tous les contrôles du pas, phase 9 comprise. **Domaines à l'ouverture** (défaut avec diagnostic, jamais repli ni `max(·)`) : S **finie et > 0** (pt 11 ; a95.5) ; **Res ≥ 0 strict** ; D_H, D_F, M^G ≥ −ε × S_payeur (M95-13) ; **IN ≥ 0 strict**, règle `STOCKS_OUVERTURE` (P72 ; H1.8) ; `t` entier. `executer_pas` passe `parametres.cadre` (P69).
+2. **`proposer(flux)`**. `RefusDeProposition` si : ligne hors catalogue ; contrepartie ; phase autre que celle de la ligne, ou phase 9 (ADR 0009, pt 2) ; terme manquant ou en trop ; seconde proposition ; ligne sans proposant au socle ; signe non admis. Une ligne à proposant reçoit **exactement une** proposition, nulle comprise ; une ligne oubliée est refusée à la clôture, jamais un zéro implicite. Unicité : **critère d'interface, non identité** (C95-10).
+   **Montant couvert** (pt 3 amendé par le pt 8 (4) ; applique l'ADR 0011, P1 ; QM2 (a)). `declarer_montant_couvert(ligne, montant)`, réservée au **bloc payeur**, apposé par la vue ; couples admis : **{(16, `finances_publiques`)}**, en 8b (ligne 7 et 19a-banque exclues, ADR 0011, P4). **Obligatoire dès que Π < 0 strict**, sinon refus à la clôture de 8b (a95.2). c = min(|Π| ; max(0 ; M^{G,8a})), **0 ≤ c ≤ |Π|** vérifié par `controle_de_signe` sous règle stricte ; hors liste ou hors domaine (ligne 16 positive, autre bloc, c < 0, c > |Π|, sans proposition, seconde déclaration) : refus, **jamais écrêtage**. Le noyau **exécute −c**, sans rien calculer ; c = 0 admis. **u = |Π| − c** est enregistrée par le bloc 9 (E13) en variable du pas ; « **exécuté − proposé = u** » au bit (a95.2 ; M3). M^G après 8b = fl(M^{G,8a} − c) ≥ 0 **si M^{G,8a} ≥ 0**, sinon c = 0 et M^G reste une poussière admise à −ε × S_G (a98.1). **Ligne 6** : proposition nette par le bloc 9 (payeur), part non versée enregistrée en variable du pas ; liste des couples inchangée (pt 10).
+3. **`clore_phase(phase) → ClotureDePhase`**. Exécution **dans l'ordre canonique du catalogue** (lignes, puis colonnes), quel que soit l'ordre d'appel (M95-3) ; permuter les blocs d'une cellule à virgule (phase 2, dernier groupe de la 5, phase 6, 8b avec le montant couvert, groupe de la 9) laisse la clôture **identique bit à bit** (C95-9, C97-4). Règlements (A4), positions (`eq:noyau-cloture-poste`), identités (A5) ; rend une valeur immuable (phase, résidus/S, montants exécutés), le noyau n'en garde rien. **Onze clôtures** : 1 à 7, 8a, 8b, 8c, 9 (pt 7 ; M95-5) ; en 8c, la banque lit le flottant même des réserves après 8b (M95-7) ; ouverture figée et position courante sont deux lectures (M95-6). Une clôture **sans ligne exécutée** saute ses contrôles (égalité testée), jamais la couche noyau de la phase 9 (a95.6). L'identifiant « 8c » est **exposé par le noyau**, lu par l'ordonnanceur sans copie (c14.2).
+   **Lectures seules**, aucune méthode d'affectation : `montant_execute(ligne, colonne)`, `montant_execute_ligne(ligne)` après clôture de la phase de la ligne, sinon refus, jamais 0 ; `position`, `ouverture`, `echelle` ; `valeur_nette_stock`, `valeur_nette_flux` ; `clore_pas()` rend les onze positions de clôture ; le grand livre ne survit pas au pas.
+
+**A4. Règlement dérivé** (Acc A4, pt 2). Moyens de paiement : D_H, D_F (comptes à la banque), Res, M^G (comptes à la banque centrale) ; la banque centrale paie au compte de la contrepartie chez elle. 17, 20, 22 **routées ligne par ligne**, jamais en reste de colonne (M95-1, M95-4) ; `eq:noyau-somme-colonne` reste un contrôle qui peut échouer. Caisse : **colonne payeuse**, quel que soit le proposant (ADR 0011). Le noyau ne convertit aucun taux et ne lit pas n_a.
+
+**A5. Identités** (Acc A5 ; pts 8, 9 ; a95.4, a95.7). Tolérances **relatives** ε × S, ε_V × S, S à l'ouverture, ε et ε_V paramètres typés ; forme |r| ≤ ε × S. **À chaque clôture** : `eq:noyau-somme-ligne` (exacte sous A2) ; `eq:noyau-somme-colonne` (ε × S_s, sous-colonnes des entreprises réunies) ; `eq:noyau-cloture-poste` dans **chacun des deux bilans**, à son échelle ; **portes ligne par ligne**, contreparties comprises (a95.7 ; M95-2), à ε × S_ℓ, **S_ℓ = plus petit S_s des secteurs à montant non nul** (pt 9 (α) ; M95-12) ; **caisse nette** `eq:noyau-caisse-nette` (`verifier_caisse` ; a95.4) pour D_H, D_F, M^G seuls (banque et banque centrale exclues ; M95-8) : **x + ε × S_payeur ≥ 0**, S à l'ouverture (pt 8 (2)), position jamais ramenée à zéro. **Phase 9, couche noyau** (ADR 0009, pt 2) : `eq:noyau-valeur-nette-stock` et `eq:noyau-valeur-nette-flux`, V^flux_{t+1} = V^flux_t + Σ lignes 1 à 16 de la colonne (sous-colonne courante des entreprises), V^flux variable d'état du noyau, initialisée à V^stock_0 (ADR 0005, pt 8) ; `eq:noyau-tolerance-cumulee` (ε_V × S_{s,t}) ; `eq:noyau-reserves-cloture`, **Res_{t+1} ≥ 0 strict**, sans tolérance (pt 8 (1)) ; `eq:noyau-variation-monnaie` (ε × S^Bk) et `eq:noyau-variation-monnaie-centrale` (ε × S^CB), une fonction chacune (a95.4) ; `eq:noyau-tolerance-pas`, forme commune. Res n'est pas contrôlé entre les phases (découvert intra-pas). Σ V^stock = K + IN : **retirée du moteur, gardée en test** (a95.4). **Douze** labels `eq:noyau-*` (a95.4).
+**Contrôle de signe** (pt 8 (3)) : **une seule fonction**, `controle_de_signe` (`nations.noyau.identites`), sans label propre (labels portés par ses appelants : caisse nette, réserves de clôture, domaine du montant couvert ; a95.4) ; aucune autre comparaison de signe dans `src/nations/noyau/` (test textuel). Domaine **déclaré par identité** selon sa structure (nombre de lignes qui touchent la position dans la phase) : *strict* (Res_{t+1}) ou *relatif au payeur* (D_H, D_F, M^G) ; pas un drapeau de mode, son changement est une décision. Mêmes domaines pour l'**état chargé** avant la phase 1 (M95-13). Statut : précision de M22, lecture (B), annotation du 07/10/2026 de l'ADR 0005, pt 10.
+
+**A6. Diagnostics** (pt 6). Exceptions dérivées d'`ArretNoyau` (`nations.noyau.diagnostics`) : `RefusDeProposition` à l'appel, `DefautComptable` à la clôture ; champs structurés (pas, étape, identité ou règle, secteur ou payeur, ligne, terme, résidu, S, résidu/S, tolérance), message en français. Jamais rattrapées par le moteur ; état d'ouverture intact ; aucune tolérance élargie (ADR 0005, pt 14).
+
+**A7. Représentation** (Acc A7 ; P37 (a)). `float` Python dans des structures à champs fixes ; **aucun NumPy** dans le grand livre d'un pays ni dans l'état, **aucun `Decimal`** ; NumPy admis dans `observation/` et, sur mesure, pour l'agrégation du J5.
+
+**A8. Saturations exactes et contrat de poussière** (pt 8 (5)).
+1. **Saturation à une ligne : forme exacte**, en **min/max sur la position lue** au grand livre. Cas : **B7, ΔL^CB = −min(Res^{8b} ; L^CB)**, d'où **Res_{t+1} · L^CB_{t+1} = 0 exactement**, critère de #90 sans tolérance (M1) ; E13 par le montant couvert (M3) ; E1 et H5, exactes par construction (M7, M8) ; N8, ΔIN = cm · IN^vol_{t+1} − IN_t, qui n'est pas un solde résiduel au sens de l'ADR 0005, pt 8 (P72). Une poussière laissée par une telle saturation est un **défaut du bloc**.
+2. **Contrat de poussière** : D_H, D_F, M^G peuvent valoir jusqu'à −ε × S de leur détenteur sans défaut (cas réel : E6 saturée, τ_F = 0, M6) ; toute règle qui les **lit** écrit **max(0 ; ·)**, borne déclarée, testée à −1 ulp et à −0,5 ε × S. Les réserves n'en relèvent pas (Res ≥ 0 strict à l'ouverture, découvert intra-pas lu tel quel par B7).
+
+### B. Ordonnanceur (#97)
+
+**B1. `PHASES`** (`nations.moteur.phases`, unique transcription de `tab:phases` ; Acc B1). Pour chaque phase : écrivains en **séquence de groupes** (virgule : sans lecture mutuelle ; « puis » : ordre), lignes, phases lues. 0 : `moteur` ; 1 : `(moteur) puis (travail, banque_centrale)` ; 2 : `(production, menages, investissement, finances_publiques)` ; 3 : `(investissement)`, ligne 18 ; 4 : `(travail) puis (production)`, ligne 5 ; 5 : `(prix) puis (production) puis (menages, investissement, finances_publiques)`, lignes 1 à 4 ; 6 : `(finances_publiques, banque, investissement)`, lignes 6 à 10, 11a à 11c, 14, 15 ; 7 : `(finances_publiques)`, sans ordre interne (ADR 0011), lignes 19a ; 8 : (a) `(banque_centrale)`, lignes 12, 13 ; (b) `(banque_centrale, finances_publiques)` sans ordre (ADR 0011, P1), ligne 16 ; (c) `(banque)`, ligne 21 ; 9 : `noyau`, puis `(menages, investissement)`, puis `moteur` (ADR 0009). La colonne **« Lisent » est normative** (a97.10) ; les phases 6 et 7 lisent la phase 2 (a97.10, R1). Un test compare `PHASES` à `tab:phases` lue par `lire_table`, colonne « Lisent » comprise. Ordre des radicaux et groupe de la phase 9 indépendants des données et des joueurs (ADR 0007, pt 4 ; ADR 0009, pt 3).
+
+**B2. Contrat de bloc** (`nations.moteur.contrat_bloc`, module feuille ; Acc B2). `DeclarationDeBloc` immuable, suite de **sièges** (bloc × étape) : variables du pas écrites ; lectures (source, nom), source `ouverture`, étape, `grand_livre` ou `registre` ; lignes proposées ; lignes couvertes ; variables d'état (C1, H1). Une méthode par étape, appelée avec une `Vue` qui ne donne que : ouverture figée, paramètres, grandeurs d'ouverture, variables du pas déclarées, grand livre en lecture seule avec `proposer` et `declarer_montant_couvert`, registre, `ecrire_pas` et `ecrire_etat` pour ses variables. `Vue.ecrire_etat` contrôle le domaine dès l'écriture (`RefusDuMoteur`, rien d'enregistré ; a13, mention du rang 10). **Aucun attribut d'instance** : `assembler` refuse un `__dict__` ou des `__slots__` non vides (a97.8) ; test textuel : H5.3.
+
+**B3. Assemblage** (une fois, avant le premier pas ; Acc B3). **`assembler(phases, blocs, parametres, entrees)`** (a97.1), `entrees` une `DeclarationDesEntrees` (entrées de scénario publiées en phase 0, leviers au premier groupe de la phase 1) ; `parametres` exactement un `EnsembleDesParametres` (H3.5). `DefautDeDeclaration` si : écrivain sans implémentation, ou bloc sans siège ; écriture hors phase déclarée, ou ligne proposée hors de sa phase ; ligne à proposant sans exactement un proposant, ou ligne sans proposant qui en a un ; **triangularité** violée (lecture (p', nom) depuis p : p' < p, ou p' = p depuis un groupe antérieur ; montant exécuté : phase de la ligne close avant ; en phase 9, aucune lecture d'un écrivain de la phase 9 ; `ouverture` et `registre` toujours admis) ; **phase source hors de la colonne « Lisent »** (a97.10), montants exécutés compris, leur phase étant celle de la ligne, contreparties en 8c (R2), positions, échelles, ouverture et registre relevant de la seule triangularité (R2), lecture interne à la phase lectrice admise (R3) ; variable d'état à deux propriétaires, propriétaire absent de sa phase d'écriture, ou **bijection** schéma ↔ siège rompue (a97.9 ; g15.1) ; `"P"` non écrite par `prix` en phase 5 (`ECRIVAIN_DE_L_INDICE` ; a97.3) ; attribut d'instance (a97.8).
+
+**B4. Espace des variables du pas** (`VariablesDuPas` ; Acc B4). Noms déclarés, créé à `ouvrir_pas`, détruit à `clore_pas`, distinct de l'état. Refus : nom non déclaré, seconde écriture, lecture d'un nom non écrit (jamais de défaut), valeur non finie (a13, mesures). À l'exécution, seule la présence du nom est vérifiée.
+
+**B5. Pas** (Acc B5). `executer_pas(etat_ouverture, entrees_du_tour, ordonnanceur, observateur) → etat_cloture`, sans état propre. Phase 0 : `ouvrir_pas`, calendrier, grandeurs d'ouverture, entrées de scénario (`EntreesDuTour`, vérifiées contre la déclaration à chaque pas ; a97.1). Phases 1 à 8 : groupes dans l'ordre « puis », blocs dans l'ordre canonique des radicaux, `clore_phase` par étape, `observateur.relever(cloture)`. Phase 9 : `clore_phase("9")`, blocs du groupe, puis couche moteur : avancée du registre avec la variable du pas **`"P"`** (`INDICE_DES_PRIX` ; a97.3), état t + 1 construit par `schema.EtatPays(**champs)`, qui vérifie les domaines (H1.6), contrôle d'**une seule écriture** par variable d'état, `relever(fin_de_pas)`. Les leviers (J4) changent le contenu des déclarations, pas `executer_pas` (a97.1).
+**Montants exécutés lus à l'exécution** (a100.1, a100.2, a100.3) : chaque siège a sa `LectureDuGrandLivre` aux droits arrêtés à l'assemblage ; une ligne non déclarée lève `RefusDuMoteur` (pas, étape, bloc, ligne), une ligne hors catalogue garde le refus du noyau. Positions, ouverture, échelles, valeurs nettes ne sont pas filtrées à l'exécution (a100.4) : contrôle statique (H5).
+
+### C. Variables d'état et grandeurs d'ouverture (#96, #97, #61)
+
+**C1. `VariableEtat`** (Acc C1). Nom ; propriétaire (`noyau`, `moteur` ou radical) ; phase d'écriture ; unité (D1) ; type (`float`, `int`, tuple de `float` de longueur déclarée) ; valeur stationnaire ; **invariance** : `nominal` (× 100), `sans_dimension`, `volume` (inchangée, personnes et productivité comprises ; a13 § 1.3), `indice` (× 100, critère relatif du glissement ; a96.2). Sans propriétaire ou sans déclaration : refus.
+
+**C2. Écriture** (Acc C2). Le propriétaire écrit la valeur du pas suivant par `ecrire_etat`, dans sa phase, **une fois par pas** ; elle est lisible dans le pas sous **`<nom>_suivant`**, seul autre nom admis (H1.1, H2.1) ; les autres lisent l'ouverture. Changer de propriétaire change une déclaration, pas l'interface.
+
+**C3. Grandeurs d'ouverture** (`nations.moteur.ouverture.GRANDEURS_OUVERTURE` ; Acc C3 ; forme attendue par #61, P34 (a)). Nom, fonction, label éventuel, unité ; calculées une fois par pas en phase 0, dans l'ordre (triangulaire), lisibles dès la phase 1 (source `0`), **jamais variables d'état ni sauvegardées**. En vigueur : `annee`, `mois`, `date_de_decision`, `g`, `facteur_g` (H4) ; Γ^e_t, avec γ^e_t et π^{∗,pas}_t (`eq:moteur-croissance-nominale-attendue`), s'y ajoute par #61 **après g**, en lisant π\*_t, variable d'état du bloc 8 (ADR 0010, pt 4 et annotation du 04/10/2026). Année, mois et prédicat : « sans dimension », `UNITES` non étendu (a97.6) ; `label` d'`annee` et `mois` : renvoi, non balise (a97.7).
+
+### D. Schéma d'état, version, sauvegarde, reprise (#96)
+
+**D1. `EtatPays`** (`nations.etat.schema` ; Acc D1). Dataclasse **gelée**, champs obligatoires sans défaut : **`CHAMPS_D_IDENTITE`** (`identifiant`, `graine`, écrits par aucune phase) puis **`VARIABLES`** (a96.1) : `t`, `registre_prix` (13 `float`, P_{t−1} à P_{t−13}), onze positions, cinq V^flux, variables des blocs (H1). Champs = déclarations (test) ; empreinte calendaire = 14 ; ni historique, ni série, ni compteur hors de t. Monde : séquence triée par identifiant **par point de code Unicode** (a96.1). Variables d'un bloc déclarées **dans `etat/`, un module par radical**, référencées par sa `DeclarationDeBloc` (G1 (a) : g15.1, P40 (a)) ; `nations.etat.schema` assemble seul `VARIABLES`.
+**Domaines** : `schema.defaut_de_domaine`, seule fonction de domaine, appelée à toute construction (état initial, état de clôture de chaque pas) et à la reprise ; refus avec diagnostic, jamais écrêtage (H1.6) : graine entière dans **[0 ; 2^64[** ; `t` entier dans **[0 ; 2^63[** (`T_EXCLU`) ; identifiant non vide, encodable en UTF-8, sans caractère de contrôle ni de catégorie `Cf`, `Zl`, `Zp`, sans espace de bord, en **NFC** (a96.1 et compléments) ; diagnostic de type faux sans entier géant recopié (a96.1, C-2) ; registre **fini et > 0** (c14.1) ; toute variable `float` **finie** (a13 § 1.7, mention du rang 10) ; variables de bloc : H1.6, H1.7.
+**Unités** : vocabulaire fermé, **`nations.etat.unites`**, sans importation de `nations` (a96.2) : celui de F2, plus `pas`, `u.v.`, `u.v. par pas`, `u.m. par u.v.` (a96.2), `u.m. par personne et par pas`, `u.v. par personne et par pas` (P65 ; a13 § 1.3).
+
+**D2. Version** (Acc D2). `VERSION_SCHEMA`, incrémentée à tout changement de champ, type, unité ou sémantique, journal dans la docstring. **En vigueur : 2** (a13 § 1.5 ; P53). Une retouche dans une branche ne l'incrémente pas tant qu'aucune sauvegarde de cette version n'est publiée (a96, complément D2 ; a13 § 1.5).
+
+**D3. Sauvegarde** (pt 5). JSON texte UTF-8, `{"version": n, "pays": [...]}` dans l'ordre canonique ; flottants par **`repr`** ; `allow_nan=False` ; clés : champs d'identité puis variables (a96.1). Ni paramètre, ni levier, ni série : reprise exacte **à paramètres et entrées identiques**.
+
+**D4. Reprise** (Acc D4). `charger` refuse (`SauvegardeRefusee`) : autre version (aucune migration, G3) ; champ manquant ou inconnu ; type faux ; pays en double ou hors ordre ; valeur hors domaine. Tests : aller-retour aux mêmes octets ; égalité bit à bit (`struct.pack("<d")`) ; sauvegarde à la frontière de tour qui reproduit la trajectoire ; des **leviers** différents après reprise ne font diverger qu'à partir de la phase 1 (a97.1).
+
+### E. Observation (#96)
+
+**E1. Protocole** (Acc E1). `Observateur.relever(evenement)`, appelé par le moteur seul, avec `ClotureDePhase` et `FinDePas` immuables ; ne rend rien. `FinDePas` : état de clôture, `variables_du_pas`, `grandeurs_ouverture` en n-uplets (nom, valeur) de types de base, dans l'ordre d'inscription, indépendant de l'ordre des blocs passés ; montants exécutés dans les `ClotureDePhase` seulement (a96.4, a97.2). Aucun module de `noyau/`, `moteur/`, `etat/`, `blocs/` n'importe `observation/` hors du protocole ; `ObservateurNul` ; **test de suppression** : sauvegardes identiques à l'octet.
+
+**E2. Résidus** (Acc E2). `ReleveDesResidus` (a96.3) : résidus/S par clôture et |V^stock − V^flux|/S en phase 9 ; grandeur A du jalon (maximum sur secteurs et pas, S à l'ouverture, fenêtre 720 pas) : `accumulation_maximale` (`nations.observation.residus` ; a98.2). Les séries vivent dans `observation/` seulement.
+
+**E3. Coût du noyau seul** (Acc E3). Temps de `ouvrir_pas`, **25 propositions et une déclaration de montant couvert** (a95.8), onze `clore_phase` et `clore_pas` ; propositions pré-générées, `ObservateurNul`, un pays, moyenne sur 720 pas ; relevé par `ReleveDuCout` (`nations.observation.cout` ; a98.2). Seuil **0,5 ms** (ADR 0005, pt 19), affirmé **sur la plateforme de référence seule** (ADR 0003, M16 ; `GITHUB_ACTIONS=true`), saut explicite ailleurs (a98.3).
+
+### F. Paramètres et conversions (#97)
+
+**F1. `Parametre`** (Acc F1, pt 4). Nom, symbole, valeur, unité, source, étiquette, **domaine** (refus, jamais écrêtage ; ADR 0011, pt 2). Cadre : n_a = 12, n_m = 1, ε, ε_V dans `nations.moteur.parametres.cadre` (ADR 0005, pt 18). Tables des blocs : **`nations.moteur.parametres.<radical>`**, valeurs par archétype dans `scenarios/` (H3). Chaque paramètre est dans au moins un test.
+
+**F2. Conversions** (Acc F2). `TauxDeFlux`, `TauxDeCroissance` ; `par_pas` (`eq:moteur-conversion-taux`, x/n_a) et `facteur_par_pas` (`eq:moteur-conversion-croissance`, (1 + x)^{1/n_a}) dans `nations.moteur.conversions`, chacune réservée à son type ; aucune fonction à argument de nature (ADR 0008, I.3). **Annualisation inverse** (1 + v)^{n_a} − 1 (ADR 0008, I.4) : même module, écrite avec son **premier consommateur**, label et test (a97.5). **Test « conversion unique »** sur l'arbre syntaxique (a97.4) : écart = division réelle dont le diviseur est n_a, ou puissance dont l'exposant contient 1/n_a (puis n_a), hors des deux fonctions ; un élément indexé par n_a n'en est pas une ; exemption fermée : `calendrier.date`, `calendrier.est_date_de_decision`. Une durée en années passe par `par_pas(TauxDeFlux(1/κ))` (N11), sans exemption ; construire ces types au site d'appel pour un taux dérivé ou pour π^e est admis (a13 § 3.6, mention du rang 10).
+
+**F3. Registre et calendrier** (Acc F3). Seules fonctions qui indexent le registre (`nations.moteur.registre`) : `dernier_prix`, `glissement`, `variation_sur_le_tour`, `avancer` (`eq:moteur-registre-prix`). `nations.moteur.calendrier` : date affichée (`eq:moteur-calendrier-date`, une balise, dans `calendrier.date` ; t = n − 1, définition du tour, sans balise ; a97.7) et prédicat de date de décision.
+
+### G. Ouvert et à venir
+
+- **G1** : question a96.5 et a97.9, tranchée en (a) le 15/10/2026 (D1 ; g15.1, g15.2) ; échéance « avant le premier module de bloc », sans objet depuis J3-b (g15.3 ; P41 (a)) ; version 2 avec les premières variables de bloc (g15.4 ; D2). **G2** : barrières entre pays (J5), une barrière ne coupant pas une phase (ADR 0007, 0009). **G3** : migrations et paquet de partie, paramètres par référence (J4). **G4** : leviers, déclarés dans `DeclarationDesEntrees` (J4).
+- **G5. Générateur de #98** : contrat de bloc sous les huit radicaux ; 23 lignes proposables ; 17, 20, 22 par dérivation ; 19b par un **double du catalogue dans les tests**, jamais en modifiant `catalogue.py` (a95.3) ; B7 en −min et ligne 16 par montant couvert (pt 8) ; critère × 100 **rapporté à S** : |x^{×100} − 100 x| ≤ 1e−10 × 100 S_s, registre et glissement gardant leur critère relatif (ADR 0008 ; M5).
+- **Laissés ouverts par l'ADR 0012** : classement des lignes de résultat par secteur (M95-11), à confirmer par `macro` ; agrégat P_t à J ≥ 2 (ADR 0008), qui rouvre l'écrivain unique de `"P"` (a97.3) ; radical de `eq:moteur-ratio-pib-annuel` (E2) ; lectures de paramètres hors contrôle statique (H5.4) ; lecture d'une échelle ou d'une valeur nette par un bloc (H5.3). Issues ouvertes : #120, #121, #122.
+
+### H. Blocs du J3 (a13 ; P53, P54, P58, P59, P63, P65 à P73, dont P67, critère de stationnarité partielle de J3-b)
+
+**H1. Variables d'état du schéma v2** (a13 § 1 ; P53, P54, P65).
+1. **Nommage** : transcription ASCII du symbole ; exposant ou indice joint par `_` ; `*` → `_etoile`, `~` → `_tilde` ; grec par son nom ASCII ; indice de secteur (J = 1, M24) et date omis. **Un espace de noms par pays** (variables d'état, du pas, grandeurs d'ouverture).
+2. **Table** (toutes `float` ; valeurs stationnaires : a13 § 1.2).
+
+| Nom | Ouverture du pas t | Unité | Invariance | Propriétaire | Phase |
+|---|---|---|---|---|---|
+| `v_e` | v^e_t | u.v. par pas | `volume` | `production` | 5 |
+| `IN_vol` | IN^vol_t | u.v. | `volume` | `production` | 5 |
+| `pr` | pr_t | u.v. par personne et par pas | `volume` | `production` | 5 |
+| `K_vol` | K^vol_t | u.v. | `volume` | `production` | 5 |
+| `W` | W_{t−1} | u.m. par personne et par pas | `nominal` | `travail` | 1 |
+| `U` | U_{t−1} | fraction | `sans_dimension` | `travail` | 4 |
+| `N` | N_{t−1} | personnes | `volume` | `travail` | 4 |
+| `N_pa` | N^pa_t | personnes | `volume` | `travail` | 4 |
+| `mu_tilde` | μ̃_{t−1} | sans dimension | `sans_dimension` | `prix` | 5 |
+| `pi_e` | π^e_t | par an, taux de croissance | `sans_dimension` | `banque_centrale` | 1 |
+
+3. Seule `W` est nominale (critère relatif à 1e−10, ADR 0005, pt 19).
+4. **μ̃** (P54) : écrite par `prix` en phase 5, μ̃_t = ln(p_t/UC_t) ; lue à l'ouverture par `prix` (P2) et `travail` (ω_{t−1} = exp(−μ̃_{t−1}), T2), sans recalcul ni lecture du registre ; |μ̃_t − ln(p_t/UC_t)| ≤ 1e−12 : test de #51.
+5. **Ordre** : variables des blocs après celles du noyau, par radical dans l'ordre des blocs, puis dans l'ordre de la table ; `VariableEtat` et `Invariance` peuvent passer dans un module feuille d'`etat/` sans changer de forme ; sauvegarde v1 refusée.
+6. **π^e** : refusée si **non (1 + π^e > 0)** ; au fil des pas, π^e > −1 est un invariant de BC3 (0 < λ_e ≤ n_a, P > 0), éprouvé par les tests du bloc 8.
+7. **Domaines** (visa de `macro`), forme non (condition) : **W, pr, N^pa > 0** ; **IN^vol, N ≥ 0** ; **v^e > 0** ; **K^vol > 0** ; **0 ≤ U ≤ 1**. Les règles qui les écrivent les tiennent **exactement en double précision** : IN^vol_{t+1} = (IN^vol + y) − v, v = min(d ; IN^vol + y) ; U = 1 − N/N^pa, N ≤ N^pa (critères d'audit de #50, #51). Recommandation de `macro` : test de cohérence de U avec N et N^pa (T5) sur l'état résolu et une sauvegarde rechargée.
+8. **Position `IN`** : N8 en ΔIN = cm · IN^vol_{t+1} − IN_t, domaine **IN ≥ 0 strict** dans `ouvrir_pas`, sans ε ni S^F (P72, option (c)) ; critère « Valorisation » de la fiche 2 rapporté à IN_t + UC_t · y_t (P73) ; IN^vol = 0 ⇒ IN = 0 à l'état chargé : #122. Position K : même domaine strict, sans réécriture, « J3-c » se lisant J3-d avec #67 (P80 ; mention datée à porter par l'annotation de J3-c).
+
+**H2. Variables du pas entre blocs** (a13 § 2 ; unités : a13 § 2.2).
+1. **Une valeur, un nom** : W_t, N_t, U_t, N^pa_{t+1}, μ̃_t et les quatre variables du bloc 2 s'écrivent une fois par `ecrire_etat` et se lisent sous `<nom>_suivant`.
+2. **Table** (étape et groupe de `PHASES`) :
+
+| Nom | Écrivain, étape (groupe) | Lecteurs (bloc, étape) |
+|---|---|---|
+| `g`, `facteur_g` | moteur, 0 | production (2 : N3 ; 5 : N1) |
+| `W_suivant` | `travail`, 1 (2ᵉ) | production (2 : UC) ; travail (4 : WB) |
+| `C_plan`, `I_plan`, `G_plan` | `menages`, `investissement`, `finances_publiques`, 2 | production (5 : demande) |
+| `y_etoile` | `production`, 2 | production (4 : N5) |
+| `IN_vol_etoile` | `production`, 2 | prix (5 : ξ, sans recalcul) |
+| `N_etoile` | `production`, 2 | travail (4 : T4) |
+| `UC` | `production`, 2 | prix (5 : P2, P3) ; production (5 : ligne 4) |
+| `N_suivant` | `travail`, 4 (1ᵉʳ) | production (4, 2ᵉ : N5) |
+| `y` | `production`, 4 (2ᵉ) | production (5 : N6, N7) |
+| `p` | `prix`, 5 (1ᵉʳ) | production (5, 2ᵉ) ; acheteurs (5, 3ᵉ) |
+| `P` | `prix`, 5 (1ᵉʳ) | moteur (9 : registre ; a97.3) |
+| `C_vol`, `I_vol`, `G_vol` | `production`, 5 (2ᵉ) | acheteurs (5, 3ᵉ : lignes 1, 3, 2) |
+| `v_e_suivant`, `IN_vol_suivant`, `pr_suivant`, `K_vol_suivant` | `production`, 5 (2ᵉ) | lecteur déclaré (ADR 0009, pt 1) |
+| `U_suivant`, `N_pa_suivant` ; `y_cap`, `tu` ; `xi`, `mu_tilde_suivant` ; `v` | `travail`, 4 ; `production`, 4 ; `prix`, 5 ; `production`, 5 | observation (P66, P54) |
+
+3. **p et P** : `p`, prix du bien, lu par le bloc 2 et les acheteurs ; `P`, indice, lu par le moteur seul ; sous J = 1, P_t = p_t (`eq:prix-indice`).
+4. **La phase 5 ne lit pas W_t** : UC_t (phase 2) le porte ; un besoin contraire modifierait `PHASES` et `tab:phases` (condition d'arrêt) ; confirmé par `macro` (fiche 2, § 9.4).
+5. **Lectures d'ouverture fermées par siège** : `travail` 1 : `W`, `U`, `mu_tilde`, `pi_e` (jamais π\*_t ni Γ^e à la place de π^e, ni le registre) ; `travail` 4 : `N`, `N_pa` ; `production` 2 : `v_e`, `IN_vol`, `pr` ; 4 : `pr`, `K_vol` ; 5 : `v_e`, `IN_vol`, `pr`, `K_vol` et la position `IN` (N8) ; `prix` 5 : `IN_vol`, `mu_tilde`, sans registre.
+
+**H3. Tables de paramètres** (a13 § 3 ; P63, P65, P68 à P71).
+1. **Forme** : un module par bloc sur le modèle de `cadre`, une déclaration `Parametre` par paramètre et une table immuable aux mêmes noms ; un taux annuel porte **son type** (`taux_du_parametre`), les autres champs sont des `float`.
+2. **Domaine vérifié dans `__post_init__`**, toute construction comprise (`dataclasses.replace`, variations de test, archétypes) ; hors domaine : `DefautDeDeclaration`. **0 < λ_v < n_a strict** (P70) ; 0 < λ ≤ n_a pour λ_IN, λ_w, λ_N, λ_μ (P65) ; 1 + x > 0 pour g_pr, g_N ; β > 0 ; ψ_ξ ≥ 0 ; 0 < δ < n_a. *Domaines de définition* (visa de `macro`) : σ > 0 ; κ > 0 et 1/κ fini (a13 § 3.6, mention du rang 10) ; 1 + μ̄ > 0. *Conditions d'existence de l'état stationnaire*, refusées et nommées comme telles (P71) : **0 < U^eq < 1**, **μ̄ > 0**, refusées aussi par `outils/etat_stationnaire.py`.
+3. **Une maison par paramètre** : g_pr (production), μ̄ (prix), lus par `travail` sans copie ; valeurs indicatives = défauts du script, **g_N = 0** (P63), égalité testée.
+4. **δ** dans `nations.moteur.parametres.investissement` (P68 (b) ; maison de la décision M28), table à compléter avec le bloc 6 (« J3-c » se lit J3-d, P80) ; le bloc 2 la lit par la vue (N10) ; le cadre garde quatre paramètres (ADR 0005, pt 18).
+5. **Accès par la vue seulement** (`vue.parametres.<radical>.<nom>`), jamais par importation ; `parametres` est un **`EnsembleDesParametres`** immuable (`cadre`, `production`, `travail`, `prix`, `investissement`), module à part, instance de référence (P69) ; `assembler` refuse tout autre type (mention du rang 10 ; n_a ≠ 12 : #120).
+
+**H4. Croissance tendancielle** (a13 § 4 ; P63). En tête des grandeurs économiques d'ouverture, avant Γ^e : `g` = (1 + g_pr)(1 + g_N) − 1 (label `None`) et `facteur_g` = `facteur_par_pas(TauxDeCroissance(g))` (renvoi `eq:moteur-conversion-croissance`, non balise) ; lues par `Lecture("0", …)`, jamais sauvegardées ni recalculées par un bloc.
+
+**H5. Contrôle statique des lectures** (a13 § 5 ; P58, P59 ; ferme a100.4). Test de `tests/invariants` sur l'arbre syntaxique de chaque module de `src/nations/blocs/` (hors `__init__.py`), **un bloc par module**, nommé par son radical.
+1. **Relève**, dans chaque `phase_<étape>` : `vue.ouverture.<champ>` ; `vue.grand_livre.position`, `montant_execute`, `montant_execute_ligne` ; `vue.dernier_prix`, `glissement`, `variation_sur_le_tour` ; `vue.lire`, `ecrire_pas`, `ecrire_etat`, `proposer`, `declarer_montant_couvert`.
+2. **Vérifie** : relevé = déclaré, siège par siège et source par source (une lecture déclarée jamais faite est un écart) ; méthode sans siège ou siège sans méthode : écart.
+3. **Refuse** : `getattr`, `setattr`, `delattr`, `vars`, `globals`, `locals`, `eval`, `exec`, `__import__`, `__dict__` ; un nom non littéral ; la vue, `vue.ouverture` ou `vue.grand_livre` hors d'un accès relevé ; `vue.grand_livre.ouverture`, `.echelle`, `.valeur_nette_stock`, `.valeur_nette_flux` ; l'importation d'un module de `nations.moteur` autre que `contrat_bloc` et `conversions`, de `tests` ou d'`outils` ; depuis `conversions`, d'autres noms que `par_pas`, `facteur_par_pas`, `TauxDeFlux`, `TauxDeCroissance` (module entier, étoile, formes relatives refusés ; mention du rang 10) ; `global`, `nonlocal`, affectation à un attribut (a97.8). Contournements restants : #121.
+4. **Hors contrôle** : `vue.parametres` ; les montants exécutés restent aussi filtrés à l'exécution (a100).
+5. **Le test sait échouer** : un module fictif par forme refusée, une déclaration en trop ou en moins.
+
+**H6. Garde-fou** (a13 § 6 ; P52 ; ADR 0002). Blocs d'essai dans `tests/` seulement, sous les radicaux réels, assemblés comme les blocs réels ; aucun module de `src/` n'importe `tests` ni `outils` ; aucun nom ni paramètre de mode dans `src/` ; H5 ne porte que sur `src/nations/blocs/`. Une mesure faite avec un bloc d'essai porte son étiquette (« π^e exogène (bloc d'essai) » en J3-b) et ne vaut pas verdict de boucle conjointe.
+
+## Options écartées
+
+- **P76 (a)**, section « État en vigueur » dans l'ADR 0012 : le fichier lu grossit. **P76 (c)**, document hors ADR : deux maisons à synchroniser.
+- Les options écartées par l'ADR 0012 **restent écartées**, motifs et mesures y étant : section « Options écartées » (dont, au pt 8, (i-0), (i-e), (ii) pour Res, (iii-a), (iv), exécution de Π + u (M2, M4), noyau qui exécute −min, position ramenée à zéro) ; a95.3 ; a97.1 ; a97.7 ; g15.2 ; a13 §§ 1.8, 2.4, 3.4 et 4.
+
+## Conséquences
+
+- **Fichiers** : le présent ADR ; une mention en tête de l'ADR 0012 ; `docs/feuille-de-route.md` (§ 1, rang 1b) ; `CONTEXT.md` (entrée « ADR de consolidation »). Ni code, ni test, ni spécification ; labels et balises inchangés. **Effet sur les résultats : aucun.**
+- **Relevé de #119** : chaque P-n, M-n, D-n et point d'annotation cité par l'ADR 0012 se retrouve ici (commande et sortie dans la PR #129), hors l'historique pur ci-dessous.
+- **Non repris, lus dans l'ADR 0012** : historique de rédaction et d'acceptation (statut « proposé », consultations Fable, compléments du rang 1b de J2) ; positions des experts au point 8 et son instruction ; mesures chiffrées du Contexte et de a13 (un chiffre se remesure) ; numéros de ligne de la spécification à `f021b13` et SHA de réalisation ; tâches par rang de J2 et de J3-b (tests, surfaces documentaires, `CONTEXT.md`, feuille de route), réalisées ; échecs attendus (6, 2) et (7, 2), levés ; réserve M-1 de l'`audit`, corrigée ; mention facultative « interne » de R3 ; mesure publiée de E3 (a98.3) ; effet et surface documentaire de #100 (a100.5).
+- **Hors de ce document** : l'annotation de forme de J3-c, ci-dessous, qui attend les avis du rang 1a.
+
+Issues : #119 ; contrats consolidés : #95, #96, #97, #98, #100, #112, #113, #50, #51, #104, #61 ; ouvertes : #120, #121, #122.
+
+## Annotations
+
+### Annotation du 14/11/2026 (rang 1b de J3-c) : nomenclature du schéma v3, tables des blocs 7 et 8, forme de i_res ≡ i_CB, mentions datées de P80
+
+*Réservée. À rédiger par `architect-approfondi` après les avis du rang 1a de J3-c ; rédigée à une autre date, elle en porte la date.*
