@@ -588,7 +588,8 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     W = math.exp(lnW)
     i_CB = (1 + o["r_hat"]) * (1 + pi_c) + par.a_pi * (pi_prec - pi_c) - 1  # BC1
     s["r_hat_1"] = o["r_hat"] + par.a_I / n * (pi_prec - pi_c)  # BC2
-    s["pi_e_1"] = o["pi_e"] + par.lambda_e / n * (pi_prec - o["pi_e"])  # BC3
+    c_e = par.lambda_e / n
+    s["pi_e_1"] = (1 - c_e) * o["pi_e"] + c_e * pi_prec  # BC3, forme convexe exécutée (P92, P93)
     s["pi_cible_1"] = pi_c  # BC4
     theta_CB = par.theta_CB  # BC5
     Pi_CB = (i_CB * o["B_CB"] + i_CB * o["L_CB"] - i_CB * o["Res"]) / n  # BC6, i_B = i_res = i_CB

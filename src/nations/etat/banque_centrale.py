@@ -1,6 +1,6 @@
 """Variables d'état du bloc 8, banque centrale et anticipations (radical
-`banque_centrale`) : l'anticipation d'inflation π^e (schéma v2), puis la cible
-en vigueur π* (schéma v3).
+`banque_centrale`) : l'anticipation d'inflation π^e (schéma v2), puis le taux
+neutre retenu par la règle r̂* et la cible en vigueur π* (schéma v3).
 
 Contrat : ADR 0012, G1 (a), et annotation du 13/11/2026, points 1.2 et 1.6
 (P53 ; avis de `monnaie`, synthèse du rang 1a, § 9). π^e est écrite en
@@ -13,7 +13,14 @@ est la **cible en vigueur**, écrite en phase 1 (BC4, π*_{t+1} = π*_t à levie
 fermé) ; à l'ouverture du pas t, `pi_etoile` vaut π*_t, lue par la phase 0
 (Γ^e et π^{∗,pas}, `nations.moteur.ouverture`) et par les blocs (ADR 0010).
 Valeur initiale : le paramètre `pi_etoile` de la table du bloc 8 (BC4 ; état
-résolu). r̂* s'ajoute, avant elle, avec le bloc 8 (#91, rang 4 de J3-c).
+résolu).
+
+r̂* (schéma v3 ; ADR 0013, annotation du 14/11/2026, points 3 et 4 ; P96 ; #91)
+est le **taux neutre retenu par la règle**, écrit en phase 1 (BC2) ; à
+l'ouverture du pas t, `r_hat_etoile` vaut r̂*_t, lue par le bloc 8 seul (BC1,
+BC2). Unité « par an, taux de croissance » (taux réel de Fisher sur la cible,
+jamais converti par pas). Valeur stationnaire et initiale : r̄, le paramètre
+`r_bar` de la table du bloc 8 (`sec:banque_centrale-stationnaire`).
 
 Domaine au chargement (point 1.6) : 1 + π^e > 0, domaine du type « par an,
 taux de croissance » (condition de `TauxDeCroissance` et de ln(1 + π^e) dans
@@ -23,7 +30,10 @@ pas, π^e > −1 est un invariant de BC3, éprouvé par les tests du bloc 8 (J3-
 non par le moteur.
 
 Domaine de π* au chargement et à l'écriture (point 4) : 1 + π* > 0, domaine du
-type (facteur de Fisher de BC1 et f(π*) de Γ^e), même forme de refus.
+type (facteur de Fisher de BC1 et f(π*) de Γ^e), même forme de refus. Domaine
+de r̂* (point 4) : **finitude seule, déclarée**, sans condition de signe (r̂*
+n'a pas de plancher : M32) ; elle est contrôlée par `schema.defaut_de_domaine`
+pour toute variable `float`, d'où aucune entrée dans `DOMAINES`.
 """
 
 from __future__ import annotations
@@ -35,11 +45,14 @@ RADICAL = "banque_centrale"
 VARIABLES = (
     scalaire("pi_e", RADICAL, "1", "par an, taux de croissance",
              "π^e_t = π̄ = π* (sec:banque_centrale-anticipation)", Invariance.SANS_DIMENSION),
+    scalaire("r_hat_etoile", RADICAL, "1", "par an, taux de croissance",
+             "r̂*_t = r̄ (sec:banque_centrale-stationnaire)", Invariance.SANS_DIMENSION),
     scalaire("pi_etoile", RADICAL, "1", "par an, taux de croissance",
              "π*_t = π* déclarée (BC4 ; ADR 0010)", Invariance.SANS_DIMENSION),
 )
 
-# Domaines au chargement : nom → (condition en clair, prédicat de la condition).
+# Domaines au chargement : nom → (condition en clair, prédicat de la condition) ; r̂* :
+# finitude seule (point 4), contrôlée par le schéma pour toute variable `float`.
 DOMAINES = {
     "pi_e": ("1 + π^e > 0 (domaine du taux de croissance ; ln(1 + π^e) dans T3)",
              lambda x: 1.0 + x > 0.0),

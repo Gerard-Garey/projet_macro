@@ -28,7 +28,7 @@ Champs de `EtatPays`, dans l'ordre :
 - les variables des **blocs** (ADR 0012, G1 (a) ; annotation du 13/11/2026,
   point 1), par radical dans l'ordre des blocs, chaque radical déclarant les
   siennes dans son module de `etat/` : `production` (v^e, IN^vol, pr, K^vol),
-  `travail` (W, U, N, N^pa), `prix` (μ̃), `banque_centrale` (π^e, π*).
+  `travail` (W, U, N, N^pa), `prix` (μ̃), `banque_centrale` (π^e, r̂*, π*).
 
 L'échelle S des bilans n'est pas dans l'état : c'est une grandeur dérivée,
 recalculée à l'ouverture de chaque pas, reprise comprise (C96-2). Aucun
@@ -46,7 +46,7 @@ liste des champs, d'un type, d'une unité ou d'une sémantique) :
 - **3** (14/11/2026, #61, #91, #90 ; ADR 0013, annotation du 14/11/2026 ;
   P96) : i_L, i_D, r̂*, π*. Version fixée dès le premier commit qui modifie le
   schéma et jusqu'à la fusion de J3-c, sans incrément pendant la branche
-  (point 3) : π* au rang 3 (#61) ; r̂*, i_L et i_D aux rangs 4 et 5 (#91, #90).
+  (point 3) : π* au rang 3 (#61) ; r̂* au rang 4 (#91) ; i_L et i_D au rang 5 (#90).
 """
 
 from __future__ import annotations

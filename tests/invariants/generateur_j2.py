@@ -794,7 +794,7 @@ def registre_stationnaire(pi_barre: float = INFLATION) -> tuple[float, ...]:
 VARIABLES_DES_BLOCS_INITIALES = {
     "v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8 * ECHELLE, "U": 0.05,
     "N": 0.95, "N_pa": 1.0, "mu_tilde": math.log(1.25), "pi_e": INFLATION,
-    "pi_etoile": INFLATION,
+    "r_hat_etoile": 0.01, "pi_etoile": INFLATION,
 }
 
 

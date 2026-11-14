@@ -193,9 +193,10 @@ def test_croissance_tendancielle_du_moteur_egale_au_script(trajectoires, pi):
 def test_cible_en_vigueur_constante_et_gamma_e_de_la_phase_0(trajectoires, pi, publier):
     """Critères de #61 : à levier fermé, π*_{t+1} = π*_t exactement sur 720 pas (bloc d'essai
     8, BC4 ; M30 ; ADR 0013, annotation du 14/11/2026, point 6), à la valeur du paramètre de
-    la table du bloc 8 à π* = 2 % ; Γ^e, calculé en phase 0 sur π*_t lue à l'ouverture, égale
-    [(1 + g)(1 + π*)]^{1/n_a} à 1e−15 relatif et le facteur nominal Γ̄ du script à 1e−15
-    relatif, à chaque pas ; γ^e = Γ^e − 1."""
+    la table du bloc 8 (alignée sur π̄, R1 : `test_table_du_bloc_8_alignee_sur_la_cible`) ;
+    Γ^e, calculé en phase 0 sur π*_t lue à l'ouverture, égale [(1 + g)(1 + π*)]^{1/n_a} à
+    1e−15 relatif et le facteur nominal Γ̄ du script à 1e−15 relatif, à chaque pas ;
+    γ^e = Γ^e − 1."""
     tr = trajectoires[pi]
     assert tr.initial.pi_etoile == pi
     if pi == 0.02:
@@ -214,6 +215,43 @@ def test_cible_en_vigueur_constante_et_gamma_e_de_la_phase_0(trajectoires, pi, p
     publier(f"Γ^e de la phase 0, π* = {100 * pi:g} %, 720 pas (#61)", [
         f"max |Γ^e / [(1 + g)(1 + π*)]^(1/n_a) − 1| = {pire_direct:.2e} ; "
         f"max |Γ^e / Γ̄ du script − 1| = {pire_script:.2e} (seuil 1e−15) ; π* constante"])
+
+
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_table_du_bloc_8_alignee_sur_la_cible(socle, pi):
+    """Réserve R1 de `monnaie` (rang 3 de J3-c ; #91) : l'ordonnanceur du socle partiel porte la
+    table du bloc 8 alignée sur la cible du sentier (`varier(banque_centrale, pi_etoile=π̄)`) ;
+    l'état initial égale la table à chaque π* : π*_0 = π* de la table (valeur initiale de la
+    cible en vigueur, BC4) et r̂*_0 = r̄ de la table ; les autres tables sont celles de
+    référence, et les autres paramètres du bloc 8 inchangés."""
+    sentier = socle.sentier(pi)
+    initial = socle.etat_initial(sentier)
+    table = socle.ordonnanceur(sentier).parametres.banque_centrale
+    assert initial.pi_etoile == table.pi_etoile.valeur == pi
+    assert initial.r_hat_etoile == table.r_bar.valeur
+    reference = PARAMETRES_DE_REFERENCE
+    assert socle.parametres_du_sentier(sentier) == dataclasses.replace(
+        reference, banque_centrale=varier(reference.banque_centrale, pi_etoile=pi))
+    assert dataclasses.replace(table, pi_etoile=reference.banque_centrale.pi_etoile) == \
+        reference.banque_centrale
+
+
+@pytest.mark.parametrize("pi", [0.0, 0.10])
+def test_table_du_bloc_8_de_l_appelant_jamais_ecrasee(socle, pi):
+    """Réserve R1 de `monnaie`, (a) de la reprise du rang 4 : une table du bloc 8 passée par
+    l'appelant n'est jamais alignée en silence ; refusée (`TableDuBloc8HorsDuSentier`) si son π*
+    diffère de π̄ du sentier, même si un seul autre paramètre a changé ; gardée telle quelle si
+    son π* égale π̄."""
+    sentier = socle.sentier(pi)
+    reference = PARAMETRES_DE_REFERENCE
+    for table in (varier(reference.banque_centrale, pi_etoile=0.05),
+                  varier(reference.banque_centrale, a_pi=0.6)):
+        parametres = dataclasses.replace(reference, banque_centrale=table)
+        with pytest.raises(socle.TableDuBloc8HorsDuSentier, match="refusée"):
+            socle.ordonnanceur(sentier, parametres)
+    table = varier(reference.banque_centrale, pi_etoile=pi, a_pi=0.6)
+    parametres = dataclasses.replace(reference, banque_centrale=table)
+    assert socle.ordonnanceur(sentier, parametres).parametres is parametres
 
 
 @pytest.mark.parametrize("pi_0", [0.03, 0.0, -0.5])

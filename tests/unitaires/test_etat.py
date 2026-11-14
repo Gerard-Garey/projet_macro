@@ -40,7 +40,7 @@ OUVERTURE = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0
 # Variables d'état des blocs (schéma v3), valeurs d'essai dans leurs domaines.
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "pi_e": 0.02, "pi_etoile": 0.02}
+                       "pi_e": 0.02, "r_hat_etoile": 0.01, "pi_etoile": 0.02}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -177,18 +177,18 @@ def test_variables_du_noyau_positions_et_v_flux():
         assert (v.phase_ecriture, v.unite, v.type, v.invariance) == (
             "9", "u.m.", float, Invariance.NOMINAL)
     # Décompte de l'état : 14 (empreinte) + 11 + 5 scalaires, plus les dix variables des
-    # blocs du schéma v2 et π* (schéma v3, rang 3 de J3-c, #61).
+    # blocs du schéma v2, π* et r̂* (schéma v3, rangs 3 et 4 de J3-c, #61, #91).
     assert {v.proprietaire for v in VARIABLES} == {
         "moteur", "noyau", "production", "travail", "prix", "banque_centrale"}
-    assert sum(v.longueur for v in VARIABLES) == 41
+    assert sum(v.longueur for v in VARIABLES) == 42
 
 
 def test_variables_des_blocs_du_schema_v3():
     """ADR 0012, annotation du 13/11/2026, point 1.2 : nom, propriétaire, phase d'écriture,
     unité et invariance des dix variables du schéma v2, à la suite de celles du noyau, par
     radical dans l'ordre des blocs puis dans l'ordre de la table ; ADR 0013, annotation du
-    14/11/2026, point 3 (P96 ; #61) : π*, après π^e, propriétaire `banque_centrale`, écrite en
-    phase 1, par an, taux de croissance, sans dimension."""
+    14/11/2026, point 3 (P96 ; #61, #91) : r̂* puis π*, après π^e, propriétaire
+    `banque_centrale`, écrites en phase 1, par an, taux de croissance, sans dimension."""
     blocs = [(v.nom, v.proprietaire, v.phase_ecriture, v.unite, v.type, v.longueur,
               v.invariance) for v in VARIABLES if v.proprietaire not in ("moteur", "noyau")]
     assert blocs == [
@@ -203,17 +203,21 @@ def test_variables_des_blocs_du_schema_v3():
         ("mu_tilde", "prix", "5", "sans dimension", float, 1, Invariance.SANS_DIMENSION),
         ("pi_e", "banque_centrale", "1", "par an, taux de croissance", float, 1,
          Invariance.SANS_DIMENSION),
+        ("r_hat_etoile", "banque_centrale", "1", "par an, taux de croissance", float, 1,
+         Invariance.SANS_DIMENSION),
         ("pi_etoile", "banque_centrale", "1", "par an, taux de croissance", float, 1,
          Invariance.SANS_DIMENSION),
     ]
-    assert CHAMPS[-11:] == tuple(nom for nom, *_ in blocs)
+    assert CHAMPS[-12:] == tuple(nom for nom, *_ in blocs)
     # Seule W est nominale parmi les variables des blocs (point 1.3).
     assert [nom for nom, *_, inv in blocs if inv is Invariance.NOMINAL] == ["W"]
     # Un module de déclarations par radical (G1 (a)), assemblé par `schema` seul.
     from nations.etat import banque_centrale, prix, production, travail
     assert schema.VARIABLES_DES_BLOCS == (production.VARIABLES + travail.VARIABLES
                                           + prix.VARIABLES + banque_centrale.VARIABLES)
-    assert set(schema.DOMAINES_DES_BLOCS) == {v[0] for v in blocs} - {"mu_tilde"}
+    # μ̃ et r̂* : finitude seule, sans domaine propre (point 1.4 de l'annotation du 13/11/2026 ;
+    # ADR 0013, annotation du 14/11/2026, point 4).
+    assert set(schema.DOMAINES_DES_BLOCS) == {v[0] for v in blocs} - {"mu_tilde", "r_hat_etoile"}
 
 
 def test_cloture_du_noyau_couvre_exactement_ses_variables_d_etat():
@@ -353,10 +357,10 @@ NON_FINIS = (math.inf, -math.inf, math.nan)
 
 
 def test_toutes_les_variables_flottantes_sont_couvertes():
-    """Les variables `float` du schéma v3 : onze positions, cinq V^flux, onze variables des
-    blocs (π* comprise) ; aucune autre variable numérique que `t` (entier) et le registre
-    (n-uplet)."""
-    assert len(VARIABLES_FLOTTANTES) == 27
+    """Les variables `float` du schéma v3 : onze positions, cinq V^flux, douze variables des
+    blocs (r̂* et π* comprises) ; aucune autre variable numérique que `t` (entier) et le
+    registre (n-uplet)."""
+    assert len(VARIABLES_FLOTTANTES) == 28
     assert set(VARIABLES_FLOTTANTES) == (set(cat.NOMS_POSTES) | set(cat.VALEUR_NETTE_FLUX.values())
                                          | {v.nom for v in schema.VARIABLES_DES_BLOCS})
     assert {v.nom for v in schema.VARIABLES if v.type is not float} == {"t", "registre_prix"}
@@ -429,6 +433,9 @@ def test_registre_hors_domaine_refuse_a_la_construction(u, niveau):
     {"U": 0.0}, {"U": 1.0}, {"U": -0.0}, {"IN_vol": 0.0}, {"N": 0.0}, {"pi_e": -0.999},
     {"mu_tilde": -3.0}, {"mu_tilde": 0.0}, {"W": 5e-324}, {"v_e": 1e300},
     {"pi_etoile": -0.999}, {"pi_etoile": 0.0}, {"pi_etoile": -0.05},
+    # r̂* : finitude seule, sans condition de signe (ADR 0013, annotation du 14/11/2026,
+    # point 4 ; #91).
+    {"r_hat_etoile": -0.5}, {"r_hat_etoile": -5.0}, {"r_hat_etoile": 0.0},
 ])
 def test_valeurs_aux_bornes_du_domaine_admises(champs):
     """Les bornes incluses (0, 2^64 − 1, 2^63 − 1), les identifiants Unicode réguliers

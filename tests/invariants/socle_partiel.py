@@ -21,7 +21,7 @@ facteur^t, le facteur par pas étant celui de la grandeur sur le sentier :
 - prix (u.m. par u.v.) : (1 + π̄)^{1/n_a} ; salaire par personne :
   ((1 + g_pr)(1 + π̄))^{1/n_a} ;
 - montant nominal (u.m. par pas) : Γ̄ = ((1 + g)(1 + π̄))^{1/n_a} ;
-- grandeur sans dimension (U, tu, ξ, μ̃, π^e, π*) : 1.
+- grandeur sans dimension (U, tu, ξ, μ̃, π^e, r̂*, π*, i_CB, θ_CB) : 1.
 
 Les facteurs sont ceux du script (`facteurs`), non ceux du moteur : le bloc
 d'essai ne lit pas `facteur_g`, qu'aucun bloc réel ne remplace.
@@ -43,7 +43,21 @@ d'essai `REGLES_PAR_DEFAUT` (BC4 à levier fermé ; M30 ; ADR 0013, annotation d
 du script ; hors du sentier (π*_0 ≠ π̄), elle reste à π*_0.
 
 **Variables du pas** : noms, écrivains, étapes et lecteurs de l'annotation du
-13/11/2026, point 2.2. La banque propose la ligne 21 sous la forme exacte de
+13/11/2026, point 2.2, et de l'annotation du 14/11/2026 de l'ADR 0013, point 5
+(bloc 8 : `i_regle`, `i_CB`, `theta_CB`, `Pi_CB`, écrits en phase 1 aux valeurs du
+sentier par le bloc d'essai 8, par BC1, BC5 et BC6 par le bloc réel, #91).
+
+**Bloc d'essai 9 (P95, rang 4 de J3-c)** : E1, il déclare le montant couvert de
+la ligne 16 sur Π^CB **lu en phase 1** (`Pi_CB`, variable du pas du bloc 8), non
+sur le sentier ; E2, il propose les lignes 11a à 11c selon E7, au taux du tour
+`i_CB` lu en phase 1, converti au pas, sur les encours d'ouverture B_H, B_Bk et
+B_CB. L'émission (E3, selon E9 à E11) reste aux montants du sentier (rang 6).
+
+**Table du bloc 8 (réserve R1 de `monnaie`, rang 4 de J3-c)** : `ordonnanceur`
+aligne le paramètre π* de la table de référence du bloc 8 sur la cible du sentier
+(`parametres_du_sentier`), si bien que l'état initial (π*_0 = π̄ du script) égale
+la table à chaque π* ; une table du bloc 8 passée par l'appelant n'est jamais
+écrasée : gardée si son π* égale π̄, refusée sinon. La banque propose la ligne 21 sous la forme exacte de
 B7, −min(Res^{8b} ; L^CB), sur les positions lues (le noyau arrête sur une
 poussière de réserves) ; l'État déclare le montant couvert de la ligne 16 si
 elle est négative (jamais sur le sentier).
@@ -74,7 +88,9 @@ from nations.moteur.contrat_bloc import (
     Lecture,
     Siege,
 )
+from nations.moteur.conversions import TauxDeFlux, par_pas
 from nations.moteur.ordonnanceur import INDICE_DES_PRIX, DeclarationDesEntrees, EntreesDuTour
+from nations.moteur.parametres import varier
 from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import PHASES
 from nations.noyau import catalogue as cat
@@ -140,6 +156,8 @@ def sentier(pi: float, **variations: float) -> Sentier:
     s = dict(es.un_pas(o, par))
     # Volumes servis (N6) : p_t × volume servi = montant des lignes 1 à 3.
     s["C_vol"], s["I_vol"], s["G_vol"] = s["C"] / s["p"], s["I"] / s["p"], s["G"] / s["p"]
+    # Part de la banque centrale à l'émission (BC5), paramètre que `un_pas` ne publie pas.
+    s["theta_CB"] = par.theta_CB
     n = par.n_a
     f = es.facteurs(par)
     facteurs = {
@@ -160,6 +178,9 @@ VARIABLES_DU_PAS = {
     ("production", "5"): {"v": ("v", VOLUME), "C_vol": ("C_vol", VOLUME),
                           "I_vol": ("I_vol", VOLUME), "G_vol": ("G_vol", VOLUME)},
     ("prix", "5"): {"p": ("p", PRIX), INDICE_DES_PRIX: ("p", PRIX), "xi": ("xi", CONSTANTE)},
+    # Bloc 8 (ADR 0013, annotation du 14/11/2026, point 5) : i^règle = i_CB au socle.
+    ("banque_centrale", "1"): {"i_regle": ("i_CB", CONSTANTE), "i_CB": ("i_CB", CONSTANTE),
+                               "theta_CB": ("theta_CB", CONSTANTE), "Pi_CB": ("Pi_CB", NOMINAL)},
     ("menages", "2"): {"C_plan": ("C_plan", NOMINAL)},
     ("investissement", "2"): {"I_plan": ("I_plan", NOMINAL)},
     ("finances_publiques", "2"): {"G_plan": ("G_plan", NOMINAL)},
@@ -170,7 +191,8 @@ VARIABLES_D_ETAT = {
     "v_e": ("ve_1", VOLUME), "IN_vol": ("IN_vol_1", VOLUME), "pr": ("pr_1", PRODUCTIVITE),
     "K_vol": ("K_vol_1", VOLUME), "W": ("W", SALAIRE), "U": ("U", CONSTANTE),
     "N": ("N", PERSONNES), "N_pa": ("N_pa_1", PERSONNES), "mu_tilde": ("mu_tilde", CONSTANTE),
-    "pi_e": ("pi_e_1", CONSTANTE), "pi_etoile": ("pi_cible_1", CONSTANTE),
+    "pi_e": ("pi_e_1", CONSTANTE), "r_hat_etoile": ("r_hat_1", CONSTANTE),
+    "pi_etoile": ("pi_cible_1", CONSTANTE),
 }
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
@@ -179,16 +201,16 @@ if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
 OUVERTURE_DES_VARIABLES = {
     "v_e": "ve", "IN_vol": "IN_vol", "pr": "pr", "K_vol": "K_vol", "W": "W_m1", "U": "U_m1",
     "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "pi_e": "pi_e",
-    "pi_etoile": "pi_cible",
+    "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible",
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
-# Les lignes 1 à 3 (acheteurs, p × volume servi) et 21 (B7, forme exacte) n'y sont pas.
+# Les lignes 1 à 3 (acheteurs, p × volume servi), 11a à 11c (E7, bloc d'essai 9, E2) et 21 (B7,
+# forme exacte) n'y sont pas.
 LIGNES_DU_SENTIER = {
     "4": {"Delta_IN": "dIN"}, "5": {"WB": "WB"}, "6": {"Tr": "Tr"},
     "7": {"T_H": "T_H", "T_F": "T_F"}, "8": {"deltaK": "amort"}, "9": {"iL_L": "l9"},
-    "10": {"iD_DH": "l10_H", "iD_DF": "l10_F"}, "11a": {"iB_BH": "l11a"},
-    "11b": {"iB_BBk": "l11b"}, "11c": {"iB_BCB": "l11c"}, "12": {"ires_Res": "l12"},
+    "10": {"iD_DH": "l10_H", "iD_DF": "l10_F"}, "12": {"ires_Res": "l12"},
     "13": {"iCB_LCB": "l13"}, "14": {"Div_F": "Div_F"}, "15": {"Div_Bk": "Div_Bk"},
     "16": {"Pi_CB": "l16"}, "18": {"Delta_L": "dL"}, "19a-ménages": {"Delta_BH_prim": "dB_H"},
     "19a-banque": {"Delta_BBk_prim": "dB_Bk"}, "19a-BC": {"Delta_BCB_prim": "dB_CB"},
@@ -198,6 +220,11 @@ LIGNES_DU_SENTIER = {
 ACHETEURS = (("menages", "1", "C", "C_vol", "C_plan"),
              ("investissement", "3", "I", "I_vol", "I_plan"),
              ("finances_publiques", "2", "G", "G_vol", "G_plan"))
+
+# Lignes 11a à 11c (E7), proposées par le bloc d'essai 9 (E2) : ligne → (terme, encours
+# d'ouverture des titres).
+INTERETS_SUR_TITRES = {"11a": ("iB_BH", "B_H"), "11b": ("iB_BBk", "B_Bk"),
+                       "11c": ("iB_BCB", "B_CB")}
 
 
 # --------------------------------------------------------------------------
@@ -230,8 +257,13 @@ def _lectures(radical: str, etape: str) -> tuple[Lecture, ...]:
             lectures += [Lecture("5", "p"), Lecture("5", volume)]
     if (radical, etape) == ("banque", "8c"):
         lectures += [Lecture(GRAND_LIVRE, "Res"), Lecture(GRAND_LIVRE, "L_CB")]
+    if (radical, etape) == ("finances_publiques", "6"):
+        # E2 : lignes 11a à 11c selon E7, au taux du tour sur les encours d'ouverture.
+        lectures += [Lecture("1", "i_CB")] + [Lecture(OUVERTURE, encours) for _, encours
+                                              in INTERETS_SUR_TITRES.values()]
     if (radical, etape) == ("finances_publiques", "8b"):
-        lectures.append(Lecture(GRAND_LIVRE, "M_G"))
+        # E1 : montant couvert de la ligne 16 sur Π^CB lu en phase 1.
+        lectures += [Lecture(GRAND_LIVRE, "M_G"), Lecture("1", "Pi_CB")]
     if (radical, etape) == ("banque_centrale", "1"):
         lectures.append(Lecture(OUVERTURE, "pi_etoile"))
     return tuple(lectures)
@@ -292,6 +324,10 @@ class _BlocDEssai:
             if acheteur is not None:
                 _, _, terme, volume, _ = acheteur
                 vue.proposer(ligne, {terme: vue.lire("p") * vue.lire(volume)})
+            elif ligne in INTERETS_SUR_TITRES:
+                terme, encours = INTERETS_SUR_TITRES[ligne]
+                i_pas = par_pas(TauxDeFlux(vue.lire("i_CB")))
+                vue.proposer(ligne, {terme: i_pas * getattr(vue.ouverture, encours)})
             elif ligne == "21":
                 livre = vue.grand_livre
                 vue.proposer("21", {"Delta_LCB": -min(livre.position("Res"),
@@ -300,7 +336,8 @@ class _BlocDEssai:
                 vue.proposer(ligne, {terme: sentier.valeur(cle, NOMINAL, t, echelle)
                                      for terme, cle in LIGNES_DU_SENTIER[ligne].items()})
         if siege.couvre:
-            perte = sentier.valeur("l16", NOMINAL, t, echelle)
+            # E1 : Π^CB du pas, lu en phase 1 ; une perte est un résultat négatif.
+            perte = vue.lire("Pi_CB")
             if perte < 0.0:
                 vue.declarer_montant_couvert(
                     "16", min(-perte, max(0.0, vue.grand_livre.position("M_G"))))
@@ -397,9 +434,32 @@ def blocs_reels() -> tuple[object, ...]:
     return tuple(rendus)
 
 
+class TableDuBloc8HorsDuSentier(ValueError):
+    """Refus explicite (réserve R1 de `monnaie`, reprise du rang 4) : la table du bloc 8 passée
+    par l'appelant porte une cible déclarée π* différente de π̄ du sentier."""
+
+
+def parametres_du_sentier(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE):
+    """Réserve R1 de `monnaie` : les tables `parametres`, dont la table du bloc 8 porte la cible du
+    sentier, valeur initiale de l'état π*_0. Si l'appelant garde la table de référence du bloc 8
+    (inchangée), son π* est aligné sur π̄ (`varier(banque_centrale, pi_etoile=π̄)`) ; s'il passe
+    une table du bloc 8 à lui, elle est gardée telle quelle, et refusée
+    (`TableDuBloc8HorsDuSentier`) si son π* diffère de π̄ : jamais écrasée en silence."""
+    table = parametres.banque_centrale
+    if table == PARAMETRES_DE_REFERENCE.banque_centrale:
+        return replace(parametres, banque_centrale=varier(table, pi_etoile=sentier.pi))
+    if table.pi_etoile.valeur != sentier.pi:
+        raise TableDuBloc8HorsDuSentier(
+            f"table du bloc 8 de l'appelant à π* = {table.pi_etoile.valeur!r}, sentier à π̄ = "
+            f"{sentier.pi!r} : refusée (R1), jamais alignée en silence")
+    return parametres
+
+
 def ordonnanceur(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE, **options):
-    """Ordonnanceur du socle partiel d'essai, aux tables de référence par défaut."""
-    return ordo.assembler(PHASES, blocs(sentier, **options), parametres, SANS_ENTREES)
+    """Ordonnanceur du socle partiel d'essai, aux tables de référence par défaut, la table du
+    bloc 8 alignée sur la cible du sentier ou refusée (R1, `parametres_du_sentier`)."""
+    return ordo.assembler(PHASES, blocs(sentier, **options),
+                          parametres_du_sentier(sentier, parametres), SANS_ENTREES)
 
 
 # --------------------------------------------------------------------------

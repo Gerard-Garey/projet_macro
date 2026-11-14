@@ -22,6 +22,7 @@ from nations.etat import schema
 from nations.etat.sauvegarde import sauvegarder
 from nations.etat.schema import EtatPays, Invariance, VariableEtat
 from nations.moteur import ordonnanceur as ordo
+from nations.moteur import registre
 from nations.moteur.contrat_bloc import (
     GRAND_LIVRE,
     OUVERTURE,
@@ -70,7 +71,7 @@ POSITIONS = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0
 # d'essai de ce module les reconduisent d'un pas à l'autre (aucun ne les lit).
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "pi_e": 0.02, "pi_etoile": 0.02}
+                       "pi_e": 0.02, "r_hat_etoile": 0.01, "pi_etoile": 0.02}
 
 SANS_ENTREES = DeclarationDesEntrees((), ())
 ENTREES_VIDES = EntreesDuTour((), ())
@@ -851,7 +852,8 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
         e = VARIABLES_DES_BLOCS
         assert f.variables_du_pas == (
             ("sigma_L", 0.5 + t), ("levier", 0.03), ("i_CB", 1.0 + t),
-            ("pi_e_suivant", e["pi_e"]), ("pi_etoile_suivant", e["pi_etoile"]),
+            ("pi_e_suivant", e["pi_e"]), ("r_hat_etoile_suivant", e["r_hat_etoile"]),
+            ("pi_etoile_suivant", e["pi_etoile"]),
             (INDICE_DES_PRIX, p_t),
             ("mu_tilde_suivant", e["mu_tilde"]), ("y", 1.0 + t),
             ("v_e_suivant", e["v_e"]), ("IN_vol_suivant", e["IN_vol"]),
@@ -922,7 +924,7 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
         fins.append([e for e in releve.evenements if type(e) is FinDePas])
     assert fins[0] == fins[1] == fins[2]
     assert empreinte(fins[0]) == empreinte(fins[1]) == empreinte(fins[2])
-    assert len(fins[0][0].variables_du_pas) == 18
+    assert len(fins[0][0].variables_du_pas) == 19
 
 
 def test_ligne_16_negative_et_montant_couvert_exerces():
@@ -1407,3 +1409,72 @@ def test_permutation_d_un_groupe_bit_a_bit(monkeypatch, etape, groupe):
         releve = Enregistreur()
         trajectoire(o, etat_initial(), 4, releve)
         assert empreinte(releve.evenements) == empreinte(reference.evenements)
+
+
+# --------------------------------------------------------------------------
+# Glissement hors domaine (P92 ; ADR 0013, annotation du 14/11/2026, point 4 ; #91)
+# --------------------------------------------------------------------------
+
+
+def _registre_de_rapport(rapport):
+    """Registre de n_a + 1 niveaux, P_{t−1}/P_{t−1−n_a} = `rapport` (niveaux finis > 0)."""
+    return (rapport,) + (1.0,) * N_A
+
+
+def _pas_avec_glissement(rapport, lus):
+    """Un pas du monde d'essai où le bloc 8 lit d'abord `vue.glissement()` en phase 1."""
+    base = action_d_essai("banque_centrale", "1", plans_nuls(1), 0.02)
+
+    def lecteur(vue):
+        lus.append(vue.glissement())
+        base(vue)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={("banque_centrale", "1"): lecteur})
+    etat = dataclasses.replace(etat_initial(), registre_prix=_registre_de_rapport(rapport))
+    return executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
+
+
+@pytest.mark.parametrize("rapport", [2.0**-54, 2.0**-60, 1e-300, 5e-324])
+def test_glissement_hors_domaine_refuse_par_la_vue(rapport):
+    """Point de forme 1 du mainteneur (14/11/2026) ; P92 : un rapport des prix au plus 2^−54
+    donne `registre.glissement` = −1 exactement (fonction pure, inchangée) ; `Vue.glissement()`
+    le refuse par un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et la valeur, −1
+    exactement compris, sans écrêtage, et le pas s'arrête."""
+    assert registre.glissement(_registre_de_rapport(rapport)) == -1.0
+    lus = []
+    with pytest.raises(RefusDuMoteur, match="hors du domaine 1 \\+ π") as refus:
+        _pas_avec_glissement(rapport, lus)
+    r = refus.value
+    assert (r.t, r.etape, r.bloc, r.nom) == (0, "1", "banque_centrale", "glissement")
+    assert "-1.0" in str(r) and lus == []
+
+
+@pytest.mark.parametrize("rapport", [2.0**-53, 2.0**-52, 1e-15, 0.5, 1.0, 1e300])
+def test_glissement_dans_le_domaine_rendu_au_bit(rapport):
+    """Dans le domaine (1 + π_{t−1} > 0 tel que calculé), la vue rend le glissement du registre
+    au bit, et le pas se déroule."""
+    attendu = registre.glissement(_registre_de_rapport(rapport))
+    assert 1.0 + attendu > 0.0
+    lus = []
+    _pas_avec_glissement(rapport, lus)
+    assert [x.hex() for x in lus] == [attendu.hex()]
+
+
+def test_glissement_non_fini_refuse_par_la_vue():
+    """Réserve (b) de `monnaie` (reprise du rang 4 de #91) : deux niveaux finis > 0 du registre
+    dont le rapport déborde (1e300/1e−300) donnent un glissement +inf, que la vue refuse comme
+    hors domaine (finitude), sans le rendre au bloc."""
+    registre_prix = (1e300,) + (1.0,) * (N_A - 1) + (1e-300,)
+    assert registre.glissement(registre_prix) == float("inf")
+    lus = []
+    base = action_d_essai("banque_centrale", "1", plans_nuls(1), 0.02)
+
+    def lecteur(vue):
+        lus.append(vue.glissement())
+        base(vue)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={("banque_centrale", "1"): lecteur})
+    etat = dataclasses.replace(etat_initial(), registre_prix=registre_prix)
+    with pytest.raises(RefusDuMoteur, match="fini") as refus:
+        executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        "1", "banque_centrale", "glissement")
+    assert "inf" in str(refus.value) and lus == []

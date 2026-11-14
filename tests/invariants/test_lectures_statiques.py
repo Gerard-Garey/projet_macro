@@ -75,9 +75,17 @@ dont le radical est le nom du module.
    rangée dans un conteneur par une méthode (`t.append(π*)`) ; aucune affectation à un
    attribut n'est admise (point 4). La conversion linéaire d'une grandeur qui dépend de π*
    reste admise (BC6 convertit i_CB).
-6. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
-   déclare pas).
-7. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
+6. **π* lue dans l'état seulement** (réserve R2 de `monnaie`, rang 3 de J3-c ;
+   ADR 0010 : tout bloc lit la cible en vigueur π*_t, variable d'état écrite par
+   BC4, jamais la cible déclarée de la table, qui n'est que sa valeur initiale ;
+   #91) : tout attribut `pi_etoile` qui n'est pas lu sur `<vue>.ouverture` est
+   refusé, partout dans le module (`vue.parametres.banque_centrale.pi_etoile`,
+   une table liée à un nom, `c.pi_etoile`, un paramètre de fonction,
+   `p.banque_centrale.pi_etoile`, un motif de classe `case C(pi_etoile=…)`).
+   `vue.ouverture.pi_etoile` reste soumise au relevé (point 2) et au point 5.
+7. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
+   déclare pas), sauf le point 6.
+8. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
    déclaration en trop ou en moins ; un essai par contournement connu (#121).
 
 Garde-fou (point 6 (a)) : aucun module de `src/` n'importe `tests` ni `outils`.
@@ -201,6 +209,9 @@ LOGARITHMES = frozenset({"log", "log1p", "log2", "log10"})
 FONCTIONS_DE_MATH_SURVEILLEES = RACINES | EXPONENTIELLES | LOGARITHMES | {"pow"}
 MOTIF_PUISSANCE = "puissance d'une grandeur qui dépend de π* refusée (recalcul de f(π*))"
 MOTIF_MATH = "sur une grandeur qui dépend de π* refusé (recalcul de f(π*))"
+# Point 6 (R2 de `monnaie`) : π* ne se lit que dans l'état d'ouverture.
+MOTIF_CIBLE_HORS_DE_L_ETAT = ("π* lue hors de l'état d'ouverture refusée (tout bloc lit π*_t, "
+                              "vue.ouverture.pi_etoile ; ADR 0010 ; R2 de monnaie)")
 
 
 def declares(siege) -> dict[str, set[str]]:
@@ -276,6 +287,13 @@ def _nom_refuse(noeud: ast.Name) -> str | None:
     if noeud.id in NATIFS and noeud.id not in NATIFS_ADMIS:
         return f"nom natif {noeud.id} hors de la liste blanche"
     return None
+
+
+def _cible_hors_de_l_etat(noeud: ast.Attribute) -> bool:
+    """Point 6 (R2) : vrai si l'attribut `pi_etoile` n'est pas lu sur `<nom>.ouverture`."""
+    valeur = noeud.value
+    return not (isinstance(valeur, ast.Attribute) and valeur.attr == "ouverture"
+                and isinstance(valeur.value, ast.Name))
 
 
 def _cibles(noeud: ast.AST) -> list[ast.AST]:
@@ -756,6 +774,8 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
         elif isinstance(noeud, ast.MatchClass):
             ecarts += [f"ligne {noeud.lineno} : motif de classe, {motif}"
                        for nom in noeud.kwd_attrs if (motif := _attribut_refuse(nom))]
+            ecarts += [f"ligne {noeud.lineno} : motif de classe, {MOTIF_CIBLE_HORS_DE_L_ETAT}"
+                       for nom in noeud.kwd_attrs if nom == CIBLE]
         elif isinstance(noeud, ast.alias) and noeud.name in NOMS_REFUSES:
             ecarts.append(f"ligne {noeud.lineno} : importation du nom {noeud.name} refusée")
         elif isinstance(noeud, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and _special(
@@ -768,6 +788,9 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
                 if not _importation_admise(module, nom):
                     ecarts.append(f"ligne {noeud.lineno} : importation de "
                                   f"{_libelle(module, nom)} refusée")
+        if isinstance(noeud, ast.Attribute) and noeud.attr == CIBLE and _cible_hors_de_l_etat(
+                noeud):
+            ecarts.append(f"ligne {noeud.lineno} : {MOTIF_CIBLE_HORS_DE_L_ETAT}")
         for cible in _cibles(noeud):
             for sous in ast.walk(cible):
                 if isinstance(sous, ast.Attribute):
@@ -1328,6 +1351,11 @@ METHODE = ("    def convertir(self, x):\n"
 
 def _avec_forme(forme: str, fonctions: str) -> str:
     texte = AVEC_FACTEUR.replace(AVANT_ECRITURE, forme + AVANT_ECRITURE, 1)
+    if fonctions == "LIT_LA_CIBLE":
+        # Lecture de π* d'ouverture déclarée dans le siège de la phase 5 (forme admise).
+        return texte.replace('(Lecture("ouverture", "IN_vol"),',
+                             '(Lecture("ouverture", "IN_vol"), Lecture("ouverture", "pi_etoile"),',
+                             1)
     if fonctions == "METHODE":
         return texte.replace("    def phase_5(self, vue):", METHODE + "    def phase_5(self, vue):",
                              1)
@@ -1381,9 +1409,10 @@ def test_conversion_geometrique_hors_d_un_appel_direct_refusee(forme, motif):
     assert any(motif in e for e in ecarts), ecarts
 
 
-# π* lue dans la table par la vue (lecture non déclarée par B2) : les formes ne portent que le
-# point 5.
-PI = "vue.parametres.banque_centrale.pi_etoile.valeur"
+# π* lue dans l'état d'ouverture, seule forme admise (point 6, R2 de `monnaie`) : les formes
+# refusées ci-dessous ne portent que le point 5 (et le relevé, la lecture n'y étant pas
+# déclarée) ; les formes admises déclarent la lecture (`_avec_forme_lisant_la_cible`).
+PI = "vue.ouverture.pi_etoile"
 N_A_VUE = "vue.parametres.cadre.pas_par_an"
 
 
@@ -1431,8 +1460,9 @@ def test_reconstruction_de_f_pi_etoile_refusee(forme, motif):
 ])
 def test_formes_sans_reconstruction_de_f_pi_etoile_admises(forme):
     """Point 5 : seule la reconstruction de f(π*) est refusée ; une exponentielle ou une
-    puissance entière d'une grandeur qui dépend de π* reste admise."""
-    texte = _avec_forme(forme, "").replace(
+    puissance entière d'une grandeur qui dépend de π* reste admise (π* lue dans l'état
+    d'ouverture et déclarée, point 6)."""
+    texte = _avec_forme(forme, "LIT_LA_CIBLE").replace(
         "import TauxDeCroissance, facteur_par_pas, par_pas",
         "import TauxDeCroissance, TauxDeFlux, facteur_par_pas, par_pas", 1)
     assert analyser_texte(texte) == []
@@ -1445,7 +1475,7 @@ def test_formes_hors_du_critere_de_gamma_e():
     aussi."""
     texte = _avec_forme(
         f"        t = [0.0]\n        t.append({PI})\n"
-        "        f = facteur_par_pas(TauxDeCroissance(t[1]))\n", "")
+        "        f = facteur_par_pas(TauxDeCroissance(t[1]))\n", "LIT_LA_CIBLE")
     assert analyser_texte(texte) == []
 
 
@@ -1489,18 +1519,49 @@ def test_recalcul_sous_un_autre_nom_refuse():
     assert any("fpp sur une grandeur qui dépend de π* refusé" in e for e in ecarts), ecarts
 
 
-@pytest.mark.parametrize("forme", [
+@pytest.mark.parametrize("forme, fonctions", [
     # Une conversion géométrique sans π* ; π* lue sans conversion (BC1 lit le taux annuel) ; la
     # conversion linéaire d'une grandeur qui dépend de π* (BC6 convertit i_CB), hors du critère.
-    "        f = facteur_par_pas(vue.parametres.production.g_pr)\n",
-    "        c = vue.parametres.banque_centrale.pi_etoile.valeur\n        k = (1.0 + c) * 1.01\n",
-    "        c = vue.parametres.banque_centrale.pi_etoile.valeur\n"
-    "        k = par_pas(vue.parametres.prix.lambda_mu) * c\n",
+    # π* lue dans l'état d'ouverture (point 6, R2 de `monnaie` : forme réécrite au rang 4 de
+    # J3-c, la lecture dans la table étant refusée).
+    ("        f = facteur_par_pas(vue.parametres.production.g_pr)\n", ""),
+    ("        c = vue.ouverture.pi_etoile\n        k = (1.0 + c) * 1.01\n", "LIT_LA_CIBLE"),
+    ("        c = vue.ouverture.pi_etoile\n"
+     "        k = par_pas(vue.parametres.prix.lambda_mu) * c\n", "LIT_LA_CIBLE"),
 ])
-def test_formes_sans_recalcul_admises(forme):
+def test_formes_sans_recalcul_admises(forme, fonctions):
     """Point 5 : seule la conversion géométrique d'une grandeur qui dépend de π* est
     refusée."""
-    assert analyser_texte(_avec_forme(forme, "")) == []
+    assert analyser_texte(_avec_forme(forme, fonctions)) == []
+
+
+@pytest.mark.parametrize("forme, fonctions", [
+    ("        c = vue.parametres.banque_centrale.pi_etoile.valeur\n        k = (1.0 + c) * 1.01\n",
+     ""),
+    ("        c = vue.parametres.banque_centrale.pi_etoile\n", ""),
+    ("        table = vue.parametres.banque_centrale\n        c = table.pi_etoile.valeur\n", ""),
+    ("        c = cible(vue.parametres)\n",
+     "def cible(p):\n    return p.banque_centrale.pi_etoile.valeur\n"),
+    ("        c = cible(vue.parametres.banque_centrale)\n",
+     "def cible(t):\n    match t:\n        case float(pi_etoile=x):\n            return x\n"
+     "    return 0.0\n"),
+])
+def test_cible_lue_hors_de_l_etat_refusee(forme, fonctions):
+    """Point 6 (réserve R2 de `monnaie`, rang 3 de J3-c ; ADR 0010) : un bloc lit la cible en
+    vigueur π*_t dans l'état d'ouverture ; toute lecture de `pi_etoile` ailleurs que sur
+    `vue.ouverture` (la table du bloc 8 par la vue, liée à un nom, passée à une fonction, ou
+    un motif de classe) est refusée, même sans conversion."""
+    ecarts = analyser_texte(_avec_forme(forme, fonctions))
+    assert any(MOTIF_CIBLE_HORS_DE_L_ETAT in e for e in ecarts), ecarts
+
+
+def test_cible_lue_dans_l_etat_admise():
+    """Point 6 : `vue.ouverture.pi_etoile`, déclarée, est la forme admise ; non déclarée, elle
+    est refusée par le relevé (point 2), non par le point 6."""
+    forme = "        c = vue.ouverture.pi_etoile\n        k = (1.0 + c) * 1.01\n"
+    assert analyser_texte(_avec_forme(forme, "LIT_LA_CIBLE")) == []
+    ecarts = analyser_texte(_avec_forme(forme, ""))
+    assert ecarts == ["phase_5 : ouverture 'pi_etoile' faite, non déclarée"]
 
 
 def test_aucun_nom_admis_ne_calcule_gamma_e():
