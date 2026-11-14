@@ -857,9 +857,11 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
             ("W", 1.0 + t), ("W_suivant", e["W"]), ("N", 1.0 + t),
             ("U_suivant", e["U"]), ("N_suivant", e["N"]), ("N_pa_suivant", e["N_pa"]))
     # Croissance tendancielle et son facteur (annotation du 13/11/2026, point 4), aux tables
-    # de référence : g = (1 + g_pr)(1 + g_N) − 1, facteur par la conversion géométrique.
+    # de référence : g = (1 + g_pr)(1 + g_N) − 1 ; facteur, produit des conversions
+    # géométriques de g_pr et de g_N (P88).
     g = (1.0 + 0.02) * (1.0 + 0.0) - 1.0
-    tendance = (("g", g), ("facteur_g", facteur_par_pas(TauxDeCroissance(g))))
+    tendance = (("g", g), ("facteur_g", facteur_par_pas(TauxDeCroissance(0.02))
+                           * facteur_par_pas(TauxDeCroissance(0.0))))
     assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1),
                                            ("date_de_decision", True)) + tendance
     assert fins[13].grandeurs_ouverture == (("annee", 2), ("mois", 2),

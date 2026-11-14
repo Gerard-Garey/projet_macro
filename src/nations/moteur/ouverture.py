@@ -12,9 +12,11 @@ Au J2, la séquence porte la date affichée (année, mois) et le prédicat de da
 de décision. En J3-b (ADR 0012, annotation du 13/11/2026, point 4 ; P63), elle
 reçoit, en tête des grandeurs économiques, la croissance tendancielle
 g = (1 + g_pr)(1 + g_N) − 1, qui combine les tables de deux blocs et
-n'appartient à aucun, et son facteur par pas (1 + g)^{1/n_a}, calculés une
-fois par pas et lus par les blocs sans recalcul ; #61 (J3-c) y ajoute ensuite
-Γ^e_t, γ^e_t et π^{∗,pas}_t, sans changer aucune signature.
+n'appartient à aucun, et son facteur par pas, calculés une fois par pas et lus
+par les blocs sans recalcul. Le facteur est le produit f(g_pr) · f(g_N),
+f = `facteur_par_pas` (P88 ; ADR 0013, annotation du 14/11/2026, point 7) ;
+#61 (J3-c) y ajoute ensuite Γ^e_t, γ^e_t et π^{∗,pas}_t, sans changer aucune
+signature.
 """
 
 from __future__ import annotations
@@ -76,8 +78,12 @@ def _croissance_tendancielle(etat: object, parametres: object,
 
 
 def _facteur_g(etat: object, parametres: object, grandeurs: Mapping[str, object]) -> float:
-    """(1 + g)^{1/n_a}, par la seule conversion géométrique (F2), sur g déjà calculée."""
-    return facteur_par_pas(TauxDeCroissance(grandeurs["g"]))
+    """f(g_pr) · f(g_N), f = `facteur_par_pas`, égal à (1 + g)^{1/n_a} à l'arrondi près (P88 ;
+    ADR 0013, annotation du 14/11/2026, point 7 ; #125, point 1) : le produit des facteurs par
+    lesquels les blocs font croître pr et N^pa, non le facteur de g déjà arrondie, qui n'en
+    diffère au bit qu'à g_N ≠ 0. g reste publiée, mais `facteur_g` ne la lit plus."""
+    return (facteur_par_pas(parametres.production.g_pr)
+            * facteur_par_pas(parametres.travail.g_N))
 
 
 GRANDEURS_OUVERTURE = (
