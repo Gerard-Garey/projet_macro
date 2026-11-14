@@ -458,7 +458,8 @@ class Prix(_PseudoBloc):
 
 
 class Menages(_PseudoBloc):
-    """Propension (phase 2) et consommation (ligne 1, phase 5) ; rien en phase 9."""
+    """Propension (phase 2) et consommation (ligne 1, phase 5) ; en phase 9, YD_{t−1} (schéma
+    v4) reconduite, sans flux."""
 
     __slots__ = ()
     declaration = _declaration(
@@ -466,7 +467,7 @@ class Menages(_PseudoBloc):
         _siege("2", ecrit=("propension",), lit=_BASE + (Lecture("0", "mois"),)),
         _siege("5", lit=_BASE + _gl("D_H", "B_H", "5") + (Lecture("2", "propension"),),
                propose=("1",)),
-        _siege("9"),
+        _siege("9", etat=_reconduites("menages", "9")),
     )
 
     def phase_2(self, vue: ordo.Vue) -> None:
@@ -485,7 +486,7 @@ class Menages(_PseudoBloc):
         vue.proposer("1", {"C": min(plan, depots)})
 
     def phase_9(self, vue: ordo.Vue) -> None:
-        return None
+        self._reconduire(vue, self._lecteur(vue, "9"), "9")
 
 
 class Investissement(_PseudoBloc):
@@ -788,13 +789,14 @@ def registre_stationnaire(pi_barre: float = INFLATION) -> tuple[float, ...]:
     return tuple((1.0 + pi_barre) ** (-(u - 1) / n_a) for u in range(1, n_a + 2))
 
 
-# Variables d'état des blocs (schéma v3) à l'ouverture du pas 0, reconduites telles
+# Variables d'état des blocs (schéma v4) à l'ouverture du pas 0, reconduites telles
 # quelles (`_reconduites`) : ordres de grandeur de l'état stationnaire du socle
-# (π* = 2 %, n_a = 12, p_0 = pr_0 = N^pa_0 = 1), le salaire nominal W multiplié par
-# ECHELLE comme les autres grandeurs nominales.
+# (π* = 2 %, n_a = 12, p_0 = pr_0 = N^pa_0 = 1), le salaire nominal W et le revenu disponible
+# YD_{t−1} multipliés par ECHELLE comme les autres grandeurs nominales.
 VARIABLES_DES_BLOCS_INITIALES = {
     "v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8 * ECHELLE, "U": 0.05,
-    "N": 0.95, "N_pa": 1.0, "mu_tilde": math.log(1.25), "i_L": 0.0502, "i_D": 0.0202,
+    "N": 0.95, "N_pa": 1.0, "mu_tilde": math.log(1.25),
+    "YD_m1": 0.7 * ECHELLE, "i_L": 0.0502, "i_D": 0.0202,
     "pi_e": INFLATION, "r_hat_etoile": 0.01, "pi_etoile": INFLATION,
 }
 

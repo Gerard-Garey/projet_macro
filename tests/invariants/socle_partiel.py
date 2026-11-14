@@ -28,7 +28,8 @@ d'essai ne lit pas `facteur_g`, qu'aucun bloc réel ne remplace.
 
 **Exigences du rang 1a (§ 8).** Les blocs d'essai acheteurs (ménages,
 investissement, État) écrivent leurs plans en u.m. sur le sentier (C^plan,
-I^plan, G^plan, phase 2), exogènes et à chocs possibles (`chocs_des_plans`), et
+I^plan, G^plan, phase 2), exogènes et à chocs possibles (`chocs_des_plans`, table plan →
+facteur(t)), et
 proposent les lignes 1 à 3 **au prix p_t du pas sur les volumes servis par le
 bloc 2** (`p` × `C_vol`, `I_vol`, `G_vol`, lus en phase 5), non aux montants
 du sentier. Le bloc d'essai 8 a une variante à π^e choqué (`choc_pi_e`),
@@ -208,6 +209,8 @@ VARIABLES_D_ETAT = {
     "N": ("N", PERSONNES), "N_pa": ("N_pa_1", PERSONNES), "mu_tilde": ("mu_tilde", CONSTANTE),
     "i_L": ("i_L_1", CONSTANTE), "i_D": ("i_D_1", CONSTANTE), "pi_e": ("pi_e_1", CONSTANTE),
     "r_hat_etoile": ("r_hat_1", CONSTANTE), "pi_etoile": ("pi_cible_1", CONSTANTE),
+    # Bloc 5 (schéma v4, #60) : YD_t, écrit en phase 9, retenu pour le pas suivant.
+    "YD_m1": ("YD", NOMINAL),
 }
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
@@ -216,7 +219,7 @@ if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
 OUVERTURE_DES_VARIABLES = {
     "v_e": "ve", "IN_vol": "IN_vol", "pr": "pr", "K_vol": "K_vol", "W": "W_m1", "U": "U_m1",
     "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "i_L": "i_L", "i_D": "i_D",
-    "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible",
+    "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible", "YD_m1": "YD_m1",
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
@@ -329,8 +332,8 @@ class _BlocDEssai:
         # Variables du pas, dont les plans des acheteurs, éventuellement choqués.
         for nom, (cle, classe) in VARIABLES_DU_PAS.get((radical, etape), {}).items():
             valeur = sentier.valeur(cle, classe, t, echelle)
-            if nom in ("C_plan", "I_plan", "G_plan"):
-                valeur *= r["chocs_des_plans"](nom, t)
+            if nom in PLANS_DES_ACHETEURS:
+                valeur *= r["chocs_des_plans"].get(nom, _sans_choc)(t)
             vue.ecrire_pas(nom, valeur)
         # Lignes : acheteurs au prix du pas sur les volumes servis ; B7 sous forme exacte ;
         # les autres aux montants du sentier.
@@ -367,20 +370,28 @@ def _choc_nul(t: int) -> float:
     return 0.0
 
 
-def _plans_sans_choc(nom: str, t: int) -> float:
+def _sans_choc(t: int) -> float:
     return 1.0
+
+
+# Plans des acheteurs → radical de leur écrivain (`ACHETEURS`) : clés admises de
+# `chocs_des_plans`.
+PLANS_DES_ACHETEURS = types.MappingProxyType({plan: radical
+                                              for radical, _, _, _, plan in ACHETEURS})
 
 
 def classe_d_essai(radical: str, sentier: Sentier, *, echelle: float = 1.0,
                    choc_pi_e: Callable[[int], float] = _choc_nul,
-                   chocs_des_plans: Callable[[str, int], float] = _plans_sans_choc,
+                   chocs_des_plans: dict | None = None,
                    regles: dict | None = None, lignes: dict | None = None,
                    declaration: DeclarationDeBloc | None = None) -> type:
     """Classe du bloc d'essai d'un radical ; `declaration` remplace sa déclaration (essais de
     refus à l'assemblage) ; `regles` donne, pour une variable d'état du radical, une règle
     d'essai (vue, sentier, t) → valeur du pas suivant, à la place du sentier (cas d'essai de
     la linéarisation) ; `lignes` donne, pour une ligne proposée par le radical, une règle
-    d'essai (vue, sentier) → montants par terme, à la place du sentier (E3)."""
+    d'essai (vue, sentier) → montants par terme, à la place du sentier (E3) ;
+    `chocs_des_plans` : plan → facteur(t) multipliant le plan du sentier au pas t (un plan absent
+    n'est pas choqué)."""
     declaration = declaration_d_essai(radical) if declaration is None else declaration
     proposees = {ligne for s in declaration.sieges for ligne in s.propose}
     orphelines = sorted(set(lignes or {}) - proposees)
@@ -390,7 +401,8 @@ def classe_d_essai(radical: str, sentier: Sentier, *, echelle: float = 1.0,
             "ses sièges ne propose : refusée, jamais ignorée en silence")
     reglage = types.MappingProxyType({
         "sentier": sentier, "echelle": echelle, "choc_pi_e": choc_pi_e,
-        "chocs_des_plans": chocs_des_plans, "regles": types.MappingProxyType(regles or {}),
+        "chocs_des_plans": types.MappingProxyType(chocs_des_plans or {}),
+        "regles": types.MappingProxyType(regles or {}),
         "lignes": types.MappingProxyType(lignes or {}),
         "sieges": types.MappingProxyType({s.etape: s for s in declaration.sieges})})
     espace = {"__slots__": (), "declaration": declaration, "reglage": reglage}
@@ -425,7 +437,7 @@ class OptionSansBlocDEssai(ValueError):
 
 def blocs(sentier: Sentier, *, echelle: float = 1.0,
           choc_pi_e: Callable[[int], float] = _choc_nul,
-          chocs_des_plans: Callable[[str, int], float] = _plans_sans_choc,
+          chocs_des_plans: dict | None = None,
           regles: dict | None = None, lignes: dict | None = None,
           reels: Sequence[object] = (),
           declarations: dict | None = None) -> tuple[object, ...]:
@@ -433,9 +445,13 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
     réel par radical, #113, #50, #51) ; `declarations` remplace la déclaration d'un radical ;
     `regles` : variable d'état → règle d'essai, passée au bloc de son propriétaire, ajoutée à
     `REGLES_PAR_DEFAUT` (et prioritaire sur elles) ; `lignes` : ligne → règle d'essai, passée
-    au bloc d'essai de son proposant (E3). Une clé de `lignes` ou de `declarations` dont le
-    radical est remplacé par un bloc réel, ou une ligne qu'aucun siège ne propose, est refusée
-    (`OptionSansBlocDEssai`)."""
+    au bloc d'essai de son proposant (E3) ; `chocs_des_plans` : plan (`PLANS_DES_ACHETEURS`) →
+    facteur(t), passé au bloc d'essai de son écrivain. Une clé de `lignes`, de `declarations`,
+    de `regles` ou de `chocs_des_plans` dont le radical (proposant, propriétaire ou écrivain)
+    est remplacé par un bloc réel, ou une ligne qu'aucun siège ne propose, ou un plan inconnu,
+    est refusée (`OptionSansBlocDEssai`, constat m1 de l'audit du rang 3 de J3-d1 : un choc du
+    plan d'un bloc réel était ignoré en silence). Les règles par défaut
+    (`REGLES_PAR_DEFAUT`) ne s'appliquent qu'aux blocs d'essai, sans refus."""
     remplaces = {b.declaration.radical: b for b in reels}
     for radical in declarations or {}:
         if radical not in RADICAUX or radical in remplaces:
@@ -452,6 +468,22 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
                 f"règle d'essai pour la ligne {ligne}, proposée par "
                 f"{cat.LIGNE[ligne].proposant}, remplacé par un bloc réel : refusée, jamais "
                 "ignorée en silence")
+    for plan in chocs_des_plans or {}:
+        if plan not in PLANS_DES_ACHETEURS:
+            raise OptionSansBlocDEssai(f"choc du plan {plan!r}, inconnu (plans admis : "
+                                       f"{sorted(PLANS_DES_ACHETEURS)}) : refusé")
+        if PLANS_DES_ACHETEURS[plan] in remplaces:
+            raise OptionSansBlocDEssai(
+                f"choc du plan {plan}, écrit par {PLANS_DES_ACHETEURS[plan]}, remplacé par un "
+                "bloc réel : refusé, jamais ignoré en silence")
+    for nom in regles or {}:
+        proprietaire = schema.VARIABLE[nom].proprietaire if nom in schema.VARIABLE else None
+        if proprietaire not in RADICAUX or proprietaire in remplaces:
+            raise OptionSansBlocDEssai(
+                f"règle d'essai pour la variable d'état {nom!r}, "
+                + (f"écrite par {proprietaire}, remplacé par un bloc réel"
+                   if proprietaire in remplaces else "sans bloc propriétaire")
+                + " : refusée, jamais ignorée en silence")
     regles = {**REGLES_PAR_DEFAUT, **(regles or {})}
     rendus = []
     for radical in RADICAUX:
@@ -462,8 +494,10 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
                    if schema.VARIABLE[nom].proprietaire == radical}
         siennes = {ligne: regle for ligne, regle in (lignes or {}).items()
                    if cat.LIGNE[ligne].proposant == radical}
+        chocs = {plan: choc for plan, choc in (chocs_des_plans or {}).items()
+                 if PLANS_DES_ACHETEURS[plan] == radical}
         classe = classe_d_essai(radical, sentier, echelle=echelle, choc_pi_e=choc_pi_e,
-                                chocs_des_plans=chocs_des_plans, regles=propres,
+                                chocs_des_plans=chocs, regles=propres,
                                 lignes=siennes, declaration=(declarations or {}).get(radical))
         rendus.append(classe())
     return tuple(rendus)
@@ -474,7 +508,7 @@ def blocs_reels() -> tuple[object, ...]:
     radical, dont l'unique classe déclarée sous ce radical est instanciée (ADR 0012, annotation
     du 13/11/2026, point 5 : chaque module porte un seul bloc, dont le radical est le nom du
     module). Au rang 6 de J3-c : la production (#113), le travail (#50), les prix (#51), la
-    banque (#90) et la banque centrale (#91)."""
+    banque (#90) et la banque centrale (#91) ; au rang 3 de J3-d1, les ménages (#60)."""
     dossier = RACINE / "src" / "nations" / "blocs"
     rendus = []
     for radical in RADICAUX:

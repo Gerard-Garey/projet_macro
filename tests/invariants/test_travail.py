@@ -247,9 +247,10 @@ def test_coherence_des_conversions_a_g_n_positif(socle, publier):
 
 
 def chocs_g(facteur, debut, fin):
-    def chocs(nom, t):
-        return facteur if nom == "G_plan" and debut <= t <= fin else 1.0
-    return chocs
+    """Choc de G^plan (table plan → facteur(t) de `socle.blocs`)."""
+    def choc(t):
+        return facteur if debut <= t <= fin else 1.0
+    return {"G_plan": choc}
 
 
 def grandeurs_finales(releve):

@@ -313,8 +313,8 @@ def test_marche_de_cible_prescription_exacte(socle, pi_0, publier):
                 f"par an"])
 
 
-def _g_plan_reduit(nom, t):
-    return 0.95 if nom == "G_plan" and t < 12 else 1.0
+def _g_plan_reduit(t):
+    return 0.95 if t < 12 else 1.0
 
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
@@ -323,7 +323,7 @@ def test_bornes_depense_reduite_prescription_exacte(socle, pi, publier):
     aux tours 1 à 12, le taux directeur égale exactement la prescription à chaque pas, sur 120
     pas, sans plancher ; aucun arrêt du noyau ; taux minimal publié."""
     sentier = socle.sentier(pi)
-    _, releve = derouler(socle, sentier, 120, chocs_des_plans=_g_plan_reduit)
+    _, releve = derouler(socle, sentier, 120, chocs_des_plans={"G_plan": _g_plan_reduit})
     assert all(p["variables"]["i_CB"] == p["variables"]["i_regle"] for p in releve.pas)
     minimum = min(p["variables"]["i_CB"] for p in releve.pas)
     publier(f"Bloc 8, G^plan −5 % aux tours 1 à 12, π* = {100 * pi:g} %, 120 pas "

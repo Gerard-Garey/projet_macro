@@ -120,8 +120,8 @@ def reels():
     return (Production(), Travail(), Prix(), Banque(), BanqueCentrale())
 
 
-def _g_plan_accru(nom, t):
-    return 1.01 if nom == "G_plan" and t < 12 else 1.0
+def _g_plan_accru(t):
+    return 1.01 if t < 12 else 1.0
 
 
 def parametres(pi, lambda_e):
@@ -135,7 +135,7 @@ def parametres(pi, lambda_e):
 def ordonnanceur(socle, sentier, lambda_e, choc_g=False):
     options = socle.emission_e3()
     if choc_g:
-        options["chocs_des_plans"] = _g_plan_accru
+        options["chocs_des_plans"] = {"G_plan": _g_plan_accru}
     return socle.ordonnanceur(sentier, parametres(sentier.pi, lambda_e), reels=reels(),
                               **options)
 

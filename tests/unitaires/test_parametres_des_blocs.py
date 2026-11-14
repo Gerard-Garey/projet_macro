@@ -181,15 +181,18 @@ def test_bornes_admises():
 def test_ensemble_des_tables():
     """Point 3.5 (P69) : un champ par table, chacune de son type exact ; ni champ de mode ni
     de doublure (annotation du 13/11/2026, point 6 (b)) ; variation contrôlée. J3-c (ADR 0013,
-    annotation du 14/11/2026, point 6 ; H3.5) : `banque` et `banque_centrale` à la suite."""
-    noms = ["cadre", "production", "travail", "prix", "investissement", "banque",
+    annotation du 14/11/2026, point 6 ; H3.5) : `banque` et `banque_centrale` à la suite. J3-d1
+    (annotation du 14/11/2026 (rang 1b de J3-d1), point 2) : `menages` entre `prix` et
+    `investissement`."""
+    from nations.moteur.parametres import menages
+    noms = ["cadre", "production", "travail", "prix", "menages", "investissement", "banque",
             "banque_centrale"]
     assert [f.name for f in dataclasses.fields(EnsembleDesParametres)] == noms
     p = PARAMETRES_DE_REFERENCE
-    assert (p.cadre, p.production, p.travail, p.prix, p.investissement, p.banque,
+    assert (p.cadre, p.production, p.travail, p.prix, p.menages, p.investissement, p.banque,
             p.banque_centrale) == (
-        CADRE, production.PRODUCTION, travail.TRAVAIL, prix.PRIX, investissement.INVESTISSEMENT,
-        banque.BANQUE, banque_centrale.BANQUE_CENTRALE)
+        CADRE, production.PRODUCTION, travail.TRAVAIL, prix.PRIX, menages.MENAGES,
+        investissement.INVESTISSEMENT, banque.BANQUE, banque_centrale.BANQUE_CENTRALE)
     for nom in noms:
         with pytest.raises(DefautDeDeclaration, match=nom):
             dataclasses.replace(p, **{nom: object()})
