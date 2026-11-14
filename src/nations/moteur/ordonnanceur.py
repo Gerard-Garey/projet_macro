@@ -143,7 +143,7 @@ def _est_finie(valeur: object) -> bool:
 class DeclarationDesEntrees:
     """Noms des entrées du tour, déclarés à l'assemblage (B5, G4).
 
-    - `scenario` : entrées de scénario (ς_{L,t}, ς_{B,t} au J3), publiées en
+    - `scenario` : entrées de scénario (ς_{L,t}, ς_{B,t}, avec les blocs 6 et 9), publiées en
       phase 0 ;
     - `leviers` : leviers du joueur (J4), lus par le moteur en phase 1,
       premier groupe.
