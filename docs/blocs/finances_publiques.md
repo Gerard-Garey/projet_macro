@@ -3,7 +3,7 @@ bloc: État et dette
 module: src/nations/blocs/finances_publiques.py
 expert pilote: macro
 experts consultés: monnaie (placement de la dette et prime : frontière dette publique) ; jeu
-statut: décidée (M33)
+statut: spécifiée (04/10/2026)
 décision: M33 (04/10/2026)
 issue: #73
 ---
