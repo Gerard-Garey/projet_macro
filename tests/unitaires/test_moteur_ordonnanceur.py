@@ -11,9 +11,11 @@ Le générateur complet est celui de #98.
 
 import dataclasses
 import itertools
+import math
 import re
 import struct
 from pathlib import Path
+from types import MappingProxyType
 
 import numpy as np
 import pytest
@@ -27,16 +29,18 @@ from nations.moteur.contrat_bloc import (
     GRAND_LIVRE,
     OUVERTURE,
     REGISTRE,
+    SUFFIXE_SUIVANT,
     DeclarationDeBloc,
     Lecture,
     Siege,
     methode_de_l_etape,
 )
 from nations.moteur.conversions import facteur_par_pas
-from nations.moteur.diagnostics import DefautDeDeclaration, RefusDuMoteur
+from nations.moteur.diagnostics import DefautDeDeclaration, PlanHorsDomaine, RefusDuMoteur
 from nations.moteur.ouverture import GrandeurOuverture
 from nations.noyau.diagnostics import RefusDeProposition
 from nations.moteur.ordonnanceur import (
+    DOMAINES_DU_PAS,
     INDICE_DES_PRIX,
     DeclarationDesEntrees,
     EntreesDuTour,
@@ -1028,6 +1032,124 @@ def test_espace_du_pas_refuse_une_valeur_non_finie(valeur):
     assert (refus.value.t, refus.value.nom) == (3, "x")
     espace.ecrire("x", (1.0, 2.0))
     assert espace.lire("x") == (1.0, 2.0)
+
+
+# --------------------------------------------------------------------------
+# Domaine des plans (#124 ; P120, P129 ; ADR 0013, annotation du 14/11/2026 (J3-d1), point 4)
+# --------------------------------------------------------------------------
+
+PLANS = ("C_plan", "I_plan", "G_plan")
+# Valeurs hors du domaine des plans : −1 ulp sous 0 (plus petit sous-normal négatif), −1,
+# NaN, ±∞, l'entier −1 (type de base admis par l'espace du pas) et le n-uplet (1,0,) (type de
+# base, mais pas un plan).
+HORS_DOMAINE = (math.nextafter(0.0, -1.0), -1.0, float("nan"), float("inf"), -float("inf"), -1,
+                (1.0,))
+# Valeurs du domaine : −0,0, 0, le plus petit sous-normal positif, 1, l'entier 0.
+DANS_LE_DOMAINE = (-0.0, 0.0, math.nextafter(0.0, 1.0), 1.0, 0)
+
+
+def test_domaines_du_pas_liste_fermee():
+    """P129 : `DOMAINES_DU_PAS` est une liste fermée, en lecture seule, des trois plans des
+    acheteurs ; aucun de ses noms n'est une variable d'état, une valeur du pas suivant ni une
+    grandeur calculée à l'ouverture (leur domaine relève du schéma ou de la grandeur)."""
+    assert type(DOMAINES_DU_PAS) is MappingProxyType
+    assert tuple(DOMAINES_DU_PAS) == PLANS
+    with pytest.raises(TypeError):
+        DOMAINES_DU_PAS["y"] = DOMAINES_DU_PAS["C_plan"]
+    etat = {f.name for f in dataclasses.fields(EtatPays)}
+    ouverture = {g.nom for g in ordo.GRANDEURS_OUVERTURE}
+    for nom in DOMAINES_DU_PAS:
+        assert nom not in etat and nom not in ouverture
+        assert not nom.endswith(SUFFIXE_SUIVANT)
+    assert issubclass(PlanHorsDomaine, RefusDuMoteur)
+
+
+@pytest.mark.parametrize("nom", PLANS)
+@pytest.mark.parametrize("valeur", HORS_DOMAINE, ids=repr)
+def test_plan_hors_domaine_refuse_par_l_espace_du_pas(nom, valeur):
+    """Un plan négatif (−1 ulp compris), NaN ou infini est refusé par `PlanHorsDomaine`, et non
+    par le refus générique de finitude, qu'il précède ; rien n'est écrit (aucun écrêtage) ; un
+    autre nom de l'espace n'a que le contrôle générique."""
+    espace = ordo.VariablesDuPas(frozenset({nom, "x"}), 4)
+    with pytest.raises(PlanHorsDomaine, match="hors du domaine") as refus:
+        espace.ecrire(nom, valeur, etape="2", bloc="menages")
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        4, "2", "menages", nom)
+    assert repr(valeur) in str(refus.value)
+    with pytest.raises(RefusDuMoteur, match="avant son écriture"):
+        espace.lire(nom)
+    if type(valeur) in (int, tuple) or math.isfinite(valeur):
+        espace.ecrire("x", valeur)
+    else:
+        with pytest.raises(RefusDuMoteur, match="non finie") as generique:
+            espace.ecrire("x", valeur)
+        assert type(generique.value) is RefusDuMoteur
+
+
+@pytest.mark.parametrize("nom", PLANS)
+@pytest.mark.parametrize("valeur", DANS_LE_DOMAINE, ids=repr)
+def test_plan_dans_le_domaine_admis_au_bit(nom, valeur):
+    """−0,0, 0 et les plans positifs sont admis et relus au bit (signe de −0,0 compris)."""
+    espace = ordo.VariablesDuPas(frozenset({nom}), 0)
+    espace.ecrire(nom, valeur)
+    lu = espace.lire(nom)
+    assert type(lu) is type(valeur) and bits_de_base(lu) == bits_de_base(valeur)
+
+
+@pytest.mark.parametrize("nom", PLANS)
+@pytest.mark.parametrize("famille", ["scenario", "leviers"])
+def test_plan_en_entree_du_tour_refuse_a_l_assemblage(nom, famille):
+    """#124 (constat M1 de l'audit du rang 2) : un plan n'est écrit que par un bloc ; une entrée
+    du tour, de scénario ou levier, sous le nom d'une variable de `DOMAINES_DU_PAS` est refusée
+    à l'assemblage, avant tout pas."""
+    entrees = (DeclarationDesEntrees((nom,), ()) if famille == "scenario"
+               else DeclarationDesEntrees((), (nom,)))
+    with pytest.raises(DefautDeDeclaration, match="DOMAINES_DU_PAS") as refus:
+        ordonnanceur_d_essai(plans_nuls(1), entrees=entrees)
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        "0" if famille == "scenario" else "1", MOTEUR, nom)
+
+
+def _ecrire_un_plan(radical, nom, valeur):
+    """Sièges et action d'essai : le bloc `radical` écrit `nom` = `valeur` en phase 2, après son
+    action d'essai."""
+    def remplacer(sieges):
+        s = sieges[radical]["2"]
+        sieges[radical]["2"] = dataclasses.replace(s, ecrit=s.ecrit + (nom,))
+    base = action_d_essai(radical, "2", plans_nuls(2), 0.02)
+
+    def agir(vue):
+        base(vue)
+        vue.ecrire_pas(nom, valeur(vue.ouverture.t))
+    return remplacer, {(radical, "2"): agir}
+
+
+@pytest.mark.parametrize("radical, nom", [("menages", "C_plan"), ("investissement", "I_plan"),
+                                          ("finances_publiques", "G_plan")])
+@pytest.mark.parametrize("valeur", HORS_DOMAINE, ids=repr)
+def test_plan_hors_domaine_refuse_pour_un_bloc_d_essai(radical, nom, valeur):
+    """Écrivain bloc d'essai, par la vue : le refus nomme le pas, l'étape et le bloc écrivain
+    (apposés par la vue) et le plan ; l'état d'ouverture reste intact."""
+    remplacer, actions = _ecrire_un_plan(radical, nom, lambda t: valeur)
+    o = ordonnanceur_d_essai(plans_nuls(1), remplacer=remplacer, actions=actions)
+    e0 = etat_initial()
+    avant = sauvegarder([e0])
+    with pytest.raises(PlanHorsDomaine) as refus:
+        executer_pas(e0, ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "2", radical, nom)
+    assert sauvegarder([e0]) == avant
+
+
+def test_plan_nul_signe_admis_par_un_bloc_d_essai():
+    """−0,0 au pas 0, 0 au pas 1 : deux pas déroulés, plans relevés au bit, sans écrêtage."""
+    remplacer, actions = _ecrire_un_plan("menages", "C_plan", lambda t: (-0.0, 0.0)[t])
+    o = ordonnanceur_d_essai(plans_nuls(2), remplacer=remplacer, actions=actions)
+    releve = Enregistreur()
+    trajectoire(o, etat_initial(), 2, releve)
+    plans = [dict(e.variables_du_pas)["C_plan"] for e in releve.evenements
+             if type(e) is FinDePas]
+    assert [bits(x) for x in plans] == [bits(-0.0), bits(0.0)]
 
 
 @pytest.mark.parametrize("famille", ["scenario", "leviers"])
