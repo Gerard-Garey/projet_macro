@@ -1579,6 +1579,17 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai : réserve
 | J4 | (e) perceptibilité | Scénario apparié (O2), i_CB + 1 point aux tours 1 à 12 | (e) (i) deux crans en 12 tours ; (ii) pic au plus tard au tour 24 ; (iii) aucune dynamique lente du bloc |
 | J4 | Restitution (conditions 1 à 7, #79) | Niveaux normaux restitués égaux à ceux du script | 1e−9 relatif |
 
+*Correction prospective du 14/11/2026, avant l'essai (P77 ; décision du mainteneur du 14/11/2026, sur avis de `monnaie`, rang 1a de J3-c, PR #129)* : les lignes « État stationnaire » et « Superneutralité des écarts » se lisent sur le moteur à n_a = 12 seulement, pour π̄ = π\* ∈ {0 ; 2 % ; 10 %}, dans le socle partiel d'essai (blocs 2, 3, 4, 7 et 8 réels, plans nominaux exogènes) ; n_a ∈ {4 ; 52} reste couvert par le script (`outils/etat_stationnaire.py`). Les valeurs de référence sont celles du script, jamais les chiffres de la ligne : Div/Π à π̄ = 2 % vaut 0,889928 / 0,890253 / 0,890378 pour n_a = 4 / 12 / 52 (`nations_et_marches.tex`, l. 2603 et 2609), et non 0,892301 / 0,892616 / 0,892737 ; « formes fermées » se lit « valeurs du script ». Seuils inchangés. Le texte d'origine reste publié ; les sections historiques (§ 3.C-3, § 6.2, tableau du § 9.5) gardent leurs chiffres, à lire avec ce renvoi. Chiffres périmés signalés, sans changement de lecture : ligne « Calibration » (marge nette 2,633 / 2,421 / 2,072 %, contre 2,717 / 2,497 / 2,126 % au script, spécification l. 2604) ; ligne « C43 » (canal rentier 0,209 / 0,429 / 0,735 %, contre 0,151 / 0,387 / 0,721 %, l. 2611).
+
+*Classement des lignes « J3 » (rang 1a de J3-c, 14/11/2026, avis de `monnaie`, décision du mainteneur)* : (a) appel direct ou inspection ; (b) socle partiel d'essai ; (c) socle complet. Une ligne qui relève de deux classes est scindée.
+- (a) : cas à la main, C29, boucle propre, neutralité des achats de titres, (d1) ; parties (a) de « Réserves et refinancement » (B7 dans ses trois cas sur tirages, achat 19b-banque), « Bornes » (scénarios de taux en équilibre partiel), « Monnaie endogène », « Phases », « Empreinte », (d2) et (d3).
+- (b) : état stationnaire, superneutralité des écarts, coût ; parties (b) de « Réserves et refinancement » (à chaque clôture ; identité B19 plutôt que L^CB = M^G\*), « Résultat et lignes exécutées » (Π^Bk égal aux lignes 9 + 11b + 12 − 10 − 13 exécutées), « Phases », « Empreinte ».
+- (c), à J3-d avec le bloc 6 (#67) : partie F3 de « Résultat et lignes exécutées », ς_L de « Bornes » et de « Monnaie endogène », « Refus de crédit », partie ς ≠ 0 de « Empreinte » ; à J3-d avec le bloc 9 : « Placement raté ».
+- (c), à #114 (socle complet) : « Vitesses », « Test zéro », « C43 », parts de ΔYD de (d2) et (d3).
+- Hors moteur : « Calibration » (#130).
+
+B7 s'écrit en −min (Res_{t+1} ≥ 0 et L^CB ≥ 0 exactement) ; le script (`outils/etat_stationnaire.py`) y est aligné avec #90.
+
 ### 9.7 Conditions transmises
 
 **Fiche 6 (`macro`), conditions de M28 complétées** :

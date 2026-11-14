@@ -1956,6 +1956,15 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 
 ### 9.4 Interfaces
 
+*Annotation du 14/11/2026 (rang 1a de J3-c ; `macro`, expert pilote ; décision du mainteneur du 14/11/2026, PR #129 ; décisions du mainteneur du 03/10/2026, § 9.10 ; M29, M30, M32 ; ADR 0010 et son annotation du 04/10/2026 ; #61)*. Le texte des § 9.2, 9.4 et 9.6 et la condition C35 restent publiés ; ils se lisent avec les corrections suivantes, prospectives, aucun essai n'ayant été fait.
+1. Tableau des phases, lignes 2 et 6 : « phase 1 : π\* » se lit « ouverture : π\*_t (cible en vigueur, variable d'état du bloc 8, écrite par BC4 en phase 1 du pas précédent) ; phase 0 : Γ^e_t et π^{∗,pas}_t (moteur, `eq:moteur-croissance-nominale-attendue`) ». Le bloc ne lit jamais π\*_{t+1}.
+2. Tableau des phases, dernière ligne : « après la phase 6, à fixer (§ 9.8, constat 1) » se lit « phase 9 (M29, ADR 0009) : T_{F,t}, retenu comme T_{F,t−1} du pas suivant ».
+3. F1, F2, F4 (§ 3.N, repris au § 9.1) : p̂_t = p_{t−1}(1 + π^{∗,pas}_t) ; D\*_{F,t+1} = ν_F n_a p_{t−1}(1 + π^{∗,pas}_t)^2 v^e_{t+1} ; T^e_{F,t} = Γ^e_t T_{F,t−1} (symbole de la spécification ; Γ̂ et T̂_F disparaissent). Aucun de ces facteurs n'est recalculé dans le bloc (ADR 0008, I.3 ; ADR 0010, point 4). Γ^e_t = `facteur_g`·(1 + π^{∗,pas}_t), avec `facteur_g` = (1 + g_pr)^{1/n_a}(1 + g_N)^{1/n_a} (décision du 14/11/2026, #125 point 1).
+4. Interfaces, ligne « 8, banque centrale et anticipations » : « π\* (phase 1) » se lit « π\*_t (ouverture) ; Γ^e_t et π^{∗,pas}_t lus du moteur (phase 0) ». La colonne « Phases » « 1, 2 » se lit « ouverture, 0, 2, 6 ».
+5. Leviers, ligne « Cible d'inflation π\* » : « … D\* et T̂_F au tour n » se lit « … D\* et T^e_F au tour n + 1 » ; le délai « 0 » se lit « 1 ». L'effet de C33 (−1,98 % du plan par point de baisse de π\*, à i_L donné ; chiffre de la fiche, non remesuré) s'entend au tour n + 1. Le levier de cible reste fermé au socle et au J4 (M32).
+6. § 9.2 : « π\* : cible lue (bloc 8 ; paramètre ou levier lu en phase 1) » se lit « π\*_t, cible en vigueur lue à l'ouverture ; valeur initiale : paramètre π\* de la table du bloc 8 (ADR 0010, annotation du 04/10/2026) » ; « g, γ et Γ̂ = [(1 + g)(1 + π\*)]^{1/n_a}, dérivés » se lit « g, γ, dérivés ; Γ^e_t, grandeur du moteur (phase 0), lue ». Au § 9.10, « π\* est un paramètre typé à source unique de `moteur/` » se lit « π\* est un paramètre de la table du bloc 8 » (même annotation).
+7. C35, à ses trois occurrences (§ 3.L ; § 6.1, Q2, point 5 ; § 6.3), se lit avec le texte décidé au § 9.10 : « décision du tour n (taux ou cible) → i_L, i_D et π\* lus à l'ouverture du tour n + 1 → plans d'investissement et des ménages du tour n + 1 ; intérêts des lignes 9 et 10 au tour n + 1 → plan des ménages au tour n + 2 ».
+
 **Phases, lectures et écritures du bloc 6** (lecture (a) de Q7 ; i_L à l'ouverture, Q8 ; C27) :
 
 | Phase | Lit | Écrit, ou propose au noyau |
@@ -2110,6 +2119,11 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (réserv
 - 4 : test « Bornes » (c) ;
 - 5 : condition A > 0 au chargement ;
 - 6 : `\limites` de S6 et restitution (condition 3).
+
+*Annotation du 14/11/2026 (rang 1a de J3-c ; `macro` ; décision du mainteneur du 14/11/2026, PR #129 ; ADR 0010, § Conséquences, tests 2 à 4)*, prospective :
+- Ligne « Délais » : « π\* au tour n : plan modifié au tour n » se lit « cible modifiée au tour n (π\*_{n+1} écrite en phase 1 du tour n ; levier fermé au socle, donc par un bloc d'essai 8) : plans et T^e_F du tour n identiques au bit au contrôle apparié, modifiés au tour n + 1 ».
+- Trois lignes « J3 » ajoutées : (a) une seule source de Γ^e : les blocs 5 et 6 lisent Γ^e_t et π^{∗,pas}_t de l'étape 0, aucun ne les recalcule (contrôle statique de #61 ; test « conversion unique »), seuil : aucune occurrence ; (b) ϱ_{L,t} = (1 + i_{L,t})/(1 + π\*_t) − 1, avec i_L et π\* d'ouverture, seuil 1e−15 relatif ; (c) à cible constante, π\*_t constante au bit.
+- #80 (critère 13 de la fiche 8) : attribution mesurée sur le script par `macro` le 14/11/2026 (synthèse du rang 1a, PR #129) ; aucune des trois sources (C30, conversion linéaire, écarts nominaux) ne réduit seule l'écart ; voie (c) de M32 maintenue (décision du mainteneur du 14/11/2026), S2, S3 et F1 codés tels que M28 les a décidés.
 
 ### 9.7 Chiffres de la décision recalculés et faits nouveaux
 

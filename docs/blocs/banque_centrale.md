@@ -1515,6 +1515,15 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai. Ils couvr
 | J4 | Perceptibilité (critère 19 (e) ; O2) | Même choc apparié | deux crans en 12 tours ; pic au plus tard au tour 24 ; demi-vie supérieure à 60 tours déclarée avec le résidu au tour 60 |
 | J4 | Restitution (conditions 1 à 10, #81) | Niveaux normaux restitués égaux à ceux du script | 1e−9 relatif |
 
+*Correction prospective du 14/11/2026, avant l'essai (P77 ; décision du mainteneur du 14/11/2026, sur avis de `monnaie`, rang 1a de J3-c, PR #129)* : la ligne « État stationnaire » se lit sur le moteur à n_a = 12 seulement, pour π\* ∈ {0 ; 2 % ; 10 %}, dans le socle partiel d'essai (blocs 2, 3, 4, 7 et 8 réels, plans nominaux exogènes) ; n_a ∈ {4 ; 52} reste couvert par le script. Les valeurs de référence sont celles du script, jamais des chiffres recopiés ; « L^CB = M^G\* » se lit « `L_CB_1` du script », la spécification datant L^CB_0 sur M^G\*_{−1} (l. 2915). Seuils inchangés. Le texte d'origine reste publié. Chiffre à redéclarer avant l'essai de #114 : H = 5 500 pas de la ligne « Vitesses » vient d'une demi-vie de 275 tours, la spécification en publie 240.
+
+*Classement des lignes « J3 » (rang 1a de J3-c, 14/11/2026, avis de `monnaie`, décision du mainteneur)* : (a) appel direct ou inspection ; (b) socle partiel d'essai ; (c) socle complet.
+- (a) : cas à la main ; parties (a) de « Perte » (BC6 et BC9 à i_CB < 0), « Phases », « Bornes » (égalité exacte, taux négatif, marche de cible), « Empreinte et coût » ; ligne ajoutée : invariant π^e > −1 de BC3 (forme convexe (1 − c)π^e + cπ_{t−1}, précondition 1 + π_{t−1} > 0 tel que calculé ; 10^6 tirages à graine déclarée et un lot adverse).
+- (b) : état stationnaire, résultat et lignes exécutées, cible (ADR 0010, test 4) ; parties (b) de « Phases », « Bornes » (G^plan −5 % aux tours 1 à 12), « Empreinte et coût » ; ligne ajoutée : boucle T3 ↔ BC3 sur le socle partiel, critère P78 (feuille de route, § 4), qui ne vaut pas verdict de boucle conjointe.
+- (c), à J3-d avec le bloc 9 : partie couverture et C60 de « Perte ».
+- (c), à #114 : « Neutralité de s_CB », « Stabilité », « Vitesses », « Gain statique », « Clause II.7 », « Cible relevée », « Persistance », « Superneutralité » (le `xfail` sur le script reste, #80), « C46 », « Test zéro ».
+- Hors moteur : « Calibration » (#45 ; #130 pour r̄). J4 : #54.
+
 ### 9.7 Conditions transmises
 
 **Conditions de `macro` (§ 6.6)** :
