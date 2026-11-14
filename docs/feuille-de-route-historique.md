@@ -4,7 +4,71 @@ Tenu par `architect`. Ce fichier reçoit, **sans rien supprimer ni réécrire**,
 
 Chaque condensation ajoute une partie, la plus récente en tête. Une partie est figée.
 
-**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro.
+**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro. Un renvoi à P74 à P86, ou à une branche fusionnée jusqu'à J3-a, absent de la tête, se lit dans la partie B (ajoutée le 14/11/2026).
+
+## Partie B : extraits de la tête sortis le 14/11/2026 (rang 9 de J3-c), figés
+
+Sortis de `docs/feuille-de-route.md` à `aebbd1d` (tête de la branche `claude/j3-monnaie`, PR #129), pour tenir la tête sous son plafond de 60 ko (P76) : texte inchangé, titres décalés d'un niveau. Les numéros P-n restent stables ; ces décisions restent en vigueur tant qu'aucune décision ultérieure ne les remplace.
+
+### 4. Décisions du mainteneur (extrait)
+
+#### Décisions du mainteneur du 14/11/2026 (point d'étape après la PR #117, P74 à P86)
+
+Points soumis par `architect` (Opus) au point d'étape après la fusion de la PR #117 (`main` = `688f299`), **toutes recommandations retenues par le mainteneur le 14/11/2026**, sans numéro M. Consignés au rang 0 de J3-c.
+
+| N° | Décision |
+|---|---|
+| P74 | Périmètre de J3-c, option (a) : #119, #121, #61, #91, #90 avec `Closes` ; #80 sans `Closes` (instruction de C61, avis de `jeu`) ; #103 en J3-d, sa part du bloc 7 tenue par le critère 4 de #90. Options écartées : (b) liste indicative (#90, #91, #61, #80, #103) et #119 en branche dédiée ; (c) #121 en J3-d et #103 gardée. |
+| P75 | Correctifs rapides avant l'ouverture : CR1, statut d'en-tête des fiches 1, 5, 6, 8 et 9 (PR #128) ; CR2, test de durée de la maquette conjointe (issue #126 créée, PR #127). |
+| P76 | #119, option (b) : feuille de route en tête (≤ 60 ko, tableau M-n gardé, lu par `outils/concordance_spec_moteur.py`) et historique (`docs/feuille-de-route-historique.md`) ; ADR 0013 de consolidation, sans décision nouvelle, document de lecture (≤ 40 ko) ; l'ADR 0012 reste intact, les annotations futures vont à l'ADR 0013. **Sans Fable** (seuil § 4.3 atteint, consultation déclinée). Options écartées : (a) section « État en vigueur » dans l'ADR 0012 (le fichier grossit) ; (c) document hors ADR (deux maisons à synchroniser). |
+| P77 | P56 étendue aux fiches 7 et 8 : lignes « état stationnaire » lues sur le moteur à n_a = 12 seulement, n_a ∈ {4 ; 52} couvert par le script ; comparaison au script, jamais aux chiffres recopiés d'une fiche (la fiche 7, § 9.6, porte encore Div/Π = 0,892616 à n_a = 12, barré et republié 0,890253 dans `sec:banque-stationnaire`). Correction prospective, ancien texte publié. |
+| P78 | Boucle T3 ↔ BC3 mesurée sur le socle partiel (blocs 2, 3, 4, 7, 8 réels, plans nominaux exogènes), critère écrit au rang 1a par `monnaie` et `macro` ; elle remplace l'étiquette « π^e exogène (bloc d'essai) » sans valoir verdict de la boucle conjointe de la fiche 8 (stabilité, vitesses : #114). |
+| P79 | #125 point 1 (forme de `facteur_g`) tranché au rang 1a par `macro`, avant Γ^e ; s'il est adopté, réalisé dans les commits de #61 avec tableau avant / après. Option écartée : report à J3-e (Γ^e modifié après coup). |
+| P80 | Les mentions « J3-c » de l'ADR 0012, annotation du 13/11/2026, points 1.8 (domaine strict de la position K) et 3.4 (table du bloc 6 complétée), se lisent J3-d, avec #67 : mention datée au rang 1b. |
+| P81 | #121, option (b) : liste blanche des importations d'un module de bloc ; rang 2 de J3-c. Option écartée : (a) liste noire. |
+| P82 | #120, option (a) : refus à l'assemblage d'un `Cadre` dont n_a diffère de celui des tables ; J3-e. Options écartées : (b) domaines construits depuis le cadre ; (c) limite déclarée. |
+| P83 | #123, option (a), avis de `macro` : labels de d et tu, ω\* couverte par `eq:travail-salaire`, g par l'ADR 0012 ; réalisée en J3-d avec #67 (S6 lit tu). Option écartée : (b) catégorie « définition exécutée non numérotée ». |
+| P84 | Rattachements : #122 → J3-e ; #124 → J3-d ; #125 point 2 → J3-f, points 3 à 6 → J3-e (borne inférieure de κ et σ : `macro`). |
+| P85 | Charge de J3-d au-dessus de cinq issues (§ 2) : découpage à instruire au point d'étape de J3-c. |
+| P86 | Délégation technique reconduite pour J3-c. Rappel : #11 et #14. |
+
+### 5. Pistes à instruire dans les fiches comparatives (texte complet sorti de la tête)
+
+Ouvertes par M2 et M3 ; chacune sera présentée dans la fiche du bloc concerné, avec ses références vérifiées, l'avis de l'expert pilote et de `jeu`, puis tranchée par le mainteneur (M-n à venir). Une piste tranchée reste dans le tableau, barrée, avec sa décision.
+
+| Piste | Fiche | Motif de l'instruction |
+|---|---|---|
+| ~~Pas de temps mensuel unique~~ — **retenue (M22, 30/09/2026)** | temps et comptabilité | Quatre fois moins de pas ; supprime l'incohérence calendaire de la v1.5 (4 pas par mois, 52 par an, glissement sur 12 mois) ; le moteur v2.0 prend 13 dates de décision par an. Pesée contre la granularité hebdomadaire des marchés dans la fiche (§ 3 à 7) : aucun fait mesuré de G à K ne l'exploitait ; réouverture par une décision M-m citant M22 si une fiche (J3, J6) établit un besoin infra-mensuel. |
+| Consommation par règle stock-flux à cible de richesse (forme fermée) plutôt qu'une optimisation à chaque pas | ménages | État stationnaire calculable ; compatible avec l'invariant 11 de l'ADR 0002. |
+| Corridor de taux explicite (facilités permanentes) | banque centrale et anticipations | Réserves et refinancement deviennent des flux décidés, pas des soldes résiduels (défaut d'invariance de la v2.0, ADR 0001 § 6). |
+| Loi de crédibilité revue ; alternative : apprentissage à gain constant | banque centrale et anticipations | Piège de la loi v2.0 (ADR 0001 § 2). |
+| Prix au coût normal majoré | prix | Forme fermée, lisible pour le joueur ; à confronter au terme de demande R3, acquis mesuré de la première tentative. |
+| ~~Deux secteurs pour le socle (consommation, équipement)~~ — **écartée (M24, 02/10/2026) : J = 1 retenu**, équations indexées par j dès le socle | production et stocks | Budget de complexité (`docs/exigences.md` § 2.7). Instruite comme option D de la fiche (§ 3.D, § 3.J), contre J = 1 (option C), J = 4 et la liste de la v1.5 : à exigences comptables égales, elle n'ajoute aucune identité vérifiable et paie un prix relatif à stabiliser (instabilités 9 à 11 et 14 ; dérive de 12,8 % de p_K/p_C en v2.0, R) sans levier du socle qui l'exploite ; l'investissement se voit sous J = 1 par les ventes par acheteur. Les secteurs arrivent avec leur mécanisme propre aux jalons J5 à J7 (fiche § 3.J (d)). Libellé initial corrigé le 02/10/2026 (fiche § 1.5, Q1) : la mention « avant les quatre de la v1.5 et de la v2.0 » était inexacte pour la v1.5, qui propose **sept secteurs et un secteur de ressources** (`archive/v1.5/Nations_et_Marches_v1_5.tex` l. 391) ; seule la v2.0 en a quatre (`archive/v2.0/prototype/model.py` l. 68). |
+| Encours hypothécaires agrégés par strate plutôt que cohortes individuelles | actifs et crises (J6) | 70 % du temps de la v2.0 dans 23 403 cohortes (mesuré le 29/09/2026). |
+
+### 7. Branches fusionnées (extrait : de `claude/fondations` à `claude/j3-maquette-criteres`)
+
+| Branche | PR | Jalon | Fusion | Détail |
+|---|---|---|---|---|
+| `claude/fondations` | #7 | J0 | 30/09/2026, commit de fusion `facf97f` | historique, partie A, § 7 |
+| `claude/routage-modele-effort` | #22 | hors jalon (ad hoc ; M23, ADR 0006) | 02/10/2026, commit de fusion `7a17e01` | historique, partie A, § 7 |
+| `claude/j1-temps-comptabilite` | #20 | J1 (branche n° 1 : fiche « temps et comptabilité », M21) | 02/10/2026, commit de fusion `3518e18` | historique, partie A, § 7 |
+| `claude/correctif-journal-agents` | #31 | hors jalon (correctif rapide, `CLAUDE.md`, « Git et GitHub ») | 02/10/2026, commit de fusion `3276b7c` | historique, partie A, § 7 |
+| `claude/technique-archive-concordance` | #29 | J1, branche technique n° 1 (M21 : outillage de J0) | 02/10/2026, commit de fusion `bf6ad56` (parents `3276b7c`, `8b9af3f`) | historique, partie A, § 7 |
+| `claude/j1-cadre-production` | #35 | J1 (branche n° 3a : reprises du cadre et fiche « production et stocks », D2) | 03/10/2026, commit de fusion `3021eaa` (parents `bf6ad56`, `0a59fe0`) | historique, partie A, § 7 |
+| `claude/j1-economie-reelle` | #43 | J1 (branche n° 3b : fiches 3 « travail et salaires », 4 « prix », 5 « ménages », 6 « investissement et financement », D2) | 04/10/2026, 10 h 12 UTC, commit de fusion `050ffbf` (parents `3021eaa`, `6157e3f`) | historique, partie A, § 7 |
+| `claude/technique-matrices-ci` | #68 | J1, branche n° 3 bis (technique n° 2 : `verifier_matrices`, concordance, invariant d'archive et CI) | 04/10/2026, 12 h 20 UTC, commit de fusion `9097617` (parents `050ffbf`, `906edb5`), par le mainteneur | historique, partie A, § 7 |
+| `claude/j1-monnaie-etat` | #77 | J1 (branche n° 4 : fiches 7 « banque commerciale », 8 « banque centrale et anticipations », 9 « État et dette » ; P13, P14) | 05/10/2026, 16 h 08 UTC, commit de fusion `54edad8` (parents `9097617`, `0cfdc44`), par le mainteneur | historique, partie A, § 7 |
+| `claude/j1-cloture` | #85 | J1 (branche n° 4 bis : clôture, script d'état stationnaire sous forme fermée, technique n° 3 ; P19 à P27) | 07/10/2026, 10 h 36 UTC, commit de fusion `833afd9` (parents `47e0eb2`, `a8f3061`), par le mainteneur | historique, partie A, § 7 |
+| `claude/j1-passage` | #94 | J1 (consignation du passage ; branche dédiée, non branche de travail, P28 (a)) | 07/10/2026, 11 h 15 UTC (date du commit de fusion), commit de fusion `faa3f85` (parents `833afd9`, `6dc9174`) | historique, partie A, § 7 |
+| `claude/j2-noyau` | #99 | J2 | 15/10/2026, 05:01 UTC, commit de fusion `2e643a2` (parents `faa3f85`, `0e63473`), par le mainteneur | historique, partie A, § 7 |
+| `claude/j3-maquette-criteres` | #109 | J3 (J3-a) | 13/11/2026, 17:34 UTC, commit de fusion `204ab2d` (parents `2e643a2`, `5fe2667`), par le mainteneur | historique, partie A, § 7 |
+
+### 8. Escalades, relances et arrêts hors branche (extrait)
+
+| Date | Fiche / modèle / critère déclenché / statut obtenu / suite |
+|---|---|
+| 13/11/2026 | Point d'étape après la PR #109 (plan de J3-b, réexamen du découpage de J3) / `architect-approfondi` / Fable, accord du mainteneur du 13/11/2026 (seuil § 4.3, critère 2, report du 15/10/2026) / P49 à P64 décidés le 13/11/2026 (P54, P56, P57, P63 sous réserve de l'avis de `macro`) / compte pour J3-b : 1 sur 3. |
 
 ## Partie A : version complète du 13/11/2026, figée le 14/11/2026
 
