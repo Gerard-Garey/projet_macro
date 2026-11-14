@@ -33,7 +33,7 @@ from nations.etat import schema
 from nations.etat.sauvegarde import charger, sauvegarder
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import par_pas
-from nations.moteur.diagnostics import DefautDeDeclaration
+from nations.moteur.diagnostics import DefautDeDeclaration, PlanHorsDomaine
 from nations.moteur.parametres import TauxDeFlux, varier
 from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
 from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
@@ -598,6 +598,42 @@ def test_acheteurs_au_prix_du_pas_sur_les_volumes_servis(socle):
         assert v["G_plan"] == p0["variables"]["G_plan"] * chocs("G_plan", t)
         assert v["C_plan"] == p0["variables"]["C_plan"] * chocs("C_plan", t)
         assert (p1["1"], p1["2"], p1["3"]) == (p0["1"], p0["2"], p0["3"])
+
+
+def test_domaines_du_pas_verifies_contre_les_variables_du_pas(socle):
+    """#124, P129 : chaque nom de la liste fermée `DOMAINES_DU_PAS` est une variable du pas du
+    socle, écrite en phase 2 par un seul acheteur (bloc d'essai), et lue par le bloc réel de la
+    production en phase 5 (N6) ; un nom inconnu n'y figurerait pas."""
+    o = socle.ordonnanceur(socle.sentier(0.02), reels=socle.blocs_reels())
+    ecrivains = {}
+    for etape, appels in o.etapes:
+        for droits, _ in appels:
+            for nom in droits.ecritures & set(ordo.DOMAINES_DU_PAS):
+                ecrivains.setdefault(nom, []).append((etape, droits.radical))
+    assert ecrivains == {"C_plan": [("2", "menages")], "I_plan": [("2", "investissement")],
+                         "G_plan": [("2", "finances_publiques")]}
+    production = next(b for b in socle.blocs_reels() if b.declaration.radical == "production")
+    lus = {lu.nom for s in production.declaration.sieges for lu in s.lit if lu.source == "2"}
+    assert set(ordo.DOMAINES_DU_PAS) <= lus <= set(o.declares)
+
+
+@pytest.mark.parametrize("nom, radical", [("C_plan", "menages"), ("I_plan", "investissement"),
+                                          ("G_plan", "finances_publiques")])
+@pytest.mark.parametrize("facteur", [-1.0, float("nan"), float("inf")], ids=repr)
+def test_plan_exogene_hors_domaine_refuse(socle, nom, radical, facteur):
+    """#124 : un plan exogène des tests (`chocs_des_plans`) hors du domaine au pas 3, négatif,
+    NaN ou infini, arrête le pas 3 par `PlanHorsDomaine`, qui nomme le bloc d'essai écrivain,
+    la phase 2 et le plan ; les pas 0 à 2 se déroulent."""
+    sentier = socle.sentier(0.02)
+
+    def chocs(n, t):
+        return facteur if (n, t) == (nom, 3) else 1.0
+    o = socle.ordonnanceur(sentier, chocs_des_plans=chocs, reels=socle.blocs_reels())
+    etat = socle.derouler(socle.etat_initial(sentier), 3, o, ObservateurNul())
+    with pytest.raises(PlanHorsDomaine) as refus:
+        ordo.executer_pas(etat, socle.ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        3, "2", radical, nom)
 
 
 def test_variante_du_bloc_8_a_pi_e_choque(socle, publier):

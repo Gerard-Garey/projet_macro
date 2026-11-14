@@ -11,7 +11,10 @@ Contrat : ADR 0012, B3, B4 et F1 ; même forme que les diagnostics du noyau
   non déclarée ou non encore écrite, lecture du montant exécuté d'une ligne
   non déclarée (#100), écriture d'une variable d'état hors de
   son propriétaire, de sa phase ou de son type, variable d'état non écrite à
-  la couche moteur de la phase 9, entrées du tour non déclarées (B4, C2, B5).
+  la couche moteur de la phase 9, entrées du tour non déclarées (B4, C2, B5) ;
+  sa dérivée `PlanHorsDomaine` refuse un plan écrit hors de son domaine
+  (`DOMAINES_DU_PAS` de l'ordonnanceur ; ADR 0013, annotation du 14/11/2026
+  (J3-d1), point 4 ; P120, P129, #124).
 
 Le moteur ne rattrape jamais un arrêt pour continuer, ni du noyau ni le sien :
 l'état d'ouverture reste intact (gelé), et aucun état t + 1 n'est rendu.
@@ -65,3 +68,14 @@ class DefautDeDeclaration(ArretMoteur):
 
 class RefusDuMoteur(ArretMoteur):
     """Refus levé au moment de l'appel, pendant un pas (B4, C2, B5)."""
+
+
+class PlanHorsDomaine(RefusDuMoteur):
+    """Plan d'un acheteur (`C_plan`, `I_plan`, `G_plan`) écrit hors de son domaine : non fini
+    (NaN, ±∞) ou négatif ; −0,0 est admis (ADR 0013, annotation du 14/11/2026 (J3-d1),
+    point 4 ; P120, P129, #124).
+
+    Levé par l'espace du pas à l'écriture, quel que soit l'écrivain, avant le refus générique
+    de finitude ; jamais d'écrêtage. Champs : pas, étape et bloc écrivain (apposés par la
+    vue), nom du plan ; la valeur et la condition sont dans le message.
+    """

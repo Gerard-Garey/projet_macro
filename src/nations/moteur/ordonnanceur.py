@@ -53,6 +53,11 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
   registre (le glissement refusé non fini ou hors de 1 + π_{t−1} > 0, précondition de
   BC3, P92),
   et l'écriture de ses seules variables déclarées.
+- Le **domaine d'une variable du pas** est contrôlé à l'écriture par l'espace
+  du pas, quel que soit l'écrivain, pour les seuls noms de la liste fermée
+  `DOMAINES_DU_PAS` (les plans des acheteurs, ≥ 0 et finis) : refus par
+  `PlanHorsDomaine`, jamais écrêtage (ADR 0013, annotation du 14/11/2026
+  (J3-d1), point 4 ; P120, P129, #124).
 
 Les observateurs ne reçoivent que des valeurs immuables et sont appelés par le
 moteur seul (ADR 0012, E1).
@@ -61,7 +66,7 @@ moteur seul (ADR 0012, E1).
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -77,7 +82,7 @@ from nations.moteur.contrat_bloc import (
     Siege,
     methode_de_l_etape,
 )
-from nations.moteur.diagnostics import DefautDeDeclaration, RefusDuMoteur
+from nations.moteur.diagnostics import DefautDeDeclaration, PlanHorsDomaine, RefusDuMoteur
 from nations.moteur.ouverture import GRANDEURS_OUVERTURE
 from nations.moteur.parametres.ensemble import EnsembleDesParametres
 from nations.moteur.phases import MOTEUR, NOYAU, Etape, Phase
@@ -132,6 +137,44 @@ def _est_finie(valeur: object) -> bool:
     if type(valeur) is tuple:
         return all(math.isfinite(x) for x in valeur)
     return type(valeur) is not float or math.isfinite(valeur)
+
+
+# --------------------------------------------------------------------------
+# Domaines des variables du pas (#124)
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class DomaineDuPas:
+    """Domaine d'une variable du pas : condition en clair, citée par le refus, et prédicat sur
+    une valeur dont l'espace du pas a déjà contrôlé le type de base."""
+
+    condition: str
+    predicat: Callable[[object], bool]
+
+
+def _plan_dans_son_domaine(valeur: object) -> bool:
+    """Plan fini et ≥ 0 : NaN et ±∞ hors du domaine, −0,0 admis (−0,0 ≥ 0,0) ; un n-uplet
+    n'est pas un plan ; un `int` ou un `bool` est fini (sans `math.isfinite`, qui déborderait
+    sur un grand entier)."""
+    if type(valeur) is float:
+        return math.isfinite(valeur) and valeur >= 0.0
+    return type(valeur) is not tuple and valeur >= 0
+
+
+_DOMAINE_D_UN_PLAN = DomaineDuPas(
+    "plan fini et ≥ 0, −0,0 admis (P120 ; refus, jamais écrêtage)", _plan_dans_son_domaine)
+
+# Liste fermée des domaines des variables du pas (P129 ; ADR 0013, annotation du 14/11/2026
+# (J3-d1), point 4), contrôlée par l'espace du pas à l'écriture, quel que soit l'écrivain :
+# blocs réels, blocs d'essai, plans exogènes des tests. Les plans des acheteurs, en u.m., écrits
+# en phase 2 (C^plan, I^plan, G^plan) ; d ≥ 0 (N6) en découle avec p > 0, sans contrôle propre.
+# Une variable du pas hors de la liste n'a que le contrôle générique (type de base, finitude).
+DOMAINES_DU_PAS: Mapping[str, DomaineDuPas] = MappingProxyType({
+    "C_plan": _DOMAINE_D_UN_PLAN,
+    "I_plan": _DOMAINE_D_UN_PLAN,
+    "G_plan": _DOMAINE_D_UN_PLAN,
+})
 
 
 # --------------------------------------------------------------------------
@@ -192,7 +235,9 @@ class VariablesDuPas:
     Une écriture d'un nom non déclaré, une seconde écriture du même nom, ou
     une valeur qui n'est pas de type de base fini (`float`, `int`, `bool`,
     n-uplet de `float`, sans NaN ni infini) est refusée ; une lecture d'un nom non encore écrit est refusée, jamais une
-    valeur par défaut.
+    valeur par défaut. Une variable de `DOMAINES_DU_PAS` hors de son domaine est refusée par
+    `PlanHorsDomaine`, avant le refus générique de finitude (NaN et ±∞ compris) ; l'étape et
+    le bloc écrivain sont apposés par la vue.
     """
 
     __slots__ = ("_declares", "_t", "_valeurs")
@@ -202,7 +247,10 @@ class VariablesDuPas:
         self._t = t
         self._valeurs: dict[str, object] = {}
 
-    def ecrire(self, nom: str, valeur: object) -> None:
+    def ecrire(self, nom: str, valeur: object, *, etape: str | None = None,
+               bloc: str | None = None) -> None:
+        """Écrit `nom` ; `etape` et `bloc`, apposés par la vue, nomment l'écrivain dans le refus
+        de domaine."""
         if nom not in self._declares:
             raise RefusDuMoteur("variable du pas non déclarée", t=self._t, nom=nom)
         if nom in self._valeurs:
@@ -210,6 +258,10 @@ class VariablesDuPas:
         if not _est_de_type_de_base(valeur):
             raise RefusDuMoteur(f"valeur {valeur!r} : float, int, bool ou tuple de float "
                                 "attendu", t=self._t, nom=nom)
+        domaine = DOMAINES_DU_PAS.get(nom)
+        if domaine is not None and not domaine.predicat(valeur):
+            raise PlanHorsDomaine(f"valeur {valeur!r} hors du domaine : {domaine.condition}",
+                                  t=self._t, etape=etape, bloc=bloc, nom=nom)
         if not _est_finie(valeur):
             raise RefusDuMoteur(f"valeur {valeur!r} : valeur non finie refusée", t=self._t,
                                 nom=nom)
@@ -358,7 +410,8 @@ class Vue:
         """Écrit une variable du pas déclarée par le bloc dans cette étape."""
         if nom not in self._droits.ecritures:
             raise self._refus("écriture d'une variable du pas non déclarée par le bloc", nom)
-        self._pas.espace.ecrire(nom, valeur)
+        d = self._droits
+        self._pas.espace.ecrire(nom, valeur, etape=d.etape, bloc=d.radical)
 
     def ecrire_etat(self, nom: str, valeur: object) -> None:
         """Écrit la valeur du pas suivant d'une variable d'état du bloc, une fois par pas (C2)."""
@@ -690,6 +743,15 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
 
     for grandeur in GRANDEURS_OUVERTURE:
         inscrire(grandeur.nom, "0", 0, MOTEUR)
+    # Une variable de `DOMAINES_DU_PAS` (un plan) n'est écrite que par un bloc, par la vue, qui
+    # appose l'étape et le bloc au refus de domaine : jamais une entrée du tour (#124).
+    for famille, noms in (("scénario", entrees.scenario), ("leviers", entrees.leviers)):
+        for nom in noms:
+            if nom in DOMAINES_DU_PAS:
+                raise _defaut(f"entrée du tour ({famille}) sous le nom d'une variable de "
+                              "DOMAINES_DU_PAS : un plan n'est écrit que par un bloc",
+                              etape="0" if famille == "scénario" else "1", bloc=MOTEUR,
+                              nom=nom)
     for nom in entrees.scenario:
         inscrire(nom, "0", 0, MOTEUR)
     for nom in entrees.leviers:
