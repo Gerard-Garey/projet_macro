@@ -3,7 +3,7 @@ bloc: Travail et salaires
 module: src/nations/blocs/travail.py
 expert pilote: macro
 experts consultés: monnaie (indexation des salaires sur les anticipations : frontière inflation) ; jeu
-statut: décidée (M25, 03/10/2026)
+statut: implémentée (J3-b, 13/11/2026)
 décision: M25 (03/10/2026)
 issue: #39
 ---
@@ -1210,6 +1210,29 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (réserv
 - 9 : `\limites` et restitution.
 
 *Correction prospective du 13/11/2026, avant l'essai (P56 ; décision du mainteneur du 13/11/2026, sur avis de `macro`, rang 1a de J3-b)* : la partie (b) de la ligne T2 se lit sur le moteur à n_a = 12 seulement, pour π̄ ∈ {0 ; 2 % ; 10 %}, dans le socle partiel d'essai (blocs 2 à 4 réels, blocs d'essai sur le sentier pour les autres radicaux, plans nominaux du sentier). Motif : n_a est une constante du moteur (`nations.moteur.parametres.cadre.PAS_PAR_AN`, décision M22), qui ne s'exécute pas à n_a ∈ {4 ; 52}. La dépendance à n_a reste éprouvée par la partie (a), sur le script d'état stationnaire, aux trois valeurs de n_a ; l'absence de littéral 12 dans `src/` hors de `cadre.py` est contrôlée à part (P50). À n_a = 12, la partie (b) garde son pouvoir de discrimination. Après 720 pas, la lecture fautive (p_{t−2}) donne U − U^eq = −0,0825 point à π̄ = 2 % et −0,3971 point à π̄ = 10 %, soit des écarts relatifs de 1,65e−2 et 7,94e−2. Au premier pas, elle donne un écart relatif de W de −1,375e−4 et de −6,617e−4. Le seuil est de 1e−10. Ces valeurs viennent de la maquette de `macro` du 13/11/2026, écrite sur les équations du script d'état stationnaire : c'est une mesure du modèle, pas un résultat du moteur. Seuils inchangés : écarts relatifs de W et de p ≤ 1e−10 après un pas ; |U − U^eq|/U^eq ≤ 1e−10 après 720 pas. Le cas π̄ = 0 reste un contrôle de stationnarité, sans pouvoir discriminant. Si n_a devient un paramètre exécutable du moteur, la partie (b) s'étend à n_a ∈ {4 ; 52} par une ligne écrite avant l'essai. Le texte d'origine de la ligne reste publié dans le tableau ; aucun verdict n'existe.
+
+*Verdicts du 13/11/2026 (J3-b, consignation du rang 10 par `architect`, tête `ce7c619`)*. Classes de la synthèse du rang 1a : (a) appel direct, (b) socle partiel d'essai, (c) socle complet. Mesures remesurées par `uv run pytest -q -s` (110 passed). Mesures (b) étiquetées « plans nominaux exogènes », « π^e exogène (bloc d'essai) » et, blocs 2 et 3 seuls, « prix exogène » ; elles ne valent pas verdict de boucle conjointe.
+
+| Ligne | Classe | Verdict | Mesure | Test |
+|---|---|---|---|---|
+| État stationnaire | (b) | conforme | un pas, trois π\* : W ≤ 2,2e−16 ; U 8,9e−16 ; N, N^pa 0 ; N/N\* 0 (seuil 1e−10) | `tests/invariants/test_travail.py::test_un_pas_depuis_l_etat_resolu` |
+| T2 (a) | (a) | conforme | U\* = U^eq, trois π̄ × trois n_a ; pouvoir discriminant de la lecture fautive | `tests/unitaires/test_travail.py::test_t2_a_chomage_stationnaire_egal_au_chomage_d_equilibre`, `::test_t2_a_pouvoir_discriminant_de_la_lecture_fautive` |
+| T2 (b) (P56) | (b) | conforme, verdict sur les blocs 2 à 4 réels (avis de `macro`) | W, p au pas 1 ≤ 2,2e−16 ; U au pas 720 : 8,9e−16 / 7,5e−15 / 1,6e−14 (seuil 1e−10). Blocs 2 et 3, prix exogène, sans verdict : U 3,6e−15 / 8,2e−13 / 1,8e−12 | `tests/invariants/test_prix.py::test_t2_b_dernier_prix_connu` ; `tests/invariants/test_travail.py::test_t2_b_dernier_prix_connu` |
+| Cohérence des conversions | (b) et (a) | conforme | g_N = 0,005, π\* = 2 % : \|N/N\* − 1\| pas 1 : 0 (seuil 1e−10), max 720 pas 4,4e−16 (sans verdict) ; forme mixte écartée | `…::test_coherence_des_conversions_a_g_n_positif` ; `tests/unitaires/test_travail.py::test_coherence_des_conversions_forme_mixte_ecartee` |
+| Vitesses (critère 4) | (b) | conforme | U 2,2e−15 ; N/N\* 2,2e−16 ; ω 3,6e−15 ; ΣWB/ΣVA 3,6e−15 (seuil 1e−6) | `…::test_vitesses_ne_determinent_pas_l_etat_d_arrivee` |
+| Boucle propre (5 (b)) | (a) | conforme | 0,91667 / 0,70833 ; × 0,5 : 0,95833 / 0,85417 ; × 2 : 0,83333 / 0,41667 ; demi-vies 2,01 / 4,40 / 0,79 tours (assertions) | `tests/unitaires/test_travail.py::test_boucle_propre_valeurs_propres` |
+| Boucle combinée (5 (c)) | (c) | renvoyée à #114 | — | — |
+| Boucle salaires – prix (5 (d)) | (c) | renvoyée à #114 | — | — |
+| Borne N ≤ N^pa | (a) | conforme | (a) inactive à l'état résolu, g_N ∈ {0 ; 0,005} ; (b) N = N^pa, U = 0 exactement, 1,96 % non réalisé | `…::test_borne_inactive_a_l_etat_resolu`, `::test_borne_active_par_appel_direct` |
+| Instabilité 15 | (c) | renvoyée à #114 | — | — |
+| Rétention (critère 8) | (a) et (b) | conforme | W(N − y/pr)/WB = 0,019608 ; ΔIN identique au bit ; baisse de V_F rapportée à l'excédent − 1 = −1,1e−13 | `…::test_retention_identite_et_variation_des_stocks` ; `tests/invariants/test_travail.py::test_retention_resultat_par_la_valeur_nette` |
+| Asymétrie de C | (a) | conforme | 20 000 tirages (graine 20261113), structure exacte | `tests/unitaires/test_travail.py::test_asymetrie_de_c_structure_exacte` |
+| Délais | (b) | conforme | G ± 1 % au tour 6 : emploi au tour 7, salaire au tour 8, inchangés au bit avant ; π^e ± 1 point au tour 7 : W_7/W̄_7 − 1 = 8,133452e−04 et −8,206878e−04, égal à l'attendu, W inchangé au bit aux tours 0 à 6 | `tests/invariants/test_travail.py::test_delais_d_un_choc_de_depense_publique`, `::test_delais_d_un_choc_d_anticipation` |
+| Phases | (b) | conforme | lecture hors ordre refusée ; contrôle statique des lectures | `…::test_phases_lecture_hors_ordre_refusee` ; `tests/unitaires/test_travail.py::test_declaration_conforme_a_tab_travail_phases` |
+| Empreinte | (a) | conforme | W, U, N, N^pa ; aucun registre, aucun tirage | `…::test_empreinte_quatre_variables_sans_registre_ni_tirage` |
+| Coût | (b) | conforme | 0,0070 ms par pas (alerte 0,276, critère 0,48), CI de `060cba4`, plateforme de référence | `tests/invariants/test_budget.py::test_part_de_chaque_bloc_reel` |
+
+Lignes J4 et « Remesure T1 » : hors de J3-b. Cohérence de U avec N et N^pa (recommandation de `macro`, ADR 0012, annotation du 13/11/2026, point 1.7) : `tests/invariants/test_travail.py::test_coherence_de_u_avec_n_et_n_pa`.
 
 ### 9.7 Lecture commune (G) : chiffres de la fiche recalculés
 

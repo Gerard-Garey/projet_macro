@@ -3,7 +3,7 @@ bloc: Prix
 module: src/nations/blocs/prix.py
 expert pilote: macro
 experts consultés: monnaie (indexation des prix sur les anticipations, indice et glissement lus par la règle de taux : frontière inflation) ; jeu
-statut: décidée (M26, 03/10/2026)
+statut: implémentée (J3-b, 13/11/2026)
 décision: M26 (03/10/2026)
 issue: #40
 ---
@@ -1339,6 +1339,25 @@ W/(p·pr) n'est pas une ligne du tableau de bord (= 1/(1 + marge) sous J = 1). L
 | — | Remesure P1 | Proposée, non lancée ; sans effet sur M26 | — |
 
 *Correction prospective du 13/11/2026, avant l'essai (P56 ; même décision)* : la ligne T2 renvoie à la fiche 3, § 9.6. Sa partie (b) se lit sur le moteur à n_a = 12 seulement, pour π̄ ∈ {0 ; 2 % ; 10 %}, et la dépendance à n_a reste éprouvée par la partie (a), sur le script (correction prospective de la fiche 3, de même date). Seuils inchangés. Le texte d'origine de la ligne reste publié ; aucun verdict n'existe.
+
+*Verdicts du 13/11/2026 (J3-b, consignation du rang 10 par `architect`, tête `ce7c619`)*. Classes de la synthèse du rang 1a : (a) appel direct, (b) socle partiel d'essai (blocs 2 à 4 réels), (c) socle complet. Mesures remesurées par `uv run pytest -q -s` (110 passed), étiquetées « plans nominaux exogènes » et « π^e exogène (bloc d'essai) » ; elles ne valent pas verdict de boucle conjointe.
+
+| Ligne | Classe | Verdict | Mesure | Test |
+|---|---|---|---|---|
+| État stationnaire | (b) | conforme | un pas, trois π\* : μ̃ 0 ; p ≤ 2,2e−16 ; ξ 0 en absolu (seuil 1e−10) | `tests/invariants/test_prix.py::test_un_pas_depuis_l_etat_resolu` |
+| T2 | (a) et (b) | conforme | (a) règles SN et M, trois π̄ × trois n_a ; (b) P56 : voir la fiche 3, § 9.6 (verdict sur les blocs 2 à 4 réels) | `tests/unitaires/test_prix.py::test_t2_a_regles_sn_et_m` ; `tests/invariants/test_prix.py::test_t2_b_dernier_prix_connu` |
+| Vitesses (réserve 2) | (b) | conforme ; ξ jugée en écart absolu (P66 par analogie, visa de `macro`, à porter à la connaissance du mainteneur) | marge 2,4e−13 ; ΣWB/ΣVA 5,8e−14 ; ξ 3,5e−14 en absolu (seuil 1e−6) | `…::test_vitesses_ne_determinent_pas_l_etat_d_arrivee` |
+| Boucle propre (5 (d)) | (a) | conforme | 0,9 / 0,95 / 0,8 ; demi-vies 6,58 / 13,51 / 3,11 tours (assertions) | `tests/unitaires/test_prix.py::test_boucle_propre_valeur_propre` |
+| Boucle salaires – prix (5 (e)) | (c) | renvoyée à #114 | — | — |
+| Boucle prix – stocks – demande (5 (f)) | (c) | renvoyée à #114 | — | — |
+| Alternance étendue | (c) | renvoyée à #114 ; pré-mesure sans verdict à m = 0 : (a) 0 et (b) 1 changement de signe | — | `tests/invariants/test_prix.py::test_pre_mesure_de_l_alternance_sans_verdict` |
+| Positivité | (a) | conforme | ξ = 1 et ξ = −9 : p > 0 et fini sur 720 pas | `tests/unitaires/test_prix.py::test_positivite` |
+| Phases | (b) | conforme | lecture hors ordre refusée ; contrôle statique des lectures | `tests/invariants/test_prix.py::test_phases_lecture_hors_ordre_refusee` ; `tests/unitaires/test_prix.py::test_declaration_conforme_a_tab_prix_phases` |
+| Identité (P15) | (b) | conforme | prix distants de 1 % : \|Σ soldes\|/S_min 2,2e−15 ; \|V_F flux − V_F stock\|/S_F 4,3e−17 (seuil 1e−12 × S) | `…::test_identite_p15_deux_prix_distants_de_un_pour_cent` |
+| Empreinte | (a) | conforme | une variable d'état propre, μ̃ (P54) | `tests/unitaires/test_prix.py::test_empreinte_une_variable_d_etat_mu_tilde` |
+| Coût | (b) | conforme | 0,0027 ms par pas (alerte 0,276, critère 0,48), CI de `060cba4`, plateforme de référence | `tests/invariants/test_budget.py::test_part_de_chaque_bloc_reel` |
+
+P54 (visa de `macro`, lecture (A)) : option (i) de référence contre le moteur ≤ 1,3e−15 relatif, invariant \|μ̃ − ln(p/UC)\| ≤ 2,8e−16 sur 720 pas, trois π\*, vitesses × 0,5, × 1, × 2 (seuil 1e−12) : `tests/invariants/test_prix.py::test_p54_option_i_de_reference_et_invariant_de_mu` ; P_t ≡ p_t : `tests/unitaires/test_prix.py::test_indice_egal_au_prix`. Lignes J4 et J7 : hors de J3-b.
 
 ### 9.7 Contrats partagés touchés, surface de spécification
 

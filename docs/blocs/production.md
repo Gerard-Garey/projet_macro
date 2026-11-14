@@ -3,7 +3,7 @@ bloc: Production et stocks
 module: src/nations/blocs/production.py
 expert pilote: macro
 experts consultés: jeu (lisibilité de la production, des stocks et du délai entre demande et production ; nombre de secteurs vu du joueur) ; monnaie non consulté (docs/blocs/README.md § 1)
-statut: spécifiée (03/10/2026)
+statut: implémentée (J3-b, 13/11/2026)
 décision: M24 (02/10/2026)
 issue: #34
 ---
@@ -1162,6 +1162,26 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (§ 5, r
 - **Valorisation** : le seuil « 1e−12 relatif » de la ligne se lit rapporté à la valeur du stock disponible IN_t + UC_t·y_t, soit |IN_{t+1} − cm_t·IN^vol_{t+1}| ≤ 1e−12·(IN_t + UC_t·y_t). Rapporté à la grandeur elle-même, il n'est pas tenable sous forte annulation (5,3e−12 mesuré sous la forme B ; bornes mesurées rapportées au stock disponible : 2e−16 à 4e−16). Aucun code n'existait : c'est une précision, non un déplacement de critère.
 - **Forme de N8** : la ligne 4 s'écrit ΔIN = cm·IN^vol_{t+1} − IN_t (forme B), algébriquement équivalente par N7 à UC·y − cm·v. Elle tient IN ≥ 0 exactement en double précision et IN_{t+1} = 0 exactement quand le stock est épuisé (sondes de `macro` du 13/11/2026 : 0 cas négatif sur 1 440 000 pas enchaînés, contre 28 % des pas d'épuisement sous la forme d'origine). La ligne « Disponibilité » se lit donc avec IN = 0 **exactement** à la clôture d'un pas d'épuisement, et le domaine IN ≥ 0 est contrôlé strictement par le noyau à l'ouverture de chaque pas.
 - Seuils et texte d'origine des lignes inchangés ; aucun verdict n'existe.
+
+*Verdicts du 13/11/2026 (J3-b, consignation du rang 10 par `architect`, tête `ce7c619`)*. Classes de la synthèse du rang 1a : (a) appel direct, (b) socle partiel d'essai, (c) socle complet. Mesures remesurées par `uv run pytest -q -s` sur les tests des blocs 2 à 4 (110 passed). Toutes les mesures (b) portent les étiquettes « plans nominaux exogènes » et « π^e exogène (bloc d'essai) » ; elles ne valent pas verdict de boucle conjointe.
+
+| Ligne | Classe | Verdict | Mesure | Test |
+|---|---|---|---|---|
+| État stationnaire | (b) | conforme | un pas, trois π\* : v^e, IN^vol, pr, K^vol 0 ; IN ≤ 2,2e−16 ; ρ_IN ≤ 2,2e−16 (seuil 1e−10) | `tests/invariants/test_production.py::test_un_pas_depuis_l_etat_resolu` |
+| Vitesses (critère 4) | (b) | conforme (règle d'essai N = N\*, avis de `macro`) | stocks / ventes 6,9e−15 ; y/v 2,2e−16 (seuil 1e−6) | `…::test_vitesses_n_determinent_pas_l_etat_d_arrivee` |
+| Boucle propre | (a) | conforme | 0,75 et 0,87356 ; × 0,5 : 0,875 et 0,9360 ; × 2 : 0,5 et 0,7488 (assertions) | `tests/unitaires/test_production.py::test_boucle_propre_valeurs_propres_reelles_dans_l_intervalle` |
+| Boucle fermée | (c) | renvoyée à #114 | — | — |
+| Délai | (b) | conforme | choc G ± 1 % au tour 6 : production inchangée au bit au tour 6, ventes du signe du choc, stock de signe opposé, production du signe du choc au tour 7 | `…::test_delai_d_un_choc_de_demande` |
+| Identité de volume | (b) | conforme | ≤ 4,0e−16 (trois π\*, chocs G × 1,01 et × 0,99 ; seuil 1e−12) | `…::test_identite_de_volume_et_valorisation` |
+| Disponibilité | (b) et (a) | conforme | d / disponible = 1,1 ; IN^vol_1 = 0 et IN_1 = 0 exactement ; ligne 4 = −IN_0 au bit ; 25 pas sans arrêt ; même taux de service par acheteur | `…::test_disponibilite_epuisement_zero_exact` ; `tests/unitaires/test_production.py::test_rationnement_proportionnel_et_demande_nulle` |
+| Plancher (N3) | (a) | conforme | f = 0,99 : y\* > 0 ; f = 1,01 : y\* = N\* = y = 0 exactement | `tests/unitaires/test_production.py::test_plancher_inactif_sous_le_seuil_et_a_l_etat_resolu`, `::test_plancher_actif_au_dela_du_seuil` |
+| Technique (N5) | (a) | conforme | (a) égalité à 1e−12, (b) et (c) signes exacts | `…::test_technique_trois_cas` |
+| Valorisation (P73) | (b) et (a) | conforme | 0 rapporté à IN_t + UC_t·y_t (seuil 1e−12) ; forme B égale à la forme d'origine rapportée au stock disponible | `tests/invariants/test_production.py::test_identite_de_volume_et_valorisation` ; `tests/unitaires/test_production.py::test_forme_b_egale_la_forme_d_origine_rapportee_au_stock_disponible` |
+| Phases | (b) | conforme | déclaration acceptée ; lecture hors ordre refusée par `assembler` ; contrôle statique des lectures | `…::test_phases_lecture_hors_ordre_refusee` ; `tests/unitaires/test_production.py::test_declaration_conforme_a_tab_production_phases` |
+| Empreinte | (a) | conforme | quatre variables d'état, aucun historique, aucun tirage | `…::test_empreinte_quatre_variables_sans_historique_ni_tirage` |
+| Coût | (b) | conforme | 0,0114 ms par pas (alerte 0,276, critère 0,48), CI de `060cba4`, plateforme de référence (exécution 43522565602) ; non remesurable hors de cette plateforme | `tests/invariants/test_budget.py::test_part_de_chaque_bloc_reel` |
+
+Lignes J4 et « maintenant » : hors de J3-b.
 
 ### 9.7 Remesure S1 : spécification et critères écrits avant l'essai
 
