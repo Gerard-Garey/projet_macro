@@ -186,6 +186,55 @@ Issues : #119 ; contrats consolidés : #95, #96, #97, #98, #100, #112, #113, #50
 
 ## Annotations
 
-### Annotation du 14/11/2026 (rang 1b de J3-c) : nomenclature du schéma v3, tables des blocs 7 et 8, forme de i_res ≡ i_CB, mentions datées de P80
+### Annotation du 14/11/2026 (rang 1b de J3-c) : nomenclature du schéma v3, tables des blocs 7 et 8, forme de i_res ≡ i_CB, formes d'écriture, mentions datées de P80
 
-*Réservée. À rédiger par `architect-approfondi` après les avis du rang 1a de J3-c ; rédigée à une autre date, elle en porte la date.*
+Rédigée par `architect-approfondi` (Opus, effort `high`, sans Fable) au rang 1b de J3-c (`claude/j3-monnaie`, PR #129, tête `3aca87b`), en application des décisions du mainteneur du 14/11/2026 (P87 à P99, `docs/feuille-de-route.md` § 4) et des avis du rang 1a (`monnaie-approfondi`, pilote ; `macro-approfondi` ; synthèse en commentaire de la PR #129 du 14/11/2026). **La décision de l'ADR 0012 est inchangée** ; l'annotation précise C1, C3, D1, D2, F1, A8, H1 à H4 et la vue, **avant le code de #61, #91 et #90**. Les noms de code sont des contrats au sens de la Décision, point 5. L'annotation ne change aucun résultat ; P88 en change hors de la référence (point 7).
+
+1. **Règles de lecture confirmées** (P97). La préséance de la Décision, points 2 et 3, est confirmée : l'ADR 0012 annoté fait foi pour l'état consolidé, et l'ADR 0013 se corrige par annotation. Les renvois à P80 de H1.8 et H3.4 sont confirmés (point 11). Le **plafond de 40 ko vaut pour l'état consolidé** (Contexte à Conséquences) ; les annotations s'y ajoutent, et une **reconsolidation par un nouvel ADR** intervient quand elles deviennent lourdes. *Renvoi daté (correction de G, Décision 2)* : le radical du ratio au PIB annuel n'est plus ouvert ; il est fixé à `observation` (P44 (b) ; ADR 0008, annotation du 15/10/2026 ; label `eq:observation-ratio-pib-annuel`, #115), décision que l'ADR 0012 n'enregistrait pas.
+2. **Nommage (H1.1 complété).** Chapeau `^` → `_hat`, barre → `_bar` (usage déjà en vigueur : `mu_bar`). Les champs des tables de paramètres ont leur propre espace de noms (`vue.parametres.<radical>`) : un champ de table et une variable peuvent porter le même nom (`theta_CB`, `pi_etoile`).
+3. **Schéma v3 : variables d'état des blocs 7 et 8** (toutes `float` ; P96) :
+
+| Nom | Ouverture du pas t | Unité | Invariance | Propriétaire | Phase | Valeur stationnaire |
+|---|---|---|---|---|---|---|
+| `i_L` | i_{L,t} | par an, taux de flux | `sans_dimension` | `banque` | 8c | i_CB + ϖ_L (`sec:banque-stationnaire`) |
+| `i_D` | i_{D,t} | par an, taux de flux | `sans_dimension` | `banque` | 8c | i_CB − ϖ_D (idem) |
+| `r_hat_etoile` | r̂\*_t | par an, taux de croissance | `sans_dimension` | `banque_centrale` | 1 | r̄ (`sec:banque_centrale-stationnaire`) |
+| `pi_etoile` | π\*_t | par an, taux de croissance | `sans_dimension` | `banque_centrale` | 1 | π\* déclarée (BC4 ; ADR 0010) |
+
+   i_CB vaut (1 + r̄)(1 + π\*) − 1 à l'état stationnaire. Ordre (H1.5) : `i_L`, `i_D` (module nouveau `nations.etat.banque`), puis `pi_e`, `r_hat_etoile`, `pi_etoile` (`nations.etat.banque_centrale`). Les valeurs du pas suivant sont lues sous `<nom>_suivant` par un lecteur qui les déclare ; aucun ne le fait au socle (`sec:banque_centrale-phases`). **`VERSION_SCHEMA` = 3** dès le premier commit qui modifie le schéma (#61, rang 3) et jusqu'à la fusion de J3-c, sans incrément pendant la branche (a13 § 1.5) ; journal : « 3 (14/11/2026, #61, #91, #90 ; ADR 0013, annotation du 14/11/2026 ; P96) : i_L, i_D, r̂\*, π\* ». **Une sauvegarde v2 est refusée** (D4 ; critère de #61).
+4. **Domaines** (D1, H1.6 complétés ; `defaut_de_domaine` et `Vue.ecrire_etat`, forme non (condition), sans écrêtage) : `pi_etoile` refusée si **non (1 + π\* > 0)** (domaine du type ; facteur de Fisher de BC1 et f(π\*) de Γ^e) ; `r_hat_etoile`, `i_L`, `i_D` : **finitude seule, déclarée**, sans condition de signe (i_D et i_CB peuvent être négatifs, r̂\* n'a pas de plancher : M31, M32). **Glissement** : `Vue.glissement()` refuse (`RefusDuMoteur` nommant pas, étape, bloc et valeur) un glissement qui n'est pas tel que 1 + π_{t−1} > 0, **y compris −1 exactement**, rendu par `registre.glissement` quand le rapport des prix est inférieur à 2^−54 ; **refus explicite, jamais écrêtage**. C'est la précondition de BC3 (P92), placée dans la vue comme le contrôle de domaine d'`ecrire_etat` (B2) ; `registre.glissement` reste une fonction pure (F3).
+5. **Variables du pas (H2 complété)** :
+
+| Nom | Écrivain, étape | Unité | Lecteurs (bloc, étape) |
+|---|---|---|---|
+| `i_CB` | `banque_centrale`, 1 (2ᵉ groupe) | par an, taux de flux | `banque` (6 : B5 ; 8c : B1, B2) ; `banque_centrale` (8a : BC7, BC8) ; `finances_publiques` (6, 7) |
+| `i_regle` | `banque_centrale`, 1 | par an, taux de flux | observation (prescription restituée) |
+| `theta_CB` | `banque_centrale`, 1 | fraction | `finances_publiques` (7) |
+| `Pi_CB` | `banque_centrale`, 1 | u.m. par pas | `banque_centrale` (8b : BC9) ; `finances_publiques` (7 ; E1 du bloc d'essai 9) |
+| `Pi_Bk` | `banque`, 6 | u.m. par pas | observation |
+
+   **Lectures d'ouverture et du grand livre, par siège** (H2.5 complété) : `banque_centrale` 1 : ouverture `pi_etoile`, `r_hat_etoile`, `pi_e`, `B_CB`, `L_CB`, `Res` ; registre : `glissement` ; jamais W_t, p_t ni U_{t−1}. BC6 s'exécute sous sa forme générale, (i_CB B_CB + i_CB L^CB − i_CB Res)/n_a ; la forme « au socle », i_CB (E^CB + M^G)/n_a, est une identité de bilan vérifiée par test, non exécutée (elle lirait une valeur nette, H5.3). 8a : ouverture `Res`, `L_CB` ; pas `i_CB`. 8b : pas `Pi_CB`. `banque` 6 : ouverture `L`, `B_Bk`, `Res`, `L_CB`, `D_H`, `D_F`, `i_L`, `i_D` ; pas `i_CB` ; grand livre : montant exécuté de la ligne 18. E^Bk_t est calculé par le bloc depuis ces six positions (L + B_Bk + Res − D_H − D_F − L^CB), sans lecture de valeur nette (H5.3 reste fermé) ; un test le compare à `valeur_nette_stock` de la banque à l'ouverture, à ε × S^Bk. 8c : grand livre `position("Res")` (après 8b, A3.3) ; ouverture `L_CB` ; pas `i_CB`. Lignes proposées : `banque` 9, 10, 15 (6) et 21 (8c) ; `banque_centrale` 12, 13 (8a) et 16 (8b).
+6. **Tables `banque` et `banque_centrale`** (F1, H3 complétés ; P96 ; synthèse du rang 1a, § 6). Valeurs indicatives = défauts du script (H3.3), égalité testée ; aucune unité nouvelle.
+
+| Table | Nom | Symbole | Valeur | Unité | Domaine |
+|---|---|---|---|---|---|
+| `banque` | `varpi_L` | ϖ_L | 0,02 | par an, taux de flux | fini, sans signe (la condition d'existence du dividende stationnaire le contraint, script) |
+| `banque` | `varpi_D` | ϖ_D | 0,01 | par an, taux de flux | idem |
+| `banque` | `vartheta` | ϑ | 0,10 | fraction | ϑ > 0 |
+| `banque_centrale` | `a_pi` | a_π | 0,5 | sans dimension | 0 < a_π < 1,5 |
+| `banque_centrale` | `a_I` | a_I | 0,25 | par an, taux de flux | a_I > 0 |
+| `banque_centrale` | `lambda_e` | λ_e | 0,2 | par an, taux de flux | 0 < λ_e ≤ n_a (P65) |
+| `banque_centrale` | `theta_CB` | θ_CB | 0 | fraction | 0 ≤ θ_CB ≤ 1 |
+| `banque_centrale` | `pi_etoile` | π\* | 0,02 | par an, taux de croissance | 1 + π\* > 0 |
+| `banque_centrale` | `r_bar` | r̄ | 0,01 | par an, taux de croissance | r̄ > −5 % (C51 ; contient 1 + r̄ > 0) |
+
+   Le script nomme `pi_cible` et `rbar` ce que les tables nomment `pi_etoile` et `r_bar` ; le test d'égalité porte la correspondance, le script n'est pas renommé. `EnsembleDesParametres` reçoit les champs `banque` et `banque_centrale` (H3.5). La valeur initiale de la variable d'état `pi_etoile` est le paramètre `pi_etoile` (BC4 ; état résolu).
+7. **Γ^e et `facteur_g`** (C3, H4 précisés ; P88, #125 point 1). f(x) désigne `facteur_par_pas(TauxDeCroissance(x))`. **`facteur_g` = f(g_pr) · f(g_N)** ; `g` reste publiée comme grandeur de définition (label `None`), mais `facteur_g` n'est plus calculé depuis g. Après `facteur_g`, dans cet ordre : `pi_etoile_pas` = f(π\*_t) − 1, **`Gamma_e` = `facteur_g` · f(π\*_t)**, `gamma_e` = Γ^e − 1, π\*_t lue à l'ouverture (`pi_etoile`) ; une balise `eq:moteur-croissance-nominale-attendue` dans la fonction de `Gamma_e`, renvois pour les deux autres ; aucun bloc ne recalcule Γ^e (contrôle statique, critère de #61). *Mention datée du 14/11/2026 sur H4 (a13 § 4)* : la forme `facteur_par_pas(TauxDeCroissance(g))` est remplacée par le produit. Mesures de `macro` (rang 1a) : trajectoires identiques au bit à la référence sur 720 pas aux trois π\* ; écart au plus 5,6e−14 hors référence ; Γ^e à 4,44e−16 de la forme directe ; tableau avant / après et visa de `macro` dans les commits de #61.
+8. **i_res ≡ i_CB et i_B ≡ i_CB** : identités de notation, **aucune variable `i_res` ni `i_B`** ; la ligne 12 (BC7) et BC6 se calculent sur `i_CB`. La **question 2 de la fiche 8 est close** (ADR 0011, P6). Un corridor non nul (J6, décision citant M32) ferait de i_res une variable du pas du bloc 8, écrite en phase 1, sans changer de contrat.
+9. **Formes d'écriture déclarées** (A8 précisé ; P92, P93). Une forme d'écriture est algébriquement égale à l'équation de la spécification ; l'équation reste écrite telle quelle, et son encadré déclare la forme exécutée (surface de `docwriter`, rang 7) ; ce n'est ni une borne ni un drapeau. **B7** : ΔL^CB = −min(Res^{8b} ; L^CB) (A8.1, M1). **BC3** : π^e_{t+1} = (1 − c) π^e_t + c π_{t−1}, c = `par_pas(λ_e)` ; la forme littérale rend π^e_{t+1} = −1 dans 13 553 tirages adverses sur 1 954 258, la forme convexe dans aucun (mesure de `monnaie`, non une preuve). Test de l'invariant π^e > −1 (#91) : 10^6 tirages à graine déclarée sous 0 < λ_e ≤ n_a, π^e_t > −1 et la précondition 1 + π_{t−1} > 0 telle que calculée, plus un lot adverse sur les bords ; le contrôle de domaine d'`ecrire_etat` reste en place. `outils/etat_stationnaire.py` est aligné sur les deux formes (P93 ; précédent de P72), avec tableau avant / après (#90, #91).
+10. **Concordance** : **57 labels** attendus à la fin de J3-c (40 + 7, B1 à B7 + 9, BC1 à BC9 + 1, `eq:moteur-croissance-nominale-attendue`), décompte du § 1 confirmé ; aucun label pour i_res, γ^e ni π^{∗,pas}. L'annualisation inverse (F2) n'a pas de consommateur dans les blocs 7 et 8 (BC1 à BC3 lisent le glissement annuel) : elle n'est pas écrite en J3-c.
+11. **Mentions datées de P80** (14/11/2026). H1.8 : « Position K : même domaine strict en J3-c » se lit **J3-d**, avec #67. H3.4 : « table … complétée en J3-c » se lit **J3-d**, avec #67. Rien de J3-c n'en dépend (mesure de `macro`, rang 1a).
+
+**Effet sur les résultats** : aucun par l'annotation. P88 : identique au bit à la référence, écart au plus 5,6e−14 ailleurs ; P93 : le script change à l'arrondi (Res_1 < 0 dans 5 cas sur 9, de −1,3e−18 à −2,1e−17, avant alignement) ; tableaux avant / après dans les commits concernés. **Surface documentaire** (rang 7, `docwriter`, un commit `docs:` par issue) : unités et domaines des quatre variables d'état et des deux tables (`tab:calibration`, noms `\code{nations.moteur.parametres.<radical>.<NOM>}`) ; formes exécutées de B7 et BC3 ; i_res ≡ i_CB ; Γ^e et `facteur_g` en produit (`sec:cadre-calendrier`) ; refus d'un glissement hors domaine ; BC6 exécutée sous sa forme générale ; mentions de P77.
+
+Issues : #61, #91, #90, #125 (point 1), #119 ; renvoi : `docs/feuille-de-route.md` § 1 (rang 1b de J3-c) et § 4 (P87 à P99).
