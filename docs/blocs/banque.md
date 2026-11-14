@@ -3,7 +3,7 @@ bloc: Banque commerciale
 module: src/nations/blocs/banque.py
 expert pilote: monnaie
 experts consultés: macro (demande de crédit des entreprises : frontière crédit ; placement de la dette publique, avec la fiche 9) ; jeu
-statut: spécifiée
+statut: implémentée (J3-c, 14/11/2026)
 décision: M31 (04/10/2026)
 issue: #71
 ---
@@ -1590,6 +1590,8 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai : réserve
 
 B7 s'écrit en −min (Res_{t+1} ≥ 0 et L^CB ≥ 0 exactement) ; le script (`outils/etat_stationnaire.py`) y est aligné avec #90.
 
+*Mention du 14/11/2026 (rang 9 de J3-c)* : B7 exécutée en −min(Res^{8b} ; L^CB) (`bba1125`) ; E^Bk calculé par le bloc sur les six positions brutes, égal à la valeur nette par le stock (P107 ; exception au contrat de poussière, ADR 0013, annotation de consignation, point 5) ; D_H et D_F lus en max(0 ; ·) dans B4 et B5. Verdicts des lignes (a) et (b) : tenus (P94 selon P100 ; P57 : 0,0124 ms sur la CI). (d2) mesuré par appel direct du bloc : +1,2606 point sur 12 tours, +1,0000 au tour 12, égal au script (P104, `83b7c23`) ; « +1,33 point » de la maquette est une valeur d'illustration (richesse de 0,7 année de PIB). Parts de ΔYD : #114.
+
 ### 9.7 Conditions transmises
 
 **Fiche 6 (`macro`), conditions de M28 complétées** :
@@ -1730,3 +1732,4 @@ Encadrés `proposee` citant M31, sans label (§ 9.1). Numéros de ligne à `320b
 | 04/10/2026 | Annotation de C38 (§ 6.5 et § 9.7) : seuils calculés à taux nominaux inchangés (`macro`) | `macro` ; session principale |
 | 04/10/2026 | Section `sec:banque` rédigée par `docwriter` (`12e1c4d`, corrections `2b24827` et retouches suivantes), validée par `monnaie` ; jalon 4 de #71 terminé, fiche « spécifiée » | `docwriter` ; `monnaie` ; session principale |
 | 04/10/2026 | Lecture (f) tranchée par M33 : A8 (le bloc 9 propose les trois lignes 19a ; la banque ne siège plus en phase 7) ; `sec:banque` à mettre à jour (branche variante retirée) | mainteneur ; session principale |
+| 14/11/2026 | Fiche « implémentée » (J3-c, rang 9) : `banque.py` (`bba1125`, labels `7d90789`), mention datée au § 9.6 | session principale, d'après `architect` |

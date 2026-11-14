@@ -3,7 +3,7 @@ bloc: Banque centrale et anticipations
 module: src/nations/blocs/banque_centrale.py
 expert pilote: monnaie
 experts consultés: macro (prix et salaires : frontière inflation ; fermeture du niveau d'activité et dette publique, avec la fiche 9) ; jeu
-statut: spécifiée (04/10/2026)
+statut: implémentée (J3-c, 14/11/2026)
 décision: M32 (04/10/2026)
 issue: #72
 ---
@@ -1524,6 +1524,8 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai. Ils couvr
 - (c), à #114 : « Neutralité de s_CB », « Stabilité », « Vitesses », « Gain statique », « Clause II.7 », « Cible relevée », « Persistance », « Superneutralité » (le `xfail` sur le script reste, #80), « C46 », « Test zéro ».
 - Hors moteur : « Calibration » (#45 ; #130 pour r̄). J4 : #54.
 
+*Mention du 14/11/2026 (rang 9 de J3-c)* : BC3 exécutée en forme convexe, précondition 1 + π_{t−1} > 0 refusée hors domaine ou non finie (P92, P106) ; BC6 sous sa forme générale, forme au socle vérifiée par test (P108) ; i_res ≡ i_CB sans variable (ADR 0011, P6). Verdicts : P87 tenu, P94 tenu (P100), P57 : 0,0110 ms sur la CI. Continuum de r̂\* propre au banc publié (P101, #131) ; coût en chômage d'un choc d'anticipations publié à côté de 1/(λ_e λ_w β (1 + π\*)), seuil à #114 (P102).
+
 ### 9.7 Conditions transmises
 
 **Conditions de `macro` (§ 6.6)** :
@@ -1728,3 +1730,4 @@ Encadrés `proposee` citant M32 (et M33 pour les points partagés), sans label (
 | 04/10/2026 | Issues créées sur accord du mainteneur : #80 (critère 13), #81 (restitution J4 banque centrale), #82 (restitution J4 État et dette) ; commentaires publiés sur #54, #73 et #55 | session principale |
 | 04/10/2026 | § 9 rédigé (conséquences de M32 et des points tranchés avec M33 : équations BC1 à BC9 et labels prévus, paramètres, chiffres de référence sous C-HS, phases sous A8, restitution, tests du J3 et du J4 avec le critère 13 en échec attendu (#80), conditions transmises, surface d'impact pour `sec:banque_centrale`, `sec:banque` et `tab:phases`) ; renvois à l'ADR d'A8 rapportés à l'ADR 0011 (proposé) par la session | `monnaie` ; session principale |
 | 04/10/2026 | Section `sec:banque_centrale` proposée (`e0155c4`), validée par `monnaie` avec reprises (`81bd85f`, `ca10fc8`, `2d017b4`) ; revue finale de la branche (règle 10) ; **fiche « spécifiée »** | `docwriter` ; `monnaie` ; `macro` ; `jeu` ; session principale |
+| 14/11/2026 | Fiche « implémentée » (J3-c, rang 9) : `banque_centrale.py` (`a3702ba`, labels `99eea4a`), mention datée au § 9.6 | session principale, d'après `architect` |
