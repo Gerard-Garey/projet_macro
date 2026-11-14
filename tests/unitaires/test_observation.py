@@ -47,7 +47,8 @@ CADRE = CadreDouble()
 # Variables d'état des blocs (schéma v3), valeurs d'essai dans leurs domaines.
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "pi_e": 0.02, "r_hat_etoile": 0.01, "pi_etoile": 0.02}
+                       "i_L": 0.0502, "i_D": 0.0202, "pi_e": 0.02, "r_hat_etoile": 0.01,
+                       "pi_etoile": 0.02}
 
 
 def etat_initial(identifiant="A", graine=20261007, decalage=0.0):

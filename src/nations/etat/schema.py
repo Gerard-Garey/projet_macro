@@ -28,7 +28,8 @@ Champs de `EtatPays`, dans l'ordre :
 - les variables des **blocs** (ADR 0012, G1 (a) ; annotation du 13/11/2026,
   point 1), par radical dans l'ordre des blocs, chaque radical déclarant les
   siennes dans son module de `etat/` : `production` (v^e, IN^vol, pr, K^vol),
-  `travail` (W, U, N, N^pa), `prix` (μ̃), `banque_centrale` (π^e, r̂*, π*).
+  `travail` (W, U, N, N^pa), `prix` (μ̃), `banque` (i_L, i_D), `banque_centrale`
+  (π^e, r̂*, π*).
 
 L'échelle S des bilans n'est pas dans l'état : c'est une grandeur dérivée,
 recalculée à l'ouverture de chaque pas, reprise comprise (C96-2). Aucun
@@ -56,7 +57,7 @@ import itertools
 import math
 import unicodedata
 
-from nations.etat import banque_centrale, prix, production, travail
+from nations.etat import banque, banque_centrale, prix, production, travail
 # `TYPES`, `Invariance` et `VariableEtat` sont réexportés : leur forme est celle du
 # schéma v1, passée dans le module feuille `variables` (annotation du 13/11/2026, point 1.5).
 from nations.etat.variables import TYPES, Invariance, VariableEtat
@@ -94,7 +95,7 @@ VARIABLES_NOYAU = tuple(
 
 # Modules de déclarations des blocs, dans l'ordre des blocs (annotation du
 # 13/11/2026, point 1.5) : chacun porte `VARIABLES` et `DOMAINES`.
-_MODULES_DES_BLOCS = (production, travail, prix, banque_centrale)
+_MODULES_DES_BLOCS = (production, travail, prix, banque, banque_centrale)
 VARIABLES_DES_BLOCS = tuple(v for module in _MODULES_DES_BLOCS for v in module.VARIABLES)
 
 # Le schéma : toutes les déclarations, dans l'ordre des champs de `EtatPays`.

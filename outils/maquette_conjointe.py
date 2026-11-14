@@ -731,8 +731,11 @@ def carte_socle(par, regime: str = "hausse", taux: str = "regle", financement: s
         # Phase 8 : compte du Trésor, réserves et refinancement (BC7 à BC9, B7), taux du pas suivant (B1, B2).
         M_G_8a = s["M_G"] - G - Tr + T_H + T_F - l11b - l11c + dB_Bk + dB_CB
         Res_8b = s["Res"] + G + Tr - T_H - T_F + l11b + i_CB * s["Res"] / n - i_CB * s["L_CB"] / n - dB_Bk
-        L_CB_1 = max(s["L_CB"] - Res_8b, 0.0)  # B7
-        Res_1 = Res_8b + (L_CB_1 - s["L_CB"])
+        # B7 en forme −min, comme le script d'état stationnaire (P93 ; ADR 0013, annotation du 14/11/2026,
+        # point 9) : Res_{t+1} ≥ 0, L^CB_{t+1} ≥ 0 et Res_{t+1} L^CB_{t+1} = 0 exactement.
+        dL_CB = -min(Res_8b, s["L_CB"])  # B7
+        L_CB_1 = s["L_CB"] + dL_CB
+        Res_1 = Res_8b + dL_CB
         # Phase 9 : revenu disponible (H7), registre, postes de clôture par les flux.
         YD = WB + Tr - T_H + l10_H + Div_F + Div_Bk  # H7
         suivant = {

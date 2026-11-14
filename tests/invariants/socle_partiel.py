@@ -21,7 +21,7 @@ facteur^t, le facteur par pas étant celui de la grandeur sur le sentier :
 - prix (u.m. par u.v.) : (1 + π̄)^{1/n_a} ; salaire par personne :
   ((1 + g_pr)(1 + π̄))^{1/n_a} ;
 - montant nominal (u.m. par pas) : Γ̄ = ((1 + g)(1 + π̄))^{1/n_a} ;
-- grandeur sans dimension (U, tu, ξ, μ̃, π^e, r̂*, π*, i_CB, θ_CB) : 1.
+- grandeur sans dimension (U, tu, ξ, μ̃, i_L, i_D, π^e, r̂*, π*, i_CB, θ_CB) : 1.
 
 Les facteurs sont ceux du script (`facteurs`), non ceux du moteur : le bloc
 d'essai ne lit pas `facteur_g`, qu'aucun bloc réel ne remplace.
@@ -181,6 +181,8 @@ VARIABLES_DU_PAS = {
     # Bloc 8 (ADR 0013, annotation du 14/11/2026, point 5) : i^règle = i_CB au socle.
     ("banque_centrale", "1"): {"i_regle": ("i_CB", CONSTANTE), "i_CB": ("i_CB", CONSTANTE),
                                "theta_CB": ("theta_CB", CONSTANTE), "Pi_CB": ("Pi_CB", NOMINAL)},
+    # Bloc 7 (ADR 0013, annotation du 14/11/2026, point 5) : Π^Bk, écrit en phase 6 (B5).
+    ("banque", "6"): {"Pi_Bk": ("Pi_Bk", NOMINAL)},
     ("menages", "2"): {"C_plan": ("C_plan", NOMINAL)},
     ("investissement", "2"): {"I_plan": ("I_plan", NOMINAL)},
     ("finances_publiques", "2"): {"G_plan": ("G_plan", NOMINAL)},
@@ -191,8 +193,8 @@ VARIABLES_D_ETAT = {
     "v_e": ("ve_1", VOLUME), "IN_vol": ("IN_vol_1", VOLUME), "pr": ("pr_1", PRODUCTIVITE),
     "K_vol": ("K_vol_1", VOLUME), "W": ("W", SALAIRE), "U": ("U", CONSTANTE),
     "N": ("N", PERSONNES), "N_pa": ("N_pa_1", PERSONNES), "mu_tilde": ("mu_tilde", CONSTANTE),
-    "pi_e": ("pi_e_1", CONSTANTE), "r_hat_etoile": ("r_hat_1", CONSTANTE),
-    "pi_etoile": ("pi_cible_1", CONSTANTE),
+    "i_L": ("i_L_1", CONSTANTE), "i_D": ("i_D_1", CONSTANTE), "pi_e": ("pi_e_1", CONSTANTE),
+    "r_hat_etoile": ("r_hat_1", CONSTANTE), "pi_etoile": ("pi_cible_1", CONSTANTE),
 }
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
@@ -200,8 +202,8 @@ if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
 # Valeur à l'ouverture du pas 0 de chaque variable d'état (clé de `ouverture`).
 OUVERTURE_DES_VARIABLES = {
     "v_e": "ve", "IN_vol": "IN_vol", "pr": "pr", "K_vol": "K_vol", "W": "W_m1", "U": "U_m1",
-    "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "pi_e": "pi_e",
-    "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible",
+    "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "i_L": "i_L", "i_D": "i_D",
+    "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible",
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.

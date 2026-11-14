@@ -71,7 +71,7 @@ def test_facteurs_de_tendance_par_unite(linearisation):
         "u.v. par pas": f(1.03 * 1.005 - 1), "u.v. par personne et par pas": f(0.03),
         "personnes": f(0.005), "u.m. par personne et par pas": f(1.03 * 1.1 - 1),
         "u.m. par u.v.": f(0.1), "fraction": 1.0, "sans dimension": 1.0,
-        "par an, taux de croissance": 1.0,
+        "par an, taux de croissance": 1.0, "par an, taux de flux": 1.0,
     }
     for unite, attendu in attendus.items():
         assert linearisation.facteur_de_tendance(unite, varie, pi) == pytest.approx(

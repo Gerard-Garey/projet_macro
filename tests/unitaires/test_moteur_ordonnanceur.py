@@ -71,7 +71,8 @@ POSITIONS = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0
 # d'essai de ce module les reconduisent d'un pas à l'autre (aucun ne les lit).
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "pi_e": 0.02, "r_hat_etoile": 0.01, "pi_etoile": 0.02}
+                       "i_L": 0.0502, "i_D": 0.0202, "pi_e": 0.02, "r_hat_etoile": 0.01,
+                       "pi_etoile": 0.02}
 
 SANS_ENTREES = DeclarationDesEntrees((), ())
 ENTREES_VIDES = EntreesDuTour((), ())
@@ -851,7 +852,8 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
         # par les blocs d'essai).
         e = VARIABLES_DES_BLOCS
         assert f.variables_du_pas == (
-            ("sigma_L", 0.5 + t), ("levier", 0.03), ("i_CB", 1.0 + t),
+            ("sigma_L", 0.5 + t), ("levier", 0.03),
+            ("i_L_suivant", e["i_L"]), ("i_D_suivant", e["i_D"]), ("i_CB", 1.0 + t),
             ("pi_e_suivant", e["pi_e"]), ("r_hat_etoile_suivant", e["r_hat_etoile"]),
             ("pi_etoile_suivant", e["pi_etoile"]),
             (INDICE_DES_PRIX, p_t),
@@ -924,7 +926,7 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
         fins.append([e for e in releve.evenements if type(e) is FinDePas])
     assert fins[0] == fins[1] == fins[2]
     assert empreinte(fins[0]) == empreinte(fins[1]) == empreinte(fins[2])
-    assert len(fins[0][0].variables_du_pas) == 19
+    assert len(fins[0][0].variables_du_pas) == 21
 
 
 def test_ligne_16_negative_et_montant_couvert_exerces():

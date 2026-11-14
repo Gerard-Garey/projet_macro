@@ -503,14 +503,17 @@ def test_bijection_proprietaire_ecrivain(socle, nom):
     sans = _avec_etat(propre, v.phase_ecriture, tuple(n for n in siege.etat if n != nom))
     with pytest.raises(DefautDeDeclaration, match=f"« {nom} ».*sans propriétaire qui l'écrive"):
         _assembler_avec(socle, {v.proprietaire: sans})
-    # Un autre bloc de la même étape l'écrit à la place de son propriétaire.
-    autre = next(r for r in socle.RADICAUX if r != v.proprietaire
-                 and v.phase_ecriture in socle.etapes_du(r))
-    intrus = socle.declaration_d_essai(autre)
-    siege_intrus = next(s for s in intrus.sieges if s.etape == v.phase_ecriture)
-    intrus = _avec_etat(intrus, v.phase_ecriture, siege_intrus.etat + (nom,))
-    with pytest.raises(DefautDeDeclaration, match=f"« {nom} ».*écrite par un autre bloc"):
-        _assembler_avec(socle, {v.proprietaire: sans, autre: intrus})
+    # Un autre bloc de la même étape l'écrit à la place de son propriétaire ; en 8 (c), la banque
+    # est le seul écrivain de `tab:phases` (i_L, i_D, #90) : le cas n'existe pas.
+    autres = [r for r in socle.RADICAUX if r != v.proprietaire
+              and v.phase_ecriture in socle.etapes_du(r)]
+    assert autres or (v.proprietaire, v.phase_ecriture) == ("banque", "8c")
+    for autre in autres[:1]:
+        intrus = socle.declaration_d_essai(autre)
+        siege_intrus = next(s for s in intrus.sieges if s.etape == v.phase_ecriture)
+        intrus = _avec_etat(intrus, v.phase_ecriture, siege_intrus.etat + (nom,))
+        with pytest.raises(DefautDeDeclaration, match=f"« {nom} ».*écrite par un autre bloc"):
+            _assembler_avec(socle, {v.proprietaire: sans, autre: intrus})
     # Son propriétaire l'écrit dans une autre de ses étapes.
     autres_etapes = [e for e in socle.etapes_du(v.proprietaire) if e != v.phase_ecriture]
     if autres_etapes:

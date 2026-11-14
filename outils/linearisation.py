@@ -69,6 +69,7 @@ FACTEURS_PAR_UNITE = {
     "fraction": (0, 0, 0),
     "sans dimension": (0, 0, 0),
     "par an, taux de croissance": (0, 0, 0),
+    "par an, taux de flux": (0, 0, 0),
 }
 
 

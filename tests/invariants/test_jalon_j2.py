@@ -971,6 +971,8 @@ def test_b7_sous_couverte_est_un_defaut(generateur, monkeypatch, publier):
         __slots__ = ()
 
         def phase_8c(self, vue):
+            # i_L et i_D reconduits, comme la pseudo-banque (schéma v3, #90).
+            self._reconduire(vue, self._lecteur(vue, "8c"), "8c")
             livre = vue.grand_livre
             reserves, refinancement = livre.position("Res"), livre.position("L_CB")
             vue.proposer("21", {"Delta_LCB": -min(reserves, refinancement) if reserves >= 0.0
@@ -992,6 +994,8 @@ def test_b7_sous_forme_litterale_arrete_sur_l_arrondi(generateur, monkeypatch, p
         __slots__ = ()
 
         def phase_8c(self, vue):
+            # i_L et i_D reconduits, comme la pseudo-banque (schéma v3, #90).
+            self._reconduire(vue, self._lecteur(vue, "8c"), "8c")
             livre = vue.grand_livre
             reserves, refinancement = livre.position("Res"), livre.position("L_CB")
             vue.proposer("21", {"Delta_LCB": max(refinancement - reserves, 0.0)

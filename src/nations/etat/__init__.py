@@ -10,7 +10,7 @@ Modules (ADR 0012, Conséquences) :
 - `unites` : `UNITES`, vocabulaire fermé des unités, unique pour les
   variables d'état et les paramètres du moteur ; n'importe rien de `nations` ;
 - `variables` : `VariableEtat` et `Invariance`, module feuille (C1) ;
-- `production`, `travail`, `prix`, `banque_centrale` : déclarations et
+- `production`, `travail`, `prix`, `banque`, `banque_centrale` : déclarations et
   domaines des variables d'état de chaque bloc, un module par radical
   (G1 (a) ; annotation du 13/11/2026, point 1) ;
 - `schema` : `VARIABLES` assemblées, `EtatPays` engendré, `VERSION_SCHEMA`,

@@ -694,8 +694,10 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     # Position de réserves après tous les règlements : lignes 2, 6, 7, 11a (compte du Trésor ↔ banque),
     # 11b, 12, −13, −19a-banque (19b-banque nulle au socle).
     Res_8b = o["Res"] + G + Tr - T_H - T_F + l11a + l11b + l12 - l13 - dB_Bk
-    L_CB_1 = max(o["L_CB"] - Res_8b, 0.0)  # B7
-    dL_CB = L_CB_1 - o["L_CB"]
+    # B7 en forme −min, algébriquement égale à max(L^CB − Res^8b ; 0) − L^CB (P93 ; ADR 0013, annotation
+    # du 14/11/2026, point 9) : Res_{t+1} et L^CB_{t+1} ≥ 0 et Res_{t+1} L^CB_{t+1} = 0 exactement.
+    dL_CB = -min(Res_8b, o["L_CB"])  # B7
+    L_CB_1 = o["L_CB"] + dL_CB
     Res_1 = Res_8b + dL_CB
     s.update(l12=l12, l13=l13, l16=l16, M_G_8a=M_G_8a, perte_non_couverte=perte_non_couverte,
              tr_non_verses=tr_non_verses, Res_8b=Res_8b, L_CB_1=L_CB_1, dL_CB=dL_CB, Res_1=Res_1,
