@@ -36,6 +36,18 @@ def generateur():
 
 
 @pytest.fixture(scope="session")
+def socle():
+    """Module `tests/invariants/socle_partiel.py`, le socle partiel d'essai de #112 (P52)."""
+    return _charger("socle_partiel", Path(__file__).with_name("socle_partiel.py"))
+
+
+@pytest.fixture(scope="session")
+def linearisation():
+    """Module `outils/linearisation.py`, linéarisation de la carte d'un pas (#112, point 4)."""
+    return _charger("linearisation", RACINE / "outils" / "linearisation.py")
+
+
+@pytest.fixture(scope="session")
 def matrices():
     """Module `outils/verifier_matrices.py`, lecteur des tables de la spécification."""
     return _charger("verifier_matrices", RACINE / "outils" / "verifier_matrices.py")

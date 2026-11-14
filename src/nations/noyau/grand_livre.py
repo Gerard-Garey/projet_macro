@@ -8,7 +8,7 @@ endroit où un flux monétaire s'exécute**. Trois opérations d'écriture :
   constructeur du grand livre : copie le pas t (entier), les onze positions
   et les cinq V^flux de l'état d'ouverture, évalue l'échelle S de chaque
   secteur **une fois** (P33 (a)) et contrôle les domaines de l'état chargé
-  (S finie et > 0 ; Res ≥ 0 ; D_H, D_F, M^G ≥ −ε × S) ;
+  (S finie et > 0 ; Res ≥ 0 et IN ≥ 0, stricts ; D_H, D_F, M^G ≥ −ε × S) ;
 - `proposer(flux)` et `declarer_montant_couvert(ligne, montant, payeur)` :
   enregistrent, sans rien exécuter ;
 - `clore_phase(phase) → ClotureDePhase` : exécute les propositions de la phase
@@ -230,6 +230,14 @@ def ouvrir_pas(etat_ouverture: EtatOuverture, parametres_cadre: ParametresCadre)
         raise DefautComptable("réserves d'ouverture négatives", t=t, phase="0",
                               regle=idt.RESERVES_CLOTURE.nom, secteur="banque", moyen="Res",
                               residu=ouverture["Res"], echelle=echelles["banque"])
+    # IN ≥ 0, strict, à côté de Res (A3.1 (ii) étendu ; P72) : N8 suppose IN ≥ 0 pour que
+    # le coût moyen pondéré soit positif ; contrôlé à t = 0, à la reprise et à chaque pas.
+    if not idt.controle_de_signe(ouverture["IN"], idt.STOCKS_OUVERTURE, epsilon,
+                                 echelles["entreprises"]):
+        raise DefautComptable("stocks d'ouverture négatifs", t=t, phase="0",
+                              regle=idt.STOCKS_OUVERTURE.nom, secteur="entreprises",
+                              terme="IN", residu=ouverture["IN"],
+                              echelle=echelles["entreprises"])
     idt.verifier_caisse(ouverture, echelles, epsilon, t=t, phase="0", positions_debut=ouverture,
                         mouvements_par_ligne={})
     return _construire(t, epsilon, epsilon_v, ouverture, v_flux, echelles)

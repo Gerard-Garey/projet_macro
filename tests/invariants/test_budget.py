@@ -14,9 +14,21 @@
   marge est publiée ;
 - **budget du socle complet** (1 ms par pays-semaine) : critère du J3 (M19),
   inactif (skip) jusqu'aux premiers blocs ; la mesure elle-même est prête et
-  testée.
+  testée ;
+- **part d'un bloc dans le coût** (P57, définie avant l'essai ; synthèse du rang
+  1a de J3-b, § 2) : durée cumulée des appels de l'ordonnanceur aux méthodes
+  d'étape du bloc, de l'entrée au retour, instrumentée dans `tests/` seulement
+  par enveloppe des méthodes déclarées ; ni l'ordonnanceur hors de ces appels,
+  ni le noyau, ni le registre, ni les blocs d'essai, ni l'observateur (nul) ;
+  coût du chronomètre publié, non soustrait ; socle partiel d'essai, π* = 2 %,
+  n_a = 12, ν_G = 1,15, 720 pas sans choc ; part = min sur 5 répétitions de
+  (Σ durées / 720), en ms par pas mensuel ; critère 0,48 ms, alerte non
+  bloquante 0,2760 ms = (52/12/1,60 − 0,5)/8, verdict sur la plateforme de
+  référence seulement ; projection cumulée publiée sans seuil : coût du noyau
+  seul + Σ des parts mesurées + (8 − k) × 0,276, à comparer à 2,708 ms.
 """
 
+import math
 import os
 import sys
 import time
@@ -26,13 +38,17 @@ from collections.abc import Callable
 import pytest
 
 from nations.moteur import ordonnanceur as ordo
-from nations.moteur.parametres.cadre import CADRE
+from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import PHASES
 from nations.noyau import grand_livre as gl_module
 from nations.observation.cout import ReleveDuCout
 from nations.observation.observateur import FinDePas, ObservateurNul
 
 pytestmark = pytest.mark.budget
+
+# Mesures du module reprises par une autre mesure du même module (coût du noyau seul,
+# lu par la projection cumulée de la part des blocs) ; écrites par le test qui les mesure.
+_MESURES_DU_MODULE: dict[str, float] = {}
 
 # Budget : secondes de calcul par pays et par semaine simulée.
 BUDGET_S_PAR_PAYS_SEMAINE = 1e-3
@@ -135,9 +151,10 @@ def blocs_rejoues(generateur, propositions, couverts, prix):
     """Les huit pseudo-blocs, réduits à rejouer les propositions précalculées.
 
     Mêmes déclarations que le générateur ; chaque méthode de phase propose les
-    montants relevés pour ses lignes, déclare le montant couvert relevé et
-    écrit P_t relevé ; les tables relevées sont des attributs de classe en
-    lecture seule (aucun attribut d'instance).
+    montants relevés pour ses lignes, déclare le montant couvert relevé, écrit
+    P_t relevé et reconduit les variables d'état des blocs (schéma v2) à leur
+    valeur d'ouverture, comme le générateur ; les tables relevées sont des
+    attributs de classe en lecture seule (aucun attribut d'instance).
     """
     tables = types.MappingProxyType({"propositions": propositions, "couverts": couverts,
                                      "prix": prix})
@@ -153,6 +170,9 @@ def blocs_rejoues(generateur, propositions, couverts, prix):
                 vue.declarer_montant_couvert("16", self.tables["couverts"][t])
             if ordo.INDICE_DES_PRIX in siege.ecrit:
                 vue.ecrire_pas(ordo.INDICE_DES_PRIX, self.tables["prix"][t])
+            # Variables d'état du schéma v2, reconduites comme par le générateur.
+            for nom in siege.etat:
+                vue.ecrire_etat(nom, getattr(vue.ouverture, nom))
         return agir
 
     blocs = []
@@ -174,8 +194,8 @@ def test_cout_du_noyau_seul(generateur, monkeypatch, publier):
         generateur, monkeypatch, GRAINE_DU_COUT, NB_PAS_DU_COUT)
     assert len(propositions) == NB_PAS_DU_COUT
     assert all(len(p) == 25 for p in propositions.values())
-    o = ordo.assembler(PHASES, blocs_rejoues(generateur, propositions, couverts, prix), CADRE,
-                       generateur.DECLARATION_DES_ENTREES)
+    o = ordo.assembler(PHASES, blocs_rejoues(generateur, propositions, couverts, prix),
+                       PARAMETRES_DE_REFERENCE, generateur.DECLARATION_DES_ENTREES)
     initial = generateur.etat_initial(GRAINE_DU_COUT)
     entrees = [generateur.entrees(GRAINE_DU_COUT, t) for t in range(NB_PAS_DU_COUT)]
     # Le rejeu reproduit la trajectoire du générateur, bit à bit.
@@ -193,6 +213,7 @@ def test_cout_du_noyau_seul(generateur, monkeypatch, publier):
         assert releve.pas() == tuple(range(NB_PAS_DU_COUT))
         couts.append(releve.cout_par_pas())
     cout = min(couts)
+    _MESURES_DU_MODULE["noyau_seul"] = cout
     grandeur = releve.grandeur()
     publier("Coût du noyau seul (C98-1 ; ADR 0005, point 19)", [
         f"définition : {grandeur.definition} ; ordonnanceur, noyau et registre sur des "
@@ -216,3 +237,147 @@ def test_cout_du_noyau_seul(generateur, monkeypatch, publier):
                     "seuil du coût du noyau seul contrôlé sur la plateforme de référence seulement "
                     "(CI GitHub Actions, ADR 0003, M16) ; mesure publiée")
     assert cout <= SEUIL_NOYAU_SEUL_MS_PAR_PAS
+
+
+# --------------------------------------------------------------------------
+# Part d'un bloc dans le coût (P57, #112)
+# --------------------------------------------------------------------------
+
+# Critère et alerte de la part d'un bloc, en ms par pas mensuel (P57, écrits avant l'essai).
+SEUIL_PART_MS_PAR_PAS = 0.48
+ALERTE_PART_MS_PAR_PAS = 0.2760
+# Budget du socle complet en ms par pas mensuel, marge m = 0,60 comprise (#105, #107).
+BUDGET_DU_SOCLE_MS_PAR_PAS = 2.708
+NB_BLOCS_DU_SOCLE = 8
+PI_DE_LA_PART = 0.02
+
+
+def envelopper(bloc, durees: list) -> object:
+    """Le bloc, dont chaque méthode d'étape déclarée est enveloppée d'un chronomètre qui ajoute
+    à `durees[0]` la durée de l'appel, de l'entrée au retour, et compte l'appel dans
+    `durees[1]` ; sous-classe sans attribut d'instance (`__slots__` vide), même déclaration."""
+    classe = type(bloc)
+    espace = {"__slots__": ()}
+    for siege in bloc.declaration.sieges:
+        nom = f"phase_{siege.etape}"
+
+        def chronometre(self, vue, _methode=getattr(classe, nom)):
+            debut = time.perf_counter()
+            try:
+                _methode(self, vue)
+            finally:
+                durees[0] += time.perf_counter() - debut
+                durees[1] += 1
+        espace[nom] = chronometre
+    return type(classe.__name__ + "Chronometre", (classe,), espace)()
+
+
+def mesurer_part(socle, radical: str, reels=()) -> tuple[float, list[float], int]:
+    """Part du bloc `radical` (ms par pas, min sur 5 répétitions de Σ durées / 720), ses
+    répétitions et le nombre d'appels par répétition, sur le socle partiel d'essai à π* = 2 %
+    où les blocs réels `reels` remplacent les blocs d'essai de leur radical."""
+    sentier = socle.sentier(PI_DE_LA_PART)
+    parts, appels = [], None
+    for _ in range(REPETITIONS_DU_COUT):
+        durees = [0.0, 0]
+        blocs = socle.blocs(sentier, reels=reels)
+        blocs = tuple(envelopper(b, durees) if b.declaration.radical == radical else b
+                      for b in blocs)
+        o = ordo.assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+        socle.derouler(socle.etat_initial(sentier), NB_PAS_DU_COUT, o, ObservateurNul())
+        parts.append(durees[0] * 1e3 / NB_PAS_DU_COUT)
+        appels = durees[1]
+    return min(parts), parts, appels
+
+
+def cout_du_chronometre_par_appel(nb: int = 100_000) -> float:
+    """Durée relevée par le chronomètre autour d'un appel vide, en ms (moyenne sur `nb` appels,
+    meilleure de 5) : coût publié, non soustrait (P57)."""
+    meilleur = math.inf
+    for _ in range(REPETITIONS_DU_COUT):
+        durees = [0.0, 0]
+
+        class Vide:
+            __slots__ = ()
+
+            def phase_0(self, vue):
+                return None
+
+        Vide.declaration = types.SimpleNamespace(sieges=(types.SimpleNamespace(etape="0"),))
+        bloc = envelopper(Vide(), durees)
+        for _ in range(nb):
+            bloc.phase_0(None)
+        meilleur = min(meilleur, durees[0] * 1e3 / nb)
+    return meilleur
+
+
+def test_instrument_de_la_part_d_un_bloc(socle, publier):
+    """L'enveloppe ne change pas la trajectoire (états identiques au bit) et compte chaque appel
+    d'étape du bloc une fois : 720 × nombre de sièges ; la part est positive et au plus le coût
+    du pas entier. Mesure de contrôle sur un bloc d'essai (production), sans verdict."""
+    sentier = socle.sentier(PI_DE_LA_PART)
+    durees = [0.0, 0]
+    blocs = tuple(envelopper(b, durees) if b.declaration.radical == "production" else b
+                  for b in socle.blocs(sentier))
+    o = ordo.assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+    debut = time.perf_counter()
+    fin = socle.derouler(socle.etat_initial(sentier), NB_PAS_DU_COUT, o, ObservateurNul())
+    total = time.perf_counter() - debut
+    reference = socle.derouler(socle.etat_initial(sentier), NB_PAS_DU_COUT,
+                               socle.ordonnanceur(sentier), ObservateurNul())
+    assert fin == reference
+    nb_sieges = len(socle.declaration_d_essai("production").sieges)
+    assert durees[1] == NB_PAS_DU_COUT * nb_sieges
+    assert 0.0 < durees[0] <= total
+    part, parts, _ = mesurer_part(socle, "production")
+    chrono = cout_du_chronometre_par_appel()
+    publier("Part d'un bloc dans le coût : instrument (P57), bloc d'essai de la production", [
+        f"part du bloc d'essai (contrôle de l'instrument, sans verdict) : {part:.4f} ms par pas "
+        "(répétitions : " + ", ".join(f"{x:.4f}" for x in parts) + ")",
+        f"coût du chronomètre : {chrono * 1e3:.3f} µs par appel, {nb_sieges} appels par pas, soit "
+        f"{chrono * nb_sieges:.4f} ms par pas, publié, non soustrait",
+    ])
+
+
+def test_part_de_chaque_bloc_reel(socle, publier):
+    """P57 : part de chaque bloc réel de `src/nations/blocs/` ≤ 0,48 ms par pas mensuel
+    (alerte non bloquante au-dessus de 0,2760 ms) sur la plateforme de référence ; projection
+    cumulée publiée sans seuil. Avant le premier bloc réel (#113), la mesure est publiée vide
+    et le test se termine par un saut qui le dit."""
+    reels = socle.blocs_reels()
+    lignes, parts = [], {}
+    for bloc in reels:
+        radical = bloc.declaration.radical
+        part, repetitions, appels = mesurer_part(socle, radical, reels)
+        parts[radical] = part
+        alerte = " ; ALERTE (> 0,2760 ms, non bloquante)" if part > ALERTE_PART_MS_PAR_PAS else ""
+        lignes.append(f"{radical} : {part:.4f} ms par pas (répétitions : "
+                      + ", ".join(f"{x:.4f}" for x in repetitions)
+                      + f" ; {appels // NB_PAS_DU_COUT} appels par pas){alerte}")
+    k = len(parts)
+    noyau = _MESURES_DU_MODULE.get("noyau_seul")
+    if noyau is None:
+        projection = "coût du noyau seul non mesuré dans cette session : projection non publiée"
+    else:
+        total = noyau + sum(parts.values()) + (NB_BLOCS_DU_SOCLE - k) * ALERTE_PART_MS_PAR_PAS
+        projection = (f"projection cumulée = {noyau:.4f} (noyau seul) + {sum(parts.values()):.4f} "
+                      f"(Σ des {k} parts) + {NB_BLOCS_DU_SOCLE - k} × {ALERTE_PART_MS_PAR_PAS} = "
+                      f"{total:.4f} ms par pas, à comparer à {BUDGET_DU_SOCLE_MS_PAR_PAS} ms "
+                      "(sans seuil)")
+    publier("Part de chaque bloc réel dans le coût (P57)", [
+        "définition : durée cumulée des appels aux méthodes d'étape du bloc, socle partiel "
+        "d'essai, π* = 2 %, 720 pas, min sur 5 répétitions ; ms par pas mensuel",
+        *(lignes or ["aucun bloc réel dans src/nations/blocs/"]),
+        projection,
+        "plateforme : " + ("référence, critère contrôlé" if PLATEFORME_DE_REFERENCE
+                           else "hors référence (ADR 0003, M16), critère non contrôlé"),
+    ])
+    if not reels:
+        pytest.skip("aucun bloc réel dans src/nations/blocs/ : part d'un bloc mesurée dès le "
+                    "premier (#113) ; mesure publiée")
+    if not PLATEFORME_DE_REFERENCE:
+        pytest.skip("part d'un bloc contrôlée sur la plateforme de référence seulement (CI "
+                    "GitHub Actions, ADR 0003, M16) ; mesure publiée")
+    for radical, part in parts.items():
+        assert part <= SEUIL_PART_MS_PAR_PAS, radical
+

@@ -65,3 +65,16 @@ def releve_cout():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="session")
+def linearisation():
+    """Module `outils/linearisation.py`, chargé par son chemin (#112, point 4)."""
+    nom = "linearisation"
+    if nom in sys.modules:
+        return sys.modules[nom]
+    spec = importlib.util.spec_from_file_location(nom, RACINE / "outils" / "linearisation.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module

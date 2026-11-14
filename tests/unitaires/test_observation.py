@@ -44,13 +44,19 @@ class CadreDouble:
 
 CADRE = CadreDouble()
 
+# Variables d'état des blocs (schéma v2), valeurs d'essai dans leurs domaines.
+VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
+                       "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
+                       "pi_e": 0.02}
+
 
 def etat_initial(identifiant="A", graine=20261007, decalage=0.0):
     """État d'essai ; V^flux = V^stock + décalage × S de chaque secteur."""
     p = dict(OUVERTURE)
     v = {cat.VALEUR_NETTE_FLUX[s]: idt.valeur_nette_stock(p, s) for s in cat.SECTEURS}
     registre = tuple(1.02 ** (-u / 12) for u in range(1, 14))
-    e = EtatPays(identifiant=identifiant, graine=graine, t=0, registre_prix=registre, **p, **v)
+    e = EtatPays(identifiant=identifiant, graine=graine, t=0, registre_prix=registre, **p, **v,
+                 **VARIABLES_DES_BLOCS)
     gl = ouvrir_pas(e, CADRE)
     return dataclasses.replace(e, **{
         cat.VALEUR_NETTE_FLUX[s]: v[cat.VALEUR_NETTE_FLUX[s]] + decalage * gl.echelle(s)

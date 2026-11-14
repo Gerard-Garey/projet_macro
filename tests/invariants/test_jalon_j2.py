@@ -34,6 +34,7 @@ from nations.moteur.conversions import par_pas
 from nations.moteur.diagnostics import DefautDeDeclaration
 from nations.moteur.parametres import TauxDeFlux
 from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
+from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import PHASES, Phase
 from nations.noyau import catalogue as cat
 from nations.noyau import grand_livre as gl_module
@@ -652,7 +653,8 @@ def test_colonne_lisent_controle_les_lectures_du_generateur(generateur, monkeypa
     phases = tuple(Phase(p.numero, p.nom, p.etapes, tuple(x for x in p.lisent if x != 4))
                    if p.numero == 5 else p for p in PHASES)
     with pytest.raises(DefautDeDeclaration, match="Lisent"):
-        ordo.assembler(phases, generateur.blocs(), CADRE, generateur.DECLARATION_DES_ENTREES)
+        ordo.assembler(phases, generateur.blocs(), PARAMETRES_DE_REFERENCE,
+                       generateur.DECLARATION_DES_ENTREES)
 
 
 @pytest.mark.parametrize("lire, erreur, motif", [
@@ -906,6 +908,9 @@ def test_capitalisation_annuelle(generateur, monkeypatch, publier):
                 vue.proposer(ligne, montants)
             for nom in siege.ecrit:
                 vue.ecrire_pas(nom, vue.dernier_prix() if nom == ordo.INDICE_DES_PRIX else 1.0)
+            # Variables d'état du schéma v2 : reconduites, comme par le générateur.
+            for nom in siege.etat:
+                vue.ecrire_etat(nom, getattr(vue.ouverture, nom))
 
     def classe_dediee(classe):
         espace = {"__slots__": (), "declaration": classe.declaration}

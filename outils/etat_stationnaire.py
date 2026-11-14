@@ -248,7 +248,10 @@ def controler_domaine(par: Parametres) -> list[str]:
     for champ in fields(par):  # NaN et ±∞ : refus avant tout calcul (aucune division par zéro ni dépassement)
         if not math.isfinite(getattr(par, champ.name)):
             raise HorsDomaine(f"{champ.name} = {getattr(par, champ.name)!r} : valeur finie attendue")
-    for nom in ("lambda_v", "lambda_IN", "lambda_w", "lambda_N", "lambda_mu", "lambda_H", "lambda_ti", "lambda_e"):
+    # λ_v : domaine strict, comme dans la table du moteur (`nations.moteur.parametres.production`, P70).
+    if not 0 < par.lambda_v < n:
+        raise HorsDomaine(f"lambda_v = {par.lambda_v!r} : 0 < λ_v < n_a = {n} attendu (domaine strict, P70)")
+    for nom in ("lambda_IN", "lambda_w", "lambda_N", "lambda_mu", "lambda_H", "lambda_ti", "lambda_e"):
         val = getattr(par, nom)
         if not 0 < val <= n:
             raise HorsDomaine(f"{nom} = {val!r} : 0 < λ ≤ n_a = {n} attendu (sec:cadre-calendrier)")
@@ -260,10 +263,13 @@ def controler_domaine(par: Parametres) -> list[str]:
         raise HorsDomaine(f"pi_cible = {par.pi_cible!r} : π* > −1 attendu (sec:menages-conditions)")
     if not 0 < par.nu_H * par.lambda_H < 1:
         raise HorsDomaine(f"ν_H λ_H = {par.nu_H * par.lambda_H!r} : 0 < ν_H λ_H < 1 attendu (sec:menages-conditions)")
-    # Facteur de croissance contrôlé avant toute racine n_a-ième : une base négative donnerait un complexe
-    # (`TypeError` à la comparaison suivante) au lieu d'un refus.
-    if not (1 + par.g_pr) * (1 + par.g_N) > 0:
-        raise HorsDomaine("(1 + g_pr)(1 + g_N) > 0 attendu")
+    # Facteurs de croissance contrôlés avant toute racine n_a-ième : une base négative donnerait un complexe
+    # (`TypeError` à la comparaison suivante) au lieu d'un refus. Chaque taux séparément, comme le domaine
+    # `TAUX_DE_CROISSANCE_ANNUEL` des tables (`nations.moteur.parametres.production` et `.travail`) : le
+    # produit (1 + g_pr)(1 + g_N) > 0 admettrait g_pr = g_N = −1,5, que les tables refusent.
+    for nom in ("g_pr", "g_N"):
+        if not 1 + getattr(par, nom) > 0:
+            raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : 1 + {nom} > 0 attendu (taux de croissance)")
     gamma_e = ((1 + par.g_pr) * (1 + par.g_N) * (1 + par.pi_cible)) ** (1 / n) - 1
     pis = (1 + par.pi_cible) ** (1 / n) - 1
     coefficient = par.lambda_H / n + par.nu_H * par.lambda_H * pis - gamma_e
@@ -295,10 +301,15 @@ def controler_domaine(par: Parametres) -> list[str]:
     for nom in ("eta_r", "zeta"):
         if not getattr(par, nom) >= 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : ≥ 0 attendu (sec:investissement-conditions)")
-    if not 0 <= par.U_eq < 1:
-        raise HorsDomaine(f"U_eq = {par.U_eq!r} : 0 ≤ U^eq < 1 attendu")
-    if not 1 + par.mu_bar > 0:
-        raise HorsDomaine(f"mu_bar = {par.mu_bar!r} : 1 + μ̄ > 0 attendu (μ̃ = ln(1 + μ̄))")
+    # U^eq > 0 et μ̄ > 0 : conditions de conception et d'existence de l'état stationnaire, non domaines de
+    # définition (décision du mainteneur du 13/11/2026, P71) ; refusées ici comme dans les tables du moteur
+    # (`nations.moteur.parametres.travail` et `.prix`), de sorte que script et tables refusent le même ensemble.
+    if not 0 < par.U_eq < 1:
+        raise HorsDomaine(f"U_eq = {par.U_eq!r} : 0 < U^eq < 1 attendu (condition de conception et d'existence de "
+                          "l'état stationnaire, P71)")
+    if not par.mu_bar > 0:
+        raise HorsDomaine(f"mu_bar = {par.mu_bar!r} : μ̄ > 0 attendu (condition de conception et d'existence de "
+                          "l'état stationnaire, P71 ; elle contient 1 + μ̄ > 0, μ̃ = ln(1 + μ̄))")
     if not par.vartheta > 0:
         raise HorsDomaine(f"vartheta = {par.vartheta!r} : ϑ > 0 attendu (sec:banque-conditions)")
     if not 0 < par.a_pi < 1.5:
@@ -527,7 +538,12 @@ def controler_etat(e: dict[str, float], par: Parametres) -> None:
 
 
 def ouverture(e: dict[str, float], par: Parametres) -> dict[str, object]:
-    """État d'ouverture du pas 0, tel que les sections le résolvent (« État initial résolu »)."""
+    """État d'ouverture du pas 0, tel que les sections le résolvent (« État initial résolu »).
+
+    `mu_tilde_m1` est la marge en logarithme d'ouverture μ̃_{−1} = ln(1 + μ̄), variable d'état du bloc 4 du
+    schéma v2 (ADR 0012, annotation du 13/11/2026, point 1.4 ; P54, #112) ; `un_pas` ne la lit pas (P2 y garde
+    ln(P_{t−1}/UC_{t−1}), égal à 1e−15 près).
+    """
     n = par.n_a
     Gr, Gam = e["Gr"], e["Gam"]
     pr_m1 = e["pr"] * (1 + par.g_pr) ** (-1 / n)
@@ -535,7 +551,7 @@ def ouverture(e: dict[str, float], par: Parametres) -> dict[str, object]:
     return {
         "registre": P,
         "pr": e["pr"], "N_pa": e["N_pa"], "N_m1": e["N"] * (1 + par.g_N) ** (-1 / n), "U_m1": par.U_eq,
-        "W_m1": P[0] * pr_m1 / (1 + par.mu_bar),
+        "W_m1": P[0] * pr_m1 / (1 + par.mu_bar), "mu_tilde_m1": math.log(1 + par.mu_bar),
         "ve": e["ve"], "IN_vol": e["IN_vol"], "IN": e["IN"], "K_vol": e["K_vol"], "K": e["K"],
         "ti": e["ti"], "y_m1": e["y"] / Gr, "T_F_m1": e["T_F"] / Gam, "rho_bar_L": e["rho_bar_L"],
         "L": e["L"], "D_F": e["D_F"], "YD_m1": e["YD"] / Gam, "D_H": e["D_H"], "B_H": 0.0,
@@ -624,11 +640,12 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     p = UC * math.exp(mu_t)  # P3 ; P4 : P_t ≡ p
     d_H, d_F, d_G = C_plan / p, I_plan / p, G_plan / p  # N6
     d = d_H + d_F + d_G
-    v = min(d, o["IN_vol"] + y)
+    disponible = o["IN_vol"] + y  # calculé une fois : v et IN^vol_{t+1} sur la même valeur
+    v = min(d, disponible)
     v_H, v_F, v_G = v / d * d_H, v / d * d_F, v / d * d_G
-    IN_vol_1 = o["IN_vol"] + y - v  # N7
-    cm = (o["IN"] + UC * y) / (o["IN_vol"] + y)  # N8
-    dIN = UC * y - cm * v
+    IN_vol_1 = disponible - v  # N7
+    cm = (o["IN"] + UC * y) / disponible  # N8
+    dIN = cm * IN_vol_1 - o["IN"]  # N8, forme B (P72) : ΔIN = cm IN^vol_{t+1} − IN_t
     pr_1 = o["pr"] * (1 + par.g_pr) ** (1 / n)  # N9
     K_vol_1 = (1 - par.delta / n) * o["K_vol"] + v_F  # N10
     ve_1 = Gr * ((1 - par.lambda_v / n) * o["ve"] + par.lambda_v / n * d)  # N1

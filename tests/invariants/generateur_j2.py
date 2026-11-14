@@ -67,7 +67,8 @@ from dataclasses import replace
 
 import numpy as np
 
-from nations.etat.schema import EtatPays
+from nations.etat import schema
+from nations.etat.schema import EtatPays, Invariance
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.contrat_bloc import (
     GRAND_LIVRE,
@@ -86,7 +87,8 @@ from nations.moteur.ordonnanceur import (
     assembler,
 )
 from nations.moteur.parametres import TauxDeCroissance, TauxDeFlux
-from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
+from nations.moteur.parametres.cadre import PAS_PAR_AN
+from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import PHASES
 from nations.noyau import catalogue as cat
 from nations.noyau import grand_livre as gl_module
@@ -302,8 +304,22 @@ def _gl(*noms: str) -> tuple[Lecture, ...]:
 
 
 def _siege(etape: str, ecrit: Sequence[str] = (), lit: Sequence[Lecture] = (),
-           propose: Sequence[str] = (), couvre: Sequence[str] = ()) -> Siege:
-    return Siege(etape, tuple(ecrit), tuple(lit), tuple(propose), tuple(couvre), ())
+           propose: Sequence[str] = (), couvre: Sequence[str] = (),
+           etat: Sequence[str] = ()) -> Siege:
+    """Siège ; une variable d'état reconduite (`etat`) est aussi lue à l'ouverture."""
+    return Siege(etape, tuple(ecrit), tuple(lit) + _ouv(*etat), tuple(propose), tuple(couvre),
+                 tuple(etat))
+
+
+def _reconduites(radical: str, etape: str) -> tuple[str, ...]:
+    """Variables d'état du schéma v2 dont le pseudo-bloc est propriétaire dans l'étape.
+
+    Le générateur n'est pas un modèle économique : il **reconduit** chacune à sa
+    valeur d'ouverture (aucune règle ne les lit), ce qui laisse ses flux, et donc
+    les mesures du jalon J2, identiques bit à bit à celles du schéma v1.
+    """
+    return tuple(v.nom for v in schema.VARIABLES_DES_BLOCS
+                 if v.proprietaire == radical and v.phase_ecriture == etape)
 
 
 # Lectures communes : tirages du pas (graine, t) et échelle nominale (K).
@@ -319,6 +335,12 @@ class _PseudoBloc:
     def _lecteur(self, vue: ordo.Vue, etape: str) -> _Lecteur:
         siege = next(s for s in self.declaration.sieges if s.etape == etape)
         return _Lecteur(vue, siege)
+
+    def _reconduire(self, vue: ordo.Vue, lecteur: _Lecteur, etape: str) -> None:
+        """Écrit, pour chaque variable d'état du siège, sa valeur d'ouverture (lecture déclarée)."""
+        siege = next(s for s in self.declaration.sieges if s.etape == etape)
+        for nom in siege.etat:
+            vue.ecrire_etat(nom, lecteur.ouverture(nom))
 
 
 def _declaration(radical: str, *sieges: Siege) -> DeclarationDeBloc:
@@ -361,7 +383,7 @@ class Production(_PseudoBloc):
         _siege("5", lit=_BASE + _ouv("IN") + (Lecture("2", "activite"),
                                               Lecture("4", "production"),
                                               Lecture("5", INDICE_DES_PRIX)),
-               propose=("4",)),
+               propose=("4",), etat=_reconduites("production", "5")),
     )
 
     def phase_2(self, vue: ordo.Vue) -> None:
@@ -376,6 +398,7 @@ class Production(_PseudoBloc):
 
     def phase_5(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "5")
+        self._reconduire(vue, lecteur, "5")
         lecteur.pas("5", INDICE_DES_PRIX)
         k = lecteur.ouverture("K")
         stocks = lecteur.ouverture("IN")
@@ -394,18 +417,21 @@ class Travail(_PseudoBloc):
     __slots__ = ()
     declaration = _declaration(
         "travail",
-        _siege("1", ecrit=("part_salariale",), lit=_BASE),
+        _siege("1", ecrit=("part_salariale",), lit=_BASE, etat=_reconduites("travail", "1")),
         _siege("4", ecrit=("emploi",), lit=_BASE + _gl("D_F") + (
-            Lecture("1", "part_salariale"), Lecture("2", "activite")), propose=("5",)),
+            Lecture("1", "part_salariale"), Lecture("2", "activite")), propose=("5",),
+            etat=_reconduites("travail", "4")),
     )
 
     def phase_1(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "1")
+        self._reconduire(vue, lecteur, "1")
         vue.ecrire_pas("part_salariale",
                        0.76 * (1.0 + 0.05 * centre(lecteur.tirages()["salaire"])))
 
     def phase_4(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "4")
+        self._reconduire(vue, lecteur, "4")
         activite = lecteur.pas("2", "activite")
         vue.ecrire_pas("emploi", activite)
         plan = lecteur.pas("1", "part_salariale") * activite * lecteur.production()
@@ -421,11 +447,12 @@ class Prix(_PseudoBloc):
     declaration = _declaration(
         "prix",
         _siege("5", ecrit=(INDICE_DES_PRIX,), lit=_ouv("graine", "t") + (
-            Lecture(REGISTRE, "dernier_prix"),)),
+            Lecture(REGISTRE, "dernier_prix"),), etat=_reconduites("prix", "5")),
     )
 
     def phase_5(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "5")
+        self._reconduire(vue, lecteur, "5")
         bruit = 0.003 * centre(tirages(lecteur.ouverture("graine"), lecteur.ouverture("t"))["prix"])
         vue.ecrire_pas(INDICE_DES_PRIX, lecteur.registre("dernier_prix") * F_PRIX * (1.0 + bruit))
 
@@ -553,13 +580,15 @@ class BanqueCentrale(_PseudoBloc):
     __slots__ = ()
     declaration = _declaration(
         "banque_centrale",
-        _siege("1", ecrit=("i_CB",), lit=(Lecture("1", LEVIER),)),
+        _siege("1", ecrit=("i_CB",), lit=(Lecture("1", LEVIER),),
+               etat=_reconduites("banque_centrale", "1")),
         _siege("8a", lit=_gl("Res", "L_CB") + (Lecture("1", "i_CB"),), propose=("12", "13")),
         _siege("8b", lit=_LECTURES_PI, propose=("16",)),
     )
 
     def phase_1(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "1")
+        self._reconduire(vue, lecteur, "1")
         vue.ecrire_pas("i_CB", lecteur.pas("1", LEVIER))
 
     def phase_8a(self, vue: ordo.Vue) -> None:
@@ -715,7 +744,7 @@ def blocs(remplacer: dict[str, type] | None = None) -> tuple[_PseudoBloc, ...]:
 
 def ordonnanceur(remplacer: dict[str, type] | None = None) -> Ordonnanceur:
     """Ordonnanceur du générateur (sous la déclaration d'essai de 19b, `doubler_19b`)."""
-    return assembler(PHASES, blocs(remplacer), CADRE, DECLARATION_DES_ENTREES)
+    return assembler(PHASES, blocs(remplacer), PARAMETRES_DE_REFERENCE, DECLARATION_DES_ENTREES)
 
 
 # --------------------------------------------------------------------------
@@ -758,17 +787,30 @@ def registre_stationnaire(pi_barre: float = INFLATION) -> tuple[float, ...]:
     return tuple((1.0 + pi_barre) ** (-(u - 1) / n_a) for u in range(1, n_a + 2))
 
 
+# Variables d'état des blocs (schéma v2) à l'ouverture du pas 0, reconduites telles
+# quelles (`_reconduites`) : ordres de grandeur de l'état stationnaire du socle
+# (π* = 2 %, n_a = 12, p_0 = pr_0 = N^pa_0 = 1), le salaire nominal W multiplié par
+# ECHELLE comme les autres grandeurs nominales.
+VARIABLES_DES_BLOCS_INITIALES = {
+    "v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8 * ECHELLE, "U": 0.05,
+    "N": 0.95, "N_pa": 1.0, "mu_tilde": math.log(1.25), "pi_e": INFLATION,
+}
+
+
 def etat_initial(graine: int) -> EtatPays:
-    """État d'ouverture du pas 0 : niveaux stationnaires × ECHELLE, V^flux = V^stock."""
+    """État d'ouverture du pas 0 : niveaux stationnaires × ECHELLE, V^flux = V^stock,
+    variables des blocs à `VARIABLES_DES_BLOCS_INITIALES`."""
     positions = {nom: v * ECHELLE for nom, v in NIVEAUX_INITIAUX.items()}
     v_flux = {cat.VALEUR_NETTE_FLUX[s]: idt.valeur_nette_stock(positions, s)
               for s in cat.SECTEURS}
     return EtatPays(identifiant="A", graine=graine, t=0, registre_prix=registre_stationnaire(),
-                    **positions, **v_flux)
+                    **positions, **v_flux, **VARIABLES_DES_BLOCS_INITIALES)
 
 
-# Champs nominaux de l'état (positions et V^flux) et indice (registre).
-CHAMPS_NOMINAUX = cat.NOMS_POSTES + tuple(cat.VALEUR_NETTE_FLUX[s] for s in cat.SECTEURS)
+# Champs nominaux de l'état (positions, V^flux et variables nominales des blocs, W) et
+# indice (registre).
+CHAMPS_NOMINAUX = cat.NOMS_POSTES + tuple(cat.VALEUR_NETTE_FLUX[s] for s in cat.SECTEURS) + tuple(
+    v.nom for v in schema.VARIABLES_DES_BLOCS if v.invariance is Invariance.NOMINAL)
 
 
 def redenominer(etat: EtatPays, facteur: float) -> EtatPays:

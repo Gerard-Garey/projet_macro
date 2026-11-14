@@ -24,19 +24,25 @@ Champs de `EtatPays`, dans l'ordre :
   (ADR 0008, II.3) ; ensemble, l'**empreinte
   calendaire**, 14 variables (ADR 0008, II.4) ;
 - les variables du **noyau** : les onze positions de `catalogue.POSTES` et les
-  cinq V^flux de `catalogue.VALEUR_NETTE_FLUX`, en u.m.
+  cinq V^flux de `catalogue.VALEUR_NETTE_FLUX`, en u.m. ;
+- les variables des **blocs** (ADR 0012, G1 (a) ; annotation du 13/11/2026,
+  point 1), par radical dans l'ordre des blocs, chaque radical déclarant les
+  siennes dans son module de `etat/` : `production` (v^e, IN^vol, pr, K^vol),
+  `travail` (W, U, N, N^pa), `prix` (μ̃), `banque_centrale` (π^e).
 
 L'échelle S des bilans n'est pas dans l'état : c'est une grandeur dérivée,
 recalculée à l'ouverture de chaque pas, reprise comprise (C96-2). Aucun
 historique, aucune série, aucun compteur hors de t : les séries relèvent de
-`nations.observation`. Les variables des blocs s'ajoutent au J3, chacune par
-sa déclaration (ADR 0012, G1), avec une nouvelle version du schéma.
+`nations.observation`. Les variables des blocs s'ajoutent par leur déclaration
+(ADR 0012, G1), une version du schéma par branche (P53).
 
 Journal des versions (D2 : la version est incrémentée à tout changement de la
 liste des champs, d'un type, d'une unité ou d'une sémantique) :
 
 - **1** (07/10/2026, #96, ADR 0012, C1, D1, D2) : identifiant, graine, t,
   registre de 13 niveaux, onze positions, cinq V^flux.
+- **2** (13/11/2026, #112 ; ADR 0012, annotation du 13/11/2026 ; P53) : dix
+  variables des blocs 2 à 4 et π^e.
 """
 
 from __future__ import annotations
@@ -45,94 +51,20 @@ import dataclasses
 import itertools
 import math
 import unicodedata
-from dataclasses import dataclass
-from enum import Enum
 
-from nations.etat.unites import UNITES
-from nations.noyau.catalogue import NOMS_POSTES, PHASES, SECTEURS, VALEUR_NETTE_FLUX
+from nations.etat import banque_centrale, prix, production, travail
+# `TYPES`, `Invariance` et `VariableEtat` sont réexportés : leur forme est celle du
+# schéma v1, passée dans le module feuille `variables` (annotation du 13/11/2026, point 1.5).
+from nations.etat.variables import TYPES, Invariance, VariableEtat
+from nations.noyau.catalogue import NOMS_POSTES, SECTEURS, VALEUR_NETTE_FLUX
 
-VERSION_SCHEMA = 1
-
-# Types admis d'une variable d'état (C1) : entier, flottant, ou tuple de
-# flottants de longueur fixe déclarée.
-TYPES = (int, float, tuple)
+VERSION_SCHEMA = 2
 
 # Longueur du registre de l'indice des prix : n_a + 1 niveaux (ADR 0008, II.3).
 # Copie de `nations.moteur.registre.NIVEAUX` (= PAS_PAR_AN.valeur + 1), que
 # `etat` ne peut pas importer (graphe des couches) ; l'égalité est figée par
 # `test_registre_du_schema_de_n_a_plus_un_niveaux` (tests/unitaires/test_moteur_temps.py).
 NIVEAUX_DU_REGISTRE = 13
-
-
-class Invariance(Enum):
-    """Invariance d'unité d'une variable (C1) : ce que fait une redénomination ×100.
-
-    - `NOMINAL` : multipliée par 100 ;
-    - `SANS_DIMENSION`, `VOLUME` : inchangée ;
-    - `INDICE` : multipliée par 100, et comparée par le critère relatif du
-      glissement (ADR 0008 ; ADR 0012, annotation du 07/10/2026, point 2).
-    """
-
-    NOMINAL = "nominal"
-    SANS_DIMENSION = "sans_dimension"
-    VOLUME = "volume"
-    INDICE = "indice"
-
-
-@dataclass(frozen=True, slots=True)
-class VariableEtat:
-    """Déclaration d'une variable d'état (ADR 0012, C1).
-
-    - `nom` : nom du champ de `EtatPays` et clé de la sauvegarde ;
-    - `proprietaire` : `noyau`, `moteur` ou le radical d'un bloc ; seul à
-      écrire la valeur du pas suivant, une fois par pas ;
-    - `phase_ecriture` : clôture où elle est écrite (`catalogue.PHASES`) ;
-    - `unite` : dans `UNITES` ;
-    - `type` : `int`, `float` ou `tuple` (de `float`) ;
-    - `longueur` : nombre de scalaires, 1 pour un scalaire, la longueur
-      déclarée pour un tuple ;
-    - `valeur_stationnaire` : formule ou renvoi ; l'état résolu (J3) la fournit ;
-    - `invariance` : comportement sous une redénomination ×100.
-    """
-
-    nom: str
-    proprietaire: str
-    phase_ecriture: str
-    unite: str
-    type: type
-    longueur: int
-    valeur_stationnaire: str
-    invariance: Invariance
-
-    def __post_init__(self) -> None:
-        if not self.nom.isidentifier() or not self.nom.isascii():
-            raise ValueError(f"nom de variable d'état invalide : {self.nom!r}")
-        if not self.proprietaire:
-            raise ValueError(f"variable d'état sans propriétaire : {self.nom}")
-        if self.phase_ecriture not in PHASES:
-            raise ValueError(f"{self.nom} : phase d'écriture {self.phase_ecriture!r} inconnue")
-        if self.unite not in UNITES:
-            raise ValueError(f"{self.nom} : unité {self.unite!r} hors du vocabulaire")
-        if self.type not in TYPES:
-            raise ValueError(f"{self.nom} : type {self.type!r} non admis")
-        if type(self.longueur) is not int or self.longueur < 1 or (
-                self.type is not tuple and self.longueur != 1):
-            raise ValueError(f"{self.nom} : longueur {self.longueur!r} invalide")
-        if type(self.invariance) is not Invariance:
-            raise ValueError(f"{self.nom} : invariance {self.invariance!r} invalide")
-
-    def description_du_type(self) -> str:
-        """Type déclaré, en clair (diagnostics)."""
-        if self.type is tuple:
-            return f"tuple de {self.longueur} float"
-        return self.type.__name__
-
-    def admet(self, valeur: object) -> bool:
-        """Vrai si la valeur a exactement le type déclaré (ni booléen, ni scalaire NumPy)."""
-        if self.type is tuple:
-            return type(valeur) is tuple and len(valeur) == self.longueur and all(
-                type(x) is float for x in valeur)
-        return type(valeur) is self.type
 
 
 # Variables du moteur : l'empreinte calendaire (ADR 0008, II.4 ; ADR 0012, C1).
@@ -156,9 +88,21 @@ VARIABLES_NOYAU = tuple(
     for s in SECTEURS
 )
 
+# Modules de déclarations des blocs, dans l'ordre des blocs (annotation du
+# 13/11/2026, point 1.5) : chacun porte `VARIABLES` et `DOMAINES`.
+_MODULES_DES_BLOCS = (production, travail, prix, banque_centrale)
+VARIABLES_DES_BLOCS = tuple(v for module in _MODULES_DES_BLOCS for v in module.VARIABLES)
+
 # Le schéma : toutes les déclarations, dans l'ordre des champs de `EtatPays`.
-VARIABLES = VARIABLES_MOTEUR + VARIABLES_NOYAU
+VARIABLES = VARIABLES_MOTEUR + VARIABLES_NOYAU + VARIABLES_DES_BLOCS
 VARIABLE = {v.nom: v for v in VARIABLES}
+
+# Domaines au chargement des variables des blocs (annotation du 13/11/2026,
+# points 1.6 et 1.7) : nom → (condition en clair, prédicat de la condition).
+DOMAINES_DES_BLOCS = {nom: domaine for module in _MODULES_DES_BLOCS
+                      for nom, domaine in module.DOMAINES.items()}
+if not set(DOMAINES_DES_BLOCS) <= {v.nom for v in VARIABLES_DES_BLOCS}:
+    raise ValueError("schéma d'état : domaine d'une variable non déclarée")
 
 # Champs d'identité du pays, avant les variables d'état (D1).
 CHAMPS_D_IDENTITE = (("identifiant", str), ("graine", int))
@@ -319,11 +263,17 @@ def defaut_du_registre(valeur: tuple[float, ...]) -> str | None:
 def defaut_de_domaine(nom: str, valeur: object) -> str | None:
     """Motif de refus d'un champ de bon type hors de son domaine, sinon `None`.
 
-    Seule fonction de domaine de `EtatPays`, appelée par la construction et par
-    la reprise : champs d'identité (`defaut_d_identite`), `t` (`defaut_de_t`) et
-    `registre_prix` (`defaut_du_registre`) ; les autres champs n'ont pas de
-    domaine au-delà de leur type ici (les domaines des positions, Res ≥ 0 et
-    D_H, D_F, M^G ≥ −ε × S, sont contrôlés par le noyau à l'ouverture du pas).
+    Seule fonction de domaine de `EtatPays`, appelée par la construction (état
+    initial, état de clôture de chaque pas), par la reprise et, pour une
+    variable d'état d'un bloc, par `Vue.ecrire_etat` : champs d'identité
+    (`defaut_d_identite`), `t` (`defaut_de_t`), `registre_prix`
+    (`defaut_du_registre`), variables des blocs (`DOMAINES_DES_BLOCS`, refus
+    sous la forme « <valeur> hors du domaine <condition> », qui refuse aussi
+    `NaN`, sans écrêtage ; annotation du 13/11/2026, points 1.6 et 1.7) et
+    **finitude** de toute variable `float` (positions, V^flux, variables des
+    blocs) : `inf`, `-inf` et `NaN` sont refusés (décision du mainteneur du
+    13/11/2026, point Q2 de l'audit de #112). Les domaines de signe des
+    positions sont contrôlés par le noyau à l'ouverture du pas (`ouvrir_pas`).
     """
     if nom in _NOMS_D_IDENTITE:
         return defaut_d_identite(nom, valeur)
@@ -331,6 +281,14 @@ def defaut_de_domaine(nom: str, valeur: object) -> str | None:
         return defaut_de_t(valeur)
     if nom == "registre_prix":
         return defaut_du_registre(valeur)
+    if nom in DOMAINES_DES_BLOCS:
+        condition, predicat = DOMAINES_DES_BLOCS[nom]
+        if not predicat(valeur):
+            return f"{valeur!r} hors du domaine {condition}"
+    # Finitude (Q2 de l'audit de #112) : un `float` infini passerait un domaine de signe
+    # (v^e > 0, IN^vol ≥ 0…) et un champ sans domaine (positions, V^flux) accepterait `NaN`.
+    if type(valeur) is float and not math.isfinite(valeur):
+        return f"{valeur!r} non fini : float fini attendu"
     return None
 
 
@@ -368,7 +326,8 @@ EtatPays.__doc__ = """État d'un pays à l'ouverture d'un pas (ADR 0012, D1), ge
 Champs engendrés depuis `CHAMPS_D_IDENTITE` et `VARIABLES`, tous obligatoires,
 sans valeur par défaut ; un champ de type faux est refusé à la construction
 (`TypeError`), un champ hors de son domaine aussi (`ValueError`, par
-`defaut_de_domaine` : identifiant, graine, t, niveaux du registre).
+`defaut_de_domaine` : identifiant, graine, t, niveaux du registre, variables
+des blocs).
 L'état d'un monde est une séquence d'`EtatPays` triée par identifiant, par
 point de code Unicode.
 """

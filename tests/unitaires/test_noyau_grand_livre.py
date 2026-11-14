@@ -1147,6 +1147,9 @@ def test_domaines_declares_par_regle():
     """Le domaine est une propriété déclarée de la règle : strict pour Res, relatif pour la caisse."""
     assert idt.RESERVES_CLOTURE.domaine is idt.Domaine.POSITIF_OU_NUL
     assert idt.CAISSE.domaine is idt.Domaine.POSITIF_OU_NUL_A_EPSILON_S
+    assert idt.STOCKS_OUVERTURE.domaine is idt.Domaine.POSITIF_OU_NUL
+    assert idt.controle_de_signe(0.0, idt.STOCKS_OUVERTURE, EPS, 10.0)
+    assert not idt.controle_de_signe(-math.ulp(0.0), idt.STOCKS_OUVERTURE, EPS, 10.0)
     assert idt.controle_de_signe(0.0, idt.RESERVES_CLOTURE, EPS, 10.0)
     assert not idt.controle_de_signe(-math.ulp(0.0), idt.RESERVES_CLOTURE, EPS, 10.0)
     assert idt.controle_de_signe(-0.5 * EPS * 10.0, idt.CAISSE, EPS, 10.0)
@@ -1187,6 +1190,9 @@ def echelle_a_zero(poste, secteur):
 @pytest.mark.parametrize("poste, secteur, facteur, regle", [
     ("Res", "banque", None, "eq:noyau-reserves-cloture"),
     ("Res", "banque", -0.5, "eq:noyau-reserves-cloture"),
+    # IN ≥ 0 strict, à côté de Res (P72 ; ADR 0012, annotation du 13/11/2026, point 1.8).
+    ("IN", "entreprises", None, "domaine des stocks à l'ouverture, IN ≥ 0"),
+    ("IN", "entreprises", -0.5, "domaine des stocks à l'ouverture, IN ≥ 0"),
     ("D_H", "menages", -2.0, "eq:noyau-caisse-nette"),
     ("D_F", "entreprises", -2.0, "eq:noyau-caisse-nette"),
     ("M_G", "etat", -2.0, "eq:noyau-caisse-nette"),
@@ -1194,7 +1200,7 @@ def echelle_a_zero(poste, secteur):
 def test_etat_charge_controle_avant_la_phase_1(poste, secteur, facteur, regle):
     """Critère 17 : mêmes domaines à t = 0 et à la reprise, contrôlés à l'ouverture.
 
-    Res : −1 ulp et −0,5 ε S sont des défauts (strict) ; caisse : −2 ε S_payeur.
+    Res et IN : −1 ulp et −0,5 ε S sont des défauts (stricts) ; caisse : −2 ε S_payeur.
     """
     x = -math.ulp(0.0) if facteur is None else facteur * EPS * echelle_a_zero(poste, secteur)
     with pytest.raises(DefautComptable) as erreur:
@@ -1206,8 +1212,11 @@ def test_etat_charge_controle_avant_la_phase_1(poste, secteur, facteur, regle):
 @pytest.mark.parametrize("poste, secteur", [("D_H", "menages"), ("D_F", "entreprises"),
                                             ("M_G", "etat")])
 def test_etat_charge_admis_a_la_frontiere_des_domaines(poste, secteur):
-    """Res = 0 passe ; une caisse à −0,5 ε S_payeur passe et reste négative."""
+    """Res = 0 et IN = 0 (±0,0) passent ; une caisse à −0,5 ε S_payeur passe et reste
+    négative."""
     ouvrir_pas(etat(Res=0.0), CADRE)
+    assert ouvrir_pas(etat(IN=0.0), CADRE).position("IN") == 0.0
+    assert ouvrir_pas(etat(IN=-0.0), CADRE).position("IN") == 0.0
     x = -0.5 * EPS * echelle_a_zero(poste, secteur)
     gl = ouvrir_pas(etat(**{poste: x}), CADRE)
     assert gl.position(poste) == x < 0.0

@@ -5,7 +5,8 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
 (phase 7, sous-phase 8 (b)) ; spécification, `sec:cadre-phases`.
 
 - `assembler(phases, blocs, parametres, entrees) → Ordonnanceur` vérifie
-  **une fois**, avant le premier pas, les déclarations des blocs contre
+  **une fois**, avant le premier pas, que `parametres` est l'ensemble des
+  tables (`EnsembleDesParametres`, P69), puis les déclarations des blocs contre
   `PHASES` et le catalogue du noyau (B3), et refuse par `DefautDeDeclaration` :
   écrivain sans implémentation ou bloc sans siège ; siège hors des étapes du
   bloc ; bloc à attribut d'instance (`__dict__`, ou `__slots__` non vide
@@ -32,7 +33,8 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
   les propositions d'une étape dans l'ordre du catalogue.
 - `executer_pas(etat_ouverture, entrees_du_tour, ordonnanceur, observateur)
   → etat_cloture`, fonction **sans état propre** (B5) : phase 0 (ouverture
-  du grand livre, grandeurs calculées à l'ouverture, entrées de scénario) ;
+  du grand livre, qui reçoit la table du cadre seule, `parametres.cadre` ;
+  grandeurs calculées à l'ouverture ; entrées de scénario) ;
   étapes 1 à 8 (c) (blocs groupe par groupe, clôture du noyau, relevé de la
   clôture) ; phase 9 par couches (clôture du noyau et relevé ; blocs du
   groupe ; couche moteur : avance du registre, assemblage de l'état t + 1,
@@ -75,6 +77,7 @@ from nations.moteur.contrat_bloc import (
 )
 from nations.moteur.diagnostics import DefautDeDeclaration, RefusDuMoteur
 from nations.moteur.ouverture import GRANDEURS_OUVERTURE
+from nations.moteur.parametres.ensemble import EnsembleDesParametres
 from nations.moteur.phases import MOTEUR, NOYAU, Etape, Phase
 from nations.noyau.catalogue import (
     COUPLES_MONTANT_COUVERT,
@@ -334,7 +337,7 @@ class Vue:
 
     @property
     def parametres(self) -> object:
-        """Paramètres du moteur."""
+        """Paramètres du moteur : l'ensemble des tables, lu `vue.parametres.<radical>.<nom>`."""
         return self._pas.parametres
 
     @property
@@ -366,8 +369,15 @@ class Vue:
         variable = schema.VARIABLE[nom]
         if not variable.admet(valeur):
             raise self._refus(f"valeur {valeur!r} : {variable.description_du_type()} attendu", nom)
-        # Validation d'abord (finitude, par l'espace du pas), enregistrement
-        # ensuite : un refus laisse `etat_suivant` inchangé.
+        # Domaine de la variable, par la seule fonction de domaine du schéma, dès l'écriture
+        # plutôt qu'à la construction de l'état de clôture (qui le contrôle encore) ; une
+        # valeur non finie est refusée par l'espace du pas, ci-dessous.
+        if _est_finie(valeur):
+            motif = schema.defaut_de_domaine(nom, valeur)
+            if motif is not None:
+                raise self._refus(f"valeur {motif}", nom)
+        # Validation d'abord (domaine ci-dessus, finitude par l'espace du pas),
+        # enregistrement ensuite : un refus laisse `etat_suivant` inchangé.
         self._pas.espace.ecrire(nom + SUFFIXE_SUIVANT, valeur)
         etat_suivant[nom] = valeur
 
@@ -601,7 +611,14 @@ def _controler_attributs_d_instance(bloc: object, radical: str) -> None:
 
 def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: object,
               entrees: DeclarationDesEntrees) -> Ordonnanceur:
-    """Contrôle statique des déclarations, une fois, et ordonnanceur immuable (B3)."""
+    """Contrôle statique des déclarations, une fois, et ordonnanceur immuable (B3).
+
+    `parametres` est l'ensemble des tables (`EnsembleDesParametres`, P69) ; un
+    autre objet est refusé ici plutôt qu'au premier pas.
+    """
+    if type(parametres) is not EnsembleDesParametres:
+        raise _defaut(f"paramètres {type(parametres).__name__} : EnsembleDesParametres attendu "
+                      "(ADR 0012, annotation du 13/11/2026, point 3.5)")
     rang, places, phase_de = _structure(phases)
     etapes_du_bloc: dict[str, set[str]] = {}
     for identifiant, places_de_l_etape in places.items():
@@ -777,7 +794,8 @@ def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour
     t = etat_ouverture.t
     # Phase 0 : ouverture du grand livre (lecture figée, échelles, domaines de
     # l'état chargé), grandeurs calculées à l'ouverture, entrées de scénario.
-    livre = ouvrir_pas(etat_ouverture, o.parametres)
+    # Le noyau reçoit la table du cadre seule (A3.1 ; P69).
+    livre = ouvrir_pas(etat_ouverture, o.parametres.cadre)
     espace = VariablesDuPas(o.declares, t)
     pas = _Pas(etat_ouverture, o.parametres, espace, livre)
     grandeurs: dict[str, object] = {}

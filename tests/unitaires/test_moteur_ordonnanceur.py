@@ -42,7 +42,8 @@ from nations.moteur.ordonnanceur import (
     executer_pas,
 )
 from nations.moteur.parametres import TauxDeCroissance
-from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
+from nations.moteur.parametres.cadre import PAS_PAR_AN
+from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import (
     ETAPES,
     LIBELLES,
@@ -64,6 +65,12 @@ GRAINE = 20261007
 POSITIONS = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0,
              "B_CB": 100.0, "Res": 50.0, "L_CB": 20.0, "M_G": 150.0, "K": 900.0, "IN": 100.0}
 
+# Variables d'état des blocs (schéma v2), valeurs d'essai dans leurs domaines ; les blocs
+# d'essai de ce module les reconduisent d'un pas à l'autre (aucun ne les lit).
+VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
+                       "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
+                       "pi_e": 0.02}
+
 SANS_ENTREES = DeclarationDesEntrees((), ())
 ENTREES_VIDES = EntreesDuTour((), ())
 
@@ -80,7 +87,8 @@ def registre_stationnaire(pi_barre):
 def etat_initial(pi_barre=0.02, positions=POSITIONS):
     v = {cat.VALEUR_NETTE_FLUX[s]: idt.valeur_nette_stock(positions, s) for s in cat.SECTEURS}
     return EtatPays(identifiant="A", graine=GRAINE, t=0,
-                    registre_prix=registre_stationnaire(pi_barre), **positions, **v)
+                    registre_prix=registre_stationnaire(pi_barre), **positions, **v,
+                    **VARIABLES_DES_BLOCS)
 
 
 # --------------------------------------------------------------------------
@@ -161,13 +169,23 @@ ECRITURES_ET_LECTURES = {
 }
 
 
+def variables_d_etat_de(radical, etape):
+    """Variables d'état du schéma v2 dont le bloc est propriétaire dans l'étape."""
+    return tuple(v.nom for v in schema.VARIABLES_DES_BLOCS
+                 if v.proprietaire == radical and v.phase_ecriture == etape)
+
+
 def action_d_essai(radical, etape, plans, pi_barre):
-    """Ce que fait le bloc d'essai dans l'étape : ses lignes, ses écritures, ses lectures."""
+    """Ce que fait le bloc d'essai dans l'étape : ses lignes, ses écritures, ses lectures, et
+    la reconduction de ses variables d'état (valeur d'ouverture)."""
     lignes = lignes_de(radical, etape) if etape in cat.LIGNES_DE_LA_PHASE else ()
     ecritures, lectures = ECRITURES_ET_LECTURES.get((radical, etape), ((), ()))
     facteur = facteur_par_pas(TauxDeCroissance(pi_barre))
+    reconduites = variables_d_etat_de(radical, etape)
 
     def agir(vue):
+        for nom in reconduites:
+            vue.ecrire_etat(nom, getattr(vue.ouverture, nom))
         plan = plans[vue.ouverture.t]
         for lecture in lectures:
             if lecture.source not in (OUVERTURE, REGISTRE, GRAND_LIVRE):
@@ -205,7 +223,8 @@ def declarations_d_essai(remplacer=None):
             sieges[radical][etape] = siege(
                 etape, ecrit=ecritures, lit=lectures,
                 propose=lignes_de(radical, etape) if etape in cat.LIGNES_DE_LA_PHASE else (),
-                couvre=("16",) if (radical, etape) == ("finances_publiques", "8b") else ())
+                couvre=("16",) if (radical, etape) == ("finances_publiques", "8b") else (),
+                etat=variables_d_etat_de(radical, etape))
     if remplacer is not None:
         remplacer(sieges)
     return sieges
@@ -227,7 +246,7 @@ def blocs_d_essai(plans, pi_barre=0.02, remplacer=None, actions=None):
 
 def ordonnanceur_d_essai(plans, pi_barre=0.02, remplacer=None, actions=None,
                          entrees=SANS_ENTREES):
-    return assembler(PHASES, blocs_d_essai(plans, pi_barre, remplacer, actions), CADRE, entrees)
+    return assembler(PHASES, blocs_d_essai(plans, pi_barre, remplacer, actions), PARAMETRES_DE_REFERENCE, entrees)
 
 
 class Enregistreur:
@@ -530,8 +549,10 @@ REFUS_D_ASSEMBLAGE = {
         _retirer("production", "5", "lit", (Lecture(GRAND_LIVRE, "18"),)),
         "phase 3 hors de la colonne « Lisent » de la phase 5"),
     "indice des prix écrit par un autre bloc": (
-        lambda s: (s.__setitem__("prix", {"5": siege("5")}),
-                   s["production"].__setitem__("5", siege("5", ecrit=("P",), propose=("4",)))),
+        lambda s: (s.__setitem__("prix", {"5": siege("5", etat=("mu_tilde",))}),
+                   s["production"].__setitem__("5", siege(
+                       "5", ecrit=("P",), propose=("4",),
+                       etat=variables_d_etat_de("production", "5")))),
         "indice des prix écrit par production"),
 }
 
@@ -545,7 +566,7 @@ def test_assemblage_refuse(cas):
         blocs.append(fabriquer(radical, sieges.values(),
                                {e: (lambda vue: None) for e in sieges}))
     with pytest.raises(DefautDeDeclaration, match=motif):
-        assembler(PHASES, blocs, CADRE, SANS_ENTREES)
+        assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, SANS_ENTREES)
 
 
 @pytest.mark.parametrize("lecture, etape, lecteur", [
@@ -564,7 +585,7 @@ def test_lectures_admises(lecture, etape, lecteur):
     def remplacer(sieges):
         s = sieges[lecteur][etape]
         sieges[lecteur][etape] = dataclasses.replace(s, lit=s.lit + (lecture,))
-    assembler(PHASES, blocs_d_essai(plans_nuls(1), remplacer=remplacer), CADRE, SANS_ENTREES)
+    assembler(PHASES, blocs_d_essai(plans_nuls(1), remplacer=remplacer), PARAMETRES_DE_REFERENCE, SANS_ENTREES)
 
 
 # Lectures de montants exécutés prévues par la spécification : (lecteur, étape, lignes).
@@ -589,7 +610,7 @@ def test_lectures_du_grand_livre_prevues_admises(lecteur, etape, lignes):
     def remplacer(sieges):
         s = sieges[lecteur][etape]
         sieges[lecteur][etape] = dataclasses.replace(s, lit=s.lit + lectures)
-    assembler(PHASES, blocs_d_essai(plans_nuls(1), remplacer=remplacer), CADRE, SANS_ENTREES)
+    assembler(PHASES, blocs_d_essai(plans_nuls(1), remplacer=remplacer), PARAMETRES_DE_REFERENCE, SANS_ENTREES)
 
 
 @pytest.mark.parametrize("lecteur, etape, ligne, retiree", [
@@ -608,14 +629,14 @@ def test_colonne_lisent_borne_les_montants_executes(lecteur, etape, ligne, retir
         sieges[lecteur][etape] = dataclasses.replace(sieges[lecteur][etape],
                                                      lit=(Lecture(GRAND_LIVRE, ligne),))
     blocs = blocs_d_essai(plans_nuls(1), remplacer=remplacer)
-    assembler(PHASES, blocs, CADRE, SANS_ENTREES)
+    assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     numero = int(etape)
     phases = list(PHASES)
     phases[numero] = dataclasses.replace(
         phases[numero], lisent=tuple(p for p in phases[numero].lisent if p != retiree))
     with pytest.raises(DefautDeDeclaration, match=f"phase {retiree} hors de la colonne "
                        f"« Lisent » de la phase {numero}") as refus:
-        assembler(tuple(phases), blocs, CADRE, SANS_ENTREES)
+        assembler(tuple(phases), blocs, PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (etape, lecteur, ligne)
 
 
@@ -633,12 +654,12 @@ def test_colonne_lisent_normative():
     déclaration est refusée."""
     blocs = blocs_d_essai(plans_nuls(1), remplacer=_plan_de_la_phase_2)
     assert 2 in PHASES[6].lisent
-    assembler(PHASES, blocs, CADRE, SANS_ENTREES)
+    assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     phases = list(PHASES)
     phases[6] = dataclasses.replace(phases[6], lisent=(1, 3, 4, 5))
     with pytest.raises(DefautDeDeclaration, match="phase 2 hors de la colonne « Lisent » de la "
                        "phase 6") as refus:
-        assembler(tuple(phases), blocs, CADRE, SANS_ENTREES)
+        assembler(tuple(phases), blocs, PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
         "6", "finances_publiques", "T_H_plan")
 
@@ -657,12 +678,12 @@ def test_phase_7_lit_la_phase_2():
     « Lisent », la même déclaration est refusée."""
     blocs = blocs_d_essai(plans_nuls(1), remplacer=_couverture_de_la_phase_2)
     assert 2 in PHASES[7].lisent
-    assembler(PHASES, blocs, CADRE, SANS_ENTREES)
+    assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     phases = list(PHASES)
     phases[7] = dataclasses.replace(phases[7], lisent=(1, 4, 5, 6))
     with pytest.raises(DefautDeDeclaration, match="phase 2 hors de la colonne « Lisent » de la "
                        "phase 7") as refus:
-        assembler(tuple(phases), blocs, CADRE, SANS_ENTREES)
+        assembler(tuple(phases), blocs, PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
         "7", "finances_publiques", "T_cou")
 
@@ -670,13 +691,13 @@ def test_phase_7_lit_la_phase_2():
 def test_bloc_sans_declaration_ni_methode():
     blocs = blocs_d_essai(plans_nuls(1))
     with pytest.raises(DefautDeDeclaration, match="sans déclaration"):
-        assembler(PHASES, blocs + [object()], CADRE, SANS_ENTREES)
-    sans_methode = fabriquer("prix", [siege("5", ecrit=("P",))], {})
+        assembler(PHASES, blocs + [object()], PARAMETRES_DE_REFERENCE, SANS_ENTREES)
+    sans_methode = fabriquer("prix", [siege("5", ecrit=("P",), etat=("mu_tilde",))], {})
     autres = [b for b in blocs if b.declaration.radical != "prix"]
     with pytest.raises(DefautDeDeclaration, match="phase_5 absente"):
-        assembler(PHASES, autres + [sans_methode], CADRE, SANS_ENTREES)
+        assembler(PHASES, autres + [sans_methode], PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     with pytest.raises(DefautDeDeclaration, match="même radical"):
-        assembler(PHASES, blocs + blocs[:1], CADRE, SANS_ENTREES)
+        assembler(PHASES, blocs + blocs[:1], PARAMETRES_DE_REFERENCE, SANS_ENTREES)
 
 
 @pytest.mark.parametrize("mutation, motif", [
@@ -701,7 +722,7 @@ def test_assemblage_refuse_une_declaration_des_phases_fautive(mutation, motif):
         phases[3] = dataclasses.replace(phases[3], etapes=(dataclasses.replace(
             phases[3].etapes[0], lignes=("18", "21")),))
     with pytest.raises(DefautDeDeclaration, match=motif):
-        assembler(tuple(phases), blocs_d_essai(plans_nuls(1)), CADRE, SANS_ENTREES)
+        assembler(tuple(phases), blocs_d_essai(plans_nuls(1)), PARAMETRES_DE_REFERENCE, SANS_ENTREES)
 
 
 class _BaseAEmplacement:
@@ -726,7 +747,7 @@ def test_bloc_a_attribut_d_instance_refuse(cas, bases, slots, motif):
     fautif = fabriquer("prix", sieges.values(), {e: (lambda vue: None) for e in sieges},
                        bases=bases, slots=slots)
     with pytest.raises(DefautDeDeclaration, match=motif) as refus:
-        assembler(PHASES, blocs + [fautif], CADRE, SANS_ENTREES)
+        assembler(PHASES, blocs + [fautif], PARAMETRES_DE_REFERENCE, SANS_ENTREES)
     assert refus.value.bloc == "prix"
 
 
@@ -823,12 +844,26 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
         t = f.t
         # P_t : premier niveau du registre avancé de l'état t + 1.
         p_t = f.etat.registre_prix[0]
+        # Ordre d'inscription : entrées, puis radicaux dans l'ordre canonique, sièges dans
+        # leur ordre, écritures puis valeurs du pas suivant des variables d'état (reconduites
+        # par les blocs d'essai).
+        e = VARIABLES_DES_BLOCS
         assert f.variables_du_pas == (
-            ("sigma_L", 0.5 + t), ("levier", 0.03), ("i_CB", 1.0 + t), (INDICE_DES_PRIX, p_t),
-            ("y", 1.0 + t), ("W", 1.0 + t), ("N", 1.0 + t))
-    assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1), ("date_de_decision", True))
+            ("sigma_L", 0.5 + t), ("levier", 0.03), ("i_CB", 1.0 + t),
+            ("pi_e_suivant", e["pi_e"]), (INDICE_DES_PRIX, p_t),
+            ("mu_tilde_suivant", e["mu_tilde"]), ("y", 1.0 + t),
+            ("v_e_suivant", e["v_e"]), ("IN_vol_suivant", e["IN_vol"]),
+            ("pr_suivant", e["pr"]), ("K_vol_suivant", e["K_vol"]),
+            ("W", 1.0 + t), ("W_suivant", e["W"]), ("N", 1.0 + t),
+            ("U_suivant", e["U"]), ("N_suivant", e["N"]), ("N_pa_suivant", e["N_pa"]))
+    # Croissance tendancielle et son facteur (annotation du 13/11/2026, point 4), aux tables
+    # de référence : g = (1 + g_pr)(1 + g_N) − 1, facteur par la conversion géométrique.
+    g = (1.0 + 0.02) * (1.0 + 0.0) - 1.0
+    tendance = (("g", g), ("facteur_g", facteur_par_pas(TauxDeCroissance(g))))
+    assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1),
+                                           ("date_de_decision", True)) + tendance
     assert fins[13].grandeurs_ouverture == (("annee", 2), ("mois", 2),
-                                            ("date_de_decision", True))
+                                            ("date_de_decision", True)) + tendance
     for f in fins:
         for nom, valeur in f.variables_du_pas + f.grandeurs_ouverture:
             assert type(nom) is str and type(valeur) in (float, int, bool, tuple)
@@ -847,7 +882,7 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
     assert len({tuple(b.declaration.radical for b in liste) for liste in ordres}) == 3
     fins = []
     for liste in ordres:
-        o = assembler(PHASES, liste, CADRE, ENTREES_D_ESSAI)
+        o = assembler(PHASES, liste, PARAMETRES_DE_REFERENCE, ENTREES_D_ESSAI)
         releve = Enregistreur()
         etat = etat_initial()
         for t in range(3):
@@ -855,7 +890,7 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
         fins.append([e for e in releve.evenements if type(e) is FinDePas])
     assert fins[0] == fins[1] == fins[2]
     assert empreinte(fins[0]) == empreinte(fins[1]) == empreinte(fins[2])
-    assert len(fins[0][0].variables_du_pas) == 7
+    assert len(fins[0][0].variables_du_pas) == 17
 
 
 def test_ligne_16_negative_et_montant_couvert_exerces():
@@ -1125,7 +1160,7 @@ def schema_avec_variables_de_bloc(monkeypatch):
 
 def _sieges_d_etat(sieges):
     s = sieges["banque_centrale"]["1"]
-    sieges["banque_centrale"]["1"] = dataclasses.replace(s, etat=("pi_cible",))
+    sieges["banque_centrale"]["1"] = dataclasses.replace(s, etat=s.etat + ("pi_cible",))
     s = sieges["menages"]["9"]
     sieges["menages"]["9"] = dataclasses.replace(s, etat=("revenu",))
     s = sieges["finances_publiques"]["7"]
@@ -1158,15 +1193,15 @@ def test_variable_d_etat_ecrite_une_fois_et_assemblee(schema_avec_variables_de_b
     lus = []
     plans = tirer_plans(1)
     o = ordonnanceur_d_essai(plans, remplacer=_sieges_d_etat, actions=_actions_d_etat(lus))
-    assert o.variables_des_blocs == ("pi_cible", "revenu")
+    assert o.variables_des_blocs == tuple(VARIABLES_DES_BLOCS) + ("pi_cible", "revenu")
     releve = Enregistreur()
     suivant = executer_pas(schema_avec_variables_de_bloc, ENTREES_VIDES, o, releve)
     assert lus == [0.02]
     assert suivant.pi_cible == 0.02
     assert suivant.revenu == plans[0]["5"]["WB"]
     fin = releve.evenements[-1]
-    assert [n for n, _ in fin.variables_du_pas] == [
-        "i_CB", "pi_cible_suivant", "revenu_suivant", "P", "y", "W", "N"]
+    assert [n for n, _ in fin.variables_du_pas if n[:-len("_suivant")] not in VARIABLES_DES_BLOCS
+            ] == ["i_CB", "pi_cible_suivant", "revenu_suivant", "P", "y", "W", "N"]
     assert dict(fin.variables_du_pas)["revenu_suivant"] == plans[0]["5"]["WB"]
 
 
@@ -1202,6 +1237,35 @@ def test_variable_d_etat_non_finie_refusee_sans_rien_enregistrer(schema_avec_var
     suivant = executer_pas(schema_avec_variables_de_bloc, ENTREES_VIDES, o, ObservateurNul())
     assert motifs == ["pi_cible_suivant"]
     assert suivant.pi_cible == 0.03
+
+
+@pytest.mark.parametrize("radical, etape, nom, valeur, condition", [
+    ("banque_centrale", "1", "pi_e", -1.5, "1 + π^e > 0"),
+    ("travail", "4", "U", 1.2, "0 ≤ U ≤ 1"),
+    ("production", "5", "IN_vol", -1.0, "IN^vol ≥ 0"),
+])
+def test_variable_d_etat_hors_domaine_refusee_a_l_ecriture(radical, etape, nom, valeur,
+                                                           condition):
+    """`ecrire_etat` refuse une valeur finie hors du domaine de la variable (fonction de domaine
+    du schéma, `defaut_de_domaine`) par un `RefusDuMoteur` qui porte t, étape, bloc et nom,
+    sans rien enregistrer : la reconduction qui suit passe, et l'état t + 1 est celui d'un pas
+    sans écriture fautive."""
+    refus = []
+    base = action_d_essai(radical, etape, plans_nuls(1), 0.02)
+
+    def fautif(vue):
+        with pytest.raises(RefusDuMoteur, match="hors du domaine") as r:
+            vue.ecrire_etat(nom, valeur)
+        refus.append(r.value)
+        base(vue)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={(radical, etape): fautif})
+    suivant = executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    temoin = executer_pas(etat_initial(), ENTREES_VIDES, ordonnanceur_d_essai(plans_nuls(1)),
+                          ObservateurNul())
+    r, = refus
+    assert (r.t, r.etape, r.bloc, r.nom) == (0, etape, radical, nom)
+    assert condition in str(r) and repr(valeur) in str(r)
+    assert suivant == temoin
 
 
 @pytest.mark.parametrize("doubler, oublier, motif", [

@@ -9,7 +9,14 @@ peut l'importer sans charger le schéma d'état ni le noyau.
 """
 
 # Le vocabulaire de F2, complété de « pas » (unité de t), « u.v. », « u.v. par
-# pas » et « u.m. par u.v. » (unité de P_t).
+# pas » et « u.m. par u.v. » (unité de P_t) ; puis, au J3 (#104 ; P65 ; ADR 0012,
+# annotation du 13/11/2026), de deux unités par personne et par pas
+# (dénominateur : personnes × un pas ; fenêtre : le pas) : « u.m. par personne
+# et par pas » (salaire W, nominale) et « u.v. par personne et par pas »
+# (productivité pr, volume). La population de référence (les personnes
+# employées, pour W et pr) est portée par la définition de la grandeur, non par
+# l'unité ; de même, l'invariance sous la redénomination est portée par la
+# déclaration de la variable.
 UNITES = (
     "pas par an",
     "pas par tour",
@@ -25,4 +32,6 @@ UNITES = (
     "u.v.",
     "u.v. par pas",
     "u.m. par u.v.",
+    "u.m. par personne et par pas",
+    "u.v. par personne et par pas",
 )

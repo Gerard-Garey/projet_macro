@@ -82,6 +82,11 @@ TOLERANCE_CUMULEE = Regle("eq:noyau-tolerance-cumulee", None)
 # sommées par le noyau, sans forme exacte : −ε × S_payeur.
 RESERVES_CLOTURE = Regle("eq:noyau-reserves-cloture", Domaine.POSITIF_OU_NUL)
 CAISSE = Regle("eq:noyau-caisse-nette", Domaine.POSITIF_OU_NUL_A_EPSILON_S)
+# Stocks d'ouverture, IN ≥ 0, strict (décision du mainteneur du 13/11/2026, P72 ;
+# ADR 0012, annotation du 13/11/2026, point 1.8) : seule la ligne 4 touche IN, et
+# sa forme B, ΔIN = cm IN^vol_{t+1} − IN_t, tient IN_{t+1} ≥ 0 exactement par
+# monotonie de l'arrondi ; aucune tolérance.
+STOCKS_OUVERTURE = Regle("domaine des stocks à l'ouverture, IN ≥ 0", Domaine.POSITIF_OU_NUL)
 # Domaines d'interface : échelle à l'ouverture (ADR 0012, point 11 ; finie,
 # en plus, par l'annotation du 07/10/2026, point 5), tolérances reçues, sens
 # des montants proposés (A2), montant couvert et perte de la ligne 16 (A3.2),
