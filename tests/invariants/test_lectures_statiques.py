@@ -15,31 +15,40 @@ dont le radical est le nom du module.
 2. **Vérification** : pour chaque siège, l'ensemble relevé égale l'ensemble
    déclaré, source par source ; une méthode sans siège ou un siège sans méthode
    est un écart.
-3. **Refus**, partout dans le module : `getattr`, `setattr`, `delattr`, `vars`,
-   `globals`, `locals`, `eval`, `exec`, `__import__`, comme nom, comme
-   attribut ou comme nom importé ; `__dict__` ; un nom qui n'est pas un
-   littéral ; la vue, `vue.ouverture` ou `vue.grand_livre` hors d'un accès
-   relevé ; `vue.grand_livre.ouverture`, `.echelle`,
-   `.valeur_nette_stock`, `.valeur_nette_flux` ; l'importation d'un module de
-   `nations.moteur` autre que `contrat_bloc` et `conversions` (`from base
-   import X` jugé sur `base.X`) ; depuis `conversions`, tout nom hors de la
-   **liste fermée** `NOMS_DE_CONVERSIONS` (les deux conversions et les deux
-   types de taux qu'elles acceptent), ce qui refuse aussi le module importé
-   entier (`import nations.moteur.conversions`, `from nations.moteur import
-   conversions`) et toute réexportation (`PAS_PAR_AN`, constat M2 de l'audit
-   du rang 4, #112) ; l'importation de `tests`, d'`outils`, d'`importlib` ou de
-   `builtins` (une importation relative est résolue contre le paquet
-   `nations.blocs` ; au-delà de `nations`, elle est refusée) ; `global`,
-   `nonlocal` et toute affectation dont la cible est un attribut.
-4. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
+3. **Liste blanche des importations** (P81 (b), #121), partout dans le module :
+   un module de bloc n'importe que ce que `IMPORTATIONS_ADMISES` déclare, nom par
+   nom (`from base import X`, `base` résolue contre `nations.blocs` pour une
+   importation relative), et n'importe entier que `MODULES_ENTIERS_ADMIS`
+   (`import math`). Tout le reste est refusé : un module de `nations` importé
+   entier (`import nations.moteur.contrat_bloc`, `from nations.moteur import
+   conversions`, `from . import travail`), l'étoile, `sys`, `builtins`,
+   `operator`, `importlib`, `tests`, `outils`… Depuis `conversions`, la **liste
+   fermée** `NOMS_DE_CONVERSIONS` (constat M2 de l'audit du rang 4, #112). Les
+   noms natifs (`builtins`, importé implicitement) suivent la même règle : seuls
+   ceux de `NATIFS_ADMIS` sont admis, comme nom quel qu'en soit l'usage.
+4. **Refus d'accès par chaîne ou par introspection**, partout dans le module :
+   `getattr`, `setattr`, `delattr`, `vars`, `globals`, `locals`, `eval`, `exec`,
+   `__import__`, comme nom, comme attribut ou comme nom importé ; tout nom
+   spécial (`__x__`, dont `__builtins__`), sauf l'affectation de `__slots__` ;
+   tout attribut privé ou spécial (`_x`, dont `__getattribute__`, `__globals__`,
+   `__dict__`) et tout attribut d'introspection des cadres, codes, générateurs et
+   traces (`PREFIXES_D_INTROSPECTION`), y compris comme attribut d'un motif de
+   classe (`case C(attr=…)`) ; `format` et `format_map` (une chaîne de format lit
+   attributs et indices par leur nom) ; un nom de lecture qui n'est pas un
+   littéral ; la vue, `vue.ouverture` ou `vue.grand_livre` hors d'un accès relevé ;
+   `vue.grand_livre.ouverture`, `.echelle`, `.valeur_nette_stock`,
+   `.valeur_nette_flux` ; `global`, `nonlocal` et toute affectation dont la cible
+   est un attribut.
+5. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
    déclare pas).
-5. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
-   déclaration en trop ou en moins.
+6. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
+   déclaration en trop ou en moins ; un essai par contournement connu (#121).
 
 Garde-fou (point 6 (a)) : aucun module de `src/` n'importe `tests` ni `outils`.
 """
 
 import ast
+import builtins
 import importlib
 import types
 from pathlib import Path
@@ -66,15 +75,74 @@ METHODES_DU_GRAND_LIVRE = ("position", "montant_execute", "montant_execute_ligne
 REFUSES_DU_GRAND_LIVRE = ("ouverture", "echelle", "valeur_nette_stock", "valeur_nette_flux")
 NOMS_REFUSES = frozenset({"getattr", "setattr", "delattr", "vars", "globals", "locals", "eval",
                           "exec", "__import__"})
-# `importlib` et `builtins` rendraient `getattr` ou un module du moteur sous un autre nom.
-RACINES_REFUSEES = frozenset({"tests", "outils", "importlib", "builtins"})
-MOTEUR_ADMIS = frozenset({"nations.moteur.contrat_bloc", "nations.moteur.conversions"})
+# Liste blanche des importations d'un module de bloc (P81 (b), #121) : liste fermée, toute
+# importation absente est refusée. Chaque entrée est justifiée par son usage dans un bloc.
+CONVERSIONS = "nations.moteur.conversions"
 # Noms admis depuis `nations.moteur.conversions` (liste fermée, constat M2 de l'audit du rang 4,
 # #112) : les deux conversions et les deux types qu'elles acceptent. Toute autre importation du
 # module (lui-même, ou un nom qu'il réexporte, comme `PAS_PAR_AN`) est refusée : n_a ne se lit
 # que par la vue (`vue.parametres.cadre`), et un taux ne se convertit que par ces deux fonctions.
-CONVERSIONS = "nations.moteur.conversions"
 NOMS_DE_CONVERSIONS = frozenset({"par_pas", "facteur_par_pas", "TauxDeFlux", "TauxDeCroissance"})
+IMPORTATIONS_ADMISES = {
+    # Annotations différées, sans effet à l'exécution (les trois blocs).
+    "__future__": frozenset({"annotations"}),
+    # La déclaration d'un bloc : ses trois classes et les trois sources d'une lecture autres
+    # qu'une étape (ADR 0012, B2, B3). Ni les fonctions de l'ordonnanceur
+    # (`methode_de_l_etape`), ni les réexportations (`dataclass`).
+    "nations.moteur.contrat_bloc": frozenset({"DeclarationDeBloc", "Siege", "Lecture",
+                                              "OUVERTURE", "REGISTRE", "GRAND_LIVRE"}),
+    # Les conversions d'un taux annuel au pas (ADR 0013, F2).
+    CONVERSIONS: NOMS_DE_CONVERSIONS,
+}
+# Modules importés entiers : `math` (exp, log des équations des prix et du travail), qui n'expose
+# que des fonctions numériques pures et aucune voie vers un autre module.
+MODULES_ENTIERS_ADMIS = frozenset({"math"})
+# Noms natifs admis (le module `builtins`, importé implicitement, est soumis à la même liste
+# blanche) : les conversions et constructeurs de types des équations et des annotations (`float`,
+# `int`, `str`, `tuple`), les deux bornes du travail et de la production (`min`, `max`).
+NATIFS_ADMIS = frozenset({"float", "int", "str", "tuple", "min", "max"})
+# Noms natifs de Python 3.12 (`requires-python`, ADR 0003), liste figée et déclarée : les noms
+# non spéciaux de `builtins` sous `python -S`, plus les six que `site` y ajoute (`copyright`,
+# `credits`, `exit`, `help`, `license`, `quit`). Figée plutôt que lue par `dir(builtins)`, qui
+# dépend de `site` et de l'interpréteur : le verdict du contrôle n'en dépend plus. Figée plutôt
+# que remplacée par la règle « tout nom chargé non lié dans le module est refusé » : une liaison
+# morte (`if False: type = 0`) ou postérieure à la lecture rend la lecture au natif, et seule la
+# connaissance des noms natifs ferme ces formes. `test_liste_des_natifs_complete` vérifie
+# qu'aucun natif de l'interpréteur n'y manque.
+NATIFS = frozenset({
+    "ArithmeticError", "AssertionError", "AttributeError", "BaseException",
+    "BaseExceptionGroup", "BlockingIOError", "BrokenPipeError", "BufferError", "BytesWarning",
+    "ChildProcessError", "ConnectionAbortedError", "ConnectionError",
+    "ConnectionRefusedError", "ConnectionResetError", "DeprecationWarning", "EOFError",
+    "Ellipsis", "EncodingWarning", "EnvironmentError", "Exception", "ExceptionGroup", "False",
+    "FileExistsError", "FileNotFoundError", "FloatingPointError", "FutureWarning",
+    "GeneratorExit", "IOError", "ImportError", "ImportWarning", "IndentationError",
+    "IndexError", "InterruptedError", "IsADirectoryError", "KeyError", "KeyboardInterrupt",
+    "LookupError", "MemoryError", "ModuleNotFoundError", "NameError", "None",
+    "NotADirectoryError", "NotImplemented", "NotImplementedError", "OSError", "OverflowError",
+    "PendingDeprecationWarning", "PermissionError", "ProcessLookupError", "RecursionError",
+    "ReferenceError", "ResourceWarning", "RuntimeError", "RuntimeWarning",
+    "StopAsyncIteration", "StopIteration", "SyntaxError", "SyntaxWarning", "SystemError",
+    "SystemExit", "TabError", "TimeoutError", "True", "TypeError", "UnboundLocalError",
+    "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeError", "UnicodeTranslateError",
+    "UnicodeWarning", "UserWarning", "ValueError", "Warning", "ZeroDivisionError", "abs",
+    "aiter", "all", "anext", "any", "ascii", "bin", "bool", "breakpoint", "bytearray",
+    "bytes", "callable", "chr", "classmethod", "compile", "complex", "copyright", "credits",
+    "delattr", "dict", "dir", "divmod", "enumerate", "eval", "exec", "exit", "filter",
+    "float", "format", "frozenset", "getattr", "globals", "hasattr", "hash", "help", "hex",
+    "id", "input", "int", "isinstance", "issubclass", "iter", "len", "license", "list",
+    "locals", "map", "max", "memoryview", "min", "next", "object", "oct", "open", "ord",
+    "pow", "print", "property", "quit", "range", "repr", "reversed", "round", "set",
+    "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super", "tuple", "type",
+    "vars", "zip"
+})
+# Attributs d'introspection des cadres (`f_back`, `f_globals`), codes (`co_`), générateurs,
+# coroutines et générateurs asynchrones (`gi_frame`, `cr_frame`, `ag_frame`) et traces
+# (`tb_frame`) : sans aucun nom spécial, `gi_frame.f_back.f_globals` rend les globales de
+# l'appelant du bloc.
+PREFIXES_D_INTROSPECTION = ("f_", "co_", "gi_", "cr_", "ag_", "tb_")
+# Méthodes de chaîne qui lisent attributs et indices par leur nom (`"{0.x[k]}".format(o)`).
+FORMATS = frozenset({"format", "format_map"})
 # Paquet contre lequel se résout une importation relative d'un module de bloc.
 PAQUET_DES_BLOCS = "nations.blocs"
 CATEGORIES = ("ouverture", "grand_livre", "registre", "pas", "ecrit", "etat", "propose",
@@ -94,37 +162,66 @@ def declares(siege) -> dict[str, set[str]]:
     return rendus
 
 
-def _module_importe(noeud: ast.AST) -> list[str]:
-    """Noms complets des modules qu'importe une instruction d'importation."""
+def _importations(noeud: ast.AST) -> list[tuple[str, str | None]]:
+    """(module, nom) de chaque importation d'une instruction : nom `None` pour un module importé
+    entier (`import base`), `X` pour `from base import X` (`*` pour l'étoile)."""
     if isinstance(noeud, ast.Import):
-        return [a.name for a in noeud.names]
+        return [(a.name, None) for a in noeud.names]
     base = noeud.module or ""
     if noeud.level:
         # Résolution contre le paquet du module (`nations.blocs`), non contre le module lui-même :
         # `from ..moteur import parametres` désigne `nations.moteur.parametres`. Au-delà de
-        # `nations`, le nom garde ses points de tête et `_import_refuse` le refuse.
+        # `nations`, le nom garde ses points de tête, hors de toute liste blanche.
         parties = PAQUET_DES_BLOCS.split(".")
         if noeud.level > len(parties):
             base = "." * noeud.level + base
         else:
             base = ".".join(parties[:len(parties) - noeud.level + 1] + ([base] if base else []))
-    # `from base import X` est jugé sur `base.X` (X module ou nom de `base`), non sur `base`
-    # seule : `from nations.moteur import contrat_bloc` est admis, `… import ordonnanceur` refusé.
-    separateur = "" if base.endswith(".") else "."  # `from ... import X` : `...X`
-    return [f"{base}{separateur}{a.name}" for a in noeud.names]
+    return [(base, a.name) for a in noeud.names]
 
 
-def _import_refuse(nom: str) -> bool:
-    racine = nom.split(".")[0]
-    if racine == "" or racine in RACINES_REFUSEES:
-        return True
-    if nom == "nations.moteur":
-        return True
-    if nom == CONVERSIONS or nom.startswith(CONVERSIONS + "."):
-        return nom.removeprefix(CONVERSIONS + ".") not in NOMS_DE_CONVERSIONS
-    if nom.startswith("nations.moteur."):
-        return not any(nom == m or nom.startswith(m + ".") for m in MOTEUR_ADMIS)
-    return False
+def _importation_admise(module: str, nom: str | None) -> bool:
+    if nom is None:
+        return module in MODULES_ENTIERS_ADMIS
+    return nom in IMPORTATIONS_ADMISES.get(module, frozenset())
+
+
+def _libelle(module: str, nom: str | None) -> str:
+    """`base.X` pour `from base import X` (`...X` pour `from ... import X`), `base` sinon."""
+    if nom is None:
+        return module
+    return f"{module}{'' if module.endswith('.') else '.'}{nom}"
+
+
+def _special(nom: str) -> bool:
+    return nom.startswith("__") and nom.endswith("__")
+
+
+def _attribut_refuse(nom: str) -> str | None:
+    """Motif du refus d'un nom d'attribut (attribut lu, écrit ou motif de classe), `None` si
+    admis."""
+    if nom in NOMS_REFUSES:
+        return f"attribut {nom} refusé"
+    if nom.startswith("_"):
+        return f"attribut privé ou spécial {nom} refusé"
+    if nom.startswith(PREFIXES_D_INTROSPECTION):
+        return f"attribut d'introspection {nom} refusé"
+    if nom in FORMATS:
+        return f"attribut {nom} refusé (accès par chaîne)"
+    return None
+
+
+def _nom_refuse(noeud: ast.Name) -> str | None:
+    """Motif du refus d'un nom, `None` si admis."""
+    if noeud.id in NOMS_REFUSES:
+        return f"{noeud.id} refusé"
+    if _special(noeud.id):
+        if noeud.id == "__slots__" and isinstance(noeud.ctx, ast.Store):
+            return None
+        return f"nom spécial {noeud.id} refusé"
+    if noeud.id in NATIFS and noeud.id not in NATIFS_ADMIS:
+        return f"nom natif {noeud.id} hors de la liste blanche"
+    return None
 
 
 def _cibles(noeud: ast.AST) -> list[ast.AST]:
@@ -147,12 +244,75 @@ def _litteral(appel: ast.Call) -> str | None:
     return None
 
 
+def _signature_exacte(fonction: ast.FunctionDef) -> bool:
+    """Signature `(self, vue)` exacte : ni paramètre positionnel seul, ni nommé seul, ni `*args`,
+    ni `**kwargs`, ni valeur par défaut. Sinon la vue relevée (`args.args[1]`) peut ne pas être
+    celle que passe l'ordonnanceur (`def phase_5(self, v, /, vue=None)`, constat M1 (b) de
+    l'audit de #121)."""
+    a = fonction.args
+    return ([p.arg for p in a.args] == ["self", "vue"] and not a.posonlyargs
+            and not a.kwonlyargs and a.vararg is None and a.kwarg is None and not a.defaults
+            and not a.kw_defaults)
+
+
+def _est_phase(nom: str | None) -> bool:
+    return nom is not None and nom.startswith("phase_")
+
+
+def _liaisons_de_phase(arbre: ast.AST, parents: dict) -> list[str]:
+    """Écarts de liaison d'un nom `phase_*` (constat M1 (a) et (c) de l'audit de #121) : un nom
+    `phase_*` ne se lie que par un `def` unique, sans décorateur, dans le corps d'une classe ;
+    toute autre liaison (affectation, `AnnAssign`, importation, motif, `except … as`, paramètre,
+    classe, `def` hors d'une classe ou répété) est refusée. Les classes ne portent ni
+    décorateur ni mot-clé (`metaclass=`)."""
+    ecarts = []
+    for noeud in ast.walk(arbre):
+        if isinstance(noeud, ast.ClassDef):
+            if noeud.decorator_list:
+                ecarts.append(f"ligne {noeud.lineno} : décorateur de la classe {noeud.name} "
+                              "refusé")
+            if noeud.keywords:
+                ecarts.append(f"ligne {noeud.lineno} : mot-clé de la classe {noeud.name} refusé")
+            vus = set()
+            for membre in noeud.body:
+                if isinstance(membre, ast.FunctionDef) and _est_phase(membre.name):
+                    if membre.name in vus:
+                        ecarts.append(f"ligne {membre.lineno} : {membre.name} défini deux fois")
+                    vus.add(membre.name)
+                    if membre.decorator_list:
+                        ecarts.append(f"ligne {membre.lineno} : décorateur de {membre.name} "
+                                      "refusé")
+        if isinstance(noeud, ast.FunctionDef):
+            if _est_phase(noeud.name) and not isinstance(parents.get(noeud), ast.ClassDef):
+                ecarts.append(f"ligne {noeud.lineno} : {noeud.name} défini hors du corps "
+                              "d'une classe")
+            continue
+        if isinstance(noeud, ast.Name) and not isinstance(noeud.ctx, ast.Load):
+            nom = noeud.id
+        elif isinstance(noeud, ast.alias):
+            nom = noeud.asname or noeud.name.split(".")[0]
+        elif isinstance(noeud, (ast.AsyncFunctionDef, ast.ClassDef, ast.MatchAs, ast.MatchStar,
+                                ast.ExceptHandler, ast.TypeVar, ast.ParamSpec,
+                                ast.TypeVarTuple)):
+            nom = noeud.name
+        elif isinstance(noeud, ast.MatchMapping):
+            nom = noeud.rest
+        elif isinstance(noeud, ast.arg):
+            nom = noeud.arg
+        else:
+            continue
+        if _est_phase(nom):
+            ecarts.append(f"ligne {noeud.lineno} : liaison de {nom} hors d'un def de classe "
+                          "refusée")
+    return ecarts
+
+
 def _relever_methode(fonction: ast.FunctionDef, parents: dict) -> tuple[dict, list[str]]:
     """Relevé d'une méthode `phase_<étape>` sur son paramètre de vue, et écarts de forme."""
     releve = {c: set() for c in CATEGORIES}
     ecarts = []
-    if len(fonction.args.args) < 2:
-        return releve, [f"{fonction.name} : paramètre de vue absent"]
+    if not _signature_exacte(fonction):
+        return releve, [f"{fonction.name} : signature (self, vue) exacte attendue"]
     vue = fonction.args.args[1].arg
     for noeud in ast.walk(fonction):
         if not (isinstance(noeud, ast.Name) and noeud.id == vue):
@@ -209,20 +369,25 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
     parents = {enfant: noeud for noeud in ast.walk(arbre) for enfant in ast.iter_child_nodes(noeud)}
     ecarts = []
     for noeud in ast.walk(arbre):
-        if isinstance(noeud, ast.Name) and noeud.id in NOMS_REFUSES:
-            ecarts.append(f"ligne {noeud.lineno} : {noeud.id} refusé")
-        elif isinstance(noeud, ast.Attribute) and noeud.attr == "__dict__":
-            ecarts.append(f"ligne {noeud.lineno} : accès à __dict__ refusé")
-        elif isinstance(noeud, ast.Attribute) and noeud.attr in NOMS_REFUSES:
-            ecarts.append(f"ligne {noeud.lineno} : attribut {noeud.attr} refusé")
+        if isinstance(noeud, ast.Name) and (motif := _nom_refuse(noeud)):
+            ecarts.append(f"ligne {noeud.lineno} : {motif}")
+        elif isinstance(noeud, ast.Attribute) and (motif := _attribut_refuse(noeud.attr)):
+            ecarts.append(f"ligne {noeud.lineno} : {motif}")
+        elif isinstance(noeud, ast.MatchClass):
+            ecarts += [f"ligne {noeud.lineno} : motif de classe, {motif}"
+                       for nom in noeud.kwd_attrs if (motif := _attribut_refuse(nom))]
         elif isinstance(noeud, ast.alias) and noeud.name in NOMS_REFUSES:
             ecarts.append(f"ligne {noeud.lineno} : importation du nom {noeud.name} refusée")
+        elif isinstance(noeud, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and _special(
+                noeud.name):
+            ecarts.append(f"ligne {noeud.lineno} : définition spéciale {noeud.name} refusée")
         elif isinstance(noeud, (ast.Global, ast.Nonlocal)):
             ecarts.append(f"ligne {noeud.lineno} : {type(noeud).__name__.lower()} refusé")
         elif isinstance(noeud, (ast.Import, ast.ImportFrom)):
-            for nom in _module_importe(noeud):
-                if _import_refuse(nom):
-                    ecarts.append(f"ligne {noeud.lineno} : importation de {nom} refusée")
+            for module, nom in _importations(noeud):
+                if not _importation_admise(module, nom):
+                    ecarts.append(f"ligne {noeud.lineno} : importation de "
+                                  f"{_libelle(module, nom)} refusée")
         for cible in _cibles(noeud):
             for sous in ast.walk(cible):
                 if isinstance(sous, ast.Attribute):
@@ -231,6 +396,7 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
         return ecarts + ["aucun bloc déclaré dans le module"]
     if declaration.radical != radical:
         ecarts.append(f"radical {declaration.radical!r} : {radical!r} (nom du module) attendu")
+    ecarts += _liaisons_de_phase(arbre, parents)
     methodes = [n for classe in ast.walk(arbre) if isinstance(classe, ast.ClassDef)
                 for n in classe.body if isinstance(n, ast.FunctionDef)
                 and n.name.startswith("phase_")]
@@ -471,33 +637,41 @@ def test_le_controle_statique_sait_echouer(avant, apres, motif):
     assert any(motif in e for e in ecarts), ecarts
 
 
-def test_from_moteur_import_module_admis_juge_sur_base_point_nom():
-    """C2 : `from nations.moteur import contrat_bloc` est admis (jugé sur
-    `nations.moteur.contrat_bloc`, non sur `nations.moteur`) ; `from nations.moteur import
-    ordonnanceur` est refusé sous son nom complet, et lui seul. `conversions` importé comme
-    module est refusé (liste fermée de ses noms, constat M2 du rang 4, #112)."""
-    admis = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
-                             "contrat_bloc\n", 1)
-    assert analyser_texte(admis) == []
-    module = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
-                              "contrat_bloc, conversions\n", 1)
-    assert [e for e in analyser_texte(module) if "importation" in e] == [
-        "ligne 4 : importation de nations.moteur.conversions refusée"]
+def test_from_moteur_import_juge_sur_base_point_nom():
+    """C2, sous la liste blanche (P81 (b), #121) : `from base import X` est jugé sur `base.X`.
+    Un module de `nations` importé entier est refusé, `contrat_bloc` compris (`from
+    nations.moteur import contrat_bloc`) : seuls ses noms déclarés s'importent ; chaque nom hors
+    de la liste est refusé sous son nom complet, et lui seul."""
     refuse = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur import "
-                              "contrat_bloc, ordonnanceur\n", 1)
+                              "contrat_bloc, conversions, ordonnanceur\n", 1)
     assert [e for e in analyser_texte(refuse) if "importation" in e] == [
+        "ligne 4 : importation de nations.moteur.contrat_bloc refusée",
+        "ligne 4 : importation de nations.moteur.conversions refusée",
         "ligne 4 : importation de nations.moteur.ordonnanceur refusée"]
+    noms = CONFORME.replace("import math\n", "import math\n\nfrom nations.moteur.contrat_bloc "
+                            "import GRAND_LIVRE, methode_de_l_etape, REGISTRE, dataclass\n", 1)
+    assert [e for e in analyser_texte(noms) if "importation" in e] == [
+        "ligne 4 : importation de nations.moteur.contrat_bloc.methode_de_l_etape refusée",
+        "ligne 4 : importation de nations.moteur.contrat_bloc.dataclass refusée"]
 
 
-def test_importation_relative_admise_resolue_contre_nations_blocs():
-    """A1 : `from ..moteur import contrat_bloc` désigne `nations.moteur.contrat_bloc`, admis ;
-    `from . import travail` désigne `nations.blocs.travail`, hors du contrôle d'importation."""
+def test_importation_relative_resolue_contre_nations_blocs():
+    """A1 : une importation relative est résolue contre `nations.blocs`, puis jugée par la liste
+    blanche : `from ..moteur.contrat_bloc import Siege` et `from ..moteur.conversions import
+    facteur_par_pas` sont admis ; `from ..moteur import contrat_bloc` (module entier) et `from .
+    import travail` (un autre bloc, `nations.blocs.travail`) sont refusés."""
     admis = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
-                             "    from ..moteur import contrat_bloc\n"
+                             "    from ..moteur.contrat_bloc import Siege as S\n"
                              "    from ..moteur.conversions import facteur_par_pas\n"
-                             "    from . import travail\n"
-                             "    return contrat_bloc, facteur_par_pas, travail\n", 1)
+                             "    return S, facteur_par_pas\n", 1)
     assert analyser_texte(admis) == []
+    refuse = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
+                              "    from ..moteur import contrat_bloc\n"
+                              "    from . import travail\n"
+                              "    return contrat_bloc, travail\n", 1)
+    assert [e for e in analyser_texte(refuse) if "importation" in e] == [
+        "ligne 6 : importation de nations.moteur.contrat_bloc refusée",
+        "ligne 7 : importation de nations.blocs.travail refusée"]
 
 
 def test_module_sans_bloc_ou_de_radical_faux():
@@ -560,3 +734,165 @@ def test_les_blocs_du_moteur_n_importent_de_conversions_que_la_liste_fermee():
         for noeud in ast.walk(ast.parse(chemin.read_text(encoding="utf-8"))):
             if isinstance(noeud, ast.ImportFrom) and noeud.module == CONVERSIONS:
                 assert {a.name for a in noeud.names} <= NOMS_DE_CONVERSIONS, chemin.name
+
+
+# --------------------------------------------------------------------------
+# Liste blanche des importations (P81 (b), #121)
+# --------------------------------------------------------------------------
+
+
+def test_liste_blanche_fermee_et_declaree():
+    """La liste blanche est fermée et déclarée : ses entrées sont exactement celles-ci, chaque
+    nom admis existe dans son module, chaque module entier admis s'importe, chaque nom natif
+    admis est un nom natif."""
+    assert IMPORTATIONS_ADMISES == {
+        "__future__": {"annotations"},
+        "nations.moteur.contrat_bloc": {"DeclarationDeBloc", "Siege", "Lecture", "OUVERTURE",
+                                        "REGISTRE", "GRAND_LIVRE"},
+        "nations.moteur.conversions": NOMS_DE_CONVERSIONS,
+    }
+    assert MODULES_ENTIERS_ADMIS == {"math"}
+    assert NATIFS_ADMIS == {"float", "int", "str", "tuple", "min", "max"}
+    for module, noms in IMPORTATIONS_ADMISES.items():
+        objet = importlib.import_module(module)
+        assert all(hasattr(objet, nom) for nom in noms), module
+    assert all(importlib.import_module(m) for m in MODULES_ENTIERS_ADMIS)
+    assert NATIFS_ADMIS <= NATIFS
+
+
+def test_liste_des_natifs_complete():
+    """La liste figée `NATIFS` contient tout nom natif non spécial de l'interpréteur qui exécute
+    le test (avec ou sans `site`) : un natif ajouté par une version de Python fait échouer ce
+    test, non le contrôle des blocs."""
+    assert {n for n in dir(builtins) if not _special(n)} <= NATIFS
+
+
+def test_les_blocs_du_moteur_passent_la_liste_blanche():
+    """Test positif : chaque module de `src/nations/blocs/` (les blocs 2 à 4 aujourd'hui, sans
+    liste figée), tel qu'il est, passe le contrôle ; toutes ses importations sont dans la liste
+    blanche."""
+    assert modules_de_blocs()
+    for chemin in modules_de_blocs():
+        module = importlib.import_module(f"nations.blocs.{chemin.stem}")
+        texte = chemin.read_text(encoding="utf-8")
+        assert analyser(texte, chemin.stem, declaration_du_module(module, chemin.stem)) == []
+        for noeud in ast.walk(ast.parse(texte)):
+            if isinstance(noeud, (ast.Import, ast.ImportFrom)):
+                assert all(_importation_admise(m, n) for m, n in _importations(noeud))
+
+
+def _avant_la_classe(corps: str) -> tuple[tuple[str, str], ...]:
+    """Remplacement qui insère `corps` avant la classe du module conforme."""
+    return (("class Prix:", corps + "\n\nclass Prix:"),)
+
+
+# Contournements connus (#121 : corps, commentaires des 13/11/2026), et ceux relevés en
+# l'implémentant ou par l'audit (M1) : (nom, remplacements dans le module conforme, motif
+# attendu d'un écart). Chacun est réel à l'exécution et était admis par le contrôle (mesures
+# des comptes rendus de `coder`, rang 2 de J3-c). Les corps ajoutés avant la classe sont dans
+# une fonction jamais appelée.
+CONTOURNEMENTS = [
+    ("builtins_indice", _avant_la_classe(
+        "def _jamais(o):\n    return __builtins__['getattr'](o, 'real')\n"),
+     "nom spécial __builtins__ refusé"),
+    ("sys_modules", _avant_la_classe(
+        "import sys\n\n\ndef _jamais():\n"
+        "    return sys.modules['nations.moteur.parametres.cadre'].PAS_PAR_AN.valeur\n"),
+     "importation de sys refusée"),
+    ("operator_attrgetter", _avant_la_classe(
+        "import operator\n\n\ndef _jamais(o):\n    return operator.attrgetter('real')(o)\n"),
+     "importation de operator refusée"),
+    ("getattribute", _avant_la_classe(
+        "def _jamais(o):\n    return o.__getattribute__('real')\n"),
+     "attribut privé ou spécial __getattribute__ refusé"),
+    ("import_pointe_sous_nations", _avant_la_classe(
+        "import nations.moteur.contrat_bloc\n\n\ndef _jamais():\n"
+        "    return nations.moteur.parametres.cadre.PAS_PAR_AN.valeur\n"),
+     "importation de nations.moteur.contrat_bloc refusée"),
+    ("globals_d_une_conversion", _avant_la_classe(
+        "def _jamais():\n    return par_pas.__globals__['PAS_PAR_AN'].valeur\n"),
+     "attribut privé ou spécial __globals__ refusé"),
+    # Relevés au rang 2 de J3-c.
+    ("chaine_de_format", _avant_la_classe(
+        "def _jamais():\n"
+        "    return float('{0.__globals__[PAS_PAR_AN].valeur}'.format(par_pas))\n"),
+     "attribut format refusé"),
+    ("cadre_de_l_appelant", _avant_la_classe(
+        "def _jamais():\n    def gen():\n"
+        "        yield boite[0].gi_frame.f_back.f_back.f_globals\n"
+        "    boite = [None]\n    boite[0] = gen()\n    return next(boite[0])\n"),
+     "attribut d'introspection gi_frame refusé"),
+    ("motif_de_classe", _avant_la_classe(
+        "def _jamais(o):\n    match o:\n        case float(__class__=c):\n            return c\n"),
+     "motif de classe, attribut privé ou spécial __class__ refusé"),
+    ("natif_hors_liste", _avant_la_classe("def _jamais(o):\n    return type(o)\n"),
+     "nom natif type hors de la liste blanche"),
+    ("ouverture_de_fichier", _avant_la_classe(
+        "def _jamais():\n    return open('p.txt').read()\n"),
+     "nom natif open hors de la liste blanche"),
+    ("definition_speciale", _avant_la_classe(
+        "class _Lecteur:\n    def __getattr__(self, nom):\n        return nom\n"),
+     "définition spéciale __getattr__ refusée"),
+    # Contournements du relevé (constat M1 de l'audit de #121) : la vue réelle lue hors de
+    # l'analyse. Chacun lisait `K_vol` sans le déclarer, la méthode appelée comme par
+    # l'ordonnanceur.
+    ("reaffectation_dans_la_classe", (
+        ("class Prix:", "def _lire(self, v):\n    return v.ouverture.K_vol\n\n\nclass Prix:"),
+        ("        vue.ecrire_etat(\"mu_tilde\", mu)\n",
+         "        vue.ecrire_etat(\"mu_tilde\", mu)\n\n    phase_5 = _lire\n")),
+     "liaison de phase_5 hors d'un def de classe refusée"),
+    ("annotation_dans_la_classe", (
+        ("class Prix:", "def _lire(self, v):\n    return v.ouverture.K_vol\n\n\nclass Prix:"),
+        ("        vue.ecrire_etat(\"mu_tilde\", mu)\n",
+         "        vue.ecrire_etat(\"mu_tilde\", mu)\n\n    phase_5: object = _lire\n")),
+     "liaison de phase_5 hors d'un def de classe refusée"),
+    ("def_repete", (
+        ("        vue.ecrire_etat(\"mu_tilde\", mu)\n",
+         "        vue.ecrire_etat(\"mu_tilde\", mu)\n\n    def phase_5(self, vue):\n"
+         "        return None\n"),),
+     "phase_5 défini deux fois"),
+    ("positionnels_seuls", (
+        ("    def phase_5(self, vue):", "    def phase_5(self, v, /, a=None, vue=None):"),),
+     "phase_5 : signature (self, vue) exacte attendue"),
+    ("decorateur_de_methode", (
+        ("class Prix:", "def _deco(f):\n    def g(self, v):\n        k = v.ouverture.K_vol\n"
+         "        return f(self, v)\n    return g\n\n\nclass Prix:"),
+        ("    def phase_5(self, vue):", "    @_deco\n    def phase_5(self, vue):")),
+     "décorateur de phase_5 refusé"),
+    ("decorateur_de_classe", (
+        ("class Prix:", "def _deco(c):\n    return c\n\n\n@_deco\nclass Prix:"),),
+     "décorateur de la classe Prix refusé"),
+    ("metaclasse", (
+        ("class Prix:", "class _M(type):\n    pass\n\n\nclass Prix(metaclass=_M):"),),
+     "mot-clé de la classe Prix refusé"),
+    ("phase_hors_de_la_classe", (
+        ("class Prix:", "def phase_7(self, vue):\n    return vue\n\n\nclass Prix:"),),
+     "phase_7 défini hors du corps d'une classe"),
+]
+
+
+@pytest.mark.parametrize("remplacements, motif", [c[1:] for c in CONTOURNEMENTS],
+                         ids=[c[0] for c in CONTOURNEMENTS])
+def test_contournement_refuse(tmp_path, remplacements, motif):
+    """Chaque contournement, écrit dans un module de bloc factice (`prix.py` sous `tmp_path`),
+    fait échouer le contrôle."""
+    texte = CONFORME
+    for avant, apres in remplacements:
+        assert avant in texte
+        texte = texte.replace(avant, apres, 1)
+    chemin = tmp_path / "prix.py"
+    chemin.write_text(texte, encoding="utf-8")
+    ecarts = analyser_texte(chemin.read_text(encoding="utf-8"), chemin.stem)
+    assert any(motif in e for e in ecarts), ecarts
+
+
+def test_slots_admis_en_affectation_seulement():
+    """`__slots__ = ()` (contrat de bloc : aucun attribut d'instance) est le seul nom spécial
+    admis, et seulement comme cible d'affectation."""
+    assert "    __slots__ = ()\n" in CONFORME
+    lu = CONFORME.replace("def marge(", "def _jamais():\n    return Prix.__slots__\n\n\n"
+                          "def marge(", 1)
+    assert any("__slots__ refusé" in e for e in analyser_texte(lu))
+    nom = CONFORME.replace("def marge(", "def _jamais():\n    return __slots__\n\n\n"
+                           "def marge(", 1)
+    assert any("nom spécial __slots__ refusé" in e for e in analyser_texte(nom))
