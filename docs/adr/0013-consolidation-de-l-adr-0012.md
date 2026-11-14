@@ -255,3 +255,102 @@ Rédigée par `architect` (Opus) au rang 9 de J3-c (PR #129, tête `aebbd1d`), d
 7. **Point 7 et « Effet sur les résultats », correction prospective** (réserve R1 de `macro`, `0f4954c`). « Écart au plus 5,6e−14 hors référence » se lit, sur 720 pas à g_N = 0,001 et π\* = 0 ; 2 ; 10 % : variables d'état des blocs 2 à 4, écart relatif à la grandeur elle-même au plus 4,88e−14 ; 5,55e−14 ; 4,88e−14 ; positions, |Δ| rapporté à S du détenteur au plus 6,96e−14 ; 4,61e−14 ; 1,80e−14 ; V^flux, |Δ|/S au plus 6,98e−14 ; 4,59e−14 ; 1,84e−14 ; montants exécutés, |Δ|/max_s S au plus 1,3e−16 ; ξ, nulle à l'état résolu, au plus 9,2e−15 en absolu. L'ancien texte reste publié ci-dessus.
 
 **Effet sur les résultats** : aucun. Issues : #121, #61, #91, #90, #119 ; renvoi : `docs/feuille-de-route.md` § 4 (P100 à P110).
+
+### Annotation du 14/11/2026 (rang 1b de J3-d1) : schéma v4, tables des blocs 5 et 6, domaine strict de K, domaine des plans, exceptions d'identité à A8.2, A8.1 sous la lecture nette, couverture X4, 76 labels
+
+Rédigée par `architect-approfondi` (Opus, effort `high`, sans Fable) au rang 1b de J3-d1 (`claude/j3-menages-investissement`, PR #136, tête `50c55f0`), en application des décisions du mainteneur du 14/11/2026 (P119 à P126, `docs/feuille-de-route.md` § 4), de l'avis du rang 1a de `macro` (pilote) et de celui de `monnaie` (résumé en P124 à P126). **La décision de l'ADR 0012 est inchangée** ; l'annotation précise A3.1, A8, C1, D1, D2, D4, F1, H1, H2 et H3, **avant le code de #124, #60 et #67**. Les noms de code sont des contrats (Décision, point 5). Trois points de forme que les textes ne tranchent pas sont soumis au mainteneur (Q1 à Q3, en fin d'annotation) : la forme recommandée est écrite **sous réserve**, et une mention datée enregistrera la décision. L'annotation ne change aucun résultat.
+
+1. **Schéma v4 : variables d'état des blocs 5 et 6** (C1, D1, H1 complétés). Constat à `50c55f0` : aucune n'existe. `src/nations/etat/` compte cinq modules de bloc (`schema.py:60`, `schema.py:98` : production, travail, prix, banque, banque centrale), `VERSION_SCHEMA = 3` (`schema.py:66`), et le moteur refuse une variable d'état que son propriétaire n'écrit pas dans le pas (`ordonnanceur.py:845-848`). Variables nouvelles, toutes `float` :
+
+| Nom (sous réserve de Q1) | Ouverture du pas t | Unité | Invariance | Propriétaire | Phase | Valeur à l'état initial résolu | Domaine |
+|---|---|---|---|---|---|---|---|
+| `YD_m1` | YD_{t−1} | u.m. par pas | `nominal` | `menages` | 9 (groupe des blocs ; H7, montants exécutés) | clé `YD_m1` de `ouverture()` du script | finitude seule, déclarée (YD < 0 possible, plancher de H5) |
+| `ti` | ti_t | fraction | `sans_dimension` | `investissement` | 5 (S6) | (n_a[(1 + g)^{1/n_a} − 1] + δ) κ/t̄u (`sec:investissement-stationnaire`) | **ti > 0** |
+| `y_m1` | y_{t−1} | u.v. par pas | `volume` | `investissement` | 5 (y_t retenue) | y_0/(1 + g)^{1/n_a} (idem) | **y_m1 ≥ 0** |
+| `T_F_m1` | T_{F,t−1} | u.m. par pas | `nominal` | `investissement` | 9 (groupe des blocs ; ligne 7 exécutée, colonne des entreprises) | T_{F,0}/Γ̄ (idem) ; nulle au socle (τ_F = 0, M33) | finitude seule, déclarée |
+| `varrho_bar_L` | ϱ̄_L | par an, taux de croissance | `sans_dimension` | `investissement` | 2 (sous réserve de Q2) | ϱ_{L,0} = r̄ + ϖ_L/(1 + π\*) (`sec:banque-taux`) | finitude seule, déclarée |
+
+   - **Domaines** : forme non (condition), dans `defaut_de_domaine` et `Vue.ecrire_etat`, refus avec diagnostic, jamais écrêtage (H1.6). ti > 0 et y_m1 ≥ 0 sont la condition de forme qui tient I^plan ≥ 0 par S3 et S4 avec P > 0 (point 4) ; **visa de `macro` au rang 4**, sur le précédent de H1.7. Unité de ϱ̄_L : celle de r̄ et de r̂\* (taux de Fisher, employé en base annuelle sans conversion).
+   - **Ordre** (H1.5) : par radical dans l'ordre des blocs, production, travail, prix, **menages**, **investissement**, banque, banque centrale. Deux modules nouveaux, `nations.etat.menages` et `nations.etat.investissement`.
+   - **Version** (D2) : **`VERSION_SCHEMA` = 4** dès le premier commit qui modifie le schéma (#60, rang 3, `YD_m1`), et jusqu'à la fusion de J3-d1, sans incrément pendant la branche (précédent du point 3 de l'annotation du rang 1b de J3-c). Journal : « 4 (14/11/2026, #60, #67 ; ADR 0013, annotation du 14/11/2026 (J3-d1)) : YD_{t−1} ; ti, y_{t−1}, T_{F,t−1}, ϱ̄_L ». **Une sauvegarde v3 est refusée** (D4 ; critère de #60). L'insertion des deux radicaux avant `banque` change l'ordre des clés de la sauvegarde ; la version le couvre.
+   - **Variables du pas** : `C_plan` et `I_plan` gardent leur nom (H2.2) ; les autres (C^règle, ϱ_L, tu\*, I^{vol,plan}, ΔL^d…) suivent H1.1 et sont listées par `coder` dans le commit qui les crée.
+2. **Tables `menages` et `investissement`** (F1, H3 complétés). Module nouveau `nations.moteur.parametres.menages` ; `investissement` est complétée (H3.4, P80) ; `EnsembleDesParametres` reçoit le champ `menages` entre `prix` et `investissement` (H3.5). Valeurs indicatives = défauts de `outils/etat_stationnaire.py` (H3.3), égalité testée ; le script nomme `lv` ce que la table nomme `lv_etoile`, et le test porte la correspondance (précédent de `pi_cible`). Aucune unité nouvelle : η_r et ζ sont `sans dimension`, sur le précédent de β et de a_π, la source gardant « par unité de taux réel annuel, sans conversion ».
+
+| Table | Nom | Symbole | Valeur | Unité | Domaine (`DefautDeDeclaration`) | Source | Étiquettes |
+|---|---|---|---|---|---|---|---|
+| `menages` | `nu_H` | ν_H | 1,0 | années | ν_H > 0 | `tab:calibration` (indicative) ; M27 ; calibration #62 | `eq:menages-richesse-visee` |
+| `menages` | `lambda_H` | λ_H | 0,4 | par an, taux de flux | 0 < λ_H ≤ n_a (P65) | idem | `eq:menages-plan-consommation` |
+| `investissement` | `delta` | δ | 0,05 | par an, taux de flux | 0 < δ < n_a (en vigueur) | inchangée | ajouter `eq:investissement-demande-credit` |
+| `investissement` | `tu_bar` | t̄u | 0,8 | fraction | t̄u > 0 | M28 ; `tab:calibration` (indicative) | `eq:investissement-utilisation-visee`, `eq:investissement-part-visee` |
+| `investissement` | `lambda_ti` | λ_ti | 0,02 | par an, taux de flux | 0 < λ_ti ≤ n_a | M28 ; hypothèse | `eq:investissement-part-visee` |
+| `investissement` | `eta_r` | η_r | 2,0 | sans dimension | η_r ≥ 0 | M28 ; hypothèse | `eq:investissement-plan` |
+| `investissement` | `zeta` | ζ | 4,0 | sans dimension | ζ ≥ 0 | M28 ; à calibrer (4 à 8), valeur du script | `eq:investissement-utilisation-visee` |
+| `investissement` | `lv_etoile` | lv\* | 0,4 | fraction | 0 ≤ lv\* < 1 | M28 ; hypothèse | `eq:investissement-demande-credit` |
+| `investissement` | `nu_F` | ν_F | 1/6 | années | ν_F > 0 | M28 ; hypothèse | `eq:investissement-depots-vises` |
+
+   - **Conditions jointes** (`sec:menages-conditions`, « contrôlées au chargement de la table de calibration ») : 0 < ν_H λ_H < 1 dans `__post_init__` de la table `menages` ; **coefficient de richesse** λ_H/n_a + ν_H λ_H π^{∗,pas} > γ^e, qui lit `production`, `travail` et `banque_centrale`, dans `__post_init__` d'`EnsembleDesParametres`, sur le paramètre π\* (valeur initiale de la cible, BC4 à levier fermé) ; les facteurs passent par `facteur_par_pas` (F2, conversion unique). Au J4, le domaine du levier de cible prend le relais (G4).
+   - **Hors des tables** : A > 0, taux de distribution dans [0,2 ; 0,9] (#55), η_r ≥ 1,005 (seuil (d1)), λ_ti × 2 dans le domaine de stabilité. Ce sont des contraintes de calibration, contrôlées par le script et les tests, non des refus (fiche 6, § 9.2). Le plafond de H5 n'a pas de champ (décision du 03/10/2026, lecture (i)). ϱ̄_L, π\*, g, Γ^e ne sont pas des paramètres (`sec:investissement-conditions`).
+   - Les blocs 5 et 6 lisent π\*_t à l'ouverture, jamais `parametres.banque_centrale.pi_etoile` (R2, refus statique).
+3. **Domaine strict de K** (P80 ; H1.8 et H3.4 se lisent J3-d). `ouvrir_pas` refuse **K < 0** à côté de IN (`grand_livre.py:235-239`) : règle `STOCKS_OUVERTURE` étendue à « IN ≥ 0, K ≥ 0 », `controle_de_signe` sans ε ni S^F ; il couvre l'état initial, la reprise et chaque pas (A5, M95-13). **Sans réécriture** : seules les lignes 3 (+I, phase 5) et 8 (−δK/n_a, phase 6) touchent K (`catalogue.py:294`, `catalogue.py:306`), et K_{t+1} = fl(fl(K_t + I_t) − fl(c K_t)) ≥ 0 par monotonie de l'arrondi, si c = `par_pas(δ)` < 1 (domaine de δ), si la ligne 8 porte sur K d'ouverture sous cette forme (S7) et si I_t ≥ 0 (point 4 et N6). *Hypothèse* à éprouver par un lot adverse et des pas enchaînés, sur le précédent de P72 (critère de #67).
+4. **Domaine des plans** (P120, #124 ; voie (a)).
+   - `C_plan`, `I_plan`, `G_plan` (u.m., phase 2) sont refusés à l'écriture si **non (valeur finie et ≥ 0)** ; NaN et ±∞ compris ; −0,0 admis. Jamais d'écrêtage.
+   - **Exception typée** : **`PlanHorsDomaine`**, dérivée de `RefusDuMoteur` (`nations.moteur.diagnostics`), champs t, étape, bloc écrivain (apposé par la vue), nom, valeur dans le message. Dérivée : A6 et le contrat « refus à l'appel » restent tenus ; typée : le test de #124 la distingue. Elle couvre aussi la valeur non finie d'un plan, contrôlée avant le refus générique de l'espace du pas (`ordonnanceur.py:213-215`).
+   - **Place** (sous réserve de Q3) : liste fermée `DOMAINES_DU_PAS` du moteur (nom → condition en clair, prédicat), contrôlée par l'espace du pas à l'écriture, quel que soit l'écrivain : blocs réels, blocs d'essai 5, 6 et 9, `chocs_des_plans` des tests. d ≥ 0 (N6) en découle avec p > 0, sans contrôle propre ; le cas d < 0 de #124 tombe à l'écriture du plan.
+   - **Conditions**, qui tiennent les plans ≥ 0 par la forme et non par le refus : H5 lit max(0 ; D_H), et H3 et H4 lisent V_H = max(0 ; D_H) + B_H ; E1 lit max(0 ; M^G) (A8.2, déjà prescrit ; code dans #132) ; F3 lit max(0 ; D_F), dans le terme de dépôts et dans les intérêts (comme B4) ; S3 et S4 tiennent I^plan ≥ 0 par ti > 0, y_m1 ≥ 0 et P > 0 (point 1). Chaque lecture en max(0 ; ·) est testée à −1 ulp et à −0,5 ε S (A8.2). Sans elles, une poussière déclencherait `PlanHorsDomaine` : l'arrêt sur l'arrondi qu'a écarté la lecture nette (ADR 0012, option (i-e)).
+5. **Exceptions d'identité à A8.2** (P125 ; #103). « Toute règle qui les lit écrit max(0 ; ·) » ne vise pas, outre E^Bk (annotation de consignation, point 5) :
+   - **E6** : M^G lu **brut** dans le plafond des transferts, sous le max(0 ; ·) extérieur qui tient Tr_t ≥ 0 (lecture (ii) de `monnaie`) ;
+   - **E9** : M^G **brut**. Em_t contient M^{G*}_t − M^G_t : la lecture brute absorbe la poussière à l'émission du pas, alors que max(0 ; ·) la laisserait persister (avis de `macro`, rang 1a, § 5) ;
+   - **E4** : assiette B − M^G − E^CB lue **brute**. C'est la dette consolidée d'ouverture, assiette aussi du canal rentier (ligne 15) ; un max(0 ; ·) romprait l'égalité de T^cou et du surcroît de dividende de la banque (`sec:finances_publiques`, couverture réelle).
+
+   La liste est **fermée** : toute autre lecture brute de D_H, D_F ou M^G par un bloc est un défaut. Chaque exception est déclarée au site de lecture (commentaire qui cite ce point) et testée sous une poussière à −1 ulp (E9 l'absorbe ; E4 garde l'identité de bilan ; E6 rend Tr ≥ 0). Code dans #132 (J3-d2). Textes de la spécification (l. ~3194, ~3342, ~3356) réécrits en correction prospective au passage de `docwriter` de J3-d1 (commit `docs:` de #103), ancien texte publié avec sa date.
+6. **A8.1, annotée** (P126). « E1 et H5, exactes par construction (M7, M8) » se lit : E1 et H5 bornent **le plan** exactement, G^plan ≤ max(0 ; M^G) et C^plan ≤ max(0 ; D_H). La ligne exécutée (2 ou 1), p·v avec v tiré de N6, peut toutefois dépasser le plan d'un ulp : p·(G^plan/p) ≠ G^plan dans environ 5,7 % des tirages (0,0572 au-dessus, 0,0568 au-dessous sur 10^5 tirages ; mesure de `monnaie` confirmée par la session, P126, non remesurée ici).
+   - La poussière laissée ainsi sur M^G et D_H en fin de phase 5 est **admise sous la lecture nette** (A5, −ε × S_payeur), comme pour D_H et D_F jusqu'ici : E1 et H5 sortent de la règle « défaut du bloc » de A8.1 et relèvent de A8.2.
+   - Le reste de A8.1 est inchangé (B7, E13 par le montant couvert, N8).
+   - Écartée : forme exacte de la ligne 2 et de H5 (P126).
+   - La condition de réouverture « si une saturation à une ligne n'admet pas d'écriture en min/max » (Décision, point 6) **n'est pas déclenchée** : la forme exacte existe et a été écartée ; le min porte sur le plan.
+   - Les critères « Bornes (d) » de la fiche 5 et de M^G se lisent sous la lecture nette (#103, P125).
+7. **Contrat de la couverture X4** (P124 ; code à `coder`, rang 5).
+   - **Place** : option de composition `couverture_x4()` dans `tests/invariants/socle_partiel.py`, sur le précédent d'`emission_e3()` (`socle_partiel.py:729`). Elle rend les options du bloc d'essai 9 (déclaration, règle de la ligne 7). Jamais dans `src/` (H6). **Jamais dans le banc de P87** : verdicts de P87 identiques au bit, testés.
+   - **Règle** : ligne 7, part des ménages = T_H du sentier + T^cou_t, avec T^cou_t = φ (i_CB,t − i_ref,t) A_t, convertie au pas par `par_pas` (conversion linéaire, F2), φ = 1 et i_ref,t = (1 + r̄)(1 + π\*_t) − 1. Lectures :
+     - π\*_t à l'ouverture (`pi_etoile`) ;
+     - r̄ du sentier (`sentier.par.rbar`, jamais `parametres.banque_centrale`) ;
+     - i_CB en phase 1.
+   - **Assiette** : A_t = B_t − M^G_t − E^CB_t, sur les positions d'ouverture, **lue brute** (point 5, E4). E^CB est calculé sur les quatre positions de la banque centrale (B_CB + L^CB − Res − M^G), sans lecture de valeur nette (précédent d'E^Bk, P107).
+   - **Lectures déclarées** : ouverture `pi_etoile`, `B_H`, `B_Bk`, `B_CB`, `L_CB`, `Res`, `M_G` ; phase 1 `i_CB`. Variable du pas écrite : `T_cou`.
+   - **Grandeur nulle** : T^cou entre dans `GRANDEURS_NULLES` à 1e−12 × S^G, nullité **calculée** (i_CB = i_ref sur le sentier ; P121).
+   - **Étiquette** « couverture X4 active » sur toute mesure faite avec l'option (H6).
+   - **Composition** : avec `emission_e3()`, déclaration et règles identiques dans les deux ordres (test). Les deux options touchent des sièges et des lignes distincts : X4 la ligne 7 en phase 6, E3 les lignes 19a en phase 7.
+   - **Refus sur un bloc 9 réel** : refus typé à l'assemblage, jamais ignoré ; nom au choix de `coder`.
+   - **Lignes à choc long** : aucun critère d'arrivée sur 720 pas à π\* = 10 % (demi-vie de 1 799 pas) ; signe et délai seulement.
+   - **Nom** : X désigne une exigence du bloc d'essai, distincte d'E1 à E13 de la spécification. #133 renommera E1 à E3 du bloc d'essai dans la même série (X1 à X3, recommandation, décidée dans #133) et gardera X4.
+8. **Concordance** : **76 labels** attendus à la fin de J3-d1, soit 57 + 6 (H2 à H7 ; H1 est `eq:moteur-croissance-nominale-attendue`, déjà compté) + 11 (S1 à S7, F1 à F4) + 2 (d et tu, #123). Base remesurée à `50c55f0` : `uv run python outils/concordance_spec_moteur.py --strict` → « labels eq: 57 ; balises # eq: 57 […] Aucun écart ». Aucun label pour la tenue des variables retardées ni pour ϱ̄_L (fiche 6, § 9.1), ni pour X4 (tests).
+
+**Questions au mainteneur** (formes non tranchées par les textes ; recommandations de l'architecte) :
+- **Q1. Noms des variables retardées.** H1.1 omet la date, mais `y` est déjà une variable du pas (bloc 2, phase 4) dans le même espace de noms.
+  - (i) H1.1 à la lettre, `YD` et `T_F`, et `y_m1` par exception pour la seule collision ;
+  - (ii) suffixe `_m1` pour toute variable d'état qui retient une grandeur du pas (`YD_m1`, `y_m1`, `T_F_m1`), H1.1 complété.
+
+  Recommandation : (ii). Une seule règle, sans collision future (T_F, grandeur du bloc 9 en J3-d2), et des noms égaux aux clés d'`ouverture()` du script.
+- **Q2. Statut de ϱ̄_L.** Les textes l'excluent des paramètres (`sec:investissement-conditions` ; fiche 6, § 9.2), constante « tenue avec l'état, jamais recalculée » ; ils ne fixent pas la forme.
+  - (i) variable d'état d'`investissement`, recopiée de l'ouverture à chaque pas (phase 2) : contrat C2 inchangé, sauvegardée, égalité au bit testée sur 720 pas ;
+  - (ii) catégorie nouvelle de champ d'`EtatPays`, « constante résolue », écrite par aucune phase et portée par le moteur, comme les champs d'identité : C1, C2 et D1 modifiés.
+
+  Recommandation : (i). Le contrat est inchangé ; (ii) n'a qu'un usage.
+- **Q3. Place du domaine des plans.**
+  - (i) liste `DOMAINES_DU_PAS` du moteur, contrôlée à l'écriture pour tout écrivain ;
+  - (ii) domaine porté par le siège de chaque écrivain (`DeclarationDeBloc`).
+
+  Recommandation : (i). C'est la précondition du lecteur (N6), tenue en un lieu qui couvre aussi les blocs d'essai et les plans exogènes des tests ; (ii) la répète chez trois écrivains et laisse un bloc d'essai l'omettre.
+
+**Décisions du mainteneur du 14/11/2026** (P127 à P129, `docs/feuille-de-route.md` § 4) : Q1 **(ii)**, suffixe `_m1` (`YD_m1`, `y_m1`, `T_F_m1`) ; Q2 **(i)**, ϱ̄_L variable d'état d'`investissement` ; Q3 **(i)**, `DOMAINES_DU_PAS` du moteur. Les mentions « sous réserve de Q1 à Q3 » de la présente annotation sont levées dans ce sens.
+
+**Effet sur les résultats** : aucun par l'annotation. Pour #124 et K, des refus seulement : les trajectoires de la référence restent identiques au bit (critère de #124).
+
+**Surface documentaire** (rang 6, `docwriter`, un commit `docs:` par issue) :
+- noms `\code{nations.moteur.parametres.menages.…}` et `…investissement.…` dans `tab:calibration` ;
+- variables d'état des blocs 5 et 6, avec unités et domaines (`sec:menages`, `sec:investissement`) ;
+- domaine strict de K, avec IN (`sec:cadre-phases`, chapitre du noyau) ;
+- domaine des plans (`sec:production-ventes`) ;
+- A8.1 et exceptions E6, E9, E4 (`sec:cadre-caisse`, l. ~689 ; `sec:finances_publiques`, l. ~3194, ~3342, ~3356).
+
+Issues : #124, #60, #67, #123, #103 ; renvois : #132, #133, P80, P119 à P126 (`docs/feuille-de-route.md` § 4).
