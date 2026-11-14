@@ -37,10 +37,10 @@ EPS = 1e-12
 OUVERTURE = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0,
              "B_CB": 100.0, "Res": 50.0, "L_CB": 20.0, "M_G": 150.0, "K": 900.0, "IN": 100.0}
 
-# Variables d'état des blocs (schéma v2), valeurs d'essai dans leurs domaines.
+# Variables d'état des blocs (schéma v3), valeurs d'essai dans leurs domaines.
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "pi_e": 0.02}
+                       "pi_e": 0.02, "pi_etoile": 0.02}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -126,7 +126,8 @@ def test_champs_engendres_des_declarations():
     assert [f.name for f in dataclasses.fields(EtatPays)] == list(CHAMPS)
     for f in dataclasses.fields(EtatPays):
         assert f.default is dataclasses.MISSING and f.default_factory is dataclasses.MISSING
-    assert VERSION_SCHEMA == 2
+    # Schéma v3 (ADR 0013, annotation du 14/11/2026, point 3 ; P96 ; #61).
+    assert VERSION_SCHEMA == 3
 
 
 def test_empreinte_calendaire_de_14_variables():
@@ -176,16 +177,18 @@ def test_variables_du_noyau_positions_et_v_flux():
         assert (v.phase_ecriture, v.unite, v.type, v.invariance) == (
             "9", "u.m.", float, Invariance.NOMINAL)
     # Décompte de l'état : 14 (empreinte) + 11 + 5 scalaires, plus les dix variables des
-    # blocs du schéma v2.
+    # blocs du schéma v2 et π* (schéma v3, rang 3 de J3-c, #61).
     assert {v.proprietaire for v in VARIABLES} == {
         "moteur", "noyau", "production", "travail", "prix", "banque_centrale"}
-    assert sum(v.longueur for v in VARIABLES) == 40
+    assert sum(v.longueur for v in VARIABLES) == 41
 
 
-def test_dix_variables_des_blocs_du_schema_v2():
+def test_variables_des_blocs_du_schema_v3():
     """ADR 0012, annotation du 13/11/2026, point 1.2 : nom, propriétaire, phase d'écriture,
-    unité et invariance des dix variables, à la suite de celles du noyau, par radical dans
-    l'ordre des blocs puis dans l'ordre de la table."""
+    unité et invariance des dix variables du schéma v2, à la suite de celles du noyau, par
+    radical dans l'ordre des blocs puis dans l'ordre de la table ; ADR 0013, annotation du
+    14/11/2026, point 3 (P96 ; #61) : π*, après π^e, propriétaire `banque_centrale`, écrite en
+    phase 1, par an, taux de croissance, sans dimension."""
     blocs = [(v.nom, v.proprietaire, v.phase_ecriture, v.unite, v.type, v.longueur,
               v.invariance) for v in VARIABLES if v.proprietaire not in ("moteur", "noyau")]
     assert blocs == [
@@ -200,9 +203,11 @@ def test_dix_variables_des_blocs_du_schema_v2():
         ("mu_tilde", "prix", "5", "sans dimension", float, 1, Invariance.SANS_DIMENSION),
         ("pi_e", "banque_centrale", "1", "par an, taux de croissance", float, 1,
          Invariance.SANS_DIMENSION),
+        ("pi_etoile", "banque_centrale", "1", "par an, taux de croissance", float, 1,
+         Invariance.SANS_DIMENSION),
     ]
-    assert CHAMPS[-10:] == tuple(nom for nom, *_ in blocs)
-    # Seule W est nominale parmi les dix (point 1.3).
+    assert CHAMPS[-11:] == tuple(nom for nom, *_ in blocs)
+    # Seule W est nominale parmi les variables des blocs (point 1.3).
     assert [nom for nom, *_, inv in blocs if inv is Invariance.NOMINAL] == ["W"]
     # Un module de déclarations par radical (G1 (a)), assemblé par `schema` seul.
     from nations.etat import banque_centrale, prix, production, travail
@@ -319,6 +324,9 @@ HORS_DOMAINE = [
     ("U", -1e-300, "hors du domaine 0 ≤ U ≤ 1"), ("U", 1.0000000000000002, "0 ≤ U ≤ 1"),
     ("N", -1.0, "hors du domaine N ≥ 0"), ("N_pa", 0.0, "hors du domaine N\\^pa > 0"),
     ("pi_e", -1.0, "hors du domaine 1 \\+ π\\^e > 0"), ("pi_e", -2.0, "1 \\+ π\\^e > 0"),
+    # Schéma v3 (ADR 0013, annotation du 14/11/2026, point 4 ; #61).
+    ("pi_etoile", -1.0, "hors du domaine 1 \\+ π\\* > 0"),
+    ("pi_etoile", -1.5, "1 \\+ π\\* > 0"),
 ]
 
 # Valeurs non finies des variables des blocs : refusées à la construction par le domaine
@@ -345,9 +353,10 @@ NON_FINIS = (math.inf, -math.inf, math.nan)
 
 
 def test_toutes_les_variables_flottantes_sont_couvertes():
-    """Les variables `float` du schéma v2 : onze positions, cinq V^flux, dix variables des
-    blocs ; aucune autre variable numérique que `t` (entier) et le registre (n-uplet)."""
-    assert len(VARIABLES_FLOTTANTES) == 26
+    """Les variables `float` du schéma v3 : onze positions, cinq V^flux, onze variables des
+    blocs (π* comprise) ; aucune autre variable numérique que `t` (entier) et le registre
+    (n-uplet)."""
+    assert len(VARIABLES_FLOTTANTES) == 27
     assert set(VARIABLES_FLOTTANTES) == (set(cat.NOMS_POSTES) | set(cat.VALEUR_NETTE_FLUX.values())
                                          | {v.nom for v in schema.VARIABLES_DES_BLOCS})
     assert {v.nom for v in schema.VARIABLES if v.type is not float} == {"t", "registre_prix"}
@@ -419,6 +428,7 @@ def test_registre_hors_domaine_refuse_a_la_construction(u, niveau):
     {"identifiant": "\U0001F30D"}, {"identifiant": "\u00e9"},
     {"U": 0.0}, {"U": 1.0}, {"U": -0.0}, {"IN_vol": 0.0}, {"N": 0.0}, {"pi_e": -0.999},
     {"mu_tilde": -3.0}, {"mu_tilde": 0.0}, {"W": 5e-324}, {"v_e": 1e300},
+    {"pi_etoile": -0.999}, {"pi_etoile": 0.0}, {"pi_etoile": -0.05},
 ])
 def test_valeurs_aux_bornes_du_domaine_admises(champs):
     """Les bornes incluses (0, 2^64 − 1, 2^63 − 1), les identifiants Unicode réguliers
@@ -588,7 +598,7 @@ def test_document_utf8_non_echappe_et_un_champ_par_ligne():
     assert "État-α".encode() in document
     assert b"\\u" not in document
     lignes = document.decode("utf-8").splitlines()
-    assert lignes[:5] == ["{", ' "version": 2,', ' "pays": [', "  {", '   "identifiant": "État-α",']
+    assert lignes[:5] == ["{", ' "version": 3,', ' "pays": [', "  {", '   "identifiant": "État-α",']
     # Un champ par ligne, trois espaces devant (profondeur 3), et un niveau du registre par ligne.
     for nom in CHAMPS:
         assert sum(1 for ligne in lignes if ligne.startswith(f'   "{nom}": ')) == 1
@@ -650,7 +660,7 @@ def retirer_champ(champ):
     return modifier
 
 
-@pytest.mark.parametrize("version", [0, 1, 3, "2", 2.0, True, None])
+@pytest.mark.parametrize("version", [0, 1, 2, 4, "3", 3.0, True, None])
 def test_version_differente_refusee(version):
     with pytest.raises(SauvegardeRefusee, match="version") as refus:
         charger(document_modifie(remplacer("version", version)))
@@ -660,7 +670,7 @@ def test_version_differente_refusee(version):
 def test_version_refusee_avant_tout_diagnostic_de_champ():
     """Une sauvegarde d'une autre version est refusée comme telle, même si ses champs diffèrent."""
     def modifier(racine):
-        racine["version"] = 3
+        racine["version"] = 4
         racine["pays"][0]["champ_futur"] = 1.0
     with pytest.raises(SauvegardeRefusee, match="version"):
         charger(document_modifie(modifier))
@@ -668,7 +678,7 @@ def test_version_refusee_avant_tout_diagnostic_de_champ():
 
 def test_sauvegarde_v1_refusee_avec_diagnostic():
     """ADR 0012, D4 et annotation du 13/11/2026, point 1.5 : une sauvegarde au format v1
-    (version 1, sans les dix variables des blocs) est refusée sous le schéma v2, avec un
+    (version 1, sans les variables des blocs) est refusée sous le schéma v3, avec un
     diagnostic qui nomme la version lue et la seule admise, sans migration."""
     def en_v1(racine):
         racine["version"] = 1
@@ -676,9 +686,28 @@ def test_sauvegarde_v1_refusee_avec_diagnostic():
             for v in schema.VARIABLES_DES_BLOCS:
                 del pays[v.nom]
     with pytest.raises(SauvegardeRefusee,
-                       match="version du schéma 1 : seule la version 2 est admise "
+                       match="version du schéma 1 : seule la version 3 est admise "
                              "\\(aucune migration\\)") as refus:
         charger(document_modifie(en_v1))
+    assert refus.value.champ == "version"
+
+
+def test_sauvegarde_v2_refusee_avec_diagnostic():
+    """ADR 0012, D4 ; ADR 0013, annotation du 14/11/2026, point 3 (critère de #61) : une
+    sauvegarde au format v2 (version 2, sans π*) est refusée sous le schéma v3, avec un
+    diagnostic qui nomme la version lue et la seule admise, sans migration ; la même, au seul
+    numéro de version près, l'est encore (le champ manquant n'est pas le motif)."""
+    def en_v2(racine):
+        racine["version"] = 2
+        for pays in racine["pays"]:
+            del pays["pi_etoile"]
+    with pytest.raises(SauvegardeRefusee,
+                       match="version du schéma 2 : seule la version 3 est admise "
+                             "\\(aucune migration\\)") as refus:
+        charger(document_modifie(en_v2))
+    assert refus.value.champ == "version"
+    with pytest.raises(SauvegardeRefusee, match="version du schéma 2") as refus:
+        charger(document_modifie(remplacer("version", 2)))
     assert refus.value.champ == "version"
 
 
@@ -766,11 +795,11 @@ def test_pays_hors_ordre_ou_en_double_refuse(identifiants, motif):
 @pytest.mark.parametrize("document, motif", [
     (b"", "JSON invalide"),
     (b"[]", "racine"),
-    (b'{"version": 2}', "champ manquant"),
+    (b'{"version": 3}', "champ manquant"),
     (b'{"pays": []}', "champ manquant"),
-    (b'{"version": 2, "pays": {}}', "liste des pays"),
-    (b'{"version": 2, "pays": [3]}', "objet JSON"),
-    (b'{"version": 2, "version": 2, "pays": []}', "clé en double"),
+    (b'{"version": 3, "pays": {}}', "liste des pays"),
+    (b'{"version": 3, "pays": [3]}', "objet JSON"),
+    (b'{"version": 3, "version": 3, "pays": []}', "clé en double"),
     (b"\xff\xfe", "UTF-8"),
 ])
 def test_document_mal_forme_refuse(document, motif):

@@ -1,4 +1,4 @@
-"""Socle partiel d'essai : huit blocs d'essai sur le sentier, schéma v2 (issue #112).
+"""Socle partiel d'essai : huit blocs d'essai sur le sentier, schéma v3 (issues #112, #61).
 
 Critères d'acceptation de #112, écrits avant l'essai (issue #112 ; P52, P66,
 P67 ; synthèse du rang 1a de J3-b, § 6) : 720 pas depuis l'état résolu, aux
@@ -8,14 +8,20 @@ variable d'état sur son sentier à 1e−10 relatif après un pas et à 1e−9 s
 relatif sur 720 pas, B4 à B7 et B24 (et B13, fenêtre de 12 tours) dès le pas
 11 (D13), une grandeur de valeur résolue nulle jugée en valeur absolue,
 |x| ≤ 1e−12 (P66 : B7 à π* = 0, ξ) ; reprise au bit à la frontière de tour
-sous le schéma v2 ; invariance × 100 sur les variables nouvelles ; permutation
+sous le schéma v2, puis v3 (#61) ; invariance × 100 sur les variables nouvelles ; permutation
 des blocs d'un groupe identique au bit ; bijection propriétaire ↔ écrivain
 pour chaque variable nouvelle.
 
 Ces mesures portent l'étiquette « π^e exogène (bloc d'essai) » (réserve de
 `monnaie`) : le socle partiel ne vaut pas verdict de boucle conjointe. Tant
 qu'aucun bloc réel n'y est substitué, elles éprouvent le moteur (noyau,
-ordonnanceur, registre, schéma v2) sur le sentier, pas un bloc.
+ordonnanceur, registre, schéma v3) sur le sentier, pas un bloc.
+
+Critères de #61 (feuille de route § 1, écrits avant l'essai) éprouvés ici :
+π*_{t+1} = π*_t exactement à levier fermé (bloc d'essai 8, BC4 ; M30 ; ADR 0013,
+annotation du 14/11/2026, point 6), π*_t lue à l'ouverture, y compris hors du
+sentier ; Γ^e de la phase 0 égal à [(1 + g)(1 + π*)]^{1/n_a} à 1e−15 relatif à
+chaque pas ; reprise exacte en v3.
 """
 
 import dataclasses
@@ -30,6 +36,7 @@ from nations.moteur.conversions import par_pas
 from nations.moteur.diagnostics import DefautDeDeclaration
 from nations.moteur.parametres import varier
 from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
+from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import ETAPES, MOTEUR, NOYAU
 from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
@@ -183,6 +190,52 @@ def test_croissance_tendancielle_du_moteur_egale_au_script(trajectoires, pi):
 
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_cible_en_vigueur_constante_et_gamma_e_de_la_phase_0(trajectoires, pi, publier):
+    """Critères de #61 : à levier fermé, π*_{t+1} = π*_t exactement sur 720 pas (bloc d'essai
+    8, BC4 ; M30 ; ADR 0013, annotation du 14/11/2026, point 6), à la valeur du paramètre de
+    la table du bloc 8 à π* = 2 % ; Γ^e, calculé en phase 0 sur π*_t lue à l'ouverture, égale
+    [(1 + g)(1 + π*)]^{1/n_a} à 1e−15 relatif et le facteur nominal Γ̄ du script à 1e−15
+    relatif, à chaque pas ; γ^e = Γ^e − 1."""
+    tr = trajectoires[pi]
+    assert tr.initial.pi_etoile == pi
+    if pi == 0.02:
+        assert tr.initial.pi_etoile == PARAMETRES_DE_REFERENCE.banque_centrale.pi_etoile.valeur
+    ouvertures = [tr.initial] + [p["etat"] for p in tr.releve.pas]
+    assert all(e.pi_etoile == tr.initial.pi_etoile for e in ouvertures)
+    pire_direct = pire_script = 0.0
+    for t, p in enumerate(tr.releve.pas):
+        g = p["grandeurs"]
+        direct = ((1.0 + g["g"]) * (1.0 + ouvertures[t].pi_etoile)) ** (1.0 / N_A)
+        pire_direct = max(pire_direct, abs(g["Gamma_e"] / direct - 1.0))
+        pire_script = max(pire_script, abs(g["Gamma_e"] / tr.sentier.facteurs["nominal"] - 1.0))
+        assert g["gamma_e"] == g["Gamma_e"] - 1.0
+        assert g["Gamma_e"] == tr.releve.pas[0]["grandeurs"]["Gamma_e"]
+    assert pire_direct <= 1e-15 and pire_script <= 1e-15
+    publier(f"Γ^e de la phase 0, π* = {100 * pi:g} %, 720 pas (#61)", [
+        f"max |Γ^e / [(1 + g)(1 + π*)]^(1/n_a) − 1| = {pire_direct:.2e} ; "
+        f"max |Γ^e / Γ̄ du script − 1| = {pire_script:.2e} (seuil 1e−15) ; π* constante"])
+
+
+@pytest.mark.parametrize("pi_0", [0.03, 0.0, -0.5])
+def test_cible_en_vigueur_hors_du_sentier_reconduite_au_bit(socle, pi_0, publier):
+    """Constat M1 de l'audit du rang 3 : le critère π*_{t+1} = π*_t doit pouvoir échouer. Sur le
+    sentier à π̄ = 2 %, un état initial à π*_0 ≠ π̄ garde π*_t = π*_0 au bit sur 720 pas (le
+    bloc d'essai 8 lit π*_t à l'ouverture, non le sentier), et Γ^e de la phase 0 suit π*_0 à
+    1e−15 de la forme directe ; aucun bloc ne lit π* ni Γ^e, et le noyau ne s'arrête pas."""
+    sentier = socle.sentier(0.02)
+    initial = dataclasses.replace(socle.etat_initial(sentier), pi_etoile=pi_0)
+    releve = Releve()
+    socle.derouler(initial, NB_PAS, socle.ordonnanceur(sentier), releve)
+    assert all(p["etat"].pi_etoile == pi_0 for p in releve.pas)
+    pire = max(abs(p["grandeurs"]["Gamma_e"]
+                   / ((1.0 + p["grandeurs"]["g"]) * (1.0 + pi_0)) ** (1.0 / N_A) - 1.0)
+               for p in releve.pas)
+    assert pire <= 1e-15
+    publier(f"Cible hors du sentier (M1 de l'audit), π̄ = 2 %, π*_0 = {100 * pi_0:g} %", [
+        f"π*_t = π*_0 au bit sur {NB_PAS} pas ; max |Γ^e/direct − 1| = {pire:.2e}"])
+
+
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 def test_variables_d_etat_sur_leur_sentier(trajectoires, socle, pi, publier):
     """Chaque variable d'état des blocs à l'ouverture du pas t égale sa valeur d'ouverture du
     pas 0 × facteur^t à 1e−10 relatif après un pas et à 1e−9 sur 720 pas."""
@@ -254,9 +307,10 @@ def test_stationnarite_partielle(trajectoires, socle, pi, publier):
 # --------------------------------------------------------------------------
 
 
-def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v2(socle):
-    """D4 : sauvegarde v2 après la phase 9 du pas 359, rechargée : trajectoire, clôtures et
-    états identiques au bit à ceux d'une trajectoire continue, variables des blocs comprises."""
+def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v3(socle):
+    """D4 : sauvegarde v3 après la phase 9 du pas 359, rechargée : trajectoire, clôtures et
+    états identiques au bit à ceux d'une trajectoire continue, variables des blocs comprises,
+    π* comprise (critère de #61)."""
     sentier = socle.sentier(0.02)
     o = socle.ordonnanceur(sentier)
     continu = Empreinte()
@@ -264,7 +318,8 @@ def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v2(socle):
     avant, apres = Empreinte(), Empreinte()
     milieu = socle.derouler(socle.etat_initial(sentier), NB_PAS // 2, o, avant)
     document = sauvegarder([milieu])
-    assert b'"version": 2' in document and b'"mu_tilde"' in document
+    assert b'"version": 3' in document and b'"mu_tilde"' in document
+    assert b'"pi_etoile"' in document
     repris, = charger(document)
     assert repris == milieu
     fin_reprise = socle.derouler(repris, NB_PAS - NB_PAS // 2, o, apres)
@@ -309,7 +364,7 @@ def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 def test_reprise_avec_les_blocs_reels(socle, pi):
     """D4, blocs réels (`blocs_reels` ; en J3-b, blocs 2 à 4) substitués à leurs blocs
-    d'essai : sauvegarde v2 rechargée, reprise à la frontière de tour des pas 1, 359 et 361
+    d'essai : sauvegarde v3 rechargée, reprise à la frontière de tour des pas 1, 359 et 361
     (la reprise du bloc d'essai est au pas 360) : clôtures et états identiques au bit à ceux d'une
     trajectoire continue de 720 pas."""
     reels = socle.blocs_reels()
@@ -462,7 +517,7 @@ def test_acheteurs_au_prix_du_pas_sur_les_volumes_servis(socle):
 def test_variante_du_bloc_8_a_pi_e_choque(socle, publier):
     """Synthèse du rang 1a, § 8 : π^e choquée, injectée dans l'état d'ouverture (π^e_0 dans
     l'état initial, π^e_{t+1} écrite en phase 1) ; π^e d'ouverture suit le choc déclaré, et
-    reste dans le domaine 1 + π^e > 0 du schéma v2."""
+    reste dans le domaine 1 + π^e > 0 du schéma v3."""
     sentier = socle.sentier(0.02)
 
     def choc(t):
@@ -530,8 +585,8 @@ def test_linearisation_retrouve_une_valeur_propre_connue(socle, linearisation, p
     retrouve à 1e−8 des valeurs propres connues en forme fermée. Cas : le bloc d'essai de la
     production suit N1 pour v^e, demande d exogène sur le sentier, λ_v lue dans la table par la
     vue (référence 3, puis × 2 et × 0,5 par le constructeur validé) : v^e ramenée au sentier a
-    la valeur propre 1 − λ_v/n_a ; chaque position, aux flux exogènes, a 1/Γ̄ ; les variables
-    écrites au sentier, 0."""
+    la valeur propre 1 − λ_v/n_a ; chaque position, aux flux exogènes, a 1/Γ̄ ; π*, reconduite
+    depuis l'ouverture (BC4), 1 ; les variables écrites au sentier, 0."""
     sentier = socle.sentier(pi)
     p = socle.PARAMETRES_DE_REFERENCE
     parametres = dataclasses.replace(p, production=varier(p.production, lambda_v=lambda_v))
@@ -541,13 +596,15 @@ def test_linearisation_retrouve_une_valeur_propre_connue(socle, linearisation, p
     carte = linearisation.carte_du_moteur(socle.etat_initial(sentier), o, noms, pi)
     assert linearisation.residu_point_fixe(carte) <= SEUIL_NUL
     valeurs = linearisation.valeurs_propres(carte)
-    attendues = sorted([1.0 - lambda_v / N_A] + [1.0 / sentier.facteurs[socle.NOMINAL]]
-                       * len(postes) + [0.0] * (len(noms) - len(postes) - 1), reverse=True)
+    # π* reconduite depuis l'ouverture (BC4 à levier fermé) : valeur propre 1, racine unitaire
+    # de la cible en vigueur, qu'aucun bloc ne ramène (constat M1 de l'audit du rang 3 de J3-c).
+    attendues = sorted([1.0, 1.0 - lambda_v / N_A] + [1.0 / sentier.facteurs[socle.NOMINAL]]
+                       * len(postes) + [0.0] * (len(noms) - len(postes) - 2), reverse=True)
     ecart_max = float(max(abs(valeurs - attendues)))
     assert ecart_max <= 1e-8
     if (pi, lambda_v) == (0.02, 3.0):
         publier("Linéarisation de la carte d'un pas (#112, point 4), π* = 2 %, λ_v = 3", [
-            f"valeur propre de v^e : {valeurs[len(postes)].real:.12f} (1 − λ_v/n_a = 0,75) ; "
+            f"valeur propre de v^e : {valeurs[len(postes) + 1].real:.12f} (1 − λ_v/n_a = 0,75) ; "
             f"1/Γ̄ = {1.0 / sentier.facteurs[socle.NOMINAL]:.12f} (multiplicité {len(postes)}) ; "
             f"écart maximal aux formes fermées {ecart_max:.1e} (seuil 1e−8)"])
 
@@ -579,8 +636,10 @@ def test_linearisation_tendance_lue_dans_l_unite_a_croissance_demographique(socl
     residu = linearisation.residu_point_fixe(carte)
     assert residu <= SEUIL_NUL
     valeurs = linearisation.valeurs_propres(carte)
-    attendues = sorted([1.0 - 3.0 / N_A] + [1.0 / sentier.facteurs[socle.NOMINAL]]
-                       * len(postes) + [0.0] * (len(noms) - len(postes) - 1), reverse=True)
+    # π* reconduite depuis l'ouverture (BC4 à levier fermé) : valeur propre 1, racine unitaire
+    # de la cible en vigueur, qu'aucun bloc ne ramène (constat M1 de l'audit du rang 3 de J3-c).
+    attendues = sorted([1.0, 1.0 - 3.0 / N_A] + [1.0 / sentier.facteurs[socle.NOMINAL]]
+                       * len(postes) + [0.0] * (len(noms) - len(postes) - 2), reverse=True)
     ecart_max = float(max(abs(valeurs - attendues)))
     assert ecart_max <= 1e-8
     publier("Linéarisation à g_N = 0,005, π* = 2 %, λ_v = 3 (#112, Q2 de `macro`)", [

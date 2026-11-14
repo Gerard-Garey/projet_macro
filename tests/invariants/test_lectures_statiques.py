@@ -39,15 +39,52 @@ dont le radical est le nom du module.
    `vue.grand_livre.ouverture`, `.echelle`, `.valeur_nette_stock`,
    `.valeur_nette_flux` ; `global`, `nonlocal` et toute affectation dont la cible
    est un attribut.
-5. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
+5. **Aucun recalcul de Γ^e** (critère de #61 ; ADR 0013, annotation du 14/11/2026,
+   point 7) : Γ^e = `facteur_g` · f(π*) et π^{∗,pas} = f(π*) − 1 sont des grandeurs
+   d'ouverture que la phase 0 calcule seule ; un bloc les lit (`Gamma_e`, `gamma_e`,
+   `pi_etoile_pas`). Aucun nom admis ne les calcule (`nations.moteur.ouverture` hors de
+   la liste blanche, `NOMS_DE_CONVERSIONS` inchangée). Est refusée la **reconstruction
+   de f(π*) = (1 + π*)^{1/n_a}**, sur une grandeur qui **dépend de π*** :
+   - `facteur_par_pas` (sous son nom ou renommé à l'importation) ;
+   - `x ** e` ou `x **= e` dont la base en dépend et dont l'exposant n'est pas un entier
+     littéral (`(1 + π*) ** 2` est admis) ; toute puissance dont l'exposant contient le
+     logarithme d'une telle grandeur (`math.e ** (log(1 + π*)/n_a)`) ;
+   - `math.exp`, `exp2`, `expm1` dont l'argument contient un appel `math.log`, `log1p`,
+     `log2` ou `log10` sur une telle grandeur, ou un identifiant lié à un tel appel
+     (`y = math.log(1 + π*)` puis `math.exp(y/n_a)`) ;
+   - `math.pow` dont la base en dépend et dont l'exposant n'est pas un entier littéral ;
+   - `math.sqrt` et `math.cbrt` sur une telle grandeur (racines).
+   Une exponentielle ou un logarithme sans cette composition reste admis (S2 du bloc 6,
+   tu* = tū·exp[ζ(ϱ_L − ϱ̄_L)], avec ϱ_L = (1 + i_L)/(1 + π*) − 1). `facteur_par_pas` et
+   les fonctions surveillées de `math` ne s'emploient qu'appelés directement
+   (`p = math.pow` refusé). Dépend de π* une expression qui contient un attribut
+   `pi_etoile` (`vue.ouverture.pi_etoile`, `vue.parametres.banque_centrale.pi_etoile`) ou un
+   identifiant marqué. Est marqué : la cible d'une affectation (`=`, annotée, augmentée,
+   `:=`, `for`, compréhension, `with … as`, capture d'un `case`) d'une expression qui en
+   dépend ; le paramètre dont la valeur par défaut en dépend ; le paramètre d'une
+   fonction, méthode ou lambda du module appelée avec un argument qui en dépend (lambda
+   liée à un nom ou appelée sur place ; nom lié à un appelable ou à une méthode par une
+   affectation, `conv = convertir`, `m = self.convertir`, suivi) ; tout paramètre de tout
+   appelable du module pour un appel indirect (`h[0](x)`, `d['c'](x)`, appel d'un nom qui
+   n'est ni un appelable du module, ni natif, ni importé, ni une classe, comme un
+   paramètre qui reçoit une fonction : marquage par excès) ; le nom d'une fonction ou d'une lambda qui rend ou produit une
+   valeur qui en dépend. Fermeture d'un graphe des liaisons, sur les identifiants du module
+   sans distinction de portée (un homonyme est marqué aussi, et les homonymes appelables
+   sont réunis), en O(taille de l'arbre + appels + paramètres des définitions). **Hors du
+   critère**, déclaré et fixé par `test_formes_hors_du_critere_de_gamma_e` : une valeur
+   rangée dans un conteneur par une méthode (`t.append(π*)`) ; aucune affectation à un
+   attribut n'est admise (point 4). La conversion linéaire d'une grandeur qui dépend de π*
+   reste admise (BC6 convertit i_CB).
+6. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
    déclare pas).
-6. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
+7. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
    déclaration en trop ou en moins ; un essai par contournement connu (#121).
 
 Garde-fou (point 6 (a)) : aucun module de `src/` n'importe `tests` ni `outils`.
 """
 
 import ast
+import dataclasses
 import builtins
 import importlib
 import types
@@ -147,6 +184,23 @@ FORMATS = frozenset({"format", "format_map"})
 PAQUET_DES_BLOCS = "nations.blocs"
 CATEGORIES = ("ouverture", "grand_livre", "registre", "pas", "ecrit", "etat", "propose",
               "couvre")
+# Point 5 (#61) : la cible en vigueur π*, champ d'ouverture et paramètre du bloc 8 sous ce nom
+# (ADR 0013, annotation du 14/11/2026, point 2), et la conversion géométrique qui en ferait
+# f(π*), donc Γ^e = `facteur_g` · f(π*).
+CIBLE = "pi_etoile"
+CONVERSION_GEOMETRIQUE = "facteur_par_pas"
+# Fonctions de `math` par lesquelles f(π*) = (1 + π*)^{1/n_a} se reconstruirait sans
+# `facteur_par_pas` (C2 de `monnaie` ; R1 de l'audit de la reprise du rang 3 de J3-c) : racines
+# sur une grandeur qui dépend de π* ; exponentielles d'un logarithme de π*
+# (exp(log(1 + π*)/n_a)) ; `pow` à exposant non entier littéral. Une exponentielle sans
+# logarithme de π* (S2 du bloc 6, tu* = tū·exp[ζ(ϱ_L − ϱ̄_L)]) est admise. Chacune ne s'emploie
+# qu'appelée directement (`p = math.pow` refusé).
+RACINES = frozenset({"sqrt", "cbrt"})
+EXPONENTIELLES = frozenset({"exp", "exp2", "expm1"})
+LOGARITHMES = frozenset({"log", "log1p", "log2", "log10"})
+FONCTIONS_DE_MATH_SURVEILLEES = RACINES | EXPONENTIELLES | LOGARITHMES | {"pow"}
+MOTIF_PUISSANCE = "puissance d'une grandeur qui dépend de π* refusée (recalcul de f(π*))"
+MOTIF_MATH = "sur une grandeur qui dépend de π* refusé (recalcul de f(π*))"
 
 
 def declares(siege) -> dict[str, set[str]]:
@@ -307,6 +361,332 @@ def _liaisons_de_phase(arbre: ast.AST, parents: dict) -> list[str]:
     return ecarts
 
 
+def _identifiants_cibles(cible: ast.AST) -> set[str]:
+    """Noms liés par une cible d'affectation (n-uplets et étoiles compris)."""
+    return {n.id for n in ast.walk(cible) if isinstance(n, ast.Name)}
+
+
+def _identifiants_du_motif(motif: ast.AST) -> set[str]:
+    """Noms liés par un motif de `case` (`case y`, `case [*y]`, `case {**y}`, `case C(x=y)`)."""
+    noms = set()
+    for n in ast.walk(motif):
+        if isinstance(n, (ast.MatchAs, ast.MatchStar)) and n.name is not None:
+            noms.add(n.name)
+        elif isinstance(n, ast.MatchMapping) and n.rest is not None:
+            noms.add(n.rest)
+    return noms
+
+
+def _depend_de_la_cible(expression: ast.AST | None, marques: set[str]) -> bool:
+    """Vrai si l'expression contient un attribut `pi_etoile`, ou un nom ou un attribut marqué
+    (nom qui dépend de π*, fonction ou méthode qui en rend une valeur)."""
+    if expression is None:
+        return False
+    for n in ast.walk(expression):
+        if isinstance(n, ast.Attribute) and (n.attr == CIBLE or n.attr in marques):
+            return True
+        if isinstance(n, ast.Name) and n.id in marques:
+            return True
+    return False
+
+
+def _references(expression: ast.AST | None) -> tuple[bool, set[str]]:
+    """(contient un attribut `pi_etoile`, identifiants référencés : noms et attributs)."""
+    if expression is None:
+        return False, set()
+    cible, noms = False, set()
+    for n in ast.walk(expression):
+        if isinstance(n, ast.Attribute):
+            cible = cible or n.attr == CIBLE
+            noms.add(n.attr)
+        elif isinstance(n, ast.Name):
+            noms.add(n.id)
+    return cible, noms
+
+
+def _appelables(arbre: ast.AST) -> dict[str, list[ast.AST]]:
+    """Appelables du module par nom : `def` (fonctions et méthodes, homonymes réunis) et lambdas
+    liées à un nom ; un nom lié à un autre par une affectation de nom à nom
+    (`conv = convertir`, `:=`, affectation annotée) ou à un attribut (`m = self.convertir`)
+    partage ses appelables (classes d'union, sans ordre : un alias écrit avant sa source est
+    suivi)."""
+    parent: dict[str, str] = {}
+
+    def racine(x: str) -> str:
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    definitions: dict[str, list[ast.AST]] = {}
+    for n in ast.walk(arbre):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            definitions.setdefault(n.name, []).append(n)
+        paires = ()
+        if isinstance(n, ast.Assign):
+            paires = ((c, n.value) for c in n.targets)
+        elif isinstance(n, (ast.AnnAssign, ast.NamedExpr)) and n.value is not None:
+            paires = ((n.target, n.value),)
+        for cible, valeur in paires:
+            for nom in _identifiants_cibles(cible):
+                if isinstance(valeur, ast.Lambda):
+                    definitions.setdefault(nom, []).append(valeur)
+                elif isinstance(valeur, (ast.Name, ast.Attribute)):
+                    source = valeur.id if isinstance(valeur, ast.Name) else valeur.attr
+                    parent[racine(nom)] = racine(source)
+    par_classe: dict[str, list[ast.AST]] = {}
+    for nom, liste in definitions.items():
+        par_classe.setdefault(racine(nom), []).extend(liste)
+    noms = set(parent) | set(definitions)
+    return {nom: par_classe[racine(nom)] for nom in noms if racine(nom) in par_classe}
+
+
+def _positionnels(definition: ast.AST) -> list[str]:
+    """Paramètres positionnels, sans un `self` de tête : une méthode est appelée par un attribut
+    (`self.m(x)`) ou par un alias lié (`m = self.m ; m(x)`), qui ne passent pas `self` ; un appel
+    explicite `Classe.m(self, x)` décale les arguments au-delà des positionnels, d'où tous les
+    paramètres (ci-dessous). `self` n'est jamais marqué."""
+    a = definition.args
+    noms = [p.arg for p in a.posonlyargs + a.args]
+    return noms[1:] if noms[:1] == ["self"] else noms
+
+
+def _tous_les_parametres(definition: ast.AST) -> set[str]:
+    a = definition.args
+    return ({p.arg for p in a.posonlyargs + a.args + a.kwonlyargs} | {
+        p.arg for p in (a.vararg, a.kwarg) if p is not None}) - {"self"}
+
+
+def _est_un_entier_litteral(n: ast.AST) -> bool:
+    """Exposant entier écrit en littéral (`2`, `-1`), non booléen."""
+    if isinstance(n, ast.UnaryOp) and isinstance(n.op, (ast.USub, ast.UAdd)):
+        n = n.operand
+    return isinstance(n, ast.Constant) and type(n.value) is int
+
+
+def _noms_de_math(arbre: ast.AST) -> set[str]:
+    """Noms sous lesquels `math` est importé entier (`import math`, `import math as m`)."""
+    return {a.asname or a.name for n in ast.walk(arbre) if isinstance(n, ast.Import)
+            for a in n.names if a.name == "math"}
+
+
+def _fonction_de_math(n: ast.AST, modules_math: set[str]) -> str | None:
+    """`f` si `n` est l'attribut `math.f`, sinon `None`."""
+    if (isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
+            and n.value.id in modules_math):
+        return n.attr
+    return None
+
+
+@dataclasses.dataclass(frozen=True)
+class _Graphe:
+    """Graphe des liaisons d'un module (point 5) : arêtes identifiant référencé → identifiants
+    liés, et liste des liaisons (valeur, identifiants liés) dont partent les graines."""
+
+    aretes: dict
+    liaisons: list
+    noeuds_d_appel: set
+
+
+def _graphe_des_liaisons(arbre: ast.AST, parents: dict) -> _Graphe:
+    """Graphe construit en un parcours de l'arbre. Un appel lie chaque argument à un **nœud
+    d'appel** (appelable, position ou mot-clé), relié une seule fois aux paramètres de cette
+    position de tous les appelables du même nom ; un appel indirect (`h[0](x)`, `d['c'](x)`,
+    `f()(x)`, ou un nom qui n'est ni un appelable du module, ni natif, ni importé, ni une
+    classe : paramètre qui reçoit une fonction, `def app(g, x): return g(x)`) lie ses arguments
+    à tous les paramètres de tous les appelables du module : coût en
+    O(taille de l'arbre + appels + paramètres des définitions), homonymes compris."""
+    appelables = _appelables(arbre)
+    tous_les_appelables = [n for n in ast.walk(arbre)
+                           if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda))]
+    # Noms connus qui ne désignent pas un appelable du module : natifs, noms importés, classes.
+    connus = NATIFS | {a.asname or a.name.split(".")[0] for n in ast.walk(arbre)
+                       if isinstance(n, (ast.Import, ast.ImportFrom)) for a in n.names} | {
+        n.name for n in ast.walk(arbre) if isinstance(n, ast.ClassDef)}
+    aretes: dict[str, set[str]] = {}
+    liaisons: list[tuple[ast.AST, set[str]]] = []
+    noeuds_d_appel: set[str] = set()
+
+    def lier(valeur: ast.AST | None, lies: set[str]) -> None:
+        if valeur is None:
+            return
+        lies = lies - {"self"}
+        liaisons.append((valeur, lies))
+        for nom in _references(valeur)[1]:
+            aretes.setdefault(nom, set()).update(lies)
+
+    def noeud(cle: str, definitions: list[ast.AST], selon) -> str:
+        """Nœud d'appel `cle` (préfixe `\\0`, hors des identifiants Python), relié une fois aux
+        paramètres que `selon(definition)` désigne dans chaque définition."""
+        nom = "\0" + cle
+        if nom not in noeuds_d_appel:
+            noeuds_d_appel.add(nom)
+            aretes.setdefault(nom, set()).update(
+                p for d in definitions for p in selon(d) if p != "self")
+        return nom
+
+    def appel(n: ast.Call) -> None:
+        if isinstance(n.func, ast.Lambda):
+            definitions, cle = [n.func], f"lambda@{id(n.func)}"
+        elif isinstance(n.func, (ast.Name, ast.Attribute)) and (
+                (nom := n.func.id if isinstance(n.func, ast.Name) else n.func.attr)
+                in appelables):
+            definitions, cle = appelables[nom], nom
+        elif isinstance(n.func, ast.Attribute) or (
+                isinstance(n.func, ast.Name) and n.func.id in connus):
+            # Méthode d'un objet (`t.append`, `vue.lire`) ou nom connu : aucun appelable du
+            # module n'est désigné.
+            return
+        else:
+            definitions, cle = tous_les_appelables, "indirect"
+        tous = noeud(f"{cle}*", definitions, _tous_les_parametres)
+        for i, argument in enumerate(n.args):
+            if isinstance(argument, ast.Starred) or cle == "indirect":
+                lier(argument, {tous})
+                continue
+            lier(argument, {noeud(f"{cle}#{i}", definitions, lambda d, i=i: (
+                [p[i]] if i < len(p := _positionnels(d)) else _tous_les_parametres(d)))})
+        for mot in n.keywords:
+            if mot.arg is None or cle == "indirect":
+                lier(mot.value, {tous})
+                continue
+            lier(mot.value, {noeud(f"{cle}={mot.arg}", definitions, lambda d, k=mot.arg: (
+                [k] if k in _tous_les_parametres(d) else _tous_les_parametres(d)))})
+
+    noms_des_appelables: dict[int, set[str]] = {}
+    for nom, definitions in appelables.items():
+        for d in definitions:
+            noms_des_appelables.setdefault(id(d), set()).add(nom)
+    for n in ast.walk(arbre):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            a = n.args
+            positionnels = a.posonlyargs + a.args
+            for p, defaut in zip(positionnels[len(positionnels) - len(a.defaults):], a.defaults):
+                lier(defaut, {p.arg})
+            for p, defaut in zip(a.kwonlyargs, a.kw_defaults):
+                lier(defaut, {p.arg})
+            if isinstance(n, ast.Lambda):
+                lier(n.body, noms_des_appelables.get(id(n), set()))
+        elif isinstance(n, (ast.Return, ast.Yield, ast.YieldFrom)):
+            englobante = parents.get(n)
+            while englobante is not None and not isinstance(
+                    englobante, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                englobante = parents.get(englobante)
+            if englobante is not None:
+                lier(n.value, {englobante.name})
+        elif isinstance(n, ast.Assign):
+            for c in n.targets:
+                lier(n.value, _identifiants_cibles(c))
+        elif isinstance(n, (ast.AnnAssign, ast.AugAssign, ast.NamedExpr)):
+            lier(n.value, _identifiants_cibles(n.target))
+        elif isinstance(n, (ast.For, ast.AsyncFor, ast.comprehension)):
+            lier(n.iter, _identifiants_cibles(n.target))
+        elif isinstance(n, ast.withitem) and n.optional_vars is not None:
+            lier(n.context_expr, _identifiants_cibles(n.optional_vars))
+        elif isinstance(n, ast.Match):
+            for cas in n.cases:
+                lier(n.subject, _identifiants_du_motif(cas.pattern))
+        if isinstance(n, ast.Call):
+            appel(n)
+    return _Graphe(aretes, liaisons, noeuds_d_appel)
+
+
+def _fermeture(graphe: _Graphe, est_graine) -> set[str]:
+    """Identifiants atteints depuis les liaisons dont la valeur satisfait `est_graine`."""
+    marques: set[str] = set()
+    for valeur, lies in graphe.liaisons:
+        if est_graine(valeur):
+            marques |= lies
+    a_suivre = list(marques)
+    while a_suivre:
+        for suivant in graphe.aretes.get(a_suivre.pop(), ()):
+            if suivant not in marques:
+                marques.add(suivant)
+                a_suivre.append(suivant)
+    return marques - graphe.noeuds_d_appel
+
+
+def _contient_un_attribut_cible(valeur: ast.AST) -> bool:
+    return any(isinstance(n, ast.Attribute) and n.attr == CIBLE for n in ast.walk(valeur))
+
+
+def _marques_de_la_cible(arbre: ast.AST, parents: dict) -> set[str]:
+    """Identifiants du module qui dépendent de π* (point 5) : fermeture du graphe des liaisons
+    depuis les identifiants liés à une expression qui contient un attribut `pi_etoile`."""
+    return _fermeture(_graphe_des_liaisons(arbre, parents), _contient_un_attribut_cible)
+
+
+def _contient_un_log_de(valeur: ast.AST, marques: set[str], logarithmes: set[str],
+                        modules_math: set[str]) -> bool:
+    """Vrai si `valeur` contient un appel `math.log*` sur une grandeur marquée, ou un identifiant
+    de `logarithmes` (lié à un tel appel)."""
+    for n in ast.walk(valeur):
+        if (isinstance(n, ast.Call) and _fonction_de_math(n.func, modules_math) in LOGARITHMES
+                and any(_depend_de_la_cible(x, marques)
+                        for x in n.args + [k.value for k in n.keywords])):
+            return True
+        if isinstance(n, ast.Name) and n.id in logarithmes:
+            return True
+    return False
+
+
+def _recalculs_de_gamma_e(arbre: ast.AST, parents: dict) -> list[str]:
+    """Écarts du point 5 : reconstruction de f(π*) = (1 + π*)^{1/n_a}, donc de Γ^e ou de
+    π^{∗,pas}, dans un bloc (voir le docstring du module, point 5)."""
+    alias = {a.asname or a.name for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom)
+             for module, nom in _importations(n) if module == CONVERSIONS
+             for a in n.names if a.name == nom == CONVERSION_GEOMETRIQUE}
+    modules_math = _noms_de_math(arbre)
+    graphe = _graphe_des_liaisons(arbre, parents)
+    marques = _fermeture(graphe, _contient_un_attribut_cible)
+    # Identifiants liés au logarithme d'une grandeur marquée (y = math.log(1 + π*)).
+    logarithmes = _fermeture(graphe, lambda v: _contient_un_log_de(v, marques, set(),
+                                                                    modules_math))
+
+    def log_de_la_cible(x: ast.AST) -> bool:
+        return _contient_un_log_de(x, marques, logarithmes, modules_math)
+
+    lire = "lire Gamma_e, gamma_e ou pi_etoile_pas, #61"
+    ecarts = []
+    for n in ast.walk(arbre):
+        if isinstance(n, ast.Name) and n.id in alias and isinstance(n.ctx, ast.Load):
+            appel = parents.get(n)
+            if not (isinstance(appel, ast.Call) and appel.func is n):
+                ecarts.append(f"ligne {n.lineno} : {n.id} employé hors d'un appel direct")
+            elif any(_depend_de_la_cible(x, marques)
+                     for x in appel.args + [k.value for k in appel.keywords]):
+                ecarts.append(f"ligne {n.lineno} : {n.id} sur une grandeur qui dépend de π* "
+                              f"refusé (recalcul de Γ^e ou de π^{{∗,pas}} : {lire})")
+        elif isinstance(n, (ast.BinOp, ast.AugAssign)) and isinstance(n.op, ast.Pow):
+            base, exposant = (n.left, n.right) if isinstance(n, ast.BinOp) else (n.target, n.value)
+            if (_depend_de_la_cible(base, marques) and not _est_un_entier_litteral(exposant)) \
+                    or log_de_la_cible(exposant):
+                ecarts.append(f"ligne {n.lineno} : {MOTIF_PUISSANCE} ({lire})")
+        elif (fonction := _fonction_de_math(n, modules_math)) in FONCTIONS_DE_MATH_SURVEILLEES:
+            appel = parents.get(n)
+            if not (isinstance(appel, ast.Call) and appel.func is n):
+                ecarts.append(f"ligne {n.lineno} : math.{fonction} employé hors d'un appel "
+                              "direct")
+                continue
+            arguments = appel.args + [k.value for k in appel.keywords]
+            if fonction in RACINES:
+                refus = any(_depend_de_la_cible(x, marques) for x in arguments)
+            elif fonction == "pow":
+                refus = (len(appel.args) == 2 and _depend_de_la_cible(appel.args[0], marques)
+                         and not _est_un_entier_litteral(appel.args[1])) or any(
+                    log_de_la_cible(x) for x in arguments) or (
+                    len(appel.args) != 2 and any(_depend_de_la_cible(x, marques)
+                                                 for x in arguments))
+            elif fonction in EXPONENTIELLES:
+                refus = any(log_de_la_cible(x) for x in arguments)
+            else:
+                refus = False
+            if refus:
+                ecarts.append(f"ligne {n.lineno} : math.{fonction} {MOTIF_MATH} ({lire})")
+    return ecarts
+
+
 def _relever_methode(fonction: ast.FunctionDef, parents: dict) -> tuple[dict, list[str]]:
     """Relevé d'une méthode `phase_<étape>` sur son paramètre de vue, et écarts de forme."""
     releve = {c: set() for c in CATEGORIES}
@@ -392,6 +772,7 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
             for sous in ast.walk(cible):
                 if isinstance(sous, ast.Attribute):
                     ecarts.append(f"ligne {sous.lineno} : affectation à un attribut refusée")
+    ecarts += _recalculs_de_gamma_e(arbre, parents)
     if declaration is None:
         return ecarts + ["aucun bloc déclaré dans le module"]
     if declaration.radical != radical:
@@ -663,7 +1044,7 @@ def test_importation_relative_resolue_contre_nations_blocs():
     admis = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
                              "    from ..moteur.contrat_bloc import Siege as S\n"
                              "    from ..moteur.conversions import facteur_par_pas\n"
-                             "    return S, facteur_par_pas\n", 1)
+                             "    return S, facteur_par_pas(S)\n", 1)
     assert analyser_texte(admis) == []
     refuse = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
                               "    from ..moteur import contrat_bloc\n"
@@ -896,3 +1277,283 @@ def test_slots_admis_en_affectation_seulement():
     nom = CONFORME.replace("def marge(", "def _jamais():\n    return __slots__\n\n\n"
                            "def marge(", 1)
     assert any("nom spécial __slots__ refusé" in e for e in analyser_texte(nom))
+
+
+# --------------------------------------------------------------------------
+# Aucun recalcul de Γ^e (point 5 ; critère de #61)
+# --------------------------------------------------------------------------
+
+# Le module conforme, la conversion géométrique et son type importés.
+AVEC_FACTEUR = CONFORME.replace(
+    "from nations.moteur.conversions import par_pas\n",
+    "from nations.moteur.conversions import TauxDeCroissance, facteur_par_pas, par_pas\n", 1)
+# Point d'insertion d'une forme dans `phase_5`, avant la première écriture.
+AVANT_ECRITURE = "        vue.ecrire_pas(\"p\", p)\n"
+MOTIF_GAMMA_E = "facteur_par_pas sur une grandeur qui dépend de π* refusé"
+
+# (forme insérée dans `phase_5`, fonctions ajoutées au module) : chacune recalcule f(π*).
+RECALCULS = [
+    ("        f = facteur_par_pas(TauxDeCroissance(vue.ouverture.pi_etoile))\n", ""),
+    ("        f = facteur_par_pas(vue.parametres.banque_centrale.pi_etoile)\n", ""),
+    ("        c = vue.parametres.banque_centrale\n        f = facteur_par_pas(c.pi_etoile)\n", ""),
+    ("        x = vue.ouverture.pi_etoile\n        y = 1.0 * x\n"
+     "        f = facteur_par_pas(TauxDeCroissance(y))\n", ""),
+    ("        y = 0.0\n        y += vue.ouverture.pi_etoile\n"
+     "        f = facteur_par_pas(TauxDeCroissance(y))\n", ""),
+    ("        if (y := vue.ouverture.pi_etoile) > -1.0:\n"
+     "            f = facteur_par_pas(TauxDeCroissance(y))\n", ""),
+    ("        for y in (vue.ouverture.pi_etoile,):\n"
+     "            f = facteur_par_pas(TauxDeCroissance(y))\n", ""),
+    ("        f = [facteur_par_pas(TauxDeCroissance(y)) for y in (vue.ouverture.pi_etoile,)]\n",
+     ""),
+    ("        f = facteur_par_pas(taux=TauxDeCroissance(vue.ouverture.pi_etoile))\n", ""),
+    # Par une fonction du module : paramètre marqué à l'appel, ou valeur rendue marquée.
+    ("        f = convertir(vue.ouverture.pi_etoile)\n",
+     "def convertir(x):\n    return facteur_par_pas(TauxDeCroissance(x))\n"),
+    ("        f = convertir(x=vue.ouverture.pi_etoile)\n",
+     "def convertir(x):\n    return facteur_par_pas(TauxDeCroissance(x))\n"),
+    ("        f = convertir(*(vue.ouverture.pi_etoile,))\n",
+     "def convertir(x):\n    return facteur_par_pas(TauxDeCroissance(x))\n"),
+    ("        f = facteur_par_pas(TauxDeCroissance(cible(vue.parametres)))\n",
+     "def cible(p):\n    return p.banque_centrale.pi_etoile.valeur\n"),
+    ("        f = facteur_par_pas(TauxDeCroissance(relais(cible(vue.parametres))))\n",
+     "def cible(p):\n    return p.banque_centrale.pi_etoile.valeur\n\n\n"
+     "def relais(x):\n    return x\n"),
+    # Méthode du bloc appelée par `self`.
+    ("        f = self.convertir(vue.ouverture.pi_etoile)\n", "METHODE"),
+]
+METHODE = ("    def convertir(self, x):\n"
+           "        return facteur_par_pas(TauxDeCroissance(x))\n\n")
+
+
+def _avec_forme(forme: str, fonctions: str) -> str:
+    texte = AVEC_FACTEUR.replace(AVANT_ECRITURE, forme + AVANT_ECRITURE, 1)
+    if fonctions == "METHODE":
+        return texte.replace("    def phase_5(self, vue):", METHODE + "    def phase_5(self, vue):",
+                             1)
+    if fonctions:
+        return texte.replace("class Prix:", fonctions + "\n\nclass Prix:", 1)
+    return texte
+
+
+# Contournements relevés par l'audit du rang 3 (m1), désormais suivis : lambda, alias d'une
+# fonction, valeur par défaut, capture d'un `case`.
+RECALCULS += [
+    ("        h = lambda x: facteur_par_pas(TauxDeCroissance(x))\n"
+     "        f = h(vue.parametres.banque_centrale.pi_etoile.valeur)\n", ""),
+    ("        f = (lambda x: facteur_par_pas(TauxDeCroissance(x)))(vue.ouverture.pi_etoile)\n",
+     ""),
+    ("        conv = convertir\n        f = conv(vue.ouverture.pi_etoile)\n",
+     "def convertir(x):\n    return facteur_par_pas(TauxDeCroissance(x))\n"),
+    ("        f = conv(vue.ouverture.pi_etoile)\n        conv = convertir\n",
+     "def convertir(x):\n    return facteur_par_pas(TauxDeCroissance(x))\n"),
+    ("        def k(y=vue.ouverture.pi_etoile):\n"
+     "            return facteur_par_pas(TauxDeCroissance(y))\n        f = k()\n", ""),
+    ("        def k(*, y=vue.ouverture.pi_etoile):\n"
+     "            return facteur_par_pas(TauxDeCroissance(y))\n        f = k()\n", ""),
+    ("        match vue.ouverture.pi_etoile:\n            case y:\n"
+     "                f = facteur_par_pas(TauxDeCroissance(y))\n", ""),
+    ("        match (vue.ouverture.pi_etoile,):\n            case (*y,):\n"
+     "                f = facteur_par_pas(TauxDeCroissance(y[0]))\n", ""),
+    # Fonction imbriquée : son retour marque son nom, non celui de la fonction englobante.
+    ("        def interne():\n            return vue.ouverture.pi_etoile\n"
+     "        f = facteur_par_pas(TauxDeCroissance(interne()))\n", ""),
+]
+
+
+@pytest.mark.parametrize("forme, fonctions", RECALCULS)
+def test_recalcul_de_gamma_e_refuse(forme, fonctions):
+    """Point 5 (critère de #61) : `facteur_par_pas` sur une grandeur qui dépend de π*, sous
+    chaque forme de liaison déclarée, est refusé ; Γ^e et π^{∗,pas} ne se lisent que dans
+    l'espace du pas."""
+    ecarts = analyser_texte(_avec_forme(forme, fonctions))
+    assert any(MOTIF_GAMMA_E in e for e in ecarts), ecarts
+
+
+@pytest.mark.parametrize("forme, motif", [
+    ("        g = facteur_par_pas\n", "facteur_par_pas employé hors d'un appel direct"),
+    ("        g = (facteur_par_pas,)[0]\n", "facteur_par_pas employé hors d'un appel direct"),
+])
+def test_conversion_geometrique_hors_d_un_appel_direct_refusee(forme, motif):
+    """Point 5 : `facteur_par_pas` ne se lie ni ne se passe (`g = facteur_par_pas`, puis
+    `g(…)` échapperait au contrôle) ; il s'emploie appelé directement."""
+    ecarts = analyser_texte(_avec_forme(forme, ""))
+    assert any(motif in e for e in ecarts), ecarts
+
+
+# π* lue dans la table par la vue (lecture non déclarée par B2) : les formes ne portent que le
+# point 5.
+PI = "vue.parametres.banque_centrale.pi_etoile.valeur"
+N_A_VUE = "vue.parametres.cadre.pas_par_an"
+
+
+@pytest.mark.parametrize("forme, motif", [
+    (f"        f = (1.0 + {PI}) ** (1.0 / {N_A_VUE})\n", MOTIF_PUISSANCE),
+    (f"        f = (1.0 + {PI}) ** (1 / 12)\n", MOTIF_PUISSANCE),
+    (f"        y = 1.0 + {PI}\n        y **= 0.5\n", MOTIF_PUISSANCE),
+    (f"        f = math.e ** (math.log(1.0 + {PI}) / {N_A_VUE})\n", MOTIF_PUISSANCE),
+    (f"        f = math.exp(math.log(1.0 + {PI}) / {N_A_VUE})\n", "math.exp " + MOTIF_MATH),
+    (f"        f = math.exp(par_pas(TauxDeFlux(math.log1p({PI}))))\n", "math.exp " + MOTIF_MATH),
+    (f"        y = math.log(1.0 + {PI})\n        f = math.expm1(y / {N_A_VUE})\n",
+     "math.expm1 " + MOTIF_MATH),
+    (f"        f = math.pow(1.0 + {PI}, 1.0 / {N_A_VUE})\n", "math.pow " + MOTIF_MATH),
+    (f"        f = math.pow(1.0 + {PI}, 1 / 12)\n", "math.pow " + MOTIF_MATH),
+    (f"        f = math.sqrt(1.0 + {PI})\n", "math.sqrt " + MOTIF_MATH),
+    (f"        f = math.cbrt(1.0 + {PI})\n", "math.cbrt " + MOTIF_MATH),
+    # R2 de l'audit de la reprise : une fonction surveillée de `math` s'emploie appelée
+    # directement.
+    (f"        p = math.pow\n        f = p(1.0 + {PI}, 0.5)\n",
+     "math.pow employé hors d'un appel direct"),
+])
+def test_reconstruction_de_f_pi_etoile_refusee(forme, motif):
+    """Point 5 (C2 de `monnaie` ; R1 de l'audit de la reprise du rang 3) : (1 + π*)^{1/n_a}
+    par `**`, `**=`, `math.pow` à exposant non entier littéral, exp(log(1 + π*)/n_a), ou une
+    racine (`sqrt`, `cbrt`) d'une grandeur qui dépend de π*, est refusée."""
+    texte = _avec_forme(forme, "").replace(
+        "import TauxDeCroissance, facteur_par_pas, par_pas",
+        "import TauxDeCroissance, TauxDeFlux, facteur_par_pas, par_pas", 1)
+    ecarts = analyser_texte(texte)
+    assert any(motif in e for e in ecarts), ecarts
+
+
+@pytest.mark.parametrize("forme", [
+    # S1 puis S2 du bloc 6 (spécification, `sec:investissement`) : ϱ_L = (1 + i_L)/(1 + π*) − 1,
+    # tu* = tū·exp[ζ(ϱ_L − ϱ̄_L)] ; test anti-régression du faux positif R1.
+    f"        rho = (1.0 + 0.05) / (1.0 + {PI}) - 1.0\n"
+    "        tu_vise = 0.8 * math.exp(2.0 * (rho - 0.03))\n",
+    # Puissance entière d'une grandeur qui dépend de π* : aucune racine.
+    f"        ecart = (1.0 + {PI}) ** 2\n",
+    f"        ecart = (1.0 + {PI}) ** -1 + math.pow(1.0 + {PI}, 3)\n",
+    # Logarithme seul, sans exponentielle (ln(1 + π*), taux réel en logarithme).
+    f"        lr = math.log(1.0 + {PI})\n",
+    # Exponentielle d'un taux par pas qui ne passe pas par le logarithme de π*.
+    f"        k = math.exp(par_pas(TauxDeFlux({PI})))\n",
+])
+def test_formes_sans_reconstruction_de_f_pi_etoile_admises(forme):
+    """Point 5 : seule la reconstruction de f(π*) est refusée ; une exponentielle ou une
+    puissance entière d'une grandeur qui dépend de π* reste admise."""
+    texte = _avec_forme(forme, "").replace(
+        "import TauxDeCroissance, facteur_par_pas, par_pas",
+        "import TauxDeCroissance, TauxDeFlux, facteur_par_pas, par_pas", 1)
+    assert analyser_texte(texte) == []
+
+
+def test_formes_hors_du_critere_de_gamma_e():
+    """Point 5, limite déclarée : une valeur qui dépend de π* rangée dans un conteneur par une
+    méthode (`t.append(π*)`) n'est pas suivie ; la forme est admise par le contrôle. Le test
+    fixe cette limite : s'il échoue, le contrôle a été étendu et le docstring doit l'être
+    aussi."""
+    texte = _avec_forme(
+        f"        t = [0.0]\n        t.append({PI})\n"
+        "        f = facteur_par_pas(TauxDeCroissance(t[1]))\n", "")
+    assert analyser_texte(texte) == []
+
+
+# Contournements de la reprise du rang 3 (m1 puis R2), suivis : ordre supérieur, lambda ou
+# fonction rangée dans un n-uplet ou un dictionnaire, alias de méthode.
+CONVERTIR = "def convertir(u):\n    return facteur_par_pas(TauxDeCroissance(u))\n"
+
+
+@pytest.mark.parametrize("forme, fonctions", [
+    (f"        f = appliquer(convertir, {PI})\n",
+     CONVERTIR + "\n\ndef appliquer(g, w):\n    return g(w)\n"),
+    ("        h = (lambda z: facteur_par_pas(TauxDeCroissance(z)),)\n"
+     f"        f = h[0]({PI})\n", ""),
+    ("        d = {'c': lambda z: facteur_par_pas(TauxDeCroissance(z))}\n"
+     f"        f = d['c']({PI})\n", ""),
+    (f"        h = (convertir,)\n        f = h[0]({PI})\n", CONVERTIR),
+    (f"        m = self.convertir\n        f = m({PI})\n", "METHODE"),
+])
+def test_recalcul_par_appel_indirect_refuse(forme, fonctions):
+    """Point 5 (R2 de l'audit de la reprise du rang 3) : un appel indirect (indice, appel d'un
+    paramètre) lie ses arguments à tous les paramètres des appelables du module ; un alias de
+    méthode partage ses appelables : le recalcul de f(π*) qui s'y cache est refusé."""
+    ecarts = analyser_texte(_avec_forme(forme, fonctions))
+    assert any(MOTIF_GAMMA_E in e for e in ecarts), ecarts
+
+
+def test_puissance_et_math_sans_pi_etoile_admises():
+    """Point 5 : la puissance et `math` sur une grandeur qui ne dépend pas de π* restent
+    admises (la marge du bloc 4 emploie `math.exp` et `math.log`)."""
+    texte = _avec_forme("        k = (1.0 + vue.ouverture.IN_vol) ** 2.0 + math.log(2.0)\n", "")
+    assert [e for e in analyser_texte(texte) if "π*" in e] == []
+
+
+def test_recalcul_sous_un_autre_nom_refuse():
+    """Point 5 : la conversion renommée à l'importation est suivie sous son nouveau nom."""
+    texte = _avec_forme("        f = fpp(TauxDeCroissance(vue.ouverture.pi_etoile))\n", "")
+    texte = texte.replace("import TauxDeCroissance, facteur_par_pas, par_pas",
+                          "import TauxDeCroissance, par_pas\n"
+                          "from nations.moteur.conversions import facteur_par_pas as fpp", 1)
+    ecarts = analyser_texte(texte)
+    assert any("fpp sur une grandeur qui dépend de π* refusé" in e for e in ecarts), ecarts
+
+
+@pytest.mark.parametrize("forme", [
+    # Une conversion géométrique sans π* ; π* lue sans conversion (BC1 lit le taux annuel) ; la
+    # conversion linéaire d'une grandeur qui dépend de π* (BC6 convertit i_CB), hors du critère.
+    "        f = facteur_par_pas(vue.parametres.production.g_pr)\n",
+    "        c = vue.parametres.banque_centrale.pi_etoile.valeur\n        k = (1.0 + c) * 1.01\n",
+    "        c = vue.parametres.banque_centrale.pi_etoile.valeur\n"
+    "        k = par_pas(vue.parametres.prix.lambda_mu) * c\n",
+])
+def test_formes_sans_recalcul_admises(forme):
+    """Point 5 : seule la conversion géométrique d'une grandeur qui dépend de π* est
+    refusée."""
+    assert analyser_texte(_avec_forme(forme, "")) == []
+
+
+def test_aucun_nom_admis_ne_calcule_gamma_e():
+    """Critère de #61 : Γ^e n'est pas dans les noms admis. La fonction qui le calcule est dans
+    `nations.moteur.ouverture`, module hors de la liste blanche ; `NOMS_DE_CONVERSIONS` ne
+    contient que les deux conversions et leurs types ; son importation est refusée."""
+    from nations.moteur import ouverture
+
+    fonction = next(g.fonction for g in ouverture.GRANDEURS_OUVERTURE if g.nom == "Gamma_e")
+    assert fonction.__module__ == "nations.moteur.ouverture"
+    assert "nations.moteur.ouverture" not in IMPORTATIONS_ADMISES
+    assert not any(n in NOMS_DE_CONVERSIONS for n in (fonction.__name__, "Gamma_e", "gamma_e",
+                                                      "pi_etoile_pas"))
+    texte = CONFORME.replace("import math\n", "import math\n\n\ndef _jamais():\n"
+                             f"    from nations.moteur.ouverture import {fonction.__name__}\n",
+                             1)
+    assert any(f"importation de nations.moteur.ouverture.{fonction.__name__} refusée" in e
+               for e in analyser_texte(texte))
+
+
+def test_cout_de_la_fermeture_au_pire_cas():
+    """Coût de la fermeture de `_marques_de_la_cible` : une chaîne de 2 000 liaisons écrites
+    dans l'ordre inverse de leur dépendance (le pire cas d'un point fixe par passes, qui ne
+    marquerait qu'un identifiant par passe) est jugée en moins de 5 s ; la fermeture parcourt
+    chaque arête une fois (mesure dans le compte rendu de #61). Homonymes : voir
+    `test_cout_des_homonymes`."""
+    import time
+
+    n = 2000
+    lignes = [f"        x{k} = x{k - 1}\n" for k in range(n, 0, -1)]
+    forme = "".join(lignes) + "        x0 = 0.0\n" + "        x0 = vue.ouverture.pi_etoile\n" \
+        + f"        f = facteur_par_pas(TauxDeCroissance(x{n}))\n"
+    texte = _avec_forme(forme, "")
+    debut = time.perf_counter()
+    ecarts = analyser(texte, "prix", None)
+    duree = time.perf_counter() - debut
+    assert any(MOTIF_GAMMA_E in e for e in ecarts)
+    assert duree < 5.0, duree
+
+
+def test_cout_des_homonymes():
+    """m3 de l'audit du rang 3 : 2 000 fonctions homonymes appelées 2 000 fois (51,7 s quand
+    chaque appel parcourait chaque définition) sont jugées en moins de 5 s : un nœud d'appel par
+    position, relié une fois aux paramètres des homonymes."""
+    import time
+
+    k = m = 2000
+    fonctions = "".join(f"def h(a{i}, b{i}):\n    return a{i}\n\n\n" for i in range(k))
+    forme = "".join(f"        y{j} = h(vue.ouverture.pi_etoile, {j})\n" for j in range(m)) \
+        + "        f = facteur_par_pas(TauxDeCroissance(y0))\n"
+    texte = _avec_forme(forme, fonctions)
+    debut = time.perf_counter()
+    ecarts = analyser(texte, "prix", None)
+    duree = time.perf_counter() - debut
+    assert any(MOTIF_GAMMA_E in e for e in ecarts)
+    assert duree < 5.0, duree

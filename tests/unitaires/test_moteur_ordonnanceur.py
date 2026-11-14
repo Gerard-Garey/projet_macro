@@ -33,6 +33,7 @@ from nations.moteur.contrat_bloc import (
 )
 from nations.moteur.conversions import facteur_par_pas
 from nations.moteur.diagnostics import DefautDeDeclaration, RefusDuMoteur
+from nations.moteur.ouverture import GrandeurOuverture
 from nations.noyau.diagnostics import RefusDeProposition
 from nations.moteur.ordonnanceur import (
     INDICE_DES_PRIX,
@@ -65,11 +66,11 @@ GRAINE = 20261007
 POSITIONS = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0,
              "B_CB": 100.0, "Res": 50.0, "L_CB": 20.0, "M_G": 150.0, "K": 900.0, "IN": 100.0}
 
-# Variables d'état des blocs (schéma v2), valeurs d'essai dans leurs domaines ; les blocs
+# Variables d'état des blocs (schéma v3), valeurs d'essai dans leurs domaines ; les blocs
 # d'essai de ce module les reconduisent d'un pas à l'autre (aucun ne les lit).
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "pi_e": 0.02}
+                       "pi_e": 0.02, "pi_etoile": 0.02}
 
 SANS_ENTREES = DeclarationDesEntrees((), ())
 ENTREES_VIDES = EntreesDuTour((), ())
@@ -850,7 +851,8 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
         e = VARIABLES_DES_BLOCS
         assert f.variables_du_pas == (
             ("sigma_L", 0.5 + t), ("levier", 0.03), ("i_CB", 1.0 + t),
-            ("pi_e_suivant", e["pi_e"]), (INDICE_DES_PRIX, p_t),
+            ("pi_e_suivant", e["pi_e"]), ("pi_etoile_suivant", e["pi_etoile"]),
+            (INDICE_DES_PRIX, p_t),
             ("mu_tilde_suivant", e["mu_tilde"]), ("y", 1.0 + t),
             ("v_e_suivant", e["v_e"]), ("IN_vol_suivant", e["IN_vol"]),
             ("pr_suivant", e["pr"]), ("K_vol_suivant", e["K_vol"]),
@@ -860,8 +862,13 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
     # de référence : g = (1 + g_pr)(1 + g_N) − 1 ; facteur, produit des conversions
     # géométriques de g_pr et de g_N (P88).
     g = (1.0 + 0.02) * (1.0 + 0.0) - 1.0
-    tendance = (("g", g), ("facteur_g", facteur_par_pas(TauxDeCroissance(0.02))
-                           * facteur_par_pas(TauxDeCroissance(0.0))))
+    facteur_g = facteur_par_pas(TauxDeCroissance(0.02)) * facteur_par_pas(TauxDeCroissance(0.0))
+    # Puis la cible par pas, Γ^e et γ^e sur π*_t lue à l'ouverture (#61 ; ADR 0013, annotation
+    # du 14/11/2026, point 7), π* reconduite par le bloc d'essai.
+    f_cible = facteur_par_pas(TauxDeCroissance(e["pi_etoile"]))
+    gamma_e = facteur_g * f_cible
+    tendance = (("g", g), ("facteur_g", facteur_g), ("pi_etoile_pas", f_cible - 1.0),
+                ("Gamma_e", gamma_e), ("gamma_e", gamma_e - 1.0))
     assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1),
                                            ("date_de_decision", True)) + tendance
     assert fins[13].grandeurs_ouverture == (("annee", 2), ("mois", 2),
@@ -871,6 +878,29 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
             assert type(nom) is str and type(valeur) in (float, int, bool, tuple)
     with pytest.raises(dataclasses.FrozenInstanceError):
         fins[0].variables_du_pas = ()
+
+
+def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
+    """Critère de #61 (ADR 0013, annotation du 14/11/2026, point 7) : la fonction de Γ^e est
+    appelée une fois par pas, par la phase 0 de `executer_pas`, après `g` et `facteur_g` (les
+    grandeurs déjà calculées qu'elle reçoit), sur l'état d'ouverture du pas ; aucun bloc ne
+    l'appelle."""
+    appels = []
+    remplacees = []
+    for g in ordo.GRANDEURS_OUVERTURE:
+        if g.nom == "Gamma_e":
+            def compter(etat, parametres, deja, fonction=g.fonction):
+                appels.append((etat.t, tuple(deja)))
+                return fonction(etat, parametres, deja)
+            g = GrandeurOuverture(g.nom, compter, g.label, g.unite)
+        remplacees.append(g)
+    monkeypatch.setattr(ordo, "GRANDEURS_OUVERTURE", tuple(remplacees))
+    o = ordonnanceur_d_essai(plans_nuls(3))
+    etat = etat_initial()
+    for _ in range(3):
+        etat = executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
+    precedentes = ("annee", "mois", "date_de_decision", "g", "facteur_g", "pi_etoile_pas")
+    assert appels == [(t, precedentes) for t in range(3)]
 
 
 def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
@@ -892,7 +922,7 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
         fins.append([e for e in releve.evenements if type(e) is FinDePas])
     assert fins[0] == fins[1] == fins[2]
     assert empreinte(fins[0]) == empreinte(fins[1]) == empreinte(fins[2])
-    assert len(fins[0][0].variables_du_pas) == 17
+    assert len(fins[0][0].variables_du_pas) == 18
 
 
 def test_ligne_16_negative_et_montant_couvert_exerces():
@@ -1243,6 +1273,7 @@ def test_variable_d_etat_non_finie_refusee_sans_rien_enregistrer(schema_avec_var
 
 @pytest.mark.parametrize("radical, etape, nom, valeur, condition", [
     ("banque_centrale", "1", "pi_e", -1.5, "1 + π^e > 0"),
+    ("banque_centrale", "1", "pi_etoile", -1.0, "1 + π* > 0"),
     ("travail", "4", "U", 1.2, "0 ≤ U ≤ 1"),
     ("production", "5", "IN_vol", -1.0, "IN^vol ≥ 0"),
 ])

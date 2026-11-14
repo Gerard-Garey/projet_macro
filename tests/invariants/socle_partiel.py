@@ -21,7 +21,7 @@ facteur^t, le facteur par pas étant celui de la grandeur sur le sentier :
 - prix (u.m. par u.v.) : (1 + π̄)^{1/n_a} ; salaire par personne :
   ((1 + g_pr)(1 + π̄))^{1/n_a} ;
 - montant nominal (u.m. par pas) : Γ̄ = ((1 + g)(1 + π̄))^{1/n_a} ;
-- grandeur sans dimension (U, tu, ξ, μ̃, π^e) : 1.
+- grandeur sans dimension (U, tu, ξ, μ̃, π^e, π*) : 1.
 
 Les facteurs sont ceux du script (`facteurs`), non ceux du moteur : le bloc
 d'essai ne lit pas `facteur_g`, qu'aucun bloc réel ne remplace.
@@ -36,6 +36,11 @@ injecté dans l'état d'ouverture : π^e_0 dans l'état initial, π^e_{t+1} écr
 en phase 1. **Réserve de `monnaie`** : hors du sentier, le bloc d'essai à
 π^e = π* coupe la boucle T3 ↔ BC3 ; toute mesure dynamique faite sur ce socle
 porte l'étiquette `ETIQUETTE` et ne vaut pas verdict de boucle conjointe.
+Le bloc d'essai 8 écrit aussi la cible en vigueur π*_{t+1} = π*_t, **lue à
+l'ouverture** (`vue.ouverture.pi_etoile`, lecture déclarée), par la règle
+d'essai `REGLES_PAR_DEFAUT` (BC4 à levier fermé ; M30 ; ADR 0013, annotation du
+14/11/2026, point 6 ; #61) : sur le sentier, elle reste à la valeur `pi_cible_1`
+du script ; hors du sentier (π*_0 ≠ π̄), elle reste à π*_0.
 
 **Variables du pas** : noms, écrivains, étapes et lecteurs de l'annotation du
 13/11/2026, point 2.2. La banque propose la ligne 21 sous la forme exacte de
@@ -165,7 +170,7 @@ VARIABLES_D_ETAT = {
     "v_e": ("ve_1", VOLUME), "IN_vol": ("IN_vol_1", VOLUME), "pr": ("pr_1", PRODUCTIVITE),
     "K_vol": ("K_vol_1", VOLUME), "W": ("W", SALAIRE), "U": ("U", CONSTANTE),
     "N": ("N", PERSONNES), "N_pa": ("N_pa_1", PERSONNES), "mu_tilde": ("mu_tilde", CONSTANTE),
-    "pi_e": ("pi_e_1", CONSTANTE),
+    "pi_e": ("pi_e_1", CONSTANTE), "pi_etoile": ("pi_cible_1", CONSTANTE),
 }
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
@@ -174,6 +179,7 @@ if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
 OUVERTURE_DES_VARIABLES = {
     "v_e": "ve", "IN_vol": "IN_vol", "pr": "pr", "K_vol": "K_vol", "W": "W_m1", "U": "U_m1",
     "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "pi_e": "pi_e",
+    "pi_etoile": "pi_cible",
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
@@ -226,6 +232,8 @@ def _lectures(radical: str, etape: str) -> tuple[Lecture, ...]:
         lectures += [Lecture(GRAND_LIVRE, "Res"), Lecture(GRAND_LIVRE, "L_CB")]
     if (radical, etape) == ("finances_publiques", "8b"):
         lectures.append(Lecture(GRAND_LIVRE, "M_G"))
+    if (radical, etape) == ("banque_centrale", "1"):
+        lectures.append(Lecture(OUVERTURE, "pi_etoile"))
     return tuple(lectures)
 
 
@@ -332,6 +340,17 @@ RADICAUX = ("production", "travail", "prix", "menages", "investissement", "banqu
             "banque_centrale", "finances_publiques")
 
 
+def _cible_reconduite(vue: ordo.Vue, sentier: Sentier, t: int) -> float:
+    """BC4 à levier fermé : π*_{t+1} = π*_t, lue à l'ouverture du pas."""
+    return vue.ouverture.pi_etoile
+
+
+# Règles d'essai appliquées sauf remplacement par `regles` : la cible en vigueur est reconduite
+# depuis l'ouverture, non tirée du sentier (constat M1 de l'audit du rang 3 de J3-c : la valeur
+# du sentier rendait le critère π*_{t+1} = π*_t infalsifiable).
+REGLES_PAR_DEFAUT = types.MappingProxyType({"pi_etoile": _cible_reconduite})
+
+
 def blocs(sentier: Sentier, *, echelle: float = 1.0,
           choc_pi_e: Callable[[int], float] = _choc_nul,
           chocs_des_plans: Callable[[str, int], float] = _plans_sans_choc,
@@ -339,14 +358,16 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
           declarations: dict | None = None) -> tuple[object, ...]:
     """Les huit blocs : un bloc d'essai par radical, sauf ceux que `reels` fournit (un bloc
     réel par radical, #113, #50, #51) ; `declarations` remplace la déclaration d'un radical ;
-    `regles` : variable d'état → règle d'essai, passée au bloc de son propriétaire."""
+    `regles` : variable d'état → règle d'essai, passée au bloc de son propriétaire, ajoutée à
+    `REGLES_PAR_DEFAUT` (et prioritaire sur elles)."""
     remplaces = {b.declaration.radical: b for b in reels}
+    regles = {**REGLES_PAR_DEFAUT, **(regles or {})}
     rendus = []
     for radical in RADICAUX:
         if radical in remplaces:
             rendus.append(remplaces[radical])
             continue
-        propres = {nom: regle for nom, regle in (regles or {}).items()
+        propres = {nom: regle for nom, regle in regles.items()
                    if schema.VARIABLE[nom].proprietaire == radical}
         classe = classe_d_essai(radical, sentier, echelle=echelle, choc_pi_e=choc_pi_e,
                                 chocs_des_plans=chocs_des_plans, regles=propres,
