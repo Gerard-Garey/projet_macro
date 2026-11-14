@@ -3,7 +3,7 @@ bloc: Banque centrale et anticipations
 module: src/nations/blocs/banque_centrale.py
 expert pilote: monnaie
 experts consultés: macro (prix et salaires : frontière inflation ; fermeture du niveau d'activité et dette publique, avec la fiche 9) ; jeu
-statut: décidée (M32)
+statut: spécifiée (04/10/2026)
 décision: M32 (04/10/2026)
 issue: #72
 ---

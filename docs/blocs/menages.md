@@ -3,7 +3,7 @@ bloc: Ménages
 module: src/nations/blocs/menages.py
 expert pilote: macro
 experts consultés: monnaie (dépôts et détention de titres publics : frontière dette publique) ; jeu
-statut: décidée (M27, 03/10/2026)
+statut: spécifiée (04/10/2026)
 décision: M27 (03/10/2026)
 issue: #41
 ---
