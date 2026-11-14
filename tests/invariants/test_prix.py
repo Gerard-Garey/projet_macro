@@ -26,7 +26,7 @@ m = 0 (plans nominaux exogènes) est publiée ici sans verdict.
 Les blocs réels de la production (#113), du travail (#50) et des prix
 remplacent les blocs d'essai de leur radical ; les cinq autres sont des blocs
 d'essai sur le sentier. **Étiquettes** : toute mesure dynamique porte « plans
-nominaux exogènes » et « π^e exogène (bloc d'essai) » ; elle ne vaut pas
+nominaux exogènes » et l'étiquette du socle (`socle_partiel.ETIQUETTE`) ; elle ne vaut pas
 verdict de boucle fermée ni de boucle conjointe T3 ↔ BC3.
 """
 
@@ -51,7 +51,6 @@ from nations.observation.residus import ReleveDesResidus
 
 N_A = PAS_PAR_AN.valeur
 NB_PAS = 720
-ETIQUETTES = "plans nominaux exogènes ; π^e exogène (bloc d'essai)"
 # Seuils écrits avant l'essai (fiche 4, § 9.6 ; fiche 3, § 9.6 pour T2 ; P54, P66, P67).
 SEUIL_UN_PAS = 1e-10
 SEUIL_720_PAS = 1e-9
@@ -65,6 +64,12 @@ REGLES_PAR_PAS = ("eq:noyau-somme-ligne", "eq:noyau-somme-colonne", "eq:noyau-cl
                   "eq:noyau-variation-monnaie", "eq:noyau-variation-monnaie-centrale")
 VITESSES = {"production": ("lambda_v", "lambda_IN"), "travail": ("lambda_w", "lambda_N"),
             "prix": ("lambda_mu",)}
+
+
+def etiquettes(socle):
+    """Étiquettes des mesures dynamiques : plans nominaux exogènes, étiquette du socle à
+    bloc d'essai 8 (`socle.ETIQUETTE`, jamais écrite en dur)."""
+    return f"plans nominaux exogènes ; {socle.ETIQUETTE}"
 
 
 class Releve:
@@ -199,7 +204,7 @@ def test_p54_option_i_de_reference_et_invariant_de_mu(socle, pi, publier):
         lignes.append(f"vitesses × {facteur:g} : " + " ; ".join(
             f"{n} {x:.1e}" for n, x in pires.items()))
     publier(f"Bloc 4, P54 : option (i) de référence et invariant de μ̃, π* = {100 * pi:g} %, "
-            f"choc G + 1 % aux tours 1 à 12, 720 pas ({ETIQUETTES})",
+            f"choc G + 1 % aux tours 1 à 12, 720 pas ({etiquettes(socle)})",
             lignes + ["W, p : écart relatif ; μ̃, invariant : écart absolu (seuil 1e−12)"])
 
 
@@ -222,7 +227,7 @@ def test_un_pas_depuis_l_etat_resolu(trajectoires, socle, pi, publier):
     for nom, x in ecarts.items():
         assert x <= SEUIL_UN_PAS, (nom, x)
     assert v["P"] == v["p"]
-    publier(f"Bloc 4, un pas depuis l'état résolu, π* = {100 * pi:g} % ({ETIQUETTES})", [
+    publier(f"Bloc 4, un pas depuis l'état résolu, π* = {100 * pi:g} % ({etiquettes(socle)})", [
         " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items()) + " (seuil 1e−10)"])
 
 
@@ -239,7 +244,7 @@ def test_t2_b_dernier_prix_connu(trajectoires, socle, pi, publier):
                                    socle.PARAMETRES_DE_REFERENCE.travail.U_eq)}
     for nom, x in ecarts.items():
         assert x <= SEUIL_T2, (nom, x)
-    publier(f"Blocs 3 et 4, T2 (b), π* = {100 * pi:g} % ({ETIQUETTES} ; blocs 2 à 4 réels)", [
+    publier(f"Blocs 3 et 4, T2 (b), π* = {100 * pi:g} % ({etiquettes(socle)} ; blocs 2 à 4 réels)", [
         " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items()) + " (seuil 1e−10)"])
 
 
@@ -275,7 +280,7 @@ def test_stationnarite_partielle(trajectoires, socle, pi, publier):
         assert pires[cle] <= seuil, (cle, pires[cle], resolues[cle])
     assert (resolues["B7"] == 0.0) == (pi == 0.0)
     publier(f"Bloc 4, stationnarité partielle (P67), π* = {100 * pi:g} %, 720 pas "
-            f"({ETIQUETTES} ; blocs 2 à 4 réels)",
+            f"({etiquettes(socle)} ; blocs 2 à 4 réels)",
             ["max |x_t/x̄ − 1| (|x_t| si x̄ = 0, P66) : "
              + " ; ".join(f"{c} {x:.1e}" for c, x in pires.items())])
 
@@ -310,7 +315,7 @@ def test_vitesses_ne_determinent_pas_l_etat_d_arrivee(socle, publier):
     for nom, x in ecarts.items():
         assert x <= SEUIL_VITESSES, (nom, x)
     publier(f"Bloc 4, vitesses λ_μ × 0,5 et × 2 après un choc G + 1 % sur 12 tours "
-            f"({ETIQUETTES})", ["écart après 720 pas : "
+            f"({etiquettes(socle)})", ["écart après 720 pas : "
                                 + " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items())
                                 + " (seuil 1e−6)"])
 
@@ -351,7 +356,7 @@ def test_identite_p15_deux_prix_distants_de_un_pour_cent(socle, publier):
         lignes.append(f"{nom} : |Σ soldes|/S_min {abs(soldes) / S:.1e} ; "
                       f"|V_F flux − V_F stock|/S_F {entreprises:.1e}")
     assert abs(releve_prix["+1 %"] / releve_prix["sentier"] / 1.01 - 1.0) <= 1e-12
-    publier(f"Bloc 4, identité P15, deux prix distants de 1 % au pas 0 ({ETIQUETTES})",
+    publier(f"Bloc 4, identité P15, deux prix distants de 1 % au pas 0 ({etiquettes(socle)})",
             lignes + ["seuil 1e−12 × S"])
 
 
@@ -409,7 +414,7 @@ def test_pre_mesure_de_l_alternance_sans_verdict(socle, publier):
     niveau = [ln_c[t] - ln_b[t] for t in range(2, 14)]
     variation = [(ln_c[t] - ln_c[t - 1]) - (ln_b[t] - ln_b[t - 1]) for t in range(2, 14)]
     assert max(abs(x) for x in niveau) > 1e-6
-    publier(f"Bloc 4, alternance étendue, pré-mesure à m = 0, sans verdict ({ETIQUETTES})", [
+    publier(f"Bloc 4, alternance étendue, pré-mesure à m = 0, sans verdict ({etiquettes(socle)})", [
         f"changements de signe sur les tours 2 à 13 : (a) niveau {changements_de_signe(niveau)} ; "
         f"(b) variation mensuelle {changements_de_signe(variation)} (maquette de la synthèse du "
         "rang 1a : (a) 0 et (b) 1) ; renvoyé à #114 pour le verdict"])

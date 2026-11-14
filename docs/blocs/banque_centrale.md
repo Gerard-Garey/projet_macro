@@ -3,7 +3,7 @@ bloc: Banque centrale et anticipations
 module: src/nations/blocs/banque_centrale.py
 expert pilote: monnaie
 experts consultés: macro (prix et salaires : frontière inflation ; fermeture du niveau d'activité et dette publique, avec la fiche 9) ; jeu
-statut: spécifiée (04/10/2026)
+statut: implémentée (J3-c, 14/11/2026)
 décision: M32 (04/10/2026)
 issue: #72
 ---
@@ -1515,6 +1515,17 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai. Ils couvr
 | J4 | Perceptibilité (critère 19 (e) ; O2) | Même choc apparié | deux crans en 12 tours ; pic au plus tard au tour 24 ; demi-vie supérieure à 60 tours déclarée avec le résidu au tour 60 |
 | J4 | Restitution (conditions 1 à 10, #81) | Niveaux normaux restitués égaux à ceux du script | 1e−9 relatif |
 
+*Correction prospective du 14/11/2026, avant l'essai (P77 ; décision du mainteneur du 14/11/2026, sur avis de `monnaie`, rang 1a de J3-c, PR #129)* : la ligne « État stationnaire » se lit sur le moteur à n_a = 12 seulement, pour π\* ∈ {0 ; 2 % ; 10 %}, dans le socle partiel d'essai (blocs 2, 3, 4, 7 et 8 réels, plans nominaux exogènes) ; n_a ∈ {4 ; 52} reste couvert par le script. Les valeurs de référence sont celles du script, jamais des chiffres recopiés ; « L^CB = M^G\* » se lit « `L_CB_1` du script », la spécification datant L^CB_0 sur M^G\*_{−1} (l. 2915). Seuils inchangés. Le texte d'origine reste publié. Chiffre à redéclarer avant l'essai de #114 : H = 5 500 pas de la ligne « Vitesses » vient d'une demi-vie de 275 tours, la spécification en publie 240.
+
+*Classement des lignes « J3 » (rang 1a de J3-c, 14/11/2026, avis de `monnaie`, décision du mainteneur)* : (a) appel direct ou inspection ; (b) socle partiel d'essai ; (c) socle complet.
+- (a) : cas à la main ; parties (a) de « Perte » (BC6 et BC9 à i_CB < 0), « Phases », « Bornes » (égalité exacte, taux négatif, marche de cible), « Empreinte et coût » ; ligne ajoutée : invariant π^e > −1 de BC3 (forme convexe (1 − c)π^e + cπ_{t−1}, précondition 1 + π_{t−1} > 0 tel que calculé ; 10^6 tirages à graine déclarée et un lot adverse).
+- (b) : état stationnaire, résultat et lignes exécutées, cible (ADR 0010, test 4) ; parties (b) de « Phases », « Bornes » (G^plan −5 % aux tours 1 à 12), « Empreinte et coût » ; ligne ajoutée : boucle T3 ↔ BC3 sur le socle partiel, critère P78 (feuille de route, § 4), qui ne vaut pas verdict de boucle conjointe.
+- (c), à J3-d avec le bloc 9 : partie couverture et C60 de « Perte ».
+- (c), à #114 : « Neutralité de s_CB », « Stabilité », « Vitesses », « Gain statique », « Clause II.7 », « Cible relevée », « Persistance », « Superneutralité » (le `xfail` sur le script reste, #80), « C46 », « Test zéro ».
+- Hors moteur : « Calibration » (#45 ; #130 pour r̄). J4 : #54.
+
+*Mention du 14/11/2026 (rang 9 de J3-c)* : BC3 exécutée en forme convexe, précondition 1 + π_{t−1} > 0 refusée hors domaine ou non finie (P92, P106) ; BC6 sous sa forme générale, forme au socle vérifiée par test (P108) ; i_res ≡ i_CB sans variable (ADR 0011, P6). Verdicts : P87 tenu, P94 tenu (P100), P57 : 0,0110 ms sur la CI. Continuum de r̂\* propre au banc publié (P101, #131) ; coût en chômage d'un choc d'anticipations publié à côté de 1/(λ_e λ_w β (1 + π\*)), seuil à #114 (P102).
+
 ### 9.7 Conditions transmises
 
 **Conditions de `macro` (§ 6.6)** :
@@ -1719,3 +1730,4 @@ Encadrés `proposee` citant M32 (et M33 pour les points partagés), sans label (
 | 04/10/2026 | Issues créées sur accord du mainteneur : #80 (critère 13), #81 (restitution J4 banque centrale), #82 (restitution J4 État et dette) ; commentaires publiés sur #54, #73 et #55 | session principale |
 | 04/10/2026 | § 9 rédigé (conséquences de M32 et des points tranchés avec M33 : équations BC1 à BC9 et labels prévus, paramètres, chiffres de référence sous C-HS, phases sous A8, restitution, tests du J3 et du J4 avec le critère 13 en échec attendu (#80), conditions transmises, surface d'impact pour `sec:banque_centrale`, `sec:banque` et `tab:phases`) ; renvois à l'ADR d'A8 rapportés à l'ADR 0011 (proposé) par la session | `monnaie` ; session principale |
 | 04/10/2026 | Section `sec:banque_centrale` proposée (`e0155c4`), validée par `monnaie` avec reprises (`81bd85f`, `ca10fc8`, `2d017b4`) ; revue finale de la branche (règle 10) ; **fiche « spécifiée »** | `docwriter` ; `monnaie` ; `macro` ; `jeu` ; session principale |
+| 14/11/2026 | Fiche « implémentée » (J3-c, rang 9) : `banque_centrale.py` (`a3702ba`, labels `99eea4a`), mention datée au § 9.6 | session principale, d'après `architect` |

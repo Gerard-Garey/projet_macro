@@ -11,7 +11,7 @@ du 13/11/2026 ; issue #113), non déplacés.
 Le bloc réel `nations.blocs.production.Production` remplace le bloc d'essai de
 son radical (`socle.blocs(..., reels=...)`) ; les sept autres blocs sont des
 blocs d'essai sur le sentier. **Étiquettes** : toute mesure dynamique porte
-« plans nominaux exogènes » et « π^e exogène (bloc d'essai) » ; elle ne vaut
+« plans nominaux exogènes » et l'étiquette du socle (`socle_partiel.ETIQUETTE`) ; elle ne vaut
 pas verdict de boucle fermée (S1, #114). Les lignes « Délai » et « Vitesses »
 font suivre à l'emploi la demande de travail (règle d'essai du bloc travail,
 N = N*, hypothèse de la boucle propre, `sec:production-conditions` ; masse
@@ -38,7 +38,6 @@ from nations.observation.observateur import FinDePas
 
 N_A = PAS_PAR_AN.valeur
 NB_PAS = 720
-ETIQUETTES = "plans nominaux exogènes ; π^e exogène (bloc d'essai)"
 # Seuils écrits avant l'essai (fiche 2, § 9.6 ; P67, P73).
 SEUIL_UN_PAS = 1e-10
 SEUIL_720_PAS = 1e-9
@@ -47,6 +46,12 @@ SEUIL_VALORISATION = 1e-12
 SEUIL_VITESSES = 1e-6
 PREMIER_PAS_SUR_12_TOURS = N_A - 1
 VARIABLES_DU_BLOC = ("v_e", "IN_vol", "pr", "K_vol")
+
+
+def etiquettes(socle):
+    """Étiquettes des mesures dynamiques : plans nominaux exogènes, étiquette du socle à
+    bloc d'essai 8 (`socle.ETIQUETTE`, jamais écrite en dur)."""
+    return f"plans nominaux exogènes ; {socle.ETIQUETTE}"
 
 
 class Releve:
@@ -128,7 +133,7 @@ def test_un_pas_depuis_l_etat_resolu(trajectoires, socle, pi, publier):
         ecarts[f"rho_IN (pas {t})"] = ecart(etat.IN / (uc * etat.IN_vol), rho)
     for nom, x in ecarts.items():
         assert x <= SEUIL_UN_PAS, (nom, x)
-    publier(f"Bloc 2, un pas depuis l'état résolu, π* = {100 * pi:g} % ({ETIQUETTES})", [
+    publier(f"Bloc 2, un pas depuis l'état résolu, π* = {100 * pi:g} % ({etiquettes(socle)})", [
         "|x_1/x̄_1 − 1| : " + " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items())
         + " (seuil 1e−10)"])
 
@@ -166,7 +171,7 @@ def test_stationnarite_partielle_b1_b2_b24(trajectoires, socle, pi, publier):
             pires["B24"] = max(pires["B24"], ecart(v["y"] / y0 - 1.0, reference["B24"]))
     for cle, x in pires.items():
         assert x <= SEUIL_720_PAS, (cle, x)
-    publier(f"Bloc 2, stationnarité partielle (P67), π* = {100 * pi:g} %, 720 pas ({ETIQUETTES})",
+    publier(f"Bloc 2, stationnarité partielle (P67), π* = {100 * pi:g} %, 720 pas ({etiquettes(socle)})",
             ["max |x_t/x̄ − 1| : " + " ; ".join(f"{c} {x:.1e}" for c, x in pires.items())
              + " (seuil 1e−9)"])
 
@@ -217,7 +222,7 @@ def test_identite_de_volume_et_valorisation(trajectoires, socle, publier):
         volume, valeur = _identite_et_valorisation(initial, releve)
         assert volume <= SEUIL_IDENTITE and valeur <= SEUIL_VALORISATION, (nom, volume, valeur)
         lignes.append(f"{nom} : volume {volume:.1e}, valorisation {valeur:.1e}")
-    publier(f"Bloc 2, identité de volume et valorisation (P73) ({ETIQUETTES})",
+    publier(f"Bloc 2, identité de volume et valorisation (P73) ({etiquettes(socle)})",
             lignes + ["seuils 1e−12 ; IN_{t+1} − IN_t = ligne 4 au bit"])
 
 
@@ -264,7 +269,7 @@ def test_disponibilite_epuisement_zero_exact(socle, publier):
     assert initial.IN > 0.0 and p0["4"] == -initial.IN
     for p in releve.pas:
         assert p["etat"].IN_vol >= 0.0 and p["etat"].IN >= 0.0
-    publier(f"Bloc 2, épuisement du stock (P72) ({ETIQUETTES})", [
+    publier(f"Bloc 2, épuisement du stock (P72) ({etiquettes(socle)})", [
         f"d / disponible = {sum(d.values()) / disponible:.15f} ; IN^vol_1 = "
         f"{p0['etat'].IN_vol!r}, IN_1 = {p0['etat'].IN!r} ; ligne 4 = −IN_0 au bit ; 25 pas "
         "sans arrêt"])
@@ -317,7 +322,7 @@ def test_vitesses_n_determinent_pas_l_etat_d_arrivee(socle, publier):
                      socle.valeur_d_ouverture(sentier, "IN_vol", 13)) > 1e-4
     ecarts = [ecart(a, b) for a, b in zip(ratios[0.5], ratios[2.0], strict=True)]
     assert max(ecarts) <= SEUIL_VITESSES
-    publier(f"Bloc 2, vitesses × 0,5 et × 2 après un choc G + 1 % sur 12 tours ({ETIQUETTES} ; "
+    publier(f"Bloc 2, vitesses × 0,5 et × 2 après un choc G + 1 % sur 12 tours ({etiquettes(socle)} ; "
             "N = N*)", [f"écart relatif après 720 pas : stocks / ventes {ecarts[0]:.1e}, y/v "
                         f"{ecarts[1]:.1e} (seuil 1e−6)"])
 

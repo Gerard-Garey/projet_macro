@@ -16,7 +16,14 @@ from nations.etat.unites import UNITES
 from nations.moteur.diagnostics import DefautDeDeclaration
 from nations.moteur.ordonnanceur import DeclarationDesEntrees, assembler
 from nations.moteur.parametres import TauxDeCroissance, TauxDeFlux, varier
-from nations.moteur.parametres import investissement, prix, production, travail
+from nations.moteur.parametres import (
+    banque,
+    banque_centrale,
+    investissement,
+    prix,
+    production,
+    travail,
+)
 from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
 from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE, EnsembleDesParametres
 from nations.moteur.phases import PHASES
@@ -173,13 +180,17 @@ def test_bornes_admises():
 
 def test_ensemble_des_tables():
     """Point 3.5 (P69) : un champ par table, chacune de son type exact ; ni champ de mode ni
-    de doublure (annotation du 13/11/2026, point 6 (b)) ; variation contrôlée."""
-    assert [f.name for f in dataclasses.fields(EnsembleDesParametres)] == [
-        "cadre", "production", "travail", "prix", "investissement"]
+    de doublure (annotation du 13/11/2026, point 6 (b)) ; variation contrôlée. J3-c (ADR 0013,
+    annotation du 14/11/2026, point 6 ; H3.5) : `banque` et `banque_centrale` à la suite."""
+    noms = ["cadre", "production", "travail", "prix", "investissement", "banque",
+            "banque_centrale"]
+    assert [f.name for f in dataclasses.fields(EnsembleDesParametres)] == noms
     p = PARAMETRES_DE_REFERENCE
-    assert (p.cadre, p.production, p.travail, p.prix, p.investissement) == (
-        CADRE, production.PRODUCTION, travail.TRAVAIL, prix.PRIX, investissement.INVESTISSEMENT)
-    for nom in ("cadre", "production", "travail", "prix", "investissement"):
+    assert (p.cadre, p.production, p.travail, p.prix, p.investissement, p.banque,
+            p.banque_centrale) == (
+        CADRE, production.PRODUCTION, travail.TRAVAIL, prix.PRIX, investissement.INVESTISSEMENT,
+        banque.BANQUE, banque_centrale.BANQUE_CENTRALE)
+    for nom in noms:
         with pytest.raises(DefautDeDeclaration, match=nom):
             dataclasses.replace(p, **{nom: object()})
     with pytest.raises(DefautDeDeclaration, match="travail"):

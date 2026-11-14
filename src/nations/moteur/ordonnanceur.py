@@ -50,7 +50,9 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
   #100), `proposer` et `declarer_montant_couvert` pour ses seules
   lignes déclarées dans l'étape (le proposant et le payeur apposés par la
   vue ; aucune en phase 9, où tout flux est refusé), les lectures du
-  registre, et l'écriture de ses seules variables déclarées.
+  registre (le glissement refusé non fini ou hors de 1 + π_{t−1} > 0, précondition de
+  BC3, P92),
+  et l'écriture de ses seules variables déclarées.
 
 Les observateurs ne reçoivent que des valeurs immuables et sont appelés par le
 moteur seul (ADR 0012, E1).
@@ -141,7 +143,7 @@ def _est_finie(valeur: object) -> bool:
 class DeclarationDesEntrees:
     """Noms des entrées du tour, déclarés à l'assemblage (B5, G4).
 
-    - `scenario` : entrées de scénario (ς_{L,t}, ς_{B,t} au J3), publiées en
+    - `scenario` : entrées de scénario (ς_{L,t}, ς_{B,t}, avec les blocs 6 et 9), publiées en
       phase 0 ;
     - `leviers` : leviers du joueur (J4), lus par le moteur en phase 1,
       premier groupe.
@@ -403,8 +405,21 @@ class Vue:
         return registre.dernier_prix(self._pas.etat.registre_prix)
 
     def glissement(self) -> float:
-        """π_{t−1}, lu sur le registre d'ouverture."""
-        return registre.glissement(self._pas.etat.registre_prix)
+        """π_{t−1}, lu sur le registre d'ouverture ; refusé s'il n'est pas fini et tel que
+        1 + π_{t−1} > 0.
+
+        Précondition de BC3 (P92 ; ADR 0013, annotation du 14/11/2026, point 4), placée dans
+        la vue comme le contrôle de domaine d'`ecrire_etat` : `registre.glissement`, fonction
+        pure, rend −1 exactement quand le rapport des prix est au plus 2^−54 ; ce
+        glissement, −1 exactement compris, est refusé, jamais écrêté. Un glissement non fini
+        (rapport de deux niveaux finis qui déborde) l'est aussi (réserve (b) de `monnaie`, reprise
+        du rang 4).
+        """
+        pi = registre.glissement(self._pas.etat.registre_prix)
+        if not (math.isfinite(pi) and 1.0 + pi > 0.0):
+            raise self._refus(f"glissement {pi!r} hors du domaine 1 + π_{{t−1}} > 0, fini "
+                              "(précondition de BC3 ; refus, jamais écrêtage)", "glissement")
+        return pi
 
     def variation_sur_le_tour(self) -> float:
         """Variation de l'indice sur le dernier tour clos, lue sur le registre d'ouverture."""

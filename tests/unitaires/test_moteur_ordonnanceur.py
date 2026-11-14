@@ -22,6 +22,7 @@ from nations.etat import schema
 from nations.etat.sauvegarde import sauvegarder
 from nations.etat.schema import EtatPays, Invariance, VariableEtat
 from nations.moteur import ordonnanceur as ordo
+from nations.moteur import registre
 from nations.moteur.contrat_bloc import (
     GRAND_LIVRE,
     OUVERTURE,
@@ -33,6 +34,7 @@ from nations.moteur.contrat_bloc import (
 )
 from nations.moteur.conversions import facteur_par_pas
 from nations.moteur.diagnostics import DefautDeDeclaration, RefusDuMoteur
+from nations.moteur.ouverture import GrandeurOuverture
 from nations.noyau.diagnostics import RefusDeProposition
 from nations.moteur.ordonnanceur import (
     INDICE_DES_PRIX,
@@ -65,11 +67,12 @@ GRAINE = 20261007
 POSITIONS = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0,
              "B_CB": 100.0, "Res": 50.0, "L_CB": 20.0, "M_G": 150.0, "K": 900.0, "IN": 100.0}
 
-# Variables d'état des blocs (schéma v2), valeurs d'essai dans leurs domaines ; les blocs
+# Variables d'état des blocs (schéma v3), valeurs d'essai dans leurs domaines ; les blocs
 # d'essai de ce module les reconduisent d'un pas à l'autre (aucun ne les lit).
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "pi_e": 0.02}
+                       "i_L": 0.0502, "i_D": 0.0202, "pi_e": 0.02, "r_hat_etoile": 0.01,
+                       "pi_etoile": 0.02}
 
 SANS_ENTREES = DeclarationDesEntrees((), ())
 ENTREES_VIDES = EntreesDuTour((), ())
@@ -849,17 +852,27 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
         # par les blocs d'essai).
         e = VARIABLES_DES_BLOCS
         assert f.variables_du_pas == (
-            ("sigma_L", 0.5 + t), ("levier", 0.03), ("i_CB", 1.0 + t),
-            ("pi_e_suivant", e["pi_e"]), (INDICE_DES_PRIX, p_t),
+            ("sigma_L", 0.5 + t), ("levier", 0.03),
+            ("i_L_suivant", e["i_L"]), ("i_D_suivant", e["i_D"]), ("i_CB", 1.0 + t),
+            ("pi_e_suivant", e["pi_e"]), ("r_hat_etoile_suivant", e["r_hat_etoile"]),
+            ("pi_etoile_suivant", e["pi_etoile"]),
+            (INDICE_DES_PRIX, p_t),
             ("mu_tilde_suivant", e["mu_tilde"]), ("y", 1.0 + t),
             ("v_e_suivant", e["v_e"]), ("IN_vol_suivant", e["IN_vol"]),
             ("pr_suivant", e["pr"]), ("K_vol_suivant", e["K_vol"]),
             ("W", 1.0 + t), ("W_suivant", e["W"]), ("N", 1.0 + t),
             ("U_suivant", e["U"]), ("N_suivant", e["N"]), ("N_pa_suivant", e["N_pa"]))
     # Croissance tendancielle et son facteur (annotation du 13/11/2026, point 4), aux tables
-    # de référence : g = (1 + g_pr)(1 + g_N) − 1, facteur par la conversion géométrique.
+    # de référence : g = (1 + g_pr)(1 + g_N) − 1 ; facteur, produit des conversions
+    # géométriques de g_pr et de g_N (P88).
     g = (1.0 + 0.02) * (1.0 + 0.0) - 1.0
-    tendance = (("g", g), ("facteur_g", facteur_par_pas(TauxDeCroissance(g))))
+    facteur_g = facteur_par_pas(TauxDeCroissance(0.02)) * facteur_par_pas(TauxDeCroissance(0.0))
+    # Puis la cible par pas, Γ^e et γ^e sur π*_t lue à l'ouverture (#61 ; ADR 0013, annotation
+    # du 14/11/2026, point 7), π* reconduite par le bloc d'essai.
+    f_cible = facteur_par_pas(TauxDeCroissance(e["pi_etoile"]))
+    gamma_e = facteur_g * f_cible
+    tendance = (("g", g), ("facteur_g", facteur_g), ("pi_etoile_pas", f_cible - 1.0),
+                ("Gamma_e", gamma_e), ("gamma_e", gamma_e - 1.0))
     assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1),
                                            ("date_de_decision", True)) + tendance
     assert fins[13].grandeurs_ouverture == (("annee", 2), ("mois", 2),
@@ -869,6 +882,29 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
             assert type(nom) is str and type(valeur) in (float, int, bool, tuple)
     with pytest.raises(dataclasses.FrozenInstanceError):
         fins[0].variables_du_pas = ()
+
+
+def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
+    """Critère de #61 (ADR 0013, annotation du 14/11/2026, point 7) : la fonction de Γ^e est
+    appelée une fois par pas, par la phase 0 de `executer_pas`, après `g` et `facteur_g` (les
+    grandeurs déjà calculées qu'elle reçoit), sur l'état d'ouverture du pas ; aucun bloc ne
+    l'appelle."""
+    appels = []
+    remplacees = []
+    for g in ordo.GRANDEURS_OUVERTURE:
+        if g.nom == "Gamma_e":
+            def compter(etat, parametres, deja, fonction=g.fonction):
+                appels.append((etat.t, tuple(deja)))
+                return fonction(etat, parametres, deja)
+            g = GrandeurOuverture(g.nom, compter, g.label, g.unite)
+        remplacees.append(g)
+    monkeypatch.setattr(ordo, "GRANDEURS_OUVERTURE", tuple(remplacees))
+    o = ordonnanceur_d_essai(plans_nuls(3))
+    etat = etat_initial()
+    for _ in range(3):
+        etat = executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
+    precedentes = ("annee", "mois", "date_de_decision", "g", "facteur_g", "pi_etoile_pas")
+    assert appels == [(t, precedentes) for t in range(3)]
 
 
 def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
@@ -890,7 +926,7 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
         fins.append([e for e in releve.evenements if type(e) is FinDePas])
     assert fins[0] == fins[1] == fins[2]
     assert empreinte(fins[0]) == empreinte(fins[1]) == empreinte(fins[2])
-    assert len(fins[0][0].variables_du_pas) == 17
+    assert len(fins[0][0].variables_du_pas) == 21
 
 
 def test_ligne_16_negative_et_montant_couvert_exerces():
@@ -1241,6 +1277,7 @@ def test_variable_d_etat_non_finie_refusee_sans_rien_enregistrer(schema_avec_var
 
 @pytest.mark.parametrize("radical, etape, nom, valeur, condition", [
     ("banque_centrale", "1", "pi_e", -1.5, "1 + π^e > 0"),
+    ("banque_centrale", "1", "pi_etoile", -1.0, "1 + π* > 0"),
     ("travail", "4", "U", 1.2, "0 ≤ U ≤ 1"),
     ("production", "5", "IN_vol", -1.0, "IN^vol ≥ 0"),
 ])
@@ -1374,3 +1411,72 @@ def test_permutation_d_un_groupe_bit_a_bit(monkeypatch, etape, groupe):
         releve = Enregistreur()
         trajectoire(o, etat_initial(), 4, releve)
         assert empreinte(releve.evenements) == empreinte(reference.evenements)
+
+
+# --------------------------------------------------------------------------
+# Glissement hors domaine (P92 ; ADR 0013, annotation du 14/11/2026, point 4 ; #91)
+# --------------------------------------------------------------------------
+
+
+def _registre_de_rapport(rapport):
+    """Registre de n_a + 1 niveaux, P_{t−1}/P_{t−1−n_a} = `rapport` (niveaux finis > 0)."""
+    return (rapport,) + (1.0,) * N_A
+
+
+def _pas_avec_glissement(rapport, lus):
+    """Un pas du monde d'essai où le bloc 8 lit d'abord `vue.glissement()` en phase 1."""
+    base = action_d_essai("banque_centrale", "1", plans_nuls(1), 0.02)
+
+    def lecteur(vue):
+        lus.append(vue.glissement())
+        base(vue)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={("banque_centrale", "1"): lecteur})
+    etat = dataclasses.replace(etat_initial(), registre_prix=_registre_de_rapport(rapport))
+    return executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
+
+
+@pytest.mark.parametrize("rapport", [2.0**-54, 2.0**-60, 1e-300, 5e-324])
+def test_glissement_hors_domaine_refuse_par_la_vue(rapport):
+    """Point de forme 1 du mainteneur (14/11/2026) ; P92 : un rapport des prix au plus 2^−54
+    donne `registre.glissement` = −1 exactement (fonction pure, inchangée) ; `Vue.glissement()`
+    le refuse par un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et la valeur, −1
+    exactement compris, sans écrêtage, et le pas s'arrête."""
+    assert registre.glissement(_registre_de_rapport(rapport)) == -1.0
+    lus = []
+    with pytest.raises(RefusDuMoteur, match="hors du domaine 1 \\+ π") as refus:
+        _pas_avec_glissement(rapport, lus)
+    r = refus.value
+    assert (r.t, r.etape, r.bloc, r.nom) == (0, "1", "banque_centrale", "glissement")
+    assert "-1.0" in str(r) and lus == []
+
+
+@pytest.mark.parametrize("rapport", [2.0**-53, 2.0**-52, 1e-15, 0.5, 1.0, 1e300])
+def test_glissement_dans_le_domaine_rendu_au_bit(rapport):
+    """Dans le domaine (1 + π_{t−1} > 0 tel que calculé), la vue rend le glissement du registre
+    au bit, et le pas se déroule."""
+    attendu = registre.glissement(_registre_de_rapport(rapport))
+    assert 1.0 + attendu > 0.0
+    lus = []
+    _pas_avec_glissement(rapport, lus)
+    assert [x.hex() for x in lus] == [attendu.hex()]
+
+
+def test_glissement_non_fini_refuse_par_la_vue():
+    """Réserve (b) de `monnaie` (reprise du rang 4 de #91) : deux niveaux finis > 0 du registre
+    dont le rapport déborde (1e300/1e−300) donnent un glissement +inf, que la vue refuse comme
+    hors domaine (finitude), sans le rendre au bloc."""
+    registre_prix = (1e300,) + (1.0,) * (N_A - 1) + (1e-300,)
+    assert registre.glissement(registre_prix) == float("inf")
+    lus = []
+    base = action_d_essai("banque_centrale", "1", plans_nuls(1), 0.02)
+
+    def lecteur(vue):
+        lus.append(vue.glissement())
+        base(vue)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={("banque_centrale", "1"): lecteur})
+    etat = dataclasses.replace(etat_initial(), registre_prix=registre_prix)
+    with pytest.raises(RefusDuMoteur, match="fini") as refus:
+        executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        "1", "banque_centrale", "glissement")
+    assert "inf" in str(refus.value) and lus == []

@@ -94,6 +94,6 @@ class VariableEtat:
 
 def scalaire(nom: str, proprietaire: str, phase: str, unite: str, valeur_stationnaire: str,
              invariance: Invariance) -> VariableEtat:
-    """Variable d'état scalaire de type `float` (les dix variables des blocs du schéma v2)."""
+    """Variable d'état scalaire de type `float` (les variables des blocs, schémas v2 et v3)."""
     return VariableEtat(nom, proprietaire, phase, unite, float, 1, valeur_stationnaire,
                         invariance)

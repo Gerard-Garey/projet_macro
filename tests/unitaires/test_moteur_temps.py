@@ -273,27 +273,36 @@ def test_calendrier_refuse_un_pas_hors_domaine(fonction, t):
 def test_grandeurs_d_ouverture_du_j2():
     """C3 : date affichée et prédicat de date de décision, chacun avec label et unité ; puis
     (J3-b) croissance tendancielle g et son facteur par pas (annotation du 13/11/2026,
-    point 4), calculés une fois depuis les tables de la production et du travail."""
+    point 4), calculés une fois depuis les tables de la production et du travail ; puis (J3-c,
+    #61 ; ADR 0013, annotation du 14/11/2026, point 7) π^{∗,pas}, Γ^e et γ^e, dans cet ordre,
+    sur π*_t lue à l'ouverture, labels de renvoi à `eq:moteur-croissance-nominale-attendue`."""
+    nominale = "eq:moteur-croissance-nominale-attendue"
     assert [(g.nom, g.label) for g in GRANDEURS_OUVERTURE] == [
         ("annee", "eq:moteur-calendrier-date"), ("mois", "eq:moteur-calendrier-date"),
         ("date_de_decision", "eq:moteur-date-decision"), ("g", None),
-        ("facteur_g", "eq:moteur-conversion-croissance")]
+        ("facteur_g", "eq:moteur-conversion-croissance"), ("pi_etoile_pas", nominale),
+        ("Gamma_e", nominale), ("gamma_e", nominale)]
     # Rangs et prédicat : « sans dimension », le type portant la nature ; le
-    # vocabulaire des unités n'est pas étendu (annotation du 07/10/2026, point 6).
+    # vocabulaire des unités n'est pas étendu (annotation du 07/10/2026, point 6 ; P96).
     assert {g.unite for g in GRANDEURS_OUVERTURE[:3]} == {"sans dimension"}
-    assert [g.unite for g in GRANDEURS_OUVERTURE[3:]] == ["par an, taux de croissance",
-                                                          "sans dimension"]
+    assert [g.unite for g in GRANDEURS_OUVERTURE[3:]] == ["par an, taux de croissance"] + [
+        "sans dimension"] * 4
 
     class Ouverture:
         t = 25
+        pi_etoile = 0.10
 
     valeurs = {}
     for g in GRANDEURS_OUVERTURE:
         valeurs[g.nom] = g.fonction(Ouverture(), PARAMETRES_DE_REFERENCE, valeurs)
     g = (1.0 + PRODUCTION.g_pr.valeur) * (1.0 + TRAVAIL.g_N.valeur) - 1.0
+    facteur_g = facteur_par_pas(PRODUCTION.g_pr) * facteur_par_pas(TRAVAIL.g_N)
+    f_cible = facteur_par_pas(TauxDeCroissance(0.10))
     assert valeurs == {"annee": 3, "mois": 2, "date_de_decision": True, "g": g,
-                       "facteur_g": facteur_par_pas(TauxDeCroissance(g))}
-    assert all(type(valeurs[nom]) is float for nom in ("g", "facteur_g"))
+                       "facteur_g": facteur_g, "pi_etoile_pas": f_cible - 1.0,
+                       "Gamma_e": facteur_g * f_cible, "gamma_e": facteur_g * f_cible - 1.0}
+    assert all(type(valeurs[nom]) is float
+               for nom in ("g", "facteur_g", "pi_etoile_pas", "Gamma_e", "gamma_e"))
 
 
 def test_croissance_tendancielle_lit_les_deux_tables():
@@ -305,14 +314,39 @@ def test_croissance_tendancielle_lit_les_deux_tables():
 
     class Ouverture:
         t = 0
+        pi_etoile = 0.02
 
     valeurs = {}
     for g in GRANDEURS_OUVERTURE:
         valeurs[g.nom] = g.fonction(Ouverture(), ensemble, valeurs)
     assert valeurs["g"] == 1.03 * 1.005 - 1.0
-    assert valeurs["facteur_g"] == facteur_par_pas(TauxDeCroissance(1.03 * 1.005 - 1.0))
+    assert valeurs["facteur_g"] == (facteur_par_pas(TauxDeCroissance(0.03))
+                                    * facteur_par_pas(TauxDeCroissance(0.005)))
     with pytest.raises(ValueError, match="unité"):
         GrandeurOuverture("x", lambda e, p, g: 0, None, "mois")
+
+
+@pytest.mark.parametrize("g_n", [0.0, 0.001, 0.005])
+def test_facteur_g_produit_des_deux_facteurs(g_n):
+    """P88 (#125, point 1 ; ADR 0013, annotation du 14/11/2026, point 7) : `facteur_g` égale au
+    bit f(g_pr) · f(g_N), f = `facteur_par_pas`, produit des facteurs par lesquels les blocs 2 et
+    3 font croître pr et N^pa, à g_N ∈ {0 ; 0,001 ; 0,005} ; il est à 1 ulp au plus de
+    (1 + g)^{1/n_a}, la forme de J3-b, calculée sur g arrondie ; g reste publiée."""
+    ensemble = dataclasses.replace(PARAMETRES_DE_REFERENCE, travail=varier(TRAVAIL, g_N=g_n))
+
+    class Ouverture:
+        t = 0
+
+    valeurs = {}
+    for g in GRANDEURS_OUVERTURE[:5]:
+        valeurs[g.nom] = g.fonction(Ouverture(), ensemble, valeurs)
+    produit = facteur_par_pas(PRODUCTION.g_pr) * facteur_par_pas(TauxDeCroissance(g_n))
+    assert valeurs["facteur_g"].hex() == produit.hex()
+    assert valeurs["g"] == (1.0 + PRODUCTION.g_pr.valeur) * (1.0 + g_n) - 1.0
+    ancienne = facteur_par_pas(TauxDeCroissance(valeurs["g"]))
+    assert abs(valeurs["facteur_g"] - ancienne) <= math.ulp(ancienne)
+    if g_n == 0.0:
+        assert valeurs["facteur_g"] == ancienne
 
 
 # --------------------------------------------------------------------------
