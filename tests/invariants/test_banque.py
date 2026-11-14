@@ -24,6 +24,7 @@ vaut verdict de la boucle T3 ↔ BC3 (P87, rang 6), de la stationnarité partiel
 """
 
 import dataclasses
+import math
 
 import pytest
 
@@ -375,6 +376,59 @@ def test_bornes_plancher_inactif_publie(socle, scenario, publier):
     publier(f"Bloc 7, bornes, {scenario} aux tours 1 à 12, équilibre partiel, π* = 2 %", [
         f"plancher de B6 inactif sur les 48 pas (Div_Bk > 0 à chaque pas) ; Div/Π au plus bas "
         f"{bas:.4f} au pas {t_bas} (fenêtre : pas 0 à 47)"])
+
+
+def _rendements_en_equilibre_partiel(es, par, e, i_cb):
+    """Rendement des fonds propres de la banque n_a Π^Bk_t/E^Bk_t (% par an, E^Bk d'ouverture
+    du tour), pas 0 à 12, en équilibre partiel (forme de `test_bornes_plancher_inactif_publie`) :
+    encours de la banque du script × Γ̄ par pas, crédit exécuté L (Γ̄ − 1), taux directeur
+    `i_cb(t)`, i_L et i_D par B1 et B2 au tour suivant, E^Bk_{t+1} = E^Bk_t + Π − Div. Appel
+    direct des fonctions du bloc 7."""
+    from nations.blocs import banque as bloc
+    o, gam = es.ouverture(e, par), e["Gam"]
+    i_L, i_D, E = o["i_L"], o["i_D"], o["E_Bk"]
+    rendements = []
+    for t in range(13):
+        f = gam ** t
+        enc = {k: o[k] * f for k in ("L", "B_Bk", "Res", "L_CB", "D_H", "D_F")}
+        i = i_cb(t)
+        Pi = bloc.resultat(par_pas(TauxDeFlux(i_L)), enc["L"], par_pas(TauxDeFlux(i)),
+                           enc["B_Bk"], par_pas(TauxDeFlux(i)), enc["Res"],
+                           par_pas(TauxDeFlux(i_D)), enc["D_H"], enc["D_F"],
+                           par_pas(TauxDeFlux(i)), enc["L_CB"])
+        Div = bloc.dividendes(E, Pi, par.vartheta, enc["L"], enc["L"] * (gam - 1.0))
+        rendements.append(100.0 * N_A * Pi / E)
+        E = E + Pi - Div
+        i_L = bloc.taux_des_credits_suivant(i, par.varpi_L)
+        i_D = bloc.taux_des_depots_suivant(i, par.varpi_D)
+    return rendements
+
+
+def test_d2_rendement_des_fonds_propres_sur_12_tours_publie(socle, publier):
+    """(d2) de `jeu` (fiche 7, § 7 et § 9.6, critère 13 (d) ; classe (a), appel direct) : taux
+    directeur relevé d'un point aux tours 1 à 12 depuis l'état résolu à π* = 2 % (n_a = 12), en
+    équilibre partiel, contre un contrôle apparié au taux inchangé. Rendement des fonds propres
+    sur 12 tours, définition de `tab:banque-restitution` : moyenne sur les tours 1 à 12 de
+    n_a Π^Bk_t/E^Bk_t, % par an, E^Bk d'ouverture ; publié en points (écart au contrôle), avec
+    son écart au tour 12 et la valeur du script (`valeurs(...)["d2"]`). La fiche ne fixe aucun
+    seuil à (d2) (« restitué en points, et son écart au tour 12 est publié ») : mesure publiée
+    sans verdict. Publié ici, où vit la fixture `publier`."""
+    es = socle.script()
+    par = dataclasses.replace(es.Parametres(), pi_cible=0.02, n_a=12, nu_G=1.15)
+    e = es.etat_stationnaire(par)
+    i0 = e["i_CB"]
+    choc = _rendements_en_equilibre_partiel(es, par, e,
+                                            lambda t: i0 + 0.01 if 1 <= t <= 12 else i0)
+    controle = _rendements_en_equilibre_partiel(es, par, e, lambda t: i0)
+    ecarts = [c - k for c, k in zip(choc, controle, strict=True)]
+    d2 = sum(ecarts[1:13]) / 12
+    script = es.valeurs(e, par)["d2"]
+    assert math.isfinite(d2) and math.isfinite(ecarts[12])
+    publier("Bloc 7, (d2), i_CB + 1 point aux tours 1 à 12, équilibre partiel, π* = 2 %", [
+        f"rendement des fonds propres sur 12 tours (moyenne des tours 1 à 12 de n_a Π^Bk/E^Bk, "
+        f"% par an, E^Bk d'ouverture), écart au contrôle : {d2:+.4f} point ; écart au tour 12 : "
+        f"{ecarts[12]:+.4f} point ; tour 1 : {ecarts[1]:+.4f} point (C29) ; script : "
+        f"{script:+.4f} point ; mesure sans seuil (fiche 7, § 9.6)"])
 
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])

@@ -125,7 +125,8 @@ def _g_plan_accru(nom, t):
 
 
 def parametres(pi, lambda_e):
-    """Tables de référence, table du bloc 8 à π* = π̄ du sentier et λ_e = `lambda_e` (R1)."""
+    """Tables de référence, table du bloc 8 à π* = π̄ du sentier et λ_e = `lambda_e`, valeurs du
+    sentier (R1)."""
     p = PARAMETRES_DE_REFERENCE
     return dataclasses.replace(p, banque_centrale=varier(p.banque_centrale, pi_etoile=pi,
                                                          lambda_e=lambda_e))
@@ -181,8 +182,10 @@ class Essai:
 
 
 def executer(socle, pi, lambda_e, nb_pas, choc_pi_e0=0.0, choc_g=False):
-    """Un essai du banc ; un arrêt du noyau est relevé (P87 (e)), non propagé."""
-    sentier = socle.sentier(pi)
+    """Un essai du banc ; un arrêt du noyau est relevé (P87 (e)), non propagé. Le sentier est
+    construit à λ_e = `lambda_e`, valeur de la table du bloc 8 (R1 étendue : une table hors du
+    sentier est refusée) ; λ_e, vitesse, ne change ni l'état résolu ni son ouverture."""
+    sentier = socle.sentier(pi, lambda_e=lambda_e)
     initial = socle.etat_initial(sentier, choc_pi_e0=choc_pi_e0)
     serie = Serie()
     try:
@@ -432,7 +435,7 @@ def test_c_arrivee_independante_de_la_vitesse(bancs, pi, publier):
 
 
 # --------------------------------------------------------------------------
-# Publiés sans verdict : demi-vie, ratio de sacrifice, asymétrie, r̂* − r̄
+# Publiés sans verdict : demi-vie, coût en chômage d'un choc d'anticipations, asymétrie, r̂* − r̄
 # --------------------------------------------------------------------------
 
 
@@ -685,6 +688,35 @@ def test_e3_souscriptions_hors_du_socle(socle, pi):
     # Part non souscrite ς_B (Em − θ_CB Em), sans souscription des ménages (M27).
     non_souscrit = em - sum(rendus.values())
     assert abs(non_souscrit - varsigma * (1.0 - theta_cb) * em) <= 1e-15 * abs(em)
+
+
+def test_e3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque(socle, monkeypatch):
+    """Constat (b) de `/code-review` (revue finale de J3-c) : `besoin_d_emission` est appelé par
+    les deux règles d'E3 (19a-BC, E10 ; 19a-banque, E11), une fois chacune par pas, faute d'un
+    calcul unique sans état caché dans le bloc d'essai. Sur 36 pas sous choc de G^plan, à π* =
+    2 %, chaque pas compte exactement deux appels, qui rendent le même (Em_t, M^G*_t) au bit ; les
+    lignes 19a-BC et 19a-banque exécutées égalent E10 et E11 sur ce Em_t (au bit)."""
+    appels = {}
+    besoin = socle.besoin_d_emission
+
+    def releve(vue, sentier):
+        rendu = besoin(vue, sentier)
+        appels.setdefault(vue.ouverture.t, []).append(rendu)
+        return rendu
+
+    monkeypatch.setattr(socle, "besoin_d_emission", releve)
+    sentier = socle.sentier(0.02)
+    releve_e3 = ReleveE3()
+    socle.derouler(socle.etat_initial(sentier), 36,
+                   ordonnanceur(socle, sentier, LAMBDA_DE_LA_TABLE, True), releve_e3)
+    assert sorted(appels) == list(range(36))
+    varsigma = sentier.par.varsigma_B
+    for t, p in enumerate(releve_e3.pas):
+        (em, visee), second = appels[t]
+        assert (em.hex(), visee.hex()) == tuple(x.hex() for x in second), t
+        part_cb = p["variables"]["theta_CB"] * em
+        assert p["19a-BC"].hex() == part_cb.hex(), t
+        assert p["19a-banque"].hex() == ((1.0 - varsigma) * (em - part_cb)).hex(), t
 
 
 def test_options_sans_bloc_d_essai_refusees(socle):

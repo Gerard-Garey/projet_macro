@@ -60,12 +60,16 @@ exécutées, Π^CB et θ_CB lus en phase 1 et M^G d'ouverture, ν_G et ς_B du
 sentier ; sans ces options, l'émission reste aux montants du sentier (cas
 d'essai de la linéarisation, où les positions ont des flux exogènes).
 
-**Table du bloc 8 (réserve R1 de `monnaie`, rang 4 de J3-c)** : `ordonnanceur`
-aligne le paramètre π* de la table de référence du bloc 8 sur la cible du sentier
-(`parametres_du_sentier`), si bien que l'état initial (π*_0 = π̄ du script) égale
-la table à chaque π* ; une table du bloc 8 passée par l'appelant n'est jamais
-écrasée : gardée si son π* égale π̄, refusée sinon. La banque propose la ligne 21 sous la forme exacte de
-B7, −min(Res^{8b} ; L^CB), sur les positions lues (le noyau arrête sur une
+**Tables des blocs 7 et 8 (réserve R1 de `monnaie`, rang 4 de J3-c ; étendue
+par décision du mainteneur à la revue finale de J3-c)** : `ordonnanceur` aligne
+les tables de référence des blocs 7 et 8 sur les paramètres avec lesquels le
+script a construit le sentier (`parametres_du_sentier` ; ϖ_L, ϖ_D, ϑ, a_π, a_I,
+λ_e, θ_CB, π*, r̄), si bien que l'état initial (π*_0 = π̄ du script) égale la
+table à chaque π* ; une table des blocs 7 ou 8 passée par l'appelant n'est
+jamais écrasée : gardée si chacun de ces paramètres égale celui du sentier,
+refusée sinon (`TableHorsDuSentier`). La banque propose la ligne 21 sous la forme exacte de
+B7, −min(Res^{8b} ; L^CB), par la fonction du bloc 7 (`nations.blocs.banque.refinancement`),
+sur les positions lues au grand livre (le noyau arrête sur une
 poussière de réserves) ; l'État déclare le montant couvert de la ligne 16 si
 elle est négative (jamais sur le sentier).
 
@@ -82,10 +86,11 @@ import math
 import sys
 import types
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
 from fractions import Fraction
 from pathlib import Path
 
+from nations.blocs.banque import refinancement
 from nations.etat import schema
 from nations.etat.schema import EtatPays
 from nations.moteur import ordonnanceur as ordo
@@ -98,7 +103,7 @@ from nations.moteur.contrat_bloc import (
 )
 from nations.moteur.conversions import TauxDeFlux, par_pas
 from nations.moteur.ordonnanceur import INDICE_DES_PRIX, DeclarationDesEntrees, EntreesDuTour
-from nations.moteur.parametres import varier
+from nations.moteur.parametres import TauxDeCroissance, varier
 from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import PHASES
 from nations.noyau import catalogue as cat
@@ -342,9 +347,11 @@ class _BlocDEssai:
                 i_pas = par_pas(TauxDeFlux(vue.lire("i_CB")))
                 vue.proposer(ligne, {terme: i_pas * getattr(vue.ouverture, encours)})
             elif ligne == "21":
+                # B7 du bloc 7 (`refinancement`), L^CB lue au grand livre en 8 (c) : seule la
+                # ligne 21 touche L^CB, sa position y égale donc l'ouverture que lit le bloc réel.
                 livre = vue.grand_livre
-                vue.proposer("21", {"Delta_LCB": -min(livre.position("Res"),
-                                                      livre.position("L_CB"))})
+                vue.proposer("21", {"Delta_LCB": refinancement(livre.position("Res"),
+                                                               livre.position("L_CB"))})
             else:
                 vue.proposer(ligne, {terme: sentier.valeur(cle, NOMINAL, t, echelle)
                                      for terme, cle in LIGNES_DU_SENTIER[ligne].items()})
@@ -466,7 +473,8 @@ def blocs_reels() -> tuple[object, ...]:
     """Les blocs réels de `src/nations/blocs/`, dans l'ordre des radicaux : un module par
     radical, dont l'unique classe déclarée sous ce radical est instanciée (ADR 0012, annotation
     du 13/11/2026, point 5 : chaque module porte un seul bloc, dont le radical est le nom du
-    module). En J3-b : la production (#113), puis le travail (#50) et les prix (#51)."""
+    module). Au rang 6 de J3-c : la production (#113), le travail (#50), les prix (#51), la
+    banque (#90) et la banque centrale (#91)."""
     dossier = RACINE / "src" / "nations" / "blocs"
     rendus = []
     for radical in RADICAUX:
@@ -483,30 +491,64 @@ def blocs_reels() -> tuple[object, ...]:
     return tuple(rendus)
 
 
-class TableDuBloc8HorsDuSentier(ValueError):
-    """Refus explicite (réserve R1 de `monnaie`, reprise du rang 4) : la table du bloc 8 passée
-    par l'appelant porte une cible déclarée π* différente de π̄ du sentier."""
+# Paramètres des tables des blocs 7 et 8 que lit le script pour construire le sentier : radical
+# → {champ de la table: nom dans `Parametres` du script} (le script nomme `pi_cible` et `rbar` ce
+# que la table du bloc 8 nomme `pi_etoile` et `r_bar`).
+PARAMETRES_DES_TABLES_DU_SENTIER = types.MappingProxyType({
+    "banque": types.MappingProxyType({"varpi_L": "varpi_L", "varpi_D": "varpi_D",
+                                      "vartheta": "vartheta"}),
+    "banque_centrale": types.MappingProxyType({"a_pi": "a_pi", "a_I": "a_I",
+                                               "lambda_e": "lambda_e", "theta_CB": "theta_CB",
+                                               "pi_etoile": "pi_cible", "r_bar": "rbar"}),
+})
+if any(set(noms) != {f.name for f in fields(getattr(PARAMETRES_DE_REFERENCE, radical))}
+       for radical, noms in PARAMETRES_DES_TABLES_DU_SENTIER.items()):
+    raise AssertionError("socle partiel : un paramètre des blocs 7 ou 8 sans valeur du sentier")
+
+
+class TableHorsDuSentier(ValueError):
+    """Refus explicite (réserve R1 de `monnaie`, étendue par décision du mainteneur à la revue
+    finale de J3-c) : une table du bloc 7 ou du bloc 8 passée par l'appelant porte un paramètre
+    (ϖ_L, ϖ_D, ϑ ; a_π, a_I, λ_e, θ_CB, π*, r̄) différent de la valeur avec laquelle le script a
+    construit le sentier."""
+
+
+def _valeur_de_champ(valeur) -> float:
+    """Valeur brute d'un champ de table : un taux typé rend sa valeur, un `float` lui-même."""
+    return valeur.valeur if isinstance(valeur, (TauxDeFlux, TauxDeCroissance)) else valeur
 
 
 def parametres_du_sentier(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE):
-    """Réserve R1 de `monnaie` : les tables `parametres`, dont la table du bloc 8 porte la cible du
-    sentier, valeur initiale de l'état π*_0. Si l'appelant garde la table de référence du bloc 8
-    (inchangée), son π* est aligné sur π̄ (`varier(banque_centrale, pi_etoile=π̄)`) ; s'il passe
-    une table du bloc 8 à lui, elle est gardée telle quelle, et refusée
-    (`TableDuBloc8HorsDuSentier`) si son π* diffère de π̄ : jamais écrasée en silence."""
-    table = parametres.banque_centrale
-    if table == PARAMETRES_DE_REFERENCE.banque_centrale:
-        return replace(parametres, banque_centrale=varier(table, pi_etoile=sentier.pi))
-    if table.pi_etoile.valeur != sentier.pi:
-        raise TableDuBloc8HorsDuSentier(
-            f"table du bloc 8 de l'appelant à π* = {table.pi_etoile.valeur!r}, sentier à π̄ = "
-            f"{sentier.pi!r} : refusée (R1), jamais alignée en silence")
-    return parametres
+    """Réserve R1 de `monnaie`, étendue aux tables des blocs 7 et 8 : les tables `parametres`,
+    dont celles des blocs 7 et 8 portent les valeurs avec lesquelles le script a construit le
+    sentier (`sentier.par`, `PARAMETRES_DES_TABLES_DU_SENTIER`) ; π* du sentier est la valeur
+    initiale de l'état π*_0. Table par table : une table de référence (inchangée) est alignée
+    sur le sentier (`varier`, paramètres du script) ; une table de l'appelant est gardée telle
+    quelle, et refusée (`TableHorsDuSentier`) si un de ses paramètres diffère de celui du
+    sentier : jamais écrasée en silence. Sans écart, `parametres` est rendu tel quel."""
+    alignees = {}
+    for radical, noms in PARAMETRES_DES_TABLES_DU_SENTIER.items():
+        table = getattr(parametres, radical)
+        du_sentier = {champ: getattr(sentier.par, nom) for champ, nom in noms.items()}
+        if table == getattr(PARAMETRES_DE_REFERENCE, radical):
+            alignee = varier(table, **du_sentier)
+            if alignee != table:
+                alignees[radical] = alignee
+            continue
+        ecarts = {champ: (_valeur_de_champ(getattr(table, champ)), valeur)
+                  for champ, valeur in du_sentier.items()
+                  if _valeur_de_champ(getattr(table, champ)) != valeur}
+        if ecarts:
+            raise TableHorsDuSentier(
+                f"table du bloc {radical} de l'appelant hors du sentier, (table, sentier) : "
+                + " ; ".join(f"{champ} = {a!r}, {b!r}" for champ, (a, b) in ecarts.items())
+                + " : refusée (R1), jamais alignée en silence")
+    return replace(parametres, **alignees) if alignees else parametres
 
 
 def ordonnanceur(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE, **options):
-    """Ordonnanceur du socle partiel d'essai, aux tables de référence par défaut, la table du
-    bloc 8 alignée sur la cible du sentier ou refusée (R1, `parametres_du_sentier`)."""
+    """Ordonnanceur du socle partiel d'essai, aux tables de référence par défaut, les tables des
+    blocs 7 et 8 alignées sur le sentier ou refusées (R1, `parametres_du_sentier`)."""
     return ordo.assembler(PHASES, blocs(sentier, **options),
                           parametres_du_sentier(sentier, parametres), SANS_ENTREES)
 
@@ -651,7 +693,10 @@ def besoin_d_emission(vue: ordo.Vue, sentier: Sentier) -> tuple[float, float]:
     """E8 et E9 sur les montants exécutés des phases 5 et 6, Π^CB lu en phase 1 et M^G
     d'ouverture : PB_t = G_t + Tr_t + Σ lignes 11a à 11c (i_CB B_t/n_a, E7) ; M^G*_t = ν_G PB_t ;
     Em_t = PB_t − (T_H + T_F) − Π^CB_t + M^G*_t − M^G_t. Rend (Em_t, M^G*_t), u.m. par pas et
-    u.m. ; ν_G du sentier (1,15, `NU_G`)."""
+    u.m. ; ν_G du sentier (1,15, `NU_G`). Appelé par les règles 19a-BC et 19a-banque, une fois
+    chacune par pas, sur les mêmes lectures : un calcul unique demanderait un état caché dans le
+    bloc d'essai ; le même Em_t des deux appels est vérifié au bit
+    (`test_e3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque`)."""
     livre = vue.grand_livre
     interets = sum(livre.montant_execute_ligne(ligne) for ligne in ("11a", "11b", "11c"))
     paiements_bruts = (livre.montant_execute_ligne("2") + livre.montant_execute_ligne("6")

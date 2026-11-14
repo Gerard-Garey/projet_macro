@@ -21,7 +21,7 @@ n'est pas coupée. T2 (b) se lit ici sur les blocs 2 et 3 réels, le prix étant
 exogène ; sa lecture sur les blocs 2 à 4 réels vient avec le bloc 4 (#51).
 
 **Étiquettes** : toute mesure dynamique porte « plans nominaux exogènes » et
-« π^e exogène (bloc d'essai) » ; elle ne vaut pas verdict de boucle fermée ni de
+l'étiquette du socle (`socle_partiel.ETIQUETTE`, par `etiquettes`) ; elle ne vaut pas verdict de boucle fermée ni de
 boucle conjointe T3 ↔ BC3 (réserve de `monnaie`, synthèse du rang 1a, § 8).
 """
 
@@ -44,7 +44,6 @@ from nations.observation.observateur import FinDePas
 
 N_A = PAS_PAR_AN.valeur
 NB_PAS = 720
-ETIQUETTES = "plans nominaux exogènes ; π^e exogène (bloc d'essai) ; prix exogène"
 # Seuils écrits avant l'essai (fiche 3, § 9.6 ; P66, P67).
 SEUIL_UN_PAS = 1e-10
 SEUIL_720_PAS = 1e-9
@@ -55,6 +54,12 @@ SEUIL_VITESSES = 1e-6
 SEUIL_RETENTION = 1e-12
 VARIABLES_DU_BLOC = ("W", "U", "N", "N_pa")
 G_N_D_ESSAI = 0.005
+
+
+def etiquettes(socle):
+    """Étiquettes des mesures dynamiques : plans nominaux exogènes, étiquette du socle à
+    bloc d'essai 8 (`socle.ETIQUETTE`, jamais écrite en dur), prix exogène."""
+    return f"plans nominaux exogènes ; {socle.ETIQUETTE} ; prix exogène"
 
 
 class Releve:
@@ -135,7 +140,7 @@ def test_un_pas_depuis_l_etat_resolu(trajectoires, socle, pi, publier):
     ecarts["N/N*"] = ecart(v["N_suivant"], v["N_etoile"])
     for nom, x in ecarts.items():
         assert x <= SEUIL_UN_PAS, (nom, x)
-    publier(f"Bloc 3, un pas depuis l'état résolu, π* = {100 * pi:g} % ({ETIQUETTES})", [
+    publier(f"Bloc 3, un pas depuis l'état résolu, π* = {100 * pi:g} % ({etiquettes(socle)})", [
         "|x_1/x̄_1 − 1| : " + " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items())
         + " (seuil 1e−10)"])
 
@@ -170,7 +175,7 @@ def test_t2_b_dernier_prix_connu(trajectoires, socle, pi, publier):
     for nom, x in ecarts.items():
         assert x <= SEUIL_T2, (nom, x)
     publier(f"Bloc 3, T2 (b), mesure complémentaire sans verdict, π* = {100 * pi:g} % "
-            f"({ETIQUETTES} ; blocs 2 et 3 réels)", [
+            f"({etiquettes(socle)} ; blocs 2 et 3 réels)", [
         " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items()) + " (seuil 1e−10)"])
 
 
@@ -193,7 +198,7 @@ def test_stationnarite_partielle(trajectoires, socle, pi, publier):
         seuil = SEUIL_NUL if resolues[cle] == 0.0 else SEUIL_720_PAS
         assert pires[cle] <= seuil, (cle, pires[cle], resolues[cle])
     publier(f"Bloc 3, stationnarité partielle (P67), π* = {100 * pi:g} %, 720 pas "
-            f"({ETIQUETTES} ; blocs 2 et 3 réels)",
+            f"({etiquettes(socle)} ; blocs 2 et 3 réels)",
             ["max |x_t/x̄ − 1| (|x_t| si x̄ = 0, P66) : "
              + " ; ".join(f"{c} {x:.1e}" for c, x in pires.items())])
 
@@ -231,7 +236,7 @@ def test_coherence_des_conversions_a_g_n_positif(socle, publier):
             <= SEUIL_UN_PAS, nom
     pire = max(ecart(p["variables"]["N_suivant"], p["variables"]["N_etoile"])
                for p in releve.pas)
-    publier(f"Bloc 3, cohérence des conversions, g_N = 0,005, π* = 2 % ({ETIQUETTES})", [
+    publier(f"Bloc 3, cohérence des conversions, g_N = 0,005, π* = 2 % ({etiquettes(socle)})", [
         f"|N/N* − 1| : pas 1 {ecart(v['N_suivant'], v['N_etoile']):.1e} (seuil 1e−10) ; "
         f"max sur 720 pas {pire:.1e} (publié, sans verdict)"])
 
@@ -278,7 +283,7 @@ def test_vitesses_ne_determinent_pas_l_etat_d_arrivee(socle, publier):
     for nom, x in ecarts.items():
         assert x <= SEUIL_VITESSES, (nom, x)
     publier(f"Bloc 3, vitesses λ_w et λ_N × 0,5 et × 2 après un choc G + 1 % sur 12 tours "
-            f"({ETIQUETTES})", ["écart relatif après 720 pas : "
+            f"({etiquettes(socle)})", ["écart relatif après 720 pas : "
                                 + " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items())
                                 + " (seuil 1e−6)"])
 
@@ -306,7 +311,7 @@ def test_retention_resultat_par_la_valeur_nette(socle, publier):
     nom = cat.VALEUR_NETTE_FLUX["entreprises"]
     baisse = getattr(s["etat"], nom) - getattr(a["etat"], nom)
     assert abs(baisse - excedent) / WB <= SEUIL_RETENTION
-    publier(f"Bloc 3, rétention (N = 1,02 N*, un pas) ({ETIQUETTES})", [
+    publier(f"Bloc 3, rétention (N = 1,02 N*, un pas) ({etiquettes(socle)})", [
         f"W(N − y/pr)/WB = {excedent / WB:.6f} (1 − 1/1,02 = {1 - 1 / 1.02:.6f}) ; baisse de "
         f"V_F rapportée à l'excédent − 1 = {baisse / excedent - 1.0:.1e} ; ligne 4 inchangée "
         "au bit"])
@@ -348,7 +353,7 @@ def test_delais_d_un_choc_d_anticipation(socle, choc, publier):
     rapport = W_c[n + 1] / W_b[n + 1]
     attendu = ((1.0 + 0.02 + choc) / 1.02) ** (1.0 / N_A)
     assert (rapport - 1.0) * choc > 0.0 and abs(rapport / attendu - 1.0) <= 1e-12
-    publier(f"Bloc 3, délai d'un choc de π^e de {100 * choc:+g} point au tour 7 ({ETIQUETTES})",
+    publier(f"Bloc 3, délai d'un choc de π^e de {100 * choc:+g} point au tour 7 ({etiquettes(socle)})",
             [f"W_7/W̄_7 − 1 = {rapport - 1.0:.6e} (attendu {attendu - 1.0:.6e}) ; W inchangé au "
              "bit aux tours 0 à 6"])
 

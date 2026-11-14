@@ -12,7 +12,7 @@ sous le schéma v2, puis v3 (#61) ; invariance × 100 sur les variables nouvelle
 des blocs d'un groupe identique au bit ; bijection propriétaire ↔ écrivain
 pour chaque variable nouvelle.
 
-Ces mesures portent l'étiquette « π^e exogène (bloc d'essai) » (réserve de
+Ces mesures portent l'étiquette du socle (`socle_partiel.ETIQUETTE`) (réserve de
 `monnaie`) : le socle partiel ne vaut pas verdict de boucle conjointe. Tant
 qu'aucun bloc réel n'y est substitué, elles éprouvent le moteur (noyau,
 ordonnanceur, registre, schéma v3) sur le sentier, pas un bloc.
@@ -34,7 +34,7 @@ from nations.etat.sauvegarde import charger, sauvegarder
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import par_pas
 from nations.moteur.diagnostics import DefautDeDeclaration
-from nations.moteur.parametres import varier
+from nations.moteur.parametres import TauxDeFlux, varier
 from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
 from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import ETAPES, MOTEUR, NOYAU
@@ -136,7 +136,7 @@ def ecart(x, reference):
 def test_huit_blocs_d_essai_conformes_au_contrat(socle):
     """Un bloc d'essai par radical, sans attribut d'instance, un siège par étape où
     `tab:phases` le déclare ; toutes les lignes à proposant au socle proposées une fois ;
-    les dix variables d'état écrites chacune par son propriétaire ; l'assemblage les accepte."""
+    les quatorze variables d'état écrites chacune par son propriétaire ; l'assemblage les accepte."""
     sentier = socle.sentier(0.02)
     blocs = socle.blocs(sentier)
     assert [b.declaration.radical for b in blocs] == list(socle.RADICAUX)
@@ -160,7 +160,7 @@ def test_huit_blocs_d_essai_conformes_au_contrat(socle):
 
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
-def test_720_pas_sans_arret_et_identites(trajectoires, pi, publier):
+def test_720_pas_sans_arret_et_identites(trajectoires, socle, pi, publier):
     """720 pas depuis l'état résolu sans arrêt du noyau ; identités par pas ≤ ε × S et
     identité cumulée ≤ ε_V × S à chaque clôture."""
     tr = trajectoires[pi]
@@ -171,7 +171,7 @@ def test_720_pas_sans_arret_et_identites(trajectoires, pi, publier):
         assert maxima[regle] <= EPS, regle
     assert maxima["eq:noyau-tolerance-cumulee"] <= EPS_V
     publier(f"Socle partiel d'essai, π* = {100 * pi:g} %, 720 pas", [
-        "étiquette : π^e exogène (bloc d'essai) ; aucun bloc réel",
+        f"étiquette : {socle.ETIQUETTE} ; aucun bloc réel",
         "résidu / S maximal : " + " ; ".join(f"{r.removeprefix('eq:noyau-')} {x:.2e}"
                                             for r, x in maxima.items())])
 
@@ -236,22 +236,65 @@ def test_table_du_bloc_8_alignee_sur_la_cible(socle, pi):
         reference.banque_centrale
 
 
-@pytest.mark.parametrize("pi", [0.0, 0.10])
-def test_table_du_bloc_8_de_l_appelant_jamais_ecrasee(socle, pi):
-    """Réserve R1 de `monnaie`, (a) de la reprise du rang 4 : une table du bloc 8 passée par
-    l'appelant n'est jamais alignée en silence ; refusée (`TableDuBloc8HorsDuSentier`) si son π*
-    diffère de π̄ du sentier, même si un seul autre paramètre a changé ; gardée telle quelle si
-    son π* égale π̄."""
-    sentier = socle.sentier(pi)
+# Variations d'essai des paramètres des tables des blocs 7 et 8 : (radical, champ de la table,
+# nom dans `Parametres` du script, valeur du sentier varié, autre valeur de l'appelant).
+VARIATIONS_DES_TABLES_7_ET_8 = (
+    ("banque", "varpi_L", "varpi_L", 0.03, 0.025),
+    ("banque", "varpi_D", "varpi_D", 0.015, 0.005),
+    ("banque", "vartheta", "vartheta", 0.12, 0.08),
+    ("banque_centrale", "a_pi", "a_pi", 0.6, 0.4),
+    ("banque_centrale", "a_I", "a_I", 0.3, 0.2),
+    ("banque_centrale", "lambda_e", "lambda_e", 0.4, 0.1),
+    ("banque_centrale", "theta_CB", "theta_CB", 0.1, 0.2),
+    ("banque_centrale", "pi_etoile", "pi_cible", 0.05, 0.03),
+    ("banque_centrale", "r_bar", "rbar", 0.015, 0.005),
+)
+
+
+def _sentier_varie(socle, nom, valeur):
+    """Sentier du script à π̄ = 2 % dont le paramètre `nom` (script) vaut `valeur` ; π* est
+    l'argument `pi` de `sentier`."""
+    return socle.sentier(valeur) if nom == "pi_cible" else socle.sentier(0.02, **{nom: valeur})
+
+
+@pytest.mark.parametrize("radical, champ, nom, valeur, autre", VARIATIONS_DES_TABLES_7_ET_8)
+def test_tables_de_reference_des_blocs_7_et_8_alignees_sur_le_sentier(socle, radical, champ,
+                                                                      nom, valeur, autre):
+    """Réserve R1 de `monnaie`, étendue par décision du mainteneur (revue finale de J3-c) : sur
+    un sentier construit à un paramètre des blocs 7 ou 8 différent de la table de référence
+    (ex. `sentier(0.02, varpi_L=0.03)`), la table de référence de son bloc est alignée sur le
+    sentier (`varier(table, champ=valeur)`), l'autre table et les autres paramètres restent ceux
+    de référence ; l'ordonnanceur porte la table alignée."""
+    sentier = _sentier_varie(socle, nom, valeur)
     reference = PARAMETRES_DE_REFERENCE
-    for table in (varier(reference.banque_centrale, pi_etoile=0.05),
-                  varier(reference.banque_centrale, a_pi=0.6)):
-        parametres = dataclasses.replace(reference, banque_centrale=table)
-        with pytest.raises(socle.TableDuBloc8HorsDuSentier, match="refusée"):
-            socle.ordonnanceur(sentier, parametres)
-    table = varier(reference.banque_centrale, pi_etoile=pi, a_pi=0.6)
-    parametres = dataclasses.replace(reference, banque_centrale=table)
-    assert socle.ordonnanceur(sentier, parametres).parametres is parametres
+    attendu = dataclasses.replace(
+        reference, **{radical: varier(getattr(reference, radical), **{champ: valeur})})
+    assert socle.parametres_du_sentier(sentier) == attendu
+    assert socle.ordonnanceur(sentier).parametres == attendu
+
+
+@pytest.mark.parametrize("radical, champ, nom, valeur, autre", VARIATIONS_DES_TABLES_7_ET_8)
+def test_table_de_l_appelant_hors_du_sentier_refusee(socle, radical, champ, nom, valeur,
+                                                     autre):
+    """Réserve R1 de `monnaie`, étendue par décision du mainteneur (revue finale de J3-c) : une
+    table des blocs 7 ou 8 passée par l'appelant n'est jamais alignée en silence ; refusée
+    (`TableHorsDuSentier`, le champ nommé) si un seul de ses paramètres diffère de la valeur
+    avec laquelle le script a construit le sentier, que le sentier soit varié (table à une autre
+    valeur) ou de référence (table variée seule) ; gardée telle quelle (même objet) si tous ses
+    paramètres égalent ceux du sentier."""
+    reference = PARAMETRES_DE_REFERENCE
+
+    def de_l_appelant(x):
+        return dataclasses.replace(
+            reference, **{radical: varier(getattr(reference, radical), **{champ: x})})
+
+    for sentier, table in ((_sentier_varie(socle, nom, valeur), de_l_appelant(autre)),
+                           (socle.sentier(0.02), de_l_appelant(valeur))):
+        with pytest.raises(socle.TableHorsDuSentier, match=f"{champ} = .*refusée"):
+            socle.ordonnanceur(sentier, table)
+    parametres = de_l_appelant(valeur)
+    assert socle.ordonnanceur(_sentier_varie(socle, nom, valeur), parametres).parametres \
+        is parametres
 
 
 @pytest.mark.parametrize("pi_0", [0.03, 0.0, -0.5])
@@ -285,7 +328,7 @@ def test_variables_d_etat_sur_leur_sentier(trajectoires, socle, pi, publier):
         assert ecarts[0] <= SEUIL_UN_PAS, nom
         pires[nom] = max(ecarts)
         assert pires[nom] <= SEUIL_720_PAS, nom
-    publier(f"Variables d'état sur le sentier, π* = {100 * pi:g} % (π^e exogène, bloc d'essai)", [
+    publier(f"Variables d'état sur le sentier, π* = {100 * pi:g} % ({socle.ETIQUETTE})", [
         "max sur 720 pas de |x_t / (x̄_0 facteur^t) − 1| : "
         + " ; ".join(f"{n} {x:.1e}" for n, x in pires.items())])
 
@@ -309,7 +352,7 @@ def test_positions_sur_le_sentier(trajectoires, socle, pi, publier):
                 pire = max(pire, ecart(x, reference))
         pires[poste.nom] = pire
         assert pire <= (SEUIL_NUL if float(tr.sentier.o[poste.nom]) == 0.0 else SEUIL_720_PAS)
-    publier(f"Positions sur le sentier, π* = {100 * pi:g} % (π^e exogène, bloc d'essai)", [
+    publier(f"Positions sur le sentier, π* = {100 * pi:g} % ({socle.ETIQUETTE})", [
         "max sur 720 pas : " + " ; ".join(f"{n} {x:.1e}" for n, x in pires.items())])
 
 
@@ -335,7 +378,7 @@ def test_stationnarite_partielle(trajectoires, socle, pi, publier):
         seuil = SEUIL_NUL if resolues[cle] == 0.0 else SEUIL_720_PAS
         assert pires[cle] <= seuil, (cle, pires[cle], resolues[cle])
     assert (resolues["B7"] == 0.0) == (pi == 0.0)
-    publier(f"Stationnarité partielle (P67), π* = {100 * pi:g} %, 720 pas (π^e exogène, bloc d'essai)", [
+    publier(f"Stationnarité partielle (P67), π* = {100 * pi:g} %, 720 pas ({socle.ETIQUETTE})", [
         "max |x_t/x̄ − 1| (|x_t| si x̄ = 0, P66) : "
         + " ; ".join(f"{c} {x:.1e}" for c, x in pires.items())])
 
@@ -368,7 +411,7 @@ def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v3(socle):
 def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
     """ADR 0005, point 19 ; ADR 0012, annotation du 13/11/2026, point 1.3 : sous une
     redénomination × 100 (état initial et sentier nominal × 100), W est multipliée par 100 et
-    les neuf autres variables nouvelles sont inchangées, à 1e−10 relatif sur 720 pas ;
+    les treize autres variables nouvelles sont inchangées, à 1e−10 relatif sur 720 pas ;
     positions et registre multipliés par 100 à 1e−10 relatif."""
     sentier = socle.sentier(0.02)
     un, cent = Releve(), Releve()
@@ -401,7 +444,7 @@ def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 def test_reprise_avec_les_blocs_reels(socle, pi):
-    """D4, blocs réels (`blocs_reels` ; en J3-b, blocs 2 à 4) substitués à leurs blocs
+    """D4, blocs réels (`blocs_reels` : blocs 2, 3, 4, 7 et 8) substitués à leurs blocs
     d'essai : sauvegarde v3 rechargée, reprise à la frontière de tour des pas 1, 359 et 361
     (la reprise du bloc d'essai est au pas 360) : clôtures et états identiques au bit à ceux d'une
     trajectoire continue de 720 pas."""
@@ -422,12 +465,14 @@ def test_reprise_avec_les_blocs_reels(socle, pi):
 
 
 def test_invariance_sous_100_avec_les_blocs_reels(socle, publier):
-    """ADR 0005, point 19, blocs réels (`blocs_reels` ; en J3-b, blocs 2 à 4) substitués à
-    leurs blocs d'essai : sous une redénomination × 100, W est multipliée par 100 et les neuf
-    autres variables nouvelles sont inchangées, à 1e−10 relatif sur 720 pas ; positions et
+    """ADR 0005, point 19, blocs réels (`blocs_reels` : blocs 2, 3, 4, 7 et 8) substitués à
+    leurs blocs d'essai : sous une redénomination × 100, W est multipliée par 100 et les
+    treize autres variables nouvelles sont inchangées, à 1e−10 relatif sur 720 pas ; positions et
     registre × 100 à 1e−10 relatif."""
     reels = socle.blocs_reels()
-    assert reels
+    # Libellé publié « blocs réels 2, 3, 4, 7 et 8 » tenu par la mesure.
+    assert [b.declaration.radical for b in reels] == ["production", "travail", "prix",
+                                                    "banque", "banque_centrale"]
     sentier = socle.sentier(0.02)
     un, cent = Releve(), Releve()
     socle.derouler(socle.etat_initial(sentier), NB_PAS,
@@ -451,7 +496,7 @@ def test_invariance_sous_100_avec_les_blocs_reels(socle, publier):
             pire_registre = max(pire_registre, ecart(x100, 100.0 * x1))
     assert pire_nouvelles <= SEUIL_UN_PAS
     assert pire_positions <= SEUIL_UN_PAS and pire_registre <= SEUIL_UN_PAS
-    publier("Invariance ×100, blocs réels 2 à 4 substitués, π* = 2 %, 720 pas", [
+    publier("Invariance ×100, blocs réels 2, 3, 4, 7 et 8 substitués, π* = 2 %, 720 pas", [
         f"variables nouvelles : {pire_nouvelles:.1e} ; positions : {pire_positions:.1e} ; "
         f"registre : {pire_registre:.1e} (seuil 1e−10)"])
 
@@ -700,3 +745,56 @@ def test_linearisation_refuse_franchement_une_variable_au_bord_de_son_domaine(so
     carte = linearisation.carte_du_moteur(etat, socle.ordonnanceur(sentier), ("Res",), 0.02)
     with pytest.raises(DefautComptable):
         linearisation.jacobienne(carte)
+
+
+# --------------------------------------------------------------------------
+# Règles d'essai de ligne (`lignes`) sur les lignes d'acheteur et d'intérêts sur titres
+# --------------------------------------------------------------------------
+
+
+class ReleveDesLignes:
+    """Observateur d'essai : par pas, montants exécutés des lignes 2 et 11b (total des termes)."""
+
+    LIGNES = ("2", "11b")
+
+    def __init__(self):
+        self.pas = []
+        self._montants = {}
+
+    def relever(self, e):
+        if type(e) is ClotureDePhase:
+            for ligne, termes in e.montants:
+                if ligne in self.LIGNES:
+                    self._montants[ligne] = sum(x for _, x in termes)
+        elif type(e) is FinDePas:
+            self.pas.append(self._montants)
+            self._montants = {}
+
+
+def test_regle_de_ligne_prime_sur_acheteur_et_interets_sur_titres(socle):
+    """Constat m6 de l'audit du rang 6 de J3-c (m-T3 de la revue finale) : une règle d'essai de
+    ligne (`lignes`) prime sur toute autre forme du bloc d'essai, y compris sur une ligne
+    d'acheteur (ligne 2, p × G^vol) et sur une ligne d'intérêts sur titres (11b, E7) ; sur 3 pas
+    du socle à blocs d'essai, π* = 2 %, chaque règle est appelée une fois par pas et son montant,
+    distinct de la forme par défaut (× 1,001), est exécuté au bit."""
+    appels = {"2": [], "11b": []}
+
+    def depense(vue, sentier):
+        defaut = vue.lire("p") * vue.lire("G_vol")
+        appels["2"].append((defaut, 1.001 * defaut))
+        return {"G": 1.001 * defaut}
+
+    def interets(vue, sentier):
+        defaut = par_pas(TauxDeFlux(vue.lire("i_CB"))) * vue.ouverture.B_Bk
+        appels["11b"].append((defaut, 1.001 * defaut))
+        return {"iB_BBk": 1.001 * defaut}
+
+    sentier = socle.sentier(0.02)
+    releve = ReleveDesLignes()
+    socle.derouler(socle.etat_initial(sentier), 3,
+                   socle.ordonnanceur(sentier, lignes={"2": depense, "11b": interets}), releve)
+    for ligne, rendus in appels.items():
+        assert len(rendus) == 3, ligne
+        for t, (defaut, regle) in enumerate(rendus):
+            assert regle != defaut and defaut > 0.0, (ligne, t)
+            assert releve.pas[t][ligne].hex() == regle.hex(), (ligne, t)
