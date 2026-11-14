@@ -387,5 +387,5 @@ def test_phases_lecture_hors_ordre_refusee(socle, etape, lecture, motif):
     ordonnanceur(socle, sentier)
     blocs = socle.blocs(sentier, reels=(Production(), _fautif(etape, lecture)))
     with pytest.raises(DefautDeDeclaration, match=motif):
-        ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+        ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
 

@@ -617,11 +617,14 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     Tr_lev = P[0] * (1 + pis) * par.theta_Tr * y_pot  # E6
     Tr = min(Tr_lev, max(0.0, o["M_G"] + T_H - i_CB * B / n - G_plan))
     s.update(IN_star=IN_star, y_star=y_star, N_star=N_star, UC=UC, YD_e=YD_e, V_star=V_star, C_regle=C_regle,
-             C_plan=C_plan, rho_L=rho_L, tu_star=tu_star, I_plan=I_plan, G_plan=G_plan, T_cou=T_cou, T_H=T_H,
+             C_plan=C_plan, rho_L=rho_L, tu_star=tu_star, I_vol_plan=I_vol_plan, I_plan=I_plan, G_plan=G_plan,
+             T_cou=T_cou, T_H=T_H,
              Tr=Tr, Tr_lev=Tr_lev, plafond_E6=o["M_G"] + T_H - i_CB * B / n - G_plan)
     # Phase 3 : crédit (F1).
     dL_d = par.lv * ((1 - par.delta / n) * o["K"] + I_plan) - o["L"]
     dL = (1 - par.varsigma_L) * max(dL_d, 0.0) + min(dL_d, 0.0)
+    # ΔL^d publiée à côté de ΔL (précédent de P93 ; avis de macro, rang 1a de J3-d1, § 2).
+    s["dL_d"] = dL_d
     s["dL"] = dL
     # Phase 4 : travail, puis production (T1, T4 à T6, N5, N11).
     s["N_pa_1"] = o["N_pa"] * (1 + par.g_N) ** (1 / n)  # T1

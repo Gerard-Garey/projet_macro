@@ -85,8 +85,12 @@ CAISSE = Regle("eq:noyau-caisse-nette", Domaine.POSITIF_OU_NUL_A_EPSILON_S)
 # Stocks d'ouverture, IN ≥ 0, strict (décision du mainteneur du 13/11/2026, P72 ;
 # ADR 0012, annotation du 13/11/2026, point 1.8) : seule la ligne 4 touche IN, et
 # sa forme B, ΔIN = cm IN^vol_{t+1} − IN_t, tient IN_{t+1} ≥ 0 exactement par
-# monotonie de l'arrondi ; aucune tolérance.
-STOCKS_OUVERTURE = Regle("domaine des stocks à l'ouverture, IN ≥ 0", Domaine.POSITIF_OU_NUL)
+# monotonie de l'arrondi ; aucune tolérance. Étendue à K ≥ 0, strict (P80 ; ADR 0013,
+# annotation du 14/11/2026 (rang 1b de J3-d1), point 3) : seules les lignes 3 (+I, phase 5)
+# et 8 (−c K_t, phase 6, c = δ/n_a < 1, sur K d'ouverture) touchent K, d'où
+# K_{t+1} = fl(fl(K_t + I_t) − fl(c K_t)) ≥ 0 par monotonie de l'arrondi si I_t ≥ 0.
+STOCKS_OUVERTURE = Regle("domaine des stocks à l'ouverture, IN ≥ 0, K ≥ 0",
+                         Domaine.POSITIF_OU_NUL)
 # Domaines d'interface : échelle à l'ouverture (ADR 0012, point 11 ; finie,
 # en plus, par l'annotation du 07/10/2026, point 5), tolérances reçues, sens
 # des montants proposés (A2), montant couvert et perte de la ligne 16 (A3.2),

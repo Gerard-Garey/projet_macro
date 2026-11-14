@@ -14,7 +14,10 @@ Contrat : ADR 0012, B3, B4 et F1 ; même forme que les diagnostics du noyau
   la couche moteur de la phase 9, entrées du tour non déclarées (B4, C2, B5) ;
   sa dérivée `PlanHorsDomaine` refuse un plan écrit hors de son domaine
   (`DOMAINES_DU_PAS` de l'ordonnanceur ; ADR 0013, annotation du 14/11/2026
-  (J3-d1), point 4 ; P120, P129, #124).
+  (J3-d1), point 4 ; P120, P129, #124) ; sa dérivée `EntreeHorsDomaine` refuse une entrée de
+  scénario publiée hors de son domaine (`DOMAINES_DES_ENTREES` ; P138) ; sa dérivée
+  `DepassementNumerique` traduit le dépassement de la double précision d'une règle de bloc
+  (`OverflowError` de `math.exp`, S2, S3 et S6 du bloc 6 ; P139).
 
 Le moteur ne rattrape jamais un arrêt pour continuer, ni du noyau ni le sien :
 l'état d'ouverture reste intact (gelé), et aucun état t + 1 n'est rendu.
@@ -78,4 +81,27 @@ class PlanHorsDomaine(RefusDuMoteur):
     Levé par l'espace du pas à l'écriture, quel que soit l'écrivain, avant le refus générique
     de finitude ; jamais d'écrêtage. Champs : pas, étape et bloc écrivain (apposés par la
     vue), nom du plan ; la valeur et la condition sont dans le message.
+    """
+
+
+class EntreeHorsDomaine(RefusDuMoteur):
+    """Entrée de scénario du tour (ς_{L,t}) publiée hors de son domaine, [0 ; 1] pour une part
+    refusée : NaN, ±∞ compris (P138, sur le modèle de `PlanHorsDomaine`, P129).
+
+    Levé par le moteur à la publication en phase 0, avant le refus générique de finitude ;
+    jamais d'écrêtage. Champs : pas, étape « 0 », bloc « moteur », nom de l'entrée ; la valeur
+    et la condition sont dans le message. Dérivée de `RefusDuMoteur` : le refus a lieu au
+    moment de l'appel, pendant un pas (contrat « refus à l'appel » inchangé), et le type
+    distinct permet au test et au diagnostic de le séparer d'une entrée non déclarée.
+    """
+
+
+class DepassementNumerique(RefusDuMoteur):
+    """Dépassement de la double précision dans une méthode d'étape d'un bloc
+    (`OverflowError`, levée par `math.exp` au-delà d'un argument d'environ 709 ; S2, S3 et S6 du
+    bloc 6 ; P139).
+
+    Levé par le moteur, qui traduit l'exception de l'arithmétique en refus typé à l'appel du
+    bloc : champs pas, étape, bloc (radical de la méthode appelée) ; l'exception d'origine est
+    chaînée. Ce n'est pas un rattrapage : le pas s'arrête comme pour tout `RefusDuMoteur`.
     """

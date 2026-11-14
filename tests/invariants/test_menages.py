@@ -51,7 +51,8 @@ N_A = PAS_PAR_AN.valeur
 NB_PAS = 720
 EPSILON = PARAMETRES_DE_REFERENCE.cadre.tolerance_identite_pas
 TABLE = PARAMETRES_DE_REFERENCE.menages
-ETIQUETTES = "blocs 2, 3, 4, 5, 7 et 8 réels ; plans de l'investissement et de l'État exogènes"
+ETIQUETTES = ("blocs 2, 3, 4, 5, 7 et 8 réels ; bloc 6 d'essai ; plans de l'investissement et de "
+              "l'État exogènes")
 # Seuils écrits avant l'essai (fiche 5, § 9.6).
 SEUIL_UN_PAS = 1e-10  # relatif
 SEUIL_H7 = 1e-12  # × S^H
@@ -98,23 +99,32 @@ def cellule_des_menages(pas, ligne):
     return total
 
 
-def derouler(socle, sentier, nb_pas, initial=None, reels=None, parametres=None, **options):
+def reels_du_bloc_5(socle):
+    """Banc des lignes de la fiche 5 jugées au rang 3 (#60) : blocs réels de `blocs_reels()` sauf
+    le bloc 6 (rang 4, #67), gardé d'essai pour que ces verdicts restent sur leur banc
+    (`ETIQUETTES`) ; le bloc 6 réel n'entre que dans les lignes qui l'attendaient (canal des
+    dividendes F3 des délais)."""
+    return tuple(b for b in socle.blocs_reels() if b.declaration.radical != "investissement")
+
+
+def derouler(socle, sentier, nb_pas, initial=None, reels=None, parametres=None, refus=None,
+             **options):
     releve = Releve()
     initial = socle.etat_initial(sentier) if initial is None else initial
     o = socle.ordonnanceur(sentier, PARAMETRES_DE_REFERENCE if parametres is None else parametres,
-                           reels=socle.blocs_reels() if reels is None else reels, **options)
-    socle.derouler(initial, nb_pas, o, releve)
+                           reels=reels_du_bloc_5(socle) if reels is None else reels, **options)
+    socle.derouler(initial, nb_pas, o, releve, refus)
     return initial, releve
 
 
 @pytest.fixture(scope="module")
 def trajectoires(socle):
-    """Socle partiel, blocs réels de `blocs_reels()` (2, 3, 4, 5, 7 et 8), 720 pas, π* ∈ {0 ;
+    """Socle partiel, blocs réels de `reels_du_bloc_5` (2, 3, 4, 5, 7 et 8), 720 pas, π* ∈ {0 ;
     2 ; 10 %}."""
     rendus = {}
     for pi in socle.POINTS_PI:
         sentier = socle.sentier(pi)
-        assert [b.declaration.radical for b in socle.blocs_reels()] == [
+        assert [b.declaration.radical for b in reels_du_bloc_5(socle)] == [
             "production", "travail", "prix", "menages", "banque", "banque_centrale"]
         initial, releve = derouler(socle, sentier, NB_PAS)
         rendus[pi] = (sentier, initial, releve)
@@ -226,10 +236,10 @@ def test_plan_hors_domaine_impossible_par_la_forme(socle):
     sentier = socle.sentier(0.02)
     initial = dataclasses.replace(socle.etat_initial(sentier),
                                   YD_m1=-10.0 * socle.etat_initial(sentier).YD_m1)
-    o = socle.ordonnanceur(sentier, reels=socle.blocs_reels())
+    o = socle.ordonnanceur(sentier, reels=reels_du_bloc_5(socle))
     releve = Releve()
     try:
-        ordo.executer_pas(initial, socle.ENTREES_VIDES, o, releve)
+        ordo.executer_pas(initial, socle.ENTREES_SANS_SCENARIO, o, releve)
     except PlanHorsDomaine as refus:  # pragma: no cover - échec du critère
         pytest.fail(f"plan refusé : {refus}")
     assert releve.pas[0]["variables"]["C_plan"] == 0.0
@@ -293,7 +303,7 @@ def test_delais_des_revenus_et_de_la_cible(socle, publier):
     _, th = derouler(socle, sentier, NB_PAS_DES_DELAIS, lignes={
         "7": _regle_de_ligne(socle, "7", "T_H", un_pour_cent)})
     mesures["impôt"] = (_delai(base, th), (n + 1, -1.0))
-    sans_7 = tuple(b for b in socle.blocs_reels() if b.declaration.radical != "banque")
+    sans_7 = tuple(b for b in reels_du_bloc_5(socle) if b.declaration.radical != "banque")
     _, base_7 = derouler(socle, sentier, NB_PAS_DES_DELAIS, reels=sans_7)
     hausse = 0.01 / N_A * socle.position_d_ouverture(sentier, "D_H", n)
     _, i_d = derouler(socle, sentier, NB_PAS_DES_DELAIS, reels=sans_7, lignes={
@@ -308,7 +318,8 @@ def test_delais_des_revenus_et_de_la_cible(socle, publier):
     canal_reel = (f"bloc 7 réel, i_D + 1 point au tour 0 : ΔYD_0 = {yd_reel:.3e}, contre "
                   f"−0,01 D_F/n_a = {-0.01 / N_A * initial.D_F:.3e} (dividende résiduel B6) ; "
                   f"premier tour modifié {_delai(base, reel)}")
-    sans_8 = tuple(b for b in socle.blocs_reels() if b.declaration.radical != "banque_centrale")
+    sans_8 = tuple(b for b in reels_du_bloc_5(socle)
+                   if b.declaration.radical != "banque_centrale")
 
     def cible(vue, s, t):
         return vue.ouverture.pi_etoile - (0.01 if t == n else 0.0)
@@ -431,7 +442,7 @@ def test_vitesses_publication_du_verdict_relatif(vitesses, publier):
                           + " ; ".join(f"{k} {e:.1e} rel." for k, e in rel.items())
                           + f" ; {EPARGNE} {m['absolu']:.1e} abs." + verdict)
     publier("Bloc 5, vitesses (λ_H × 0,5 contre × 2), G + 1 % aux tours 1 à 12 (blocs 2 à 5 "
-            "réels, π^e = π* exogène, prix endogènes ; P123, P130)", lignes)
+            "réels, bloc 6 d'essai, π^e = π* exogène, prix endogènes ; P123, P130)", lignes)
 
 
 @pytest.mark.parametrize("pi", [0.02])

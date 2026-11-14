@@ -491,17 +491,20 @@ class Menages(_PseudoBloc):
 
 class Investissement(_PseudoBloc):
     """Plan (phase 2), crédit (ligne 18), investissement (ligne 3), amortissement et dividendes
-    (lignes 8, 14) ; rien en phase 9."""
+    (lignes 8, 14) ; ti, y_{t−1}, T_{F,t−1} et ϱ̄_L (schéma v4, #67) reconduites dans leurs
+    phases (2, 5, 9), sans flux."""
 
     __slots__ = ()
     declaration = _declaration(
         "investissement",
-        _siege("2", ecrit=("taux_investissement",), lit=_BASE + (Lecture("1", "i_CB"),)),
+        _siege("2", ecrit=("taux_investissement",), lit=_BASE + (Lecture("1", "i_CB"),),
+               etat=_reconduites("investissement", "2")),
         _siege("3", lit=_BASE + _ouv("L") + (Lecture("2", "taux_investissement"),),
                propose=("18",)),
-        _siege("5", lit=_BASE + (Lecture("2", "taux_investissement"),), propose=("3",)),
+        _siege("5", lit=_BASE + (Lecture("2", "taux_investissement"),), propose=("3",),
+               etat=_reconduites("investissement", "5")),
         _siege("6", lit=_ouv("K") + _gl("D_F", "K", "IN", "L"), propose=("8", "14")),
-        _siege("9"),
+        _siege("9", etat=_reconduites("investissement", "9")),
     )
 
     def phase_2(self, vue: ordo.Vue) -> None:
@@ -509,6 +512,7 @@ class Investissement(_PseudoBloc):
         i_cb = lecteur.pas("1", "i_CB")
         vue.ecrire_pas("taux_investissement",
                        1.0 + 0.5 * centre(lecteur.tirages()["investissement"]) - 2.0 * i_cb)
+        self._reconduire(vue, lecteur, "2")
 
     def phase_3(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "3")
@@ -524,6 +528,7 @@ class Investissement(_PseudoBloc):
         k = lecteur.ouverture("K")
         vue.proposer("3", {"I": max(0.0, k * (DELTA_PAS + G_PAS)
                                     * lecteur.pas("2", "taux_investissement"))})
+        self._reconduire(vue, lecteur, "5")
 
     def phase_6(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "6")
@@ -535,7 +540,7 @@ class Investissement(_PseudoBloc):
         vue.proposer("14", {"Div_F": dividendes})
 
     def phase_9(self, vue: ordo.Vue) -> None:
-        return None
+        self._reconduire(vue, self._lecteur(vue, "9"), "9")
 
 
 class Banque(_PseudoBloc):
@@ -796,7 +801,8 @@ def registre_stationnaire(pi_barre: float = INFLATION) -> tuple[float, ...]:
 VARIABLES_DES_BLOCS_INITIALES = {
     "v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8 * ECHELLE, "U": 0.05,
     "N": 0.95, "N_pa": 1.0, "mu_tilde": math.log(1.25),
-    "YD_m1": 0.7 * ECHELLE, "i_L": 0.0502, "i_D": 0.0202,
+    "YD_m1": 0.7 * ECHELLE, "ti": 0.14, "y_m1": 1.0, "T_F_m1": 0.0, "varrho_bar_L": 0.0296,
+    "i_L": 0.0502, "i_D": 0.0202,
     "pi_e": INFLATION, "r_hat_etoile": 0.01, "pi_etoile": INFLATION,
 }
 

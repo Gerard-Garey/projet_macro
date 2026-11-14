@@ -58,6 +58,13 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
   `DOMAINES_DU_PAS` (les plans des acheteurs, ≥ 0 et finis) : refus par
   `PlanHorsDomaine`, jamais écrêtage (ADR 0013, annotation du 14/11/2026
   (J3-d1), point 4 ; P120, P129, #124).
+- Le **domaine d'une entrée de scénario** est contrôlé par le moteur à sa
+  publication en phase 0, pour les seuls noms de la liste fermée
+  `DOMAINES_DES_ENTREES` (ς_L dans [0 ; 1]) : refus par `EntreeHorsDomaine`,
+  jamais écrêtage (P138).
+- Un **dépassement de la double précision** (`OverflowError`) dans une méthode
+  d'étape d'un bloc est traduit en `DepassementNumerique`, refus typé qui
+  nomme le pas, l'étape et le bloc (P139).
 
 Les observateurs ne reçoivent que des valeurs immuables et sont appelés par le
 moteur seul (ADR 0012, E1).
@@ -82,7 +89,13 @@ from nations.moteur.contrat_bloc import (
     Siege,
     methode_de_l_etape,
 )
-from nations.moteur.diagnostics import DefautDeDeclaration, PlanHorsDomaine, RefusDuMoteur
+from nations.moteur.diagnostics import (
+    DefautDeDeclaration,
+    DepassementNumerique,
+    EntreeHorsDomaine,
+    PlanHorsDomaine,
+    RefusDuMoteur,
+)
 from nations.moteur.ouverture import GRANDEURS_OUVERTURE
 from nations.moteur.parametres.ensemble import EnsembleDesParametres
 from nations.moteur.phases import MOTEUR, NOYAU, Etape, Phase
@@ -177,6 +190,23 @@ DOMAINES_DU_PAS: Mapping[str, DomaineDuPas] = MappingProxyType({
 })
 
 
+
+def _part_dans_l_intervalle_unite(valeur: object) -> bool:
+    """Part dans [0 ; 1], finie (NaN et ±∞ hors du domaine)."""
+    return type(valeur) is float and math.isfinite(valeur) and 0.0 <= valeur <= 1.0
+
+
+# Liste fermée des domaines des entrées de scénario (P138, sur le modèle de `DOMAINES_DU_PAS`,
+# P129), contrôlée par le moteur à la publication en phase 0, avant le refus générique de
+# finitude. ς_{L,t} : part refusée de la hausse de crédit demandée (`sec:banque-offre` ; F1) ;
+# ς_B viendra avec le bloc 9. Une entrée hors de la liste n'a que le contrôle générique.
+DOMAINES_DES_ENTREES: Mapping[str, DomaineDuPas] = MappingProxyType({
+    "varsigma_L": DomaineDuPas(
+        "part refusée 0 ≤ ς_L ≤ 1, finie (P138 ; refus, jamais écrêtage)",
+        _part_dans_l_intervalle_unite),
+})
+
+
 # --------------------------------------------------------------------------
 # Entrées du tour
 # --------------------------------------------------------------------------
@@ -219,6 +249,11 @@ def _verifier_entrees(entrees: EntreesDuTour, declaration: DeclarationDesEntrees
             if type(valeur) is not float:
                 raise RefusDuMoteur(f"entrée {valeur!r} : float attendu", t=t, etape="0",
                                     bloc=MOTEUR, nom=nom)
+            domaine = DOMAINES_DES_ENTREES.get(nom)
+            if domaine is not None and not domaine.predicat(valeur):
+                raise EntreeHorsDomaine(f"valeur {valeur!r} hors du domaine : "
+                                        f"{domaine.condition}", t=t, etape="0", bloc=MOTEUR,
+                                        nom=nom)
             if not math.isfinite(valeur):
                 raise RefusDuMoteur(f"entrée {valeur!r} : valeur non finie refusée", t=t,
                                     etape="0", bloc=MOTEUR, nom=nom)
@@ -859,6 +894,17 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
 # --------------------------------------------------------------------------
 
 
+def _appeler(methode: Callable[[Vue], None], vue: Vue, droits: _Droits, t: int) -> None:
+    """Appelle la méthode d'étape d'un bloc ; un dépassement de la double précision
+    (`OverflowError`) y devient `DepassementNumerique`, qui nomme le pas, l'étape et le bloc
+    (P139). Aucune autre exception n'est touchée, et rien n'est rattrapé pour continuer."""
+    try:
+        methode(vue)
+    except OverflowError as erreur:
+        raise DepassementNumerique(f"dépassement de la double précision ({erreur})", t=t,
+                                   etape=droits.etape, bloc=droits.radical) from erreur
+
+
 def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour,
                  ordonnanceur: Ordonnanceur, observateur: Observateur) -> schema.EtatPays:
     """Déroule le pas t et rend l'état d'ouverture du pas t + 1 (B5).
@@ -891,12 +937,12 @@ def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour
     # Étapes 1 à 8 (c) : blocs groupe par groupe, puis clôture et relevé.
     for identifiant, appels in o.etapes:
         for droits, methode in appels:
-            methode(Vue(pas, droits))
+            _appeler(methode, Vue(pas, droits), droits, t)
         observateur.relever(livre.clore_phase(identifiant))
     # Phase 9 : couche noyau, puis le groupe des blocs, puis la couche moteur.
     observateur.relever(livre.clore_phase("9"))
     for droits, methode in o.appels_de_la_phase_9:
-        methode(Vue(pas, droits))
+        _appeler(methode, Vue(pas, droits), droits, t)
     registre_suivant = registre.avancer(etat_ouverture.registre_prix,
                                         espace.lire(INDICE_DES_PRIX))
     cloture = livre.clore_pas()

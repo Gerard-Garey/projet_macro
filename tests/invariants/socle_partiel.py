@@ -115,8 +115,19 @@ ETIQUETTE = "π^e exogène (bloc d'essai 8) ; émission aux montants du sentier 
 GRAINE = 20261113
 NU_G = 1.15  # ν_G retenu (décision du mainteneur du 05/10/2026, #84) ; synthèse du rang 1a, § 6
 POINTS_PI = (0.0, 0.02, 0.10)
-SANS_ENTREES = DeclarationDesEntrees((), ())
-ENTREES_VIDES = EntreesDuTour((), ())
+# Entrées du tour du socle (B3, B5 ; ADR 0012, B5, phase 0) : la part refusée de la hausse de
+# crédit demandée ς_{L,t}, entrée de scénario publiée en phase 0 et lue par F1 du bloc 6 réel
+# (#67 ; `sec:investissement-financement`, `sec:banque-offre`), nulle hors scénario de refus
+# (C31) ; aucun levier. Le bloc d'essai 6 ne la lit pas.
+ENTREES_DU_SOCLE = DeclarationDesEntrees(("varsigma_L",), ())
+
+
+def entrees_du_tour(varsigma_L: float = 0.0) -> EntreesDuTour:
+    """Entrées d'un pas du socle : ς_{L,t} (`float`), nulle hors scénario."""
+    return EntreesDuTour((("varsigma_L", float(varsigma_L)),), ())
+
+
+ENTREES_SANS_SCENARIO = entrees_du_tour()
 
 
 def script():
@@ -172,6 +183,8 @@ def sentier(pi: float, **variations: float) -> Sentier:
     s["C_vol"], s["I_vol"], s["G_vol"] = s["C"] / s["p"], s["I"] / s["p"], s["G"] / s["p"]
     # Part de la banque centrale à l'émission (BC5), paramètre que `un_pas` ne publie pas.
     s["theta_CB"] = par.theta_CB
+    # Norme ϱ̄_L, constante résolue que le bloc 6 recopie à chaque pas (P128) : valeur d'ouverture.
+    s["rho_bar_L"] = o["rho_bar_L"]
     n = par.n_a
     f = es.facteurs(par)
     facteurs = {
@@ -211,6 +224,10 @@ VARIABLES_D_ETAT = {
     "r_hat_etoile": ("r_hat_1", CONSTANTE), "pi_etoile": ("pi_cible_1", CONSTANTE),
     # Bloc 5 (schéma v4, #60) : YD_t, écrit en phase 9, retenu pour le pas suivant.
     "YD_m1": ("YD", NOMINAL),
+    # Bloc 6 (schéma v4, #67) : ti_{t+1} (S6) et y_t en phase 5 ; T_{F,t} en phase 9 ; ϱ̄_L
+    # recopiée en phase 2 (P128).
+    "ti": ("ti_1", CONSTANTE), "y_m1": ("y", VOLUME), "T_F_m1": ("T_F", NOMINAL),
+    "varrho_bar_L": ("rho_bar_L", CONSTANTE),
 }
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
@@ -220,6 +237,7 @@ OUVERTURE_DES_VARIABLES = {
     "v_e": "ve", "IN_vol": "IN_vol", "pr": "pr", "K_vol": "K_vol", "W": "W_m1", "U": "U_m1",
     "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "i_L": "i_L", "i_D": "i_D",
     "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible", "YD_m1": "YD_m1",
+    "ti": "ti", "y_m1": "y_m1", "T_F_m1": "T_F_m1", "varrho_bar_L": "rho_bar_L",
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
@@ -508,7 +526,8 @@ def blocs_reels() -> tuple[object, ...]:
     radical, dont l'unique classe déclarée sous ce radical est instanciée (ADR 0012, annotation
     du 13/11/2026, point 5 : chaque module porte un seul bloc, dont le radical est le nom du
     module). Au rang 6 de J3-c : la production (#113), le travail (#50), les prix (#51), la
-    banque (#90) et la banque centrale (#91) ; au rang 3 de J3-d1, les ménages (#60)."""
+    banque (#90) et la banque centrale (#91) ; au rang 3 de J3-d1, les ménages (#60) ; au rang 4,
+    l'investissement (#67)."""
     dossier = RACINE / "src" / "nations" / "blocs"
     rendus = []
     for radical in RADICAUX:
@@ -584,7 +603,7 @@ def ordonnanceur(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE, **options
     """Ordonnanceur du socle partiel d'essai, aux tables de référence par défaut, les tables des
     blocs 7 et 8 alignées sur le sentier ou refusées (R1, `parametres_du_sentier`)."""
     return ordo.assembler(PHASES, blocs(sentier, **options),
-                          parametres_du_sentier(sentier, parametres), SANS_ENTREES)
+                          parametres_du_sentier(sentier, parametres), ENTREES_DU_SOCLE)
 
 
 # --------------------------------------------------------------------------
@@ -612,10 +631,14 @@ def etat_initial(sentier: Sentier, *, echelle: float = 1.0, graine: int = GRAINE
                     **positions, **v_flux, **variables)
 
 
-def derouler(etat: EtatPays, nb_pas: int, o, observateur) -> EtatPays:
-    """Déroule `nb_pas` pas depuis `etat`, sans entrée de tour."""
+def derouler(etat: EtatPays, nb_pas: int, o, observateur,
+             refus_de_credit: Callable[[int], float] | None = None) -> EtatPays:
+    """Déroule `nb_pas` pas depuis `etat` ; `refus_de_credit` : t → ς_{L,t} (scénario de refus de
+    crédit, C31), nulle par défaut."""
     for _ in range(nb_pas):
-        etat = ordo.executer_pas(etat, ENTREES_VIDES, o, observateur)
+        entrees = (ENTREES_SANS_SCENARIO if refus_de_credit is None
+                   else entrees_du_tour(refus_de_credit(etat.t)))
+        etat = ordo.executer_pas(etat, entrees, o, observateur)
     return etat
 
 

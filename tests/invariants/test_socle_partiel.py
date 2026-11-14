@@ -391,7 +391,8 @@ def test_stationnarite_partielle(trajectoires, socle, pi, publier):
 def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v4(socle):
     """D4 : sauvegarde v4 après la phase 9 du pas 359, rechargée : trajectoire, clôtures et
     états identiques au bit à ceux d'une trajectoire continue, variables des blocs comprises,
-    π* comprise (critère de #61), YD_{t−1} comprise (critère de #60)."""
+    π* comprise (critère de #61), YD_{t−1} comprise (critère de #60), ti, y_{t−1}, T_{F,t−1} et
+    ϱ̄_L comprises (#67)."""
     sentier = socle.sentier(0.02)
     o = socle.ordonnanceur(sentier)
     continu = Empreinte()
@@ -401,6 +402,7 @@ def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v4(socle):
     document = sauvegarder([milieu])
     assert b'"version": 4' in document and b'"mu_tilde"' in document
     assert b'"pi_etoile"' in document and b'"YD_m1"' in document
+    assert b'"ti"' in document and b'"varrho_bar_L"' in document
     repris, = charger(document)
     assert repris == milieu
     fin_reprise = socle.derouler(repris, NB_PAS - NB_PAS // 2, o, apres)
@@ -410,9 +412,10 @@ def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v4(socle):
 
 def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
     """ADR 0005, point 19 ; ADR 0012, annotation du 13/11/2026, point 1.3 : sous une
-    redénomination × 100 (état initial et sentier nominal × 100), W et YD_{t−1} (schéma v4)
-    sont multipliées par 100 et les treize autres variables nouvelles sont inchangées, à 1e−10
-    relatif sur 720 pas ; positions et registre multipliés par 100 à 1e−10 relatif."""
+    redénomination × 100 (état initial et sentier nominal × 100), W, YD_{t−1} et T_{F,t−1}
+    (schéma v4) sont multipliées par 100 et les seize autres variables nouvelles sont
+    inchangées, à 1e−10 relatif sur 720 pas ; positions et registre multipliés par 100 à 1e−10
+    relatif."""
     sentier = socle.sentier(0.02)
     un, cent = Releve(), Releve()
     socle.derouler(socle.etat_initial(sentier), NB_PAS, socle.ordonnanceur(sentier), un)
@@ -436,7 +439,7 @@ def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
     assert pire_nouvelles <= SEUIL_UN_PAS
     assert pire_positions <= SEUIL_UN_PAS and pire_registre <= SEUIL_UN_PAS
     assert [v.nom for v in schema.VARIABLES_DES_BLOCS
-            if v.invariance is schema.Invariance.NOMINAL] == ["W", "YD_m1"]
+            if v.invariance is schema.Invariance.NOMINAL] == ["W", "YD_m1", "T_F_m1"]
     publier("Invariance ×100 du socle partiel d'essai, π* = 2 %, 720 pas", [
         f"variables nouvelles : {pire_nouvelles:.1e} ; positions : {pire_positions:.1e} ; "
         f"registre : {pire_registre:.1e} (seuil 1e−10)"])
@@ -444,8 +447,8 @@ def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 def test_reprise_avec_les_blocs_reels(socle, pi):
-    """D4, blocs réels (`blocs_reels` : blocs 2, 3, 4, 5, 7 et 8) substitués à leurs blocs
-    d'essai : sauvegarde v4 rechargée, reprise à la frontière de tour des pas 1, 359 et 361
+    """D4, blocs réels (`blocs_reels` : blocs 2 à 8, le bloc 6 compris depuis #67) substitués à
+    leurs blocs d'essai : sauvegarde v4 rechargée, reprise à la frontière de tour des pas 1, 359 et 361
     (la reprise du bloc d'essai est au pas 360) : clôtures et états identiques au bit à ceux d'une
     trajectoire continue de 720 pas."""
     reels = socle.blocs_reels()
@@ -465,14 +468,14 @@ def test_reprise_avec_les_blocs_reels(socle, pi):
 
 
 def test_invariance_sous_100_avec_les_blocs_reels(socle, publier):
-    """ADR 0005, point 19, blocs réels (`blocs_reels` : blocs 2, 3, 4, 5, 7 et 8) substitués à
-    leurs blocs d'essai : sous une redénomination × 100, W et YD_{t−1} sont multipliées par 100
-    et les treize autres variables nouvelles sont inchangées, à 1e−10 relatif sur 720 pas ; positions et
-    registre × 100 à 1e−10 relatif."""
+    """ADR 0005, point 19, blocs réels (`blocs_reels` : blocs 2 à 8) substitués à leurs blocs
+    d'essai : sous une redénomination × 100, W, YD_{t−1} et T_{F,t−1} sont multipliées par 100
+    et les seize autres variables nouvelles sont inchangées, à 1e−10 relatif sur 720 pas ;
+    positions et registre × 100 à 1e−10 relatif."""
     reels = socle.blocs_reels()
-    # Libellé publié « blocs réels 2, 3, 4, 5, 7 et 8 » tenu par la mesure.
+    # Libellé publié « blocs réels 2 à 8 » tenu par la mesure.
     assert [b.declaration.radical for b in reels] == ["production", "travail", "prix", "menages",
-                                                    "banque", "banque_centrale"]
+                                                    "investissement", "banque", "banque_centrale"]
     sentier = socle.sentier(0.02)
     un, cent = Releve(), Releve()
     socle.derouler(socle.etat_initial(sentier), NB_PAS,
@@ -496,7 +499,7 @@ def test_invariance_sous_100_avec_les_blocs_reels(socle, publier):
             pire_registre = max(pire_registre, ecart(x100, 100.0 * x1))
     assert pire_nouvelles <= SEUIL_UN_PAS
     assert pire_positions <= SEUIL_UN_PAS and pire_registre <= SEUIL_UN_PAS
-    publier("Invariance ×100, blocs réels 2, 3, 4, 5, 7 et 8 substitués, π* = 2 %, 720 pas", [
+    publier("Invariance ×100, blocs réels 2 à 8 substitués, π* = 2 %, 720 pas", [
         f"variables nouvelles : {pire_nouvelles:.1e} ; positions : {pire_positions:.1e} ; "
         f"registre : {pire_registre:.1e} (seuil 1e−10)"])
 
@@ -510,7 +513,7 @@ def test_permutation_des_blocs_d_un_groupe_identique_au_bit(socle, monkeypatch):
     socle.derouler(socle.etat_initial(sentier), 120, socle.ordonnanceur(sentier), reference)
     liste = Empreinte()
     o = ordo.assembler(socle.PHASES, tuple(reversed(socle.blocs(sentier))),
-                       socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+                       socle.PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
     socle.derouler(socle.etat_initial(sentier), 120, o, liste)
     monkeypatch.setattr(ordo, "_ordre_du_groupe", lambda groupe: tuple(sorted(groupe,
                                                                               reverse=True)))
@@ -535,7 +538,7 @@ def _avec_etat(declaration, etape, etat):
 def _assembler_avec(socle, declarations):
     sentier = socle.sentier(0.02)
     return ordo.assembler(socle.PHASES, socle.blocs(sentier, declarations=declarations),
-                          socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+                          socle.PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
 
 
 @pytest.mark.parametrize("nom", [v.nom for v in schema.VARIABLES_DES_BLOCS])
@@ -634,7 +637,7 @@ def test_plan_exogene_hors_domaine_refuse(socle, nom, radical, facteur):
     o = socle.ordonnanceur(sentier, chocs_des_plans={nom: choc}, reels=reels)
     etat = socle.derouler(socle.etat_initial(sentier), 3, o, ObservateurNul())
     with pytest.raises(PlanHorsDomaine) as refus:
-        ordo.executer_pas(etat, socle.ENTREES_VIDES, o, ObservateurNul())
+        ordo.executer_pas(etat, socle.ENTREES_SANS_SCENARIO, o, ObservateurNul())
     assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
         3, "2", radical, nom)
 
@@ -718,7 +721,8 @@ def test_linearisation_retrouve_une_valeur_propre_connue(socle, linearisation, p
     o = socle.ordonnanceur(sentier, parametres, regles={"v_e": _regle_n1(socle)})
     postes = POSTES_LINEARISES
     noms = tuple(v.nom for v in schema.VARIABLES_DES_BLOCS) + postes
-    carte = linearisation.carte_du_moteur(socle.etat_initial(sentier), o, noms, pi)
+    carte = linearisation.carte_du_moteur(socle.etat_initial(sentier), o, noms, pi,
+                                          entrees=socle.ENTREES_SANS_SCENARIO)
     assert linearisation.residu_point_fixe(carte) <= SEUIL_NUL
     valeurs = linearisation.valeurs_propres(carte)
     # π* reconduite depuis l'ouverture (BC4 à levier fermé) : valeur propre 1, racine unitaire
@@ -757,7 +761,8 @@ def test_linearisation_tendance_lue_dans_l_unite_a_croissance_demographique(socl
     assert facteurs["v_e"] - facteurs["pr"] > 4e-4
     postes = POSTES_LINEARISES
     noms = tuple(v.nom for v in schema.VARIABLES_DES_BLOCS) + postes
-    carte = linearisation.carte_du_moteur(socle.etat_initial(sentier), o, noms, pi)
+    carte = linearisation.carte_du_moteur(socle.etat_initial(sentier), o, noms, pi,
+                                          entrees=socle.ENTREES_SANS_SCENARIO)
     residu = linearisation.residu_point_fixe(carte)
     assert residu <= SEUIL_NUL
     valeurs = linearisation.valeurs_propres(carte)
@@ -781,7 +786,8 @@ def test_linearisation_refuse_franchement_une_variable_au_bord_de_son_domaine(so
     sentier = socle.sentier(0.02)
     etat = socle.etat_initial(sentier)
     assert etat.Res == 0.0
-    carte = linearisation.carte_du_moteur(etat, socle.ordonnanceur(sentier), ("Res",), 0.02)
+    carte = linearisation.carte_du_moteur(etat, socle.ordonnanceur(sentier), ("Res",), 0.02,
+                                          entrees=socle.ENTREES_SANS_SCENARIO)
     with pytest.raises(DefautComptable):
         linearisation.jacobienne(carte)
 

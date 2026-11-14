@@ -358,7 +358,7 @@ def test_phases_lecture_hors_ordre_refusee(socle, etape, lecture, motif):
     ordonnanceur(socle, sentier)
     blocs = socle.blocs(sentier, reels=(_fautif(etape, lecture),))
     with pytest.raises(DefautDeDeclaration, match=motif):
-        ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+        ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
 
 
 def test_le_bloc_reel_est_trouve_par_le_socle(socle):
@@ -373,4 +373,4 @@ def test_le_bloc_reel_est_trouve_par_le_socle(socle):
     blocs = socle.blocs(socle.sentier(0.02), reels=reels)
     assert [b.declaration.radical for b in blocs] == list(socle.RADICAUX)
     assert type(blocs[0]) is Production
-    ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+    ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)

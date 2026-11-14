@@ -385,4 +385,4 @@ def test_phases_lecture_hors_ordre_refusee(socle, etape, lecture, motif):
                                         _fautif(etape, lecture)))
     with pytest.raises(DefautDeDeclaration, match=motif):
         ordo.assembler(socle.PHASES, blocs, socle.parametres_du_sentier(sentier),
-                       socle.SANS_ENTREES)
+                       socle.ENTREES_DU_SOCLE)
