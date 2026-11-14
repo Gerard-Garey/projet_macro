@@ -41,11 +41,11 @@ Ordre : #124 → #60 → #67 ; #123 avec #67 (S6 lit tu).
 
 **Critères d'acceptation, écrits avant l'essai** (précisés au rang 1a, jamais après une mesure) :
 - **#124** : la voie retenue refuse (exception typée, jamais écrêtage) un plan C_plan, I_plan ou G_plan négatif et d < 0, sur le cas de l'issue (C_plan = −1,0) et sur un lot adverse ; trajectoires de la référence identiques au bit (tableau avant / après sans ligne).
-- **#60** : lignes (a) et (b) de la fiche 5, § 9.6, à leurs seuils ; état stationnaire égal au script à 1e−10 relatif à n_a = 12, π\* ∈ {0 ; 2 ; 10 %} (P56, P77), n_a ∈ {4 ; 52} couvert par le script ; YD égal aux lignes exécutées à 1e−12 × S ; plan insensible au registre de l'indice (écart nul, #58) ; B_H ≡ 0 exactement ; boucle propre de module < 1 ; refus au chargement hors du domaine ; sept labels.
+- **#60** : lignes (a) et (b) de la fiche 5, § 9.6, à leurs seuils ; état stationnaire égal au script à 1e−10 relatif à n_a = 12, π\* ∈ {0 ; 2 ; 10 %} (P56, P77), n_a ∈ {4 ; 52} couvert par le script ; YD égal aux lignes exécutées à 1e−12 × S ; plan insensible au registre de l'indice (écart nul, #58) ; B_H ≡ 0 exactement ; boucle propre de module < 1 ; refus au chargement hors du domaine ; ~~sept labels~~ *(correction du 14/11/2026, avant tout essai, P119 : H1 a déjà son label depuis #61)* six labels (H2 à H7).
 - **#67** : lignes (a) et (b) de la fiche 6, § 9.6 ; état stationnaire égal au script (mêmes seuil et grille) ; Div ≥ 0 en contrainte de domaine (M28) ; λ_ti dans le domaine de stabilité mesuré de la fiche ; domaine strict de K (P80) ; table du bloc 6 complète ; lignes (c) des fiches 7 et 8 à un bloc près à leurs seuils de fiche ; onze labels.
 - **#123** : labels de d et de tu, une balise chacun (P83) ; ω\* et g inchangées.
 - **#103** : critères et contraintes de signe de D_H, D_F et M^G réécrits sous la lecture nette et le contrat de poussière ; correction prospective, ancien critère publié avec sa date.
-- **Branche** : stationnarité partielle à 1e−9 sur 720 pas aux trois π\*, blocs 2 à 8 réels, bloc d'essai 9, liste de P94 étendue aux grandeurs des blocs 5 et 6, grandeurs nulles par liste déclarée (P100) ; concordance attendue à 77 labels (57 + 7 + 11 + 2, à confirmer au rang 1a) ; part de chaque bloc ≤ 0,48 ms (alerte 0,276 ms) ; verdicts de P87 sur le banc de J3-c inchangés.
+- **Branche** : stationnarité partielle à 1e−9 sur 720 pas aux trois π\*, blocs 2 à 8 réels, bloc d'essai 9, liste de P94 étendue aux grandeurs des blocs 5 et 6, grandeurs nulles par liste déclarée (P100) ; concordance attendue à ~~77 labels (57 + 7 + 11 + 2, à confirmer au rang 1a)~~ *(correction du 14/11/2026, avant tout essai, P119)* 76 labels (57 + 6 + 11 + 2) ; part de chaque bloc ≤ 0,48 ms (alerte 0,276 ms) ; verdicts de P87 sur le banc de J3-c inchangés.
 
 **Conditions d'arrêt** : contrat partagé à modifier au-delà de l'annotation du rang 1b ; drapeau de mode dans `src/` ; stationnarité partielle hors seuil sans erreur de code ; arrêt du noyau sur le sentier (caisse nette, Res < 0) ; état d'arrivée dépendant d'une vitesse d'ajustement (`docs/exigences.md` § 2.7) ; boucle propre de module ≥ 1 ; instabilité connue réapparue ; part d'un bloc au-dessus de 0,48 ms ; chiffre publié non reproduit.
 
@@ -86,7 +86,7 @@ Point ouvert pour J3-e, non tranché : la façon dont `scenarios/` résout l'ét
 | #52, #53, #63, #70, #79, #81, #82 | Restitutions et scénarios O2, O3 | J4 | inchangé |
 | #54, #56 | Aller-retour de π\* ; signe net d'une hausse de taux | J4, sans `Closes` | condition (c) du levier de cible sur #54 (P99) |
 | #57 | Crises de crédit sous la règle F | J6 | inchangé |
-| #60 | `menages.py` | **J3-d1, rang 3** | propriétaire de H1 au rang 1a |
+| #60 | `menages.py` | **J3-d1, rang 3** | H1 tenue par le moteur (M30, #61 ; P119) ; six labels |
 | #64 | S-ζ hors cible durable | J5 | inchangé |
 | #67 | `investissement.py` | **J3-d1, rang 4** | avec #123, P80 et les lignes (c) à un bloc près (P90) |
 | #78, #89 | Coût de la dette ; stratégie dominante | J4 (#78 puis J6) | #89 dépend de #88 |
@@ -178,7 +178,7 @@ Prises sur les points de forme de l'annotation du rang 1b, les comptes rendus de
 | P109 | Point de forme 4 : la « mention datée de E2 » désigne les mentions datées de P80 (relevé E2 d'`architect`, point d'étape du 14/11/2026). `b6cef67`. |
 | P110 | Arbitrages techniques du rang 2 (session, délégation P86) : natifs dans la liste blanche, liste figée de 149 noms (Python 3.12), six admis (`float`, `int`, `str`, `tuple`, `min`, `max` ; `abs` et `bool` non admis) ; `REGISTRE` et `GRAND_LIVRE` admis ; importation d'un autre bloc refusée ; `math` admis importé entier seulement. `87897bc`. |
 
-### Décisions du mainteneur du 14/11/2026 au point d'étape après la PR #129 (P111 à P118)
+### Décisions du mainteneur du 14/11/2026 au point d'étape après la PR #129 (P111 à P118) et au rang 1a de J3-d1 (P119 et suivants)
 
 Questions Q1 à Q9 posées par `architect-approfondi` le 14/11/2026 ; Q1 à Q8 tranchées par le mainteneur le même jour, chacune selon la recommandation d'`architect` ; Q9 est un rappel, sans décision.
 
@@ -192,6 +192,11 @@ Questions Q1 à Q9 posées par `architect-approfondi` le 14/11/2026 ; Q1 à Q8 t
 | P116 | (Q6) Mutant équivalent B_Bk/Res dans B5 : point ouvert (§ 3), rouvert avec le corridor (J6) ; issue au point d'étape qui précède le corridor. |
 | P117 | (Q7) Fait nouveau de la passation de la PR #129 versé sur #131 en commentaire, sans conclusion. |
 | P118 | (Q8) Délégation technique (P86) reconduite pour J3-d1. |
+| P119 | (Rang 1a de J3-d1, Q1 et Q7 de `macro`) Propriétaire de H1 déjà fixé : le moteur (M30, #61, `eq:moteur-croissance-nominale-attendue`) ; actes de forme : mention datée au § 9.1 de la fiche 5, critère de #60 à six labels, critère « Branche » à 76 labels (57 + 6 + 11 + 2) ; #67 ne dépend plus de H1. |
+| P120 | (Q2) #124 par la **voie (a)** : domaine ≥ 0 (valeurs finies) sur chaque plan (C^plan, I^plan, G^plan), refus à l'écriture par exception typée, sans écrêtage ; condition : H5 lit max(0 ; D_H), E1 lit max(0 ; M^G) (#103) ; domaine des variables du pas annoté au rang 1b. Écartée : voie (b), qui laisse passer des signes mêlés. |
+| P121 | (Q4) Grandeurs nulles **calculées** : Res (H) par test de signe (L^CB/S^CB ≥ 1e−6), ξ par égalité au bit de IN^vol_0 et IN\*_0, T_F et sa ligne 7 sur τ_F du bloc d'essai 9 ; remplacent la déclaration de `GRANDEURS_NULLES` (réserve de la revue finale de J3-c). |
+| P122 | (Q5) Lignes (c) des fiches 5 et 6 **partagées** : J3-d2 (#132) pour celles qui portent sur une règle du bloc 9, #114 pour les propriétés du système fermé (test zéro, superneutralité, C36, rayon de la boucle). Précise P90. |
+| P123 | (Q6) Lignes « Vitesses » des fiches 5 et 6 sur un banc à **prix endogènes** ; écart à 6 480 pas publié sans verdict. |
 
 **Points ouverts au 14/11/2026, après la fusion de la PR #129** : #11 et #14 (Q9, mainteneur, hors branche) ; branches distantes `claude/cr-*` et `ccr-*` à supprimer par le mainteneur ; mentions « à numéroter » de la spécification remplacées par P100 à P102 au rang 9 de J3-c (`6632dce`) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2).
 
