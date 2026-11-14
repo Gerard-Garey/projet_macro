@@ -25,6 +25,7 @@ import ast
 import dataclasses
 import importlib.util
 import math
+import os
 import re
 import subprocess
 import sys
@@ -37,6 +38,10 @@ import pytest
 RACINE = Path(__file__).resolve().parents[2]
 SCRIPT = RACINE / "outils" / "maquette_conjointe.py"
 DUREE_MAX = 10.0  # secondes, « quelques secondes » (brief de #65), exécution complète en sous-processus
+# Le seuil de durée rend son verdict sur la plateforme de référence seulement (ADR 0003, M16), comme les
+# seuils de coût du moteur (`tests/invariants/test_budget.py`) ; ailleurs, la mesure est publiée et le test
+# se termine par un saut qui la dit (#126). Le déterminisme est vérifié sur toute machine.
+PLATEFORME_DE_REFERENCE = os.environ.get("GITHUB_ACTIONS") == "true" and sys.platform == "linux"
 
 
 @pytest.fixture(scope="module")
@@ -70,7 +75,9 @@ def test_n_importe_ni_src_ni_archive():
     assert "import_module" not in appels and not {"__import__", "exec", "eval", "compile"} & natifs
 
 
-def test_deterministe_et_rapide():
+@pytest.fixture(scope="module")
+def deux_executions():
+    """Deux exécutions complètes du script en sous-processus : (sorties, durées en secondes)."""
     sorties, durees = [], []
     for _ in range(2):
         debut = time.perf_counter()
@@ -78,8 +85,23 @@ def test_deterministe_et_rapide():
         durees.append(time.perf_counter() - debut)
         assert r.returncode == 0, r.stderr
         sorties.append(r.stdout)
+    return sorties, durees
+
+
+def test_deterministe(deux_executions):
+    sorties, _ = deux_executions
     assert sorties[0] == sorties[1]
-    assert max(durees) < DUREE_MAX
+
+
+def test_rapide(deux_executions):
+    _, durees = deux_executions
+    duree = max(durees)
+    if not PLATEFORME_DE_REFERENCE:
+        verdict = "<" if duree < DUREE_MAX else "≥"
+        pytest.skip(f"durée {duree:.2f} s {verdict} {DUREE_MAX} s, hors référence : seuil de durée contrôlé "
+                    "sur la plateforme de référence seulement (CI GitHub Actions, ADR 0003, M16) ; "
+                    "mesure publiée (#126)")
+    assert duree < DUREE_MAX
 
 
 def test_releve_couvre_chaque_chiffre_recense(maquette):
