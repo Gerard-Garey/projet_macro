@@ -3,7 +3,7 @@ bloc: Investissement et financement des entreprises
 module: src/nations/blocs/investissement.py
 expert pilote: macro
 experts consultés: monnaie (demande de crédit face à l'offre bancaire : frontière crédit) ; jeu
-statut: décidée (M28, 03/10/2026)
+statut: spécifiée (04/10/2026)
 décision: M28 (03/10/2026)
 issue: #42
 ---
