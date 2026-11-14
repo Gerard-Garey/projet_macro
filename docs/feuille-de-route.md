@@ -2,9 +2,11 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail.
 
-**Dernière mise à jour** : 13/11/2026, point d'étape après la fusion de la PR #109 — `main` = `204ab2d` ; **branche de travail** `claude/j3-economie-reelle` (PR brouillon) ; par `architect-approfondi` (Fable, consultation accordée par le mainteneur le 13/11/2026, 1 sur 3 pour J3-b), consigné par `architect` : § 1 (fiche de J3-b), § 2, § 3, § 4 (P49 à P64), § 7 (J3-a), § 8.
+**Dernière mise à jour** : 13/11/2026, consignation du rang 10 de J3-b — tête de la branche `ce7c619` ; par `architect` (Opus, effort `medium`) : § 1 (rangs 4 à 10, avis d'expert, issues #120 à #125), § 2 (J3-b à fusionner), § 3 (rattachement de #120 à #125).
 
-**Mise à jour précédente** : 15/10/2026, consignation des rangs 7 et 8 de J3-a, avant la sortie du brouillon — `main` = `2e643a2` ; par `architect` (Opus, effort `medium`, consignation) ; version à `5fe2667`, tête fusionnée de la PR #109 (cette version annonçait la tête `13146ff`, antérieure à son propre commit). Dernière version non condensée : `8511ba3`.
+**Mise à jour précédente** : 13/11/2026, point d'étape après la fusion de la PR #109 — `main` = `204ab2d` ; **branche de travail** `claude/j3-economie-reelle` (PR brouillon) ; par `architect-approfondi` (Fable, consultation accordée par le mainteneur le 13/11/2026, 1 sur 3 pour J3-b), consigné par `architect` : § 1 (fiche de J3-b), § 2, § 3, § 4 (P49 à P64), § 7 (J3-a), § 8.
+
+**Mise à jour antérieure** : 15/10/2026, consignation des rangs 7 et 8 de J3-a, avant la sortie du brouillon — `main` = `2e643a2` ; par `architect` (Opus, effort `medium`, consignation) ; version à `5fe2667`, tête fusionnée de la PR #109 (cette version annonçait la tête `13146ff`, antérieure à son propre commit). Dernière version non condensée : `8511ba3`.
 
 Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-route.md`).
 
@@ -25,13 +27,27 @@ Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-ro
 | 2 | #104 : vocabulaire fermé étendu | `coder` → `audit` | 3 | fait : `d5206d5`, `7f927ac` ; audit léger conforme |
 | 3 | #112 : schéma v2, tables, socle partiel d'essai, linéarisation, part d'un bloc | `coder` → `audit` ; `macro` | 3 | fait : `a8eae65`, `b10c9a7`, `d79fbcd` ; audit léger conforme avec réserves (3 mineurs) ; avis de `macro` (2 corrections) ; reprise unique `0f95742`, `e230344` (audit : conforme, A1 majeur antérieur) ; lot A1 `76a1c44` (audit : conforme) |
 | 3b | Allègement de `CLAUDE.md` (rang ajouté le 13/11/2026, accord du mainteneur) ; principes des workflows dans `.claude/workflows/README.md` | session | `claude:` | fait : `2b836dc` (22 741 → 21 393 octets, aucune règle changée) ; condensation de la feuille de route et de l'ADR 0012 : issue #119, hors périmètre |
-| 4 | #113 : `production.py` | `coder` → `audit` | 1 | à faire |
-| 5 | #50 : `travail.py` | `coder` → `audit` ; `monnaie` consulté | 1 | à faire |
-| 6 | #51 : `prix.py`, `eq:prix-indice` | `coder` → `audit` | 1 | à faire |
-| 7 | Mesures sur la plateforme de référence | session ; `macro` | — | à faire |
-| 8 | Passage unique de `docwriter` ; balises et labels poussés ensemble, par issue | `docwriter` ; `macro`, `monnaie` | règle 9 | à faire |
-| 9 | Revue finale complète, `/code-review` | `audit` | règle 10 | à faire |
-| 10 | Consignation (fiches 2 à 4 « implémentées »), validation, fusion | `architect`, mainteneur | — | à faire |
+| 4 | #113 : `production.py` ; Q2 de l'audit de #112 (finitude) | `coder` → `audit` ; `macro` | 1 | fait : `83a3afa`, `f4cdca6` ; finitude `6312fe0`, `b7d2037` ; audit léger conforme avec réserves (M1 versé sur #120, M2 corrigé au rang 6) ; visa de `macro` sous conditions C1, C2 (tenues) |
+| 5 | #50 : `travail.py` | `coder` → `audit` ; `monnaie` consulté | 1 | fait : `1d52a61`, `8685d31` |
+| 6 | #51 : `prix.py`, `eq:prix-indice` ; M2 | `coder` → `audit` | 1 | fait : `d0804aa`, `2e0974b` ; M2 `060cba4` |
+| 7 | Mesures sur la plateforme de référence | session ; `macro` | — | fait : verdict sur la CI de `060cba4` (exécution 43522565602) : coût du noyau seul C = 0,2922 ms (seuil 0,5) ; parts (P57) production 0,0114, travail 0,0070, prix 0,0027 ms par pas (alerte 0,276, critère 0,48) ; projection cumulée 1,6933 ms contre 2,708 ms. Sur `main` `02c1e1f`, C = 0,4291 ms : la dispersion entre exécuteurs domine (commentaire sur #110) |
+| 8 | Passage unique de `docwriter` ; balises et labels poussés ensemble, par issue | `docwriter` ; `macro`, `monnaie` | règle 9 | fait : `edf45de` (#104), `bef5257` (#112), `fca3992` (#113), `a307161` (#50), `49a1c83` (#51) ; docstrings `2027b3e` |
+| 9 | Revue finale complète, `/code-review` | `audit` ; `macro` | règle 10 | fait : `audit` conforme avec réserves ; `/code-review` ; validation de `macro` (`dc1d861`) ; reprise unique `98124d2` à `ce7c619` (κ > 0 et 1/κ fini ; script, 1 + g > 0 par taux ; domaine à l'écriture par `Vue.ecrire_etat` ; reprise et ×100 avec blocs réels ; `docs:` `661922b`, `ce7c619`) |
+| 10 | Consignation (fiches 2 à 4 « implémentées »), validation, fusion | `architect`, mainteneur | — | consignation faite (ce commit) ; validation et fusion : mainteneur |
+
+**Avis d'expert tenant lieu de décision de lecture (sans numéro P ; avis de `macro`, 13/11/2026)** :
+- ΔIN = 0 quand le disponible est nul : la clause de la spécification est conservée (forme B, N8) ;
+- règle d'essai N = N\* pour les lignes « Délai » et « Vitesses » de la fiche 2, étiquetée « masse salariale du sentier » ;
+- T2 (b) : verdict sur les blocs 2 à 4 réels (`tests/invariants/test_prix.py`) ; la mesure sur les blocs 2 et 3 (prix exogène) est publiée sans verdict ;
+- P54, lecture (A) : l'option (i) de référence est évaluée sur l'ouverture de chaque pas de la trajectoire du moteur ;
+- ξ jugée en écart absolu dans la ligne « Vitesses » de la fiche 4 (P66 par analogie) : visa de l'expert pilote, **à porter à la connaissance du mainteneur** ;
+- `outils/maquette_conjointe.py` n'est pas aligné sur la forme B de N8 : la contre-épreuve reste indépendante.
+
+**Issues créées pendant la branche** (autorisation du mainteneur du 13/11/2026) : #120 (`Cadre` à n_a ≠ 12, Q3), #121 (contournements du contrôle statique, A2), #122 (IN^vol = 0 ⇒ IN = 0 à l'état chargé), #123 (définitions exécutées non numérotées : d, tu, ω\*, g), #124 (domaine des plans nominaux, d < 0), #125 (facteur de croissance par pas sur g arrondi, formes divergentes).
+
+**Escalades, relances et arrêts** : aucune consultation Fable dans la session de fin de branche ; budget Fable de J3-b : 1 sur 3 (point d'étape du 13/11/2026). Une reprise unique `coder` → `audit` après la revue finale (`98124d2` à `ce7c619`). Aucun arrêt. Le détail ligne à ligne est dans la PR #117.
+
+**Stationnarité partielle (P67), mesurée le 13/11/2026 au rang 10** (`uv run pytest -q -s` sur les six fichiers de tests des blocs, 110 passed) : max |x_t/x̄ − 1| sur 720 pas, B1 à B7, B12, B13, B24, aux trois π\*, ≤ 1,8e−12 (B3, blocs 2 et 3 réels, π\* = 10 %) et ≤ 8,9e−14 avec les blocs 2 à 4 réels ; seuil 1e−9. Étiquettes : plans nominaux exogènes ; π^e exogène (bloc d'essai).
 
 **Ce que la branche prouve** : variables des blocs 2 à 4 sur leur sentier à 1e−10 après un pas ; stationnarité partielle à 1e−9 sur 720 pas pour B1 à B7 et B24, aux trois π\* ; boucles propres ; identités, reprise et × 100 sous le schéma v2 ; concordance 40 / 40 ; part de chaque bloc dans le coût. Aucun verdict de J3, aucune référence.
 
@@ -48,7 +64,7 @@ Mises à jour plus anciennes : historique de Git (`git log -- docs/feuille-de-ro
 | — | Consignation du passage de J1 (`claude/j1-passage`), branche dédiée, non branche de travail | aucune | **Fusionnée le 07/10/2026** (PR #94, `faa3f85`) : § 7. Exception ponctuelle sans valeur de précédent (P28 (a)). |
 | 5 | J2 — noyau (`claude/j2-noyau`) | #95, #96, #97, #98, #93, avec `Closes` | **Fusionnée le 15/10/2026** (PR #99, `2e643a2`) : § 7. |
 | 6 | J3-a `claude/j3-maquette-criteres` | #107, #105, #65, #66, #100 | **Fusionnée le 13/11/2026** (PR #109, `204ab2d`) : § 7. |
-| 7 | **J3-b `claude/j3-economie-reelle` (en cours)** | #112, #113, #50, #51, #104, avec `Closes` | **Branche de travail en cours** (§ 1) : blocs 2 à 4, schéma v2, socle partiel d'essai. |
+| 7 | **J3-b `claude/j3-economie-reelle` (à fusionner)** | #112, #113, #50, #51, #104, avec `Closes` | **À fusionner** (§ 1, rangs 0 à 10 faits ; validation et fusion par le mainteneur) : blocs 2 à 4, schéma v2, socle partiel d'essai. |
 | 8 | J3-c `claude/j3-monnaie` (indicative) | #90, #91, #61, #80, #103 | Blocs 7 et 8, π\* et Γ^e, signes sous lecture nette. |
 | 9 | J3-d `claude/j3-menages-investissement-etat` (indicative) | #60, #67, bloc 9 (à rédiger), #101, #106 | Blocs 5, 6 et 9 ; socle complet. #106 fermée par retrait, sauf consommateur déclaré (P51). |
 | 10 | calibration (P43 (a), indicative) | #45, #55, #62, #92 | Sources lues, visa ; confirmation au point d'étape de J3-d. |
@@ -126,6 +142,19 @@ Point ouvert pour J3-e, non tranché : la façon dont `scenarios/` résout l'ét
 **Dépendances ajoutées** (15/10/2026) : #107 → tout essai de J3 ; #105 → marge du budget de J3 et acceptation de #100 ; G1 → bloc 2, #50, #51, #60, #67, #90, #91, bloc 9 ; #91 et #61 → #60, #67 ; #100 → J3-b ; socle complet (fin de J3-d) → #87, #88. **Retirées** : #65 → #87, #88 (P42) ; « G1 avant #61 » (P40, écart E4). **Inchangées** : #65 → #66, #54, #56 ; #88 → #89 ; P34 → #51.
 
 *Complément du 13/11/2026* : #107, #105, #65, #66 et #100 fermées par la PR #109. Rattachements : #102 → correctif rapide avant J3-b ; #104 → J3-b ; #106 → J3-d ; #110 → J3-g ; #111 → J3-f, avec #88 ; #87 et #88 → J3-f. Issues créées le 13/11/2026 : #112 (A) et #113 (B) pour J3-b, #114 (C, suivi de I1) et #115 (D, radical `observation`) pour J3-e, #116 (E, relevé et point fixe de la maquette) pour J3-f.
+
+*Complément du 13/11/2026 (consignation du rang 10 de J3-b)* : issues créées pendant J3-b, sur autorisation du mainteneur du 13/11/2026, rattachements proposés (à confirmer au point d'étape qui suit la fusion de la PR #117) :
+
+| Issue | Objet | Branche prévue | Remarque |
+|---|---|---|---|
+| #120 | `EnsembleDesParametres` accepte un `Cadre` à n_a ≠ 12 sans recouper les domaines des tables (Q3 ; M1 de l'audit du rang 4 : N2 lit n_a par la vue) | point d'étape après J3-b | forme du contrôle à fixer |
+| #121 | Contrôle statique des lectures : contournements restants, liste noire ou liste blanche | point d'étape après J3-b | choix de méthode (A2) |
+| #122 | Cohérence IN^vol = 0 ⇒ IN = 0 à l'état chargé | J3-e | état initial de `scenarios/` et reprise |
+| #123 | Définitions exécutées non numérotées (d, tu, ω\*, g) : numéroter ou déclarer leur catégorie | **décision du mainteneur** | règle de concordance (`CONVENTIONS.md`) |
+| #124 | Domaine des plans nominaux et de la demande adressée (d < 0, N6) | J3-d | avant les blocs acheteurs réels |
+| #125 | Facteur de croissance par pas sur g arrondi ; formes divergentes entre script, linéarisation et moteur | J3-e et J3-f | test zéro (J3-e), linéarisation sur le moteur (J3-f) |
+
+**Dépendances ajoutées** (13/11/2026, rang 10) : #124 → blocs 5, 6 et 9 réels (J3-d) ; #122 → état initial résolu de `scenarios/` (J3-e) ; #125 → test zéro (J3-e) et S1, S2 (J3-f) ; #120 → toute exécution à n_a ≠ 12. **Retirées** : aucune.
 
 **Dépendances ajoutées** (13/11/2026) : rang 1a de J3-b → tout essai de J3-b ; #104 → #112 → #113 → #50, #51 ; #102 → premier code de bloc ; #114 ← #113, #50, #51 ; #115 → premier label `eq:observation-…` ; #110 → G1 ; #116 → #111. **Retirées** : #102 et #106 de J3-b. **Inchangées** : celles du 15/10/2026.
 
