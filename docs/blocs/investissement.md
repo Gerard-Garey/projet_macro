@@ -3,7 +3,7 @@ bloc: Investissement et financement des entreprises
 module: src/nations/blocs/investissement.py
 expert pilote: macro
 experts consultés: monnaie (demande de crédit face à l'offre bancaire : frontière crédit) ; jeu
-statut: spécifiée (04/10/2026)
+statut: implémentée (J3-d1, 15/11/2026)
 décision: M28 (03/10/2026)
 issue: #42
 ---
@@ -1891,6 +1891,8 @@ Aucun autre désaccord : lecture (a), date de i_L, ϱ_L sur π\*, levier comptab
 - Le stockage des variables d'état retardées (y_t retenu comme y_{t−1} du pas suivant ; T_{F,t}) est une tenue d'état, non une équation : il n'a pas de label.
 - Les grandeurs restituées (§ 9.4) relèvent de la couche `observation/` : elles n'auront de label qu'une fois son radical fixé.
 
+*Mention du 15/11/2026 (rang 8 de J3-d1 ; décision P142 du mainteneur du 15/11/2026)* : F1 porte un second label, `eq:investissement-credit-servi` (ligne 18 sous ς_L, balise dans `credit_servi`, `ed4c9c2`) ; le bloc porte donc **douze labels** et non onze (correction du critère de décompte avant son essai ; concordance 77).
+
 **N10 (`sec:production`) n'est pas touchée.**
 - L'équation `eq:production-capital-volume` et son label sont inchangés : K^vol est tenu par le bloc 2, avec I^vol = v_{F,j,t} livré. **Q4 est confirmée.**
 - Seul le texte autour change (§ 9.8) : l. 592, 675, 680, 728, 739, 782, 808, 829 et 832, et la ligne t̄u de `tab:symboles`.
@@ -2119,6 +2121,13 @@ Chaque test énonce une propriété, avec un seuil écrit avant l'essai (réserv
 - 4 : test « Bornes » (c) ;
 - 5 : condition A > 0 au chargement ;
 - 6 : `\limites` de S6 et restitution (condition 3).
+
+*Mention du 15/11/2026 (rang 8 de J3-d1 ; PR #136 ; verdicts publiés dans `sec:investissement`, `fae37b3`, `ed4c9c2`, `fc48f6e`)* :
+- **Classement du rang 1a** (P122) : lignes (a) et (b) jugées sur le socle partiel d'essai ; lignes (c) renvoyées à #114 (test zéro, boucle conjointe complète, boucle investissement–demande à la propension effective, (b-x) en régime B, C36) ou à J3-d2 (#132).
+- **« Endettement »** : dépôts au PIB à 1e−6 non atteints à 2 160 pas (convergence oscillante, module ≈ 0,997) ; échec attendu strict, correction prospective proposée par `macro` réservée au mainteneur : **#139** (P140).
+- **« Bornes » (b)** : tenues sur le lot |Δϱ| ≤ 0,1 par an seulement (restriction déclarée, P145) ; frontière de S6 publiée sans verdict (ti_{t+1} = 0 dès Δϱ = 3,307756 par an à ζ = 4, 0,661551 à ζ = 20) ; borne de domaine ou forme bornée : **#143**.
+- **« Bornes » (c)** : constat sans verdict ; dimensionnement du choc et refus de la moitié du crédit réservés au mainteneur : **#140** (P141).
+- Coût : 0,0186 ms par pays-pas sur la plateforme de référence (run 43700445516), seuil 0,48 ms, tenu.
 
 *Annotation du 14/11/2026 (rang 1a de J3-c ; `macro` ; décision du mainteneur du 14/11/2026, PR #129 ; ADR 0010, § Conséquences, tests 2 à 4)*, prospective :
 - Ligne « Délais » : « π\* au tour n : plan modifié au tour n » se lit « cible modifiée au tour n (π\*_{n+1} écrite en phase 1 du tour n ; levier fermé au socle, donc par un bloc d'essai 8) : plans et T^e_F du tour n identiques au bit au contrôle apparié, modifiés au tour n + 1 ».
@@ -2356,3 +2365,4 @@ Commentaires proposés sur #55 (seuils de Div ≥ 0 en fonction de ζ) et sur #5
 | 03/10/2026 | Conséquences de M28 (§ 9) rédigées par `macro` : onze labels prévus au J3 (S1 à S7, F1 à F4), paramètres, interfaces avec les blocs 2, 4, 5, 7, 8 et 9, conditions de `jeu`, tests du J3 et du J4 ; faits nouveaux (écart durable à la cible sous S-ζ, effet d'un taux maintenu croissant, levier exact sous N6, date de l'impôt) ; constat sur `tab:phases` (écriture de T_F après la phase 6) | `macro` ; session principale |
 | 03/10/2026 | Décisions du mainteneur sur les conséquences (§ 9.10) : date de π\* (délai 1), Γ^e au moteur, M29 (T_F retenu en phase 9) ; corrections du § 9.4, § 9.6 et de C35 ; avis de `monnaie` sur les § 9 ; issue #64, commentaires sur #55 et #57 | mainteneur ; `monnaie` ; session principale |
 | 14/11/2026 | Mention du rang 9 de J3-c : `facteur_g` = f(g_pr)·f(g_N) exécuté (`0f4954c`, P88) ; Γ^e = `facteur_g`·f(π\*_t) exécuté en phase 0 (`c50be3f`, label `4d0430f`) ; ligne (a) « une seule source de Γ^e » tenue par le contrôle statique de #61 ; ligne (c) π\* constante au bit, tenue (critère de #61) | session principale, d'après `architect` |
+| 15/11/2026 | Fiche « implémentée » (J3-d1, rang 8 ; statut effectif à la fusion de la PR #136) : `investissement.py` (`e0503f2`, labels `fae37b3`), douze labels (P142) ; mentions datées aux § 9.1 et § 9.6 (#139, #140, lot \|Δϱ\| ≤ 0,1 et #143) | session principale, d'après `architect` |
