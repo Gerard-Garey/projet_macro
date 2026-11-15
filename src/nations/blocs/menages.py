@@ -15,9 +15,9 @@ lisent la vue, convertissent λ_H par `nations.moteur.conversions` seulement, ap
 fonctions et écrivent. H1 (Γ^e, γ^e, π^{∗,pas}) est une grandeur du moteur
 (`nations.moteur.ouverture`, P119) : le bloc la lit sous `Gamma_e`, `gamma_e` et
 `pi_etoile_pas` (source `"0"`), sans la recalculer. Les labels `eq:menages-…` de H2 à H7
-(fiche, § 9.1 ; `tab:menages-equations`) et leurs balises sont posés ensemble au passage de
-`docwriter` (rang 6 de J3-d1, P62) : d'ici là, chaque équation est repérée par son
-identifiant H2 à H7.
+(fiche, § 9.1 ; `tab:menages-equations`) et leurs balises ont été posés ensemble au passage
+de `docwriter` (rang 6 de J3-d1, P62) ; l'identifiant H2 à H7 ne sert plus qu'au renvoi à la
+fiche.
 
 **Lecture nette** (ADR 0013, annotation du 14/11/2026 (rang 1b de J3-d1), point 4 ; ADR 0012,
 A8.2 ; #103) : D_H, moyen de paiement soumis à la lecture nette du contrôle de caisse, est lu
@@ -64,6 +64,7 @@ LIGNES_DU_REVENU = ("5", "6", "7", "10", "11a", "14", "15")
 
 def revenu_attendu(Gamma_e: float, YD_m1: float) -> float:
     """H2 : YD^e_t = Γ^e_t YD_{t−1}, u.m. par pas ; Γ^e_t lu du moteur (H1), sans recalcul."""
+    # eq:menages-revenu-attendu
     return Gamma_e * YD_m1
 
 
@@ -71,6 +72,7 @@ def richesse_visee(nu_H: float, n_a: int, YD_e: float, pi_etoile_pas: float,
                    V_H: float) -> float:
     """H3 : V*_{H,t} = ν_H n_a (YD^e_t − π^{∗,pas}_t V_{H,t}), u.m. ; ν_H en années, n_a y est un
     changement d'unité (années → pas), non une conversion ; V_H = max(0 ; D_H) + B_H."""
+    # eq:menages-richesse-visee
     return nu_H * n_a * (YD_e - pi_etoile_pas * V_H)
 
 
@@ -78,6 +80,7 @@ def plan_de_la_regle(YD_e: float, gamma_e: float, V_H: float, lambda_H_pas: floa
                      V_etoile_H: float) -> float:
     """H4 : C^règle_t = YD^e_t − γ^e_t V_{H,t} − (λ_H/n_a)(V*_{H,t} − V_{H,t}), u.m. par pas ;
     `lambda_H_pas` = λ_H/n_a, converti par `par_pas`."""
+    # eq:menages-plan-consommation
     return YD_e - gamma_e * V_H - lambda_H_pas * (V_etoile_H - V_H)
 
 
@@ -85,12 +88,14 @@ def budget_de_consommation(D_H: float, C_regle: float) -> float:
     """H5 : C^plan_t = min{D_{H,t} ; max{0 ; C^règle_t}}, u.m. par pas ; D_H reçu en max(0 ; ·)
     (lecture nette), d'où C^plan ≥ 0 exactement. Plafond : borne à seuil libre sur les dépôts
     d'ouverture ; plancher : contrainte de conservation, sans paramètre."""
+    # eq:menages-budget-consommation
     return min(D_H, max(0.0, C_regle))
 
 
 def consommation(p: float, C_vol: float) -> float:
     """H6 : C_t = p_t v_{H,t}, ligne 1, u.m. par pas ; v_{H,t} = C^vol_t servi par le bloc
     production (N6), p_t écrit par le bloc prix en phase 5."""
+    # eq:menages-consommation
     return p * C_vol
 
 
@@ -98,6 +103,7 @@ def revenu_disponible(montants: tuple[float, ...]) -> float:
     """H7 : YD_t = Σ_ℓ f_{ℓ,H,t}, ℓ ∈ {5, 6, 7, 10, 11a, 14, 15}, u.m. par pas ; `montants` :
     montants exécutés de ces lignes dans la colonne des ménages (signés : la ligne 7 y est
     −T_H), dans l'ordre de `LIGNES_DU_REVENU`, sommés dans cet ordre."""
+    # eq:menages-revenu-disponible
     total = 0.0
     for montant in montants:
         total += montant
