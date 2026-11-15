@@ -283,7 +283,7 @@ def mesurer_part(socle, radical: str, reels=()) -> tuple[float, list[float], int
         blocs = socle.blocs(sentier, reels=reels)
         blocs = tuple(envelopper(b, durees) if b.declaration.radical == radical else b
                       for b in blocs)
-        o = ordo.assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+        o = ordo.assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
         socle.derouler(socle.etat_initial(sentier), NB_PAS_DU_COUT, o, ObservateurNul())
         parts.append(durees[0] * 1e3 / NB_PAS_DU_COUT)
         appels = durees[1]
@@ -319,7 +319,7 @@ def test_instrument_de_la_part_d_un_bloc(socle, publier):
     durees = [0.0, 0]
     blocs = tuple(envelopper(b, durees) if b.declaration.radical == "production" else b
                   for b in socle.blocs(sentier))
-    o = ordo.assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+    o = ordo.assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
     debut = time.perf_counter()
     fin = socle.derouler(socle.etat_initial(sentier), NB_PAS_DU_COUT, o, ObservateurNul())
     total = time.perf_counter() - debut

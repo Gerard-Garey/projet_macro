@@ -11,9 +11,11 @@ Le générateur complet est celui de #98.
 
 import dataclasses
 import itertools
+import math
 import re
 import struct
 from pathlib import Path
+from types import MappingProxyType
 
 import numpy as np
 import pytest
@@ -27,16 +29,24 @@ from nations.moteur.contrat_bloc import (
     GRAND_LIVRE,
     OUVERTURE,
     REGISTRE,
+    SUFFIXE_SUIVANT,
     DeclarationDeBloc,
     Lecture,
     Siege,
     methode_de_l_etape,
 )
 from nations.moteur.conversions import facteur_par_pas
-from nations.moteur.diagnostics import DefautDeDeclaration, RefusDuMoteur
+from nations.moteur.diagnostics import (
+    DefautDeDeclaration,
+    DepassementNumerique,
+    EntreeHorsDomaine,
+    PlanHorsDomaine,
+    RefusDuMoteur,
+)
 from nations.moteur.ouverture import GrandeurOuverture
 from nations.noyau.diagnostics import RefusDeProposition
 from nations.moteur.ordonnanceur import (
+    DOMAINES_DU_PAS,
     INDICE_DES_PRIX,
     DeclarationDesEntrees,
     EntreesDuTour,
@@ -67,12 +77,14 @@ GRAINE = 20261007
 POSITIONS = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0,
              "B_CB": 100.0, "Res": 50.0, "L_CB": 20.0, "M_G": 150.0, "K": 900.0, "IN": 100.0}
 
-# Variables d'état des blocs (schéma v3), valeurs d'essai dans leurs domaines ; les blocs
+# Variables d'état des blocs (schéma v4, YD_m1 au rang 3, ti, y_m1, T_F_m1, varrho_bar_L au
+# rang 4 de J3-d1), valeurs d'essai dans leurs domaines ; les blocs
 # d'essai de ce module les reconduisent d'un pas à l'autre (aucun ne les lit).
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
-                       "i_L": 0.0502, "i_D": 0.0202, "pi_e": 0.02, "r_hat_etoile": 0.01,
-                       "pi_etoile": 0.02}
+                       "YD_m1": 0.7, "ti": 0.14, "y_m1": 1.0, "T_F_m1": 0.0,
+                       "varrho_bar_L": 0.0296, "i_L": 0.0502, "i_D": 0.0202, "pi_e": 0.02,
+                       "r_hat_etoile": 0.01, "pi_etoile": 0.02}
 
 SANS_ENTREES = DeclarationDesEntrees((), ())
 ENTREES_VIDES = EntreesDuTour((), ())
@@ -856,6 +868,9 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
             ("i_L_suivant", e["i_L"]), ("i_D_suivant", e["i_D"]), ("i_CB", 1.0 + t),
             ("pi_e_suivant", e["pi_e"]), ("r_hat_etoile_suivant", e["r_hat_etoile"]),
             ("pi_etoile_suivant", e["pi_etoile"]),
+            ("varrho_bar_L_suivant", e["varrho_bar_L"]), ("ti_suivant", e["ti"]),
+            ("y_m1_suivant", e["y_m1"]), ("T_F_m1_suivant", e["T_F_m1"]),
+            ("YD_m1_suivant", e["YD_m1"]),
             (INDICE_DES_PRIX, p_t),
             ("mu_tilde_suivant", e["mu_tilde"]), ("y", 1.0 + t),
             ("v_e_suivant", e["v_e"]), ("IN_vol_suivant", e["IN_vol"]),
@@ -926,7 +941,8 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
         fins.append([e for e in releve.evenements if type(e) is FinDePas])
     assert fins[0] == fins[1] == fins[2]
     assert empreinte(fins[0]) == empreinte(fins[1]) == empreinte(fins[2])
-    assert len(fins[0][0].variables_du_pas) == 21
+    # Dont YD_m1_suivant (schéma v4, #60) ; ti, y_m1, T_F_m1, varrho_bar_L (#67).
+    assert len(fins[0][0].variables_du_pas) == 26
 
 
 def test_ligne_16_negative_et_montant_couvert_exerces():
@@ -1030,6 +1046,124 @@ def test_espace_du_pas_refuse_une_valeur_non_finie(valeur):
     assert espace.lire("x") == (1.0, 2.0)
 
 
+# --------------------------------------------------------------------------
+# Domaine des plans (#124 ; P120, P129 ; ADR 0013, annotation du 14/11/2026 (J3-d1), point 4)
+# --------------------------------------------------------------------------
+
+PLANS = ("C_plan", "I_plan", "G_plan")
+# Valeurs hors du domaine des plans : −1 ulp sous 0 (plus petit sous-normal négatif), −1,
+# NaN, ±∞, l'entier −1 (type de base admis par l'espace du pas) et le n-uplet (1,0,) (type de
+# base, mais pas un plan).
+HORS_DOMAINE = (math.nextafter(0.0, -1.0), -1.0, float("nan"), float("inf"), -float("inf"), -1,
+                (1.0,))
+# Valeurs du domaine : −0,0, 0, le plus petit sous-normal positif, 1, l'entier 0.
+DANS_LE_DOMAINE = (-0.0, 0.0, math.nextafter(0.0, 1.0), 1.0, 0)
+
+
+def test_domaines_du_pas_liste_fermee():
+    """P129 : `DOMAINES_DU_PAS` est une liste fermée, en lecture seule, des trois plans des
+    acheteurs ; aucun de ses noms n'est une variable d'état, une valeur du pas suivant ni une
+    grandeur calculée à l'ouverture (leur domaine relève du schéma ou de la grandeur)."""
+    assert type(DOMAINES_DU_PAS) is MappingProxyType
+    assert tuple(DOMAINES_DU_PAS) == PLANS
+    with pytest.raises(TypeError):
+        DOMAINES_DU_PAS["y"] = DOMAINES_DU_PAS["C_plan"]
+    etat = {f.name for f in dataclasses.fields(EtatPays)}
+    ouverture = {g.nom for g in ordo.GRANDEURS_OUVERTURE}
+    for nom in DOMAINES_DU_PAS:
+        assert nom not in etat and nom not in ouverture
+        assert not nom.endswith(SUFFIXE_SUIVANT)
+    assert issubclass(PlanHorsDomaine, RefusDuMoteur)
+
+
+@pytest.mark.parametrize("nom", PLANS)
+@pytest.mark.parametrize("valeur", HORS_DOMAINE, ids=repr)
+def test_plan_hors_domaine_refuse_par_l_espace_du_pas(nom, valeur):
+    """Un plan négatif (−1 ulp compris), NaN ou infini est refusé par `PlanHorsDomaine`, et non
+    par le refus générique de finitude, qu'il précède ; rien n'est écrit (aucun écrêtage) ; un
+    autre nom de l'espace n'a que le contrôle générique."""
+    espace = ordo.VariablesDuPas(frozenset({nom, "x"}), 4)
+    with pytest.raises(PlanHorsDomaine, match="hors du domaine") as refus:
+        espace.ecrire(nom, valeur, etape="2", bloc="menages")
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        4, "2", "menages", nom)
+    assert repr(valeur) in str(refus.value)
+    with pytest.raises(RefusDuMoteur, match="avant son écriture"):
+        espace.lire(nom)
+    if type(valeur) in (int, tuple) or math.isfinite(valeur):
+        espace.ecrire("x", valeur)
+    else:
+        with pytest.raises(RefusDuMoteur, match="non finie") as generique:
+            espace.ecrire("x", valeur)
+        assert type(generique.value) is RefusDuMoteur
+
+
+@pytest.mark.parametrize("nom", PLANS)
+@pytest.mark.parametrize("valeur", DANS_LE_DOMAINE, ids=repr)
+def test_plan_dans_le_domaine_admis_au_bit(nom, valeur):
+    """−0,0, 0 et les plans positifs sont admis et relus au bit (signe de −0,0 compris)."""
+    espace = ordo.VariablesDuPas(frozenset({nom}), 0)
+    espace.ecrire(nom, valeur)
+    lu = espace.lire(nom)
+    assert type(lu) is type(valeur) and bits_de_base(lu) == bits_de_base(valeur)
+
+
+@pytest.mark.parametrize("nom", PLANS)
+@pytest.mark.parametrize("famille", ["scenario", "leviers"])
+def test_plan_en_entree_du_tour_refuse_a_l_assemblage(nom, famille):
+    """#124 (constat M1 de l'audit du rang 2) : un plan n'est écrit que par un bloc ; une entrée
+    du tour, de scénario ou levier, sous le nom d'une variable de `DOMAINES_DU_PAS` est refusée
+    à l'assemblage, avant tout pas."""
+    entrees = (DeclarationDesEntrees((nom,), ()) if famille == "scenario"
+               else DeclarationDesEntrees((), (nom,)))
+    with pytest.raises(DefautDeDeclaration, match="DOMAINES_DU_PAS") as refus:
+        ordonnanceur_d_essai(plans_nuls(1), entrees=entrees)
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        "0" if famille == "scenario" else "1", MOTEUR, nom)
+
+
+def _ecrire_un_plan(radical, nom, valeur):
+    """Sièges et action d'essai : le bloc `radical` écrit `nom` = `valeur` en phase 2, après son
+    action d'essai."""
+    def remplacer(sieges):
+        s = sieges[radical]["2"]
+        sieges[radical]["2"] = dataclasses.replace(s, ecrit=s.ecrit + (nom,))
+    base = action_d_essai(radical, "2", plans_nuls(2), 0.02)
+
+    def agir(vue):
+        base(vue)
+        vue.ecrire_pas(nom, valeur(vue.ouverture.t))
+    return remplacer, {(radical, "2"): agir}
+
+
+@pytest.mark.parametrize("radical, nom", [("menages", "C_plan"), ("investissement", "I_plan"),
+                                          ("finances_publiques", "G_plan")])
+@pytest.mark.parametrize("valeur", HORS_DOMAINE, ids=repr)
+def test_plan_hors_domaine_refuse_pour_un_bloc_d_essai(radical, nom, valeur):
+    """Écrivain bloc d'essai, par la vue : le refus nomme le pas, l'étape et le bloc écrivain
+    (apposés par la vue) et le plan ; l'état d'ouverture reste intact."""
+    remplacer, actions = _ecrire_un_plan(radical, nom, lambda t: valeur)
+    o = ordonnanceur_d_essai(plans_nuls(1), remplacer=remplacer, actions=actions)
+    e0 = etat_initial()
+    avant = sauvegarder([e0])
+    with pytest.raises(PlanHorsDomaine) as refus:
+        executer_pas(e0, ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "2", radical, nom)
+    assert sauvegarder([e0]) == avant
+
+
+def test_plan_nul_signe_admis_par_un_bloc_d_essai():
+    """−0,0 au pas 0, 0 au pas 1 : deux pas déroulés, plans relevés au bit, sans écrêtage."""
+    remplacer, actions = _ecrire_un_plan("menages", "C_plan", lambda t: (-0.0, 0.0)[t])
+    o = ordonnanceur_d_essai(plans_nuls(2), remplacer=remplacer, actions=actions)
+    releve = Enregistreur()
+    trajectoire(o, etat_initial(), 2, releve)
+    plans = [dict(e.variables_du_pas)["C_plan"] for e in releve.evenements
+             if type(e) is FinDePas]
+    assert [bits(x) for x in plans] == [bits(-0.0), bits(0.0)]
+
+
 @pytest.mark.parametrize("famille", ["scenario", "leviers"])
 @pytest.mark.parametrize("valeur", [float("nan"), float("inf"), -float("inf")])
 def test_entrees_du_tour_non_finies_refusees(famille, valeur):
@@ -1044,6 +1178,67 @@ def test_entrees_du_tour_non_finies_refusees(famille, valeur):
     with pytest.raises(RefusDuMoteur, match="non finie") as refus:
         executer_pas(etat_initial(), entrees, o, ObservateurNul())
     assert refus.value.nom == ("sigma_L" if famille == "scenario" else "levier")
+
+
+# Entrées de scénario sous un domaine déclaré (P138) : ς_L, part refusée dans [0 ; 1].
+ENTREES_AVEC_PART_REFUSEE = DeclarationDesEntrees(("varsigma_L",), ())
+
+
+@pytest.mark.parametrize("valeur", [0.0, -0.0, 0.5, 1.0])
+def test_part_refusee_admise_dans_son_domaine(valeur):
+    """P138 : ς_L dans [0 ; 1] (bornes comprises, −0,0 admis) passe la publication en phase 0,
+    à l'appel direct comme au pas ; la valeur publiée est celle reçue, sans écrêtage."""
+    entrees = EntreesDuTour((("varsigma_L", valeur),), ())
+    ordo._verifier_entrees(entrees, ENTREES_AVEC_PART_REFUSEE, 0)
+    o = ordonnanceur_d_essai(plans_nuls(1), entrees=ENTREES_AVEC_PART_REFUSEE)
+    releve = Enregistreur()
+    executer_pas(etat_initial(), entrees, o, releve)
+    fin = next(e for e in releve.evenements if type(e) is FinDePas)
+    assert dict(fin.variables_du_pas)["varsigma_L"] == valeur
+
+
+@pytest.mark.parametrize("valeur", [math.nextafter(1.0, 2.0), -5e-324, -1.0, 2.0,
+                                    float("nan"), float("inf"), -float("inf")])
+def test_part_refusee_hors_domaine_refusee(valeur):
+    """P138 (constat M1 d'`audit`) : ς_L hors de [0 ; 1], NaN et ±∞ compris, est refusée par le
+    moteur à sa publication en phase 0, par `EntreeHorsDomaine` (dérivée de `RefusDuMoteur`),
+    étape « 0 », bloc moteur, nom de l'entrée ; jamais écrêtée ; avant le refus générique de
+    finitude."""
+    entrees = EntreesDuTour((("varsigma_L", valeur),), ())
+    with pytest.raises(EntreeHorsDomaine, match=r"0 ≤ ς_L ≤ 1") as refus:
+        ordo._verifier_entrees(entrees, ENTREES_AVEC_PART_REFUSEE, 7)
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        7, "0", "moteur", "varsigma_L")
+    o = ordonnanceur_d_essai(plans_nuls(1), entrees=ENTREES_AVEC_PART_REFUSEE)
+    with pytest.raises(EntreeHorsDomaine):
+        executer_pas(etat_initial(), entrees, o, ObservateurNul())
+
+
+def test_domaines_des_entrees_liste_fermee():
+    """P138 : la liste des domaines des entrées est fermée et ne contient que ς_L (ς_B viendra
+    avec le bloc 9) ; une entrée hors de la liste n'a que le contrôle générique."""
+    assert set(ordo.DOMAINES_DES_ENTREES) == {"varsigma_L"}
+    ordo._verifier_entrees(EntreesDuTour((("sigma_L", 7.5),), (("levier", 0.03),)),
+                           ENTREES_D_ESSAI, 0)
+
+
+def test_depassement_numerique_d_un_bloc_refuse_et_type():
+    """P139 : une `OverflowError` levée dans une méthode d'étape d'un bloc (ici `math.exp`
+    au-delà de 709) devient `DepassementNumerique`, dérivée de `RefusDuMoteur`, qui nomme le pas,
+    l'étape et le bloc, l'exception d'origine chaînée ; aucune autre exception n'est traduite."""
+    def deborde(vue):
+        math.exp(710.0)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={("travail", "4"): deborde})
+    with pytest.raises(DepassementNumerique) as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc) == (0, "4", "travail")
+    assert type(refus.value.__cause__) is OverflowError
+
+    def divise(vue):
+        return 1.0 / 0.0
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={("travail", "4"): divise})
+    with pytest.raises(ZeroDivisionError):
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
 
 
 def test_lecture_d_une_variable_non_ecrite_refusee():
@@ -1198,7 +1393,7 @@ def _sieges_d_etat(sieges):
     s = sieges["banque_centrale"]["1"]
     sieges["banque_centrale"]["1"] = dataclasses.replace(s, etat=s.etat + ("pi_cible",))
     s = sieges["menages"]["9"]
-    sieges["menages"]["9"] = dataclasses.replace(s, etat=("revenu",))
+    sieges["menages"]["9"] = dataclasses.replace(s, etat=s.etat + ("revenu",))
     s = sieges["finances_publiques"]["7"]
     sieges["finances_publiques"]["7"] = dataclasses.replace(
         s, lit=s.lit + (Lecture("1", "pi_cible_suivant"),))
@@ -1212,6 +1407,8 @@ def _actions_d_etat(lus, doubler=False, oublier=False):
             vue.ecrire_etat("pi_cible", 0.0)
 
     def revenu(vue):
+        # YD_{t−1} (schéma v4) reconduite, comme par le bloc d'essai de ce module.
+        vue.ecrire_etat("YD_m1", vue.ouverture.YD_m1)
         if not oublier:
             vue.ecrire_etat("revenu", vue.grand_livre.montant_execute_ligne("5"))
 
@@ -1325,8 +1522,10 @@ def test_variable_d_etat_ecriture_unique(schema_avec_variables_de_bloc, doubler,
             s["menages"]["5"], etat=("revenu",)))), "hors de sa phase"),
     ("deux propriétaires", lambda s: (_sieges_d_etat(s), s["menages"].__setitem__(
         "5", dataclasses.replace(s["menages"]["5"], etat=("revenu",)))), "hors de sa phase"),
+    # Le siège 9 de l'investissement garde T_F_m1 (schéma v4, #67), qu'il écrit.
     ("lue dans le même groupe en phase 9", lambda s: (_sieges_d_etat(s), s[
-        "investissement"].__setitem__("9", siege("9", lit=(Lecture("9", "revenu_suivant"),)))),
+        "investissement"].__setitem__("9", siege("9", lit=(Lecture("9", "revenu_suivant"),),
+                                                 etat=("T_F_m1",)))),
      "triangularité"),
     ("écrite deux fois par son propriétaire", lambda s: (_sieges_d_etat(s), s[
         "menages"].__setitem__("9", siege("9", etat=("revenu", "revenu")))), "deux fois"),

@@ -1,7 +1,8 @@
-"""Tables de paramètres des blocs 2 à 4 et δ, ensemble des tables (issue #112).
+"""Tables de paramètres des blocs 2 à 4 et 6, ensemble des tables (issues #112, #67).
 
 Contrat : ADR 0012, F1 et F2, et annotation du 13/11/2026, point 3 (P63, P65,
-P68 à P71) ; synthèse du rang 1a de J3-b, § 3 (unités). Chaque test énonce une
+P68 à P71) ; synthèse du rang 1a de J3-b, § 3 (unités) ; table du bloc 6 complétée (ADR 0013,
+annotation du 14/11/2026 (rang 1b de J3-d1), point 2 ; P80 ; #67). Chaque test énonce une
 propriété : unité du vocabulaire fermé, type porté par l'unité, domaine refusé
 sans écrêtage à toute construction, une seule maison par paramètre, égalité des
 valeurs indicatives avec le script d'état stationnaire (P63).
@@ -48,21 +49,29 @@ UNITES_ATTENDUES = {
     "g_pr": "par an, taux de croissance", "g_N": "par an, taux de croissance",
     "U_eq": "fraction", "mu_bar": "fraction",
     "beta": "sans dimension", "psi_xi": "sans dimension",
+    # Bloc 6 (rang 4 de J3-d1, #67) : η_r et ζ sans dimension, sur le précédent de β (point 2).
+    "tu_bar": "fraction", "lambda_ti": "par an, taux de flux", "eta_r": "sans dimension",
+    "zeta": "sans dimension", "lv_etoile": "fraction", "nu_F": "années",
 }
 
+# Noms du script d'état stationnaire qui diffèrent de ceux des tables (point 2 : le script nomme
+# `lv` ce que la table nomme `lv_etoile`).
+NOMS_DU_SCRIPT = {"lv_etoile": "lv"}
 
-def test_quatorze_parametres_un_seul_par_maison():
-    """Point 3 : λ_v, λ_IN, σ, g_pr, κ ; λ_w, β, U^eq, λ_N, g_N ; μ̄, λ_μ, ψ_ξ ; δ. Un nom
-    n'apparaît que dans une table (g_pr dans la production, μ̄ dans les prix, δ dans
+
+def test_vingt_parametres_un_seul_par_maison():
+    """Point 3 : λ_v, λ_IN, σ, g_pr, κ ; λ_w, β, U^eq, λ_N, g_N ; μ̄, λ_μ, ψ_ξ ; δ, puis (ADR 0013,
+    annotation du 14/11/2026 (rang 1b de J3-d1), point 2 ; #67) t̄u, λ_ti, η_r, ζ, lv*, ν_F. Un
+    nom n'apparaît que dans une table (g_pr dans la production, μ̄ dans les prix, δ dans
     l'investissement, P68)."""
     assert [[p.nom for p in d] for _, _, d in TABLES] == [
         ["lambda_v", "lambda_IN", "sigma", "g_pr", "kappa"],
         ["lambda_w", "beta", "U_eq", "lambda_N", "g_N"],
         ["mu_bar", "lambda_mu", "psi_xi"],
-        ["delta"],
+        ["delta", "tu_bar", "lambda_ti", "eta_r", "zeta", "lv_etoile", "nu_F"],
     ]
     noms = [p.nom for p in DECLARATIONS]
-    assert len(noms) == len(set(noms)) == 14
+    assert len(noms) == len(set(noms)) == 20
     assert not {f.name for f in dataclasses.fields(CADRE)} & set(noms)
 
 
@@ -114,6 +123,22 @@ HORS_DOMAINE = [
     (prix.PRIX, "psi_xi", -1e-12), (prix.PRIX, "psi_xi", math.nan),
     (investissement.INVESTISSEMENT, "delta", 0.0),
     (investissement.INVESTISSEMENT, "delta", float(N_A)),
+    # Bloc 6 (sec:investissement-conditions ; rang 4 de J3-d1, #67).
+    (investissement.INVESTISSEMENT, "tu_bar", 0.0), (investissement.INVESTISSEMENT, "tu_bar", -0.8),
+    (investissement.INVESTISSEMENT, "tu_bar", math.inf),
+    (investissement.INVESTISSEMENT, "lambda_ti", 0.0),
+    (investissement.INVESTISSEMENT, "lambda_ti", N_A + 1e-9),
+    (investissement.INVESTISSEMENT, "lambda_ti", -0.02),
+    (investissement.INVESTISSEMENT, "eta_r", -1e-12), (investissement.INVESTISSEMENT, "eta_r", math.nan),
+    (investissement.INVESTISSEMENT, "zeta", -5e-324), (investissement.INVESTISSEMENT, "zeta", -4.0),
+    # Bornes hautes η_r, ζ ≤ 20 (P139).
+    (investissement.INVESTISSEMENT, "eta_r", math.nextafter(20.0, 21.0)),
+    (investissement.INVESTISSEMENT, "zeta", math.nextafter(20.0, 21.0)),
+    (investissement.INVESTISSEMENT, "zeta", math.inf),
+    (investissement.INVESTISSEMENT, "lv_etoile", -5e-324),
+    (investissement.INVESTISSEMENT, "lv_etoile", 1.0), (investissement.INVESTISSEMENT, "lv_etoile", 1.5),
+    (investissement.INVESTISSEMENT, "nu_F", 0.0), (investissement.INVESTISSEMENT, "nu_F", -1.0 / 6.0),
+    (investissement.INVESTISSEMENT, "nu_F", math.inf),
 ]
 
 
@@ -176,20 +201,29 @@ def test_bornes_admises():
     varier(travail.TRAVAIL, lambda_w=float(N_A), lambda_N=float(N_A), g_N=0.0, U_eq=5e-324)
     varier(prix.PRIX, lambda_mu=float(N_A), psi_xi=0.0, mu_bar=5e-324)
     varier(investissement.INVESTISSEMENT, delta=math.nextafter(N_A, 0.0))
+    # Bloc 6 : λ_ti = n_a, η_r = 0 et 20, ζ = 0 et 20, lv* = 0 inclus ; lv* juste sous 1, t̄u et ν_F juste
+    # au-dessus de 0 admis.
+    varier(investissement.INVESTISSEMENT, lambda_ti=float(N_A), eta_r=0.0, zeta=0.0, lv_etoile=0.0)
+    varier(investissement.INVESTISSEMENT, eta_r=20.0, zeta=20.0)  # bornes hautes incluses (P139)
+    varier(investissement.INVESTISSEMENT, lv_etoile=math.nextafter(1.0, 0.0), tu_bar=5e-324,
+           nu_F=5e-324)
 
 
 def test_ensemble_des_tables():
     """Point 3.5 (P69) : un champ par table, chacune de son type exact ; ni champ de mode ni
     de doublure (annotation du 13/11/2026, point 6 (b)) ; variation contrôlée. J3-c (ADR 0013,
-    annotation du 14/11/2026, point 6 ; H3.5) : `banque` et `banque_centrale` à la suite."""
-    noms = ["cadre", "production", "travail", "prix", "investissement", "banque",
+    annotation du 14/11/2026, point 6 ; H3.5) : `banque` et `banque_centrale` à la suite. J3-d1
+    (annotation du 14/11/2026 (rang 1b de J3-d1), point 2) : `menages` entre `prix` et
+    `investissement`."""
+    from nations.moteur.parametres import menages
+    noms = ["cadre", "production", "travail", "prix", "menages", "investissement", "banque",
             "banque_centrale"]
     assert [f.name for f in dataclasses.fields(EnsembleDesParametres)] == noms
     p = PARAMETRES_DE_REFERENCE
-    assert (p.cadre, p.production, p.travail, p.prix, p.investissement, p.banque,
+    assert (p.cadre, p.production, p.travail, p.prix, p.menages, p.investissement, p.banque,
             p.banque_centrale) == (
-        CADRE, production.PRODUCTION, travail.TRAVAIL, prix.PRIX, investissement.INVESTISSEMENT,
-        banque.BANQUE, banque_centrale.BANQUE_CENTRALE)
+        CADRE, production.PRODUCTION, travail.TRAVAIL, prix.PRIX, menages.MENAGES,
+        investissement.INVESTISSEMENT, banque.BANQUE, banque_centrale.BANQUE_CENTRALE)
     for nom in noms:
         with pytest.raises(DefautDeDeclaration, match=nom):
             dataclasses.replace(p, **{nom: object()})
@@ -213,12 +247,13 @@ def test_valeurs_indicatives_egales_a_celles_du_script(stationnaire):
     compris ; l'unité des taux annuels est la même nature."""
     defaut = stationnaire.Parametres()
     for p in DECLARATIONS:
-        assert hasattr(defaut, p.nom), p.nom
-        valeur = getattr(defaut, p.nom)
+        nom = NOMS_DU_SCRIPT.get(p.nom, p.nom)
+        assert hasattr(defaut, nom), p.nom
+        valeur = getattr(defaut, nom)
         assert type(valeur) is float and valeur.hex() == p.valeur.hex(), p.nom
     assert travail.G_N.valeur == defaut.g_N == 0.0
     for p in DECLARATIONS:
-        unite_script = stationnaire.DECLARATIONS[p.nom][0]
+        unite_script = stationnaire.DECLARATIONS[NOMS_DU_SCRIPT.get(p.nom, p.nom)][0]
         if p.unite == "par an, taux de croissance":
             assert unite_script == p.unite, p.nom
 
@@ -251,6 +286,21 @@ def test_taux_de_croissance_refuses_un_a_un_par_le_script_comme_par_les_tables(s
     stationnaire.controler_domaine(dataclasses.replace(base, g_pr=-0.5, g_N=-0.5))
     varier(production.PRODUCTION, g_pr=-0.5)
     varier(travail.TRAVAIL, g_N=-0.5)
+
+
+@pytest.mark.parametrize("nom", ["eta_r", "zeta"])
+def test_borne_haute_de_eta_r_et_zeta_dans_le_script_comme_dans_la_table(stationnaire, nom):
+    """P139 : 0 ≤ η_r, ζ ≤ 20, refusés par le script comme par la table du bloc 6, aux
+    frontières : 20 + 1 ulp et −1 ulp refusés par les deux ; 20 et 0 admis par les deux."""
+    base = dataclasses.replace(stationnaire.Parametres(), nu_G=1.15)
+    for valeur in (math.nextafter(20.0, math.inf), math.nextafter(0.0, -math.inf)):
+        with pytest.raises(DefautDeDeclaration, match=f"« {nom} »"):
+            varier(investissement.INVESTISSEMENT, **{nom: valeur})
+        with pytest.raises(stationnaire.HorsDomaine, match=f"0 ≤ {nom} ≤ 20"):
+            stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
+    for valeur in (20.0, 0.0):
+        varier(investissement.INVESTISSEMENT, **{nom: valeur})
+        stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
 
 
 def test_lambda_v_strict_dans_le_script_comme_dans_la_table(stationnaire):

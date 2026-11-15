@@ -197,9 +197,10 @@ def _identite_et_valorisation(initial, releve):
 
 
 def chocs_g(facteur, debut, fin):
-    def chocs(nom, t):
-        return facteur if nom == "G_plan" and debut <= t <= fin else 1.0
-    return chocs
+    """Choc de G^plan (table plan → facteur(t) de `socle.blocs`)."""
+    def choc(t):
+        return facteur if debut <= t <= fin else 1.0
+    return {"G_plan": choc}
 
 
 def test_identite_de_volume_et_valorisation(trajectoires, socle, publier):
@@ -252,10 +253,11 @@ def test_disponibilite_epuisement_zero_exact(socle, publier):
     demande = (s["C_plan"] + s["I_plan"] + s["G_plan"]) / s["p"]
     k = 1.1 * disponible / demande
 
-    def chocs(nom, t):
+    def choc(t):
         return k if t == 0 else 1.0
 
-    _, releve = derouler(socle, sentier, 25, initial, chocs_des_plans=chocs)
+    _, releve = derouler(socle, sentier, 25, initial,
+                         chocs_des_plans=dict.fromkeys(("C_plan", "I_plan", "G_plan"), choc))
     p0, v = releve.pas[0], releve.pas[0]["variables"]
     assert v["y"] == y0 < v["y_etoile"]
     d = {b: v[plan] / v["p"] for b, plan in (("C", "C_plan"), ("I", "I_plan"), ("G", "G_plan"))}
@@ -356,7 +358,7 @@ def test_phases_lecture_hors_ordre_refusee(socle, etape, lecture, motif):
     ordonnanceur(socle, sentier)
     blocs = socle.blocs(sentier, reels=(_fautif(etape, lecture),))
     with pytest.raises(DefautDeDeclaration, match=motif):
-        ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+        ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
 
 
 def test_le_bloc_reel_est_trouve_par_le_socle(socle):
@@ -371,4 +373,4 @@ def test_le_bloc_reel_est_trouve_par_le_socle(socle):
     blocs = socle.blocs(socle.sentier(0.02), reels=reels)
     assert [b.declaration.radical for b in blocs] == list(socle.RADICAUX)
     assert type(blocs[0]) is Production
-    ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.SANS_ENTREES)
+    ordo.assembler(socle.PHASES, blocs, socle.PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)

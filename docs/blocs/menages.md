@@ -3,7 +3,7 @@ bloc: Ménages
 module: src/nations/blocs/menages.py
 expert pilote: macro
 experts consultés: monnaie (dépôts et détention de titres publics : frontière dette publique) ; jeu
-statut: spécifiée (04/10/2026)
+statut: implémentée (J3-d1, 15/11/2026)
 décision: M27 (03/10/2026)
 issue: #41
 ---
@@ -1639,6 +1639,8 @@ Les sept labels respectent l'expression régulière de `CONVENTIONS.md` § 2.1 (
 
 **Ajout de rédaction à viser par le mainteneur** : le plancher max{0, ·} de H5 n'était pas écrit au § 3. Sans lui, un YD_{t−1} négatif (impôts supérieurs aux revenus) donnerait un plan négatif, donc une demande d_{H,t} < 0 que le rationnement proportionnel de N6 ne traite pas. C'est une contrainte de conservation sans paramètre (#38, lecture (ii)). Elle est inactive à l'état stationnaire, et la condition de domaine du § 9.2 (coefficient de richesse positif) l'y maintient tant que YD^e ≥ 0.
 
+*Mention du 15/11/2026 (rang 8 de J3-d1 ; décision P119 du mainteneur du 14/11/2026)* : H1 a pour propriétaire le moteur (`eq:moteur-croissance-nominale-attendue`, M30, #61) ; le bloc porte **six labels**, H2 à H7, posés avec leurs balises dans `menages.py` (`b449597`, labels `b5e98f8`). Lecture nette : D̃_H = max(0 ; D_H) dans H5 et H6, Ṽ_H = D̃_H + B_H dans H3 et H4 (`046fcde`, `d3635ed`).
+
 **Choix d'implémentation, au choix de `coder` sous visa de `macro`** (trajectoires identiques dans tous les cas) :
 - (i) le propriétaire de H1, à fixer avec la fiche 6 ;
 - (ii) C^règle_t est rendu comme variable nouvelle du pas, et non comme état : la décomposition du § 9.4 le lit sans le recalculer ;
@@ -1850,6 +1852,11 @@ Chaque test énonce une propriété avec un seuil écrit avant l'essai (réserve
 - 9 : effet d'un changement de cible et #54 ;
 - 10 : fiche 8, J5.
 
+*Mention du 15/11/2026 (rang 8 de J3-d1 ; PR #136 ; verdicts publiés dans `sec:menages`, `b5e98f8`, `d3635ed`, `f232b70`)* :
+- **Classement du rang 1a** (P122) : lignes (a) et (b) jugées sur le socle partiel d'essai ; lignes (c) renvoyées à #114 (test zéro, superneutralité, boucle conjointe, persistance, partie « scénario adverse » de l'instabilité 15) ou à J3-d2 (#132) pour une règle du bloc 9.
+- **Ligne « Vitesses », correction prospective** (P130, P131) : verdict « non tenu » publié en relatif ; correction du 14/11/2026, postérieure à l'observation et déclarée comme telle, taux d'épargne en écart absolu ≤ 1e−6, jugée à π\* = 2 % seul ; « tenue » rendue sur l'essai qui l'a motivée, confirmation à #114.
+- Coût : 0,0081 ms par pays-pas sur la plateforme de référence (run 43700445516), seuil 0,48 ms, tenu.
+
 ### 9.7 Chiffres remesurés sous la décision
 
 Commandes, exécutées le 03/10/2026 dans le scratchpad :
@@ -2020,3 +2027,4 @@ Création sur accord du mainteneur ; corps au compte rendu de `macro` du 03/10/2
 | 03/10/2026 | Décision M27 : option C, lecture (c) sur π\*, cible de Haig-Simons, lectures (b) à (e) du § 5 ; correction prospective du critère 4 (ii) (#59) | mainteneur |
 | 03/10/2026 | Conséquences de M27 (§ 9) rédigées par `macro` : labels (au J3), notation, paramètres, interfaces, conditions de `jeu`, tests, chiffres remesurés, contrats partagés et surface de `sec:menages`, quatre issues proposées ; lectures soumises au mainteneur | `macro` ; session principale |
 | 03/10/2026 | Décisions du mainteneur sur les conséquences (§ 9.10) : date de π\* (délai 1), Γ^e au moteur, M29 (YD en phase 9), lectures de la fiche 5 retenues, #58 rattachée, issues #60 à #63 | mainteneur ; session principale |
+| 15/11/2026 | Fiche « implémentée » (J3-d1, rang 8 ; statut effectif à la fusion de la PR #136) : `menages.py` (`b449597`, labels `b5e98f8`) ; mentions datées aux § 9.1 (P119) et § 9.6 (classement, P130) | session principale, d'après `architect` |

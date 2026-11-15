@@ -238,6 +238,14 @@ def ouvrir_pas(etat_ouverture: EtatOuverture, parametres_cadre: ParametresCadre)
                               regle=idt.STOCKS_OUVERTURE.nom, secteur="entreprises",
                               terme="IN", residu=ouverture["IN"],
                               echelle=echelles["entreprises"])
+    # K ≥ 0, strict, même règle (P80 ; ADR 0013, annotation du 14/11/2026 (rang 1b de J3-d1),
+    # point 3) : tenu sans réécriture par la monotonie de l'arrondi (lignes 3 et 8).
+    if not idt.controle_de_signe(ouverture["K"], idt.STOCKS_OUVERTURE, epsilon,
+                                 echelles["entreprises"]):
+        raise DefautComptable("capital comptable d'ouverture négatif", t=t, phase="0",
+                              regle=idt.STOCKS_OUVERTURE.nom, secteur="entreprises",
+                              terme="K", residu=ouverture["K"],
+                              echelle=echelles["entreprises"])
     idt.verifier_caisse(ouverture, echelles, epsilon, t=t, phase="0", positions_debut=ouverture,
                         mouvements_par_ligne={})
     return _construire(t, epsilon, epsilon_v, ouverture, v_flux, echelles)

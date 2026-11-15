@@ -298,9 +298,12 @@ def controler_domaine(par: Parametres) -> list[str]:
     for nom in ("nu_F", "tu_bar", "kappa", "sigma"):
         if not getattr(par, nom) > 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : > 0 attendu")
+    # Borne haute 20 de η_r et ζ (P139) : refusée ici comme dans la table du bloc 6
+    # (`nations.moteur.parametres.investissement`), de sorte que script et table refusent le même ensemble.
     for nom in ("eta_r", "zeta"):
-        if not getattr(par, nom) >= 0:
-            raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : ≥ 0 attendu (sec:investissement-conditions)")
+        if not 0 <= getattr(par, nom) <= 20:
+            raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : 0 ≤ {nom} ≤ 20 attendu (sec:investissement-conditions ; "
+                              "borne haute P139)")
     # U^eq > 0 et μ̄ > 0 : conditions de conception et d'existence de l'état stationnaire, non domaines de
     # définition (décision du mainteneur du 13/11/2026, P71) ; refusées ici comme dans les tables du moteur
     # (`nations.moteur.parametres.travail` et `.prix`), de sorte que script et tables refusent le même ensemble.
@@ -617,11 +620,14 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     Tr_lev = P[0] * (1 + pis) * par.theta_Tr * y_pot  # E6
     Tr = min(Tr_lev, max(0.0, o["M_G"] + T_H - i_CB * B / n - G_plan))
     s.update(IN_star=IN_star, y_star=y_star, N_star=N_star, UC=UC, YD_e=YD_e, V_star=V_star, C_regle=C_regle,
-             C_plan=C_plan, rho_L=rho_L, tu_star=tu_star, I_plan=I_plan, G_plan=G_plan, T_cou=T_cou, T_H=T_H,
+             C_plan=C_plan, rho_L=rho_L, tu_star=tu_star, I_vol_plan=I_vol_plan, I_plan=I_plan, G_plan=G_plan,
+             T_cou=T_cou, T_H=T_H,
              Tr=Tr, Tr_lev=Tr_lev, plafond_E6=o["M_G"] + T_H - i_CB * B / n - G_plan)
     # Phase 3 : crédit (F1).
     dL_d = par.lv * ((1 - par.delta / n) * o["K"] + I_plan) - o["L"]
     dL = (1 - par.varsigma_L) * max(dL_d, 0.0) + min(dL_d, 0.0)
+    # ΔL^d publiée à côté de ΔL (précédent de P93 ; avis de macro, rang 1a de J3-d1, § 2).
+    s["dL_d"] = dL_d
     s["dL"] = dL
     # Phase 4 : travail, puis production (T1, T4 à T6, N5, N11).
     s["N_pa_1"] = o["N_pa"] * (1 + par.g_N) ** (1 / n)  # T1

@@ -28,7 +28,8 @@ d'essai ne lit pas `facteur_g`, qu'aucun bloc réel ne remplace.
 
 **Exigences du rang 1a (§ 8).** Les blocs d'essai acheteurs (ménages,
 investissement, État) écrivent leurs plans en u.m. sur le sentier (C^plan,
-I^plan, G^plan, phase 2), exogènes et à chocs possibles (`chocs_des_plans`), et
+I^plan, G^plan, phase 2), exogènes et à chocs possibles (`chocs_des_plans`, table plan →
+facteur(t)), et
 proposent les lignes 1 à 3 **au prix p_t du pas sur les volumes servis par le
 bloc 2** (`p` × `C_vol`, `I_vol`, `G_vol`, lus en phase 5), non aux montants
 du sentier. Le bloc d'essai 8 a une variante à π^e choqué (`choc_pi_e`),
@@ -58,7 +59,11 @@ de `emission_e3()` : il propose les trois lignes 19a selon E8 à E11
 (`sec:finances_publiques-emission`) sur les lignes 2, 6, 7 et 11a à 11c
 exécutées, Π^CB et θ_CB lus en phase 1 et M^G d'ouverture, ν_G et ς_B du
 sentier ; sans ces options, l'émission reste aux montants du sentier (cas
-d'essai de la linéarisation, où les positions ont des flux exogènes).
+d'essai de la linéarisation, où les positions ont des flux exogènes). **X4
+(P124, rang 5 de J3-d1)**, couverture des intérêts, par les options de
+`couverture_x4()` : ligne 7 = T_H du sentier + T^cou, banc de la stationnarité
+partielle de J3-d1, jamais dans le banc de P87 ; `composer` assemble X4 et E3
+sans dépendre de l'ordre.
 
 **Tables des blocs 7 et 8 (réserve R1 de `monnaie`, rang 4 de J3-c ; étendue
 par décision du mainteneur à la revue finale de J3-c)** : `ordonnanceur` aligne
@@ -114,8 +119,19 @@ ETIQUETTE = "π^e exogène (bloc d'essai 8) ; émission aux montants du sentier 
 GRAINE = 20261113
 NU_G = 1.15  # ν_G retenu (décision du mainteneur du 05/10/2026, #84) ; synthèse du rang 1a, § 6
 POINTS_PI = (0.0, 0.02, 0.10)
-SANS_ENTREES = DeclarationDesEntrees((), ())
-ENTREES_VIDES = EntreesDuTour((), ())
+# Entrées du tour du socle (B3, B5 ; ADR 0012, B5, phase 0) : la part refusée de la hausse de
+# crédit demandée ς_{L,t}, entrée de scénario publiée en phase 0 et lue par F1 du bloc 6 réel
+# (#67 ; `sec:investissement-financement`, `sec:banque-offre`), nulle hors scénario de refus
+# (C31) ; aucun levier. Le bloc d'essai 6 ne la lit pas.
+ENTREES_DU_SOCLE = DeclarationDesEntrees(("varsigma_L",), ())
+
+
+def entrees_du_tour(varsigma_L: float = 0.0) -> EntreesDuTour:
+    """Entrées d'un pas du socle : ς_{L,t} (`float`), nulle hors scénario."""
+    return EntreesDuTour((("varsigma_L", float(varsigma_L)),), ())
+
+
+ENTREES_SANS_SCENARIO = entrees_du_tour()
 
 
 def script():
@@ -171,6 +187,8 @@ def sentier(pi: float, **variations: float) -> Sentier:
     s["C_vol"], s["I_vol"], s["G_vol"] = s["C"] / s["p"], s["I"] / s["p"], s["G"] / s["p"]
     # Part de la banque centrale à l'émission (BC5), paramètre que `un_pas` ne publie pas.
     s["theta_CB"] = par.theta_CB
+    # Norme ϱ̄_L, constante résolue que le bloc 6 recopie à chaque pas (P128) : valeur d'ouverture.
+    s["rho_bar_L"] = o["rho_bar_L"]
     n = par.n_a
     f = es.facteurs(par)
     facteurs = {
@@ -208,6 +226,12 @@ VARIABLES_D_ETAT = {
     "N": ("N", PERSONNES), "N_pa": ("N_pa_1", PERSONNES), "mu_tilde": ("mu_tilde", CONSTANTE),
     "i_L": ("i_L_1", CONSTANTE), "i_D": ("i_D_1", CONSTANTE), "pi_e": ("pi_e_1", CONSTANTE),
     "r_hat_etoile": ("r_hat_1", CONSTANTE), "pi_etoile": ("pi_cible_1", CONSTANTE),
+    # Bloc 5 (schéma v4, #60) : YD_t, écrit en phase 9, retenu pour le pas suivant.
+    "YD_m1": ("YD", NOMINAL),
+    # Bloc 6 (schéma v4, #67) : ti_{t+1} (S6) et y_t en phase 5 ; T_{F,t} en phase 9 ; ϱ̄_L
+    # recopiée en phase 2 (P128).
+    "ti": ("ti_1", CONSTANTE), "y_m1": ("y", VOLUME), "T_F_m1": ("T_F", NOMINAL),
+    "varrho_bar_L": ("rho_bar_L", CONSTANTE),
 }
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
@@ -216,7 +240,8 @@ if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
 OUVERTURE_DES_VARIABLES = {
     "v_e": "ve", "IN_vol": "IN_vol", "pr": "pr", "K_vol": "K_vol", "W": "W_m1", "U": "U_m1",
     "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "i_L": "i_L", "i_D": "i_D",
-    "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible",
+    "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible", "YD_m1": "YD_m1",
+    "ti": "ti", "y_m1": "y_m1", "T_F_m1": "T_F_m1", "varrho_bar_L": "rho_bar_L",
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
@@ -329,8 +354,8 @@ class _BlocDEssai:
         # Variables du pas, dont les plans des acheteurs, éventuellement choqués.
         for nom, (cle, classe) in VARIABLES_DU_PAS.get((radical, etape), {}).items():
             valeur = sentier.valeur(cle, classe, t, echelle)
-            if nom in ("C_plan", "I_plan", "G_plan"):
-                valeur *= r["chocs_des_plans"](nom, t)
+            if nom in PLANS_DES_ACHETEURS:
+                valeur *= r["chocs_des_plans"].get(nom, _sans_choc)(t)
             vue.ecrire_pas(nom, valeur)
         # Lignes : acheteurs au prix du pas sur les volumes servis ; B7 sous forme exacte ;
         # les autres aux montants du sentier.
@@ -367,20 +392,28 @@ def _choc_nul(t: int) -> float:
     return 0.0
 
 
-def _plans_sans_choc(nom: str, t: int) -> float:
+def _sans_choc(t: int) -> float:
     return 1.0
+
+
+# Plans des acheteurs → radical de leur écrivain (`ACHETEURS`) : clés admises de
+# `chocs_des_plans`.
+PLANS_DES_ACHETEURS = types.MappingProxyType({plan: radical
+                                              for radical, _, _, _, plan in ACHETEURS})
 
 
 def classe_d_essai(radical: str, sentier: Sentier, *, echelle: float = 1.0,
                    choc_pi_e: Callable[[int], float] = _choc_nul,
-                   chocs_des_plans: Callable[[str, int], float] = _plans_sans_choc,
+                   chocs_des_plans: dict | None = None,
                    regles: dict | None = None, lignes: dict | None = None,
                    declaration: DeclarationDeBloc | None = None) -> type:
     """Classe du bloc d'essai d'un radical ; `declaration` remplace sa déclaration (essais de
     refus à l'assemblage) ; `regles` donne, pour une variable d'état du radical, une règle
     d'essai (vue, sentier, t) → valeur du pas suivant, à la place du sentier (cas d'essai de
     la linéarisation) ; `lignes` donne, pour une ligne proposée par le radical, une règle
-    d'essai (vue, sentier) → montants par terme, à la place du sentier (E3)."""
+    d'essai (vue, sentier) → montants par terme, à la place du sentier (E3) ;
+    `chocs_des_plans` : plan → facteur(t) multipliant le plan du sentier au pas t (un plan absent
+    n'est pas choqué)."""
     declaration = declaration_d_essai(radical) if declaration is None else declaration
     proposees = {ligne for s in declaration.sieges for ligne in s.propose}
     orphelines = sorted(set(lignes or {}) - proposees)
@@ -390,7 +423,8 @@ def classe_d_essai(radical: str, sentier: Sentier, *, echelle: float = 1.0,
             "ses sièges ne propose : refusée, jamais ignorée en silence")
     reglage = types.MappingProxyType({
         "sentier": sentier, "echelle": echelle, "choc_pi_e": choc_pi_e,
-        "chocs_des_plans": chocs_des_plans, "regles": types.MappingProxyType(regles or {}),
+        "chocs_des_plans": types.MappingProxyType(chocs_des_plans or {}),
+        "regles": types.MappingProxyType(regles or {}),
         "lignes": types.MappingProxyType(lignes or {}),
         "sieges": types.MappingProxyType({s.etape: s for s in declaration.sieges})})
     espace = {"__slots__": (), "declaration": declaration, "reglage": reglage}
@@ -425,7 +459,7 @@ class OptionSansBlocDEssai(ValueError):
 
 def blocs(sentier: Sentier, *, echelle: float = 1.0,
           choc_pi_e: Callable[[int], float] = _choc_nul,
-          chocs_des_plans: Callable[[str, int], float] = _plans_sans_choc,
+          chocs_des_plans: dict | None = None,
           regles: dict | None = None, lignes: dict | None = None,
           reels: Sequence[object] = (),
           declarations: dict | None = None) -> tuple[object, ...]:
@@ -433,10 +467,20 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
     réel par radical, #113, #50, #51) ; `declarations` remplace la déclaration d'un radical ;
     `regles` : variable d'état → règle d'essai, passée au bloc de son propriétaire, ajoutée à
     `REGLES_PAR_DEFAUT` (et prioritaire sur elles) ; `lignes` : ligne → règle d'essai, passée
-    au bloc d'essai de son proposant (E3). Une clé de `lignes` ou de `declarations` dont le
-    radical est remplacé par un bloc réel, ou une ligne qu'aucun siège ne propose, est refusée
-    (`OptionSansBlocDEssai`)."""
+    au bloc d'essai de son proposant (E3) ; `chocs_des_plans` : plan (`PLANS_DES_ACHETEURS`) →
+    facteur(t), passé au bloc d'essai de son écrivain. Une clé de `lignes`, de `declarations`,
+    de `regles` ou de `chocs_des_plans` dont le radical (proposant, propriétaire ou écrivain)
+    est remplacé par un bloc réel, ou une ligne qu'aucun siège ne propose, ou un plan inconnu,
+    est refusée (`OptionSansBlocDEssai`, constat m1 de l'audit du rang 3 de J3-d1 : un choc du
+    plan d'un bloc réel était ignoré en silence). Un `choc_pi_e` autre que le choc nul sous le
+    bloc 8 réel est refusé de même (#138). Les règles par défaut (`REGLES_PAR_DEFAUT`) ne
+    s'appliquent qu'aux blocs d'essai, sans refus."""
     remplaces = {b.declaration.radical: b for b in reels}
+    # #138 : seul le bloc d'essai 8 lit `choc_pi_e` ; sous le bloc 8 réel, le choc serait ignoré.
+    if choc_pi_e is not _choc_nul and "banque_centrale" in remplaces:
+        raise OptionSansBlocDEssai(
+            "choc de π^e (`choc_pi_e`), lu par le seul bloc d'essai 8, alors que banque_centrale "
+            "est remplacé par un bloc réel : refusé, jamais ignoré en silence (#138)")
     for radical in declarations or {}:
         if radical not in RADICAUX or radical in remplaces:
             raise OptionSansBlocDEssai(
@@ -452,6 +496,22 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
                 f"règle d'essai pour la ligne {ligne}, proposée par "
                 f"{cat.LIGNE[ligne].proposant}, remplacé par un bloc réel : refusée, jamais "
                 "ignorée en silence")
+    for plan in chocs_des_plans or {}:
+        if plan not in PLANS_DES_ACHETEURS:
+            raise OptionSansBlocDEssai(f"choc du plan {plan!r}, inconnu (plans admis : "
+                                       f"{sorted(PLANS_DES_ACHETEURS)}) : refusé")
+        if PLANS_DES_ACHETEURS[plan] in remplaces:
+            raise OptionSansBlocDEssai(
+                f"choc du plan {plan}, écrit par {PLANS_DES_ACHETEURS[plan]}, remplacé par un "
+                "bloc réel : refusé, jamais ignoré en silence")
+    for nom in regles or {}:
+        proprietaire = schema.VARIABLE[nom].proprietaire if nom in schema.VARIABLE else None
+        if proprietaire not in RADICAUX or proprietaire in remplaces:
+            raise OptionSansBlocDEssai(
+                f"règle d'essai pour la variable d'état {nom!r}, "
+                + (f"écrite par {proprietaire}, remplacé par un bloc réel"
+                   if proprietaire in remplaces else "sans bloc propriétaire")
+                + " : refusée, jamais ignorée en silence")
     regles = {**REGLES_PAR_DEFAUT, **(regles or {})}
     rendus = []
     for radical in RADICAUX:
@@ -462,8 +522,10 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
                    if schema.VARIABLE[nom].proprietaire == radical}
         siennes = {ligne: regle for ligne, regle in (lignes or {}).items()
                    if cat.LIGNE[ligne].proposant == radical}
+        chocs = {plan: choc for plan, choc in (chocs_des_plans or {}).items()
+                 if PLANS_DES_ACHETEURS[plan] == radical}
         classe = classe_d_essai(radical, sentier, echelle=echelle, choc_pi_e=choc_pi_e,
-                                chocs_des_plans=chocs_des_plans, regles=propres,
+                                chocs_des_plans=chocs, regles=propres,
                                 lignes=siennes, declaration=(declarations or {}).get(radical))
         rendus.append(classe())
     return tuple(rendus)
@@ -474,7 +536,8 @@ def blocs_reels() -> tuple[object, ...]:
     radical, dont l'unique classe déclarée sous ce radical est instanciée (ADR 0012, annotation
     du 13/11/2026, point 5 : chaque module porte un seul bloc, dont le radical est le nom du
     module). Au rang 6 de J3-c : la production (#113), le travail (#50), les prix (#51), la
-    banque (#90) et la banque centrale (#91)."""
+    banque (#90) et la banque centrale (#91) ; au rang 3 de J3-d1, les ménages (#60) ; au rang 4,
+    l'investissement (#67)."""
     dossier = RACINE / "src" / "nations" / "blocs"
     rendus = []
     for radical in RADICAUX:
@@ -550,7 +613,7 @@ def ordonnanceur(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE, **options
     """Ordonnanceur du socle partiel d'essai, aux tables de référence par défaut, les tables des
     blocs 7 et 8 alignées sur le sentier ou refusées (R1, `parametres_du_sentier`)."""
     return ordo.assembler(PHASES, blocs(sentier, **options),
-                          parametres_du_sentier(sentier, parametres), SANS_ENTREES)
+                          parametres_du_sentier(sentier, parametres), ENTREES_DU_SOCLE)
 
 
 # --------------------------------------------------------------------------
@@ -578,10 +641,14 @@ def etat_initial(sentier: Sentier, *, echelle: float = 1.0, graine: int = GRAINE
                     **positions, **v_flux, **variables)
 
 
-def derouler(etat: EtatPays, nb_pas: int, o, observateur) -> EtatPays:
-    """Déroule `nb_pas` pas depuis `etat`, sans entrée de tour."""
+def derouler(etat: EtatPays, nb_pas: int, o, observateur,
+             refus_de_credit: Callable[[int], float] | None = None) -> EtatPays:
+    """Déroule `nb_pas` pas depuis `etat` ; `refus_de_credit` : t → ς_{L,t} (scénario de refus de
+    crédit, C31), nulle par défaut."""
     for _ in range(nb_pas):
-        etat = ordo.executer_pas(etat, ENTREES_VIDES, o, observateur)
+        entrees = (ENTREES_SANS_SCENARIO if refus_de_credit is None
+                   else entrees_du_tour(refus_de_credit(etat.t)))
+        etat = ordo.executer_pas(etat, entrees, o, observateur)
     return etat
 
 
@@ -748,6 +815,102 @@ def emission_e3() -> dict:
 
 
 # --------------------------------------------------------------------------
+# Bloc d'essai 9, couverture X4 (P124, rang 5 de J3-d1)
+# --------------------------------------------------------------------------
+
+ETIQUETTE_X4 = "couverture X4 active"
+# φ de la couverture X4 (P124 ; `sec:finances_publiques-stationnaire`, φ = 1).
+PHI_X4 = 1.0
+# Lectures de X4 (ADR 0013, annotation de J3-d1, point 7) : positions d'ouverture de l'assiette,
+# cible en vigueur à l'ouverture, taux du tour de la phase 1.
+LECTURES_DE_X4 = (tuple(Lecture(OUVERTURE, nom) for nom in (
+    "pi_etoile", "B_H", "B_Bk", "B_CB", "L_CB", "Res", "M_G")) + (Lecture("1", "i_CB"),))
+
+
+def couverture_des_interets(vue: ordo.Vue, sentier: Sentier) -> float:
+    """X4 : T^cou_t = φ par_pas(i_CB,t − i_ref,t) A_t, u.m. par pas, φ = 1 (`PHI_X4`) ;
+    i_ref,t = (1 + r̄)(1 + π*_t) − 1, r̄ du sentier (`sentier.par.rbar`), π*_t lue à l'ouverture,
+    i_CB,t lu en phase 1 ; conversion linéaire (`par_pas`, F2). Assiette A_t = B_t − M^G_t −
+    E^CB_t sur les positions d'ouverture, **lue brute** (exception d'identité E4 à A8.2 ; ADR
+    0013, annotation de J3-d1, point 5) ; E^CB = B_CB + L^CB − Res − M^G, sur les quatre positions
+    de la banque centrale, sans lecture de valeur nette (précédent d'E^Bk, P107)."""
+    o = vue.ouverture
+    i_ref = (1.0 + sentier.par.rbar) * (1.0 + o.pi_etoile) - 1.0
+    fonds_propres_cb = o.B_CB + o.L_CB - o.Res - o.M_G
+    assiette = o.B_H + o.B_Bk + o.B_CB - o.M_G - fonds_propres_cb
+    return PHI_X4 * par_pas(TauxDeFlux(vue.lire("i_CB") - i_ref)) * assiette
+
+
+def _impots_avec_couverture(vue: ordo.Vue, sentier: Sentier) -> dict:
+    """Ligne 7 sous X4 : T_H du sentier + T^cou_t (variable du pas `T_cou`, écrite ici) ; T_F du
+    sentier (τ_F = 0, M33)."""
+    t = vue.ouverture.t
+    t_cou = couverture_des_interets(vue, sentier)
+    vue.ecrire_pas("T_cou", t_cou)
+    return {"T_H": sentier.valeur("T_H", NOMINAL, t) + t_cou,
+            "T_F": sentier.valeur("T_F", NOMINAL, t)}
+
+
+def couverture_x4() -> dict:
+    """Options de `blocs` : le bloc d'essai 9 propose la ligne 7 sous la couverture X4 (P124 ; ADR
+    0013, annotation de J3-d1, point 7 ; `CONTEXT.md`, « Couverture X4 »), déclaration d'essai
+    complétée en phase 6 des lectures de X4 (`LECTURES_DE_X4`, celles déjà déclarées pour E2 non
+    répétées) et de la variable du pas `T_cou`. Nulle sur le sentier (i_CB = i_ref), elle referme
+    le canal rentier du banc de stationnarité partielle de J3-d1. Jamais dans le banc de P87 ;
+    refusée sur un bloc 9 réel (`OptionSansBlocDEssai`, par `blocs`) ; composable avec
+    `emission_e3()` par `composer`, dans les deux ordres. Toute mesure faite avec elle porte
+    l'étiquette `ETIQUETTE_X4`."""
+    propre = declaration_d_essai("finances_publiques")
+
+    def completer(siege: Siege) -> Siege:
+        if siege.etape != "6":
+            return siege
+        ajoutees = tuple(x for x in LECTURES_DE_X4 if x not in siege.lit)
+        return replace(siege, ecrit=siege.ecrit + ("T_cou",), lit=siege.lit + ajoutees)
+
+    sieges = tuple(completer(s) for s in propre.sieges)
+    return {"declarations": {"finances_publiques": replace(propre, sieges=sieges)},
+            "lignes": {"7": _impots_avec_couverture}}
+
+
+class OptionsIncompatibles(ValueError):
+    """Refus explicite de `composer` : deux options touchent le même siège d'un même radical, ou
+    la même ligne, ou portent une clé autre que `declarations` et `lignes` ; leur composition
+    dépendrait de l'ordre."""
+
+
+def composer(*options: dict) -> dict:
+    """Composition d'options de `blocs` de la forme d'`emission_e3()` et de `couverture_x4()`
+    (`declarations`, `lignes`). Pour un radical déclaré par plusieurs options, chaque siège est
+    pris de l'unique option qui le modifie par rapport à `declaration_d_essai` ; deux options qui
+    modifient le même siège, ou proposent une règle pour la même ligne, sont refusées
+    (`OptionsIncompatibles`) : le résultat ne dépend donc pas de l'ordre des options."""
+    declarations: dict = {}
+    lignes: dict = {}
+    for option in options:
+        inconnues = sorted(set(option) - {"declarations", "lignes"})
+        if inconnues:
+            raise OptionsIncompatibles(f"clés {inconnues} hors de la composition : refusées")
+        for ligne, regle in option.get("lignes", {}).items():
+            if ligne in lignes:
+                raise OptionsIncompatibles(f"deux règles d'essai pour la ligne {ligne} : refusées")
+            lignes[ligne] = regle
+        for radical, declaration in option.get("declarations", {}).items():
+            propre = declaration_d_essai(radical)
+            courante = declarations.get(radical, propre)
+            sieges = []
+            for base, deja, nouveau in zip(propre.sieges, courante.sieges, declaration.sieges,
+                                           strict=True):
+                if nouveau != base and deja != base:
+                    raise OptionsIncompatibles(
+                        f"deux options modifient le siège {base.etape} du radical {radical} : "
+                        "refusées")
+                sieges.append(nouveau if nouveau != base else deja)
+            declarations[radical] = replace(propre, sieges=tuple(sieges))
+    return {"declarations": declarations, "lignes": lignes}
+
+
+# --------------------------------------------------------------------------
 # Stationnarité partielle étendue (P94, rang 6 de J3-c) : grandeurs des blocs 7 et 8
 # --------------------------------------------------------------------------
 
@@ -821,7 +984,7 @@ def valeurs_resolues_p94(sentier: Sentier) -> dict:
 
 
 # --------------------------------------------------------------------------
-# Grandeurs nulles de P94 en arithmétique exacte (décision D1 du mainteneur du 14/11/2026)
+# Grandeurs nulles calculées : D1 du mainteneur du 14/11/2026 (arithmétique exacte) et P121
 # --------------------------------------------------------------------------
 
 
@@ -837,38 +1000,88 @@ def _taux_de_depot_exact(t) -> Fraction:
             - _exact(t.banque.varpi_D))
 
 
-# Liste déclarée des grandeurs de P94 nulles en arithmétique exacte : clé de `grandeurs_b`,
-# `grandeurs_p94` ou état de P94 → (raison, valeur exacte sur les tables `t`). Une grandeur y
-# est jugée nulle (|x_t| ≤ 1e−12) si et seulement si sa valeur exacte est nulle aux tables de
-# l'essai ; toute autre grandeur est jugée en relatif (1e−9). Le classement ne lit jamais la
-# valeur flottante du script (D1 : i_D à π* = 0 vaut 8,7e−18 au script, 0 en exact).
+# Seuil du test de signe de Res (H) (P121) : L^CB/S^CB du script au moins 1e−6, marge grande
+# devant l'arrondi (0,5 mesuré aux trois π*, avis de `macro`, rang 1a de J3-d1, § 6).
+SEUIL_DU_REFINANCEMENT_NET = 1e-6
+
+
+def _refinancement_net(sentier: Sentier) -> bool:
+    """P121 : banque en refinancement net à l'état résolu, L^CB/S^CB ≥ 1e−6 (script, `e`) ; sous
+    B7 en −min, Res L^CB = 0 exactement, d'où Res = 0. La valeur exacte de Res n'est pas
+    calculable (racines n_a-ièmes de l'état stationnaire) : test de signe à grande marge."""
+    e = sentier.e
+    return e["L_CB"] / script().echelle_CB(e) >= SEUIL_DU_REFINANCEMENT_NET
+
+
+def _stock_au_niveau_vise(sentier: Sentier) -> bool:
+    """P121 : ξ_0 = 1 − IN^vol_0/IN*_0 nul si IN^vol_0 (ouverture) égale au bit IN*_0 (N2 au pas 0
+    du script) ; ξ reste alors nul sur le sentier (IN^vol et IN* au même facteur)."""
+    return float(sentier.o["IN_vol"]) == sentier.s["IN_star"]
+
+
+def _ecart_de_couverture_exact(tables, sentier: Sentier) -> Fraction:
+    """T^cou sur le sentier, en exact : i_CB au point fixe de BC1 sur les tables (r̂* = r̄, π_{t−1}
+    = π*, B2) moins i_ref de X4 sur le sentier (r̄ du script, π* d'ouverture du sentier)."""
+    bc = tables.banque_centrale
+    i_cb = (1 + _exact(bc.r_bar)) * (1 + _exact(bc.pi_etoile))
+    i_ref = (1 + _exact(sentier.par.rbar)) * (1 + _exact(sentier.pi))
+    return i_cb - i_ref
+
+
+# Grandeurs nulles de P94 et de la branche J3-d1 : clé de `grandeurs_b`, `grandeurs_p94` ou d'un
+# état de P94 → (raison, calcul (tables `t`, sentier `s`) → nulle ou non). Une grandeur y est
+# jugée nulle (|x_t| ≤ 1e−12, rapportée à l'échelle indiquée) si et seulement si son calcul la
+# rend nulle ; toute autre grandeur est jugée en relatif (1e−9). D1 : en arithmétique exacte sur
+# les tables, jamais sur la valeur flottante du script (i_D à π* = 0 vaut 8,7e−18 au script, 0 en
+# exact). P121 (rang 5 de J3-d1) : Res (H) et ξ, jusque-là déclarées nulles sans calcul (réserve
+# de la revue finale de J3-c), le sont par un test de signe et une égalité au bit sur l'état
+# résolu du script. Les nullités d'identité (B8, B25, B26, E^CB, résidu de B19) restent
+# déclarées (P141 (b)) : elles ne dépendent que de règles (points fixes de BC1 à BC3, versement
+# entier de Π^CB, identité de bilan de la banque centrale), d'aucun paramètre ni d'aucune valeur
+# du script ; et une déclaration à tort fait échouer le test (la grandeur, jugée à 1e−12 en
+# absolu, n'est alors pas nulle), ce qui va dans le sens prudent.
 GRANDEURS_NULLES = types.MappingProxyType({
     "B7": ("glissement sur 12 tours = π* sur le sentier ; nul à π* = 0",
-           lambda t: _exact(t.banque_centrale.pi_etoile)),
-    "B8": ("π^e = π* sur le sentier (point fixe de BC3, π^e_0 = π̄ = π*)",
-           lambda t: Fraction(0)),
-    "B25": ("r̂* = r̄ sur le sentier (BC2 au point fixe, π_{t−1} = π*)",
-            lambda t: Fraction(0)),
-    "B26": ("i_CB = i^règle (BC1, aucun écart de prescription)", lambda t: Fraction(0)),
-    "xi": ("ξ = 0 à l'état stationnaire (bloc 4)", lambda t: Fraction(0)),
-    "B19 Res (H)": (("Res = 0 : banque en refinancement net, L^CB > 0, B7 en −min ; H = Res, "
-                     "sans billets"), lambda t: Fraction(0)),
+           lambda t, s: _exact(t.banque_centrale.pi_etoile) == 0),
+    "B8": ("π^e = π* sur le sentier (point fixe de BC3, π^e_0 = π̄ = π*)", lambda t, s: True),
+    "B25": ("r̂* = r̄ sur le sentier (BC2 au point fixe, π_{t−1} = π*)", lambda t, s: True),
+    "B26": ("i_CB = i^règle (BC1, aucun écart de prescription)", lambda t, s: True),
+    "xi": ("ξ = 0 : IN^vol_0 égale au bit IN*_0 (N2 au pas 0 du script, P121)",
+           lambda t, s: _stock_au_niveau_vise(s)),
+    "B19 Res (H)": (("Res = 0 : banque en refinancement net, L^CB/S^CB ≥ 1e−6 au script (P121), "
+                     "B7 en −min ; H = Res, sans billets"),
+                    lambda t, s: _refinancement_net(s)),
     "B19 E^CB": ("fonds propres de la banque centrale nuls : Π^CB versé en entier (ligne 16)",
-                 lambda t: Fraction(0)),
+                 lambda t, s: True),
     "B19 B_CB": ("B_CB = θ_CB B (BC5, E10), sans achat (ligne 19b, J6) ; nul sous θ_CB = 0",
-                 lambda t: _exact(t.banque_centrale.theta_CB)),
-    "B19 identité": ("résidu de l'identité L^CB + B_CB = Res + M^G + E^CB",
-                     lambda t: Fraction(0)),
+                 lambda t, s: _exact(t.banque_centrale.theta_CB) == 0),
+    "B19 identité": ("résidu de l'identité L^CB + B_CB = Res + M^G + E^CB", lambda t, s: True),
     "pi_e": ("π^e = π* sur le sentier ; nulle à π* = 0",
-             lambda t: _exact(t.banque_centrale.pi_etoile)),
+             lambda t, s: _exact(t.banque_centrale.pi_etoile) == 0),
     "pi_etoile": ("cible en vigueur π* ; nulle à π* = 0",
-                  lambda t: _exact(t.banque_centrale.pi_etoile)),
+                  lambda t, s: _exact(t.banque_centrale.pi_etoile) == 0),
     "i_D": ("i_D = (1 + r̄)(1 + π*) − 1 − ϖ_D ; nul à π* = 0 parce que r̄ = ϖ_D",
-            _taux_de_depot_exact),
+            lambda t, s: _taux_de_depot_exact(t) == 0),
+})
+
+# Grandeurs nulles propres au banc de la branche J3-d1 (blocs 5 et 6, couverture X4), hors du
+# relevé de P94 (le banc de P87 ne les relève pas) ; même forme que `GRANDEURS_NULLES`. T_F et le
+# terme T_F de la ligne 7 sur τ_F du bloc d'essai 9 (`sentier.par.tau_F`, P121) ; T^cou de X4 en
+# exact (P124), rapportée à S^G.
+GRANDEURS_NULLES_DE_J3D1 = types.MappingProxyType({
+    "T_F_m1": ("τ_F = 0 (M33) : impôt des entreprises retenu nul (P121)",
+               lambda t, s: _exact(s.par.tau_F) == 0),
+    "ligne 7 T_F": ("τ_F = 0 (M33) : terme T_F de la ligne 7 nul (P121)",
+                    lambda t, s: _exact(s.par.tau_F) == 0),
+    "T^cou": ("X4 nulle sur le sentier : i_CB = i_ref en exact (P124)",
+              lambda t, s: _ecart_de_couverture_exact(t, s) == 0),
 })
 
 
-def est_nulle(cle: str, tables) -> bool:
-    """D1 : la grandeur `cle` est nulle en arithmétique exacte aux tables `tables`
-    (`GRANDEURS_NULLES`)."""
-    return cle in GRANDEURS_NULLES and GRANDEURS_NULLES[cle][1](tables) == 0
+def est_nulle(cle: str, tables, sentier: Sentier) -> bool:
+    """D1, P121 : la grandeur `cle` est nulle par le calcul de `GRANDEURS_NULLES` ou de
+    `GRANDEURS_NULLES_DE_J3D1`, aux tables `tables` et sur le sentier `sentier`."""
+    for liste in (GRANDEURS_NULLES, GRANDEURS_NULLES_DE_J3D1):
+        if cle in liste:
+            return bool(liste[cle][1](tables, sentier))
+    return False

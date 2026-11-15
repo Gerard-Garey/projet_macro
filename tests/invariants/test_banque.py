@@ -287,8 +287,8 @@ def test_cablage_des_phases_6_et_8c_hors_du_point_fixe(socle, pi, part):
         assert p["21"] == -o.L_CB and apres.L_CB == 0.0 and apres.Res > 0.0
 
 
-def _sans_plan_de_consommation_au_premier_pas(nom, t):
-    return 0.0 if (nom, t) == ("C_plan", 0) else 1.0
+def _sans_plan_de_consommation_au_premier_pas(t):
+    return 0.0 if t == 0 else 1.0
 
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
@@ -308,7 +308,7 @@ def test_contrat_de_poussiere_dans_le_moteur(socle, pi):
     o = dataclasses.replace(e0, **pos, **v_flux)
     assert o.D_H + 1e-12 * idt.echelle_bilan(pos, "menages") >= 0.0
     _, releve = derouler(socle, sentier, 1, initial=o,
-                         chocs_des_plans=_sans_plan_de_consommation_au_premier_pas)
+                         chocs_des_plans={"C_plan": _sans_plan_de_consommation_au_premier_pas})
     p = releve.pas[0]
     v, table = p["variables"], socle.PARAMETRES_DE_REFERENCE.banque
     i, iL, iD = v["i_CB"] / 12, o.i_L / 12, o.i_D / 12
@@ -508,7 +508,7 @@ def test_phases_lecture_hors_ordre_refusee(socle, etape, lecture, motif):
                                         _fautif(etape, lecture)))
     with pytest.raises(DefautDeDeclaration, match=motif):
         ordo.assembler(socle.PHASES, blocs, socle.parametres_du_sentier(sentier),
-                       socle.SANS_ENTREES)
+                       socle.ENTREES_DU_SOCLE)
 
 
 def test_conversion_des_taux_au_pas_par_la_seule_conversion_lineaire():
