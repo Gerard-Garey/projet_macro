@@ -474,10 +474,6 @@ def test_declaration_conforme_a_tab_finances_publiques_phases():
                for lu in sieges["7"].lit if lu.source == GRAND_LIVRE)
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "#132 : `tab:finances_publiques-phases` omet deux écritures déclarées, `G_vise` (plan non "
-    "plafonné, phase 2) et T_{F,t} (phase 6) ; le commit `docs:` de #132 qui suit les ajoute, et "
-    "le commit `tests:` qui le suit immédiatement retire cette marque"))
 def test_tab_finances_publiques_phases_porte_chaque_ecriture():
     """Lien entre la transcription et la spécification : chaque écriture de variable du pas de
     `TABLEAU_DES_PHASES` figure, sous son écriture `ECRITURES_DU_TABLEAU`, dans la cellule « Le
