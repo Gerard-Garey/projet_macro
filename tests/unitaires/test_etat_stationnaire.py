@@ -869,9 +869,9 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
     """Valeurs en vigueur (spécification et fiches 8 et 9 republiées) : toutes égales à la dernière décimale
     publiée ; aucune valeur barrée n'y figure (catégories B-1 et N en contre-épreuve)."""
     lignes = resultat["publiees"]
-    assert len(lignes) == 440
+    assert len(lignes) == 449
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
-    assert sum(1 for l in lignes if l["categorie"] == "S") == 12
+    assert sum(1 for l in lignes if l["categorie"] == "S") == 20
     assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
     assert [l for l in lignes if l["verdict"] != "égal"] == []
     for l in lignes:
@@ -897,7 +897,7 @@ def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 440 valeurs comparées, 428 égales sur l'état résolu, 12 égales en arithmétique de la "
+    assert ("Bilan : 449 valeurs comparées, 429 égales sur l'état résolu, 20 égales en arithmétique de la "
             "spécification (catégorie S, sans état résolu), aucun écart.") in texte
     assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
