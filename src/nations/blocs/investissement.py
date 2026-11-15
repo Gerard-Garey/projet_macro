@@ -142,6 +142,7 @@ def credit_servi(varsigma_L: float, Delta_L_d: float) -> float:
     """F1 : ligne 18, ΔL_t = (1 − ς_{L,t}) max(ΔL^d_t ; 0) + min(ΔL^d_t ; 0), u.m. par pas ;
     ς_{L,t} part refusée de la hausse demandée (entrée de scénario, nulle hors scénario) ; un
     remboursement est accepté."""
+    # eq:investissement-credit-servi
     return (1.0 - varsigma_L) * max(Delta_L_d, 0.0) + min(Delta_L_d, 0.0)
 
 
