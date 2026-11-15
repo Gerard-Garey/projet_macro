@@ -381,8 +381,11 @@ def test_refus_de_credit(socle, publier):
     de « Monnaie endogène » : ς_L = 0,5 aux tours 1 à 12 (entrée de scénario du tour) :
     - ligne 18 = (1 − ς_L) max(ΔL^d ; 0) + min(ΔL^d ; 0), exacte, à chaque tour ; demande non
       satisfaite ΔL^d − ΔL publiée ;
-    - effet sur Div_F, en unités du crédit nouveau de base, aux tours 1 à 3 (repères de la fiche
-      7 : −50, −25 et −13 %) et rebond au tour 13 publiés, sans verdict ;
+    - effet sur Div_F, en unités du crédit nouveau de base du même pas, publié sans verdict à
+      chaque pas des 40 (repères de la fiche 7 aux tours 1 à 3 : −50, −25 et −13 %), avec le
+      rebond à la levée (pas 13), le creux qui suit et le plus grand écart des pas 24 à 39 ;
+      revenu de dividendes des ménages (lignes 14 + 15), même unité, aux pas 1 et 13 (pièce des
+      chiffres de `sec:banque`, effet du refus de crédit) ;
     - part directe du refus, Δligne 18/ΔL_base, publiée (−0,5 au tour 1, puis (1 − ς_L) fois une
       demande qui a changé) ;
     - « Monnaie endogène », partie ς_L ≠ 0 : à la clôture de la phase 3, la variation de
@@ -397,7 +400,8 @@ def test_refus_de_credit(socle, publier):
     nb = 40
     _, base = derouler(socle, sentier, nb)
     _, refus = derouler(socle, sentier, nb, refus=_refus)
-    lignes = []
+    lignes, effets = [], []
+    debut, levee = min(TOURS_DU_REFUS), max(TOURS_DU_REFUS) + 1
     actifs = {"Div_F": [], "D_F": [], "Div_Bk": []}
     for t, (a, b) in enumerate(zip(base.pas, refus.pas, strict=True)):
         demande = b["variables"]["Delta_L_d"]
@@ -410,13 +414,26 @@ def test_refus_de_credit(socle, publier):
             actifs["D_F"].append(t)
         if b["15"] == 0.0:
             actifs["Div_Bk"].append(t)
-        if t in (1, 2, 3, 13):
-            effet = (b["14"] - a["14"]) / a["18"]
-            directe = (b["18"] - a["18"]) / a["18"]
-            lignes.append(f"tour {t} : ς_L = {_refus(t)} ; demande non satisfaite "
-                          f"{demande - b['18']:.6g} ; Δligne 18/ΔL_base = {directe:+.3f} ; "
-                          f"ΔDiv_F/ΔL_base = {effet:+.1%}")
-    lignes.append(f"bornes actives (tours) : {actifs}")
+        # Publication sur toute la trajectoire, en unités du crédit nouveau de base du même pas
+        # (ligne 18 de la base) : effet sur Div_F (ligne 14) et part directe (ligne 18) ; revenu
+        # de dividendes des ménages (lignes 14 + 15) au premier pas du refus et au pas de levée.
+        effet = (b["14"] - a["14"]) / a["18"]
+        effets.append(effet)
+        directe = (b["18"] - a["18"]) / a["18"]
+        ligne = (f"pas {t} : ς_L = {_refus(t)} ; demande non satisfaite "
+                 f"{demande - b['18']:.6g} ; Δligne 18/ΔL_base = {directe:+.3f} ; "
+                 f"ΔDiv_F/ΔL_base = {effet:+.1%}")
+        if t in (debut, levee):
+            menages = (b["14"] + b["15"] - a["14"] - a["15"]) / a["18"]
+            ligne += f" ; Δ(lignes 14 + 15)/ΔL_base (ménages) = {menages:+.1%}"
+        lignes.append(ligne)
+    creux = min(range(levee + 1, nb), key=lambda t: effets[t])
+    queue = range(24, nb)  # fenêtre de queue publiée par `sec:banque` (pas 24 à 39)
+    pire = max(abs(effets[t]) for t in queue)
+    lignes.append(f"après la levée : creux de ΔDiv_F/ΔL_base au pas {creux} "
+                  f"({effets[creux]:+.1%}) ; |ΔDiv_F/ΔL_base| ≤ {pire:.1%} des pas {queue[0]} à "
+                  f"{queue[-1]}")
+    lignes.append(f"bornes actives (pas) : {actifs}")
     publier(f"Fiche 7, refus de crédit ς_L = 0,5 aux tours 1 à 12 ({ETIQUETTES} ; montants "
             "sans verdict)", lignes)
     fin = max(TOURS_DU_REFUS)
@@ -729,9 +746,13 @@ def test_endettement_sous_un_taux_releve_de_deux_points(endettement, publier):
             servis += 1
             pire_levier = max(pire_levier, ecart(e.L / e.K, TABLE.lv_etoile))
     depots, forme = endettement["depots"], endettement["forme"]
+    # Dernier pas du relevé (dépôts d'ouverture de ce pas, `endettement`), séparateur de milliers
+    # à l'espace.
+    dernier = f"{NB_PAS_DE_L_ENDETTEMENT - 1:_}".replace("_", " ")
     publier("Bloc 6, endettement, i_L + 2 points permanent (blocs 2 à 6 réels, taux exogène)", [
         f"levier : {pire_levier:.1e} rel. sur {servis} pas servis (seuil 1e−12) ; Div_F > 0 à "
-        f"chaque pas ; D_F/(n_a PIB) au pas 2 159 : {depots:.9f}, forme fermée {forme:.9f}, "
+        f"chaque pas ; D_F/(n_a PIB) au pas {dernier} : {depots:.9f}, "
+        f"forme fermée {forme:.9f}, "
         f"écart {ecart(depots, forme):.1e} (seuil 1e−6 ; verdict : test suivant)"])
     assert servis > 0 and pire_levier <= SEUIL_LEVIER
 
