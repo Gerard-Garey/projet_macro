@@ -556,6 +556,10 @@ REFUS_D_ASSEMBLAGE = {
                                      "champ inconnu"),
     "lecture inconnue du registre": (_retirer("prix", "5", "lit", (Lecture(REGISTRE, "P"),)),
                                      "inconnue du registre"),
+    # Lecture retirée faute de lecteur à la fin du rang 3 (#106, P51).
+    "variation sur le tour retirée": (
+        _retirer("prix", "5", "lit", (Lecture(REGISTRE, "variation_sur_le_tour"),)),
+        "inconnue du registre"),
     "source inconnue": (_retirer("prix", "5", "lit", (Lecture("6b", "P"),)), "source"),
     "phase hors de la colonne Lisent": (
         _retirer("investissement", "3", "lit", (Lecture("1", "i_CB"),)),

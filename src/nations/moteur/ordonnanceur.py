@@ -515,10 +515,6 @@ class Vue:
                               "(précondition de BC3 ; refus, jamais écrêtage)", "glissement")
         return pi
 
-    def variation_sur_le_tour(self) -> float:
-        """Variation de l'indice sur le dernier tour clos, lue sur le registre d'ouverture."""
-        return registre.variation_sur_le_tour(self._pas.etat.registre_prix)
-
 
 # --------------------------------------------------------------------------
 # Assemblage (B3)

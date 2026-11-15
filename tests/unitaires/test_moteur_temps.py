@@ -360,11 +360,10 @@ def niveaux(pi_barre, dernier=1.0):
 
 
 def test_lectures_du_registre():
-    """dernier prix P_{t−1} ; glissement P_{t−1}/P_{t−13} − 1 ; variation sur le tour P_{t−1}/P_{t−2} − 1."""
+    """dernier prix P_{t−1} ; glissement P_{t−1}/P_{t−13} − 1."""
     r = tuple(float(100 - u) for u in range(1, 14))
     assert registre.dernier_prix(r) == 99.0
     assert registre.glissement(r) == 99.0 / 87.0 - 1.0
-    assert registre.variation_sur_le_tour(r) == 99.0 / 98.0 - 1.0
 
 
 @pytest.mark.parametrize("pi_barre", [0.0, 0.02, 0.10])
@@ -383,7 +382,7 @@ def test_avancer_copie_sans_calcul():
 
 @pytest.mark.parametrize("registre_faux", [(1.0,) * 12, (1.0,) * 14, [1.0] * 13])
 def test_registre_de_mauvaise_forme_refuse(registre_faux):
-    for fonction in (registre.dernier_prix, registre.glissement, registre.variation_sur_le_tour):
+    for fonction in (registre.dernier_prix, registre.glissement):
         with pytest.raises(ValueError):
             fonction(registre_faux)
     with pytest.raises(ValueError):
