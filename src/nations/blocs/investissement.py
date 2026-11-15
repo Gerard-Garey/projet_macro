@@ -50,7 +50,8 @@ l'arrondi (c < 1 par le domaine de δ, I_t ≥ 0 par S4 et N6).
   (phase 4), tu*_t (phase 2) ; propose la ligne 3 (S5) ; écrit ti_{t+1} (S6) et y_t, retenue
   comme `y_m1` ;
 - phase 6 : lit l'ouverture (K, L, D_F, i_L, i_D, T_{F,t−1}), le registre, les grandeurs du
-  moteur (Γ^e, π^{∗,pas}), les montants exécutés des lignes 18, 5, 1 et 2 et v^e_{t+1}
+  moteur (Γ^e, π^{∗,pas}), les montants exécutés des lignes 18, 5, 1 et 2 dans la colonne des
+  entreprises (cellules signées, engagement 6 de #132) et v^e_{t+1}
   (`v_e_suivant`, phase 5) ; S7, F2, F4, F3 ; écrit `D_etoile_F` et `T_e_F`, propose les
   lignes 8 et 14 ; ne lit ni l'impôt ni les intérêts exécutés du pas ;
 - phase 9, groupe des blocs (M29) : lit au grand livre le montant exécuté de la ligne 7 dans la
@@ -171,6 +172,13 @@ def dividendes(D_F: float, Delta_L: float, C: float, G: float, WB: float, intere
     return max(0.0, D_F + Delta_L + C + G - WB - interets_L + interets_D_F - T_e_F - D_etoile_F)
 
 
+def sortie(cellule: float) -> float:
+    """Montant d'une sortie lue dans la colonne des entreprises : opposé de la cellule signée
+    (débit, −x), écrit 0,0 − cellule comme `impot_retenu` ; exact (l'opposé d'un flottant l'est).
+    Lecture, non une équation."""
+    return 0.0 - cellule
+
+
 def impot_retenu(cellule_7_F: float) -> float:
     """T_{F,t} retenu comme T_{F,t−1} du pas suivant (M29) : opposé du montant exécuté de la
     ligne 7 dans la colonne courante des entreprises (−T_F), écrit 0,0 − cellule pour rendre
@@ -265,11 +273,16 @@ class Investissement:
         vue.ecrire_pas("D_etoile_F", D_etoile_F)
         vue.ecrire_pas("T_e_F", T_e_F)
         vue.proposer("8", {"deltaK": amortissement(par_pas(table.delta), vue.ouverture.K)})
+        # Engagement 6 de #132 (ADR 0013, annotation du 15/11/2026 (J3-d2), point 7) : chaque
+        # montant est lu dans la cellule des entreprises (`montant_execute`, signée : + crédité, −
+        # débité), sous-colonne capital pour la ligne 18, courante pour les lignes 1, 2 et 5 ;
+        # la sortie WB en est l'opposé (`sortie`).
         vue.proposer("14", {"Div_F": dividendes(
-            D_F, vue.grand_livre.montant_execute_ligne("18"),
-            vue.grand_livre.montant_execute_ligne("1"), vue.grand_livre.montant_execute_ligne("2"),
-            vue.grand_livre.montant_execute_ligne("5"), interets_L, interets_D_F, T_e_F,
-            D_etoile_F)})
+            D_F, vue.grand_livre.montant_execute("18", "entreprises_capital"),
+            vue.grand_livre.montant_execute("1", "entreprises_courant"),
+            vue.grand_livre.montant_execute("2", "entreprises_courant"),
+            sortie(vue.grand_livre.montant_execute("5", "entreprises_courant")), interets_L,
+            interets_D_F, T_e_F, D_etoile_F)})
 
     def phase_9(self, vue) -> None:
         """Impôt des entreprises exécuté du pas, retenu pour le pas suivant (M29)."""

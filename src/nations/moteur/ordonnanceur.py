@@ -199,10 +199,16 @@ def _part_dans_l_intervalle_unite(valeur: object) -> bool:
 # Liste fermée des domaines des entrées de scénario (P138, sur le modèle de `DOMAINES_DU_PAS`,
 # P129), contrôlée par le moteur à la publication en phase 0, avant le refus générique de
 # finitude. ς_{L,t} : part refusée de la hausse de crédit demandée (`sec:banque-offre` ; F1) ;
-# ς_B viendra avec le bloc 9. Une entrée hors de la liste n'a que le contrôle générique.
+# ς_{B,t} : part non souscrite du reliquat de l'émission (`sec:banque-placement` ; E11 ;
+# engagement 5 de #132, ADR 0013, annotation du 15/11/2026 (J3-d2), point 3), sous la même
+# forme, rachat (Em < 0) compris (P159). Une entrée hors de la liste n'a que le contrôle
+# générique.
 DOMAINES_DES_ENTREES: Mapping[str, DomaineDuPas] = MappingProxyType({
     "varsigma_L": DomaineDuPas(
         "part refusée 0 ≤ ς_L ≤ 1, finie (P138 ; refus, jamais écrêtage)",
+        _part_dans_l_intervalle_unite),
+    "varsigma_B": DomaineDuPas(
+        "part non souscrite 0 ≤ ς_B ≤ 1, finie (P138 ; refus, jamais écrêtage)",
         _part_dans_l_intervalle_unite),
 })
 
