@@ -2,7 +2,9 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; l'historique (fiches des branches fusionnées, relevés d'issues antérieurs, décisions sans numéro M, points P1 à P73 et D1 à D13, détail des branches fusionnées jusqu'à J3-a) est dans `docs/feuille-de-route-historique.md`, sans rien supprimé ni réécrit ; partie B (14/11/2026, rang 9 de J3-c) : P74 à P86, pistes du § 5, branches fusionnées jusqu'à J3-a. Partie C (14/11/2026, après la fusion de la PR #129) : fiche de J3-c, relevé d'issues du 14/11/2026 après la PR #117, P87 à P99, points ouverts du rang 9. Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » se lit dans l'historique, partie A, au même §.
 
-**Dernière mise à jour** : 14/11/2026, point d'étape après la fusion de la PR #129 (`architect-approfondi`) — `main` = `731aac3` (commit de fusion, parents `6a22d39` et `6632dce`) ; aucune branche de travail ouverte ; J3-c consignée (§ 7) ; découpage de J3-d proposé (§ 1, § 2), décisions P111 à P118 (§ 4) ; fiche de J3-c, relevé du 14/11/2026 après la PR #117, P87 à P99 sortis vers l'historique, partie C (P76).
+**Dernière mise à jour** : 15/11/2026, fin des rangs 4 et 5 de J3-d1 (session) — branche `claude/j3-menages-investissement` ; état au § 1, décisions P130 à P141 au § 4.
+
+**Mise à jour précédente** : 14/11/2026, point d'étape après la fusion de la PR #129 (`architect-approfondi`) — `main` = `731aac3` (commit de fusion, parents `6a22d39` et `6632dce`) ; aucune branche de travail ouverte ; J3-c consignée (§ 7) ; découpage de J3-d proposé (§ 1, § 2), décisions P111 à P118 (§ 4) ; fiche de J3-c, relevé du 14/11/2026 après la PR #117, P87 à P99 sortis vers l'historique, partie C (P76).
 
 **Mise à jour précédente du même jour** : 14/11/2026, rang 9 de J3-c (consignation de fin de branche) — `main` = `6a22d39` ; branche `claude/j3-monnaie`, tête `aebbd1d` ; rangs 2 à 8 faits ; décisions P100 à P110 (§ 4) ; ADR 0013, annotation de consignation du 14/11/2026 ; P74 à P86 et branches fusionnées jusqu'à J3-a sorties vers l'historique, partie B (P76).
 
@@ -38,6 +40,11 @@ Aucune depuis la fusion de la PR #129 (J3-c, 14/11/2026, commit de fusion `731aa
 | 8 | Consignation (fiches 5 et 6 « implémentées »), validation, fusion | `architect`, mainteneur | — |
 
 Ordre : #124 → #60 → #67 ; #123 avec #67 (S6 lit tu).
+
+**État au 15/11/2026, fin de la session des rangs 4 et 5 (P132)** — branche `claude/j3-menages-investissement`, tête avant ce commit `ea2e0da` :
+- **fait** : rang 0 (`49fba27`) ; 1a (P119 à P126, `76a3418`, `50c55f0`) ; 1b (`3bd971e`, P127 à P129) ; 2, #124 (`5e0b3bc`, `ff3a9e3`) ; 3, #60 (`b449597` ; P130, P131) ; 4, #67 (`e0503f2` ; P138 à P140) ; 5, mesures (`ea2e0da` ; P141) ;
+- **verdicts** : critère « Branche » **tenu** sur le banc X4 seule aux trois π\* (pire relatif 1,8e−12, pire nulle 1,8e−14) ; sans X4, 3,7e−8 à 10 % sur le moteur (canal rentier confirmé) ; « Vitesses » de la fiche 5 non tenu en relatif, tenu sous P130 ; « Endettement, dépôts » de la fiche 6 non tenu (#139) ; bornes (c) de la fiche 6 sans violation, dimensionnement réservé (#140) ; parts P57 ≤ 0,029 ms hors plateforme de référence ;
+- **reste** : rangs 6 (`docwriter`, concordance de 57 à 76 labels), 7 (revue finale complète) et 8 (consignation, fusion) ; décisions « à confirmer » P138, P139, P141 ; décisions réservées #139, #140.
 
 **Critères d'acceptation, écrits avant l'essai** (précisés au rang 1a, jamais après une mesure) :
 - **#124** : la voie retenue refuse (exception typée, jamais écrêtage) un plan C_plan, I_plan ou G_plan négatif et d < 0, sur le cas de l'issue (C_plan = −1,0) et sur un lot adverse ; trajectoires de la référence identiques au bit (tableau avant / après sans ligne).
