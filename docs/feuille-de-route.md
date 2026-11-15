@@ -2,17 +2,17 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; l'historique (fiches des branches fusionnées, relevés d'issues antérieurs, décisions sans numéro M, points P1 à P73 et D1 à D13, détail des branches fusionnées jusqu'à J3-a) est dans `docs/feuille-de-route-historique.md`, sans rien supprimé ni réécrit ; partie B (14/11/2026, rang 9 de J3-c) : P74 à P86, pistes du § 5, branches fusionnées jusqu'à J3-a. Partie C (14/11/2026, après la fusion de la PR #129) : fiche de J3-c, relevé d'issues du 14/11/2026 après la PR #117, P87 à P99, points ouverts du rang 9. Partie D (15/11/2026, rang 8 de J3-d1) : mises à jour de la tête du 13/11 au 14/11/2026 (rang 9 de J3-c), plan de J3-d1 (rangs 0 à 8), P100 à P118, points ouverts au 14/11/2026 après la PR #129, lignes du § 7 de la PR #118 à la PR #128. Partie E (15/11/2026, point d'étape après la fusion de la PR #136) : mises à jour de la tête du 14/11/2026 après la PR #129 et du 15/11/2026 (rangs 4 et 5 de J3-d1), fiche de J3-d1, relevé d'issues du 14/11/2026 après la PR #129, P119 à P146, points ouverts du rang 8 de J3-d1. Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » se lit dans l'historique, partie A, au même §.
 
-**Dernière mise à jour** : 15/11/2026, point d'étape après la fusion de la PR #136, rang 0 de J3-d2 (`architect-approfondi`) — `main` = `30078bb` (commit de fusion, parents `731aac3` et `1e7f736`) ; branche de travail `claude/j3-finances-publiques`, créée depuis `30078bb`, sans PR à cette date ; J3-d1 consignée (§ 2, § 6, § 7) ; plan de J3-d2 proposé (§ 1) ; questions Q1 à Q10 proposées, à décider (§ 4) ; fiche de J3-d1, relevé du 14/11/2026 après la PR #129, P119 à P146 sortis vers l'historique, partie E (P76).
+**Dernière mise à jour** : 15/11/2026, point d'étape après la fusion de la PR #136, rang 0 de J3-d2 (`architect-approfondi`) — `main` = `30078bb` (commit de fusion, parents `731aac3` et `1e7f736`) ; branche de travail `claude/j3-finances-publiques`, créée depuis `30078bb`, sans PR à cette date ; J3-d1 consignée (§ 2, § 6, § 7) ; plan de J3-d2 proposé (§ 1) ; questions Q1 à Q10 tranchées le même jour par le mainteneur (P147 à P155, § 4) ; PR brouillon #146 ; fiche de J3-d1, relevé du 14/11/2026 après la PR #129, P119 à P146 sortis vers l'historique, partie E (P76).
 
 **Mise à jour précédente** : 15/11/2026, rang 8 de J3-d1 (consignation avant la sortie du brouillon, `architect`) — `main` = `731aac3` ; branche `claude/j3-menages-investissement`, tête `414a8a4` (PR #136) ; état au § 1 ; décisions P142 à P146 au § 4 ; P100 à P118 sortis vers l'historique, partie D (#119, P76). Mises à jour plus anciennes : historique, partie E, en-tête, puis partie D, en-tête, puis historique de Git (`git log -- docs/feuille-de-route.md`).
 
 ## 1. Branche de travail en cours
 
-**J3-d2** (`claude/j3-finances-publiques`, créée depuis `main` à `30078bb` ; PR brouillon à ouvrir au rang 0) : plan **proposé** ci-dessous, à décider par le mainteneur (Q1 et Q9, § 4). Fiche de J3-d1, figée à la fusion de la PR #136 : historique, partie E, § 1.
+**J3-d2** (`claude/j3-finances-publiques`, créée depuis `main` à `30078bb` ; PR brouillon #146) : plan ci-dessous, **décidé** par le mainteneur le 15/11/2026 (P147, P155, § 4). Fiche de J3-d1, figée à la fusion de la PR #136 : historique, partie E, § 1.
 
-### Plan proposé pour J3-d2 « finances publiques » (`claude/j3-finances-publiques`) — collision des identifiants (#133), module du bloc 9 (#132), variation sur le tour (#106), test de source (#101), encadré des vitesses (#134)
+### Plan de J3-d2 « finances publiques » (`claude/j3-finances-publiques`) — collision des identifiants (#133), module du bloc 9 (#132), variation sur le tour (#106), test de source (#101), encadré des vitesses (#134)
 
-*Proposé par `architect-approfondi` le 15/11/2026 (point d'étape après la PR #136) ; à décider (Q1 à Q10, § 4).*
+*Proposé par `architect-approfondi` le 15/11/2026 (point d'étape après la PR #136) ; décidé par le mainteneur le même jour (P147 à P155, § 4).*
 
 - **Issues avec `Closes`** (P113, inchangé) : #133, #132, #106, #101, #134. Rattachés à #132 sans issue propre : les six engagements reportés par J3-d1 (commentaire du 15/11/2026 sur #132) ; les lignes (c) des fiches 5 et 6 qui portent sur une règle du bloc 9 (P122) ; les lignes renvoyées depuis les fiches 7 et 8 (P90 : placement raté ; couverture et C60 de la ligne « Perte » ; lecture de Π^CB en 8b pour la ligne 16 et en phase 7 pour l'émission) ; le double appel de `besoin_d_emission` (bloc d'essai 9).
 - **Hors périmètre**, motifs au § 3 et en Q2 à Q6 : #143 (bloc 6 ; son option (3) rouvre M28) ; #139 et #140 (critères de la fiche 6, décisions réservées, P140, P141) ; #137, #142, #144 (forme du code, sans effet sur les trajectoires).
@@ -70,10 +70,10 @@ Les branches fusionnées sont au § 7. J3-d2 à J3-g sont indicatives (P39 (a), 
 | 7 | J3-b `claude/j3-economie-reelle` | #112, #113, #50, #51, #104 | **Fusionnée le 14/11/2026** (PR #117, `688f299`) : § 7. |
 | 8 | J3-c `claude/j3-monnaie` | #119, #121, #61, #91, #90 avec `Closes` ; #80 sans `Closes` | **Fusionnée le 14/11/2026** (PR #129, `731aac3`) : § 7. |
 | 9 | J3-d1 `claude/j3-menages-investissement` | #124, #60, #67, #123, #103 ; rattachés : domaine de K et table du bloc 6 (P80), lignes (c) des fiches 7 et 8 à un bloc près (P90) | **Fusionnée le 15/11/2026** (PR #136, `30078bb`) : § 7. |
-| 10 | **J3-d2 `claude/j3-finances-publiques` (plan proposé, Q1, Q9)** | #133, #132, #106, #101, #134 ; rattachés : six engagements de J3-d1 (sur #132), lignes (c) des fiches 5 et 6 (P122) et des fiches 7 et 8 (P90), double appel de `besoin_d_emission` | Bloc 9 ; première exécution du socle complet. Plan, critères écrits avant l'essai et conditions d'arrêt au § 1 (15/11/2026). |
-| 10 bis | forme du code `claude/j3-forme-du-code` (proposée, Q5) | #137, #142, #144 | Circuit 3 (workflow `circuit-technique`) ; trajectoires identiques au bit, mesure P57 avant / après sur le socle complet. Après J3-d2, avant la calibration. |
+| 10 | **J3-d2 `claude/j3-finances-publiques` (décidée, P147, P155 ; PR #146)** | #133, #132, #106, #101, #134 ; rattachés : six engagements de J3-d1 (sur #132), lignes (c) des fiches 5 et 6 (P122) et des fiches 7 et 8 (P90), double appel de `besoin_d_emission` | Bloc 9 ; première exécution du socle complet. Plan, critères écrits avant l'essai et conditions d'arrêt au § 1 (15/11/2026). |
+| 10 bis | forme du code `claude/j3-forme-du-code` (décidée, P151) | #137, #142, #144 | Circuit 3 (workflow `circuit-technique`) ; trajectoires identiques au bit, mesure P57 avant / après sur le socle complet. Après J3-d2, avant la calibration. |
 | 11 | calibration (P43 (a), confirmée, P115) | #45, #55, #62, #92, #130 (P98) | Sources lues, visa ; après J3-d2, avant J3-e. |
-| 12 | J3-e `claude/j3-socle` (indicative, P61) | `scenarios/` (à rédiger), observation et #115, test zéro (à rédiger), #114 (avec #131), #120, #122, #125 (points 3 à 6) ; proposé : #139, #140 (Q3, Q4) | État initial résolu ; critères A1, A2, B, C1, F, I1. |
+| 12 | J3-e `claude/j3-socle` (indicative, P61) | `scenarios/` (à rédiger), observation et #115, test zéro (à rédiger), #114 (avec #131), #120, #122, #125 (points 3 à 6) ; #139, #140 (P149, P150) | État initial résolu ; critères A1, A2, B, C1, F, I1. |
 | 13 | J3-f « stabilité et trajectoires » (indicative, P61) | S1 et S2 (à rédiger), #87, #88, #111, #116, #125 (point 2) | Linéarisation sur le moteur, trajectoires après chocs. |
 | 14 | J3-g « budget, références, passage » (indicative, P61) | #110, G1 (à rédiger), références (à rédiger) | Dix exécutions, premières références, passage de J3. |
 
@@ -104,7 +104,7 @@ Point ouvert pour J3-e, non tranché : la façon dont `scenarios/` résout l'ét
 | #106 | Consommateur de `variation_sur_le_tour` | **J3-d2, rang 4** (P51) | retrait sauf consommateur déclaré, constaté après #132 |
 | #108 | Identifiants Cn et Co | J5 | P46 (a) |
 | #110 | Processeur de l'exécuteur en CI | J3-g (P60) | inchangé |
-| #114 | Critère I1 : lignes « J3 » au socle complet | J3-e | reçoit la mesure de #131, les lignes (c) des fiches 5 et 6 (P122) et, proposé, l'exécution de #139 et #140 (Q3, Q4) |
+| #114 | Critère I1 : lignes « J3 » au socle complet | J3-e | reçoit la mesure de #131, les lignes (c) des fiches 5 et 6 (P122) et l'exécution de #139 et #140 (P149, P150) |
 | #115 | Radical `observation` | J3-e | renvois de la spécification vérifiés par #134 |
 | #120 | `Cadre` à n_a ≠ 12 | J3-e (P82) | option (a) |
 | #122 | IN^vol = 0 ⇒ IN = 0 à l'état chargé | J3-e (P84) | inchangé |
@@ -114,16 +114,16 @@ Point ouvert pour J3-e, non tranché : la façon dont `scenarios/` résout l'ét
 | #133 | Collision E1–E3 / E1–E13 | **J3-d2, rangs 2 et 6**, avant #132 (P114) | X1 à X3, X4 déjà nommée (P124) |
 | #134 | Encadré des vitesses, mentions de `scenarios/` | **J3-d2, rang 6** (P113) | `docwriter` seul |
 | #135 | `tab:phases` et levier de taux au J4 | J4 | recoupe #54, #56 |
-| #137, #142, #144 | Refus génériques sans étape ; localité de la lecture nette ; travail redondant du chemin chaud | proposé : branche technique « forme du code » après J3-d2 (Q5) | trajectoires identiques au bit ; mesure P57 avant / après ; le bloc 9 suit d'emblée la règle de #142 (critère de #132) |
-| #139 | Critère « Endettement, dépôts » de la fiche 6 | décision du mainteneur (P140, Q3) ; exécution proposée en J3-e | échec attendu strict ; banc à blocs d'essai de banque et de banque centrale |
-| #140 | Bornes (c) de la fiche 6 | décision du mainteneur (P141, Q4) ; exécution proposée en J3-e | test du refus de la moitié du crédit (C31) dans les deux options |
+| #137, #142, #144 | Refus génériques sans étape ; localité de la lecture nette ; travail redondant du chemin chaud | branche technique « forme du code » après J3-d2 (P151) | trajectoires identiques au bit ; mesure P57 avant / après ; le bloc 9 suit d'emblée la règle de #142 (critère de #132) |
+| #139 | Critère « Endettement, dépôts » de la fiche 6 | voie (ii) décidée (P149) ; exécution en J3-e | échec attendu strict ; banc à blocs d'essai de banque et de banque centrale |
+| #140 | Bornes (c) de la fiche 6 | voie (i) décidée (P150) ; exécution en J3-e | test du refus de la moitié du crédit (C31) dans les deux options |
 | #141 | Restitution du refus de crédit | J4 (Q6) | avec #70 ; mesure de `macro` en commentaire |
 | #143 | S6 : ti = 0 au-delà d'une frontière | hors J3-d2 ; décision du mainteneur avant le J4 (Q2) | bloc 6 ; option (3) rouvre M28 ; question à `monnaie` sur la caisse des entreprises sans réponse |
 | #145 | Condition du coefficient de richesse sur π\* de la table | J4, avec le levier de cible (#54) (Q6) | déclaré par la spécification ; acceptable en J3 (`macro`) |
 
 **Points ouverts sans issue** : mutant équivalent B_Bk/Res dans B5, à rouvrir avec le corridor (J6, P116) ; deux appels de `besoin_d_emission` par pas (bloc d'essai 9) → #132 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; taille de l'ADR 0013 (Q8).
 
-**Dépendances** (15/11/2026, après la PR #136). **Ajoutées** (proposées) : #132 → #106 ; #132 (localité de la lecture nette du bloc 9) → #142 ; J3-d2 → forme du code (#137, #142, #144 : mesure P57 sur le socle complet) ; #143 → domaine du levier de taux (J4) et #55 (ζ calibré) ; avis de `monnaie` sur la caisse des entreprises → #143 ; socle complet (J3-d2) → #139 (banc sans blocs d'essai) ; #145 → #54 ; #141 → J4 (avec #70). **Retirées** : J3-d1 → #101 ; #103 → #132 (#103 fermée, critère de M^G corrigé, P125) ; #124 → blocs acheteurs réels et #60 → #67 (issues fermées). **Inchangées** : #133 → #132 ; achèvement des blocs du socle → #106 ; engagements de J3-d1 → #132 ; #131 → #114 ; branche de calibration → J3-e ; #116 → #111 ; #89 → #88.
+**Dépendances** (15/11/2026, après la PR #136). **Ajoutées** (décidées, P147 à P152) : #132 → #106 ; #132 (localité de la lecture nette du bloc 9) → #142 ; J3-d2 → forme du code (#137, #142, #144 : mesure P57 sur le socle complet) ; #143 → domaine du levier de taux (J4) et #55 (ζ calibré) ; avis de `monnaie` sur la caisse des entreprises → #143 ; socle complet (J3-d2) → #139 (banc sans blocs d'essai) ; #145 → #54 ; #141 → J4 (avec #70). **Retirées** : J3-d1 → #101 ; #103 → #132 (#103 fermée, critère de M^G corrigé, P125) ; #124 → blocs acheteurs réels et #60 → #67 (issues fermées). **Inchangées** : #133 → #132 ; achèvement des blocs du socle → #106 ; engagements de J3-d1 → #132 ; #131 → #114 ; branche de calibration → J3-e ; #116 → #111 ; #89 → #88.
 
 ## 4. Décisions du mainteneur
 
@@ -175,9 +175,9 @@ M1 à M19 sont datées du 29/09/2026, M20 à M23 du 30/09/2026, M24 du 02/10/202
 
 **Décisions du mainteneur du 14/11/2026 au rang 1a de J3-d1 (P119 à P141) et du 15/11/2026 (P142 à P146)** : historique, partie E, § 4 (sorties de la tête le 15/11/2026, point d'étape après la fusion de la PR #136, texte inchangé), en vigueur ; le plan de J3-d2 cite P121, P122, P124, P125, P127, P129, P133 à P138, P140, P141 et P145.
 
-### Questions au mainteneur du 15/11/2026 (point d'étape après la PR #136) : proposées, à décider
+### Questions au mainteneur du 15/11/2026 (point d'étape après la PR #136) et décisions P147 à P155
 
-Posées par `architect-approfondi` au rang 0 de J3-d2. **Aucune n'est décidée** ; les numéros P147 et suivants ne seront attribués qu'aux décisions prises.
+Posées par `architect-approfondi` au rang 0 de J3-d2 (`6e8b9e2`) ; tranchées par le mainteneur le 15/11/2026, toutes selon l'avis d'`architect` (tableau des décisions sous celui des questions).
 
 | N° | Question | Options | Avis d'`architect` |
 |---|---|---|---|
@@ -192,7 +192,19 @@ Posées par `architect-approfondi` au rang 0 de J3-d2. **Aucune n'est décidée*
 | Q9 | Plan de J3-d2 (§ 1) : rangs, critères, conditions d'arrêt, classement proposé du § 9.6 | approuver ; amender | Approuver ; le classement est confirmé ou corrigé par `macro` au rang 1a, avant tout essai. |
 | Q10 | Rappel : #11, #14 (mainteneur, hors branche) | — | Sans décision. |
 
-**Points ouverts au 15/11/2026, après la fusion de la PR #136** : Q1 à Q10 ; PR brouillon de J3-d2 à ouvrir ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61).
+| N° | Date | Décision | Question |
+|---|---|---|---|
+| P147 | 15/11/2026 | Périmètre de J3-d2 avec `Closes` : #133, #132, #106, #101, #134 (P113 maintenue). | Q1 (a) |
+| P148 | 15/11/2026 | #143 hors de J3-d2 ; voie retenue : borne de domaine du taux réel du crédit, liée au domaine du levier de taux (J4) ; instruction par `monnaie` et `macro` hors branche, avant la branche de calibration ; M28 n'est pas rouverte. | Q2 (1) |
+| P149 | 15/11/2026 | #139 : critère « Endettement, dépôts » de la fiche 6 corrigé par un horizon de 20 demi-vies de la racine dominante (valeur propre publiée 0,99720, H ≈ 4 944 pas), jugé sur le socle complet ; correction postérieure à l'observation, déclarée comme telle (précédent P130), ancien verdict publié ; exécution en J3-e avec #114. | Q3 (ii) |
+| P150 | 15/11/2026 | #140 : intention « dimensionné pour… » des bornes (c) de la fiche 6 reportée sur le refus de crédit ; test du refus de la moitié du crédit (C31) ; exécution en J3-e avec #114. | Q4 (i) |
+| P151 | 15/11/2026 | #137, #142, #144 : branche technique `claude/j3-forme-du-code` (circuit 3), après J3-d2 et avant la branche de calibration, qu'elle précède (précise P115). | Q5 (a) |
+| P152 | 15/11/2026 | #141 au J4 avec #70 ; #145 au J4 avec le levier de cible (#54). | Q6 |
+| P153 | 15/11/2026 | Délégation pour J3-d2 : P118 (délégation technique), P133, P134, P136 et P137 reconduites ; critères de fiche et résultats finaux réservés au mainteneur. | Q7 (a) |
+| P154 | 15/11/2026 | ADR 0013 annoté au rang 1b de J3-d2, puis reconsolidé par un ADR nouveau au point d'étape après J3-d2 (consultation Fable du § 4.1 à décider alors). | Q8 (a) |
+| P155 | 15/11/2026 | Plan de J3-d2 (§ 1) approuvé ; le classement des lignes « J3 » du § 9.6 de la fiche 9 est confirmé ou corrigé par `macro` au rang 1a, avant tout essai. | Q9 |
+
+**Points ouverts au 15/11/2026, après la fusion de la PR #136** : rang 1a de J3-d2 ; instruction de #143 (P148) ; #11 et #14 (Q10) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61).
 
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
@@ -233,4 +245,4 @@ Consultations faites hors de toute branche ouverte (`docs/agents/routage.md`, §
 |---|---|
 | 14/11/2026 | Point d'étape après la PR #117 (plan de J3-c) / `architect` / Opus / seuil § 4.3 atteint par P76 (b) (remplacement de l'ADR 0012 comme document de lecture) / `revue requise`, P74 à P86 décidés le 14/11/2026 / Fable proposé et décliné par le mainteneur ; budget Fable de J3-c : 0 sur 3. |
 | 14/11/2026 | Point d'étape après la PR #129 (découpage de J3-d, plan de J3-d1) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d1) / `revue requise`, Q1 à Q9 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d1 : 0 sur 3. |
-| 15/11/2026 | Point d'étape après la PR #136 (plan de J3-d2, rang 0) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d2, reconsolidation en Q8) / `revue requise`, Q1 à Q10 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d2 : 0 sur 3. À reporter dans la PR de J3-d2 à son ouverture.
+| 15/11/2026 | Point d'étape après la PR #136 (plan de J3-d2, rang 0) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d2, reconsolidation en Q8) / `revue requise`, Q1 à Q10 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d2 : 0 sur 3 ; décisions P147 à P155 ; reportée dans la PR #146.
