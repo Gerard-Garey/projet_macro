@@ -212,9 +212,9 @@ Questions Q1 à Q10 du rang 0 de J3-d2 (`6e8b9e2`), options et avis : historique
 | P162 | 15/11/2026 | P122 se lit « réaffirmation avec le bloc 9 réel des lignes (b) appuyées sur le bloc d'essai 9 » (liste au § 1). | R7 |
 | P163 | 15/11/2026 | Continuum connu de r̂\* (P101, #131) exclu de la condition d'arrêt « état d'arrivée dépendant d'une vitesse ». | R8 |
 | P164 | 15/11/2026 | Décisions de forme F1 à F11 du rang 1a (critères précisés du § 1), prises par la session sous la délégation P153 (P118, P133). | F1 à F11 |
-| P165 | 15/11/2026 | Table `finances_publiques` dans `EnsembleDesParametres` (F1, H3.5 étendus, forme de `menages`) : ν_G, U^eq, valeurs à levier fermé de θ_G, θ_Tr, τ_H, τ_F, φ (paramètres au J3, comme π\* sous BC4 ; commandes au J4, G4, sans drapeau de mode) ; conditions jointes dans `__post_init__`. Forme, session sous P153, **à confirmer par le mainteneur** ; ADR 0013, rang 1b de J3-d2, point 8. | rang 1b |
+| P165 | 15/11/2026 | Table `finances_publiques` dans `EnsembleDesParametres` (F1, H3.5 étendus, forme de `menages`) : ν_G, U^eq, valeurs à levier fermé de θ_G, θ_Tr, τ_H, τ_F, φ (paramètres au J3, comme π\* sous BC4 ; commandes au J4, G4, sans drapeau de mode) ; conditions jointes dans `__post_init__`. Forme, session sous P153, **confirmée le 15/11/2026** ; ADR 0013, rang 1b de J3-d2, point 8. | rang 1b |
 
-**Points ouverts au 15/11/2026, rang 1b de J3-d2** : confirmation de P165 par le mainteneur ; instruction de #143 (P148) ; #11 et #14 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61) ; issue proposée par `jeu`, non créée (ou amendement de #82) : grandeurs du bloc 9 calculées hors interface au J4 ; durée d'une partie non fixée (#56).
+**Points ouverts au 15/11/2026, rang 1b de J3-d2** : instruction de #143 (P148) ; #11 et #14 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61) ; issue proposée par `jeu`, non créée (ou amendement de #82) : grandeurs du bloc 9 calculées hors interface au J4 ; durée d'une partie non fixée (#56).
 
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
