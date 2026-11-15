@@ -178,12 +178,13 @@ Posées par `architect-approfondi` au rang 0 de J3-d2 (`6e8b9e2`) ; tranchées p
 
 **Points ouverts au 15/11/2026, après la fusion de la PR #136** : rang 1a de J3-d2 ; instruction de #143 (P148) ; #11 et #14 (Q10) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61).
 
-### 8. Escalades, relances et arrêts hors branche (extrait : lignes du 14/11/2026)
+### 8. Escalades, relances et arrêts hors branche (extrait : lignes du 14/11/2026 ; ligne du 15/11/2026, rang 0 de J3-d2, sortie au rang 1b)
 
 | Date | Fiche / modèle / critère déclenché / statut obtenu / suite |
 |---|---|
 | 14/11/2026 | Point d'étape après la PR #117 (plan de J3-c) / `architect` / Opus / seuil § 4.3 atteint par P76 (b) (remplacement de l'ADR 0012 comme document de lecture) / `revue requise`, P74 à P86 décidés le 14/11/2026 / Fable proposé et décliné par le mainteneur ; budget Fable de J3-c : 0 sur 3. |
 | 14/11/2026 | Point d'étape après la PR #129 (découpage de J3-d, plan de J3-d1) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d1) / `revue requise`, Q1 à Q9 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d1 : 0 sur 3. |
+| 15/11/2026 | Point d'étape après la PR #136 (plan de J3-d2, rang 0) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d2, reconsolidation en Q8) / `revue requise`, Q1 à Q10 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d2 : 0 sur 3 ; décisions P147 à P155 ; reportée dans la PR #146.
 
 ## Partie D : extraits de la tête sortis le 15/11/2026 (rang 8 de J3-d1), figés
 

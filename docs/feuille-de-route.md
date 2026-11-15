@@ -24,7 +24,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 |---|---|---|---|
 | 0 | Point d'étape et plan (présente mise à jour) ; PR brouillon ; amendements de #132 (critères ci-dessous), #133, #106, #101, #134 | `architect-approfondi`, session | `docs:` |
 | 1a | **Fait le 15/11/2026** (P156 à P164) — lectures avant le code : classement (a)/(b)/(c) des lignes « J3 » du § 9.6 de la fiche 9 (proposition ci-dessous) ; lignes (c) des fiches 5 et 6 reçues (P122), nommées une à une ; lignes des fiches 7 et 8 (P90) ; horizon H du critère 7 déclaré ; nullités calculées du bloc 9 ; décompte des labels | `macro-approfondi` (pilote) ; `monnaie` (E9 à E11, M^G, ς_B, Π^CB) ; `jeu` (critère 11, C62) | 4 |
-| 1b | Annotation de l'ADR 0013 : table du bloc 9 ; Y^HS en variable d'état (version du schéma) ; ς_B dans `DOMAINES_DES_ENTREES` (P138) ; liste fermée des lectures brutes (E4, E6, E9, avec E^Bk) ; un seul appel du besoin d'émission par pas ; bloc d'essai 9 gardé sous X1 à X4 (P114, #133) | `architect-approfondi` | § 4.2 |
+| 1b | **Fait le 15/11/2026** (P165) — annotation de l'ADR 0013 : table du bloc 9 ; Y^HS en variable d'état (version du schéma) ; ς_B dans `DOMAINES_DES_ENTREES` (P138) ; liste fermée des lectures brutes (E4, E6, E9, avec E^Bk) ; un seul appel du besoin d'émission par pas ; bloc d'essai 9 gardé sous X1 à X4 (P114, #133) | `architect-approfondi` | § 4.2 |
 | 2 | #133 : exigences du bloc d'essai renommées X1 à X3 dans `tests/` (spécification au rang 6) ; #101 : liste étendue du test de source | `coder` → `audit` ; `macro`, `monnaie` (#101) | 3 |
 | 3 | #132 : `finances_publiques.py`, E1 à E13 ; engagements 1 à 6 ; bloc d'essai 9 retiré du banc du socle complet, gardé pour le banc de P87 | `coder` → `audit` ; `macro`, `monnaie` | 1 |
 | 4 | #106 : `variation_sur_le_tour` retirée de `LECTURES_DU_REGISTRE` faute de consommateur déclaré, ou label et balise avec son consommateur ; `pas_du_tour` et `tour_du_pas` examinées | `coder` → `audit` | 3 |
@@ -212,8 +212,9 @@ Questions Q1 à Q10 du rang 0 de J3-d2 (`6e8b9e2`), options et avis : historique
 | P162 | 15/11/2026 | P122 se lit « réaffirmation avec le bloc 9 réel des lignes (b) appuyées sur le bloc d'essai 9 » (liste au § 1). | R7 |
 | P163 | 15/11/2026 | Continuum connu de r̂\* (P101, #131) exclu de la condition d'arrêt « état d'arrivée dépendant d'une vitesse ». | R8 |
 | P164 | 15/11/2026 | Décisions de forme F1 à F11 du rang 1a (critères précisés du § 1), prises par la session sous la délégation P153 (P118, P133). | F1 à F11 |
+| P165 | 15/11/2026 | Table `finances_publiques` dans `EnsembleDesParametres` (F1, H3.5 étendus, forme de `menages`) : ν_G, U^eq, valeurs à levier fermé de θ_G, θ_Tr, τ_H, τ_F, φ (paramètres au J3, comme π\* sous BC4 ; commandes au J4, G4, sans drapeau de mode) ; conditions jointes dans `__post_init__`. Forme, session sous P153, **à confirmer par le mainteneur** ; ADR 0013, rang 1b de J3-d2, point 8. | rang 1b |
 
-**Points ouverts au 15/11/2026, rang 1a de J3-d2** : rang 1b (annotation de l'ADR 0013) ; instruction de #143 (P148) ; #11 et #14 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61) ; issue proposée par `jeu`, non créée (ou amendement de #82) : grandeurs du bloc 9 calculées hors interface au J4 ; durée d'une partie non fixée (#56).
+**Points ouverts au 15/11/2026, rang 1b de J3-d2** : confirmation de P165 par le mainteneur ; instruction de #143 (P148) ; #11 et #14 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61) ; issue proposée par `jeu`, non créée (ou amendement de #82) : grandeurs du bloc 9 calculées hors interface au J4 ; durée d'une partie non fixée (#56).
 
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
@@ -248,8 +249,6 @@ Détail des issues, commits, décisions et escalades de chaque branche jusqu'à 
 
 ## 8. Escalades, relances et arrêts hors branche
 
-Consultations faites hors de toute branche ouverte (`docs/agents/routage.md`, § 7) ; une consultation Fable compte pour la branche suivante (`docs/agents/routage.md`, § 5.2). Lignes antérieures au 13/11/2026 : historique, partie A, § 8 ; ligne du 13/11/2026 : partie B, § 8 ; lignes du 14/11/2026 : partie E, § 8.
+Consultations faites hors de toute branche ouverte (`docs/agents/routage.md`, § 7) ; une consultation Fable compte pour la branche suivante (`docs/agents/routage.md`, § 5.2). Lignes antérieures au 13/11/2026 : historique, partie A, § 8 ; ligne du 13/11/2026 : partie B, § 8 ; lignes du 14/11/2026 et du 15/11/2026 (rang 0 de J3-d2) : partie E, § 8.
 
-| Date | Fiche / modèle / critère déclenché / statut obtenu / suite |
-|---|---|
-| 15/11/2026 | Point d'étape après la PR #136 (plan de J3-d2, rang 0) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d2, reconsolidation en Q8) / `revue requise`, Q1 à Q10 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d2 : 0 sur 3 ; décisions P147 à P155 ; reportée dans la PR #146.
+Aucune ligne depuis le 15/11/2026, rang 0 de J3-d2.
