@@ -103,6 +103,24 @@ class Releve:
             self._montants = {}
 
 
+class ReleveParPhase(Releve):
+    """`Releve`, plus, par pas, les montants exécutés de chaque clôture dans l'ordre des phases
+    (critère 12 : postes après chaque phase)."""
+
+    def __init__(self):
+        super().__init__()
+        self.clotures = []
+        self._clotures_du_pas = []
+
+    def relever(self, e):
+        if type(e) is ClotureDePhase:
+            self._clotures_du_pas.append((e.phase, e.montants))
+        elif type(e) is FinDePas:
+            self.clotures.append(self._clotures_du_pas)
+            self._clotures_du_pas = []
+        super().relever(e)
+
+
 class _VueAvecParametres:
     """Vue d'un bloc dont les paramètres sont remplacés (composition d'essai, F1) ; tout le reste
     est la vue du moteur."""
@@ -289,7 +307,7 @@ def juger(socle, sentier, initial, releve):
     del blocs_5_6["T^cou"]  # relevée sous « T^cou (E4) », au même dénominateur S^G
     series.update(blocs_5_6)
     series.update(grandeurs_du_bloc_9(socle, releve.pas, initial, sentier))
-    nulles = {cle for cle in series if socle.est_nulle(cle, tables, sentier)}
+    nulles = {cle for cle in series if socle.est_nulle(cle, tables, sentier, initial)}
     assert {c for c, s in series.items() if all(r == 0.0 for _, _, r in s)} <= nulles
     assert set(NULLES_AU_BIT) <= nulles
     pires = {}
@@ -349,6 +367,63 @@ def test_etat_stationnaire_egal_au_script_sur_le_moteur(banc, socle, pi):
         assert abs(x / s[cle] - 1.0) <= SEUIL_SCRIPT, cle
     assert abs(v["T_cou"]) <= SEUIL_NUL * idt.echelle_bilan(_positions(initial), "etat")
     assert v["Tr"] == 0.0
+
+
+def _contre_exemples(socle, tables, initial):
+    """Clé de `GRANDEURS_NULLES_DU_SOCLE_COMPLET` → [(tables, ouverture)] où une seule des
+    conditions de son libellé tombe : tables du bloc 9 ou du bloc 8 variées, ou ouverture
+    exécutée déplacée d'une position ou d'une variable d'état."""
+    def bloc_9(**valeurs):
+        return dataclasses.replace(tables, finances_publiques=varier(tables.finances_publiques,
+                                                                    **valeurs))
+
+    def bloc_8(**valeurs):
+        return dataclasses.replace(tables, banque_centrale=varier(tables.banque_centrale,
+                                                                  **valeurs))
+
+    def ouverture(**valeurs):
+        return dataclasses.replace(initial, **valeurs)
+    impose, transferts, theta_CB = bloc_9(tau_F=0.01), bloc_9(theta_Tr=0.01), bloc_8(theta_CB=0.5)
+    e_cb = {cat.VALEUR_NETTE_FLUX["banque_centrale"]: 1.0}
+    return {
+        "T_F (E5)": [(impose, initial)],
+        "T^e_F": [(impose, initial), (tables, ouverture(T_F_m1=1.0))],
+        "Tr (E6)": [(transferts, initial)],
+        "ligne 6": [(transferts, initial)],
+        "transferts non versés (E13)": [(transferts, initial)],
+        "B_H": [(tables, ouverture(B_H=1.0))],
+        "ligne 11a": [(tables, ouverture(B_H=1.0))],
+        "ΔB^prim_CB (19a-BC)": [(theta_CB, initial)],
+        "B_CB": [(theta_CB, initial), (tables, ouverture(B_CB=1.0))],
+        "ligne 11c": [(theta_CB, initial), (tables, ouverture(B_CB=1.0))],
+        "E^CB (V^flux)": [(tables, ouverture(**e_cb)), (tables, ouverture(Res=1.0)),
+                          (tables, ouverture(L_CB=-1.0)), (tables, ouverture(B_CB=-1.0))],
+        "perte non couverte (E13)": [(tables, ouverture(Res=1.0)), (tables, ouverture(L_CB=-1.0)),
+                                     (tables, ouverture(B_CB=-1.0))],
+        "T^cou (E4)": [(tables, ouverture(r_hat_etoile=initial.r_hat_etoile + 0.01))],
+    }
+
+
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_nullites_du_socle_complet_calculees_sur_l_ouverture_executee(socle, pi):
+    """Réserve de la revue finale de J3-d2 (prédicats partiels, M4) : chaque nullité de
+    `GRANDEURS_NULLES_DU_SOCLE_COMPLET` est vraie sur les tables et l'état initial du banc, et
+    fausse dès qu'une seule condition de son libellé tombe (`_contre_exemples`) : le classement
+    lit l'état d'ouverture exécuté, ce n'est pas une déclaration. La ligne 19a-ménages, règle E10
+    (M27), n'a pas de contre-exemple sur les tables ni sur l'ouverture : son prédicat évalue la
+    fonction du bloc. Sans ouverture, le classement est refusé."""
+    sentier = socle.sentier(pi)
+    tables = socle.parametres_du_sentier(sentier)
+    initial = socle.etat_initial(sentier)
+    nulles = socle.GRANDEURS_NULLES_DU_SOCLE_COMPLET
+    assert all(socle.est_nulle(c, tables, sentier, initial) for c in nulles)
+    contre = _contre_exemples(socle, tables, initial)
+    assert set(contre) == set(nulles) - {"ligne 19a-ménages"}
+    for cle, cas in contre.items():
+        for t, o in cas:
+            assert not socle.est_nulle(cle, t, sentier, o), cle
+    with pytest.raises(TypeError):
+        socle.est_nulle("B_H", tables, sentier)
 
 
 def test_un_seul_calcul_du_besoin_d_emission_par_pas(socle, monkeypatch):
@@ -703,13 +778,18 @@ def test_transferts_non_verses_par_appel_direct(socle):
     assert Tr == 0.0 and paye == 0.0 and non_verse == Tr_lev > 0.0
 
 
-def test_perte_non_couverte_par_appel_direct():
+def test_perte_non_couverte_par_appel_direct(publier):
     """P157, cas (ii), par appel direct sur le grand livre : perte de la banque centrale égale à
-    deux fois l'encaisse (C60, Π^CB = −20, M^G = 10), montant couvert déclaré par E13 sur
-    max(0 ; M^{G,8a}) : le noyau exécute −mc ; ΔE^CB_t = −(perte non couverte)_t à 1e−12 S^CB,
-    par les flux (V^flux) et par le stock."""
-    ouverture = {"D_H": 100.0, "D_F": 50.0, "L": 100.0, "B_H": 0.0, "B_Bk": 0.0, "B_CB": 0.0,
-                 "Res": 2000.0, "L_CB": 0.0, "M_G": 10.0, "K": 50.0, "IN": 10.0}
+    deux fois l'encaisse (C60, Π^CB = −20, M^{G,8a} = 10), combinée à un placement raté total
+    (lignes 19a nulles), montant couvert déclaré par E13 sur max(0 ; M^{G,8a}) : le noyau exécute
+    −mc ; ΔE^CB_t = −(perte non couverte)_t à 1e−12 S^CB, par les flux (V^flux) et par le stock.
+    Sous-points du critère 12 (décision du mainteneur du 15/11/2026), postes publiés après chaque
+    phase : intérêts sur titres de la banque (ligne 11b, 1 u.m. sur B_Bk = 100, M^G d'ouverture
+    11) payés en entier en phase 6 avant la ligne 16, réduite en 8 (b) (ordre de priorité) ;
+    ΔB = Σ lignes 19a (aucun intérêt capitalisé) ; D_H, D_F, M^G ≥ 0 à la clôture de chaque phase
+    (aucun découvert implicite), M^G nul exactement après 8 (b)."""
+    ouverture = {"D_H": 100.0, "D_F": 50.0, "L": 100.0, "B_H": 0.0, "B_Bk": 100.0, "B_CB": 0.0,
+                 "Res": 2000.0, "L_CB": 0.0, "M_G": 11.0, "K": 50.0, "IN": 10.0}
     v = {cat.VALEUR_NETTE_FLUX[s]: idt.valeur_nette_stock(ouverture, s) for s in cat.SECTEURS}
     variables = {nom: 0.0 for nom in (v_.nom for v_ in schema.VARIABLES_DES_BLOCS)}
     variables.update(v_e=1.0, IN_vol=1.0, pr=1.0, K_vol=1.0, W=1.0, N=1.0, N_pa=1.0, ti=0.1)
@@ -721,13 +801,18 @@ def test_perte_non_couverte_par_appel_direct():
         tolerance_identite_pas: float = EPS
         tolerance_identite_cumulee: float = CADRE.tolerance_identite_cumulee
     gl = ouvrir_pas(etat, _Cadre())
-    Pi_CB = -par_pas(TauxDeFlux(0.12)) * ouverture["Res"]  # −20 : i_CB > 0, Res ≫ L^CB + B_CB
+    i_pas = par_pas(TauxDeFlux(0.12))
+    Pi_CB = -i_pas * ouverture["Res"]  # −20 : i_CB > 0, Res ≫ L^CB + B_CB
     perte = 0.0 - Pi_CB
+    interets_Bk = i_pas * ouverture["B_Bk"]  # 1 : M^{G,8a} = 11 − 1 = 10 = perte/2
+    postes = []
     for phase in cat.PHASES:
         for ligne in cat.LIGNES_DE_LA_PHASE[phase]:
             if ligne.proposant is None:
                 continue
             termes = {t.nom: 0.0 for t in ligne.termes}
+            if ligne.identifiant == "11b":
+                termes["iB_BBk"] = interets_Bk
             if ligne.identifiant == "12":
                 termes["ires_Res"] = perte
             if ligne.identifiant == "16":
@@ -737,12 +822,29 @@ def test_perte_non_couverte_par_appel_direct():
             mc, non_couverte = bloc_9.part_non_payee(perte, gl.position("M_G"))
             gl.declarer_montant_couvert("16", mc, "finances_publiques")
         gl.clore_phase(phase)
+        postes.append((phase, {q: gl.position(q) for q in ("D_H", "D_F", "M_G", "B_H", "B_Bk",
+                                                           "B_CB")}))
     assert (mc, non_couverte) == (10.0, 10.0)
     s_cb = gl.echelle("banque_centrale")
     v_flux = gl.valeur_nette_flux("banque_centrale")
     assert abs((v_flux - v["V_flux_banque_centrale"]) + non_couverte) <= SEUIL_FLUX * s_cb
     assert abs(gl.valeur_nette_stock("banque_centrale") - v_flux) <= SEUIL_FLUX * s_cb
     assert gl.montant_execute_ligne("16") == -mc
+    # Critère 12 : ordre de priorité, intérêt non capitalisé, aucun découvert.
+    assert cat.LIGNE["11b"].phase == "6" and cat.LIGNE["16"].phase == "8b"
+    assert gl.montant_execute_ligne("11b") == interets_Bk
+    for poste, ligne in EMISSIONS.items():
+        assert postes[-1][1][poste] - ouverture[poste] == gl.montant_execute_ligne(ligne) == 0.0
+    assert all(x[q] >= 0.0 for _, x in postes for q in PAYEURS_NON_BANCAIRES)
+    assert dict(postes)["6"]["M_G"] == ouverture["M_G"] - interets_Bk
+    assert dict(postes)["8b"]["M_G"] == 0.0
+    publier("Perte de la banque centrale égale à deux fois l'encaisse, placement raté total "
+            "(appel direct sur le grand livre ; critère 12, postes après chaque phase)", [
+                " ; ".join(f"{phase} : M^G {x['M_G']:g}, D_H {x['D_H']:g}, D_F {x['D_F']:g}, "
+                           f"B {x['B_H'] + x['B_Bk'] + x['B_CB']:g}" for phase, x in postes),
+                f"ligne 11b payée {gl.montant_execute_ligne('11b'):g} (proposée {interets_Bk:g}) ; "
+                f"ligne 16 exécutée {gl.montant_execute_ligne('16'):g} (proposée {Pi_CB:g}) ; "
+                f"perte non couverte {non_couverte:g}"])
 
 
 def test_impot_superieur_aux_depots_defaut_declare(socle):
@@ -762,13 +864,104 @@ def test_impot_superieur_aux_depots_defaut_declare(socle):
     assert d.position_debut > 0.0 > d.position_fin
 
 
+# Critère 12 (`sec:finances_publiques-conditions`, « Parts non payées » ; fiche 9, § 9.6) :
+# payeurs non bancaires et leur secteur, lecture nette du contrôle de caisse (ε S du payeur à
+# l'ouverture, `eq:noyau-caisse-nette`) ; la banque paie en réserves, dont le découvert intra-pas
+# est couvert en 8 (c) (Res_{t+1} ≥ 0 strict en phase 9, `eq:noyau-reserves-cloture`).
+PAYEURS_NON_BANCAIRES = {"D_H": "menages", "D_F": "entreprises", "M_G": "etat"}
+# Lignes 19a et poste de titres qu'elles font varier (19b sans proposant au socle).
+EMISSIONS = {"B_H": "19a-ménages", "B_Bk": "19a-banque", "B_CB": "19a-BC"}
+
+
+def postes_apres_chaque_phase(ouverture, clotures):
+    """Postes à la clôture de chaque phase d'un pas : [(phase, positions)], reconstruits depuis
+    les positions d'ouverture et les montants exécutés de chaque clôture par les variations et
+    les règlements des termes du catalogue (les contreparties 17, 20 et 22 ne font que relever
+    les règlements, déjà appliqués)."""
+    positions = _positions(ouverture)
+    rendus = []
+    for phase, montants in clotures:
+        for ligne, termes in montants:
+            if cat.LIGNE[ligne].contrepartie:
+                continue
+            x = dict(termes)
+            for terme in cat.LIGNE[ligne].termes:
+                for poste, c in terme.variations + terme.reglement:
+                    positions[poste] += c * x[terme.nom]
+        rendus.append((phase, dict(positions)))
+    return rendus
+
+
+def controler_le_critere_12(initial, releve):
+    """Critère 12 sur une trajectoire du moteur relevée par `ReleveParPhase` ; rend les mesures
+    publiées : marge minimale de chaque payeur non bancaire, à son échelle, sur toutes les phases.
+    - **postes après chaque phase** : reconstruits (`postes_apres_chaque_phase`), ceux de la
+      phase 9 égaux au bit à l'état t + 1 ;
+    - **aucun découvert implicite** : D_H, D_F, M^G ≥ −ε S du payeur à la clôture de chaque phase,
+      Res ≥ 0 à la clôture de la phase 9 ;
+    - **aucun intérêt capitalisé** : ΔB_H, ΔB_Bk, ΔB_CB du pas égaux aux lignes 19a-ménages,
+      19a-banque, 19a-BC à 1e−12 S^G, lignes 11a à 11c égales au bit à E7 sur l'ouverture
+      (i_CB/n_a fois l'encours, versés, non ajoutés au principal) ;
+    - **ordre de priorité exact** (`sec:finances_publiques-caisse`) : dépense plafonnée par le seul
+      compte d'ouverture, G^plan = min(max(0 ; M^G) ; G^vise) ; intérêts versés en entier ;
+      transferts sur le reste, Tr = min(Tr^lev ; max(0 ; M^G + T_H − i_CB B/n_a − G^plan)),
+      ligne 6 = Tr, part non versée Tr^lev − Tr ; ligne 16 en dernier, −min(|Π^CB| ;
+      max(0 ; M^{G,8a})) si Π^CB < 0, Π^CB sinon ; ces formes sont recalculées ici, au bit,
+      sans appeler les fonctions du bloc."""
+    assert [cat.LIGNE[ligne].phase for ligne in ("2", "11a", "11b", "11c", "6", "16")] == [
+        "5", "6", "6", "6", "6", "8b"]
+    ouvertures = [initial] + [p["etat"] for p in releve.pas[:-1]]
+    marges = dict.fromkeys(PAYEURS_NON_BANCAIRES, math.inf)
+    for o, p, clotures in zip(ouvertures, releve.pas, releve.clotures, strict=True):
+        v, f = p["variables"], p["etat"]
+        echelles = {s: idt.echelle_bilan(_positions(o), s) for s in cat.SECTEURS}
+        postes = postes_apres_chaque_phase(o, clotures)
+        assert [phase for phase, _ in postes] == list(cat.PHASES)
+        assert postes[-1][1] == _positions(f), p["t"]
+        for _, x in postes:
+            for moyen, payeur in PAYEURS_NON_BANCAIRES.items():
+                marges[moyen] = min(marges[moyen], x[moyen] / echelles[payeur])
+                assert x[moyen] >= -EPS * echelles[payeur], (p["t"], moyen)
+        assert f.Res >= 0.0
+        for poste, ligne in EMISSIONS.items():
+            assert abs((getattr(f, poste) - getattr(o, poste)) - p[ligne]) <= (
+                SEUIL_FLUX * echelles["etat"]), (p["t"], poste)
+        i_pas = par_pas(TauxDeFlux(v["i_CB"]))
+        assert (p["11a"], p["11b"], p["11c"]) == (i_pas * o.B_H, i_pas * o.B_Bk, i_pas * o.B_CB)
+        interets = p["11a"] + p["11b"] + p["11c"]
+        assert v["G_plan"] == min(max(0.0, o.M_G), v["G_vise"])
+        assert v["Tr"] == min(v["Tr_lev"], max(0.0, o.M_G + v["T_H"] - interets - v["G_plan"]))
+        assert p["6"] == v["Tr"] and v["Tr_non_verses"] == v["Tr_lev"] - v["Tr"]
+        M_G_8a = dict(postes)["8a"]["M_G"]
+        if v["Pi_CB"] < 0.0:
+            couvert = min(-v["Pi_CB"], max(0.0, M_G_8a))
+            assert p["16"] == -couvert
+            assert v["perte_non_couverte"] == -v["Pi_CB"] - couvert
+        else:
+            assert p["16"] == v["Pi_CB"] and v["perte_non_couverte"] == 0.0
+    return marges
+
+
+# θ_Tr au pas 6 : Tr^lev ≈ 2,3 G, au-delà du plafond de E6 (Tr/Tr^lev de 0,45 à 0,50 aux trois
+# π*, mesure publiée par le test).
+TRANSFERTS_APRES_LE_PLACEMENT = 0.5
+
+
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 def test_placement_rate_de_moitie_sur_un_tour(socle, pi, publier):
-    """P90, « Placement raté » ; critère 12 : ς_B = 0,5 au pas 5 : M^G de clôture = M^G* − ς_B
-    (Em − ΔB^prim_CB) à 1e−12 S^G ; Res L^CB = 0 exactement à la clôture (B7) ; aucun arrêt, aucune
-    part non payée ; au pas suivant, plafond de E1 publié (actif ou non)."""
+    """P90, « Placement raté » ; critère 12, cas (i) : ς_B = 0,5 au pas 5 : M^G de clôture = M^G*
+    − ς_B (Em − ΔB^prim_CB) à 1e−12 S^G ; Res L^CB = 0 exactement à la clôture (B7) ; aucun arrêt,
+    aucune part non payée ; au pas suivant, plafond de E1 publié (actif ou non). Sous-points du
+    critère 12 (décision du mainteneur du 15/11/2026), `controler_le_critere_12`, sur cette
+    trajectoire et sur une seconde où les transferts sont ouverts au seul pas 6 (θ_Tr = 0,5,
+    composition dans `tests/`) : Tr réduit sous Tr^lev au pas 6, intérêts 11a à 11c payés en
+    entier, part non versée enregistrée (E13)."""
     sentier = socle.sentier(pi)
-    _, r = derouler(socle, sentier, 24, varsigma_B=lambda t: 0.5 if t == 5 else 0.0)
+    initial = socle.etat_initial(sentier)
+
+    def part(t):
+        return 0.5 if t == 5 else 0.0
+    _, r = derouler(socle, sentier, 24, varsigma_B=part, observateur=ReleveParPhase())
     p = r.pas[5]
     v, f = p["variables"], p["etat"]
     attendu = v["M_G_etoile"] - 0.5 * (v["Em"] - p["19a-BC"])
@@ -777,11 +970,24 @@ def test_placement_rate_de_moitie_sur_un_tour(socle, pi, publier):
     assert all(q["etat"].Res * q["etat"].L_CB == 0.0 for q in r.pas)
     assert all(q["variables"]["perte_non_couverte"] == 0.0
                and q["variables"]["Tr_non_verses"] == 0.0 for q in r.pas)
+    marges = controler_le_critere_12(initial, r)
+    _, rt = derouler(socle, sentier, 24, varsigma_B=part, observateur=ReleveParPhase(),
+                     bloc_9=bloc_9_compose(levier_au_tour(
+                         6, theta_Tr=TRANSFERTS_APRES_LE_PLACEMENT)))
+    vt = rt.pas[6]["variables"]
+    assert vt["Tr"] < vt["Tr_lev"] and vt["Tr_non_verses"] > 0.0
+    assert all(q["variables"]["Tr"] == q["variables"]["Tr_lev"] for q in rt.pas if q["t"] != 6)
+    marges_tr = controler_le_critere_12(initial, rt)
     actifs = [q["t"] for q in r.pas if _actif(q)]
     publier(f"Placement raté de moitié au pas 5, π* = {100 * pi:g} % ({ETIQUETTE})", [
         f"M^G de clôture − (M^G* − ς_B (Em − ΔB^prim_CB)) = {f.M_G - attendu:.1e} u.m. "
         f"(S^G = {s_g:.3e}) ; M^G/M^G* = {f.M_G / v['M_G_etoile']:.6f}",
-        "plafond de E1 actif aux pas : " + (str(actifs) if actifs else "aucun")])
+        "plafond de E1 actif aux pas : " + (str(actifs) if actifs else "aucun"),
+        "critère 12, postes après chaque phase, marge minimale du payeur (position/S) : "
+        + " ; ".join(f"{q} {x:.3e}" for q, x in marges.items()),
+        f"avec θ_Tr = {TRANSFERTS_APRES_LE_PLACEMENT:g} au pas 6 : Tr/Tr^lev = "
+        f"{vt['Tr'] / vt['Tr_lev']:.4f}, intérêts payés en entier ; marge minimale : "
+        + " ; ".join(f"{q} {x:.3e}" for q, x in marges_tr.items())])
 
 
 @pytest.mark.parametrize("nom, choc", [
@@ -790,16 +996,24 @@ def test_placement_rate_de_moitie_sur_un_tour(socle, pi, publier):
 def test_bornes_plafond_desactive_sous_douze_tours(socle, nom, choc, publier):
     """Critère 16 (bornes), π* = 2 % : sous un placement raté de moitié ou une dépense doublée aux
     tours 1 à 12, le plafond de E1 est désactivé au plus tard 12 tours après la fin du choc, sans
-    réactivation ; aucun arrêt du noyau."""
+    réactivation : les pas où il est actif forment un intervalle d'entiers consécutifs qui
+    commence au premier pas où le choc atteint E1, celui du choc pour la dépense (θ_G lu en
+    phase 2 du tour même), le suivant pour le placement (ς_B agit en phase 7, M^G est lu en
+    phase 2 du tour suivant) ; la dépense doublée active le plafond (au-delà de la marge de
+    caisse, P158) ; aucun arrêt du noyau."""
     sentier = socle.sentier(0.02)
     if choc == "placement":
         _, r = derouler(socle, sentier, 120,
                         varsigma_B=lambda t: 0.5 if t < TOURS_DU_CHOC else 0.0)
+        premier = 1
     else:
         _, r = derouler(socle, sentier, 120, bloc_9=bloc_9_compose(choc_de_theta_G(2.0)))
+        premier = 0
+        assert any(_actif(p) for p in r.pas)
     actifs = [p["t"] for p in r.pas if _actif(p)]
     fin = TOURS_DU_CHOC - 1 + DELAI_DE_DESACTIVATION
     assert all(t <= fin for t in actifs), actifs[-5:]
+    assert not actifs or actifs == list(range(premier, actifs[-1] + 1)), actifs
     publier(f"Bornes, {nom}, π* = 2 % ({ETIQUETTE})", [
         "plafond de E1 actif aux pas : " + (f"{actifs[0]} à {actifs[-1]} ({len(actifs)} pas)"
                                              if actifs else "aucun")
@@ -816,11 +1030,14 @@ def test_couverture_d_un_choc_de_taux_au_tour_n(socle, pi):
     """F6 : r̂* relevé de 0,01 dans l'état d'ouverture (i_CB du tour relevé de Δ), contre le
     contrôle : au tour n seul, Div_Bk (ligne 15) varie de Δ (B_Bk + Res − L^CB)/n_a, T^cou reprend
     Δ A/n_a, A = B − M^G − E^CB, et le revenu disponible des ménages ne varie pas (B_H = 0), à
-    1e−12 relatif ; les autres revenus des ménages sont inchangés au bit."""
+    1e−12 relatif ; les autres revenus des ménages sont inchangés au bit. Critère de la décision
+    du mainteneur du 04/10/2026 (`sec:finances_publiques-conditions`, « Couverture ») : assiette
+    Y^HS écrite en phase 7 du tour 1 (E12) égale à celle du contrôle, et part au barème de
+    l'impôt du tour 2, τ_H Γ^e_2 Y^HS_1 (E3), inchangée, à 1e−12 relatif, sur deux pas."""
     sentier = socle.sentier(pi)
     initial = socle.etat_initial(sentier)
-    _, c = derouler(socle, sentier, 1)
-    _, s = derouler(socle, sentier, 1,
+    _, c = derouler(socle, sentier, 2)
+    _, s = derouler(socle, sentier, 2,
                     initial=dataclasses.replace(initial, r_hat_etoile=initial.r_hat_etoile + 0.01))
     pc, ps = c.pas[0], s.pas[0]
     delta = par_pas(TauxDeFlux(ps["variables"]["i_CB"] - pc["variables"]["i_CB"]))
@@ -833,6 +1050,15 @@ def test_couverture_d_un_choc_de_taux_au_tour_n(socle, pi):
     assert abs(ps["etat"].YD_m1 / pc["etat"].YD_m1 - 1.0) <= SEUIL_FLUX
     for ligne in ("5", "6", "10", "11a", "14"):
         assert ps[f"{ligne}:termes"] == pc[f"{ligne}:termes"], ligne
+    assert abs(ps["etat"].Y_HS_m1 / pc["etat"].Y_HS_m1 - 1.0) <= SEUIL_FLUX
+    tau_H = socle.parametres_du_sentier(sentier).finances_publiques.tau_H
+    bareme_c = tau_H * c.pas[1]["grandeurs"]["Gamma_e"] * c.pas[0]["etat"].Y_HS_m1
+    bareme_s = tau_H * s.pas[1]["grandeurs"]["Gamma_e"] * s.pas[0]["etat"].Y_HS_m1
+    assert abs(bareme_s / bareme_c - 1.0) <= SEUIL_FLUX
+    # La part au barème est bien celle de l'impôt exécuté du tour 2 : T_H − T^cou (E3).
+    for r, bareme in ((c, bareme_c), (s, bareme_s)):
+        v2 = r.pas[1]["variables"]
+        assert abs((v2["T_H"] - v2["T_cou"]) / bareme - 1.0) <= SEUIL_FLUX
 
 
 def test_ligne_11c_egale_au_premier_terme_de_pi_cb(socle):
@@ -1021,7 +1247,7 @@ def test_temps_de_doublement_sous_phi_nul(socle, pi, publier):
     déficit »), choc G^plan +1 % aux tours 1 à 12 contre un contrôle apparié sous φ = 0 ; écart
     de i_CB, ρ̂ = (max_{tours 600 à 720} |écart| / max_{tours 240 à 360} |écart|)^{1/360},
     temps de doublement ln 2/ln ρ̂ (si ρ̂ > 1), les deux fenêtres de 120 pas. Valeurs de la
-    maquette : 382 et 63 tours. Une
+    maquette : 381,6 et 63,2 tours. Une
     sortie de domaine de la trajectoire choquée (régime explosif) est publiée avec son pas, la
     seconde fenêtre étant alors les 120 derniers pas relevés ; si l'arrêt laisse moins de deux
     fenêtres disjointes après le pas 240, la mesure est publiée sans ρ̂. Un choc de 1 % sort du
@@ -1043,7 +1269,7 @@ def test_temps_de_doublement_sous_phi_nul(socle, pi, publier):
     doublement = math.log(2.0) / math.log(rho) if rho > 1.0 else math.inf
     publier(titre, [
         f"ρ̂ = {rho:.6f} ; temps de doublement = {doublement:.0f} tours "
-        f"(maquette : {382 if pi == 0.02 else 63}) ; |Δi_CB| tours 240–360 : "
+        f"(maquette : {'381,6' if pi == 0.02 else '63,2'}) ; |Δi_CB| tours 240–360 : "
         f"{premier:.2e}, {fin - 120}–{fin} : {dernier:.2e} ; {arret}",
         "choc de 1 % hors du régime linéaire : "
         + ("31 tours à 10 % n'est pas une racine : sortie du régime linéaire"

@@ -15,7 +15,8 @@ du rang 1a, P156 à P164 ; `sec:finances_publiques-conditions`), non déplacés 
 - **liste fermée des lectures brutes** (engagement 2 ; ADR 0013, annotation du 15/11/2026,
   point 4) et **localité** des max(0 ; ·) (critère de #132) : contrôle sur l'arbre syntaxique
   (lectures par `vue.ouverture.<moyen>`, `vue.grand_livre.position` ou `.ouverture`, et toute
-  constante "M_G", "D_H" ou "D_F" des méthodes de phase ; paramètre d'une lecture nette employé
+  constante "M_G", "D_H" ou "D_F" des méthodes de la classe, de phase ou auxiliaires ; aucun
+  alias de `vue.ouverture` ni de `vue.grand_livre` ; paramètre d'une lecture nette employé
   seulement dans max(0.0, ·)) ;
 - **couverture** (F6) : E4(i + 0,01) − E4(i) = φ par_pas(0,01) A à 1e−12 relatif ; φ = 0 ⇒
   T^cou = 0 exactement ;
@@ -32,6 +33,7 @@ import ast
 import dataclasses
 import inspect
 import math
+from pathlib import Path
 
 import pytest
 
@@ -50,6 +52,8 @@ SEUIL_ETAT_STATIONNAIRE = 1e-10  # relatif
 SEUIL_COUVERTURE = 1e-12  # relatif
 POINTS_PI = (0.0, 0.02, 0.10)
 POINTS_N_A = (4, 12, 52)
+SPECIFICATION = (Path(__file__).resolve().parents[2] / "docs" / "specification"
+                 / "nations_et_marches.tex")
 
 
 def ecart(x, reference):
@@ -241,19 +245,57 @@ def _parametres(fonction):
     return [a.arg for a in fonction.args.args]
 
 
+# Accès de la vue d'où partent les lectures d'un moyen de paiement (`vue.ouverture`,
+# `vue.grand_livre`) : ils ne s'emploient que suivis d'un attribut ou d'une méthode, jamais liés à
+# un nom (alias), passés en argument ni rendus, ce qui soustrairait la lecture au contrôle.
+ACCES_DE_LA_VUE = {"ouverture", "grand_livre"}
+
+
+def _acces_detaches(noeud):
+    """Accès `<nom>.ouverture` ou `<nom>.grand_livre` de `noeud` qui ne sont pas le préfixe d'un
+    attribut (`vue.ouverture.M_G`, `vue.grand_livre.position`) : alias, argument, valeur rendue."""
+    prefixes = {id(n.value) for n in ast.walk(noeud) if isinstance(n, ast.Attribute)}
+    return [ast.unparse(n) for n in ast.walk(noeud)
+            if isinstance(n, ast.Attribute) and n.attr in ACCES_DE_LA_VUE
+            and isinstance(n.value, ast.Name) and id(n) not in prefixes]
+
+
+def _corps_de_la_classe(classe):
+    """Instructions du corps de la classe du bloc hors de sa déclaration : toute méthode (de phase
+    ou auxiliaire) ; la docstring, `__slots__` et `declaration` sont les seules autres
+    instructions admises (une instruction de classe nouvelle échappe sinon au contrôle)."""
+    corps = []
+    for n in classe.body:
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            corps.append(n)
+        elif isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant):
+            continue
+        else:
+            assert (isinstance(n, ast.Assign) and len(n.targets) == 1
+                    and isinstance(n.targets[0], ast.Name)
+                    and n.targets[0].id in {"__slots__", "declaration"}), ast.unparse(n)
+    return corps
+
+
 def test_lectures_brutes_liste_fermee_et_localite():
-    """Engagement 2 et localité (critères de #132) : dans les méthodes de phase, toute lecture de
-    D_H, D_F ou M^G (`vue.ouverture.<moyen>`, `vue.grand_livre.position` ou `.ouverture` du
-    moyen) est passée telle quelle à une fonction du module, jamais transformée ni écrêtée sur
-    place, et aucune constante "M_G", "D_H" ou "D_F" n'y figure hors de ces accesseurs ; chaque
-    (fonction, paramètre) qui la reçoit est dans la liste des lectures nettes, dont la fonction
-    n'emploie le paramètre qu'à l'intérieur de max(0.0, <paramètre>), ou dans la liste fermée des
-    lectures brutes ; aucune méthode de phase n'appelle `max`."""
+    """Engagement 2 et localité (critères de #132) : dans toutes les méthodes de la classe du bloc
+    (de phase ou auxiliaires), toute lecture de D_H, D_F ou M^G (`vue.ouverture.<moyen>`,
+    `vue.grand_livre.position` ou `.ouverture` du moyen) est passée telle quelle à une fonction du
+    module, jamais transformée ni écrêtée sur place, et aucune constante "M_G", "D_H" ou "D_F"
+    n'y figure hors de ces accesseurs ; chaque (fonction, paramètre) qui la reçoit est dans la
+    liste des lectures nettes, dont la fonction n'emploie le paramètre qu'à l'intérieur de
+    max(0.0, <paramètre>), ou dans la liste fermée des lectures brutes ; aucune méthode n'appelle
+    `max`. Réserve M1 de la revue finale de J3-d2 : `vue.ouverture` et `vue.grand_livre` ne sont
+    jamais liés à un nom ni passés tels quels (`_acces_detaches`), dans tout le module ; hors de
+    la classe, aucune lecture d'un moyen de paiement ; le corps de la classe ne contient que ses
+    méthodes, sa docstring, `__slots__` et `declaration` (`_corps_de_la_classe`)."""
     arbre = ast.parse(inspect.getsource(bloc))
     fonctions = {n.name: n for n in arbre.body if isinstance(n, ast.FunctionDef)}
     classe = next(n for n in arbre.body if isinstance(n, ast.ClassDef))
-    methodes = [n for n in classe.body
-                if isinstance(n, ast.FunctionDef) and n.name.startswith("phase_")]
+    methodes = _corps_de_la_classe(classe)
+    assert not _acces_detaches(arbre), _acces_detaches(arbre)
+    hors_de_la_classe = [n for n in arbre.body if n is not classe]
+    assert not [n for h in hors_de_la_classe for n in ast.walk(h) if _lecture_d_un_moyen(n)]
     relevees = set()
     for methode in methodes:
         appels_max = [n for n in ast.walk(methode) if isinstance(n, ast.Call)
@@ -342,31 +384,110 @@ def test_part_non_payee_contrainte_de_conservation():
 # --------------------------------------------------------------------------
 
 
+def _ouvertures(*noms):
+    return {Lecture(OUVERTURE, nom) for nom in noms}
+
+
+def _lignes_executees(*lignes):
+    return {Lecture(GRAND_LIVRE, ligne) for ligne in lignes}
+
+
+# Transcription de `tab:finances_publiques-phases`, siège par siège : (lectures, écritures de
+# variables du pas), telles que le tableau les donne une fois complété par le commit `docs:` de
+# #132 qui suit (écritures `G_vise` en phase 2 et `T_F` en phase 6, que le tableau omet). Sources :
+# OUVERTURE, REGISTRE, GRAND_LIVRE (montants exécutés, ou M^{G,8a} en 8 (b)), ou la phase de
+# l'écriture lue (« 0 » : grandeurs du moteur et entrées de scénario). Paramètres des tables :
+# non déclarés comme lectures. Phase 6, « ses calculs de la phase 2 » : T_H, Tr^lev et Tr.
+TABLEAU_DES_PHASES = {
+    "2": (_ouvertures("M_G", "B_H", "B_Bk", "B_CB", "L_CB", "Res", "pr", "N_pa", "Y_HS_m1",
+                      "pi_etoile")
+          | {Lecture(REGISTRE, "dernier_prix"), Lecture("1", "i_CB"), Lecture("0", "Gamma_e"),
+             Lecture("0", "pi_etoile_pas")},
+          {"G_vise", "G_plan", "T_cou", "T_H", "Tr_lev", "Tr"}),
+    "5": ({Lecture("5", "p"), Lecture("5", "G_vol")}, set()),
+    "6": (_ouvertures("B_H", "B_Bk", "B_CB", "K", "L", "D_F", "i_L", "i_D")
+          | {Lecture("1", "i_CB"), Lecture("2", "T_H"), Lecture("2", "Tr_lev"),
+             Lecture("2", "Tr")}
+          | _lignes_executees("1", "2", "3", "4", "5"),
+          {"T_F", "Tr_non_verses"}),
+    "7": (_ouvertures("M_G", "D_H")
+          | {Lecture("0", "varsigma_B"), Lecture("0", "pi_etoile_pas"), Lecture("1", "theta_CB"),
+             Lecture("1", "Pi_CB"), Lecture("2", "T_cou")}
+          | _lignes_executees("2", "5", "6", "7", "10", "11a", "11b", "11c", "14", "15"),
+          {"M_G_etoile", "Em"}),
+    "8b": ({Lecture("1", "Pi_CB"), Lecture(GRAND_LIVRE, "M_G")}, {"perte_non_couverte"}),
+}
+# Écriture de chaque variable du pas dans la colonne « Le bloc écrit » du tableau (fragment
+# LaTeX ou libellé) ; `G_vise` et `T_F` : écritures à ajouter par `docwriter`.
+ECRITURES_DU_TABLEAU = {
+    "2": {"G_vise": "plan non plafonné", "G_plan": r"$G^{\mathrm{plan}}_t$",
+          "T_cou": r"$T^{\mathrm{cou}}_t$", "T_H": r"$T_{H,t}$",
+          "Tr_lev": r"$\mathit{Tr}^{\mathrm{lev}}_t$", "Tr": r"$\mathit{Tr}_t$"},
+    "5": {},
+    "6": {"T_F": r"$T_{F,t}$", "Tr_non_verses": "transferts non versés"},
+    "7": {"M_G_etoile": r"$M^{G*}_t$", "Em": r"$\mathit{Em}_t$"},
+    "8b": {"perte_non_couverte": "perte non couverte"},
+}
+
+
+def _colonne_ecrite_du_tableau():
+    """Phase → cellule « Le bloc écrit, ou propose au noyau » de `tab:finances_publiques-phases`,
+    lue dans la spécification (lignes après la fin de l'en-tête, jusqu'au filet du bas)."""
+    texte = SPECIFICATION.read_text(encoding="utf-8")
+    debut = texte.index(r"\label{tab:finances_publiques-phases}")
+    corps = texte[texte.index(r"\endhead", debut) + len(r"\endhead"):
+                  texte.index(r"\bottomrule", debut)]
+    cellules = {}
+    for ligne in corps.split("\\\\\n"):
+        if not ligne.strip():
+            continue
+        phase, *_, ecrit = ligne.strip().split(" & ")
+        cellules[phase.replace(r"\,", "").replace("(", "").replace(")", "")] = ecrit
+    return cellules
+
+
 def test_declaration_conforme_a_tab_finances_publiques_phases():
     """`tab:finances_publiques-phases` et ADR 0013, annotation du 15/11/2026, point 1 : sièges en
-    phases 2, 5, 6, 7 et 8 (b) seulement ; aucune écriture en phase 1 ; en phase 6, aucune lecture
-    d'une écriture de la phase (source « 6 ») ; lignes 2 (5), 6, 7, 11a à 11c (6), trois lignes
-    19a (7), montant couvert de la ligne 16 (8 b) ; Y^HS écrite en phase 7."""
+    phases 2, 5, 6, 7 et 8 (b) seulement ; lectures et écritures de variables du pas de chaque
+    siège **égales** (ensembles) à la transcription du tableau, `TABLEAU_DES_PHASES` ; aucune
+    écriture en phase 1 ; en phase 6, aucune lecture d'une écriture de la phase (source « 6 ») ;
+    lectures du grand livre de la phase 7 sur des lignes des phases 4 à 6 ; lignes 2 (5), 6, 7,
+    11a à 11c (6), trois lignes 19a (7), montant couvert de la ligne 16 (8 b) ; Y^HS écrite en
+    phase 7."""
     sieges = {s.etape: s for s in bloc.FinancesPubliques.declaration.sieges}
-    assert set(sieges) == {"2", "5", "6", "7", "8b"}
+    assert set(sieges) == set(TABLEAU_DES_PHASES) == {"2", "5", "6", "7", "8b"}
+    for etape, (lit, ecrit) in TABLEAU_DES_PHASES.items():
+        assert set(sieges[etape].lit) == lit, (etape, set(sieges[etape].lit) ^ lit)
+        assert len(sieges[etape].lit) == len(lit), etape
+        assert set(sieges[etape].ecrit) == ecrit, (etape, set(sieges[etape].ecrit) ^ ecrit)
+        assert len(sieges[etape].ecrit) == len(ecrit), etape
     assert sieges["5"].propose == ("2",)
     assert sieges["6"].propose == ("6", "7", "11a", "11b", "11c")
     assert set(sieges["7"].propose) == {"19a-ménages", "19a-banque", "19a-BC"}
     assert sieges["8b"].couvre == ("16",) and sieges["8b"].propose == ()
+    assert all(s.couvre == () for e, s in sieges.items() if e != "8b")
+    assert sieges["2"].propose == () and sieges["8b"].propose == ()
     assert sieges["7"].etat == ("Y_HS_m1",)
     assert all(s.etat == () for e, s in sieges.items() if e != "7")
     assert not any(lu.source == "6" for lu in sieges["6"].lit)
-    assert sieges["2"].ecrit == ("G_vise", "G_plan", "T_cou", "T_H", "Tr_lev", "Tr")
-    assert set(sieges["2"].lit) >= {Lecture(OUVERTURE, "M_G"), Lecture(REGISTRE, "dernier_prix"),
-                                    Lecture("1", "i_CB")}
-    # Phase 7 : ς_B (phase 0), θ_CB et Π^CB (phase 1), T^cou (phase 2), lignes exécutées.
-    assert set(sieges["7"].lit) >= {Lecture("0", "varsigma_B"), Lecture("1", "theta_CB"),
-                                    Lecture("1", "Pi_CB"), Lecture("2", "T_cou")}
-    assert {lu.nom for lu in sieges["7"].lit if lu.source == GRAND_LIVRE} == {
-        "2", "6", "7", "11a", "11b", "11c", "5", "10", "14", "15"}
     assert all(cat.LIGNE[lu.nom].phase in ("4", "5", "6")
                for lu in sieges["7"].lit if lu.source == GRAND_LIVRE)
-    assert set(sieges["8b"].lit) == {Lecture("1", "Pi_CB"), Lecture(GRAND_LIVRE, "M_G")}
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "#132 : `tab:finances_publiques-phases` omet deux écritures déclarées, `G_vise` (plan non "
+    "plafonné, phase 2) et T_{F,t} (phase 6) ; le commit `docs:` de #132 qui suit les ajoute, et "
+    "le commit `tests:` qui le suit immédiatement retire cette marque"))
+def test_tab_finances_publiques_phases_porte_chaque_ecriture():
+    """Lien entre la transcription et la spécification : chaque écriture de variable du pas de
+    `TABLEAU_DES_PHASES` figure, sous son écriture `ECRITURES_DU_TABLEAU`, dans la cellule « Le
+    bloc écrit » de sa phase dans `tab:finances_publiques-phases`."""
+    cellules = _colonne_ecrite_du_tableau()
+    assert {e: set(m) for e, m in ECRITURES_DU_TABLEAU.items()} == {
+        e: ecrit for e, (_, ecrit) in TABLEAU_DES_PHASES.items()}
+    absentes = {(etape, nom) for etape, ecritures in ECRITURES_DU_TABLEAU.items()
+                for nom, fragment in ecritures.items() if fragment not in cellules[etape]}
+    assert not absentes, sorted(absentes)
 
 
 def test_empreinte_une_variable_d_etat_aucun_tirage():

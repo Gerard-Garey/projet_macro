@@ -96,6 +96,7 @@ from dataclasses import dataclass, fields, replace
 from fractions import Fraction
 from pathlib import Path
 
+from nations.blocs import finances_publiques as bloc_9
 from nations.blocs.banque import refinancement
 from nations.etat import schema
 from nations.etat.schema import EtatPays
@@ -1123,52 +1124,83 @@ def _taux_directeur_exact(tables) -> Fraction:
 
 
 # Grandeurs nulles propres au banc du socle complet (bloc 9 réel, #132 ; F3 et P121 précisés au
-# rang 1a de J3-d2), hors des relevés de P87 et de J3-d1 ; même forme que `GRANDEURS_NULLES`.
-# Calculées sur les tables du bloc 9 (τ_F, θ_Tr) et du bloc 8 (θ_CB, r̄, π*) ; B_H ≡ 0 et la
-# ligne 19a-ménages nulle sont des nullités de règle (M27, E10), déclarées comme celles de P141
-# (b). Les grandeurs listées sont jugées **au bit** (|x| = 0), sauf T^cou (1e−12 S^G, F3 :
-# i_CB de BC1 sous r̂* intégrateur, non exacte au fil des pas).
+# rang 1a de J3-d2), hors des relevés de P87 et de J3-d1. Même forme que `GRANDEURS_NULLES`, mais
+# le calcul reçoit aussi l'état d'ouverture **réellement exécuté** `o` (`EtatPays`) : (tables `t`,
+# sentier `s`, ouverture `o`) → nulle ou non. Chaque prédicat teste toute la condition de son
+# libellé : paramètres des tables du bloc 9 (τ_F, θ_Tr) et du bloc 8 (θ_CB, r̄, π*), positions et
+# variables d'état de l'ouverture (B_H, B_CB, L^CB, Res, E^CB, T_{F,t−1}, r̂*) ; la ligne
+# 19a-ménages nulle est la règle E10 (M27), évaluée par la fonction du bloc. Les grandeurs listées
+# sont jugées **au bit** (|x| = 0), sauf T^cou (1e−12 S^G, F3 : i_CB de BC1 sous r̂* intégrateur,
+# non exacte au fil des pas).
 GRANDEURS_NULLES_DU_SOCLE_COMPLET = types.MappingProxyType({
     "T_F (E5)": ("τ_F = 0 (M33) : impôt des entreprises nul",
-                 lambda t, s: _exact(t.finances_publiques.tau_F) == 0),
-    "T^e_F": ("τ_F = 0 : impôt anticipé nul (T_{F,t−1} nul)",
-              lambda t, s: _exact(t.finances_publiques.tau_F) == 0),
-    "Tr (E6)": ("θ_Tr = 0 (M33) : transferts nuls", lambda t, s: _exact(
+                 lambda t, s, o: _exact(t.finances_publiques.tau_F) == 0),
+    "T^e_F": ("τ_F = 0 et T_{F,t−1} = 0 à l'ouverture : impôt anticipé Γ^e T_{F,t−1} nul",
+              lambda t, s, o: _exact(t.finances_publiques.tau_F) == 0 and o.T_F_m1 == 0.0),
+    "Tr (E6)": ("θ_Tr = 0 (M33) : transferts nuls", lambda t, s, o: _exact(
         t.finances_publiques.theta_Tr) == 0),
-    "ligne 6": ("θ_Tr = 0 : ligne 6 nulle", lambda t, s: _exact(
+    "ligne 6": ("θ_Tr = 0 : ligne 6 nulle", lambda t, s, o: _exact(
         t.finances_publiques.theta_Tr) == 0),
     "transferts non versés (E13)": ("θ_Tr = 0 : Tr^lev = 0, rien de non versé",
-                                    lambda t, s: _exact(t.finances_publiques.theta_Tr) == 0),
-    "B_H": ("B_H ≡ 0 au socle (M27, lecture (c)) : ligne 19a-ménages nulle (E10)",
-            lambda t, s: True),
-    "ligne 11a": ("B_H ≡ 0 : intérêts des ménages sur titres nuls", lambda t, s: True),
-    "ligne 19a-ménages": ("E10 : ΔB^prim_H = 0 (M27)", lambda t, s: True),
+                                    lambda t, s, o: _exact(t.finances_publiques.theta_Tr) == 0),
+    "B_H": ("B_H = 0 à l'ouverture et ligne 19a-ménages nulle (E10, M27, lecture (c))",
+            lambda t, s, o: o.B_H == 0.0 and _souscription_des_menages_nulle(t)),
+    "ligne 11a": ("B_H = 0 à l'ouverture et 19a-ménages nulle : intérêts des ménages sur titres "
+                  "nuls", lambda t, s, o: o.B_H == 0.0 and _souscription_des_menages_nulle(t)),
+    "ligne 19a-ménages": ("E10 : ΔB^prim_H = 0 (M27), règle évaluée par la fonction du bloc",
+                          lambda t, s, o: _souscription_des_menages_nulle(t)),
     "ΔB^prim_CB (19a-BC)": ("θ_CB = 0 (BC5, E10)",
-                            lambda t, s: _exact(t.banque_centrale.theta_CB) == 0),
+                            lambda t, s, o: _exact(t.banque_centrale.theta_CB) == 0),
     "B_CB": ("θ_CB = 0 et B_CB,0 = 0 : titres de la banque centrale nuls",
-             lambda t, s: _exact(t.banque_centrale.theta_CB) == 0),
-    "ligne 11c": ("B_CB = 0 : intérêts de la banque centrale sur titres nuls",
-                  lambda t, s: _exact(t.banque_centrale.theta_CB) == 0),
-    "E^CB (V^flux)": ("Π^CB versé en entier (ligne 16 positive, BC9) : fonds propres nuls",
-                      lambda t, s: _taux_directeur_exact(t) > 0),
-    "perte non couverte (E13)": ("Π^CB ≥ 0 sur le sentier (i_CB > 0, L^CB ≥ 0, Res = 0)",
-                                 lambda t, s: _taux_directeur_exact(t) > 0),
+             lambda t, s, o: _exact(t.banque_centrale.theta_CB) == 0 and o.B_CB == 0.0),
+    "ligne 11c": ("θ_CB = 0 et B_CB,0 = 0 : intérêts de la banque centrale sur titres nuls",
+                  lambda t, s, o: _exact(t.banque_centrale.theta_CB) == 0 and o.B_CB == 0.0),
+    "E^CB (V^flux)": (("E^CB_0 = 0 et Π^CB ≥ 0 sur le sentier (i_CB > 0 ; à l'ouverture B_CB ≥ 0, "
+                       "L^CB ≥ 0, Res = 0) : Π^CB versé en entier (ligne 16, BC9), fonds propres "
+                       "nuls"),
+                      lambda t, s, o: (getattr(o, cat.VALEUR_NETTE_FLUX["banque_centrale"])
+                                       == 0.0 and _resultat_cb_positif(t, o))),
+    "perte non couverte (E13)": ("Π^CB ≥ 0 sur le sentier (i_CB > 0 ; à l'ouverture B_CB ≥ 0, "
+                                 "L^CB ≥ 0, Res = 0)",
+                                 lambda t, s, o: _resultat_cb_positif(t, o)),
     # T^cou = φ (i_CB − i^ref) A/n_a (E4) : i_CB de BC1, (1 + r̂*)(1 + π*) + a_π (π_{t−1} − π*)
     # − 1, sur l'état r̂* ; i^ref = (1 + r̄)(1 + π*) − 1 sur la table r̄ ; π* d'ouverture des deux
-    # côtés. Au point fixe de BC1 (π_{t−1} = π*), i_CB = i^ref si et seulement si r̂*_0, état
-    # d'ouverture du sentier, égale r̄, paramètre de la table : condition sur deux sources
-    # distinctes. Jugée à 1e−12 S^G (F3), non au bit : π_{t−1}, lu au registre des prix, et r̂*,
-    # intégrateur, ne sont pas exacts au fil des pas.
-    "T^cou (E4)": ("i_CB = i^ref au point fixe de BC1 : r̂*_0 du sentier égal à r̄ de la table",
-                   lambda t, s: _exact(s.o["r_hat"]) == _exact(t.banque_centrale.r_bar)),
+    # côtés. Au point fixe de BC1 (π_{t−1} = π*), i_CB = i^ref si et seulement si r̂*_0, lu sur
+    # l'état d'ouverture exécuté, égale r̄, paramètre de la table : condition sur deux sources
+    # distinctes (un état initial au r̂* déplacé la rend fausse, alors que r̂*_0 du script vaut r̄
+    # par construction, `etat_stationnaire`). Jugée à 1e−12 S^G (F3), non au bit : π_{t−1}, lu au
+    # registre des prix, et r̂*, intégrateur, ne sont pas exacts au fil des pas.
+    "T^cou (E4)": ("i_CB = i^ref au point fixe de BC1 : r̂*_0 de l'ouverture exécutée égal à r̄ "
+                   "de la table",
+                   lambda t, s, o: _exact(o.r_hat_etoile) == _exact(t.banque_centrale.r_bar)),
 })
 
 
-def est_nulle(cle: str, tables, sentier: Sentier) -> bool:
+def _souscription_des_menages_nulle(tables) -> bool:
+    """E10 évaluée par la fonction du bloc 9 (`souscriptions_banque_centrale_et_menages`) sur un
+    besoin d'émission non nul : ΔB^prim_H = 0 au bit (M27)."""
+    return bloc_9.souscriptions_banque_centrale_et_menages(
+        _valeur_de_champ(tables.banque_centrale.theta_CB), 1.0)[1] == 0.0
+
+
+def _resultat_cb_positif(tables, o: EtatPays) -> bool:
+    """Π^CB = i_CB (B_CB + L^CB − Res)/n_a ≥ 0 (BC6, i_B = i_res = i_CB) : i_CB > 0 au point fixe
+    de BC1 en exact, et, sur l'ouverture exécutée, B_CB ≥ 0, L^CB ≥ 0 et Res = 0."""
+    return (_taux_directeur_exact(tables) > 0 and o.B_CB >= 0.0 and o.L_CB >= 0.0
+            and o.Res == 0.0)
+
+
+def est_nulle(cle: str, tables, sentier: Sentier, ouverture: EtatPays | None = None) -> bool:
     """D1, P121 : la grandeur `cle` est nulle par le calcul de `GRANDEURS_NULLES`, de
     `GRANDEURS_NULLES_DE_J3D1` ou de `GRANDEURS_NULLES_DU_SOCLE_COMPLET`, aux tables `tables` et
-    sur le sentier `sentier`."""
-    for liste in (GRANDEURS_NULLES, GRANDEURS_NULLES_DE_J3D1, GRANDEURS_NULLES_DU_SOCLE_COMPLET):
+    sur le sentier `sentier` ; pour la dernière liste, sur l'état d'ouverture exécuté
+    `ouverture`, obligatoire (refus sinon, jamais un état reconstruit en silence)."""
+    for liste in (GRANDEURS_NULLES, GRANDEURS_NULLES_DE_J3D1):
         if cle in liste:
             return bool(liste[cle][1](tables, sentier))
+    if cle in GRANDEURS_NULLES_DU_SOCLE_COMPLET:
+        if ouverture is None:
+            raise TypeError(f"{cle} : nullité du socle complet jugée sur l'état d'ouverture "
+                            "exécuté, à passer explicitement")
+        return bool(GRANDEURS_NULLES_DU_SOCLE_COMPLET[cle][1](tables, sentier, ouverture))
     return False
