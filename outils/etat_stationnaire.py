@@ -298,9 +298,12 @@ def controler_domaine(par: Parametres) -> list[str]:
     for nom in ("nu_F", "tu_bar", "kappa", "sigma"):
         if not getattr(par, nom) > 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : > 0 attendu")
+    # Borne haute 20 de η_r et ζ (P139) : refusée ici comme dans la table du bloc 6
+    # (`nations.moteur.parametres.investissement`), de sorte que script et table refusent le même ensemble.
     for nom in ("eta_r", "zeta"):
-        if not getattr(par, nom) >= 0:
-            raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : ≥ 0 attendu (sec:investissement-conditions)")
+        if not 0 <= getattr(par, nom) <= 20:
+            raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : 0 ≤ {nom} ≤ 20 attendu (sec:investissement-conditions ; "
+                              "borne haute P139)")
     # U^eq > 0 et μ̄ > 0 : conditions de conception et d'existence de l'état stationnaire, non domaines de
     # définition (décision du mainteneur du 13/11/2026, P71) ; refusées ici comme dans les tables du moteur
     # (`nations.moteur.parametres.travail` et `.prix`), de sorte que script et tables refusent le même ensemble.
