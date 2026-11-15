@@ -17,7 +17,7 @@ rang 4), B7 dans ses trois cas dans le moteur, E^Bk du bloc comparé à
 
 Les blocs réels de la production, du travail, des prix, de la banque et de la
 banque centrale remplacent les blocs d'essai de leur radical ; les blocs 5, 6 et
-9 sont des blocs d'essai sur le sentier (bloc 9 : E1 et E2). **Étiquettes** :
+9 sont des blocs d'essai sur le sentier (bloc 9 : X1 et X2). **Étiquettes** :
 toute mesure dynamique porte « plans nominaux exogènes » ; aucune mesure ici ne
 vaut verdict de la boucle T3 ↔ BC3 (P87, rang 6), de la stationnarité partielle
 étendue (P94, rang 6) ni de la boucle conjointe (#114).

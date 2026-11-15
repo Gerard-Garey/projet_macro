@@ -36,8 +36,8 @@ du sentier. Le bloc d'essai 8 a une variante à π^e choqué (`choc_pi_e`),
 injecté dans l'état d'ouverture : π^e_0 dans l'état initial, π^e_{t+1} écrite
 en phase 1. **Réserve de `monnaie`** : hors du sentier, le bloc d'essai à
 π^e = π* coupe la boucle T3 ↔ BC3 ; toute mesure dynamique faite sur ce socle
-avec le bloc d'essai 8 et sans les options d'E3 porte l'étiquette `ETIQUETTE` et ne
-vaut pas verdict de boucle conjointe ; une mesure où le bloc 8 est réel ou E3
+avec le bloc d'essai 8 et sans les options d'X3 porte l'étiquette `ETIQUETTE` et ne
+vaut pas verdict de boucle conjointe ; une mesure où le bloc 8 est réel ou X3
 active porte l'étiquette de son banc (réserve mineure de `monnaie`, rang 6).
 Le bloc d'essai 8 écrit aussi la cible en vigueur π*_{t+1} = π*_t, **lue à
 l'ouverture** (`vue.ouverture.pi_etoile`, lecture déclarée), par la règle
@@ -50,19 +50,20 @@ du script ; hors du sentier (π*_0 ≠ π̄), elle reste à π*_0.
 (bloc 8 : `i_regle`, `i_CB`, `theta_CB`, `Pi_CB`, écrits en phase 1 aux valeurs du
 sentier par le bloc d'essai 8, par BC1, BC5 et BC6 par le bloc réel, #91).
 
-**Bloc d'essai 9 (P95, rang 4 de J3-c)** : E1, il déclare le montant couvert de
+**Bloc d'essai 9 (P95, rang 4 de J3-c ; exigences nommées X1 à X4, #133, distinctes
+des équations E1 à E13 du bloc État et dette)** : X1, il déclare le montant couvert de
 la ligne 16 sur Π^CB **lu en phase 1** (`Pi_CB`, variable du pas du bloc 8), non
-sur le sentier ; E2, il propose les lignes 11a à 11c selon E7, au taux du tour
+sur le sentier ; X2, il propose les lignes 11a à 11c selon E7, au taux du tour
 `i_CB` lu en phase 1, converti au pas, sur les encours d'ouverture B_H, B_Bk et
-B_CB. **E3 (P95, rang 6 de J3-c)**, pour les essais avec choc, par les options
-de `emission_e3()` : il propose les trois lignes 19a selon E8 à E11
+B_CB. **X3 (P95, rang 6 de J3-c)**, pour les essais avec choc, par les options
+de `emission_x3()` : il propose les trois lignes 19a selon E8 à E11
 (`sec:finances_publiques-emission`) sur les lignes 2, 6, 7 et 11a à 11c
 exécutées, Π^CB et θ_CB lus en phase 1 et M^G d'ouverture, ν_G et ς_B du
 sentier ; sans ces options, l'émission reste aux montants du sentier (cas
 d'essai de la linéarisation, où les positions ont des flux exogènes). **X4
 (P124, rang 5 de J3-d1)**, couverture des intérêts, par les options de
 `couverture_x4()` : ligne 7 = T_H du sentier + T^cou, banc de la stationnarité
-partielle de J3-d1, jamais dans le banc de P87 ; `composer` assemble X4 et E3
+partielle de J3-d1, jamais dans le banc de P87 ; `composer` assemble X4 et X3
 sans dépendre de l'ordre.
 
 **Tables des blocs 7 et 8 (réserve R1 de `monnaie`, rang 4 de J3-c ; étendue
@@ -115,7 +116,7 @@ from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
 
 RACINE = Path(__file__).resolve().parents[2]
-ETIQUETTE = "π^e exogène (bloc d'essai 8) ; émission aux montants du sentier (E3 inactive)"
+ETIQUETTE = "π^e exogène (bloc d'essai 8) ; émission aux montants du sentier (X3 inactive)"
 GRAINE = 20261113
 NU_G = 1.15  # ν_G retenu (décision du mainteneur du 05/10/2026, #84) ; synthèse du rang 1a, § 6
 POINTS_PI = (0.0, 0.02, 0.10)
@@ -245,7 +246,7 @@ OUVERTURE_DES_VARIABLES = {
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
-# Les lignes 1 à 3 (acheteurs, p × volume servi), 11a à 11c (E7, bloc d'essai 9, E2) et 21 (B7,
+# Les lignes 1 à 3 (acheteurs, p × volume servi), 11a à 11c (E7, bloc d'essai 9, X2) et 21 (B7,
 # forme exacte) n'y sont pas.
 LIGNES_DU_SENTIER = {
     "4": {"Delta_IN": "dIN"}, "5": {"WB": "WB"}, "6": {"Tr": "Tr"},
@@ -261,7 +262,7 @@ ACHETEURS = (("menages", "1", "C", "C_vol", "C_plan"),
              ("investissement", "3", "I", "I_vol", "I_plan"),
              ("finances_publiques", "2", "G", "G_vol", "G_plan"))
 
-# Lignes 11a à 11c (E7), proposées par le bloc d'essai 9 (E2) : ligne → (terme, encours
+# Lignes 11a à 11c (E7), proposées par le bloc d'essai 9 (X2) : ligne → (terme, encours
 # d'ouverture des titres).
 INTERETS_SUR_TITRES = {"11a": ("iB_BH", "B_H"), "11b": ("iB_BBk", "B_Bk"),
                        "11c": ("iB_BCB", "B_CB")}
@@ -298,11 +299,11 @@ def _lectures(radical: str, etape: str) -> tuple[Lecture, ...]:
     if (radical, etape) == ("banque", "8c"):
         lectures += [Lecture(GRAND_LIVRE, "Res"), Lecture(GRAND_LIVRE, "L_CB")]
     if (radical, etape) == ("finances_publiques", "6"):
-        # E2 : lignes 11a à 11c selon E7, au taux du tour sur les encours d'ouverture.
+        # X2 : lignes 11a à 11c selon E7, au taux du tour sur les encours d'ouverture.
         lectures += [Lecture("1", "i_CB")] + [Lecture(OUVERTURE, encours) for _, encours
                                               in INTERETS_SUR_TITRES.values()]
     if (radical, etape) == ("finances_publiques", "8b"):
-        # E1 : montant couvert de la ligne 16 sur Π^CB lu en phase 1.
+        # X1 : montant couvert de la ligne 16 sur Π^CB lu en phase 1.
         lectures += [Lecture(GRAND_LIVRE, "M_G"), Lecture("1", "Pi_CB")]
     if (radical, etape) == ("banque_centrale", "1"):
         lectures.append(Lecture(OUVERTURE, "pi_etoile"))
@@ -381,7 +382,7 @@ class _BlocDEssai:
                 vue.proposer(ligne, {terme: sentier.valeur(cle, NOMINAL, t, echelle)
                                      for terme, cle in LIGNES_DU_SENTIER[ligne].items()})
         if siege.couvre:
-            # E1 : Π^CB du pas, lu en phase 1 ; une perte est un résultat négatif.
+            # X1 : Π^CB du pas, lu en phase 1 ; une perte est un résultat négatif.
             perte = vue.lire("Pi_CB")
             if perte < 0.0:
                 vue.declarer_montant_couvert(
@@ -411,7 +412,7 @@ def classe_d_essai(radical: str, sentier: Sentier, *, echelle: float = 1.0,
     refus à l'assemblage) ; `regles` donne, pour une variable d'état du radical, une règle
     d'essai (vue, sentier, t) → valeur du pas suivant, à la place du sentier (cas d'essai de
     la linéarisation) ; `lignes` donne, pour une ligne proposée par le radical, une règle
-    d'essai (vue, sentier) → montants par terme, à la place du sentier (E3) ;
+    d'essai (vue, sentier) → montants par terme, à la place du sentier (X3) ;
     `chocs_des_plans` : plan → facteur(t) multipliant le plan du sentier au pas t (un plan absent
     n'est pas choqué)."""
     declaration = declaration_d_essai(radical) if declaration is None else declaration
@@ -467,7 +468,7 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
     réel par radical, #113, #50, #51) ; `declarations` remplace la déclaration d'un radical ;
     `regles` : variable d'état → règle d'essai, passée au bloc de son propriétaire, ajoutée à
     `REGLES_PAR_DEFAUT` (et prioritaire sur elles) ; `lignes` : ligne → règle d'essai, passée
-    au bloc d'essai de son proposant (E3) ; `chocs_des_plans` : plan (`PLANS_DES_ACHETEURS`) →
+    au bloc d'essai de son proposant (X3) ; `chocs_des_plans` : plan (`PLANS_DES_ACHETEURS`) →
     facteur(t), passé au bloc d'essai de son écrivain. Une clé de `lignes`, de `declarations`,
     de `regles` ou de `chocs_des_plans` dont le radical (proposant, propriétaire ou écrivain)
     est remplacé par un bloc réel, ou une ligne qu'aucun siège ne propose, ou un plan inconnu,
@@ -748,12 +749,12 @@ def prix_exogene_marge_identite(echelle: float = 1.0) -> dict:
 
 
 # --------------------------------------------------------------------------
-# Bloc d'essai 9, E3 (P95, rang 6 de J3-c) : émission selon E8 à E11
+# Bloc d'essai 9, X3 (P95, rang 6 de J3-c) : émission selon E8 à E11
 # --------------------------------------------------------------------------
 
-# Lignes exécutées que lit E3 (`sec:finances_publiques-emission`, « variables ») : dépense (2),
+# Lignes exécutées que lit X3 (`sec:finances_publiques-emission`, « variables ») : dépense (2),
 # transferts (6), impôts (7, T_H + T_F) et intérêts sur titres (11a à 11c, E7).
-LIGNES_LUES_PAR_E3 = ("2", "6", "7", "11a", "11b", "11c")
+LIGNES_LUES_PAR_X3 = ("2", "6", "7", "11a", "11b", "11c")
 
 
 def besoin_d_emission(vue: ordo.Vue, sentier: Sentier) -> tuple[float, float]:
@@ -763,7 +764,7 @@ def besoin_d_emission(vue: ordo.Vue, sentier: Sentier) -> tuple[float, float]:
     u.m. ; ν_G du sentier (1,15, `NU_G`). Appelé par les règles 19a-BC et 19a-banque, une fois
     chacune par pas, sur les mêmes lectures : un calcul unique demanderait un état caché dans le
     bloc d'essai ; le même Em_t des deux appels est vérifié au bit
-    (`test_e3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque`)."""
+    (`test_x3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque`)."""
     livre = vue.grand_livre
     interets = sum(livre.montant_execute_ligne(ligne) for ligne in ("11a", "11b", "11c"))
     paiements_bruts = (livre.montant_execute_ligne("2") + livre.montant_execute_ligne("6")
@@ -793,18 +794,18 @@ def _souscription_banque(vue: ordo.Vue, sentier: Sentier) -> dict:
     return {"Delta_BBk_prim": (1.0 - sentier.par.varsigma_B) * (besoin - part_cb)}
 
 
-def emission_e3() -> dict:
-    """Options de `blocs` : le bloc d'essai 9 propose les lignes 19a selon E8 à E11 (E3, P95),
-    déclaration d'essai complétée des lectures de E3 en phase 7 (lignes exécutées
-    `LIGNES_LUES_PAR_E3`, Π^CB et θ_CB de la phase 1, M^G d'ouverture). Après le versement de
+def emission_x3() -> dict:
+    """Options de `blocs` : le bloc d'essai 9 propose les lignes 19a selon E8 à E11 (X3, P95),
+    déclaration d'essai complétée des lectures de X3 en phase 7 (lignes exécutées
+    `LIGNES_LUES_PAR_X3`, Π^CB et θ_CB de la phase 1, M^G d'ouverture). Après le versement de
     Π^CB en 8 (b), le compte du Trésor vaut M^G*_t (`sec:finances_publiques-emission`) : sous
     un choc, l'émission absorbe l'écart des paiements, que les montants du sentier laissaient
     au compte du Trésor. Mesure du rang 6 (blocs 2, 3, 4, 7 et 8 réels, 720 pas) : l'arrêt
     du compte du Trésor en phase 5 hors du sentier (marche de cible π*_0 = 1 %, pas 72 ; cas
-    E2, pas 16) disparaît sous E3, mais les dépôts des entreprises s'épuisent plus tard en
+    X2, pas 16) disparaît sous X3, mais les dépôts des entreprises s'épuisent plus tard en
     phase 4 (pas 186 et 295) : plans nominaux exogènes des blocs d'essai 5 et 6."""
     propre = declaration_d_essai("finances_publiques")
-    lectures = (tuple(Lecture(GRAND_LIVRE, ligne) for ligne in LIGNES_LUES_PAR_E3)
+    lectures = (tuple(Lecture(GRAND_LIVRE, ligne) for ligne in LIGNES_LUES_PAR_X3)
                 + (Lecture("1", "Pi_CB"), Lecture("1", "theta_CB"), Lecture(OUVERTURE, "M_G")))
     sieges = tuple(replace(s, lit=s.lit + lectures) if s.etape == "7" else s
                    for s in propre.sieges)
@@ -854,11 +855,11 @@ def _impots_avec_couverture(vue: ordo.Vue, sentier: Sentier) -> dict:
 def couverture_x4() -> dict:
     """Options de `blocs` : le bloc d'essai 9 propose la ligne 7 sous la couverture X4 (P124 ; ADR
     0013, annotation de J3-d1, point 7 ; `CONTEXT.md`, « Couverture X4 »), déclaration d'essai
-    complétée en phase 6 des lectures de X4 (`LECTURES_DE_X4`, celles déjà déclarées pour E2 non
+    complétée en phase 6 des lectures de X4 (`LECTURES_DE_X4`, celles déjà déclarées pour X2 non
     répétées) et de la variable du pas `T_cou`. Nulle sur le sentier (i_CB = i_ref), elle referme
     le canal rentier du banc de stationnarité partielle de J3-d1. Jamais dans le banc de P87 ;
     refusée sur un bloc 9 réel (`OptionSansBlocDEssai`, par `blocs`) ; composable avec
-    `emission_e3()` par `composer`, dans les deux ordres. Toute mesure faite avec elle porte
+    `emission_x3()` par `composer`, dans les deux ordres. Toute mesure faite avec elle porte
     l'étiquette `ETIQUETTE_X4`."""
     propre = declaration_d_essai("finances_publiques")
 
@@ -880,7 +881,7 @@ class OptionsIncompatibles(ValueError):
 
 
 def composer(*options: dict) -> dict:
-    """Composition d'options de `blocs` de la forme d'`emission_e3()` et de `couverture_x4()`
+    """Composition d'options de `blocs` de la forme d'`emission_x3()` et de `couverture_x4()`
     (`declarations`, `lignes`). Pour un radical déclaré par plusieurs options, chaque siège est
     pris de l'unique option qui le modifie par rapport à `declaration_d_essai` ; deux options qui
     modifient le même siège, ou proposent une règle pour la même ligne, sont refusées

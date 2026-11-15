@@ -14,7 +14,7 @@ des délais. Mesures (a) publiées : (d1), (d2), frontière de la double précis
 Coût : `test_budget.py` (P57, part de chaque bloc réel).
 
 **Étiquettes** : blocs 2 à 8 réels, bloc d'essai 9 (plans de l'État exogènes, émission aux
-montants du sentier, E3 et X4 inactives) ; aucune mesure ici ne vaut verdict de la stationnarité
+montants du sentier, X3 et X4 inactives) ; aucune mesure ici ne vaut verdict de la stationnarité
 partielle de la branche (banc à couverture X4, rang 5) ni de la boucle conjointe (#114).
 Seuils écrits avant l'essai (fiche 6, § 9.6 ; fiche 7, § 9.6 ; critère de #67), non déplacés.
 """
@@ -35,7 +35,7 @@ from nations.observation.observateur import FinDePas
 N_A = PARAMETRES_DE_REFERENCE.cadre.pas_par_an
 NB_PAS = 720
 TABLE = PARAMETRES_DE_REFERENCE.investissement
-ETIQUETTES = "blocs 2 à 8 réels, bloc d'essai 9 (E3 et X4 inactives)"
+ETIQUETTES = "blocs 2 à 8 réels, bloc d'essai 9 (X3 et X4 inactives)"
 # Seuils écrits avant l'essai (fiche 6, § 9.6 ; fiche 7, § 9.6).
 SEUIL_UN_PAS = 1e-10  # relatif
 SEUIL_S1 = 1e-15  # relatif (ajout du 14/11, (b))

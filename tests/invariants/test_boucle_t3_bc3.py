@@ -1,8 +1,8 @@
-"""Boucle T3 ↔ BC3 (P87), stationnarité partielle étendue (P94) et bloc d'essai 9 E3 (P95).
+"""Boucle T3 ↔ BC3 (P87), stationnarité partielle étendue (P94) et bloc d'essai 9 X3 (P95).
 
 Rang 6 de J3-c (#91, #90). **Banc** (P87) : socle partiel d'essai, blocs 2, 3,
 4, 7 et 8 réels, plans nominaux exogènes (blocs d'essai 5, 6 et 9) ; bloc
-d'essai 9 avec E1, E2 et **E3** (émission selon E8 à E11, `emission_e3`, P95) ;
+d'essai 9 avec X1, X2 et **X3** (émission selon E8 à E11, `emission_x3`, P95) ;
 n_a = 12, ν_G = 1,15, π* ∈ {0 ; 2 % ; 10 %}. **Étiquette** de toute mesure :
 `ETIQUETTE`. Aucune mesure ici ne vaut verdict de la boucle conjointe de la
 fiche 8 (#114).
@@ -82,8 +82,8 @@ from nations.noyau.grand_livre import ClotureDePhase
 from nations.observation.observateur import FinDePas
 
 N_A = PAS_PAR_AN.valeur
-ETIQUETTE = ("plans nominaux exogènes ; blocs 2, 3, 4, 7 et 8 réels ; bloc d'essai 9 avec E1 à "
-             "E3")
+ETIQUETTE = ("plans nominaux exogènes ; blocs 2, 3, 4, 7 et 8 réels ; bloc d'essai 9 avec X1 à "
+             "X3")
 CHOC = 0.01
 # Horizons et fenêtres écrits avant l'essai (P87).
 NB_PAS = 720
@@ -136,7 +136,7 @@ def parametres(pi, lambda_e):
 
 
 def ordonnanceur(socle, sentier, lambda_e, choc_g=False):
-    options = socle.emission_e3()
+    options = socle.emission_x3()
     if choc_g:
         options["chocs_des_plans"] = {"G_plan": _g_plan_accru}
     return socle.ordonnanceur(sentier, parametres(sentier.pi, lambda_e), reels=reels(),
@@ -592,12 +592,12 @@ def test_controle_prospectif_du_coefficient_de_t3(bancs, pi, publier):
 
 
 # --------------------------------------------------------------------------
-# Bloc d'essai 9, E3 (P95)
+# Bloc d'essai 9, X3 (P95)
 # --------------------------------------------------------------------------
 
 
-class ReleveE3:
-    """Observateur d'essai : par pas, montants exécutés des lignes lues et proposées par E3,
+class ReleveX3:
+    """Observateur d'essai : par pas, montants exécutés des lignes lues et proposées par X3,
     variables du pas et état t + 1."""
 
     LIGNES = ("2", "6", "7", "11a", "11b", "11c", "19a-ménages", "19a-banque", "19a-BC")
@@ -619,8 +619,8 @@ class ReleveE3:
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 @pytest.mark.parametrize("choc", ["π^e_0 + 1 point", "G^plan × 1,01 aux tours 1 à 12"])
-def test_e3_emission_selon_e8_a_e11(socle, pi, choc, publier):
-    """E3 (P95), sur 36 pas sous choc : les lignes 19a exécutées égalent E10 et E11 recalculées
+def test_x3_emission_selon_e8_a_e11(socle, pi, choc, publier):
+    """X3 (P95), sur 36 pas sous choc : les lignes 19a exécutées égalent E10 et E11 recalculées
     par le test sur les lignes 2, 6, 7 et 11a à 11c exécutées, Π^CB et θ_CB du pas et M^G
     d'ouverture (au bit, même ordre d'opérations) ; ligne 19a-ménages nulle ; et le compte du
     Trésor de clôture vaut M^G*_t = ν_G PB_t à 1e−12 × S^G (`sec:finances_publiques-emission` :
@@ -628,7 +628,7 @@ def test_e3_emission_selon_e8_a_e11(socle, pi, choc, publier):
     delta, choc_g = CHOCS[choc]
     sentier = socle.sentier(pi)
     initial = socle.etat_initial(sentier, choc_pi_e0=delta)
-    releve = ReleveE3()
+    releve = ReleveX3()
     socle.derouler(initial, 36, ordonnanceur(socle, sentier, LAMBDA_DE_LA_TABLE, choc_g), releve)
     nu_g, varsigma = sentier.par.nu_G, sentier.par.varsigma_B
     ouvertures = [initial] + [p["etat"] for p in releve.pas[:-1]]
@@ -646,13 +646,13 @@ def test_e3_emission_selon_e8_a_e11(socle, pi, choc, publier):
         s_g = idt.echelle_bilan({q: getattr(e, q) for q in cat.NOMS_POSTES}, "etat")
         pire = max(pire, abs(e.M_G - visee) / s_g)
     assert pire <= SEUIL_NUL
-    publier(f"Bloc d'essai 9, E3, {choc}, π* = {100 * pi:g} %, 36 pas ({ETIQUETTE})", [
+    publier(f"Bloc d'essai 9, X3, {choc}, π* = {100 * pi:g} %, 36 pas ({ETIQUETTE})", [
         f"lignes 19a = E10, E11 au bit ; max |M^G_{{t+1}} − ν_G PB_t|/S^G = {pire:.1e} "
         "(seuil 1e−12)"])
 
 
 def _vue_de_souscription(sentier, theta_cb):
-    """Vue d'essai des fonctions de souscription d'E3 : lignes 2, 6, 7 et 11a à 11c exécutées
+    """Vue d'essai des fonctions de souscription d'X3 : lignes 2, 6, 7 et 11a à 11c exécutées
     (montants du pas 0 du sentier, dépense accrue de 1 % pour que Em ≠ Em du sentier), Π^CB et
     θ_CB du pas (θ_CB = `theta_cb`) et M^G d'ouverture."""
     s, o = sentier.s, sentier.o
@@ -666,10 +666,10 @@ def _vue_de_souscription(sentier, theta_cb):
 
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
-def test_e3_souscriptions_hors_du_socle(socle, pi):
+def test_x3_souscriptions_hors_du_socle(socle, pi):
     """Constat m1 de l'audit du rang 6 : au socle, θ_CB = 0 et ς_B = 0 laissent survivre une
     mutation « E11 sans la part de la banque centrale ». Appel direct des fonctions de
-    souscription d'E3 sur une vue d'essai, θ_CB,t = 0,3 lu en phase 1 (la table garde θ_CB = 0)
+    souscription d'X3 sur une vue d'essai, θ_CB,t = 0,3 lu en phase 1 (la table garde θ_CB = 0)
     et ς_B = 0,2 : E10, 19a-BC = θ_CB,t Em_t et 19a-ménages = 0 ; E11, 19a-banque =
     (1 − ς_B)(Em_t − 19a-BC), dans l'ordre C25 (besoin, part de la banque centrale, reliquat),
     contre une forme recalculée par le test, à 1e−15 × |Em_t|."""
@@ -693,9 +693,9 @@ def test_e3_souscriptions_hors_du_socle(socle, pi):
     assert abs(non_souscrit - varsigma * (1.0 - theta_cb) * em) <= 1e-15 * abs(em)
 
 
-def test_e3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque(socle, monkeypatch):
+def test_x3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque(socle, monkeypatch):
     """Constat (b) de `/code-review` (revue finale de J3-c) : `besoin_d_emission` est appelé par
-    les deux règles d'E3 (19a-BC, E10 ; 19a-banque, E11), une fois chacune par pas, faute d'un
+    les deux règles d'X3 (19a-BC, E10 ; 19a-banque, E11), une fois chacune par pas, faute d'un
     calcul unique sans état caché dans le bloc d'essai. Sur 36 pas sous choc de G^plan, à π* =
     2 %, chaque pas compte exactement deux appels, qui rendent le même (Em_t, M^G*_t) au bit ; les
     lignes 19a-BC et 19a-banque exécutées égalent E10 et E11 sur ce Em_t (au bit)."""
@@ -709,12 +709,12 @@ def test_e3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque(socle, monkeypatch):
 
     monkeypatch.setattr(socle, "besoin_d_emission", releve)
     sentier = socle.sentier(0.02)
-    releve_e3 = ReleveE3()
+    releve_x3 = ReleveX3()
     socle.derouler(socle.etat_initial(sentier), 36,
-                   ordonnanceur(socle, sentier, LAMBDA_DE_LA_TABLE, True), releve_e3)
+                   ordonnanceur(socle, sentier, LAMBDA_DE_LA_TABLE, True), releve_x3)
     assert sorted(appels) == list(range(36))
     varsigma = sentier.par.varsigma_B
-    for t, p in enumerate(releve_e3.pas):
+    for t, p in enumerate(releve_x3.pas):
         (em, visee), second = appels[t]
         assert (em.hex(), visee.hex()) == tuple(x.hex() for x in second), t
         part_cb = p["variables"]["theta_CB"] * em
@@ -727,7 +727,7 @@ def test_options_sans_bloc_d_essai_refusees(socle):
     remplacé par un bloc réel, une ligne qu'aucun siège ne propose, ou une déclaration d'un
     radical remplacé par un bloc réel, est refusée par une exception, jamais ignorée."""
     sentier = socle.sentier(0.02)
-    e3 = socle.emission_e3()
+    x3 = socle.emission_x3()
     # Ligne 21, proposée par la banque, remplacée par le bloc réel.
     with pytest.raises(socle.OptionSansBlocDEssai, match="remplacé par un bloc réel"):
         socle.blocs(sentier, reels=(Banque(),), lignes={"21": lambda vue, s: {}})
@@ -742,14 +742,14 @@ def test_options_sans_bloc_d_essai_refusees(socle):
         dataclasses.replace(s, propose=tuple(x for x in s.propose if x != "19a-BC"))
         for s in propre.sieges))
     with pytest.raises(socle.OptionSansBlocDEssai, match="qu'aucun de ses sièges ne propose"):
-        socle.blocs(sentier, lignes=e3["lignes"], declarations={"finances_publiques": sans})
+        socle.blocs(sentier, lignes=x3["lignes"], declarations={"finances_publiques": sans})
     # Ligne absente du catalogue ; radical inconnu.
     with pytest.raises(socle.OptionSansBlocDEssai, match="absente du catalogue"):
         socle.blocs(sentier, lignes={"99z": lambda vue, s: {}})
     with pytest.raises(socle.OptionSansBlocDEssai, match="inconnu"):
         socle.blocs(sentier, declarations={"commerce": propre})
-    # Les options d'E3 restent admises sous les blocs réels du banc.
-    assert len(socle.blocs(sentier, reels=reels(), **e3)) == len(socle.RADICAUX)
+    # Les options d'X3 restent admises sous les blocs réels du banc.
+    assert len(socle.blocs(sentier, reels=reels(), **x3)) == len(socle.RADICAUX)
 
 
 # --------------------------------------------------------------------------
