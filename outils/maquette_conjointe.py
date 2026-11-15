@@ -1476,7 +1476,9 @@ def releve() -> list[Chiffre]:
     ajouter("finances.rayon.phi0.5.pi0.1.ecartees", "1,0029", "rayon", "socle",
             "couverture φ = 0,5 (E4), π̄ = 10 %, pire des deux régimes, lecture (c)",
             lambda: rayon_phi(0.10, 0.5), motif="rayon 1,0029", ou=ecartees)
-    for pi, pub, motif in ((0.02, "382", "382"), (0.10, "63", "63 tours")):
+    # À 2 %, la spécification publie le temps de la maquette avec une décimale (381,6) ; « 382 », arrondi
+    # d'avant le 15/11/2026, y est barré, et « 381 », mesure du moteur, est exclu (`EXCLUS`).
+    for pi, pub, motif in ((0.02, "381,6", "381,6"), (0.10, "63", "63 tours")):
         ajouter(f"finances.doublement.phi0.pi{pi:g}", pub, "doublement", "socle",
                 f"ln 2/ln du rayon à φ = 0, π̄ = {pi:.0%} (pays joué, lecture (c))",
                 lambda pi=pi: doublement(rayon_phi(pi, 0.0)), motif=motif, ou=impots)
@@ -1573,6 +1575,8 @@ EXCLUS: dict[tuple[str, str], str] = {
     ("sec:finances_publiques-impots", "0,5"): "entrée : couverture φ = 0,5",
     ("sec:finances_publiques-impots", "0,1"): "pas du balayage de la fonction de fermeture, en point",
     ("sec:finances_publiques-impots", "0,05"): "pas d'une grille de balayage citée auparavant, en point",
+    ("sec:finances_publiques-impots", "381"): "temps de doublement à 2 % mesuré sur le moteur en régime linéaire, "
+                                              "non un chiffre de la maquette (381,6, relevé)",
 }
 
 
