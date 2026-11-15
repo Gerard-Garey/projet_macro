@@ -78,13 +78,13 @@ POSITIONS = {"D_H": 600.0, "D_F": 400.0, "L": 500.0, "B_H": 200.0, "B_Bk": 300.0
              "B_CB": 100.0, "Res": 50.0, "L_CB": 20.0, "M_G": 150.0, "K": 900.0, "IN": 100.0}
 
 # Variables d'état des blocs (schéma v4, YD_m1 au rang 3, ti, y_m1, T_F_m1, varrho_bar_L au
-# rang 4 de J3-d1), valeurs d'essai dans leurs domaines ; les blocs
+# rang 4 de J3-d1 ; schéma v5, Y_HS_m1, #132), valeurs d'essai dans leurs domaines ; les blocs
 # d'essai de ce module les reconduisent d'un pas à l'autre (aucun ne les lit).
 VARIABLES_DES_BLOCS = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8,
                        "U": 0.05, "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.22314355131420976,
                        "YD_m1": 0.7, "ti": 0.14, "y_m1": 1.0, "T_F_m1": 0.0,
                        "varrho_bar_L": 0.0296, "i_L": 0.0502, "i_D": 0.0202, "pi_e": 0.02,
-                       "r_hat_etoile": 0.01, "pi_etoile": 0.02}
+                       "r_hat_etoile": 0.01, "pi_etoile": 0.02, "Y_HS_m1": 0.8}
 
 SANS_ENTREES = DeclarationDesEntrees((), ())
 ENTREES_VIDES = EntreesDuTour((), ())
@@ -867,7 +867,7 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
             ("sigma_L", 0.5 + t), ("levier", 0.03),
             ("i_L_suivant", e["i_L"]), ("i_D_suivant", e["i_D"]), ("i_CB", 1.0 + t),
             ("pi_e_suivant", e["pi_e"]), ("r_hat_etoile_suivant", e["r_hat_etoile"]),
-            ("pi_etoile_suivant", e["pi_etoile"]),
+            ("pi_etoile_suivant", e["pi_etoile"]), ("Y_HS_m1_suivant", e["Y_HS_m1"]),
             ("varrho_bar_L_suivant", e["varrho_bar_L"]), ("ti_suivant", e["ti"]),
             ("y_m1_suivant", e["y_m1"]), ("T_F_m1_suivant", e["T_F_m1"]),
             ("YD_m1_suivant", e["YD_m1"]),
@@ -941,8 +941,9 @@ def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
         fins.append([e for e in releve.evenements if type(e) is FinDePas])
     assert fins[0] == fins[1] == fins[2]
     assert empreinte(fins[0]) == empreinte(fins[1]) == empreinte(fins[2])
-    # Dont YD_m1_suivant (schéma v4, #60) ; ti, y_m1, T_F_m1, varrho_bar_L (#67).
-    assert len(fins[0][0].variables_du_pas) == 26
+    # Dont YD_m1_suivant (schéma v4, #60) ; ti, y_m1, T_F_m1, varrho_bar_L (#67) ; Y_HS_m1_suivant
+    # (schéma v5, #132).
+    assert len(fins[0][0].variables_du_pas) == 27
 
 
 def test_ligne_16_negative_et_montant_couvert_exerces():
@@ -1214,10 +1215,44 @@ def test_part_refusee_hors_domaine_refusee(valeur):
         executer_pas(etat_initial(), entrees, o, ObservateurNul())
 
 
+# ς_B, part non souscrite du reliquat (engagement 5 de #132 ; ADR 0013, annotation du 15/11/2026
+# (J3-d2), point 3), sous le même domaine que ς_L.
+ENTREES_AVEC_PART_NON_SOUSCRITE = DeclarationDesEntrees(("varsigma_B",), ())
+
+
+@pytest.mark.parametrize("valeur", [0.0, -0.0, 0.5, 1.0])
+def test_part_non_souscrite_admise_dans_son_domaine(valeur):
+    """Engagement 5 : ς_B dans [0 ; 1] (bornes comprises, −0,0 admis) passe la publication en
+    phase 0 ; la valeur publiée est celle reçue, sans écrêtage."""
+    entrees = EntreesDuTour((("varsigma_B", valeur),), ())
+    ordo._verifier_entrees(entrees, ENTREES_AVEC_PART_NON_SOUSCRITE, 0)
+    o = ordonnanceur_d_essai(plans_nuls(1), entrees=ENTREES_AVEC_PART_NON_SOUSCRITE)
+    releve = Enregistreur()
+    executer_pas(etat_initial(), entrees, o, releve)
+    fin = next(e for e in releve.evenements if type(e) is FinDePas)
+    assert dict(fin.variables_du_pas)["varsigma_B"] == valeur
+
+
+@pytest.mark.parametrize("valeur", [math.nextafter(1.0, 2.0), -5e-324, -1.0, 2.0,
+                                    float("nan"), float("inf"), -float("inf")])
+def test_part_non_souscrite_hors_domaine_refusee(valeur):
+    """Engagement 5 (P138, P159) : ς_B hors de [0 ; 1], NaN et ±∞ compris, est refusée par le
+    moteur en phase 0, par `EntreeHorsDomaine`, étape « 0 », bloc moteur, nom de l'entrée, avant
+    le refus générique de finitude ; jamais écrêtée."""
+    entrees = EntreesDuTour((("varsigma_B", valeur),), ())
+    with pytest.raises(EntreeHorsDomaine, match=r"0 ≤ ς_B ≤ 1") as refus:
+        ordo._verifier_entrees(entrees, ENTREES_AVEC_PART_NON_SOUSCRITE, 3)
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        3, "0", "moteur", "varsigma_B")
+    o = ordonnanceur_d_essai(plans_nuls(1), entrees=ENTREES_AVEC_PART_NON_SOUSCRITE)
+    with pytest.raises(EntreeHorsDomaine):
+        executer_pas(etat_initial(), entrees, o, ObservateurNul())
+
+
 def test_domaines_des_entrees_liste_fermee():
-    """P138 : la liste des domaines des entrées est fermée et ne contient que ς_L (ς_B viendra
-    avec le bloc 9) ; une entrée hors de la liste n'a que le contrôle générique."""
-    assert set(ordo.DOMAINES_DES_ENTREES) == {"varsigma_L"}
+    """P138 : la liste des domaines des entrées est fermée et ne contient que ς_L et ς_B (avec le
+    bloc 9, engagement 5 de #132) ; une entrée hors de la liste n'a que le contrôle générique."""
+    assert set(ordo.DOMAINES_DES_ENTREES) == {"varsigma_L", "varsigma_B"}
     ordo._verifier_entrees(EntreesDuTour((("sigma_L", 7.5),), (("levier", 0.03),)),
                            ENTREES_D_ESSAI, 0)
 

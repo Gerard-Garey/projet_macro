@@ -161,7 +161,7 @@ def _etat(ouverture, **variables):
     base = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8, "U": 0.05,
             "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.2, "YD_m1": 80.0, "ti": 0.14, "y_m1": 1.0,
             "T_F_m1": 0.0, "varrho_bar_L": 0.0296, "i_L": 0.03, "i_D": 0.03, "pi_e": 0.02,
-            "r_hat_etoile": 0.01, "pi_etoile": 0.02}
+            "r_hat_etoile": 0.01, "pi_etoile": 0.02, "Y_HS_m1": 80.0}
     base.update(variables)
     return schema.EtatPays(identifiant="A", graine=1, t=0,
                            registre_prix=tuple(1.02 ** (-u / 12) for u in range(1, 14)),
@@ -358,7 +358,10 @@ class _VueDEssai:
 def _phase_6(D_F):
     etat = _etat(dict(OUVERTURE_DU_CAS, D_F=D_F))
     lues = {"Gamma_e": 1.0033, "pi_etoile_pas": 0.00165, "v_e_suivant": 100.0}
-    montants = {"18": 3.0, "1": 107.5, "2": 0.0, "5": 100.2}
+    # Engagement 6 de #132 : F3 lit les cellules signées de la colonne des entreprises
+    # (capital pour la ligne 18, courante pour 1, 2 et 5 ; WB débité, −100,2).
+    montants = {("18", "entreprises_capital"): 3.0, ("1", "entreprises_courant"): 107.5,
+                ("2", "entreprises_courant"): 0.0, ("5", "entreprises_courant"): -100.2}
     vue = _VueDEssai(etat, lues, montants)
     bloc.Investissement().phase_6(vue)
     return vue, etat

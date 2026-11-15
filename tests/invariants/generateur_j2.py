@@ -635,7 +635,8 @@ class FinancesPubliques(_PseudoBloc):
             Lecture("1", "i_CB"), Lecture("0", SCENARIO), Lecture("2", "taux_impot")),
                propose=("6", "7", "11a", "11b", "11c")),
         _siege("7", lit=_BASE + _ouv("B_H", "B_Bk", "L_CB") + _gl("Res", "M_G", "D_H"),
-               propose=("19a-ménages", "19a-banque", "19a-BC", "19b-ménages", "19b-banque")),
+               propose=("19a-ménages", "19a-banque", "19a-BC", "19b-ménages", "19b-banque"),
+               etat=_reconduites("finances_publiques", "7")),
         _siege("8b", lit=_LECTURES_PI, couvre=("16",)),
     )
 
@@ -727,6 +728,8 @@ class FinancesPubliques(_PseudoBloc):
         vue.proposer("19a-BC", {"Delta_BCB_prim": x_cb})
         vue.proposer("19b-ménages", {"Delta_BH_sec": y_h})
         vue.proposer("19b-banque", {"Delta_BBk_sec": y_bk})
+        # Y^HS_{t−1} (schéma v5, #132) reconduite, sans flux.
+        self._reconduire(vue, lecteur, "7")
 
     def phase_8b(self, vue: ordo.Vue) -> None:
         lecteur = self._lecteur(vue, "8b")
@@ -794,7 +797,7 @@ def registre_stationnaire(pi_barre: float = INFLATION) -> tuple[float, ...]:
     return tuple((1.0 + pi_barre) ** (-(u - 1) / n_a) for u in range(1, n_a + 2))
 
 
-# Variables d'état des blocs (schéma v4) à l'ouverture du pas 0, reconduites telles
+# Variables d'état des blocs (schéma v5) à l'ouverture du pas 0, reconduites telles
 # quelles (`_reconduites`) : ordres de grandeur de l'état stationnaire du socle
 # (π* = 2 %, n_a = 12, p_0 = pr_0 = N^pa_0 = 1), le salaire nominal W et le revenu disponible
 # YD_{t−1} multipliés par ECHELLE comme les autres grandeurs nominales.
@@ -804,6 +807,8 @@ VARIABLES_DES_BLOCS_INITIALES = {
     "YD_m1": 0.7 * ECHELLE, "ti": 0.14, "y_m1": 1.0, "T_F_m1": 0.0, "varrho_bar_L": 0.0296,
     "i_L": 0.0502, "i_D": 0.0202,
     "pi_e": INFLATION, "r_hat_etoile": 0.01, "pi_etoile": INFLATION,
+    # Schéma v5 (#132) : assiette Y^HS_{t−1}, nominale.
+    "Y_HS_m1": 0.8 * ECHELLE,
 }
 
 

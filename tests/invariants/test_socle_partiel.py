@@ -231,9 +231,17 @@ def test_table_du_bloc_8_alignee_sur_la_cible(socle, pi):
     assert initial.r_hat_etoile == table.r_bar.valeur
     reference = PARAMETRES_DE_REFERENCE
     assert socle.parametres_du_sentier(sentier) == dataclasses.replace(
-        reference, banque_centrale=varier(reference.banque_centrale, pi_etoile=pi))
+        reference, banque_centrale=varier(reference.banque_centrale, pi_etoile=pi),
+        finances_publiques=_finances_du_sentier(sentier))
     assert dataclasses.replace(table, pi_etoile=reference.banque_centrale.pi_etoile) == \
         reference.banque_centrale
+
+
+def _finances_du_sentier(sentier):
+    """Table du bloc 9 alignée sur le sentier (#132) : θ_G résolu par le script, lu sur
+    l'ouverture du sentier ; les autres paramètres de la table égalent ceux du sentier (ν_G =
+    1,15, τ_H, τ_F, θ_Tr, φ du script)."""
+    return varier(PARAMETRES_DE_REFERENCE.finances_publiques, theta_G=float(sentier.o["theta_G"]))
 
 
 # Variations d'essai des paramètres des tables des blocs 7 et 8 : (radical, champ de la table,
@@ -267,8 +275,10 @@ def test_tables_de_reference_des_blocs_7_et_8_alignees_sur_le_sentier(socle, rad
     de référence ; l'ordonnanceur porte la table alignée."""
     sentier = _sentier_varie(socle, nom, valeur)
     reference = PARAMETRES_DE_REFERENCE
+    # θ_G du bloc 9 suit le sentier varié (θ_G résolu, #132).
     attendu = dataclasses.replace(
-        reference, **{radical: varier(getattr(reference, radical), **{champ: valeur})})
+        reference, **{radical: varier(getattr(reference, radical), **{champ: valeur})},
+        finances_publiques=_finances_du_sentier(sentier))
     assert socle.parametres_du_sentier(sentier) == attendu
     assert socle.ordonnanceur(sentier).parametres == attendu
 
@@ -293,8 +303,13 @@ def test_table_de_l_appelant_hors_du_sentier_refusee(socle, radical, champ, nom,
         with pytest.raises(socle.TableHorsDuSentier, match=f"{champ} = .*refusée"):
             socle.ordonnanceur(sentier, table)
     parametres = de_l_appelant(valeur)
-    assert socle.ordonnanceur(_sentier_varie(socle, nom, valeur), parametres).parametres \
-        is parametres
+    sentier = _sentier_varie(socle, nom, valeur)
+    rendus = socle.ordonnanceur(sentier, parametres).parametres
+    # La table de l'appelant est gardée (même objet) ; la table de référence du bloc 9 suit θ_G
+    # résolu du sentier varié (#132).
+    assert getattr(rendus, radical) is getattr(parametres, radical)
+    assert rendus == dataclasses.replace(parametres,
+                                         finances_publiques=_finances_du_sentier(sentier))
 
 
 @pytest.mark.parametrize("pi_0", [0.03, 0.0, -0.5])
@@ -388,11 +403,11 @@ def test_stationnarite_partielle(trajectoires, socle, pi, publier):
 # --------------------------------------------------------------------------
 
 
-def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v4(socle):
-    """D4 : sauvegarde v4 après la phase 9 du pas 359, rechargée : trajectoire, clôtures et
+def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v5(socle):
+    """D4 : sauvegarde v5 après la phase 9 du pas 359, rechargée : trajectoire, clôtures et
     états identiques au bit à ceux d'une trajectoire continue, variables des blocs comprises,
     π* comprise (critère de #61), YD_{t−1} comprise (critère de #60), ti, y_{t−1}, T_{F,t−1} et
-    ϱ̄_L comprises (#67)."""
+    ϱ̄_L comprises (#67), Y^HS_{t−1} comprise (#132)."""
     sentier = socle.sentier(0.02)
     o = socle.ordonnanceur(sentier)
     continu = Empreinte()
@@ -400,7 +415,8 @@ def test_reprise_a_la_frontiere_de_tour_sous_le_schema_v4(socle):
     avant, apres = Empreinte(), Empreinte()
     milieu = socle.derouler(socle.etat_initial(sentier), NB_PAS // 2, o, avant)
     document = sauvegarder([milieu])
-    assert b'"version": 4' in document and b'"mu_tilde"' in document
+    assert b'"version": 5' in document and b'"mu_tilde"' in document
+    assert b'"Y_HS_m1"' in document
     assert b'"pi_etoile"' in document and b'"YD_m1"' in document
     assert b'"ti"' in document and b'"varrho_bar_L"' in document
     repris, = charger(document)
@@ -439,7 +455,8 @@ def test_invariance_sous_100_des_variables_nouvelles(socle, publier):
     assert pire_nouvelles <= SEUIL_UN_PAS
     assert pire_positions <= SEUIL_UN_PAS and pire_registre <= SEUIL_UN_PAS
     assert [v.nom for v in schema.VARIABLES_DES_BLOCS
-            if v.invariance is schema.Invariance.NOMINAL] == ["W", "YD_m1", "T_F_m1"]
+            if v.invariance is schema.Invariance.NOMINAL] == ["W", "YD_m1", "T_F_m1",
+                                                              "Y_HS_m1"]
     publier("Invariance ×100 du socle partiel d'essai, π* = 2 %, 720 pas", [
         f"variables nouvelles : {pire_nouvelles:.1e} ; positions : {pire_positions:.1e} ; "
         f"registre : {pire_registre:.1e} (seuil 1e−10)"])
@@ -552,10 +569,12 @@ def test_bijection_proprietaire_ecrivain(socle, nom):
     with pytest.raises(DefautDeDeclaration, match=f"« {nom} ».*sans propriétaire qui l'écrive"):
         _assembler_avec(socle, {v.proprietaire: sans})
     # Un autre bloc de la même étape l'écrit à la place de son propriétaire ; en 8 (c), la banque
-    # est le seul écrivain de `tab:phases` (i_L, i_D, #90) : le cas n'existe pas.
+    # est le seul écrivain de `tab:phases` (i_L, i_D, #90), et en phase 7 le bloc 9 (Y^HS, #132 ;
+    # ADR 0011) : le cas n'existe pas.
     autres = [r for r in socle.RADICAUX if r != v.proprietaire
               and v.phase_ecriture in socle.etapes_du(r)]
-    assert autres or (v.proprietaire, v.phase_ecriture) == ("banque", "8c")
+    assert autres or (v.proprietaire, v.phase_ecriture) in (("banque", "8c"),
+                                                            ("finances_publiques", "7"))
     for autre in autres[:1]:
         intrus = socle.declaration_d_essai(autre)
         siege_intrus = next(s for s in intrus.sieges if s.etape == v.phase_ecriture)
