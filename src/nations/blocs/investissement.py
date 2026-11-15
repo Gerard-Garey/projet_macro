@@ -15,7 +15,7 @@ issue #67.
 appelables directement, qui reçoivent des scalaires (taux et vitesses déjà convertis au pas) ;
 les méthodes de phase lisent la vue, convertissent par `nations.moteur.conversions` seulement,
 appellent ces fonctions et écrivent. Γ^e_t, π^{∗,pas}_t et (1 + g)^{1/n_a} (`facteur_g`) sont des
-grandeurs du moteur (phase 0), lues sans recalcul. Les onze labels `eq:investissement-…` (fiche,
+grandeurs du moteur (phase 0), lues sans recalcul. Les douze labels `eq:investissement-…` (fiche,
 § 9.1 ; `tab:investissement-equations`) et leurs balises ont été posés ensemble au passage de
 `docwriter` (rang 6 de J3-d1, P62) ; l'identifiant S1 à S7 ou F1 à F4 ne sert plus qu'au renvoi
 à la fiche.

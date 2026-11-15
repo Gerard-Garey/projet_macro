@@ -20,8 +20,8 @@ production, du travail et de la banque centrale : il est contrôlé par
 `EnsembleDesParametres` (`nations.moteur.parametres.ensemble`). Le plafond de H5 n'a pas de
 champ (décision du mainteneur du 03/10/2026, lecture (i)).
 
-Les labels `eq:menages-…` sont ceux de la fiche 5 (§ 9.1) ; ils entrent dans la spécification
-avec leurs balises au passage de `docwriter` (rang 6 de J3-d1, P62).
+Les labels `eq:menages-…` sont ceux de la fiche 5 (§ 9.1) ; ils ont été posés dans la
+spécification avec leurs balises au passage de `docwriter` (rang 6 de J3-d1, P62).
 """
 
 from __future__ import annotations

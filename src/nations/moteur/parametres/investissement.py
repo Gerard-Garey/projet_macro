@@ -24,7 +24,7 @@ contrôlées par le script et les tests, non des refus (fiche 6, § 9.2). ϱ̄_L
 sont pas des paramètres : ϱ̄_L est une variable d'état du bloc (P128), π*_t est lue à
 l'ouverture, Γ^e et π^{∗,pas} sont des grandeurs du moteur.
 
-Les labels `eq:investissement-…` sont ceux de la fiche 6 (§ 9.1) ; ils entrent dans la
+Les labels `eq:investissement-…` sont ceux de la fiche 6 (§ 9.1) ; ils ont été posés dans la
 spécification avec leurs balises au passage de `docwriter` (rang 6 de J3-d1, P62).
 """
 
