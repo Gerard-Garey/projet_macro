@@ -56,6 +56,9 @@ pour les grandeurs nulles de B19). **D1** (décision du mainteneur du
 14/11/2026) : une grandeur est nulle si elle figure dans la liste déclarée
 `socle.GRANDEURS_NULLES` et que sa valeur, calculée en arithmétique exacte sur
 les tables de l'essai, est nulle ; jamais sur la valeur flottante du script.
+P121 (rang 5 de J3-d1) : Res (H) et ξ par un calcul sur l'état résolu du script
+(test de signe L^CB/S^CB ≥ 1e−6, égalité au bit de IN^vol_0 et IN*_0) ;
+classement inchangé, vérifié contre l'ancien classement flottant.
 """
 
 import dataclasses
@@ -808,7 +811,7 @@ def test_p94_stationnarite_partielle_etendue(socle, pi, publier):
     references.update({nom: socle.valeur_d_ouverture(sentier, nom, 1) for nom in ETATS_P94})
     # D1 : classement exact, et sa concordance avec l'ancien classement flottant.
     assert set(socle.GRANDEURS_NULLES) <= set(releves)
-    nulles = {cle for cle in releves if socle.est_nulle(cle, tables)}
+    nulles = {cle for cle in releves if socle.est_nulle(cle, tables, sentier)}
     nulles_flottantes = {cle for cle in releves
                          if abs(references[cle]) <= SEUIL_DU_CLASSEMENT_FLOTTANT}
     assert nulles == nulles_flottantes, (nulles ^ nulles_flottantes)
@@ -828,7 +831,7 @@ def test_p94_stationnarite_partielle_etendue(socle, pi, publier):
         assert pire <= (SEUIL_NUL if cle in nulles else SEUIL_P94), (cle, pire, references[cle])
     lignes = ["max |x_t/x̄ − 1| (|x_t| si x̄ nulle en exact, D1 ; B19 nulles /S^CB) : "
               + " ; ".join(f"{c} {x:.1e}" for c, x in pires.items()),
-              "nulles en exact (D1), égales au classement flottant |x̄| ≤ 1e−12 : "
+              "nulles par le calcul (D1, P121), égales au classement flottant |x̄| ≤ 1e−12 : "
               + " ; ".join(f"{c} ({socle.GRANDEURS_NULLES[c][0]})"
                            for c in socle.GRANDEURS_NULLES if c in nulles)]
     if "i_D" in nulles:
