@@ -103,6 +103,7 @@ def capacite(K_vol: float, rendement_normal_pas: float) -> float:
 
 def taux_d_utilisation(y: float, y_cap: float) -> float:
     """N11 : tu_t = y_t/y^cap_t, fraction ; sans plafond."""
+    # eq:production-taux-utilisation
     return y / y_cap
 
 
@@ -113,6 +114,7 @@ def disponible(IN_vol: float, y: float) -> float:
 
 def demande_adressee(d_H: float, d_F: float, d_G: float) -> float:
     """N6 : d_t = d_H + d_F + d_G, u.v. par pas, servie ou non (lue aussi par N1)."""
+    # eq:production-demande-adressee
     return d_H + d_F + d_G
 
 
