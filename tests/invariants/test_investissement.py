@@ -522,13 +522,51 @@ def _evaluer(fonction, *arguments):
         return type(erreur).__name__
 
 
-def test_frontiere_de_la_double_precision_des_bornes_b(publier):
-    """Fiche 6, § 9.6, « Bornes » (b), lues « pour toute entrée dans le domaine déclaré » (P139) :
-    frontière publiée, sans verdict ; par appel direct des fonctions pures, l'exponentielle de S3
-    et de S6 sous-dépasse (plan ou part nuls) au-delà d'un argument d'environ −745 et déborde
-    au-delà d'environ +709 (`math.exp` lève `OverflowError`, que le moteur traduit en
-    `DepassementNumerique` : test suivant). Le lot de 10^5 tirages dans le domaine déclaré est
-    jugé par `tests/unitaires/test_investissement.py`."""
+def _part_visee_nulle(ti, tu, zeta, ecart_de_taux):
+    """ti_{t+1} = 0,0 par les fonctions du moteur (S2 puis S6), aux valeurs de la table pour
+    t̄u et λ_ti/n_a ; Δϱ = ϱ_L − ϱ̄_L passé tel quel (ϱ̄_L = 0)."""
+    tu_etoile = bloc.utilisation_visee(TABLE.tu_bar, zeta, ecart_de_taux, 0.0)
+    return bloc.part_visee_suivante(ti, par_pas(TABLE.lambda_ti), tu, tu_etoile) == 0.0
+
+
+def _frontiere_de_s6(ti, tu, zeta):
+    """Plus petit Δϱ (par an, double précision) tel que ti_{t+1} = 0,0, par bisection jusqu'à
+    deux flottants adjacents ; ti_{t+1} décroît avec Δϱ (S2 croissante, S6 décroissante en tu*).
+    Rend (bas, haut) : ti_{t+1} > 0 en bas, = 0,0 en haut."""
+    bas, haut = 0.0, 10.0
+    assert not _part_visee_nulle(ti, tu, zeta, bas) and _part_visee_nulle(ti, tu, zeta, haut)
+    while math.nextafter(bas, haut) < haut:
+        milieu = 0.5 * (bas + haut)
+        if milieu in (bas, haut):
+            break
+        bas, haut = (bas, milieu) if _part_visee_nulle(ti, tu, zeta, milieu) else (milieu, haut)
+    return bas, haut
+
+
+def _forme_fermee_de_s6(ti, tu, zeta):
+    """Formes fermées de la frontière de S6 : celle de `macro`, ln[745/((λ_ti/n_a) t̄u)]/ζ
+    (sous-dépassement de exp vers −745, tu négligé), et la forme raffinée où ti e^x passe sous
+    2^{−1075}, moitié du plus petit sous-normal : (λ_ti/n_a)(tu − t̄u e^{ζΔϱ}) = ln(2^{−1075}/ti)."""
+    lam = par_pas(TABLE.lambda_ti)
+    macro = math.log(745.0 / (lam * TABLE.tu_bar)) / zeta
+    seuil = -1075.0 * math.log(2.0) - math.log(ti)
+    raffinee = math.log((tu - seuil / lam) / TABLE.tu_bar) / zeta
+    return macro, raffinee
+
+
+def test_frontiere_de_la_double_precision_des_bornes_b(socle, publier):
+    """Fiche 6, § 9.6, « Bornes » (b), tenues sur le lot |Δϱ| ≤ 0,1 par an (restriction
+    déclarée ; décision du mainteneur du 15/11/2026, constat M1 d'`audit`, borne ou mécanisme
+    renvoyés à #143) : frontière publiée, sans verdict. Par appel direct des fonctions pures,
+    l'exponentielle de S3 et de S6 sous-dépasse (plan ou part nuls) au-delà d'un argument
+    d'environ −745 et déborde au-delà d'environ +709 (`math.exp` lève `OverflowError`, que le
+    moteur traduit en `DepassementNumerique` : test de ce nom plus bas). Dans le domaine déclaré (ζ ≤ 20), S6 rend ti_{t+1} = 0,0 exactement dès que
+    Δϱ = ϱ_L − ϱ̄_L dépasse la frontière publiée ici, mesurée par bisection sur
+    `utilisation_visee` puis `part_visee_suivante` à ζ = 4 (référence) et 20 (borne haute),
+    ti du sentier résolu à π* = 2 %, tu = t̄u, t̄u et λ_ti/n_a de la table ; i_L équivalent par
+    S1 inversée (ϱ̄_L du sentier) ; formes fermées en contrôle, écart publié. Le pas est alors
+    refusé par le moteur en phase 5 (`test_part_visee_nulle_refusee_par_le_moteur`). Le lot de
+    10^5 tirages est jugé par `tests/unitaires/test_investissement.py`."""
     mesures = [
         ("plan, −η_r Δϱ = +746", _evaluer(bloc.plan_en_volume, 0.14, 1.0, 1.0, 746.0, -1.0, 0.0)),
         ("plan, −η_r Δϱ = −746", _evaluer(bloc.plan_en_volume, 0.14, 1.0, 1.0, 746.0, 1.0, 0.0)),
@@ -538,8 +576,20 @@ def test_frontiere_de_la_double_precision_des_bornes_b(publier):
          _evaluer(bloc.part_visee_suivante, 0.14, 1.0, 0.0, 700.0)),
         ("tu*, ζ Δϱ = +710", _evaluer(bloc.utilisation_visee, 0.8, 710.0, 1.0, 0.0)),
     ]
-    publier("Bloc 6, bornes (b), frontière de la double précision (sans verdict)",
-            [f"{nom} : {valeur!r}" for nom, valeur in mesures])
+    lignes = [f"{nom} : {valeur!r}" for nom, valeur in mesures]
+    initial = socle.etat_initial(socle.sentier(0.02))
+    ti, tu = initial.ti, TABLE.tu_bar
+    lignes.append(f"frontière de S6 : ti = {ti!r} (sentier, π* = 2 %), tu = t̄u = {tu!r}, "
+                  f"λ_ti/n_a = {par_pas(TABLE.lambda_ti)!r}, ϱ̄_L = {initial.varrho_bar_L!r}")
+    for zeta in (TABLE.zeta, 20.0):
+        bas, haut = _frontiere_de_s6(ti, tu, zeta)
+        macro, raffinee = _forme_fermee_de_s6(ti, tu, zeta)
+        i_L = (1.0 + initial.pi_etoile) * (1.0 + initial.varrho_bar_L + haut) - 1.0
+        lignes.append(f"ζ = {zeta:g} : ti_(t+1) = 0,0 dès Δϱ = {haut!r} par an (ti_(t+1) > 0 à "
+                      f"{bas!r}) ; i_L ≈ {i_L:.6f} par an ; forme de `macro` {macro:.6f} "
+                      f"(écart {ecart(macro, haut):.2e} relatif) ; forme raffinée "
+                      f"{raffinee:.6f} (écart {ecart(raffinee, haut):.2e})")
+    publier("Bloc 6, bornes (b), frontière de la double précision (sans verdict)", lignes)
     assert mesures[0][1] == "OverflowError" and mesures[4][1] == "OverflowError"
     assert mesures[1][1] == 0.0 and mesures[2][1] == 0.0 and mesures[3][1] > 0.0
 
@@ -907,3 +957,27 @@ def test_depassement_de_l_exponentielle_refuse_par_le_moteur(socle):
     with pytest.raises(DepassementNumerique) as refus:
         ordo.executer_pas(initial, socle.ENTREES_SANS_SCENARIO, o, Releve())
     assert (refus.value.t, refus.value.etape, refus.value.bloc) == (0, "2", "investissement")
+
+
+def test_part_visee_nulle_refusee_par_le_moteur(socle):
+    """Décision du mainteneur du 15/11/2026 (constat M1 d'`audit`, #143) : au-delà de la frontière
+    de S6 publiée (ζ = 4, test `test_frontiere_de_la_double_precision_des_bornes_b`), le pas ne
+    rend pas de valeur silencieuse : ti_{t+1} = 0,0 est refusé par `RefusDuMoteur` (domaine
+    ti > 0 de l'état), qui nomme le pas 0, la phase 5, le bloc investissement et « ti » (Δϱ à
+    la frontière + 0,01 par an). En deçà, le côté positif de la frontière est jugé par appel
+    direct (test précédent) : sur ce socle, le pas échoue déjà en phase 6 par `DefautComptable`
+    (caisse des entreprises, ligne 9) pour i_{L,0} ≳ 3,25 par an. i_{L,0} par S1 inversée sur
+    ϱ̄_L et π* du sentier à 2 %."""
+    import dataclasses
+    from nations.moteur import ordonnanceur as ordo
+    from nations.moteur.diagnostics import RefusDuMoteur
+    sentier = socle.sentier(0.02)
+    initial = socle.etat_initial(sentier)
+    _, haut = _frontiere_de_s6(initial.ti, TABLE.tu_bar, TABLE.zeta)
+    i_L = (1.0 + initial.pi_etoile) * (1.0 + initial.varrho_bar_L + haut + 0.01) - 1.0
+    o = socle.ordonnanceur(sentier, reels=socle.blocs_reels())
+    with pytest.raises(RefusDuMoteur) as refus:
+        ordo.executer_pas(dataclasses.replace(initial, i_L=i_L), socle.ENTREES_SANS_SCENARIO, o,
+                          Releve())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "5", "investissement", "ti")

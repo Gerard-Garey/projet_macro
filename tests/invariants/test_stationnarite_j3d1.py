@@ -589,9 +589,10 @@ def test_bornes_d_de_la_fiche_5_en_o2(socle, pi, monkeypatch, publier):
     """Fiche 5, « Bornes » (d), correction prospective de #103 : en O2 (G^plan × 1,01 et × 1,05
     aux tours 1 à 12), 720 pas, D_H + ε S^H ≥ 0 à la fin de chaque phase (aucun arrêt du noyau,
     min D_H/S^H ≥ −ε), plafond et plancher de H5 inactifs (C^plan = C^règle, 0 < C^règle) ;
-    bornes du bloc 6 inactives (Div_F > 0, I^{vol,plan} > 0, ΔL^d ≥ 0 ; constat m4 de l'audit
-    du rang 5). Publiés sans verdict (P141 (c)) : min sur les phases 5 à 7 de D_H/D_H
-    d'ouverture du pas, et D_H en mois de consommation."""
+    bornes du bloc 6 inactives (Div_F > 0, I^{vol,plan} > 0 ; constat m4 de l'audit du rang 5).
+    Publiés sans verdict (P141 (c)) : min sur les phases 5 à 7 de D_H/D_H d'ouverture du pas,
+    D_H en mois de consommation, et les pas de remboursement (ΔL^d < 0), mécanisme de F1 et non
+    borne, comme à la fiche 6 (c) (constat r1 de la revue finale d'`audit`, rang 7)."""
     sentier = socle.sentier(pi)
     lignes = []
     for nom, facteur in O2.items():
@@ -603,6 +604,7 @@ def test_bornes_d_de_la_fiche_5_en_o2(socle, pi, monkeypatch, publier):
         assert len(releve.pas) == NB_PAS
         assert caisse.minimums["D_H"] >= -EPS
         actives = bornes_actives(releve)
+        remboursements = actives.pop("ΔL^d < 0")
         for borne, pas in actives.items():
             assert not pas, (borne, pas[:5])
         mois_min, mois_max = mois_de_consommation(initial, releve)
@@ -610,7 +612,10 @@ def test_bornes_d_de_la_fiche_5_en_o2(socle, pi, monkeypatch, publier):
                       f"{caisse.min_d_h_debit:.6f} (min D_H/S^H en fin des phases 1 à 9 = "
                       f"{caisse.minimums['D_H']:.6f}) ; D_H d'ouverture en mois de consommation : "
                       f"{mois_min:.3f} à {mois_max:.3f} (sans verdict) ; aucune borne des blocs 5 "
-                      "et 6 active (" + ", ".join(actives) + ")")
+                      "et 6 active (" + ", ".join(actives) + ") ; ΔL^d < 0 (remboursement, "
+                      "mécanisme de F1, sans assertion) : " + (
+                          f"pas {remboursements[0]} à {remboursements[-1]} "
+                          f"({len(remboursements)} pas)" if remboursements else "jamais"))
     publier(f"Fiche 5, Bornes (d) sous #103, O2, π* = {100 * pi:g} %, 720 pas ({ETIQUETTE})",
             lignes)
 
@@ -650,8 +655,10 @@ def test_bornes_c_de_la_fiche_6_signe_et_delai(socle, pi, monkeypatch, publier):
         *(f"{nom} : " + (f"active aux pas {pas[0]} à {pas[-1]} ({len(pas)} pas)" if pas
                          else "jamais active") for nom, pas in bornes.items()),
         *(["aucune borne activée : délai non éprouvé"] if aucune else []),
-        "verdict de la ligne (c) de la fiche 6 : tenu sur le scénario écrit (G −5 %) ; intention "
-        f"de dimensionnement non atteinte, I^plan {100 * min_ecart:+.1f} % au plus ; issue #140",
+        "constat (sans verdict, réservé au mainteneur, #140) : " + (
+            "aucune borne activée" if aucune else "bornes désactivées au plus tard au tour "
+            f"{fin_autorisee}") + " sur le scénario écrit (G −5 %) ; intention de "
+        f"dimensionnement non atteinte, I^plan {100 * min_ecart:+.1f} % au plus",
         "ΔL^d < 0 (remboursement, mécanisme de F1) : " + (
             f"pas {remboursements[0]} à {remboursements[-1]} ({len(remboursements)} pas)"
             if remboursements else "jamais"),

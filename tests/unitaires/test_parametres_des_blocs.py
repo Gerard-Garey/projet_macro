@@ -288,6 +288,21 @@ def test_taux_de_croissance_refuses_un_a_un_par_le_script_comme_par_les_tables(s
     varier(travail.TRAVAIL, g_N=-0.5)
 
 
+@pytest.mark.parametrize("nom", ["eta_r", "zeta"])
+def test_borne_haute_de_eta_r_et_zeta_dans_le_script_comme_dans_la_table(stationnaire, nom):
+    """P139 : 0 ≤ η_r, ζ ≤ 20, refusés par le script comme par la table du bloc 6, aux
+    frontières : 20 + 1 ulp et −1 ulp refusés par les deux ; 20 et 0 admis par les deux."""
+    base = dataclasses.replace(stationnaire.Parametres(), nu_G=1.15)
+    for valeur in (math.nextafter(20.0, math.inf), math.nextafter(0.0, -math.inf)):
+        with pytest.raises(DefautDeDeclaration, match=f"« {nom} »"):
+            varier(investissement.INVESTISSEMENT, **{nom: valeur})
+        with pytest.raises(stationnaire.HorsDomaine, match=f"0 ≤ {nom} ≤ 20"):
+            stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
+    for valeur in (20.0, 0.0):
+        varier(investissement.INVESTISSEMENT, **{nom: valeur})
+        stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
+
+
 def test_lambda_v_strict_dans_le_script_comme_dans_la_table(stationnaire):
     """P70 : λ_v = n_a est refusée par le script comme par la table (domaine strict) ; λ_v =
     11,999 est admise par les deux."""

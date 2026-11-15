@@ -282,12 +282,15 @@ def test_repartition_d_un_choc_de_resultat(x):
 
 
 def test_plan_et_part_visee_positifs_sur_un_lot():
-    """Fiche 6, § 9.6, « Bornes » (b), lues « pour toute entrée dans le domaine déclaré » (P139) :
-    par appel direct, I^{vol,plan} > 0, tu* > 0 et ti_{t+1} > 0 sur un lot de 10^5 tirages (graine
-    déclarée) dans les domaines de l'état (ti > 0, y_{t−1} > 0) et de la table (0 ≤ η_r, ζ ≤ 20 ;
-    λ_ti/n_a ≤ 1), écart de taux ϱ_L − ϱ̄_L ∈ [−0,1 ; 0,1] par an, tu ∈ [0 ; 5] : exact. Hors de ce
-    domaine, la frontière de la double précision est publiée et le dépassement refusé par le
-    moteur (`tests/invariants/test_investissement.py`)."""
+    """Fiche 6, § 9.6, « Bornes » (b), tenues sur le lot |Δϱ| ≤ 0,1 par an (restriction déclarée ;
+    décision du mainteneur du 15/11/2026, constat M1 d'`audit` ; borne ou mécanisme renvoyés à
+    #143) : par appel direct, I^{vol,plan} > 0, tu* > 0 et ti_{t+1} > 0 sur un lot de 10^5 tirages
+    (graine déclarée) dans les domaines de l'état (ti > 0, y_{t−1} > 0) et de la table (0 ≤ η_r,
+    ζ ≤ 20 ; λ_ti/n_a ≤ 1), écart de taux Δϱ = ϱ_L − ϱ̄_L ∈ [−0,1 ; 0,1] par an, tu ∈ [0 ; 5] :
+    exact. Le verdict ne vaut pas pour tout le domaine déclaré : S6 rend ti_{t+1} = 0,0 au-delà
+    d'une frontière en Δϱ (≈ 3,31 par an à ζ = 4, ≈ 0,66 à ζ = 20), publiée avec la frontière
+    de la double précision, et le pas est alors refusé par le moteur
+    (`tests/invariants/test_investissement.py`)."""
     rng = np.random.default_rng(GRAINE)
     n = 100_000
     ti = rng.uniform(1e-6, 1.0, n)
