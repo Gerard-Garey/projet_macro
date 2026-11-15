@@ -16,9 +16,9 @@ appelables directement, qui reçoivent des scalaires (taux et vitesses déjà co
 les méthodes de phase lisent la vue, convertissent par `nations.moteur.conversions` seulement,
 appellent ces fonctions et écrivent. Γ^e_t, π^{∗,pas}_t et (1 + g)^{1/n_a} (`facteur_g`) sont des
 grandeurs du moteur (phase 0), lues sans recalcul. Les onze labels `eq:investissement-…` (fiche,
-§ 9.1 ; `tab:investissement-equations`) et leurs balises sont posés ensemble au passage de
-`docwriter` (rang 6 de J3-d1, P62) : d'ici là, chaque équation est repérée par son identifiant
-S1 à S7 ou F1 à F4.
+§ 9.1 ; `tab:investissement-equations`) et leurs balises ont été posés ensemble au passage de
+`docwriter` (rang 6 de J3-d1, P62) ; l'identifiant S1 à S7 ou F1 à F4 ne sert plus qu'au renvoi
+à la fiche.
 
 **Lecture nette** (ADR 0013, annotation du 14/11/2026 (rang 1b de J3-d1), point 4 ; ADR 0012,
 A8.2 ; #103) : D_F, moyen de paiement soumis à la lecture nette du contrôle de caisse, est lu en
@@ -82,6 +82,7 @@ from nations.moteur.conversions import TauxDeFlux, par_pas
 def taux_reel_du_credit(i_L: float, pi_etoile: float) -> float:
     """S1 : ϱ_{L,t} = (1 + i_{L,t})/(1 + π*_t) − 1, par an, forme exacte de Fisher, employé en
     base annuelle sans conversion ; i_L et π*_t lus à l'ouverture."""
+    # eq:investissement-taux-reel-credit
     return (1.0 + i_L) / (1.0 + pi_etoile) - 1.0
 
 
@@ -89,6 +90,7 @@ def utilisation_visee(tu_bar: float, zeta: float, varrho_L: float,
                       varrho_bar_L: float) -> float:
     """S2 : tu*_t = t̄u exp[ζ(ϱ_{L,t} − ϱ̄_L)], fraction de la capacité normale ; ζ, élasticité de
     niveau, sans conversion ; tu* > 0 par la forme, sans plafond."""
+    # eq:investissement-utilisation-visee
     return tu_bar * math.exp(zeta * (varrho_L - varrho_bar_L))
 
 
@@ -96,30 +98,35 @@ def plan_en_volume(ti: float, facteur_g: float, y_m1: float, eta_r: float, varrh
                    varrho_bar_L: float) -> float:
     """S3 : I^{vol,plan}_t = ti_t (1 + g)^{1/n_a} y_{t−1} exp[−η_r(ϱ_{L,t} − ϱ̄_L)], u.v. par pas ;
     `facteur_g` = (1 + g)^{1/n_a}, grandeur du moteur ; ≥ 0 par la forme (ti > 0, y_{t−1} ≥ 0)."""
+    # eq:investissement-plan
     return ti * facteur_g * y_m1 * math.exp(-eta_r * (varrho_L - varrho_bar_L))
 
 
 def plan_nominal(P_m1: float, pi_etoile_pas: float, I_vol_plan: float) -> float:
     """S4 : I^plan_t = P_{t−1}(1 + π^{∗,pas}_t) I^{vol,plan}_t, u.m. par pas ; P_{t−1} lu au
     registre, π^{∗,pas}_t du moteur."""
+    # eq:investissement-plan-nominal
     return P_m1 * (1.0 + pi_etoile_pas) * I_vol_plan
 
 
 def investissement_execute(p: float, I_vol: float) -> float:
     """S5 : I_t = p_{j,t} I^vol_t, ligne 3, u.m. par pas ; I^vol_t = v_{F,j,t}, volume servi par
     le bloc production (N6), p_t écrit par le bloc prix en phase 5."""
+    # eq:investissement-depense
     return p * I_vol
 
 
 def part_visee_suivante(ti: float, lambda_ti_pas: float, tu: float, tu_etoile: float) -> float:
     """S6 : ti_{t+1} = ti_t exp[(λ_ti/n_a)(tu_t − tu*_t)], fraction ; `lambda_ti_pas` = λ_ti/n_a,
     converti par `par_pas` ; > 0 par la forme exponentielle."""
+    # eq:investissement-part-visee
     return ti * math.exp(lambda_ti_pas * (tu - tu_etoile))
 
 
 def amortissement(delta_pas: float, K: float) -> float:
     """S7 : ligne 8 = δ K_t/n_a, u.m. par pas, sur la valeur comptable d'ouverture ;
     `delta_pas` = δ/n_a, converti par `par_pas`, sous la forme c K_t du point 3 (P80)."""
+    # eq:investissement-amortissement
     return delta_pas * K
 
 
@@ -127,6 +134,7 @@ def demande_de_credit(lv_etoile: float, delta_pas: float, K: float, I_plan: floa
                       L: float) -> float:
     """F1 : ΔL^d_t = lv*[(1 − δ/n_a) K_t + I^plan_t] − L_t, u.m. par pas, sur K et L d'ouverture
     et le plan de la phase 2."""
+    # eq:investissement-demande-credit
     return lv_etoile * ((1.0 - delta_pas) * K + I_plan) - L
 
 
@@ -142,11 +150,13 @@ def depots_vises(nu_F: float, n_a: int, P_m1: float, pi_etoile_pas: float,
     """F2 : D*_{F,t+1} = ν_F n_a P_{t−1}(1 + π^{∗,pas}_t)^2 v^e_{t+1}, u.m. ; ν_F en années, n_a y
     est un changement d'unité (années → pas), non une conversion ; v^e_{t+1} écrite en phase 5
     par le bloc production."""
+    # eq:investissement-depots-vises
     return nu_F * n_a * P_m1 * (1.0 + pi_etoile_pas) ** 2 * v_e_suivant
 
 
 def impot_anticipe(Gamma_e: float, T_F_m1: float) -> float:
     """F4 : T^e_{F,t} = Γ^e_t T_{F,t−1}, u.m. par pas ; Γ^e_t lu du moteur, sans recalcul."""
+    # eq:investissement-impot-anticipe
     return Gamma_e * T_F_m1
 
 
@@ -156,6 +166,7 @@ def dividendes(D_F: float, Delta_L: float, C: float, G: float, WB: float, intere
     + i_{D,t} D_{F,t}/n_a − T^e_{F,t} − D*_{F,t+1}}, u.m. par pas, ligne 14, versée en dernier ;
     intérêts recalculés sur les encours et les taux d'ouverture, D_F reçu en max(0 ; ·) (lecture
     nette). Le plancher est une contrainte de domaine de la ligne 14 (M28 (e)), sans paramètre."""
+    # eq:investissement-dividendes
     return max(0.0, D_F + Delta_L + C + G - WB - interets_L + interets_D_F - T_e_F - D_etoile_F)
 
 
