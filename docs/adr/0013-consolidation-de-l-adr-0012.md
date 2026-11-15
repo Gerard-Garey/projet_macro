@@ -421,3 +421,16 @@ Rédigée par `architect` (Opus, sans Fable) au rang 1b de J3-d2 (`claude/j3-fin
 **Surface documentaire** (rang 6, `docwriter`) : variable d'état Y^HS et schéma v5 (`sec:finances_publiques-phases`, chapitre du moteur) ; ς_B dans la liste des domaines des entrées (`sec:cadre-phases`) ; `\limites` de E11 sous Em < 0 (P159) ; liste fermée des lectures brutes (`sec:cadre-caisse`).
 
 Issues : #132, #133 ; renvois : #106, #142, `docs/feuille-de-route.md` § 1 et § 4 (P114, P124, P127, P138, P154, P159, P164).
+
+### Annotation du 15/11/2026 (rang 8 de J3-d2, consignation) : retrait de `variation_sur_le_tour`, `emission_x3()`, F3 et la ligne 18, erratum de transcription de P165
+
+Rédigée par `architect` (Opus, sans Fable) au rang 8 de J3-d2 (PR #146, tête `f1c8f2f`). **Aucune décision nouvelle** ; l'état consolidé (Contexte à Conséquences) et les annotations antérieures restent tels quels et se lisent avec les points ci-dessous. Conformément à P76, l'ADR 0012 n'est pas annoté : ses mentions visées au point 1 (l. 149 et 432) se lisent par le présent point.
+
+1. **`variation_sur_le_tour` retirée** (#106, P51 ; code `380a325`, spécification `b5ea86b`). Aucun bloc ne déclarant la lecture à la fin du rang 3, elle sort de `LECTURES_DU_REGISTRE` et de `nations.moteur.registre`. Se lisent sans elle : F3 de l'ADR 0012 (l. 149) et de la présente consolidation (l. 96) — fonctions qui indexent le registre : `dernier_prix`, `glissement`, `avancer` ; la liste des lectures de l'ADR 0012 (l. 432) et H1 de la présente consolidation (l. 165), réduites à `vue.dernier_prix()` et `vue.glissement()`. `pas_du_tour` et `tour_du_pas` (`nations.moteur.calendrier`) sont conservées. Concordance : **90 labels** (aucun `eq:moteur-variation-tour`).
+2. **`emission_e3()` renommée `emission_x3()`** (#133, `8352db8` ; `tests/invariants/socle_partiel.py:835`). Les mentions d'`emission_e3()` de l'annotation du rang 1b de J3-d1 (couverture X4, « Place » et « Composition ») et du point 6 de l'annotation du rang 1b de J3-d2 se lisent `emission_x3()`.
+3. **Point 7 de l'annotation du rang 1b de J3-d2, tel qu'exécuté** : F3 lit chaque ligne à la colonne des entreprises, mais la **ligne 18** (crédit) se lit dans la colonne `entreprises_capital`, les lignes 1, 2, 5 et 7 dans `entreprises_courant` (`src/nations/blocs/investissement.py:281-290`). Trajectoires identiques au bit (critère de l'engagement 6, tenu).
+4. **Erratum de transcription de P165** (point 8 de l'annotation du rang 1b de J3-d2 ; décision inchangée) : (a) U^eq **n'est pas** dans la table `finances_publiques` ; sa seule maison reste la table du travail (H3.3 ; spécification, `sec:finances_publiques-depense`, « paramètre du bloc travail ») ; r̄ reste dans la table de la banque centrale ; (b) `sec:finances_publiques-conditions` ne déclare aucune condition jointe entre champs de la table : `__post_init__` n'appelle que `valider_table`, les conditions de l'état stationnaire étant refusées par le script. Le code est conforme à la spécification (`src/nations/moteur/parametres/finances_publiques.py:23-32`). Même erratum dans `docs/feuille-de-route.md` § 4.
+
+**Effet sur les résultats** : aucun.
+
+Issues : #106, #132, #133 ; renvois : `docs/feuille-de-route.md` § 1 et § 4 (P51, P76, P165).

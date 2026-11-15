@@ -4,7 +4,7 @@ Tenu par `architect`. Ce fichier reçoit, **sans rien supprimer ni réécrire**,
 
 Chaque condensation ajoute une partie, la plus récente en tête. Une partie est figée.
 
-**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro. Un renvoi à P74 à P86, ou à une branche fusionnée jusqu'à J3-a, absent de la tête, se lit dans la partie B (ajoutée le 14/11/2026). Un renvoi à la fiche de J3-c, au relevé d'issues du 14/11/2026 après la PR #117 ou à P87 à P99, absent de la tête, se lit dans la partie C (ajoutée le 14/11/2026, après la fusion de la PR #129). Un renvoi au plan de J3-d1 (rangs 0 à 8), à P100 à P118, aux mises à jour de la tête du 13/11 au 14/11/2026 ou aux lignes du § 7 de la PR #118 à la PR #128, absent de la tête, se lit dans la partie D (ajoutée le 15/11/2026, rang 8 de J3-d1). Un renvoi à la fiche de J3-d1 (état et critères à la fusion de la PR #136), au relevé d'issues du 14/11/2026 après la PR #129, à P119 à P146 ou aux mises à jour de la tête du 14/11/2026 après la PR #129 et du 15/11/2026 (rangs 4 et 5 de J3-d1), absent de la tête, se lit dans la partie E (ajoutée le 15/11/2026, point d'étape après la fusion de la PR #136).
+**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro. Un renvoi à P74 à P86, ou à une branche fusionnée jusqu'à J3-a, absent de la tête, se lit dans la partie B (ajoutée le 14/11/2026). Un renvoi à la fiche de J3-c, au relevé d'issues du 14/11/2026 après la PR #117 ou à P87 à P99, absent de la tête, se lit dans la partie C (ajoutée le 14/11/2026, après la fusion de la PR #129). Un renvoi au plan de J3-d1 (rangs 0 à 8), à P100 à P118, aux mises à jour de la tête du 13/11 au 14/11/2026 ou aux lignes du § 7 de la PR #118 à la PR #128, absent de la tête, se lit dans la partie D (ajoutée le 15/11/2026, rang 8 de J3-d1). Un renvoi à la fiche de J3-d1 (état et critères à la fusion de la PR #136), au relevé d'issues du 14/11/2026 après la PR #129, à P119 à P146 ou aux mises à jour de la tête du 14/11/2026 après la PR #129 et du 15/11/2026 (rangs 4 et 5 de J3-d1), absent de la tête, se lit dans la partie E (ajoutée le 15/11/2026, point d'étape après la fusion de la PR #136). Un renvoi à P147 à P155, à la ligne du § 7 de la PR #129 ou aux mises à jour de la tête des rangs 0 et 1a de J3-d2, absent de la tête, se lit dans la partie E, complément du rang 8 de J3-d2.
 
 ## Partie E : extraits de la tête sortis le 15/11/2026 (point d'étape après la fusion de la PR #136, rang 0 de J3-d2), figés
 
@@ -185,6 +185,56 @@ Posées par `architect-approfondi` au rang 0 de J3-d2 (`6e8b9e2`) ; tranchées p
 | 14/11/2026 | Point d'étape après la PR #117 (plan de J3-c) / `architect` / Opus / seuil § 4.3 atteint par P76 (b) (remplacement de l'ADR 0012 comme document de lecture) / `revue requise`, P74 à P86 décidés le 14/11/2026 / Fable proposé et décliné par le mainteneur ; budget Fable de J3-c : 0 sur 3. |
 | 14/11/2026 | Point d'étape après la PR #129 (découpage de J3-d, plan de J3-d1) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d1) / `revue requise`, Q1 à Q9 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d1 : 0 sur 3. |
 | 15/11/2026 | Point d'étape après la PR #136 (plan de J3-d2, rang 0) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d2, reconsolidation en Q8) / `revue requise`, Q1 à Q10 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d2 : 0 sur 3 ; décisions P147 à P155 ; reportée dans la PR #146.
+
+### Complément sorti le 15/11/2026 au rang 8 de J3-d2 (branche `claude/j3-finances-publiques`, tête `f1c8f2f`, PR #146)
+
+Sortis de `docs/feuille-de-route.md` à `f1c8f2f` pour tenir la tête sous son plafond de 60 ko (P76) : texte inchangé, titres décalés d'un niveau. P147 à P155 restent en vigueur ; P156 à P165 restent dans la tête (§ 4).
+
+### En-tête (extrait : mises à jour de la tête du 15/11/2026, rangs 0 et 1a de J3-d2)
+
+**Dernière mise à jour** : 15/11/2026, rang 1a de J3-d2 (`architect`) — branche `claude/j3-finances-publiques`, tête `142b556` (PR #146) ; lectures de `macro-approfondi`, `monnaie` et `jeu` consignées au § 1 (classement du § 9.6 arrêté, critères précisés avant tout essai) ; décisions P156 à P164 (§ 4) ; questions Q1 à Q10, classement proposé et mise à jour du rang 8 de J3-d1 sortis vers l'historique, partie E (P76).
+
+**Mise à jour précédente** : 15/11/2026, point d'étape après la fusion de la PR #136, rang 0 de J3-d2 (`architect-approfondi`) — `main` = `30078bb` ; P147 à P155 (§ 4). Texte complet et mises à jour plus anciennes : historique, partie E, en-tête, puis partie D, en-tête, puis historique de Git (`git log -- docs/feuille-de-route.md`).
+
+### 1. Branche de travail en cours (extrait : surface d'impact documentaire notée au rang 1a de J3-d2)
+
+**Surface d'impact documentaire notée au rang 1a** (pour `docwriter` au rang 6, sans décision) : fiche 9, § 9.1, 9.4, 9.6 en retard sur la spécification (E12 en phase 7 ; E13 à deux parts ; m → ν_G ; neutralité 1,1 → 1,2 ; condition des intérêts impayables de `sec:finances_publiques`) ; `\limites` de ς_B sous Em < 0 (P159).
+
+### 2. Branches suivantes (extrait : ordre des modules de J3-b à J3-d)
+
+Ordre des modules : J3-b (blocs 2 à 4) → J3-c (blocs 7, 8 et #61) → J3-d (blocs 5, 6 et 9) (P41 (a)), découpée en J3-d1 (blocs 5 et 6) puis J3-d2 (bloc 9) (P111) ; π\*_t est écrite par le bloc 8 (P34 (a)) et lue par les blocs 5 et 6. Le découpage de la queue de J3 (J3-e à J3-g) se fixe au point d'étape de J3-d (P61), soit après J3-d2 ; J3-e compte déjà plus de cinq sujets.
+
+### 3. Issues hors plan (extrait : lignes du relevé du 15/11/2026 regroupées au rang 8 de J3-d2, et points ouverts sans issue)
+
+| #101 | Test de source de `sec:investissement-taux` | **J3-d2, rang 2** (P113) | J3-d1 fusionnée : la dépendance est levée |
+| #106 | Consommateur de `variation_sur_le_tour` | **J3-d2, rang 4** (P51) | retrait sauf consommateur déclaré, constaté après #132 |
+| #132 | Module du bloc 9 `finances_publiques.py` | **J3-d2, rangs 1a, 3 et 6** (P113) | six engagements de J3-d1, lignes (c) (P90, P122), double appel de `besoin_d_emission` |
+| #133 | Collision E1–E3 / E1–E13 | **J3-d2, rangs 2 et 6**, avant #132 (P114) | X1 à X3, X4 déjà nommée (P124) |
+| #134 | Encadré des vitesses, mentions de `scenarios/` | **J3-d2, rang 6** (P113) | `docwriter` seul |
+
+**Points ouverts sans issue** : mutant équivalent B_Bk/Res dans B5, à rouvrir avec le corridor (J6, P116) ; deux appels de `besoin_d_emission` par pas (bloc d'essai 9) → #132 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; taille de l'ADR 0013 (Q8).
+
+### 4. Décisions du mainteneur (extrait : P147 à P155, points ouverts du rang 1b de J3-d2)
+
+| N° | Date | Décision | Question |
+|---|---|---|---|
+| P147 | 15/11/2026 | Périmètre de J3-d2 avec `Closes` : #133, #132, #106, #101, #134 (P113 maintenue). | Q1 (a) |
+| P148 | 15/11/2026 | #143 hors de J3-d2 ; voie retenue : borne de domaine du taux réel du crédit, liée au domaine du levier de taux (J4) ; instruction par `monnaie` et `macro` hors branche, avant la branche de calibration ; M28 n'est pas rouverte. | Q2 (1) |
+| P149 | 15/11/2026 | #139 : critère « Endettement, dépôts » de la fiche 6 corrigé par un horizon de 20 demi-vies de la racine dominante (valeur propre publiée 0,99720, H ≈ 4 944 pas), jugé sur le socle complet ; correction postérieure à l'observation, déclarée comme telle (précédent P130), ancien verdict publié ; exécution en J3-e avec #114. | Q3 (ii) |
+| P150 | 15/11/2026 | #140 : intention « dimensionné pour… » des bornes (c) de la fiche 6 reportée sur le refus de crédit ; test du refus de la moitié du crédit (C31) ; exécution en J3-e avec #114. | Q4 (i) |
+| P151 | 15/11/2026 | #137, #142, #144 : branche technique `claude/j3-forme-du-code` (circuit 3), après J3-d2 et avant la branche de calibration, qu'elle précède (précise P115). | Q5 (a) |
+| P152 | 15/11/2026 | #141 au J4 avec #70 ; #145 au J4 avec le levier de cible (#54). | Q6 |
+| P153 | 15/11/2026 | Délégation pour J3-d2 : P118 (délégation technique), P133, P134, P136 et P137 reconduites ; critères de fiche et résultats finaux réservés au mainteneur. | Q7 (a) |
+| P154 | 15/11/2026 | ADR 0013 annoté au rang 1b de J3-d2, puis reconsolidé par un ADR nouveau au point d'étape après J3-d2 (consultation Fable du § 4.1 à décider alors). | Q8 (a) |
+| P155 | 15/11/2026 | Plan de J3-d2 (§ 1) approuvé ; le classement des lignes « J3 » du § 9.6 de la fiche 9 est confirmé ou corrigé par `macro` au rang 1a, avant tout essai. | Q9 |
+
+**Points ouverts au 15/11/2026, rang 1b de J3-d2** : instruction de #143 (P148) ; #11 et #14 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61) ; issue proposée par `jeu`, non créée (ou amendement de #82) : grandeurs du bloc 9 calculées hors interface au J4 ; durée d'une partie non fixée (#56).
+
+### 7. Branches fusionnées (extrait : ligne de J3-c)
+
+| Branche | PR | Jalon | Fusion | Détail |
+|---|---|---|---|---|
+| `claude/j3-monnaie` | #129 | J3 (J3-c) | 14/11/2026, 17:44 UTC, commit de fusion `731aac3` (parents `6a22d39`, `6632dce`), par le mainteneur | Issues fermées par `Closes` : #119, #121, #61, #91, #90 (absentes du relevé du 14/11/2026 après la PR #129) ; #80 sans `Closes`, ouverte (échec attendu). 24 commits hors fusion (5 `code:`, 3 `tests:`, 16 `docs:` ; `git rev-list --no-merges 6a22d39..6632dce`). Rangs et SHA : historique, partie C, § 1, et corps de la PR #129. Décisions : P74 à P110. Fable : 0 sur 3. Premiers résultats du moteur pour les blocs 7 et 8, aucun résultat final ; `tests/references/` intact. Concordance : 57 labels. Issues nées de la branche : #130 à #135. |
 
 ## Partie D : extraits de la tête sortis le 15/11/2026 (rang 8 de J3-d1), figés
 
