@@ -10,7 +10,9 @@ réel refusée (code 2), bloc 9 composé admis dans les seuls bancs D et BF (m-a
 seules grandeurs d'ouverture en code 3, ajout comme retrait (m-c ; P186, P189) ; variables du pas
 exclues (`--exclure-variables`, P187) : nom inconnu refusé, seule `variables` changée, noms
 consignés dans le document, règles de comparabilité à une référence (référence avec
-exclusion refusée : M1 de l'audit), banc arrêté (m1).
+exclusion refusée : M1 de l'audit), banc arrêté (m1) ; revue finale du rang 8 : noms exclus
+non relevés avant l'arrêt hors du décompte des arrêts (m4), arrêts égaux sans écart malgré
+`exclues_presentes` (m5), codes 0 et 3 avec exclusion dans l'aide.
 """
 
 import dataclasses
@@ -316,6 +318,9 @@ def test_aide_cite_les_codes_de_sortie(emp, capsys):
     assert "3 trajectoires identiques, grandeurs d'ouverture différentes" in aide
     assert "3 si seules les grandeurs d'ouverture diffèrent" in aide
     assert "référence mesurée avec exclusion" in aide and "critère de P187 tenu" in aide
+    # Avec exclusion, 0 comme 3 valent « critère de P187 tenu » (pas seulement 3).
+    assert ("avec --exclure-variables, 0 et 3 valent tous deux critère de P187 tenu (3 si en "
+            "plus les grandeurs d'ouverture diffèrent)") in aide
 
 
 # --------------------------------------------------------------------------
@@ -518,3 +523,44 @@ def test_banc_arrete_nom_exclu_non_conclu_inconnu(emp, racine, monkeypatch, caps
     err = capsys.readouterr().err
     assert "arrêt au pas 0" in err and "inconnues non établies" in err
     assert "refus" not in err
+    # m4 du rang 8 : la remarque sur les noms non relevés est tenue à part, sous son propre
+    # en-tête ; le décompte des arrêts ne compte que les trois arrêts réels (un par π*).
+    lignes = err.splitlines()
+    assert "ARRÊT du moteur (3) :" in lignes
+    i = lignes.index("ARRÊT du moteur (3) :")
+    assert all("arrêt au pas 0" in ligne for ligne in lignes[i + 1:i + 4])
+    assert lignes[i + 4] == ("variables exclues non relevées avant l'arrêt (3) : "
+                             "iB_BBk, iB_BCB, iB_BH ; inconnues non établies")
+    document = emp.empreintes(racine, ("socle complet",), 5, EXCLUES)
+    assert len(document["arrets"]) == 3
+    assert document["exclues_non_etablies"] == sorted(EXCLUES)
+    monkeypatch.setattr(racine.ordo, "executer_pas", executer)
+    assert emp.empreintes(racine, ("socle complet",), 1, EXCLUES)["exclues_non_etablies"] == []
+
+
+def test_arrets_egaux_sans_ecart_malgre_exclues_presentes(emp, racine, monkeypatch):
+    """m5 du rang 8 : un banc arrêté au même pas, de la même façon, dans la mesure (avec
+    exclusion, qui porte `exclues_presentes`) et dans la référence (sans exclusion) n'est pas un
+    écart de comparaison ; seul le contenu de l'arrêt se compare. Un arrêt différent (autre pas)
+    reste un écart."""
+    executer = racine.ordo.executer_pas
+
+    class DefautFabrique(Exception):
+        pass
+
+    def arreter_au_pas(t_arret):
+        def executer_puis_arreter(etat, *args, **kwargs):
+            if etat.t == t_arret:
+                raise DefautFabrique("arrêt fabriqué")
+            return executer(etat, *args, **kwargs)
+        return executer_puis_arreter
+    monkeypatch.setattr(racine.ordo, "executer_pas", arreter_au_pas(3))
+    reference = emp.empreintes(racine, ("socle complet",), 5)
+    mesure = emp.empreintes(racine, ("socle complet",), 5, EXCLUES)
+    assert mesure["bancs"]["socle complet"]["0.02"]["exclues_presentes"] == sorted(EXCLUES)
+    assert "exclues_presentes" not in reference["bancs"]["socle complet"]["0.02"]
+    assert emp.comparer(mesure, reference) == []
+    monkeypatch.setattr(racine.ordo, "executer_pas", arreter_au_pas(2))
+    autre = emp.empreintes(racine, ("socle complet",), 5, EXCLUES)
+    ecarts = emp.comparer(autre, reference)
+    assert len(ecarts) == 3 and all(", arrêt : mesuré" in e for e in ecarts)
