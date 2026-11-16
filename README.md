@@ -81,7 +81,7 @@ Relevé du coût du noyau seul dans des journaux bruts du job « Tests » de la 
 uv run python outils/releve_cout_ci.py <journaux…> [--commit SHA] [--json]
 ```
 
-Empreintes SHA-256 des trajectoires de huit bancs (socle complet, avec et sans choc ; P87 ; J3-d1 ; essai pur), aux trois π\*, sur 720 pas : un événement par clôture de phase et par fin de pas, encodage documenté dans le script ; `--racine` exécute un autre arbre (version « avant » extraite avec `src/` par `git archive`) ; code de sortie 0 identique, 1 écart ou arrêt du moteur, 2 refus (module ou bloc manquant) ; référence de la branche « forme du code » : `outils/empreintes_des_bancs_59e1c1b.json` (#144, P173, P184) :
+Empreintes SHA-256 des trajectoires de huit bancs (socle complet, avec et sans choc ; P87 ; J3-d1 ; essai pur), aux trois π\*, sur 720 pas : un événement par clôture de phase et par fin de pas, encodage documenté dans le script ; `--racine` exécute un autre arbre (version « avant » extraite avec `src/` par `git archive`) ; code de sortie 0 identique, 1 écart de trajectoire ou arrêt du moteur, 2 refus (module ou bloc manquant, bloc non conforme), 3 trajectoires identiques mais grandeurs d'ouverture différentes (écart à déclarer, P186, P189) ; référence de la branche « forme du code » : `outils/empreintes_des_bancs_59e1c1b.json` (#144, P173, P184) :
 
 ```bash
 uv run python outils/empreintes_des_bancs.py [--racine DOSSIER] [--bancs NOMS] [--pas N] [--ecrire FICHIER] [--comparer FICHIER]
