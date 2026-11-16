@@ -2504,3 +2504,10 @@ Distribution des entreprises (#55), identique à T1 et T0 : 0,88598 / 0,82751 / 
   - bancs d'empreintes, stationnarité du socle complet, test zéro et tests du dépôt à T1 (rang 8, J3-e1) ;
   - nombre de chiffres de la maquette qui changent à chaque commit (seuls les comptes cumulés sont mesurés) ;
   - consultation de `monnaie` sur les lignes de la banque (§ 7.11), non faite par `macro`.
+
+### 7.16 Relecture de `monnaie` (16/11/2026)
+
+- **Lignes de la banque (§ 7.11) : conforme**, chiffres vérifiés sur `sortie_banque34.txt` et recoupés à la main (marge d'existence = ϑ (ROE − n_a γ̄) ; part distribuée = 1 − n_a γ̄/ROE = 0,8463). Retouches de publication : le ROE est un **rendement brut, nominal, sans charges d'exploitation, pertes ni impôt** (Π^Bk ne contient que les marges d'intérêt, `outils/etat_stationnaire.py` l. 464), à ne comparer à aucun ROE observé ; la « marge nette » est le ratio Π^Bk/actif (l. 1050) ; écrire ϖ_D (D_H^T1 − D_H^T0) au lieu de « ϖ_D ΔD_H ». B19 à B22 non relus.
+- **C62 (§ 7.7) : conforme.** ζ_c à π̄ = 0 vérifié (3,6605 à T1, 2,4926 à T0, 1,7656 à ϑ = 0,10) ; concordance avec l'annulation de dθ_G/dr̄ vérifiée. Hypothèse : une seule traversée sous ζ = 4 (deux points de grille seulement). Retouche proposée : « stable, quasi neutre (demi-vie ≈ 125 ans) » à π̄ = 0 (0,999538), à soumettre à `jeu`.
+- **À ajouter aux questions de M34** : (a) réécrire, avant l'essai et avant le commit de λ_w, le critère des deux tests C62 à 720 pas, puisque « arrêt au pas 543 » disparaît (précision prospective) ; (b) publication du ROE comme « brut, sans charges » ; (c) hypothèse à mesurer au rang 8 : le canal rentier monte de 0,43 à 0,53 de T0 à T1 en même temps que le rayon sous φ = 0 à 2 % (1,000490 → 1,000891), avec la coupe du § 3.13.6.
+
