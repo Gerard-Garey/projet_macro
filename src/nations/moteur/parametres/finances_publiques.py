@@ -31,8 +31,8 @@ déclare **aucune condition jointe** entre les champs de la table : `__post_init
 `valider_table`. Les conditions de l'état stationnaire (θ_G > 0 résolu, marge du plafond de E1,
 B ≥ 0, D2) portent sur l'état résolu et sont refusées par le script d'état stationnaire.
 
-Les labels `eq:finances_publiques-…` sont ceux de `tab:finances_publiques-equations` ; ils
-entrent dans la spécification au passage de `docwriter` (rang 6 de J3-d2, P62).
+Les labels `eq:finances_publiques-…` sont ceux de `tab:finances_publiques-equations` ; ils sont
+dans la spécification depuis `a059d10` (P62).
 """
 
 from __future__ import annotations
