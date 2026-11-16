@@ -2,7 +2,9 @@
 
 Décision du mainteneur du 13/11/2026 (P58, P59) : les lectures de l'ouverture,
 des positions et du registre sont contrôlées **statiquement**, sans filtre à
-l'exécution. Le test lit l'arbre syntaxique de chaque module de
+l'exécution ; depuis P188 (ADR 0013, annotation du 16/11/2026, point 5 ; #150),
+les positions sont en outre filtrées à l'exécution par la vue (poste déclaré dans
+le siège), et le contrôle statique est maintenu. Le test lit l'arbre syntaxique de chaque module de
 `src/nations/blocs/` (hors `__init__.py`) ; chaque module porte un seul bloc,
 dont le radical est le nom du module.
 

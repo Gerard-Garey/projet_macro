@@ -10,6 +10,8 @@ Le générateur complet est celui de #98.
 """
 
 import dataclasses
+import importlib
+import inspect
 import itertools
 import math
 import re
@@ -1411,6 +1413,64 @@ def test_montant_execute_declare_admis_a_l_execution():
                      if type(e) is ClotureDePhase and e.phase == "6")
     attendu = dict(cloture_6.montants)["6"]
     assert lus == [(sum(x for _, x in attendu), sum(x for _, x in attendu))]
+
+
+@pytest.mark.parametrize("radical, etape, poste", [
+    # Poste déclaré par le même bloc dans un autre siège (8 (b)) : droits par siège.
+    ("finances_publiques", "7", "M_G"),
+    # Siège qui déclare d'autres postes (M_G en 8 (b) ; Res et L_CB en 8 (c)).
+    ("finances_publiques", "8b", "Res"),
+    ("banque", "8c", "D_H"),
+    # Siège sans lecture de position ; poste hors de `NOMS_POSTES`.
+    ("production", "4", "K"),
+    ("banque", "8c", "zz"),
+], ids=["autre_siege", "autre_poste_8b", "autre_poste_8c", "sans_position", "poste_inconnu"])
+def test_position_non_declaree_refusee_a_l_execution(radical, etape, poste):
+    """#150, point 2 (P188 ; ADR 0013, annotation du 16/11/2026, point 5) : la vue du grand livre
+    ne rend la position courante d'un poste qu'au siège (bloc × étape) qui en a déclaré la
+    lecture ; sinon un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et le poste, jamais une
+    valeur (bloc d'essai fabriqué, hors du contrôle statique H5)."""
+    lus = []
+    o = ordonnanceur_d_essai(plans_nuls(1), actions=_remplacer_action(
+        radical, etape, lambda vue, base: (base(vue), lus.append(vue.grand_livre.position(poste)))))
+    with pytest.raises(RefusDuMoteur, match="position d'un poste non déclarée") as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, etape, radical, poste)
+    assert lus == []
+
+
+def test_position_declaree_admise_a_l_execution():
+    """#150, point 2 : une lecture de position déclarée reste admise (M_G en 8 (b) par l'État ;
+    Res et L_CB en 8 (c) par la banque, lus par l'action d'essai elle-même) et rend la position
+    courante du noyau ; la lecture de l'ouverture du grand livre n'est pas filtrée."""
+    lus = []
+
+    def lire(vue, base):
+        base(vue)
+        livre = vue.grand_livre
+        lus.append((livre.position("M_G"), livre.ouverture("Res")))
+    o = ordonnanceur_d_essai(tirer_plans(1), actions=_remplacer_action(
+        "finances_publiques", "8b", lire))
+    executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert len(lus) == 1 and all(type(x) is float for x in lus[0])
+    assert lus[0][1] == etat_initial().Res
+
+
+def test_lectures_de_position_des_blocs_reels_liste_fermee():
+    """#150, point 2 (P188) : liste fermée des lectures de position déclarées par les blocs réels
+    de `src/nations/blocs/` : (banque, 8 (c), Res) et (finances_publiques, 8 (b), M_G)."""
+    lectures = set()
+    for radical in RADICAUX_DES_BLOCS:
+        module = importlib.import_module(f"nations.blocs.{radical}")
+        classes = [c for _, c in inspect.getmembers(module, inspect.isclass)
+                   if c.__module__ == module.__name__ and "declaration" in vars(c)]
+        assert [(type(c.declaration), c.declaration.radical) for c in classes] == [
+            (DeclarationDeBloc, radical)]
+        lectures |= {(radical, siege.etape, lu.nom) for siege in classes[0].declaration.sieges
+                     for lu in siege.lit
+                     if lu.source == GRAND_LIVRE and lu.nom in cat.NOMS_POSTES}
+    assert lectures == {("banque", "8c", "Res"), ("finances_publiques", "8b", "M_G")}
 
 
 def test_indice_des_prix_non_ecrit_refuse():
