@@ -817,6 +817,247 @@ Le critère tient à **tout ζ ≤ 20** mesuré. Sous −2 points, la plus basse
   - millésime d'AMECO (§ 1.12) ;
   - Chirinko, Fazzari et Meyer (1999).
 
+### 3.13 Remesures de C62 à ζ = 8 (avant M34)
+
+*Instruite par `macro` (expert pilote) le 16/11/2026, sur la demande du mainteneur (P219) et les quatre mesures demandées par `monnaie` (§ 3.14). Dépôt à `2f5641a`, puis `3da48c0` (commit `docs:` seul, sans effet sur les mesures), `git status` vide avant et après. Les sondes sont hors dépôt (`<scratchpad>/sondes62/`). Elles appellent sans les modifier `outils/maquette_conjointe.py`, `outils/etat_stationnaire.py`, `tests/invariants/socle_partiel.py` et les assistants de `tests/invariants/test_socle_complet.py`. Ce sont des résultats du modèle, pas des faits. Base : μ̄ = 0,60 (P213) ; ζ = 4 sert de contrôle. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**.*
+
+#### 3.13.1 Méthode et commandes
+
+Commande type : `uv run python -I <scratchpad>/sondes62/<sonde>.py <arguments>`, lancée depuis `/home/user/projet_macro`. Sorties : `<scratchpad>/sondes62/sortie_*.txt`.
+
+- **`regimes.py`** et **`grille_zeta.py`** : racines de la lecture (c) de la maquette sous φ = 0, pour chaque régime de T4 et sur une grille de ζ. Elles viennent de `jacobiennes_carte` et `lectures`, restreintes à la variété des identités, sans la racine nominale ni les racines en 1/Γ̄.
+- **`serie.py MU ZETA PI N F PHI SORTIE`** : série **signée** Δi_CB (choqué moins contrôle) du moteur, selon le protocole des deux tests C62 : choc θ_G × (1 + F) aux tours 1 à 12, contrôle apparié, φ = 0, `bloc_9_compose` et `choc_de_theta_G`. Seule la longueur change : jusqu'à 12 000 pas. Le relevé ne garde que les variables du pas. Durée : 13 s pour 12 000 pas.
+- **`analyse.py SERIE DEBUT ORDRE [FIN]`** : changements de signe et crêtes de chaque demi-cycle, puis identification de la racine dominante par **prédiction linéaire (méthode de Prony)**. La série x_t = Σ_j a_j x_{t−j} est ajustée par moindres carrés sur [DEBUT ; FIN[ ; les racines viennent du polynôme caractéristique. C'est le « jacobien du moteur » demandé, sous sa forme sans différences finies : la racine dominante de la réponse linéaire du moteur.
+- **`zeta_c.py`** : ζ_c par `frontiere`, la bissection de la maquette (40 itérations). Elle donne aussi ζ_f, où une racine réelle vaut 1, par bissection sur le signe de (1 − λ₁)(1 − λ₂), et la coalescence des deux racines réelles.
+- **`phi_star.py`** et **`phi_grille.py`** : φ\* par `frontiere` sur [0 ; 1], comme `phi_star` du script, et grille de φ pour vérifier qu'une seule traversée a lieu.
+- **`racines_phi0.py`** : racines de la lecture (α) sous φ = 0, par `resoudre_alpha` et `racines_balayage`, θ_G visé inchangé ou réduit de 5 % (#88), avec dθ_G/dr̄ à chaque racine (différence centrée, h = 1e−5). C'est le calcul de la ligne (b) de C51, que C62 cite.
+- **`pli.py`** : à π̄ donné, compare le ζ où dθ_G/dr̄ s'annule au point de référence (script) au ζ où une racine réelle de la maquette vaut 1.
+- **`option.py`** : vecteur propre de la racine dominante, plan 2 × 2.
+
+**Contrôles.** Sous ζ = 4, les sondes retrouvent les valeurs publiées :
+- rayons 1,001818 et 1,011036 ;
+- φ\* = 0,1741 et 0,6495 (`phi_star` du script : 0,1741 / 0,6495) ;
+- racines sous φ = 0 : −0,347 % et 1,000 % à 2 %, −11,017 % et 0,920 % à 10 %, pentes de +0,034, −0,034, +0,302 et −0,267, valeurs de la ligne (b) de C51 (`sec:finances_publiques-conditions`), à μ̄ = 0,25 comme à 0,60 ;
+- racine dominante du moteur (Prony) : 1,0018181, contre 1,001818 pour la maquette.
+
+#### 3.13.2 Mesure 1 : l'écart entre maquette et moteur vient de l'estimateur
+
+**La racine dominante change de nature entre ζ = 4 et ζ = 8.** Racines de la lecture (c), φ = 0, π̄ = 2 % (`regimes.py`) :
+
+| ζ | Régime « hausse » | Régime « baisse » |
+|---|---|---|
+| 4 | **1,001818, réelle** ; 0,998600 ; 0,996267 | 1,001818 ; 0,998600 ; 0,996267 |
+| 8 | **paire complexe 1,000035 ∠ ±0,176°** ; 0,996263 ; 0,994468 | 1,000035 ∠ ±0,176° ; 0,996263 ; 0,994468 |
+
+À ζ = 8, la racine dominante est **complexe**, de période 360/0,176 ≈ **2 049 tours (171 ans)**. Les deux régimes de T4 coïncident à 1e−6 près : le coude de l'emploi n'explique pas l'écart. **Vérifiée.**
+
+**Le moteur retrouve la paire complexe** (`serie.py 0.6 8 0.02 12000 1e-6 0` puis `analyse.py … 3000 4`, `sortie_moteur.txt`) :
+
+| Mesure sur le moteur, ζ = 8, π̄ = 2 %, φ = 0 | Choc de 1e−6 | Choc de 1e−9 | Choc de 1 % |
+|---|---|---|---|
+| Changements de signe de Δi_CB (pas) | 719, 1 744, 2 769, 3 793, …, 11 989 | identiques à un pas près | 730, 1 746, 2 780, … |
+| Crêtes des demi-cycles, \|Δi_CB\| | 1,184e−7 (pas 225) → 1,804e−7 (pas 11 481) | 1,183e−10 → 1,804e−10 | 1,204e−3 → 1,852e−3 |
+| Taux par pas entre crêtes successives (après le pas 3 000) | 1,0000349 à 1,0000352 | 1,0000346 à 1,0000355 | 1,0000284 à 1,0000430 (demi-cycles asymétriques) |
+| Prony (ordre 2, 4 ou 6) sur les pas 3 000 à 12 000 | **1,0000351 ∠ ±0,1757°** (période 2 049 tours), résidu relatif 4e−9 | 1,0000347 à 1,0000350 ∠ ±0,1757° | 1,0000321 ∠ ±0,1762° |
+| Maquette | 1,000035 ∠ ±0,176° | | |
+
+Accord entre maquette et moteur : 1e−7 sur le module, 0,0003° sur l'argument. Le résultat ne dépend pas de l'amplitude du choc (1e−6 et 1e−9), donc le régime est linéaire. **Vérifiée.**
+
+**Origine de l'écart.** Les deux estimateurs de C62 comparent des maxima de \|Δi_CB\| sur des fenêtres. Ils supposent une racine dominante réelle. Sur une paire complexe de période 2 049 tours, ils mesurent la phase de l'oscillation, pas son module :
+- **Régime linéaire, 2 700 pas.** La série change de signe aux pas 719, 1 744 et 2 769. Les trois dernières fenêtres (pas 2 340 à 2 700) précèdent l'annulation du pas 2 769, d'où les ρ̂ décroissants 0,999746 / 0,998568 / 0,996747 publiés au § 3.4.4.
+- **Choc de 1 %, 720 pas.** La seconde fenêtre (pas 600 à 720) finit au changement de signe du pas 730, d'où ρ̂ = 0,997465.
+
+Ces valeurs ne sont donc pas des racines. **Aucun défaut de la maquette ni du moteur** n'est en cause, mais l'estimateur de C62 ne convient pas à une racine dominante complexe lente (issue proposée au § 3.13.9). **Vérifiée.**
+
+**Correction de ma section § 3.4.4** (prospective ; l'ancien texte reste publié) : « Le moteur, en régime linéaire, converge sur 2 700 pas » est **réfuté**. Le moteur diverge à 1,0000351 par pas en oscillant. La ligne « 0,997465 ; aucun doublement » est un artefact de phase.
+
+**Contrôles complémentaires** (`sortie_moteur.txt`) :
+- **π̄ = 10 %, ζ = 8.** Prony sur les pas 300 à 900 : 1,0096608, contre 1,009661 pour la maquette.
+- **π̄ = 0, ζ = 8.** Pas 2 000 à 7 000 : 0,9982378 ∠ ±0,2424°, contre 0,998235 ∠ ±0,243° pour la maquette.
+- **Racine supplémentaire de Prony** sous ζ = 4 à 2 % et sous ζ = 8 à 10 % : 1,0036 et 1,0195, soit à peu près λ². Elle disparaît avec un choc de 1e−9 (ζ = 4 : seules restent 1,0018181 et 0,998). C'est donc l'harmonique quadratique de la non-linéarité. **Vérifiée.**
+
+#### 3.13.3 Mesure 2 : ζ_c à π̄ = 2 % et σ correspondant
+
+`zeta_c.py` (`sortie_zeta_c.txt`) :
+- `frontiere` sur [8 ; 12,56] et sur [8 ; 9] : **ζ_c = 8,763277**, où le rayon vaut 1,000000000. Pour chaque régime de T4 pris seul : 8,753636 (« hausse ») et 8,763277 (« baisse », pire des deux, retenu par `rayon_c`). Le moteur bascule entre les deux, donc ζ_c se situe dans [8,754 ; 8,763].
+- **σ_c = ζ_c (ϱ̄_L + δ) = 8,763277 × (0,029608 + 0,05) = 0,698**, sous la correspondance du § 3.1 (**hypothèse**, conditions (i) et (ii)). À titre de comparaison, ζ = 8 correspond à σ = 0,637.
+- **Contrôle sur le moteur** (`serie.py` puis Prony, pas 3 000 à 12 000) :
+
+| ζ | σ | Maquette (pire régime) | Moteur (Prony) | Période (moteur) |
+|---|---|---|---|---|
+| 8,263 (ζ_c − 0,5) | 0,658 | 1,000023 | 1,0000230 | 1 969 tours |
+| 8,763 (ζ_c) | 0,698 | 1,000000 | 0,9999998 | 1 840 tours |
+| 9,263 (ζ_c + 0,5) | 0,737 | 0,999977 | 0,9999764 | 1 734 tours |
+
+  Le moteur traverse 1 au même ζ, à 0,005 près en ζ. **Vérifiée.**
+
+**Lieu des racines à 2 %** (`grille_zeta.py`) :
+- **ζ = 4 et 4,5** : deux racines réelles, 1,001818 et 0,998600, puis 1,001222 et 0,999154.
+- **ζ_f = 4,842994** : la plus petite traverse 1 en montant (σ_f = 0,386).
+- **ζ ≈ 4,853** : les deux racines réelles se rejoignent à 1,00017 et deviennent une paire complexe.
+- **Au-delà**, le module de la paire décroît de façon monotone : 1,000167 (ζ = 5), 1,000125 (6), 1,000035 (8), 0,999942 (10), 0,999818 (12,56), 0,999443 (20).
+
+**À π̄ = 10 %, aucun ζ_c dans le domaine** : le rayon reste au-dessus de 1 sur toute la grille [0,5 ; 20] (1,012105 à ζ = 0,5, 1,009661 à 8, 1,003526 à 20). **À π̄ = 0, le rayon est inférieur à 1 sur [2 ; 20]** et dépasse 1 à ζ = 0,5 (1,000927). **Vérifiée.**
+
+**Pourquoi le rayon monte avec ζ à π̄ = 0** (remarque de `monnaie`). À π̄ = 0, la paire est déjà complexe à ζ = 4 (0,997894 ∠ ±0,133°). La coalescence a lieu avant ζ = 4 : à ζ = 2, il y a encore deux racines réelles, 0,999781 et 0,997063. Le module de la paire n'est pas monotone : 0,997894 (ζ = 4), 0,998179 (6), 0,998235 (8), 0,998232 (10), 0,998187 (12,56), 0,997949 (20), avec un maximum entre 8 et 10. ζ ne freine donc pas une racine réelle. Il la **convertit en oscillation lente**, dont le module dépend ensuite de ζ sans signe fixe. L'hypothèse du § 3.4.4, « frein par l'investissement qui compense le canal rentier », est **réfutée sous cette forme** et remplacée par ce constat. **Vérifiée** (lieu des racines) ; l'interprétation économique de la rotation est au § 3.13.6.
+
+#### 3.13.4 Mesure 3 : couverture minimale qui stabilise (maquette)
+
+`phi_star.py` et `phi_grille.py` (`sortie_phi_star.txt`, `sortie_phi_grille.txt`) :
+
+| ζ | σ | φ\* à π̄ = 2 % | φ\* à π̄ = 10 % |
+|---|---|---|---|
+| 4 (publié) | 0,318 | 0,1741 | 0,6495 |
+| **8** | **0,637** | **0,0111** | **0,5713** |
+| 8,263 (ζ_c − 0,5) | 0,658 | 0,0073 | 0,5691 |
+| 8,663 (ζ_c − 0,1) | 0,690 | 0,0015 | 0,5658 |
+| 8,863 (ζ_c + 0,1) | 0,706 | 0 (rayon 0,999995 sous φ = 0) | 0,5641 |
+| 9,263 (ζ_c + 0,5) | 0,737 | 0 (rayon 0,999977) | 0,5606 |
+| 12,56 | 1,0 | 0 (rayon 0,999818) | 0,5299 |
+
+- **Une seule traversée de 1 en φ** : le rayon décroît sur toute la grille à ζ = 8. À ζ = 4 et 2 %, il remonte de 0,996861 (φ = 0,90) à 0,997118 (φ = 1), toujours au-dessous de 1, ce qui ne crée pas de seconde traversée.
+- φ\* est une **mesure de maquette**, où φ est lu comme continu. Le moteur n'admet que φ ∈ {0 ; 1} (C62, M33) et ne mesure aucun seuil.
+
+**Vérifiée** (maquette).
+
+#### 3.13.5 Mesure 4 : corroboration par les racines sous φ = 0 (ligne (b) de C51, citée par C62)
+
+`racines_phi0.py` (`sortie_racines_phi0.txt`), lecture (α), θ_G visé de l'état à 2 %, r̄ = 1 %, ν_G = 1,15, n_a = 12, μ̄ = 0,60 :
+
+| ζ | π̄ = 0 | π̄ = 2 % | π̄ = 10 % |
+|---|---|---|---|
+| 4 (publié) | aucune racine | −0,347 % (+0,034) ; **1,000 % (−0,034)** | −11,017 % (+0,302) ; 0,920 % (−0,267) |
+| 4,843 (ζ_f) | 2,198 % (+0,045) ; 3,601 % (−0,044) | **1,000 % (−0,000)**, racine double | −7,674 % (+0,263) ; 0,890 % (−0,233) |
+| **8** | 1,422 % (+0,204) ; 5,238 % (−0,182) | **1,000 % (+0,127)** ; 3,506 % (−0,118) | −1,198 % (+0,086) ; 0,573 % (−0,082) |
+| 8,763 (ζ_c) | 1,366 % (+0,237) ; 5,408 % (−0,207) | 1,000 % (+0,157) ; 3,837 % (−0,143) | aucune racine |
+| 12,56 | 1,214 % (+0,396) ; 5,915 % (−0,312) | 1,000 % (+0,310) ; 4,874 % (−0,256) | aucune racine |
+
+Entre parenthèses : dθ_G/dr̄, en fraction de la production potentielle par unité de taux.
+
+**Dépense visée réduite de 5 % (#88), ζ = 8** : deux racines à chaque π̄ :
+- π̄ = 0 : −1,402 % (+0,590) et 8,724 % (−0,436) ;
+- π̄ = 2 % : −2,345 % (+0,551) et 7,516 % (−0,413) ;
+- π̄ = 10 % : −4,908 % (+0,529) et 4,922 % (−0,405).
+
+Sous φ = 1, à ζ = 8 : une seule racine à chaque π̄, 1,297 / 1,000 / 1,144 %, ce qui retrouve r̄_α du § 3.4.3. **Vérifiée.**
+
+**Ce que la méthode des racines mesure** (`pli.py`, `sortie_pli.txt`). Au point de référence, r̄ = 1 % avec le θ_G et la norme de l'état résolu au même π̄, la pente dθ_G/dr̄ sous φ = 0 s'annule exactement là où une racine **réelle** de la maquette traverse 1 :
+
+| π̄ | ζ où la pente s'annule (script) | ζ où une racine réelle vaut 1 (maquette) |
+|---|---|---|
+| 0 | 1,765598 | 1,765596 |
+| 2 % | 4,842996 | 4,842994 |
+| 10 % | 11,412443 | 11,412442 |
+
+Les deux transcriptions sont indépendantes (le script d'état stationnaire d'un côté, la carte d'un pas de la maquette de l'autre). Elles s'accordent à 2e−6 près en ζ. **Vérifiée.**
+
+Conséquences :
+- **Le signe de la pente donne la parité du nombre de racines réelles supérieures à 1** : il bascule à chaque traversée réelle (à 10 %, la pente devient positive à ζ = 11,41 alors que la racine dominante, réelle, reste à 1,0077). Il ne voit **ni une paire complexe ni un nombre pair de racines réelles instables**. C'est une propriété générale du déterminant de I − J. Elle est **vérifiée ici** aux trois points ; ce n'est pas un théorème établi pour ce modèle.
+- **À ζ = 8 et 2 %**, la pente au point de référence est positive (+0,127), du même signe que sous φ = 1. La méthode des racines **ne corrobore plus l'instabilité** que la maquette et le moteur mesurent (paire de module 1,000035). Elle n'y contredit pas non plus : elle ne la voit pas. La phrase publiée « le moteur les corrobore par les racines sous φ = 0 » ne vaut plus à 2 %.
+- **À ζ = 8 et 10 %**, la racine haute 0,573 % a une pente négative, ce qui est cohérent avec la racine réelle de 1,009661. Entre ζ = 8 et ζ = 8,763, les deux racines de θ_G inchangé disparaissent à 10 % : aucun état stationnaire sous φ = 0 ne garde la dépense visée de l'état à 2 %. Le ζ exact de cette disparition n'est **pas mesuré**.
+
+#### 3.13.6 Option : vecteur propre et plan 2 × 2
+
+`option.py` (`sortie_option.txt`), π̄ = 2 %, φ = 0, régime « hausse ».
+
+**Vecteur propre à droite.** Coordonnées mises à l'échelle (S⁻¹JS : 0,01 pour un taux, PIB pour un montant), composantes relatives à la plus grande :
+
+| ζ | λ | Composantes dominantes |
+|---|---|---|
+| 4 | 1,0018181 (réelle) | r̂\* 1,000 ; i_D 0,526 ; i_L 0,211 ; B_Bk 0,124 ; D_H 0,046 ; Y^HS 0,041 ; P 0,040 |
+| 8 | 1,0000302 − 0,0030664 i | r̂\* 1,000 ∠0° ; i_D 0,507 ∠−4° ; i_L 0,204 ∠−4° ; B_Bk 0,131 ∠27° ; π^e 0,072 ∠−79° ; D_H 0,047 ; K^vol 0,040 ∠−119° |
+
+Ramenées en points de taux, les composantes de i_D et i_L égalent celle de r̂\*, puisque les deux taux suivent i_CB. Le mode est donc :
+- une dérive du taux réel neutre estimé (BC2, intégrateur) ;
+- portée par la dette détenue par les banques ;
+- qui alimente les dépôts des ménages.
+
+À ζ = 8 s'y ajoutent le capital en volume, en retard de phase de 119°, et l'anticipation, en retard de 79° : ce sont eux qui font tourner le mode. **Vérifiée** (composantes) ; lecture économique : **hypothèse**.
+
+**Plan 2 × 2** (lecture (c), pire des deux régimes) :
+
+| | φ = 0 | φ = 1 |
+|---|---|---|
+| ζ = 4, règle de taux | 1,001818 | 0,997118 |
+| ζ = 8, règle de taux | 1,000035 | 0,996922 |
+| ζ = 4, taux directeur tenu (`taux = "exogene"`) | 0,997975 | 0,997975 |
+| ζ = 8, taux directeur tenu | 0,997975 | 0,997975 |
+
+- **Sans la règle de taux, le rayon ne dépend ni de ζ ni de φ.** Sans le canal rentier coupé par la couverture (φ = 1), il est sous 1 aux deux ζ.
+- L'instabilité sous φ = 0 exige donc les deux à la fois : la règle de taux (BC1, BC2) et le surcroît d'intérêts versé au privé. ζ n'agit qu'**à l'intérieur** de cette boucle.
+- Le plan coupe la règle et non le seul canal rentier. Une coupe du canal rentier seul, par exemple en neutralisant les intérêts sur titres dans Div_Bk, demanderait une variante de la carte : **non mesurée**.
+
+**Vérifiée.**
+
+#### 3.13.7 Formulation à publier
+
+Je propose ce texte pour `sec:finances_publiques-impots`, `sec:finances_publiques-conditions` (ligne (b) de C62) et C62 de la fiche 9. Il ne retient que ce qui est établi ci-dessus.
+
+> **Sous φ = 0** (intérêts financés par le déficit), à ζ = 8, la boucle conjointe est **explosive à 10 %** et **quasi neutre à 2 %**, avec **un signe qui dépend de ζ**. Elle est stable à π̄ = 0.
+> - **À 10 %** : racine réelle de 1,009661, écart doublé en 72 tours (6 ans). Couverture minimale qui stabilise : 0,571. La boucle reste explosive sur tout le domaine de ζ mesuré, de 0,5 à 20.
+> - **À 2 %** : paire complexe de module 1,000035 et de période voisine de 2 050 tours (171 ans). L'enveloppe de l'écart double en 19 750 tours environ, et croît de 2,6 % en 720 tours. Couverture minimale : 0,011.
+> - **Le module passe 1 à ζ_c = 8,76**, soit σ ≈ 0,70 sous la correspondance ζ = σ/(ϱ̄_L + δ). Ce seuil se trouve dans la fourchette de σ lue (0,5 à 1,0) : la boucle est faiblement explosive en deçà et faiblement amortie au-delà.
+> - **À π̄ = 0** : module de 0,998235.
+>
+> Ce sont des valeurs de la maquette conjointe. Le moteur retrouve la racine dominante par identification sur 12 000 pas : 1,0000351 de période 2 049 tours à 2 %, 1,0096608 à 10 %, 0,9999998 à ζ_c. Les estimateurs par fenêtres ne mesurent pas une racine complexe de période plus longue que leur horizon. La méthode des racines sous φ = 0 ne voit que les racines réelles : elle corrobore 10 %, pas 2 %.
+
+**Ce que le texte ne doit pas dire** :
+- « stable à 2 % » : le module 1,000035 est au-dessus de 1 ;
+- « converge sur 2 700 pas » : réfuté ;
+- « ζ freine la boucle » : le module n'est pas monotone en ζ à π̄ = 0 ;
+- un temps de doublement à 2 % issu des estimateurs par fenêtres (0,999746, 0,997465 : artefacts de phase).
+
+À reprendre aussi :
+- les valeurs « 381 tours » et « 63 tours », qui deviennent environ 19 750 et 72 tours à ζ = 8 ;
+- « 0,174 et 0,650 », qui deviennent 0,011 et 0,571 ;
+- « double l'écart en 5 ans » (fiche 9, l. 1267, relevé par `jeu`), qui devient 6 ans à 10 %.
+
+#### 3.13.8 Réserves
+
+- **Marge infime.** À 2 %, le module s'écarte de 1 de 3,5e−5 par tour. Les autres paramètres que M34 recalibre peuvent faire changer le signe : λ_w (#45), a_π et a_I (#163), δ (#164). La sensibilité de ζ_c à ces paramètres n'est **pas mesurée**. La formule « signe dépendant de ζ » doit se lire « et du reste de la calibration », et ζ_c est à remesurer après M34.
+- σ_c = 0,70 repose sur la correspondance du § 3.1 (**hypothèse**). Sous la lecture « crédit seul » (condition (i)), σ_c serait de 0,28.
+
+#### 3.13.9 Issue proposée (création sur accord)
+
+**Titre** : C62 : estimateur du temps de doublement inadapté à une racine dominante complexe (ζ = 8)
+**Libellés** : `needs-triage`
+**Corps** :
+
+> *Rédigé par l'agent macro (IA).*
+>
+> Les deux tests de C62 (`test_temps_de_doublement_sous_phi_nul` et `test_temps_de_doublement_en_regime_lineaire`, `tests/invariants/test_socle_complet.py`) estiment ρ̂ par rapport de maxima de |Δi_CB| sur des fenêtres de 120 pas. À ζ = 8 (P218) et π̄ = 2 %, la racine dominante sous φ = 0 est une paire complexe de module 1,000035 et de période voisine de 2 049 tours (`docs/blocs/calibration.md`, § 3.13.2). Les fenêtres mesurent alors la phase de l'oscillation, pas son module. Le test en régime linéaire publierait 0,999746 / 0,998568 / 0,996747 (changement de signe au pas 2 769), et le test du choc de 1 % publierait 0,997465 (changement de signe au pas 730). L'identification par prédiction linéaire (Prony, ordres 2 à 6) sur 12 000 pas donne 1,0000351 ∠ ±0,1757°, et la maquette 1,000035 ∠ ±0,176°.
+>
+> À décider (mainteneur) : remplacer ou compléter l'estimateur publié par une identification de la racine dominante, ou par un rapport de crêtes de demi-cycles sur un horizon d'au moins deux périodes ; ou publier la racine de la maquette seule, le moteur la corroborant. Les mesures sont publiées sans verdict : aucun critère jugé ne change, mais les valeurs publiées changent (tableau avant / après au commit de #55).
+
+#### 3.13.10 Points pour `jeu` (je ne les tranche pas)
+
+- À ζ = 8 et 2 %, sous φ = 0, un choc de dépense de 1 % fait osciller le taux directeur avec une amplitude de 0,12 point et une période de 171 ans. L'enveloppe croît de 2,6 % en 60 ans. C'est **imperceptible sur une partie** : le joueur ne verra ni dérive ni explosion à 2 %.
+- À 10 %, la dérive reste nette : doublement en 6 ans, arrêt du choc de 1 % au pas 543.
+- La leçon publiable est « financer les intérêts par le déficit est dangereux quand l'inflation est élevée ». À inflation basse, son signe dépend de paramètres contestés.
+
+#### 3.13.11 Statut des conclusions
+
+- **Vérifiées** (commande et sortie) :
+  - écart entre maquette et moteur levé : paire complexe 1,000035 ∠ ±0,176° dans les deux, à 1e−7 près sur le module ; régime linéaire (1e−6 et 1e−9) ;
+  - les estimateurs de C62 mesurent la phase (changements de signe aux pas 719, 730 et 2 769) ; aucun défaut de la maquette ni du moteur ;
+  - « converge sur 2 700 pas » (§ 3.4.4) réfuté ;
+  - harmonique λ² dans les fits de Prony, absente avec un choc de 1e−9 ;
+  - ζ_c = 8,763 (« hausse » 8,754), confirmé sur le moteur à ζ_c et ζ_c ± 0,5 ; aucun ζ_c à 10 % sur [0,5 ; 20] ; stable à π̄ = 0 sur [2 ; 20] ;
+  - lieu des racines : ζ_f = 4,843, coalescence vers 4,853, module non monotone à π̄ = 0 ; l'hypothèse « frein » est réfutée sous sa forme du § 3.4.4 ;
+  - φ\* à ζ = 8 : 0,0111 et 0,5713, avec une seule traversée ; aux ζ_c ± 0,1 et ± 0,5 ; contrôle à ζ = 4 ;
+  - racines sous φ = 0 à ζ = 8, avec et sans la réduction de 5 % ; contrôle des valeurs publiées à ζ = 4 ;
+  - coïncidence entre le zéro de la pente et la racine réelle égale à 1, aux trois π̄, à 2e−6 près en ζ ;
+  - composantes du vecteur propre ; plan 2 × 2 (règle de taux × φ).
+- **Hypothèses** :
+  - σ_c = 0,70 (correspondance du § 3.1) ;
+  - lecture économique du vecteur propre (rotation par le capital et l'anticipation) ;
+  - généralité de la règle de parité hors des trois points mesurés.
+- **Non vérifiées** :
+  - sensibilité de ζ_c aux paramètres recalibrés par M34 ;
+  - coupe du seul canal rentier ;
+  - ζ où les racines à 10 % disparaissent sous θ_G inchangé ;
+  - les deux tests C62 exécutés par `pytest` à ζ = 8 (les sondes rejouent leur protocole, mais le paramètre du dépôt reste ζ = 4).
+
 ### 3.14 Avis consultés et décisions du mainteneur (16/11/2026)
 
 **Avis de `monnaie`** (frontière dette publique, sur les sorties de `macro`, sans réexécution) : accepter ζ = 8 ; garder ζ = 4 pour préserver « explosif à 2 % » reviendrait à caler un paramètre sur un résultat attendu. Le rayon sous φ = 0 à 2 % passe sous 1 entre ζ = 8 et ζ = 12,56, à l'intérieur de la fourchette de σ lue : aucun verdict tranché n'est défendable à 2 %. À ζ = 8, maquette (1,000035) et moteur (ρ̂ non stabilisé, 0,999746 → 0,996747) divergent ; « converge » est prématuré. Formulation proposée : « explosif à 10 % ; quasi neutre à 2 %, signe dépendant de ζ ». Le rayon monte avec ζ à π̄ = 0, ce qui affaiblit l'hypothèse d'un simple frein par l'investissement. Remesures demandées avant M34 (§ 3.13). Littérature non relue dans la consultation.
