@@ -184,6 +184,9 @@ Questions qui les fondent : ci-dessous (Q1 à Q8) et ADR 0013, annotation du 16/
 | P188 | 16/11/2026 | Q-1b-1 : réouverture de a100.4 pour les seules lectures de position : `LectureDuGrandLivre.position` refuse à l'exécution un poste non déclaré (`RefusDuMoteur`, pas, étape, bloc, poste) ; liste fermée (banque 8c `Res` ; finances publiques 8b `M_G`) tenue par un test (#150 point 2). | rang 1b |
 | P189 | 16/11/2026 | Q-1b-2 : le code 3 du banc d'empreintes (P186) couvre l'ajout comme le retrait de grandeurs d'ouverture (`facteur_g_pr`, `facteur_g_N`, `delta_pas` ; `g`), écart déclaré dans le commit. | rang 1b |
 | P190 | 16/11/2026 | Rangs 2 à 5 conduits à la main par la session (`coder` → `audit` léger, une reprise au plus, commit après verdict), sans le workflow `circuit-technique`. | rang 1b |
+| P191 | 16/11/2026 | Bloc 7 (`banque.py`, `phase_6`) : lecture nette de D_H et D_F encore en phase, même écart que #142 ; issue à part, #156, hors de la branche. | rang 3 |
+| P192 | 16/11/2026 | Double contrôle de domaine à la reprise (`sauvegarde.py`), hors chemin chaud : laissé, sans issue. | rang 3 |
+| P193 | 16/11/2026 | `eval`, `exec`, `compile` et `__import__` interdits dans `src/` par un test, au rang 4 (réserve mineure de l'audit du rang 3). | rang 3 |
 
 ### Questions au mainteneur du 16/11/2026 (point d'étape après la PR #146, rang 0 de la branche « forme du code »)
 
