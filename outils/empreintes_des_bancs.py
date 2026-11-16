@@ -1,4 +1,4 @@
-"""Empreintes SHA-256 des trajectoires des bancs d'essai (#144 ; P173, P184).
+"""Empreintes SHA-256 des trajectoires des bancs d'essai (#144 ; P173, P184, P187).
 
 **Objet.** Le critère « Branche » de la branche « forme du code » (feuille de
 route, § 1) exige des trajectoires **identiques au bit** avant et après chaque
@@ -82,6 +82,33 @@ mais **n'entre ni dans l'empreinte du banc ni dans la globale** : ce sont des
 fonctions de l'état, et #144 (points 2 et 3) en ajoute et en retire sans
 changer la trajectoire (P186, P189).
 
+**Variables exclues** (`--exclure-variables`, P187) : pour juger un commit qui
+ajoute et déclare une variable du pas (`etats` et `montants` égaux au bit,
+variables préexistantes égales), les variables du pas nommées sont retirées du
+n-uplet `variables` des fins de pas, donc de la sous-empreinte `variables`, de
+l'empreinte du banc à π* et des empreintes agrégées ; `etats`, `montants` et
+`grandeurs` sont inchangés. Sans l'option, rien ne change au bit. Les noms
+exclus sont consignés (`variables_exclues`, triés) et affichés ; avec
+exclusion, chaque banc et π* porte aussi `variables_sans_exclusion` (la
+sous-empreinte sans retrait) et `exclues_presentes` (noms exclus relevés),
+informatifs, non comparés (un banc arrêté garde `exclues_presentes`, relevé
+jusqu'à l'arrêt). Refus (code 2) : nom exclu qui n'est une variable du pas
+d'aucun banc mesuré (faute de frappe : jamais une exclusion silencieuse ;
+contrôle après le déroulé ; si un banc s'est arrêté, un nom non relevé n'est
+pas conclu inconnu, l'arrêt donne le code 1) ; comparaison à une référence
+mesurée **avec** exclusion, quelles que soient les exclusions de la mesure
+(elle porte par construction les variables exclues, dont la valeur n'est pas
+hachée : P187 non jugeable). Seule une référence sans exclusion est
+comparable à une mesure avec exclusion, si les variables exclues en sont
+absentes. La référence ne garde que des empreintes : l'absence s'établit,
+par banc et π* où une variable exclue est relevée, par l'égalité de son
+`variables` à celui de la mesure ; l'égalité à `variables_sans_exclusion`
+prouve la présence (refus, une seule suffit) ; sinon l'absence n'est pas
+établie et l'écart de `variables` donne le code 1. Un critère tenu (code 0
+ou 3) avec exclusion, contre une référence sans exclusion, établit donc
+l'absence des variables exclues dans la référence, partout où la mesure les
+relève.
+
 **Pays.** Un seul pays (« A ») par banc ; s'il y en avait plusieurs (J5), ils
 seraient hachés dans l'ordre canonique de leur identifiant (refus sinon).
 
@@ -108,6 +135,7 @@ arrêté n'a pas d'empreinte agrégée.
 
     uv run python outils/empreintes_des_bancs.py [--racine DOSSIER] [--pas N]
         [--bancs NOM …] [--ecrire FICHIER] [--comparer FICHIER]
+        [--exclure-variables NOM …]
 
 `--racine` : arbre à mesurer (par défaut le dépôt) ; pour une version
 « avant », l'extraire **avec `src/`, `tests/` et `outils/`**
@@ -121,10 +149,13 @@ même nombre de pas, même version d'encodage). Codes de sortie :
 - 1 : une empreinte de trajectoire diffère (empreinte, `etats`, `montants`,
   `variables`, banc, globale, ou version, pas, π*, bancs), ou arrêt du moteur ;
   tous les écarts sont listés, ceux des grandeurs d'ouverture compris ;
-- 2 : refus (banc non conforme, racine invalide, fichier illisible) ;
+- 2 : refus (banc non conforme, racine invalide, fichier illisible, variable
+  exclue inconnue ou présente dans la référence, référence mesurée avec
+  exclusion) ;
 - 3 : trajectoires identiques, seules les sous-empreintes `grandeurs`
   diffèrent (ajout ou retrait de grandeurs d'ouverture, P186, P189) : critère
-  tenu, écart à déclarer dans le commit.
+  tenu, écart à déclarer dans le commit ; avec `--exclure-variables`, critère
+  de P187 tenu (variable du pas ajoutée, trajectoire préexistante identique).
 """
 
 from __future__ import annotations
@@ -214,13 +245,17 @@ class Hacheur:
     événement, et sous-empreintes par partie). Ne rend rien et n'agit pas sur la trajectoire ;
     `pas` compte les fins de pas relevées (pas atteint en cas d'arrêt)."""
 
-    def __init__(self, champs, cloture, fin_de_pas):
+    def __init__(self, champs, cloture, fin_de_pas, exclues=frozenset()):
         self._champs = tuple(champs)
         self._cloture = cloture
         self._fin_de_pas = fin_de_pas
+        self._exclues = frozenset(exclues)
         self.pas = 0
         self.complet = hashlib.sha256()
         self.parties = {p: hashlib.sha256() for p in PARTIES + HORS_EMPREINTE}
+        # Avec exclusion seulement (P187) : `variables` sans exclusion, et noms exclus relevés.
+        self.sans_exclusion = hashlib.sha256() if self._exclues else None
+        self.exclues_presentes = set()
 
     def n_uplet_d_etat(self, etat) -> tuple:
         return tuple((nom, getattr(etat, nom)) for nom in self._champs)
@@ -237,7 +272,12 @@ class Hacheur:
             self.parties["montants"].update(encoder((e.t, e.phase, montants)))
         elif type(e) is self._fin_de_pas:
             etat = self.n_uplet_d_etat(e.etat)
-            variables = tuple(sorted(e.variables_du_pas, key=lambda paire: paire[0]))
+            toutes = tuple(sorted(e.variables_du_pas, key=lambda paire: paire[0]))
+            variables = toutes
+            if self._exclues:
+                variables = tuple(p for p in toutes if p[0] not in self._exclues)
+                self.exclues_presentes.update(p[0] for p in toutes if p[0] in self._exclues)
+                self.sans_exclusion.update(encoder((e.t, toutes)))
             grandeurs = tuple(sorted(e.grandeurs_ouverture, key=lambda paire: paire[0]))
             self.complet.update(encoder(("F", e.t, etat, variables)))
             self.parties["etats"].update(encoder((e.t, etat)))
@@ -398,10 +438,13 @@ def verifier_blocs(banc: str, blocs, radicaux: tuple[str, ...]) -> None:
             "(module de src/nations/blocs/ absent ? refusé, jamais ignoré en silence)")
 
 
-def empreinte_du_banc(racine: Racine, banc: str, pi: float, nb_pas: int) -> dict:
+def empreinte_du_banc(racine: Racine, banc: str, pi: float, nb_pas: int,
+                      exclues=()) -> dict:
     """Empreintes (flux complet et parties, hexadécimales) du banc `banc` à π* = `pi` sur
-    `nb_pas` pas ; en cas d'arrêt, `{"arret": {type, message, pas}}` à la place."""
-    hacheur = Hacheur(racine.champs, racine.cloture, racine.fin_de_pas)
+    `nb_pas` pas, variables du pas nommées dans `exclues` retirées (P187 ; s'y ajoutent alors
+    `variables_sans_exclusion` et `exclues_presentes`) ; en cas d'arrêt,
+    `{"arret": {type, message, pas}}` à la place."""
+    hacheur = Hacheur(racine.champs, racine.cloture, racine.fin_de_pas, exclues)
     try:
         blocs, initial, derouler = racine.construire(banc, pi)
         verifier_blocs(banc, blocs, racine.socle.RADICAUX)
@@ -417,10 +460,17 @@ def empreinte_du_banc(racine: Racine, banc: str, pi: float, nb_pas: int) -> dict
     # Arrêt du moteur ou erreur de code d'une version mutée : consigné comme écart (code 1),
     # jamais ignoré ; toute exception est voulue ici (m-1 de l'audit du rang 1a).
     except Exception as erreur:  # noqa: BLE001
-        return {"arret": {"type": type(erreur).__name__, "message": str(erreur),
-                          "pas": hacheur.pas}}
-    return {"empreinte": hacheur.complet.hexdigest(),
-            **{p: h.hexdigest() for p, h in hacheur.parties.items()}}
+        arret = {"arret": {"type": type(erreur).__name__, "message": str(erreur),
+                           "pas": hacheur.pas}}
+        if exclues:
+            arret["exclues_presentes"] = sorted(hacheur.exclues_presentes)
+        return arret
+    valeurs = {"empreinte": hacheur.complet.hexdigest(),
+               **{p: h.hexdigest() for p, h in hacheur.parties.items()}}
+    if exclues:
+        valeurs["variables_sans_exclusion"] = hacheur.sans_exclusion.hexdigest()
+        valeurs["exclues_presentes"] = sorted(hacheur.exclues_presentes)
+    return valeurs
 
 
 def _cle_pi(pi: float) -> str:
@@ -435,13 +485,15 @@ def agreger(paires) -> str:
     return h.hexdigest()
 
 
-def empreintes(racine: Racine, bancs=BANCS, nb_pas: int = NB_PAS) -> dict:
-    """Document des empreintes : bancs → π* → empreintes, empreintes par banc, globale (None
-    si un banc s'est arrêté), arrêts."""
+def empreintes(racine: Racine, bancs=BANCS, nb_pas: int = NB_PAS, exclues=()) -> dict:
+    """Document des empreintes : variables exclues (P187), bancs → π* → empreintes, empreintes
+    par banc, globale (None si un banc s'est arrêté), arrêts. Refus (`BancNonConforme`) si un
+    nom exclu n'est une variable du pas d'aucun banc mesuré, à aucun π* ni aucun pas."""
+    exclues = tuple(sorted(set(exclues)))
     points = tuple(racine.socle.POINTS_PI)
     par_banc, globales_par_banc, arrets = {}, {}, []
     for banc in bancs:
-        par_banc[banc] = {_cle_pi(pi): empreinte_du_banc(racine, banc, pi, nb_pas)
+        par_banc[banc] = {_cle_pi(pi): empreinte_du_banc(racine, banc, pi, nb_pas, exclues)
                           for pi in points}
         arretes = [pi for pi, v in par_banc[banc].items() if "arret" in v]
         arrets += [f"{banc}, π* = {pi} : arrêt au pas {par_banc[banc][pi]['arret']['pas']}, "
@@ -449,9 +501,22 @@ def empreintes(racine: Racine, bancs=BANCS, nb_pas: int = NB_PAS) -> dict:
                    f"{par_banc[banc][pi]['arret']['message']}" for pi in arretes]
         globales_par_banc[banc] = None if arretes else agreger(
             (pi, par_banc[banc][_cle_pi(pi)]["empreinte"]) for pi in points)
+    presentes = {nom for par_pi in par_banc.values() for v in par_pi.values()
+                 for nom in v.get("exclues_presentes", ())}
+    inconnues = [nom for nom in exclues if nom not in presentes]
+    if inconnues and arrets:
+        # Un banc arrêté a pu s'arrêter avant de relever le nom : inconnu non conclu, l'arrêt
+        # est un écart (code 1).
+        arrets.append(f"variables exclues {inconnues} non relevées avant l'arrêt : "
+                      "inconnues non établies")
+    elif inconnues:
+        raise BancNonConforme(
+            f"variables exclues {inconnues} : variable du pas d'aucun banc mesuré "
+            f"({', '.join(bancs)}, {nb_pas} pas) ; refusé, jamais une exclusion silencieuse")
     complets = all(h is not None for h in globales_par_banc.values())
     return {
         "version_encodage": VERSION_DE_L_ENCODAGE,
+        "variables_exclues": list(exclues),
         "nb_pas": nb_pas,
         "points_pi": list(points),
         "bancs": par_banc,
@@ -496,6 +561,58 @@ def comparer(mesure: dict, reference: dict) -> list[str]:
     return ecarts
 
 
+class ExclusionIncompatible(ValueError):
+    """Refus de comparer (code 2) : exclusions de la mesure et de la référence incompatibles."""
+
+
+def verifier_exclusions(mesure: dict, reference: dict) -> list[str]:
+    """Comparabilité des exclusions (P187 : seules des variables absentes de la référence
+    s'excluent) ; rend les π* où l'absence des variables exclues dans la référence n'a pu être
+    établie (comparaison menée, écart en code 1).
+
+    - référence mesurée avec exclusion (clé `variables_exclues` non vide), quelles que soient
+      les exclusions de la mesure, mêmes noms compris : refus (`ExclusionIncompatible`) ; elle
+      porte par construction les variables exclues, dont la valeur n'est pas hachée, et des
+      exclusions symétriques masqueraient leur écart ;
+    - ni l'une ni l'autre avec exclusion (une référence sans clé n'en exclut aucune) :
+      comparaison ordinaire ;
+    - référence sans exclusion, mesure avec : comparable seulement si les variables exclues
+      sont **absentes** de la référence. La référence ne garde que des empreintes ; par banc
+      et π* où une variable exclue est relevée dans la mesure : `variables` de la référence
+      égale à `variables_sans_exclusion` de la mesure (la référence porte les variables
+      exclues) : refus, une seule présence suffit ; égale à `variables` de la mesure : absence
+      établie ; ni l'une ni l'autre : absence non établie, consignée (`variables` diffère de
+      toute façon : écart, code 1). Un critère tenu (code 0 ou 3) établit donc l'absence
+      partout où la mesure relève une variable exclue."""
+    mes = list(mesure.get("variables_exclues", []))
+    ref = list(reference.get("variables_exclues", []))
+    if ref:
+        raise ExclusionIncompatible(
+            f"référence mesurée avec exclusion ({ref} ; mesure : {mes or 'sans exclusion'}) : "
+            "elle porte par construction les variables exclues, P187 non jugeable ; "
+            "comparaison refusée (mesurer la référence sans exclusion)")
+    if not mes:
+        return []
+    presentes, non_etablies = [], []
+    for banc, par_pi in mesure.get("bancs", {}).items():
+        for pi, valeurs in par_pi.items():
+            r = reference.get("bancs", {}).get(banc, {}).get(pi, {})
+            if not valeurs.get("exclues_presentes") or "arret" in valeurs or "arret" in r:
+                continue
+            if r.get("variables") == valeurs["variables_sans_exclusion"]:
+                presentes.append(f"{banc}, π* = {pi}")
+            elif r.get("variables") != valeurs["variables"]:
+                non_etablies.append(f"{banc}, π* = {pi}, variables exclues "
+                                    f"{valeurs['exclues_presentes']} : absence dans la "
+                                    "référence non établie")
+    if presentes:
+        raise ExclusionIncompatible(
+            f"variables exclues {mes} présentes dans la référence (sans exclusion) : "
+            f"{' ; '.join(presentes)} ; comparaison refusée (P187 : seules des variables "
+            "absentes de la référence s'excluent)")
+    return non_etablies
+
+
 def comparer_grandeurs(mesure: dict, reference: dict) -> list[str]:
     """Écarts des seules sous-empreintes `grandeurs` (grandeurs calculées à l'ouverture, hors
     empreinte du banc), pour les bancs et π* communs aux deux documents et sans arrêt ; le
@@ -517,6 +634,8 @@ def comparer_grandeurs(mesure: dict, reference: dict) -> list[str]:
 def afficher(document: dict, racine: Path) -> None:
     print(f"Empreintes SHA-256 des bancs ({document['nb_pas']} pas, encodage "
           f"v{document['version_encodage']}, racine {racine})")
+    if document["variables_exclues"]:
+        print(f"  variables du pas exclues (P187) : {', '.join(document['variables_exclues'])}")
     for banc, par_pi in document["bancs"].items():
         for pi, valeurs in par_pi.items():
             texte = valeurs.get("empreinte") or (
@@ -531,8 +650,10 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
         epilog="codes de sortie : 0 conforme ; 1 écart de trajectoire ou arrêt du moteur ; "
-               "2 refus (banc non conforme, racine invalide, fichier illisible) ; 3 "
-               "trajectoires identiques, grandeurs d'ouverture différentes (P186, P189)")
+               "2 refus (banc non conforme, racine invalide, fichier illisible, variable "
+               "exclue inconnue ou présente dans la référence, référence mesurée avec "
+               "exclusion) ; 3 trajectoires identiques, grandeurs d'ouverture différentes "
+               "(P186, P189 ; avec --exclure-variables, critère de P187 tenu)")
     parser.add_argument("--racine", type=Path, default=RACINE_DU_DEPOT,
                         help="arbre à mesurer (src/, tests/, outils/) ; défaut : le dépôt")
     parser.add_argument("--pas", type=int, default=NB_PAS, help=f"nombre de pas (défaut {NB_PAS})")
@@ -542,6 +663,9 @@ def main(argv=None) -> int:
     parser.add_argument("--comparer", type=Path,
                         help="comparer à un JSON écrit par --ecrire (code 1 si une trajectoire "
                              "diffère, 3 si seules les grandeurs d'ouverture diffèrent)")
+    parser.add_argument("--exclure-variables", nargs="+", default=[], metavar="NOM",
+                        help="variables du pas retirées de la sous-empreinte variables et des "
+                             "empreintes qui en dépendent (P187) ; nom inconnu refusé (code 2)")
     args = parser.parse_args(argv)
     if args.pas < 1:
         parser.error("--pas doit être ≥ 1")
@@ -554,7 +678,7 @@ def main(argv=None) -> int:
         return REFUS
     try:
         racine = Racine(args.racine)
-        document = empreintes(racine, bancs, args.pas)
+        document = empreintes(racine, bancs, args.pas, args.exclure_variables)
     except BancNonConforme as erreur:
         print(f"refus : {erreur}", file=sys.stderr)
         return REFUS
@@ -569,12 +693,18 @@ def main(argv=None) -> int:
             print(f"  {ligne}", file=sys.stderr)
         code = ECART
     if reference is not None:
+        try:
+            non_etablies = verifier_exclusions(document, reference)
+        except ExclusionIncompatible as erreur:
+            print(f"refus : {erreur}", file=sys.stderr)
+            return REFUS
         ecarts = comparer(document, reference)
         grandeurs = comparer_grandeurs(document, reference)
         if ecarts:
-            print(f"ÉCART de trajectoire à {args.comparer} ({len(ecarts) + len(grandeurs)}) :",
+            print(f"ÉCART de trajectoire à {args.comparer} "
+                  f"({len(ecarts) + len(grandeurs) + len(non_etablies)}) :",
                   file=sys.stderr)
-            for ligne in ecarts + grandeurs:
+            for ligne in ecarts + grandeurs + non_etablies:
                 print(f"  {ligne}", file=sys.stderr)
             return ECART
         if code != CONFORME:
