@@ -1775,7 +1775,7 @@ Une seule traversée de 1 en φ sur une grille de 21 points, à chaque cas.
   - tests du dépôt exécutés à N ;
   - croissance nominale observée du revenu disponible (non lue).
 
-### 5.11 Avis consultés et décisions (16/11/2026, délégation P228)
+### 5.12 Avis consultés et décisions (16/11/2026, délégation P228)
 
 **Avis de `jeu`** : **pas d'objection**. ν_H = 1,1 ne crée ni ne ferme de levier ; part dépensée d'un transfert sur 12 tours 0,63 → 0,60, imperceptible ; C62 à 2 % sous φ = 0 invisible sur une partie. Seuil du critère 12 (d) conforme (part 0,597 dans [0,50 ; 0,85], `tests/invariants/test_menages.py` l. 62 ; λ_H = 0,4 dans [0,072 ; 0,554]) ; vigilance : la borne haute baisse vite quand ν_H monte. À clarifier dans l'aide : la dette de départ (38 % du PIB) est la contrepartie des dépôts des ménages (C42), non comparable aux 82 % observés (ni non-résidents ni assureurs) ; même remarque pour le taux d'épargne de 4,27 %.
 
