@@ -469,9 +469,10 @@ class Vue:
         variable = schema.VARIABLE[nom]
         if not variable.admet(valeur):
             raise self._refus(f"valeur {valeur!r} : {variable.description_du_type()} attendu", nom)
-        # Domaine de la variable, par la seule fonction de domaine du schéma, dès l'écriture
-        # plutôt qu'à la construction de l'état de clôture (qui le contrôle encore) ; une
-        # valeur non finie est refusée par l'espace du pas, ci-dessous.
+        # Domaine de la variable, par la seule fonction de domaine du schéma : seul contrôle
+        # de domaine d'une variable d'état d'un bloc dans le pas, que `schema.etat_de_cloture`
+        # ne refait pas (ADR 0013, annotation du 16/11/2026, point 1 ; #144) ; une valeur non
+        # finie est refusée par l'espace du pas, ci-dessous.
         if _est_finie(valeur):
             motif = schema.defaut_de_domaine(nom, valeur)
             if motif is not None:
@@ -962,7 +963,9 @@ def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour
             raise RefusDuMoteur("variable d'état non écrite par son propriétaire dans le pas",
                                 t=t, etape="9", bloc=MOTEUR, nom=nom)
         champs[nom] = etat_suivant[nom]
-    etat_cloture = schema.EtatPays(**champs)
+    # Type de tous les champs, domaine des champs du moteur, du noyau et d'identité ; le
+    # domaine des variables des blocs a été contrôlé à leur écriture (#144, point 1).
+    etat_cloture = schema.etat_de_cloture(champs)
     observateur.relever(FinDePas(
         t, etat_cloture, espace.releve(o.ordre_des_variables),
         tuple((grandeur.nom, grandeurs[grandeur.nom]) for grandeur in GRANDEURS_OUVERTURE)))
