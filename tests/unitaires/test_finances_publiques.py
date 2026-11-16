@@ -524,10 +524,6 @@ def test_tab_finances_publiques_phases_porte_chaque_ecriture():
     assert not absentes, sorted(absentes)
 
 
-@pytest.mark.xfail(strict=True, reason="#150, point 1 : les trois termes de E7 (iB_BH, iB_BBk, "
-                   "iB_BCB) sont écrits en phase 2 ; tab:finances_publiques-phases les porte au "
-                   "passage de docwriter (rang 7 de la branche « forme du code ») ; marque "
-                   "retirée par le commit tests: qui suit le commit docs:")
 def test_tab_finances_publiques_phases_porte_les_termes_de_e7():
     """Lien exact pour les trois termes de E7 seuls (`TERMES_E7`) : chacun figure, sous son
     écriture `ECRITURES_DU_TABLEAU`, dans la cellule « Le bloc écrit » de la phase 2."""
