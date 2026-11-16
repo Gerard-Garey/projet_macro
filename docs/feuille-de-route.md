@@ -77,7 +77,7 @@ Point ouvert pour J3-e, non tranché : la façon dont `scenarios/` résout l'ét
 | #52, #53, #63, #70, #79 | Restitutions et scénarios O2, O3 | J4 | inchangé |
 | #81 | Restitution du bloc banque centrale | J4 | constat de `monnaie` versé (P171) : taux directeur négatif aux tours 11 à 19 à π\* = 0 ; à signaler à `jeu` (Q7) |
 | #82 | Restitution du bloc État et dette | J4 | amendement proposé : indicateurs du pas de F8 et ratios sur 12 tours (Q7) |
-| #54, #56 | Aller-retour de π\* ; signe net d'une hausse de taux | J4, sans `Closes` | condition (c) du levier de cible sur #54 (P99) ; durée d'une partie non fixée (#56, Q8) |
+| #54, #56 | Aller-retour de π\* ; signe net d'une hausse de taux | J4, sans `Closes` | condition (c) du levier de cible sur #54 (P99) ; durée d'une partie : #155 (P180) |
 | #57 | Crises de crédit sous la règle F | J6 | inchangé |
 | #64 | S-ζ hors cible durable | J5 | inchangé |
 | #78, #89 | Coût de la dette ; stratégie dominante | J4 (#78 puis J6) | #89 dépend de #88 |
@@ -187,6 +187,10 @@ P147 à P155 (point d'étape après la PR #136, Q1 à Q10), en vigueur : histori
 | P177 | 16/11/2026 | Q6 : découpage de J3-e à J3-g au point d'étape qui suit la fusion de la branche, par `architect-approfondi`. | rang 0 |
 | P178 | 16/11/2026 | Q7 (a) à (f), toutes retenues : #147 à J3-f, harmonisation « 63 tours » versée sur #147 ; #148 au J4, instruite d'abord par `monnaie` ; issue du noyau (`coder`) créée, #153, J3-e ; issue du plafond de E1 (`macro`) créée, #154, J3-f ; #82 amendée (indicateurs F8) ; constat de #81 signalé à `jeu`. | rang 0 |
 | P179 | 16/11/2026 | Q8 : `jeu` consulté dès maintenant sur la durée d'une partie (#56) ; #11 et #14 inchangées. | rang 0 |
+| P180 | 16/11/2026 | Avis de `jeu` sur la durée d'une partie (P179) versé dans une issue propre, #155 (120 tours par défaut, format court de 60, évaluation de sortie à leviers figés ; à trancher avant le J4), #56 portant sur le signe d'une hausse de taux ; 381 et 63 tours sont le doublement de l'écart de la boucle taux-inflation sous φ = 0, pas de la dette. | rang 0 |
+| P181 | 16/11/2026 | Avis ludique de `jeu` versé sur #81 (π\* = 2 % par défaut, domaine du levier de taux aligné sur la règle) ; coût en fidélité d'un plancher du taux directeur au socle demandé à `monnaie` avant le J4. | rang 0 |
+| P182 | 16/11/2026 | Empreinte `d9931c92…f654` de J3-d2 non reproductible (méthode d'`audit` jamais versée ; code identique à `59e1c1b`) : nouvelle référence, mesurée par le script de P173 à encodage documenté sur `git archive 59e1c1b` et à la tête ; le lien avec l'ancienne empreinte est abandonné. | rang 1a |
+| P183 | 16/11/2026 | Banc d'empreintes : socle complet et cinq bancs nommés (P87 ; J3-d1 X4 seule, X4 + X3, sans X4, essai pur), aux trois π\*, soit 18 empreintes (la passation de #146 en annonçait 18 pour 15 nommées). | rang 1a |
 
 *Erratum de transcription de P165 (15/11/2026, rang 8 ; décision inchangée)* : (1) U^eq **n'est pas** dans la table `finances_publiques` ; sa seule maison reste la table du travail (H3.3 ; spécification l. 3212, « paramètre du bloc travail ») ; (2) la section ne déclare aucune condition jointe entre champs de la table, `__post_init__` n'appelle que `valider_table`. Le code est conforme à la spécification (`src/nations/moteur/parametres/finances_publiques.py:23-32`) ; ADR 0013, annotation du rang 8 de J3-d2.
 
