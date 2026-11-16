@@ -286,6 +286,25 @@ Les valeurs avant reproduisent celles publiées : 2,660, 2,697 et 2,469.
 - Question 3 : dividendes à 22 % du PIB consignés comme **limite déclarée**, sans arrêt de la branche ; issue #164 (δ et consommation de capital fixe), hors branche.
 - Questions 4 à 6 : avis de `macro` suivis sous la délégation P211 (constat n_a = 4 publié, #87 ouverte ; borne haute de #55 vérifiée dans la section #55 ; motif du plan corrigé dans la PR #162).
 
+### 12. Relecture d'AMECO ALCD2 (P213, prospective)
+
+*Relue par `macro` le 16/11/2026, rang 1 de la branche « calibration » (PR #162, tête `708c1aa`). Relecture prospective décidée par P213 : elle ne déplace pas la valeur proposée μ̄ = 0,60, et l'ancien texte du § 2 reste publié.*
+
+**Source lue.** Commission européenne, DG ECFIN, base AMECO, variable ALCD2 : « Adjusted wage share: total economy: as percentage of GDP at current factor cost (Compensation per employee as percentage of GDP at factor cost per person employed.) ». Unité : « Percentage of GDP at factor cost ». Requête du service en ligne d'AMECO (`ec.europa.eu/economy_finance/ameco/wq/series`, variable `1.0.0.0.ALCD2`, zones EA20, EA12 et EU27), consultée le 16/11/2026 à 21:31 UTC.
+
+**Définition.** La rémunération par salarié est rapportée au PIB au coût des facteurs par personne employée. Cela revient à imputer aux non-salariés la rémunération moyenne des salariés. Le dénominateur est le **PIB au coût des facteurs**, c'est-à-dire sans les impôts nets de subventions sur la production et les importations. C'est le dénominateur que le § 1 jugeait le plus proche du modèle.
+
+**Valeur.** Zone euro à 20 pays (EA20), moyenne annuelle de 1998 à 2023 (26 observations) : **63,11 %**. Minimum 61,20 % (2007), maximum 64,17 % (1999), 61,93 % en 2023. Variantes de fenêtre : 63,27 % de 1995 à 2023, 63,11 % de 1998 à 2024. EA12, même fenêtre : valeurs à moins de 0,14 point de l’EA20 chaque année (écart maximal 0,131 point, en 2014). Calcul : moyenne arithmétique des valeurs annuelles rendues par la requête, commande Python dans le scratchpad de la session. **Vérifiée.**
+
+**Millésime non identifié.** La série court jusqu'en 2027, donc ses dernières années sont des prévisions. Les pages d'AMECO qui datent la mise à jour sont refusées par le proxy (CONNECT 403). La fenêtre 1998–2023 évite les années de prévision les plus probables, mais les valeurs passées restent révisables.
+
+**Écart à 62,4 %** (BCE, *Economic Bulletin* 4/2023, prix de base, même fenêtre 1998–2023) : **+0,71 point**. Il reste **sous le seuil d'un point** : aucune question au mainteneur n'est ouverte.
+- **Ce que cela tranche.** L'hypothèse du § 2, « écart entre prix de base et coût des facteurs inférieur à un point », devient un constat sourcé : +0,71 point sur 1998–2023. Les zones ne sont pas exactement les mêmes : l'EA20 pour AMECO, la zone euro de l'encadré de la BCE, dont la composition n'est pas relue. Les millésimes diffèrent aussi.
+- **Effet sur #92.** Le modèle donne ΣWB/ΣVA = 0,624645 à μ̄ = 0,60 et π̄ = 2 %, soit −0,65 point sous ALCD2. Le critère de #92 (un point) tient sous les deux définitions. La valeur proposée μ̄ = 0,60 ne change pas.
+- **Lecture au coût des facteurs.** Elle correspondrait à la variante V3a du § 3, part de 63,4 % à μ̄ = 0,5763, à 0,3 point d'ALCD2. Je ne la recommande pas : l'écart de 0,71 point tient pour l'essentiel à la définition du dénominateur, et il est déclaré.
+
+**Statut.** Valeur, fenêtre, définition et écart : **vérifiés** (requête et calcul ci-dessus). Millésime : **non vérifié**.
+
 ## 2. #143 — S6 : ti = 0 au-delà d'une frontière (bloc 6) ; domaine du taux réel du crédit (instruction, sans `Closes`)
 
 *Instruite par `monnaie` (expert pilote) le 16/11/2026, rang 1 de la branche « calibration » (PR #162, tête `dfe352e`), avant la section de #55 (P207). `macro` est consulté ensuite sur la frontière crédit. Les chiffres du modèle viennent de sondes hors dépôt qui appellent, sans les modifier, `outils/etat_stationnaire.py`, le socle d'essai `tests/invariants/socle_partiel.py`, les assistants de `tests/invariants/test_socle_complet.py` et les fonctions du moteur (méthode au § 2.3.1). Ce sont des résultats du modèle, pas des faits. Les faits portent leur source et leur date. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**. La voie de #143 se tranche au plus tard au J4 (P207). P148 a retenu la voie (1), une borne de domaine du taux réel du crédit liée au domaine du levier de taux, sans rouvrir M28. Cette section ne la rouvre pas : elle la chiffre et en montre les limites.*
@@ -546,3 +565,254 @@ La valeur de c_dom ne se fixe pas dans cette branche : elle dépend du ζ retenu
 - Questions 4 et 5 : arrêts sous écart durable consignés par un commentaire sur #143, sans issue nouvelle ; `fred.stlouisfed.org` à ouvrir au J4 seulement (P217).
 - Question 3 : texte du test `test_part_visee_nulle_refusee_par_le_moteur` repris avec le commit de #92 au rang 3 (délégation P211).
 
+## 3. #55 — Taux de distribution, capital et ζ (bloc 6)
+
+*Instruite par `macro` (expert pilote) le 16/11/2026, rang 1 de la branche « calibration » (PR #162, tête `708c1aa`), après la section #143 (P207). Les chiffres du modèle viennent de sondes hors dépôt. Elles appellent, sans les modifier, `outils/etat_stationnaire.py`, `outils/maquette_conjointe.py`, le socle d'essai `tests/invariants/socle_partiel.py` et les assistants de `tests/invariants/test_socle_complet.py` (méthode au § 3.4.1). Ce sont des résultats du modèle, pas des faits. Les faits portent leur source et leur date. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**. La base est l'état à μ̄ = 0,60 du § 1 (P213).*
+
+### 3.1 Grandeurs visées et correspondance avec le modèle
+
+| Grandeur | Définition | Unité | Dénominateur | Fenêtre |
+|---|---|---|---|---|
+| Taux de distribution (fiche 6, § 9.4 et § 9.6, test « Bornes » (a) et (d)) | ΣDiv_F/Σ(Div_F + FU) ; au point fixe du script, Div_F/(Div_F + FU) | fraction | résultat des entreprises après intérêts et impôt, Div_F + FU | 12 tours |
+| Capital au prix courant (B12, `tab:criteres-j3`) | p K^vol/(12 PIB) | années de PIB | PIB nominal sur 12 tours | ouverture |
+| x | K^vol/(n_a y) = (κ/t̄u) e^{−ζΔϱ} | années de production | production | état stationnaire |
+| ζ (S2) | élasticité de niveau de tu\* à Δϱ, donc d ln x/dϱ = −ζ à long terme | sans dimension, par unité de taux réel annuel | — | — |
+
+**Traits du modèle que la source doit respecter** (vérifiés sur `etat_stationnaire`, l. 375 à 452 à `708c1aa`) :
+
+| Trait | Dans le modèle | Conséquence pour la source |
+|---|---|---|
+| Secteur | Un seul secteur des entreprises, consolidé (J = 1). Il ne détient pas d'actions et ne reçoit aucun dividende. | Sociétés non financières (S11), avec les **dividendes versés nets des dividendes reçus** (D.42), pour approcher un secteur consolidé |
+| Profits non distribués | FU = γ̄ V_F, après intérêts, amortissement comptable δK/n_a et impôt τ_F (nul au socle) | Épargne nette B.8n de S11. Écart déclaré : B.8n est nette de la consommation de capital fixe **au coût de remplacement**, alors que le modèle amortit au coût historique |
+| Capital | K^vol, net (amortissement géométrique δ), valorisé au prix courant p, donc au coût de remplacement. Pas de logements. Les entreprises produisent toute la valeur ajoutée, l'État n'a pas de capital. | Actifs fixes nets **hors logements**, au coût de remplacement courant, **économie totale** (même choix de champ qu'au § 1) |
+| Dénominateur de B12 | PIB = p v + ΔIN, sans impôts sur la production ni loyers imputés | PIB aux prix du marché, avec en variante la valeur ajoutée au prix de base. Les loyers imputés ne sont pas retirés : écart déclaré |
+
+**ζ n'entre pas dans l'état stationnaire de référence** (Δϱ = 0). Grille complète du script à μ̄ = 0,60 : le plus grand écart relatif entre ζ = 4 et ζ ∈ {5 ; 6 ; 6,28 ; 8 ; 8,79 ; 10 ; 12,56 ; 17 ; 20} vaut **0** (sortie `sortie_s55.txt`). ζ n'agit que hors de l'état stationnaire, et dans la mesure (α) de #80, où Δϱ ≠ 0. **Vérifiée.**
+
+**Correspondance entre ζ et la littérature** (fiche 6, § 9.2). En CES, ln(K/Y) = cte − σ ln c, où c = (ϱ + δ) est le coût d'usage réel et σ l'élasticité du rapport capital-production à ce coût. Il en découle d ln(K/Y)/dϱ = −σ/(ϱ̄_L + δ), d'où **ζ = σ/(ϱ̄_L + δ)**. À δ = 0,05 (hypothèse, #164) et ϱ̄_L = 0,030 / 0,029608 / 0,028182 (π̄ = 0 / 2 / 10 %), ζ = 8 correspond à σ = 0,640 / 0,637 / 0,625, et ζ = 4 à σ = 0,320 / 0,318 / 0,313. **Hypothèse** de correspondance, sous deux conditions :
+- (i) tout le coût du capital suit ϱ_L. Si seule la part financée par crédit (lv\* = 0,4) le suivait, ζ serait multiplié par 0,4 ;
+- (ii) δ vaut 5 %. À δ = 8 % ou 10 %, ζ serait plus bas de 27 % ou 39 % (σ = 0,7 donnerait ζ = 6,39 ou 5,40 au lieu de 8,79).
+
+### 3.2 Sources lues et citées
+
+**(a) Taux de distribution, lu.** Eurostat, comptes annuels des secteurs, jeu `nasa_10_nf_tr` (« Non-financial transactions - annual data »), mise à jour du 29/10/2026. Requête de l'API de diffusion (`ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data`) : S11, millions d'euros courants, D.42 versé et reçu, B.8n. Consultée le 16/11/2026. Zone euro à 21 pays (EA21 ; la requête ne rend pas d’agrégat EA20 pour ce jeu).
+
+| Définition | Moyenne 1999–2023 (25 ans) | Minimum ; maximum | Moyenne 2010–2024 | UE à 27, 1999–2023 |
+|---|---|---|---|---|
+| **Nette** : (D.42 versé − D.42 reçu)/(D.42 versé − D.42 reçu + B.8n) | **0,790** | 0,607 (2021) ; 0,986 (2000) | 0,717 | 0,715 |
+| Brute : D.42 versé/(D.42 versé + B.8n) | 0,860 | 0,729 (2021) ; 0,990 (2000) | 0,814 | 0,807 |
+
+Faits, **vérifiés** (requête et calcul, scratchpad `dl55/`). Non corrigé : bénéfices réinvestis d'investissement direct (D.43), revenus de la propriété attribués (D.44, D.45). Ces postes déplacent le partage, et leur ampleur n'est **pas vérifiée**.
+
+**(b) Capital productif, lu.** Eurostat, `nama_10_nfa_st` (« Fixed assets by type of asset »), mise à jour du 14/11/2026 : coût de remplacement courant (`CRC_MEUR`), branches totales, actifs fixes nets N11N moins logements nets N111N, EA20. PIB : `nama_10_gdp`, B1GQ et B1G, prix courants. Consultés le 16/11/2026.
+
+| Rapport | Moyenne 2000–2023 (24 ans) | Minimum ; maximum |
+|---|---|---|
+| **Capital net hors logements / PIB aux prix du marché** | **1,676 an** | 1,595 (2001) ; 1,772 (2020) |
+| Même capital / valeur ajoutée brute au prix de base | 1,871 an | — |
+| Pour mémoire : capital net total, logements compris / PIB | 3,229 ans | — |
+
+Répartition par secteur, de `nama_10_nfa_bs` (prix courants, publiée depuis 2012), capital net hors logements sur PIB en 2019 :
+- sociétés non financières, 0,989 ;
+- administrations publiques, 0,493 ;
+- ménages et ISBLSM, 0,137 ;
+- sociétés financières, 0,043.
+
+Le total, 1,662, est égal à celui de `nama_10_nfa_st`. Faits, **vérifiés**.
+
+**(c) ζ : élasticité du capital au coût d'usage, lue.**
+- R. Klump, P. McAdam et A. Willman, « The normalized CES production function: theory and empirics », BCE, *Working Paper Series*, n° 1294, février 2011. Tableau 2, « Empirical Studies of Aggregate Elasticity of Substitution in Selected Other Countries », page 30 du document (page 31 du PDF) :
+  - zone euro : 0,7 (Klump et al. 2007b, 1970–2003, trimestriel, progrès technique augmentant les facteurs) ; 0,95–1,05 (Willman 2002, 1970–1997, neutre au sens de Solow) ;
+  - estimations par pays de Bolt et van Els (2000), 1971–1996 : de 0,24 (Autriche) à 1 (Espagne).
+
+  Section 6, conclusions : les données rejettent la Cobb-Douglas au profit d'une CES d'élasticité « generally below unity ». Lu le 16/11/2026, PDF de `www.ecb.europa.eu`. **Vérifiée.** Ce sont des élasticités de substitution σ. Leur lecture comme élasticité de K/Y au coût d'usage est l'hypothèse du § 3.1.
+- S. Gilchrist et E. Zakrajšek, « Investment and the Cost of Capital: New Evidence from the Corporate Bond Market », NBER *Working Paper* 13174, juin 2007. Données de firmes américaines émettrices d'obligations.
+  - Résumé : une hausse d'un point du coût d'usage réduit le taux d'investissement de 50 à 75 points de base.
+  - Page 21 : « The elasticity of capital with respect to the user cost is equal to unity in the long run ». Même page : le taux d'intérêt après impôt représente environ les deux tiers du coût d'usage.
+
+  Lu le 16/11/2026, PDF de `www.nber.org`. **Vérifiée.**
+- B. Coulibaly et J. N. Millar, « The 'Elusive' Capital-User Cost Elasticity Revisited », Réserve fédérale, *Finance and Economics Discussion Series* 2007-25. Panel de 24 branches manufacturières sud-africaines, 1970–2000. Élasticité de long terme « between -0.80 and -1.0 » (conclusions). Lu le 16/11/2026 par WebFetch, qui ne rend qu'une citation courte et un résumé : **vérifiée avec réserve**.
+- **Non lus** : R. S. Chirinko, S. M. Fazzari et A. P. Meyer (1999), *Journal of Public Economics* 74(1), cité par la fiche 6 ; S. Gechert et al. (2022), *Review of Economic Dynamics* ; Knoblach, Rössler et Zwerschke (méta-régression). Aucun chiffre n'en est tiré.
+
+**Fourchette lue.** σ (ou élasticité du capital au coût d'usage) de 0,5 à 1,0 pour la zone euro et pour les études de firmes. Valeurs nationales jusqu'à 0,24. Conversion du § 3.1 à π̄ = 2 % : **ζ de 6,3 à 12,6**, et 4,0 pour σ = 0,32. Sous la condition (i) restreinte au crédit : ζ de 2,5 à 5,0. Le niveau de σ est **contesté** : la conclusion de Klump et al. (« below unity ») et celle de Gilchrist et Zakrajšek (« unity ») divergent.
+
+**(d) Pour #164, lu au passage.** Mêmes jeux, EA21, moyenne 2000–2023 : D.42 versé par S11, 9,39 % du PIB ; net des D.42 reçus, 5,68 % du PIB. Le modèle verse 22,31 % du PIB en dividendes à μ̄ = 0,60 (§ 1.6). L'écart confirme la limite P214. Il relève de #164, pas de #55. **Vérifiée** (mesure de la source).
+
+### 3.3 Valeur proposée et variantes
+
+**Capital : κ inchangé (x = 2 ans).** B12 vaut 1,99887 an à π̄ = 2 %. C'est +19,3 % au-dessus de la source rapportée au PIB (1,676) et +6,8 % au-dessus de la source rapportée à la valeur ajoutée (1,871). Écart **déclaré**, pour trois motifs :
+- **Bande de #55.** Caler x sur 1,676 porterait la distribution à **0,9087** à π̄ = 0, hors de la bande (sortie `sortie_s55.txt` : 0,9087 / 0,8590 / 0,7649 à π̄ = 0 / 2 / 10 %). La bande est franchie dès x < 1,806 à π̄ = 0 (distribution 0,9000). **Vérifiée.**
+- **Dénominateur.** Le PIB observé contient des impôts sur les produits et des loyers imputés, que le modèle n'a pas. La valeur ajoutée au prix de base (1,871) est plus proche du concept du modèle.
+- **Calibration conjointe.** κ et δ se calibrent ensemble sur la consommation de capital fixe (#164). Recaler κ seul avant δ ferait deux changements successifs de l'état de référence.
+
+**Distribution : aucune valeur à caler.** C'est un résultat de μ̄ (#92), de x, de lv\* et des écarts de #130. À μ̄ = 0,60, elle vaut 0,886 / 0,828 / 0,724. À π̄ = 2 %, le modèle (0,828) tombe entre la source nette (0,790) et la source brute (0,860), donc dans la plage observée de 1999 à 2023 (0,607 à 0,986). **Vérifiée.**
+
+**ζ proposé : 8.** C'est une valeur ronde, qui équivaut à σ ≈ 0,64 sous la correspondance du § 3.1. Elle se trouve dans la fourchette lue, entre l'estimation de la zone euro de Klump et al. (0,7) et la borne basse de 0,5. Elle figure déjà dans le script, comme second point de la plage de sensibilité (`ZETA_PLAGE` = (4 ; 8)), et dans les valeurs publiées à ζ = 8 (§ 3.6). Statut : **choix déclaré, source lue, niveau contesté**.
+
+| Variante | ζ | σ équivalent (2 %) | Distribution sous −2 points, 0 / 2 / 10 % | Δϱ où la distribution atteint 0,9, π̄ = 0 | Δϱ_lim de S6 | Rayon de la maquette, φ = 0, π̄ = 2 % | Δr̄_α (#80) | Avis |
+|---|---|---|---|---|---|---|---|---|
+| V0, statu quo | 4 | 0,318 | 0,8798 / 0,8169 / 0,7056 | +4,26 points | 3,308 | 1,001818 | 0,632 point | Sous la fourchette de la zone euro ; garde les valeurs publiées de C62 |
+| V2 | 6 | 0,478 | 0,8733 / 0,8079 / 0,6938 | +2,34 points | 2,205 | 1,000125 | non relevé | Borne basse de la fourchette |
+| **V1, proposée** | **8** | **0,637** | **0,8662 / 0,7981 / 0,6811** | **+1,61 point** | **1,654** | **1,000035** | **0,297 point** | **Recommandée** |
+| V1′ | 8,79 | 0,70 | 0,8633 / 0,7941 / 0,6759 | +1,43 point | 1,505 | non relevé | 0,266 point | Égalité à σ = 0,7 ; précision illusoire |
+| V3, Cobb-Douglas | 12,56 | 1,0 | 0,8478 / 0,7729 / 0,6491 | +0,94 point | 1,053 | 0,999818 | 0,175 point | Haut de la fourchette ; borne haute de la distribution franchie dès +0,94 point à π̄ = 0 |
+| V4, lecture « crédit seul » | ≈ 3,5 | 0,7 × 0,4 | non mesurée | non mesurée | 3,78 | non mesuré | non relevé | Écartée : S2 ne lit que ϱ_L, mais le coût des fonds propres n'est pas modélisé, ce qui ne prouve pas qu'il soit fixe |
+
+Mesures : sorties `sortie_s55.txt` et `sortie_maq.txt`. Δϱ_lim = 13,231/ζ (§ 2.3.2). **Vérifiées.**
+
+### 3.4 Tableau avant / après prédit
+
+#### 3.4.1 Méthode et commandes
+
+Sondes du scratchpad, lancées depuis `/home/user/projet_macro` à `708c1aa` (`git status` vide avant et après), dossier `<scratchpad>/sondes55/` :
+- **`s55.py`** : appelle `calculer(replace(Parametres(), mu_bar=0.60, zeta=z))` pour dix valeurs de ζ et compare chaque valeur publiée (champ `script`) et toute la grille à ζ = 4. La distribution sous Δϱ = −2 points se calcule par `etat_stationnaire(par, r_neutre=r̄ − 0,02, rho_bar_L=norme, controler=False)`, comme `test_distribution_positive_sous_un_ecart_de_taux_de_moins_deux_points`. Les seuils en Δϱ s'obtiennent par bissection. Elle traite aussi la variante κ.
+- **`main2.py`** : distribution à Δϱ = 0 et −2 points pour (μ̄, ζ) = (0,25 ; 4), (0,60 ; 4) et (0,60 ; 8).
+- **`bas.py`** : côté baisse, de Δϱ = −2 à −30 points.
+- **`c62z.py`** : `test_temps_de_doublement_sous_phi_nul` rejoué, choc de 1 %, 720 pas. Assistants du test non modifiés ; sentier et tables à (μ̄, ζ) par `socle.sentier(pi, mu_bar=…, zeta=…)` et `varier`, comme la sonde `c62.py` de `monnaie`.
+- **`c62lin.py`** : `test_temps_de_doublement_en_regime_lineaire` rejoué, choc de 1e−6, 2 700 pas, fenêtres de 120 pas.
+- **`maq.py`** : `rayon_c` de `outils/maquette_conjointe.py` sous φ = 0.
+- **`durable8.py`** : sonde `durable2.py` de `monnaie` (§ 2.4.2) à ζ = 8.
+- **Contrôles.** À ζ = 4, les sondes retrouvent les valeurs publiées : 320 et 31 tours, arrêt au pas 523 ; ρ̂ = 1,001819 ; rayons 1,001818 et 1,011036 ; distributions de main 0,61710 / 0,50480 / 0,36359.
+- Commande type : `uv run python -I <scratchpad>/sondes55/<sonde>.py`. Sorties : `<scratchpad>/sondes55/sortie_*.txt`.
+
+#### 3.4.2 `tab:etat-stationnaire` et valeurs résolues B1 à B26
+
+- **Contre l'état à μ̄ = 0,60 (§ 1) : aucune ligne ne change**, à toutes les décimales. Plus grand écart relatif sur toute la grille : 0. Ni ζ, ni κ inchangé n'entrent à Δϱ = 0. **Vérifiée.**
+- **Contre `main`** : le tableau est celui du § 1.4, sans ligne de plus. Tout le changement de l'état stationnaire de référence vient de #92.
+
+#### 3.4.3 Valeurs publiées du script qui changent avec ζ (μ̄ = 0,60 ; ζ = 4 → 8)
+
+185 valeurs publiées sur 449 sont en écart, contre 173 au § 1. Les douze en plus viennent toutes de la mesure (α) de #80 :
+
+| Endroit | Grandeur | ζ = 4 (main et § 1) | ζ = 8 |
+|---|---|---|---|
+| `sec:banque_centrale-conditions` ; fiche 9 § 3.Q | r̄_α à π\* = 0 / 1 / 3 / 4 / 6 / 10 %, % | 1,632 / 1,264 / 0,818 / 0,706 / 0,656 / 1,146 | 1,297 / 1,122 / 0,919 / 0,872 / 0,865 / 1,144 |
+| `sec:banque_centrale-conditions` | r̄_α(0) − r̄_α(10 %), point | 0,486 | 0,152 |
+| idem | écart maximal de r̄_α sur le profil, point | 0,976 | 0,432 |
+| idem | marche de cible de 2 à 3 %, point | −0,18 | −0,081 |
+| idem | Δr̄_α, verdict, point (le libellé « (ζ = 4) » est à reprendre) | 0,632 | 0,297 |
+| idem | (α) : écart de C/Y_o, point | 0,633 | 0,631 |
+| idem | (α) : écart de ti, point | 0,186 | 0,278 |
+
+Explication commune : sous la lecture (α), la cible change et Δϱ ≠ 0 entre deux cibles. Un ζ plus élevé fait porter davantage de l'ajustement par x, et moins par r̄_α. Quatre autres valeurs bougent à 1e−13 près sans changer à l'arrondi publié : écart de tu et trois lignes C/PIB de la fiche 9.
+
+**#80 reste en échec attendu** : Δr̄_α = 0,297 point et écart de C/Y_o = 0,631 point, au-dessus du seuil de 0,1 point des deux tests `xfail(strict=True)`. Aucun succès inattendu. **Vérifiée** (valeurs du script ; tests non exécutés à ζ = 8).
+
+**C51 « à ζ calibré »** (P161) : `calculer` ne lève aucun refus à ζ = 8 (ni à 5, 6, 6,28, 8,79, 10, 12,56, 17 ou 20). La racine de la fonction de fermeture est donc unique sur [−60 % ; 100 %], sans pôle, et les trois « racines parasites » restent « aucune ». **Vérifiée sous φ = 1.** Sous φ = 0, la publication des racines n'est **pas mesurée**.
+
+#### 3.4.4 Lignes propres à #55 et à C62
+
+| Grandeur | `main` (μ̄ = 0,25, ζ = 4) | § 1 (μ̄ = 0,60, ζ = 4) | Proposé (μ̄ = 0,60, ζ = 8) | Explication |
+|---|---|---|---|---|
+| Distribution, Δϱ = 0, π̄ = 0 / 2 / 10 % | 0,61710 / 0,50480 / 0,36359 | 0,88598 / 0,82751 / 0,72390 | identique au § 1 | #92 ; ζ n'entre pas |
+| Distribution, Δϱ = −2 points | 0,60988 / 0,47950 / 0,31459 | 0,87983 / 0,81694 / 0,70560 | **0,86624 / 0,79812 / 0,68114** | x = 2 e^{0,02ζ} : 2,1666 → 2,3470. Plus de capital, donc plus d'amortissement et de V_F à faire croître |
+| Div_F/(p v) sous −2 points, % | 4,84 / 4,66 / 4,29 | 22,38 / 22,20 / 21,83 | 21,19 / 20,99 / 20,58 | idem |
+| tu sous −2 points | 0,7385 | 0,7385 | 0,6817 | S2 |
+| Frontière de S6, Δϱ_lim, par an | 3,307756 | 3,307756 | **1,653878** | c/ζ, avec c = 13,231 (§ 2.3.2) |
+| Arrêt liant du pas 0, π̄ = 2 % : i_{L,0} et cause | 3,252184, caisse | 3,424111, S6 | **1,737155, S6** (déduite) | ζ = 8 > ζ\* aux trois π̄ (§ 2.3.3) ; non remesurée par bissection |
+| C62, choc de 1 %, π̄ = 2 % : ρ̂ et temps de doublement | 320 tours (publié) | 1,002170 ; 320 tours | **0,997465 ; aucun doublement**, pas d'arrêt | voir ci-dessous |
+| C62, choc de 1 %, π̄ = 10 % | 31 tours, arrêt au pas 523 | 1,022593 ; 31 tours ; arrêt au pas 523 | 1,019156 ; 37 tours ; arrêt au pas 543 | idem |
+| C62 en régime linéaire, π̄ = 2 %, trois dernières fenêtres | 381 tours (publié) | 1,001819 (381 tours) | **0,999746 / 0,998568 / 0,996747** | idem |
+| C62 en régime linéaire, π̄ = 10 % | 63 tours (publié) | 1,011219 / 1,011744 / 1,014105 ; arrêt au pas 1 362 | 1,010274 / 1,011828 / 1,022700 ; arrêt au pas 1 500 | idem |
+| Rayon de la maquette conjointe, φ = 0, π̄ = 0 / 2 / 10 % | 0,997894 / 1,001818 / 1,011036 | identique | **0,998235 / 1,000035 / 1,009661** | idem |
+
+**C62 change de nature à π̄ = 2 %** (vérifiée).
+- **À ζ = 8, la boucle sous φ = 0 n'est plus explosive à l'échelle d'une partie.** Le rayon de la maquette, 1,000035, donne un temps de doublement de l'ordre de 20 000 tours. Le moteur, en régime linéaire, converge sur 2 700 pas.
+- **Elle reste explosive à 10 %.** Rayon 1,009661 ; arrêt du choc de 1 % au pas 543 au lieu de 523.
+- **Le canal.** ζ renforce le canal de l'investissement : une hausse durable du taux réduit x et la demande. Ce frein compense le canal rentier, qui pousse vers l'explosion sous φ = 0. Ce mécanisme est une **hypothèse**, non décomposée.
+- **Ce qui est à réécrire.** Les phrases publiées « la boucle conjointe est explosive » sous φ = 0 (`sec:finances_publiques-impots`, `sec:finances_publiques-conditions`) et « 381 tours ». La couverture minimale qui stabilise, 0,174 à 2 %, est à remesurer : **non mesurée**.
+- μ̄ n'a aucun effet sur ces mesures : rayons identiques à μ̄ = 0,25 et 0,60.
+
+### 3.5 Critère de #55 (écrit avant l'essai)
+
+| Point | π̄ = 0 | π̄ = 2 % | π̄ = 10 % | Verdict |
+|---|---|---|---|---|
+| Distribution dans [0,2 ; 0,9], Δϱ = 0 | 0,88598 | 0,82751 | 0,72390 | **tenu** ; marge haute de 0,014 à π̄ = 0 |
+| Même bande, Δϱ = −2 points (taux directeur, écarts constants, M33), ζ = 8 | 0,86624 | 0,79812 | 0,68114 | **tenu** |
+| B12 rapporté à une source de capital productif au coût de remplacement, définition déclarée | 2,0017 contre 1,676 | 1,9989 contre 1,676 (1,871 sur la valeur ajoutée) | 1,9882 | **rapporté** ; écart de +19 % (PIB) ou +7 % (valeur ajoutée), déclaré (§ 3.3) |
+| ζ sur une source, ou déclaré | ζ = 8, σ ≈ 0,64, dans la fourchette lue de 0,5 à 1,0 | | | **sourcé, contesté** |
+| Publiés : C51 « à ζ calibré », frontière de #143 au ζ retenu | racine unique (φ = 1) ; Δϱ_lim = 1,654 par an | | | **publiés** |
+
+Le critère tient à **tout ζ ≤ 20** mesuré. Sous −2 points, la plus basse valeur est 0,5848, à ζ = 20 et π̄ = 10 %. Le critère ne départage donc pas les variantes. **Vérifiée.**
+
+### 3.6 Points repris du § 2.6
+
+1. **Frontière de #143 au ζ retenu.** À ζ = 8, Δϱ_lim = 1,653878 par an, soit i_L = 1,683878 / 1,737155 / 1,950266 à π̄ = 0 / 2 / 10 %. C'est la mesure de `monnaie`, § 2.3.2, faite à ζ = 8 ; **vérifiée**. Comme ζ = 8 dépasse ζ\* (4,890 / 3,875 / 2,247), **S6 lie la première au pas 0 aux trois π̄**, avant les seuils de caisse (2,735863 / 3,533060 / 6,609380). C'est une **déduction** des § 2.3.2 et 2.3.3, non remesurée par bissection à ζ = 8 : le seuil de caisse du pas 0 ne lit pas ζ, puisque S2 n'entre qu'à ti_{t+1}.
+2. **C51 et C62.** C51 tient à ζ = 8 (§ 3.4.3). C62 : § 3.4.4. **Constat principal de cette section** : à 2 %, le régime « intérêts financés par le déficit » cesse d'être explosif sur l'horizon d'une partie.
+3. **Borne haute de la distribution.** Mesure directe, qui remplace l'hypothèse x = 2 e^{−ζΔϱ} du § 2.4.3 : à ζ = 8, la distribution atteint 0,9 pour un Δϱ durable de **+1,61 / +7,15 / +19,33 points** à π̄ = 0 / 2 / 10 % (ζΔϱ = 0,129 / 0,572 / 1,547, contre 0,102 / 0,523 / 1,698 dans l'hypothèse). Ce n'est pas une condition d'existence : Div_F reste positif. La bande de #55 est un critère de calibration à l'état de référence, pas un domaine. À π̄ = 0, un resserrement durable de 1,6 point suffit à la franchir, contre 4,3 points à ζ = 4. **Vérifiée.**
+4. **Économie vidée d'investissement.** Sonde de `monnaie` à ζ = 8, μ̄ = 0,60 :
+   - aucun arrêt, sauf à π̄ = 0 sous +20 points : arrêt de la **caisse de l'État** au pas 364 (30,3 ans), phase 7, ligne 19a-banque, contre le pas 479 à ζ = 4 ;
+   - ti multiplié par 0,93 / 0,82 / 0,64 / 0,33 à π̄ = 0 sous +2 / +5 / +10 / +20 points ; par 0,275 et 0,249 à 2 % et 10 % sous +20 points ;
+   - rien de comparable aux facteurs de 10⁻⁶ à 10⁻⁹ mesurés à ζ = 20.
+
+   Avis : **la borne ζ ≤ 20 (P139) n'a pas à être resserrée dans cette branche**. ζ = 8 en est loin. c_dom de (1′) se fixe en J3-e2 avec ζ = 8 : sous l'hypothèse de `monnaie` (c_dom de 0,5 à 1), Δϱ admis de 6,3 à 12,5 points. **Vérifiée** (sortie `sortie_durable8.txt`), sauf c_dom (**hypothèse**).
+5. **Côté baisse.** À ζ = 8, la distribution reste au-dessus de 0,2 pour tout Δϱ ≥ −10 points aux trois π̄ (0,778 / 0,647 / 0,416 à −10 points). À π̄ = 10 %, elle descend à 0,174 à −15 points, puis Div_F < 0 à −20 points (i_L = −8,9 %, hors de tout domaine réaliste). À π̄ = 0 et 2 %, Div_F ne s'annule pas jusqu'à −30 points : la baisse des intérêts domine la hausse de x, et la distribution n'est pas monotone. L'hypothèse du § 2.4.3, « Div_F = 0 à ζΔϱ ≈ −0,93 », est donc **réfutée** à π̄ = 0 et 2 %. **Vérifiée** (sortie de `bas.py`).
+6. **Arrêts de la caisse de l'État** (frontière avec `monnaie`). Ils surviennent plus tôt à ζ = 8 (pas 364 contre 479, π̄ = 0, +20 points). Je partage l'avis de `monnaie` : diagnostic en J3-f2 (#87, #154) ou au J4, hors de cette branche. Mécanisme **non diagnostiqué**.
+
+### 3.7 Conditions d'existence au point fixe
+
+ζ n'entre pas à Δϱ = 0, et κ est inchangé : toutes les conditions du § 1.5 sont **identiques** à μ̄ = 0,60. Il s'agit de Div_F > 0, du dividende stationnaire de la banque, du coefficient de richesse, de ν_H λ_H < 1, de D1, D2, de la marge de E1, du plafond de E6 et de la caisse de phase 4. Le domaine de ζ (ζ ≥ 0, ζ ≤ 20 selon P139) est tenu. **Vérifiée** (grille identique ; `calculer` sans refus).
+
+**Conditions d'arrêt du plan** : aucune rencontrée.
+- Aucune valeur n'est hors domaine et aucune équation n'est à changer.
+- Aucun banc d'empreintes n'a été exécuté : c'est la mesure du rang 8. Les trajectoires choquées changeront avec ζ, puisque Δϱ ≠ 0 hors de l'état stationnaire, et le maintien du plafond des bancs D et BF n'est **pas vérifié**.
+- Le seul cas connu qui atteint la frontière de #143 (C62 à 10 %) s'arrête plus tard à ζ = 8 (pas 543 au lieu de 523).
+
+### 3.8 Questions au mainteneur
+
+1. **Valeur de ζ.** ζ = 8 (σ ≈ 0,64 ; source lue, niveau contesté), ζ = 4 (statu quo, σ ≈ 0,32, sous la fourchette de la zone euro lue), ou ζ = 12,56 (Cobb-Douglas) ? *Avis : **ζ = 8**, déclaré « σ ≈ 0,64 ; Klump, McAdam et Willman (2011) et Gilchrist et Zakrajšek (2007) ; correspondance ζ = σ/(ϱ̄_L + δ), contestée ».*
+2. **Changement de C62 à 2 %.** À ζ = 8, le régime φ = 0 n'est plus explosif à π̄ = 2 % sur l'horizon d'une partie : rayon de 1,000035, contre 1,001818 à ζ = 4. Il reste explosif à 10 %. Ce changement d'un résultat publié (sans verdict) suit de ζ. Faut-il l'accepter, avec réécriture de `sec:finances_publiques-impots` et remesure de la couverture minimale qui stabilise ? Faut-il plutôt garder ζ = 4 pour préserver la propriété ? *Avis : l'accepter. La propriété « explosif à 2 % » reposait sur un ζ indicatif sans source, et elle reste vraie à 10 %. C'est une frontière avec `monnaie` (dette publique) et un point pour `jeu` (§ 3.9).*
+3. **Capital.** Garder κ = 1,6 (x = 2, B12 = 2,0 an) avec l'écart déclaré à la source (+19 % sur le PIB, +7 % sur la valeur ajoutée), et renvoyer le calage conjoint de κ et δ à #164 ? *Avis : oui. Caler x = 1,676 seul ferait sortir la distribution de la bande à π̄ = 0 (0,9087).*
+4. **Définition de la distribution observée.** Nette des dividendes reçus (0,790, EA21, 1999–2023), ou brute (0,860) ? *Avis : nette, puisque le secteur du modèle est consolidé ; publiée avec la brute.*
+5. **Dividendes rapportés au PIB** (§ 3.2 (d)) : 5,68 % net observé, contre 22,31 % dans le modèle. *Avis : le verser en commentaire sur #164 (texte au § 3.10), sans effet sur cette branche.*
+
+### 3.9 Points pour `jeu` (je ne les tranche pas)
+
+- À ζ = 8, un point de taux réel du crédit maintenu pèse davantage sur l'investissement à long terme : e^{−0,08} − 1 = −7,7 % de capital par point durable, contre −3,9 % à ζ = 4. Le libellé « −2 % d'investissement par point, davantage s'il dure » (fiche 6, condition 2) reste juste. Son chiffre est à recalculer après M34.
+- Sous φ = 0 à 2 %, le joueur ne voit plus de dérive lente du taux directeur. Elle reste visible à 10 % (arrêt après 45 ans environ au choc de 1 %). La leçon « financer les intérêts par le déficit est explosif » ne vaut plus qu'à inflation élevée.
+- À π̄ = 0, un resserrement durable de 1,6 point fait passer la distribution au-dessus de 0,9. Cette mesure de répartition est sans conséquence de domaine.
+
+### 3.10 Commentaire proposé sur #164 (création sur accord)
+
+> *Rédigé par l'agent macro (IA).*
+>
+> Mesures lues pendant l'instruction de #55 (`docs/blocs/calibration.md`, § 3.2), Eurostat, consultées le 16/11/2026 :
+> - capital net hors logements au coût de remplacement courant (`nama_10_nfa_st`, EA20) : 1,676 an de PIB en moyenne de 2000 à 2023 (1,871 an de valeur ajoutée au prix de base) ;
+> - dividendes versés par les sociétés non financières (`nasa_10_nf_tr`, D.42, EA21) : 9,39 % du PIB, ou 5,68 % nets des dividendes reçus.
+>
+> Le modèle donne, à μ̄ = 0,60 : B12 = 2,0 ans et des dividendes de 22,3 % du PIB. Recaler κ et δ ensemble sur la consommation de capital fixe réduirait l'écart. Le faire avec κ seul ferait sortir la distribution de la bande de #55 à π̄ = 0 (0,909 à x = 1,676).
+
+### 3.11 Surface pour `coder` et `docwriter` (rang 3 à 9)
+
+- Table du bloc 6 (`ZETA`) : valeur 8 et source. Défaut `zeta` du script et sa déclaration, aujourd'hui « valeur de la maquette… n'entre que si Δϱ ≠ 0 ».
+- `ZETA_PLAGE` = (4 ; 8) : la valeur retenue y figure déjà. Le libellé « Δr̄_α, verdict (ζ = 4) » est à reprendre.
+- Les douze valeurs publiées du § 3.4.3.
+- 21 occurrences de « ζ = 4 » dans la spécification, dans dix sections au moins : `sec:banque_centrale-conditions`, `sec:finances_publiques-*`, `sec:cadre-*`, `sec:banque-*`, `sec:investissement-conditions`, et d'autres. Il faut aussi reprendre les textes publiés de C62 (320, 31, 381 et 63 tours).
+- Chiffres de la fiche 6 donnés à ζ = 4, à remesurer au rang 8 : e_I(120), (d2), tu et x hors cible durable (1,098 et 1,457 à ζ = 4 ; 1,508 et 1,061 à ζ = 8, chiffres de maquette non remesurés).
+
+### 3.12 Statut des conclusions
+
+- **Vérifiées** (commande et sortie, ou source citée) :
+  - ζ sans effet sur l'état stationnaire (grille identique) ;
+  - critère de #55 aux trois π̄ et sous −2 points ;
+  - les douze valeurs publiées qui changent ; #80 toujours en échec ;
+  - C51 sous φ = 1 ;
+  - C62 (choc de 1 %, régime linéaire, maquette) à ζ = 4 et 8 ;
+  - borne haute et côté baisse ;
+  - sonde d'écart durable à ζ = 8 ;
+  - variante κ (0,9087) ;
+  - sources Eurostat (distribution, capital, dividendes) ;
+  - Klump et al. (tableau 2) et Gilchrist et Zakrajšek (p. 21).
+- **Vérifiée avec réserve** : Coulibaly et Millar (résumé de l'outil).
+- **Hypothèses** :
+  - correspondance ζ = σ/(ϱ̄_L + δ), et lecture de σ comme élasticité du capital au coût d'usage ;
+  - mécanisme du changement de C62 ;
+  - c_dom.
+- **Déduite** : frontière liante du pas 0 à ζ = 8.
+- **Non vérifiées** :
+  - bancs d'empreintes à ζ = 8 (rang 8) ;
+  - couverture minimale qui stabilise sous φ = 0 ;
+  - racines sous φ = 0 ;
+  - postes D.43 à D.45 ;
+  - millésime d'AMECO (§ 1.12) ;
+  - Chirinko, Fazzari et Meyer (1999).
