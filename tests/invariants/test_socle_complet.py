@@ -759,10 +759,9 @@ def test_theta_H_aux_deux_sens(socle, pi, publier):
     theta_vente = (pg["14"] - pb["14"]) / (pg["2"] - pb["2"])
     o = base.pas[n - 1]["etat"]
     v = pb["variables"]
-    D_F = max(0.0, o.D_F)
-    entrees = dict(D_F=D_F, Delta_L=pb["18"], C=pb["1"], G=pb["2"], WB=pb["5"],
+    entrees = dict(D_F=o.D_F, Delta_L=pb["18"], C=pb["1"], G=pb["2"], WB=pb["5"],
                    interets_L=par_pas(TauxDeFlux(o.i_L)) * o.L,
-                   interets_D_F=par_pas(TauxDeFlux(o.i_D)) * D_F, T_e_F=v["T_e_F"],
+                   i_D_pas=par_pas(TauxDeFlux(o.i_D)), T_e_F=v["T_e_F"],
                    D_etoile_F=v["D_etoile_F"])
     assert bloc_6.dividendes(**entrees) == pb["14"]
     delta_y = 1e-3 * v["y"]

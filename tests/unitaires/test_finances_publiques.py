@@ -17,7 +17,8 @@ du rang 1a, P156 à P164 ; `sec:finances_publiques-conditions`), non déplacés 
   (lectures par `vue.ouverture.<moyen>`, `vue.grand_livre.position` ou `.ouverture`, et toute
   constante "M_G", "D_H" ou "D_F" des méthodes de la classe, de phase ou auxiliaires ; aucun
   alias de `vue.ouverture` ni de `vue.grand_livre` ; paramètre d'une lecture nette employé
-  seulement dans max(0.0, ·)) ;
+  seulement dans max(0.0, ·)) ; étendu aux blocs 5 (H3, H4, H5) et 6 (F3) par le critère de
+  #142 (branche « forme du code », rang 3) ;
 - **couverture** (F6) : E4(i + 0,01) − E4(i) = φ par_pas(0,01) A à 1e−12 relatif ; φ = 0 ⇒
   T^cou = 0 exactement ;
 - **bornes** (critère 16) : B_CB + θ_CB Em ≥ 0 et B_Bk + ΔB^prim_Bk ≥ 0 sous rachat (Em < 0),
@@ -38,6 +39,8 @@ from pathlib import Path
 import pytest
 
 from nations.blocs import finances_publiques as bloc
+from nations.blocs import investissement as bloc_6
+from nations.blocs import menages as bloc_5
 from nations.etat import schema
 from nations.moteur.contrat_bloc import GRAND_LIVRE, OUVERTURE, REGISTRE, Lecture
 from nations.moteur.conversions import TauxDeFlux, par_pas
@@ -200,6 +203,15 @@ LECTURES_NETTES = {("plan_de_depense", "M_G"), ("impot_des_entreprises", "D_F"),
 LECTURES_BRUTES = {("couverture_des_interets", "M_G"), ("transferts", "M_G"),
                    ("besoin_d_emission", "M_G")}
 MOYENS_DE_PAIEMENT = {"M_G", "D_H", "D_F"}
+# Blocs soumis au contrôle de localité : (module, lectures nettes, lectures brutes, préfixe des
+# balises). Blocs 5 et 6 : critère de #142 (lecture nette de D_H dans H3, H4, H5 ; de D_F dans
+# F3), aucune lecture brute d'un moyen de paiement.
+BLOCS_DE_LA_LOCALITE = {
+    "finances_publiques": (bloc, LECTURES_NETTES, LECTURES_BRUTES, "# eq:finances_publiques-"),
+    "menages": (bloc_5, {("richesse_visee", "D_H"), ("plan_de_la_regle", "D_H"),
+                         ("budget_de_consommation", "D_H")}, set(), "# eq:menages-"),
+    "investissement": (bloc_6, {("dividendes", "D_F")}, set(), "# eq:investissement-"),
+}
 
 
 # Accesseurs du grand livre qui lisent une position par son nom (`vue.grand_livre.position`,
@@ -277,8 +289,11 @@ def _corps_de_la_classe(classe):
     return corps
 
 
-def test_lectures_brutes_liste_fermee_et_localite():
-    """Engagement 2 et localité (critères de #132) : dans toutes les méthodes de la classe du bloc
+@pytest.mark.parametrize("radical", sorted(BLOCS_DE_LA_LOCALITE))
+def test_lectures_brutes_liste_fermee_et_localite(radical):
+    """Engagement 2 et localité (critères de #132 ; blocs 5 et 6 : critère de #142, aucun
+    max(0 ; ·) dans les méthodes de phase, lecture nette dans H3, H4, H5 et F3, aucune lecture
+    brute d'un moyen de paiement) : dans toutes les méthodes de la classe du bloc
     (de phase ou auxiliaires), toute lecture de D_H, D_F ou M^G (`vue.ouverture.<moyen>`,
     `vue.grand_livre.position` ou `.ouverture` du moyen) est passée telle quelle à une fonction du
     module, jamais transformée ni écrêtée sur place, et aucune constante "M_G", "D_H" ou "D_F"
@@ -289,7 +304,8 @@ def test_lectures_brutes_liste_fermee_et_localite():
     jamais liés à un nom ni passés tels quels (`_acces_detaches`), dans tout le module ; hors de
     la classe, aucune lecture d'un moyen de paiement ; le corps de la classe ne contient que ses
     méthodes, sa docstring, `__slots__` et `declaration` (`_corps_de_la_classe`)."""
-    arbre = ast.parse(inspect.getsource(bloc))
+    module, lectures_nettes, lectures_brutes, balise = BLOCS_DE_LA_LOCALITE[radical]
+    arbre = ast.parse(inspect.getsource(module))
     fonctions = {n.name: n for n in arbre.body if isinstance(n, ast.FunctionDef)}
     classe = next(n for n in arbre.body if isinstance(n, ast.ClassDef))
     methodes = _corps_de_la_classe(classe)
@@ -316,14 +332,14 @@ def test_lectures_brutes_liste_fermee_et_localite():
                     relevees.add((appel.func.id, mot.arg))
                     lectures.remove(mot.value)
         assert not lectures, f"lecture d'un moyen de paiement hors d'un appel dans {methode.name}"
-    assert relevees == LECTURES_NETTES | LECTURES_BRUTES
-    for nom, parametre in LECTURES_NETTES:
-        assert "# eq:finances_publiques-" in inspect.getsource(getattr(bloc, nom))
+    assert relevees == lectures_nettes | lectures_brutes
+    for nom, parametre in lectures_nettes:
+        assert balise in inspect.getsource(getattr(module, nom))
         assert f"max(0.0, {parametre})" in ast.unparse(fonctions[nom]), (nom, parametre)
         hors = _hors_d_un_max_nul(fonctions[nom], parametre)
         assert not hors, (nom, parametre, hors)
-    for nom, parametre in LECTURES_BRUTES:
-        source = inspect.getsource(getattr(bloc, nom))
+    for nom, parametre in lectures_brutes:
+        source = inspect.getsource(getattr(module, nom))
         assert "Lecture brute de M^G" in source and "point 4" in source, nom
 
 

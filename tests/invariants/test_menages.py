@@ -491,10 +491,11 @@ def _facteurs(pi, g=0.02, pi_cible=None):
 
 def _pas_du_bloc_seul(V, YD_m1, Y_o, i_D, Gamma_e, gamma_e, pis, nu, lam):
     """Un pas du bloc seul, demande servie : H2 à H5 (fonctions du bloc), revenu
-    YD = Y_o + i_D V/n_a (revenus hors intérêts exogènes), V_{t+1} = V + YD − C."""
+    YD = Y_o + i_D V/n_a (revenus hors intérêts exogènes), V_{t+1} = V + YD − C. V est passé
+    en D_H, B_H = 0 (socle, M27) ; H3 à H5 le lisent en max(0 ; V), égal à V pour V ≥ 0 (#142)."""
     YD_e = bloc.revenu_attendu(Gamma_e, YD_m1)
-    V_etoile = bloc.richesse_visee(nu, N_A, YD_e, pis, V)
-    C = bloc.budget_de_consommation(V, bloc.plan_de_la_regle(YD_e, gamma_e, V, lam / N_A,
+    V_etoile = bloc.richesse_visee(nu, N_A, YD_e, pis, V, 0.0)
+    C = bloc.budget_de_consommation(V, bloc.plan_de_la_regle(YD_e, gamma_e, V, 0.0, lam / N_A,
                                                              V_etoile))
     YD = Y_o + i_D / N_A * V
     return V + YD - C, YD, C

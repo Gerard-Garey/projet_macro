@@ -17,6 +17,7 @@ import dataclasses
 import inspect
 import math
 
+import numpy as np
 import pytest
 
 from nations.blocs import menages as bloc
@@ -58,14 +59,15 @@ def gamma_e_et_cible(pi, n_a, g_pr=0.02, g_N=0.0):
 
 
 def plan(D_H, B_H, YD_m1, pi, n_a=N_A, nu_H=TABLE.nu_H, lambda_H=TABLE.lambda_H.valeur):
-    """H2 à H5 par les fonctions du bloc ; D_H lu en max(0 ; ·) comme la phase 2."""
+    """H2 à H5 par les fonctions du bloc, qui lisent D_H en max(0 ; ·) (#142) ; `V_H` rendu :
+    Ṽ_H = max(0 ; D_H) + B_H, pour les critères."""
     Gamma_e, gamma_e, pis = gamma_e_et_cible(pi, n_a)
     V_H = max(0.0, D_H) + B_H
     YD_e = bloc.revenu_attendu(Gamma_e, YD_m1)
-    V_etoile = bloc.richesse_visee(nu_H, n_a, YD_e, pis, V_H)
-    C_regle = bloc.plan_de_la_regle(YD_e, gamma_e, V_H, lambda_H / n_a, V_etoile)
+    V_etoile = bloc.richesse_visee(nu_H, n_a, YD_e, pis, D_H, B_H)
+    C_regle = bloc.plan_de_la_regle(YD_e, gamma_e, D_H, B_H, lambda_H / n_a, V_etoile)
     return {"YD_e": YD_e, "V_etoile_H": V_etoile, "C_regle": C_regle,
-            "C_plan": bloc.budget_de_consommation(max(0.0, D_H), C_regle), "V_H": V_H,
+            "C_plan": bloc.budget_de_consommation(D_H, C_regle), "V_H": V_H,
             "pis": pis, "Gamma_e": Gamma_e, "gamma_e": gamma_e}
 
 
@@ -354,6 +356,53 @@ def test_lecture_nette_de_d_h_dans_h3_h4_h5(D_H):
     for nom in ("YD_e", "V_etoile_H", "C_regle"):
         assert vue.pas[nom] == attendu[nom], nom
     assert vue.pas["C_plan"] == 0.0 and math.copysign(1.0, vue.pas["C_plan"]) == 1.0
+
+
+# Ancienne composition (`05541fc`, avant #142) : la phase 2 lisait D_H en max(0 ; ·) et passait
+# D̃_H et Ṽ_H aux fonctions balisées ; corps recopiés tels quels, référence du test ci-dessous.
+def _ancienne_richesse_visee(nu_H, n_a, YD_e, pi_etoile_pas, V_H_net):
+    return nu_H * n_a * (YD_e - pi_etoile_pas * V_H_net)
+
+
+def _ancien_plan_de_la_regle(YD_e, gamma_e, V_H_net, lambda_H_pas, V_etoile_H):
+    return YD_e - gamma_e * V_H_net - lambda_H_pas * (V_etoile_H - V_H_net)
+
+
+def _ancien_budget_de_consommation(D_H_net, C_regle):
+    return min(D_H_net, max(0.0, C_regle))
+
+
+def _ancienne_phase_2(nu_H, n_a, YD_e, pis, gamma_e, lambda_H_pas, D_H, B_H):
+    D_H_net = max(0.0, D_H)
+    V_H_net = D_H_net + B_H
+    V_etoile_H = _ancienne_richesse_visee(nu_H, n_a, YD_e, pis, V_H_net)
+    C_regle = _ancien_plan_de_la_regle(YD_e, gamma_e, V_H_net, lambda_H_pas, V_etoile_H)
+    return V_etoile_H, C_regle, _ancien_budget_de_consommation(D_H_net, C_regle)
+
+
+# Dépôts d'ouverture négatifs du critère de #142 (poussière et au-delà) et nuls signés.
+D_H_NEGATIFS = (-0.0, 0.0, -math.ulp(0.0), -math.ulp(1.0), -0.5 * EPSILON * _S_H, -1.0, -1e9)
+
+
+def test_localite_lecture_nette_egale_au_bit_a_l_ancienne_composition():
+    """Critère de #142, écrit avant l'essai : H3, H4 et H5 appelées directement avec D_H brut
+    (D_H < 0 : poussière et au-delà ; ±0) rendent, au bit (`float.hex`, signe du zéro compris),
+    V*_H, C^règle et C^plan de l'ancienne composition « phase → max(0 ; ·) → fonction »
+    (`05541fc`) ; lot de 2 000 tirages (graine déclarée) sur YD_e, π^{∗,pas}, γ^e, λ_H/n_a, ν_H,
+    B_H ≥ 0 et D_H ∈ D_H_NEGATIFS ∪ [−10^6 ; 10^6]."""
+    rng = np.random.default_rng(20261116)
+    cas = [(d, b) for d in D_H_NEGATIFS for b in (0.0, 250.0)]
+    cas += [(float(d), float(b)) for d, b in zip(rng.uniform(-1e6, 1e6, 2000),
+                                                  rng.uniform(0.0, 1e3, 2000))]
+    for k, (D_H, B_H) in enumerate(cas):
+        YD_e = 80.0 * (1.0 + 0.5 * math.sin(k))
+        pis, gamma_e = 0.00165 * (k % 7), 0.0033 * (k % 5)
+        lambda_H_pas, nu_H = 0.1 / (1 + k % 3), 0.5 + (k % 11) / 4
+        ancien = _ancienne_phase_2(nu_H, N_A, YD_e, pis, gamma_e, lambda_H_pas, D_H, B_H)
+        V_etoile_H = bloc.richesse_visee(nu_H, N_A, YD_e, pis, D_H, B_H)
+        C_regle = bloc.plan_de_la_regle(YD_e, gamma_e, D_H, B_H, lambda_H_pas, V_etoile_H)
+        nouveau = (V_etoile_H, C_regle, bloc.budget_de_consommation(D_H, C_regle))
+        assert [x.hex() for x in nouveau] == [x.hex() for x in ancien], (D_H, B_H)
 
 
 # --------------------------------------------------------------------------
