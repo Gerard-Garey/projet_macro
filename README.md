@@ -12,7 +12,7 @@ Travail en cours : jalons et périmètre de la branche courante dans `docs/feuil
 |---|---|
 | `src/nations/` | Moteur v3, en couches (ADR 0002) : `noyau` (comptes, seul lieu d'exécution des flux monétaires), `blocs` (un module par bloc de la spécification), `moteur` (ordonnanceur et paramètres typés), `etat` (schéma d'état, sauvegarde et reprise), `observation` (séries, sans effet sur la trajectoire), `scenarios` (état initial résolu, archétypes), `leviers` (commandes du joueur) |
 | `tests/unitaires/`, `tests/invariants/` | Batteries de vérification (propriétés, invariants d'architecture, budget de calcul) |
-| `outils/` | Scripts de contrôle : concordance spécification ↔ moteur, matrices, état stationnaire sous forme fermée, compilation de la spécification ; relevé du coût du noyau dans les journaux de la CI ; maquette linéarisée de la boucle conjointe des blocs 2 à 9 ; contre-épreuve des boucles du financement des entreprises |
+| `outils/` | Scripts de contrôle : concordance spécification ↔ moteur, matrices, état stationnaire sous forme fermée, compilation de la spécification ; relevé du coût du noyau dans les journaux de la CI ; empreintes SHA-256 des trajectoires des bancs ; maquette linéarisée de la boucle conjointe des blocs 2 à 9 ; contre-épreuve des boucles du financement des entreprises |
 | `docs/specification/` | Spécification LaTeX (`nations_et_marches.tex`, PDF versionné) et ses conventions (`CONVENTIONS.md`) |
 | `docs/blocs/` | Inventaire des blocs et fiches comparatives (origine de chaque approche) |
 | `docs/adr/` | Décisions d'architecture et d'organisation |
@@ -79,6 +79,12 @@ Relevé du coût du noyau seul dans des journaux bruts du job « Tests » de la 
 
 ```bash
 uv run python outils/releve_cout_ci.py <journaux…> [--commit SHA] [--json]
+```
+
+Empreintes SHA-256 des trajectoires de huit bancs (socle complet, avec et sans choc ; P87 ; J3-d1 ; essai pur), aux trois π\*, sur 720 pas : un événement par clôture de phase et par fin de pas, encodage documenté dans le script ; `--racine` exécute un autre arbre (version « avant » extraite avec `src/` par `git archive`) ; code de sortie 0 identique, 1 écart ou arrêt du moteur, 2 refus (module ou bloc manquant) ; référence de la branche « forme du code » : `outils/empreintes_des_bancs_59e1c1b.json` (#144, P173, P184) :
+
+```bash
+uv run python outils/empreintes_des_bancs.py [--racine DOSSIER] [--bancs NOMS] [--pas N] [--ecrire FICHIER] [--comparer FICHIER]
 ```
 
 Compilation de la spécification (XeLaTeX ; MiKTeX sur le poste local, TeX Live en session cloud et en CI) :
