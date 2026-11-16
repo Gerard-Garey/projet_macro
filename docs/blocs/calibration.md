@@ -1414,6 +1414,367 @@ Lecture du § 4 et du script (`outils/etat_stationnaire.py`, l. 449 à 466), san
 - Issue proposée au § 4.11 : créée, #167 (bêta des dépôts, limite de B2), hors branche (P227).
 - Retouches de `macro` (§ 4.13) : suivies sous la délégation P211 dans le texte publié par `docwriter`.
 
+## 5. #62 — Richesse visée ν_H et vitesse λ_H (bloc 5, ménages)
+
+*Instruite par `macro` (expert pilote) le 16/11/2026, rang 1 de la branche « calibration » (PR #162). Dépôt à `1aaba84`, puis `7f433d6` (décisions P228 à P231) : ces commits ne diffèrent de `d865683` que par des fichiers `docs/`, sans effet sur les mesures. `git status` est vide avant et après. Les chiffres du modèle viennent de sondes hors dépôt (méthode au § 5.4.1). Elles appellent, sans les modifier, `outils/etat_stationnaire.py`, `outils/maquette_conjointe.py`, `tests/invariants/socle_partiel.py`, `tests/invariants/test_socle_complet.py` et les fonctions de `tests/invariants/test_menages.py`. Ce sont des résultats du modèle, pas des faits. Les faits portent leur source et leur date. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**. La base est la table proposée : μ̄ = 0,60 (§ 1), ζ = 8 (§ 3) et ϑ = 0,15 (§ 4, P225), avec ϖ_L, ϖ_D et r̄ inchangés. Elle est notée **P** ; l'état proposé, P avec ν_H = 1,1, est noté **N**.*
+
+### 5.1 Grandeurs visées et correspondance avec le modèle
+
+| Grandeur | Définition dans le modèle | Unité | Dénominateur | Fenêtre |
+|---|---|---|---|---|
+| ν_H (H3) | richesse visée V\*_H = ν_H n_a (YD^e − π^{∗,pas} V_H) ; à l'état stationnaire sous C2, V_H/(n_a YD^HS) = ν_H exactement | an | 12 × YD^HS du pas (revenu de Haig-Simons) | état stationnaire |
+| B10 (`tab:criteres-j3`) | V_H/(12 YD) = ν_H/(1 + ν_H n_a π^{∗,pas}) | années de revenu disponible nominal | 12 × YD du pas | ouverture |
+| λ_H (H4) | vitesse de rappel de la richesse vers sa cible, λ_H/n_a par pas ; propension d'impact α_Y = 1 − ν_H λ_H (forme réduite, fiche 5, § 9.1) | par an, taux de flux | — | — |
+| Part propre d'un transfert (critère 12 (d)) | Σ_{tours 1 à 12} ΔC / Σ transferts, transfert de 1 % du YD stationnaire aux tours 1 à 12, bloc seul, i_D = 3 % (protocole de `test_part_d_un_transfert_depensee_en_12_tours`) | fraction | transferts cumulés | 12 tours |
+| Dépense cumulée d'une aubaine | Σ_{tours 1 à h} ΔC / aubaine, aubaine de 1 % du YD stationnaire au seul tour 1, même bloc seul | fraction | aubaine | h = 3 tours (un trimestre) et 12 tours |
+
+**Traits du modèle que la définition empirique doit respecter** (vérifiés sur `etat_stationnaire`, l. 449 à 466, et `sec:menages`) :
+
+| Trait | Dans le modèle | Conséquence pour la source |
+|---|---|---|
+| Actifs des ménages | Dépôts seuls : B_H ≡ 0 au socle ; ni titres, ni actions, ni fonds de pension, ni logement (M27, encadré `portee`) | Numérateur : **numéraire et dépôts (F.2)** des ménages. Les actions, parts de fonds et droits à pension ne sont pas de la richesse du ménage du modèle : le capital des entreprises (V_F) n'est détenu par aucun secteur |
+| Passifs des ménages | Aucun crédit aux ménages (J6, M22) | Rapport **brut** des dépôts, pas net des crédits : le modèle n'a pas d'hypothèque à retrancher. Le rapport net (F.2 − F.4 passif) est publié pour mémoire |
+| Revenu | YD = WB + Tr − T_H + i_D D_H/n_a + Div_F + Div_Bk, sans revenu mixte, sans loyers imputés, sans consommation de capital fixe des ménages | **Revenu disponible brut (B.6g)** des ménages et ISBLSM (S14_S15). Le revenu net (B.6n) est publié en variante. Écart déclaré : B.6g contient l'excédent d'exploitation des logements et le revenu mixte |
+| Revenu de Haig-Simons | ν_H porte sur YD^HS = YD − π^{∗,pas} V_H. Le revenu observé est nominal | Le rapport observé R se compare à **B10**. On en tire ν_H = R/(1 − R n_a π^{∗,pas}), à π\* = 2 % (n_a π^{∗,pas} = 0,019819) |
+| Épargne | Toute l'épargne des ménages est une accumulation de dépôts : 1 − C/YD = ΔV_H/YD | Contrôle de cohérence stock-flux : **acquisition nette de F.2 / B.6g**. Le taux d'épargne brut observé (B.8g), qui finance aussi le logement et les autres actifs, n'est pas comparable |
+| Aubaine | Un transfert du tour n entre dans le plan au tour n + 1 (délai de H2) ; une seule marchandise, durables compris | Propension à dépenser un revenu transitoire, **dépense totale** (durables compris), sur le trimestre de réception |
+
+**Ce que fait chaque paramètre à l'état stationnaire** (formes de `etat_stationnaire`, l. 452 à 466) :
+- **ν_H** fixe D_H = ν_H n_a ((1 − τ_H) A0′ + Tr)/D1. La dette consolidée vaut D_c = D_H + X0 (C42), où X0 = −L + D_F + E^Bk ne dépend pas de ν_H. **L'État porte donc la richesse supplémentaire des ménages, euro pour euro.** θ_G se résout ensuite par la fermeture du marché des biens (#44, lecture (e)).
+- **λ_H** n'entre que dans la condition de domaine (`controler_domaine`, l. 264 et 275) : aucune grandeur de l'état stationnaire ne le lit.
+
+### 5.2 Sources lues et citées
+
+**(a) Richesse liquide des ménages, lue.** Eurostat, comptes annuels des secteurs (SEC 2010), consultés le 16/11/2026 par l'API de diffusion (`ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data`), sonde `ratios62.py` :
+- `nasa_10_f_bs` (« Financial balance sheets - annual data », mise à jour du 16/11/2026) : S14_S15, millions d'euros, non consolidé, actifs F.2 (numéraire et dépôts), F (actifs financiers), BF90 (actifs financiers nets), passif F.4 (crédits) ;
+- `nasa_10_nf_tr` (« Non-financial transactions - annual data », même date) : S14_S15, prix courants, B.6g et B.6n (revenu disponible brut et net) ;
+- zone : EA21. La requête ne rend pas d'agrégat EA20 pour `nasa_10_nf_tr`, comme au § 3.2. L'UE à 27 est publiée en contrôle ;
+- fenêtre : la série des bilans commence en 2001. Moyenne 2001–2023 (23 ans), même borne finale que les § 1 et 3.
+
+| Rapport (EA21), en années | Moyenne 2001–2023 | Min ; max | 2010–2024 | UE à 27, 2001–2023 |
+|---|---|---|---|---|
+| **Numéraire et dépôts / revenu disponible brut, F.2/B.6g** | **1,076** | 0,884 (2001) ; 1,279 | 1,154 | 1,035 |
+| F.2 / revenu disponible net, F.2/B.6n | 1,154 | 0,939 ; 1,381 | 1,242 | 1,107 |
+| Dépôts nets des crédits, (F.2 − F.4)/B.6g | 0,163 | 0,037 ; 0,331 | 0,219 | 0,115 |
+| Actifs financiers nets, BF90/B.6g | 2,309 | 1,859 ; 3,004 | 2,512 | 2,291 |
+| Actifs financiers bruts, F/B.6g | 3,328 | 2,802 ; 4,051 | 3,550 | 3,312 |
+
+Valeurs brutes de contrôle : F.2 = 4 227 219 et B.6g = 4 781 855 millions d'euros en 2001 (rapport 0,884) ; 10 488 658 et 9 101 843 en 2023 (1,152). Le rapport monte presque continûment sur la fenêtre. Faits, **vérifiés** (requête et calcul).
+
+**(b) Contrôle stock-flux, lu.** `nasa_10_f_tr` (« Financial transactions - annual data », mise à jour du 16/11/2026), S14_S15, acquisition nette d'actifs F.2, EA21, rapportée à B.6g : **4,32 %** en moyenne 2002–2023 (22 ans ; min 1,15, max 9,76), 4,01 % sur 2010–2024. Pour mémoire, le taux d'épargne brut B.8g/(B.6g + D.8) vaut 13,59 % (2001–2023) ; il n'est pas comparable, puisqu'il finance aussi le logement et les autres actifs (§ 5.1). Faits, **vérifiés** (sonde `flux62.py`).
+
+**(c) Propension à dépenser un revenu transitoire, lue** (pages de résumé de `www.nber.org`, lues le 16/11/2026 par WebFetch, qui ne rend que des citations courtes) :
+- J. A. Parker, N. S. Souleles, D. S. Johnson et R. McClelland, « Consumer Spending and the Economic Stimulus Payments of 2008 », NBER *Working Paper* 16684, janvier 2011 (publié dans l'*American Economic Review* en 2013, version publiée non lue). Les ménages ont dépensé « about 12-30% » des paiements en biens non durables « during the three-month period in which the payments were received ». La réponse totale, durables compris (surtout des véhicules), atteint « about 50-90% of the payments ». Le résumé lu ne précise pas séparément la période de ce second chiffre ; d'après le texte, c'est le même trimestre (**lecture à confirmer sur l'article**). États-Unis, 2008. **Vérifiée avec réserve** (résumé).
+- D. S. Johnson, J. A. Parker et N. S. Souleles, « Household Expenditure and the Income Tax Rebates of 2001 », NBER *Working Paper* 10784, septembre 2004. « about 20-40 percent » des remboursements dépensés en biens non durables « during the three-month period in which their rebates were received », et « roughly another third » au trimestre suivant. États-Unis, 2001. **Vérifiée avec réserve** (résumé).
+- G. Kaplan et G. L. Violante, « A Model of the Consumption Response to Fiscal Stimulus Payments », NBER *Working Paper* 17338, août 2011, révisé en janvier 2014. Repère empirique du résumé : « around 25 percent » des paiements dépensés en consommation non durable dans le trimestre. Leur conclusion est que le modèle à un seul actif liquide donne une réponse « an order of magnitude » trop faible, et qu'il faut un actif illiquide pour l'expliquer. **Vérifiée avec réserve** (résumé).
+
+**Fourchette lue** : la dépense **totale** sur le trimestre de réception va de 0,5 à 0,9 (Parker et al.). Sur les seuls non durables, elle va de 0,12 à 0,40 (Parker et al., Johnson et al.). Les sources sont américaines et portent sur des versements **annoncés** avant d'être reçus. Le modèle n'a ni annonce, ni durables séparés, ni hétérogénéité des ménages : la correspondance est **une hypothèse**.
+
+**(d) Non lus** (aucun chiffre n'en est tiré) :
+- A. Fagereng, M. B. Holm et G. J. Natvik, « MPC Heterogeneity and Household Balance Sheets », *American Economic Journal: Macroeconomics* 13(4), 2021 (gains de loterie, Norvège). Les copies trouvées sont sur des hôtes non ouverts (`www.duo.uio.no` a été refusé par la résolution de noms ; `ifo.de` et `swopec.hhs.se` n'ont pas été essayés, selon la consigne de l'outil). Pour la lire, il faut ouvrir l'un de ces hôtes. C'est la source la plus directe sur une aubaine de richesse **liquide**, celle que demandait l'issue.
+- T. Jappelli et L. Pistaferri, « Fiscal Policy and MPC Heterogeneity », *AEJ: Macroeconomics* 6(4), 2014 : aucune version sur les hôtes ouverts (CEPR, CSEF, CFS).
+- A. Fuster, G. Kaplan et B. Zafar, NBER *Working Paper* 24386 (2018) : le résumé, lu, ne donne aucun chiffre.
+- C. D. Carroll, M. Otsuka et J. Slacalek (effet richesse de 2 à 10 cents par an, cité par la fiche 5, § 9.2) : **non relu** dans cette instruction.
+
+**(e) Pour mémoire, sans cible.** Dette brute des administrations publiques (`gov_10dd_edpt1`, S13, GD, % du PIB, EA20, mise à jour du 21/10/2026) : 81,8 % en moyenne 2001–2023 (65,9 à 96,3). Le modèle n'a ni non-résidents, ni assureurs, ni détention de titres par les ménages : ce n'est **pas une cible** (§ 5.9). Fait, **vérifié**.
+
+### 5.3 Valeurs proposées et variantes
+
+**ν_H proposé : 1,1 an.** Le rapport F.2/B.6g de 2001–2023, 1,076, donne ν_H = 1,076/(1 − 1,076 × 0,019819) = **1,0995** à π\* = 2 %. Valeur ronde : 1,1. Le modèle donne alors B10 = 1,076531 à π̄ = 2 %, à +0,05 % de la source. **Vérifiée.**
+
+Motifs :
+- c'est la seule mesure lue dont le numérateur a la composition de V_H : dépôts seuls, sans passif ;
+- **contrôle stock-flux indépendant** : à ν_H = 1,1, le taux d'épargne nominal du modèle, qui est l'accumulation de dépôts sur le revenu, vaut **4,2707 %** à π̄ = 2 %. L'acquisition nette de dépôts observée vaut 4,32 % de B.6g (2002–2023). C'est un écart de 0,05 point, sans calage sur cette grandeur. **Vérifiée** (mesure et source). Interprétation, **hypothèse** : la cohérence tient à ce que le modèle et les données ont une croissance nominale voisine ; la croissance observée n'a pas été lue ;
+- à ν_H = 1, B10 vaut 0,980566, soit 8,9 % sous la source.
+
+**λ_H proposé : 0,4 par an, inchangé.** C'est un **choix déclaré dans la fourchette lue**. À ν_H = 1,1, la dépense cumulée d'une aubaine sur 3 tours vaut 0,605, et 0,705 sur 12 tours (§ 5.5). La fourchette lue de la dépense totale sur un trimestre, 0,5 à 0,9 (Parker et al.), correspond à **0,098 ≤ λ_H ≤ 0,511** à ν_H = 1,1 (sonde `front_mpc.py`). Sur 12 tours, la dépense cumulée reste au-dessus de 0,5 sur tout le domaine ν_H λ_H < 1. **Vérifiée** (mesure ; correspondance : hypothèse).
+
+Motifs : la fourchette lue est large, et sa correspondance imparfaite (versements annoncés, données américaines, hétérogénéité). Aucune source lue ne départage 0,3 et 0,4. Garder 0,4 évite de changer les trajectoires sans fait nouveau. λ_H ne change pas l'état stationnaire (§ 5.4.5).
+
+| Variante | ν_H ; λ_H | Source ou motif | B10 (2 %) | Dette brute affichée, 0 / 2 / 10 % | Part 12 (d) | Aubaine, 3 tours | Rayon C62, φ = 0, 2 % | Avis |
+|---|---|---|---|---|---|---|---|---|
+| P (statu quo de #62) | 1 ; 0,4 | indicative, sans source | 0,980566 | 16,1 / 31,6 / 59,0 | 0,6280 | 0,643 | 1,000438 | 8,9 % sous la source |
+| ν_H = 1,05 | 1,05 ; 0,4 | milieu entre statu quo et source | 1,028595 | 19,5 / 35,0 / 62,5 | non relevée | non relevée | non relevé | Sans motif propre |
+| **N, proposée** | **1,1 ; 0,4** | **F.2/B.6g, EA21, 2001–2023** | **1,076531** | **22,8 / 38,4 / 66,0** | **0,5966** | **0,605** | **1,000995** | **Recommandée** |
+| N, λ_H bas | 1,1 ; 0,3 | centre de la fourchette de Parker et al. (aubaine sur 3 tours : 0,701) | 1,076531 | = N | 0,6666 | 0,701 | non relevé (1,001020 à λ_H = 0,35) | Variante si le mainteneur veut le centre de la source |
+| ν_H revenu net | 1,18 ; 0,4 | F.2/B.6n (1,154), ou F.2/B.6g sur 2010–2024 (1,154) | 1,153035 | 28,2 / 43,8 / 71,7 | ≈ 0,57 (1,2 : 0,5651) | ≈ 0,57 (1,2 : 0,566) | 1,002847 à ν_H = 1,2 (racine réelle) | Dénominateur moins proche ; fenêtre courte |
+| Actifs financiers nets | 2,4 ; 0,2 | BF90/B.6g (2,309 → ν_H = 2,42) | 2,291026 | 110,4 / 126,9 / 159,3 | 0,5215 | 0,542 | non relevé | **Écartée** : actions et droits à pension, absents du modèle ; λ_H ≤ 0,212 imposé par 12 (d) |
+
+Mesures : sorties `sortie_tab_nu110.txt`, `sortie_variantes_nu.txt`, `sortie_part.txt`, `sortie_front_mpc.txt`, `sortie_zc.txt`. **Vérifiées.**
+
+### 5.4 Tableau avant / après prédit
+
+#### 5.4.1 Méthode et commandes
+
+Sondes du scratchpad, dossier `<scratchpad>/sondes62H/`. Elles sont lancées depuis `/home/user/projet_macro` à `1aaba84`, avec `git status` vide avant et après. Commande type : `uv run python -I <scratchpad>/sondes62H/<sonde>.py <arguments>`.
+- **`base.py`** : importe `outils/etat_stationnaire.py` par son chemin et appelle `calculer(replace(Parametres(), mu_bar=0.60, zeta=8.0, vartheta=0.15, nu_H=…, lambda_H=…))`. Noms de champs exacts de `Parametres` : `nu_H` (l. 128) et `lambda_H` (l. 145).
+- **`tab62.py NU LAM`** : tableau main / P / N sur la grille (ν_G = 1,15, π̄, n_a = 12), clés de `valeurs`, et recensement des valeurs publiées qui changent de P à N, par section. Les valeurs en écart se comptent sur le champ `verdict` ≠ « égal ».
+- **`lam62.py`** : plus grand écart relatif sur toute la grille, et nombre de valeurs publiées qui changent, pour λ_H ∈ {0,1 ; 0,2 ; 0,3 ; 0,35 ; 0,45 ; 0,5 ; 0,55 ; 0,6 ; 0,634}, à ν_H = 1 et 1,1.
+- **`part62.py`**, **`front_mpc.py`**, **`reperes.py`** : chargent `tests/invariants/test_menages.py` sans le modifier et remplacent `TABLE` par un objet qui porte ν_H. Ils mesurent la part du critère 12 (d) (`_part_d_un_transfert`), la boucle propre (`_boucle_propre`), le continuum (`_ratio_converge`), et la dépense d'une aubaine au seul tour 1 (`_pas_du_bloc_seul`), ainsi que les frontières en λ_H par bissection.
+- **`f5s97.py`** : lignes du § 9.7 de la fiche 5 (script, formes fermées, fonctions `revenu_attendu`, `richesse_visee`, `plan_de_la_regle`, `budget_de_consommation` du bloc).
+- **`meca.py`** : niveaux de D_H, YD, C, G, T_H, Div_Bk et D_c rapportés au PIB, de P à N.
+- **`s80.py`** : valeurs publiées de #80 et racines parasites de C51.
+- **`c62H.py`**, **`zc2.py`**, **`phiH.py`** : `rayon_c` de `outils/maquette_conjointe.py` sous φ = 0 et φ = 1, sur `replace(mc.parametres_socle(π̄), mu_bar=0.60, zeta=ζ, vartheta=…, nu_H=…, lambda_H=…)`. Ils donnent aussi ζ_c par `frontiere`, une grille de ζ de 0,5 à 20 et φ\* par `frontiere`.
+- **`serieH.py`** : la sonde `serie.py` du § 3.13, étendue à ϑ, ν_H et λ_H (sentier `socle.sentier(π̄, mu_bar, zeta, vartheta, nu_H, lambda_H)` et table `menages` variée). Elle est suivie d'**`analyse.py`** (Prony) du § 3.13.
+- **Contrôles** :
+  - à P, les valeurs publiées en écart sont 284, comme au § 4.4.3 ;
+  - la part du critère 12 (d) à ν_H = 1 redonne 0,628 / 0,618 / 0,760 / 0,423, et la boucle propre 0,96706 / 0,98352 / 0,93419 (repères de `test_menages.py`) ;
+  - le changement de cible redonne +0,5543 %, la frontière du coefficient de richesse 85,1175 % et la baisse des impôts doublés 10,12 ;
+  - sous ϑ = 0,10, la maquette redonne 1,000035 et ζ_c = 8,763277, et le moteur 1,0000351 ∠ ±0,1757° (§ 3.13).
+- Plus grand résidu du script à N : 6,65e−15.
+- Sorties : `<scratchpad>/sondes62H/sortie_*.txt`. Sources : `<scratchpad>/dl62/`, `<scratchpad>/ratios62.py`, `<scratchpad>/flux62.py`.
+
+#### 5.4.2 Une seule cause pour toutes les lignes qui changent de P à N (vérifiée)
+
+Notée **(ν)**. À N, D_H monte de 10,09 % à π̄ = 2 % : +10 % par ν_H, plus 0,08 % de YD^HS, qui croît par les intérêts sur dépôts et le dividende de la banque. Par C42, D_c = D_H + X0, X0 étant inchangé, la dette consolidée monte du même montant : +0,065644 année de PIB, **+22,8 %** à 2 %. Le déficit de Domar n_a γ̄ D_c et le canal rentier, tous deux proportionnels à D_c, montent d'autant. Le ménage épargne davantage pour faire croître un stock plus grand : C/YD passe de 0,96110 à 0,95729 et C baisse de 0,124 %. θ_G, résolu, monte de 0,36 % pour fermer le marché des biens. Rien ne change dans les blocs 2 à 4 ni 6. **Vérifiée** (sortie `sortie_meca.txt` : ΔD_c = ΔD_H à toutes les décimales).
+
+#### 5.4.3 `tab:etat-stationnaire` (n_a = 12, ν_G = 1,15) : N contre P, et contre `main`
+
+| Grandeur | `main` 0 / 2 / 10 % | P 0 / 2 / 10 % | **N** 0 / 2 / 10 % | N − P à 2 % | Explication |
+|---|---|---|---|---|---|
+| Capital (a), (b), (c) ; part salariale ; I/PIB ; r̄, i_CB, taux réel restitué, ϱ_L, inflation | § 1.4.3 et § 4.4.2 | § 4.4.2 | = P | 0 | ν_H n'entre pas dans les blocs 2 à 4 ni 6 |
+| θ_G | 0,218474 / 0,219573 / 0,219568 | 0,218765 / 0,219791 / 0,219626 | **0,219575 / 0,220584 / 0,220187** | +0,000793 | (ν) : C plus bas |
+| Masse monétaire, années de PIB | 0,81917 / 0,81658 / 0,81108 | 0,81921 / 0,81701 / 0,81289 | **0,88503 / 0,88265 / 0,87848** | +0,065644 | (ν) : D_H |
+| Dette consolidée | 0,09884 / 0,25674 / 0,51013 | 0,13862 / 0,28785 / 0,52800 | **0,20444 / 0,35350 / 0,59359** | +0,065644 (+22,8 %) | (ν) : C42 |
+| Dette brute | 0,11987 / 0,27849 / 0,53645 | 0,15972 / 0,30973 / 0,55457 | **0,22568 / 0,37564 / 0,62091** | +0,065910 | (ν) |
+| Dette brute, ν_G = 1 | 0,11712 / 0,27564 / 0,53299 | 0,15696 / 0,30687 / 0,55107 | **0,22291 / 0,37274 / 0,61731** | +0,065870 | (ν) |
+| Dette brute affichée, % | 12,1 / 28,5 / 57,1 | 16,1 / 31,6 / 59,0 | **22,8 / 38,4 / 66,0** | +6,7 pt | (ν) |
+| Déficit (Domar), % du PIB | 0,1959 / 1,0185 / 5,9005 | 0,2747 / 1,1419 / 6,1072 | **0,4052 / 1,4023 / 6,8659** | +0,2604 pt | (ν) : n_a γ̄ D_c |
+| Solde primaire, % du PIB | −0,0971 / −0,2432 / −0,2381 | −0,1361 / −0,2726 / −0,2464 | **−0,2007 / −0,3348 / −0,2770** | −0,0622 pt | (ν) |
+
+Aucune autre ligne de `tab:etat-stationnaire` ne change de P à N. **Vérifiée.**
+
+#### 5.4.4 Valeurs résolues de `tab:criteres-j3` (π̄ = 2 %) qui changent
+
+| N° | `main` | P | **N** | Explication |
+|---|---|---|---|---|
+| B10 richesse des ménages V_H/(12 YD) | 0,980566 | 0,980566 | **1,076531** | #62 : ν_H/(1 + ν_H n_a π^{∗,pas}) ; la bande de ±2 % reste centrée sur la valeur résolue |
+| B11 taux d'épargne nominal | 3,8900 % | 3,8900 % | **4,2707 %** | #62 : épargne de maintien et réelle proportionnelles à V_H/YD (2,1336 + 2,1371) |
+| B16 masse monétaire | 0,81658 | 0,81701 | **0,88265** | (ν) |
+| B19 encaisse du Trésor | 0,021748 | 0,021875 | **0,022141** | (ν) : M^G suit les paiements bruts, dont les intérêts de B |
+| B20 titres de la banque | 0,27849 | 0,30973 | **0,37564** | (ν) |
+| B21 dette consolidée | 0,25674 | 0,28785 | **0,35350** | (ν) |
+| B22 déficit public | 1,0185 % | 1,1419 % | **1,4023 %** | (ν) |
+
+Inchangées de P à N (écart nul) : B1 à B9, B12 à B15, B17, B18 et B24 à B26. **Vérifiée.**
+
+**Autres valeurs publiées.** 246 valeurs publiées changent de P à N (309 en écart à la publication actuelle, contre 284 à P) :
+- `sec:banque-stationnaire` : 63 ;
+- `sec:finances_publiques-stationnaire` : 50 ;
+- `tab:etat-stationnaire` : 24 ;
+- `sec:menages-stationnaire` : 20 ;
+- `sec:banque_centrale-stationnaire` : 13 ;
+- `sec:finances_publiques-emission` : 12 (+3 avec `tab:calibration`) ;
+- `sec:banque_centrale-conditions` : 12 (+6 avec la fiche 9 § 3.Q, +1 avec la fiche 8 § 9.6) ;
+- `sec:banque_centrale-restitution` : 9 ;
+- `sec:finances_publiques-depense` : 7 ;
+- `sec:banque-restitution` : 6 ;
+- `sec:finances_publiques-restitution` : 4 ;
+- fiche 9 § 3.C et § 9.6 : 4 ;
+- 2 chacune : `sec:finances_publiques-transferts`, fiche 9 § 6.3, fiche 9 § 3.C, `sec:banque-resultat` ;
+- 1 chacune : `sec:finances_publiques-impots`, `sec:finances_publiques-caisse`, `sec:banque-conditions`, fiche 8 § 9.6.
+
+Ce sont toutes des valeurs (ν) ou des valeurs de ménages. Sortie : `sortie_tab_nu110.txt`.
+
+**#80** : Δr̄_α passe de 0,2764 point (P) à 0,2779 point (N), et l'écart de C/Y_o de 0,6904 à 0,8537 point. Les deux restent au-dessus du seuil de 0,1 point : #80 reste en échec attendu, sans succès inattendu. **C51** : aucune racine parasite à N (φ = 1). **Vérifiée** (valeurs du script ; tests non exécutés à N).
+
+#### 5.4.5 λ_H seul ne change rien à l'état stationnaire (critère propre ; vérifiée)
+
+À ν_H = 1 comme à ν_H = 1,1, pour λ_H ∈ {0,1 ; 0,2 ; 0,3 ; 0,35 ; 0,45 ; 0,5 ; 0,55 ou 0,634 ; 0,6} contre λ_H = 0,4 :
+- plus grand écart relatif sur **toute la grille** du script (18 points, toutes les clés) : **0** ;
+- valeurs publiées qui changent : **aucune**. Les trois « racines parasites » sont NaN des deux côtés, et la sonde les comptait par erreur, NaN ≠ NaN.
+
+Le critère « écart relatif ≤ 1e−12 » tient exactement, puisque λ_H n'entre dans aucune forme de l'état stationnaire (§ 5.1). Aucun continuum d'équilibres n'est en jeu sous C2. Hors C2, le continuum déclaré de la fiche 5 (§ 9.6) demeure. Sortie : `sortie_lam.txt`.
+
+### 5.5 Critères propres de #62 (écrits avant l'essai)
+
+| Point | Mesure à N (ν_H = 1,1 ; λ_H = 0,4) | Verdict |
+|---|---|---|
+| ν_H λ_H < 1 | 0,44 | **tenu** |
+| 0,080 ≤ λ_H ≤ 0,634 à ν_H = 1, **remesuré au ν_H retenu** | à ν_H = 1,1 : **0,0721 ≤ λ_H ≤ 0,5536** (frontières de la part du critère 12 (d), 0,85 et 0,50) ; λ_H = 0,4 | **tenu** ; part de 0,5966, à 0,097 au-dessus de 0,50 |
+| Tableau du § 9.7 de la fiche 5 | ci-dessous | **publié** |
+| λ_H seul ne change aucune valeur de `tab:etat-stationnaire` (≤ 1e−12) | écart nul sur toute la grille | **tenu** |
+
+Frontières du critère 12 (d) selon ν_H, à i_D = 3 % (`sortie_part.txt`) :
+
+| ν_H | 1 | 1,05 | 1,1 | 1,15 | 1,2 | 1,25 | 2,4 |
+|---|---|---|---|---|---|---|---|
+| λ_H pour une part de 0,85 | 0,0803 | 0,0760 | 0,0721 | 0,0687 | 0,0655 | 0,0626 | 0,0311 |
+| λ_H pour une part de 0,50 | 0,6335 | 0,5908 | 0,5536 | 0,5209 | 0,4919 | 0,4660 | 0,2119 |
+
+**Tableau du § 9.7 de la fiche 5**, remesuré : colonne « P » (= `main` pour ces grandeurs : ni μ̄, ni ζ, ni ϑ ne les changent) contre N. Sorties : `sortie_f5s97.txt`, `sortie_part.txt`, `sortie_reperes.txt`.
+
+| Grandeur | P (ν_H = 1) | **N (ν_H = 1,1)** | Écart | Explication |
+|---|---|---|---|---|
+| V/(n_a YD) stationnaire, 2 % / 10 % | 0,980566 / 0,912667 | **1,076531 / 0,995242** | +9,79 % / +9,05 % | ν_H/(1 + ν_H n_a π^{∗,pas}) |
+| V/(n_a YD^HS) | 1 exactement | **1,1 exactement** | +10 % | définition de ν_H ; niveau normal restitué |
+| Dépendance de V/(n_a YD) à n_a (n_a = 4 / 12 / 52), 2 % | 0,980535 / 0,980566 / 0,980578 | 1,076493 / 1,076531 / 1,076545 | — | idem ; π^{∗,pas} géométrique (ADR 0008, I.6) |
+| Même dépendance, 10 % | 0,912030 / 0,912667 / 0,912911 | 0,994485 / 0,995242 / 0,995532 | — | idem |
+| Taux d'épargne nominal, 2 % / 10 % | 3,8900 % / 10,5565 % | **4,2707 % / 11,5116 %** | +0,38 / +0,96 pt | idem |
+| dont maintien + épargne réelle, 2 % ; 10 % | 1,9434 + 1,9466 ; 8,7333 + 1,8232 | 2,1336 + 2,1371 ; 9,5234 + 1,9882 | — | idem |
+| Taux d'épargne de Haig-Simons, 2 % / 10 % | 1,9852 % / 1,9977 % | 2,1837 % / 2,1975 % | +0,20 pt | idem |
+| Taux de Haig-Simons selon n_a (4 / 12 / 52), 2 % | 1,9950 / 1,9852 / 1,9814 % | 2,1945 / 2,1837 / 2,1795 % | — | idem |
+| C/YD, 0 / 2 / 10 % | 0,98018 / 0,96110 / 0,89443 | 0,97820 / 0,95729 / 0,88488 | −0,0038 (2 %) | idem |
+| α_Y = 1 − ν_H λ_H | 0,600 | **0,560** | −0,040 | propension d'impact |
+| Coefficient de richesse × n_a, 2 % (0 / 2 / 10 % par pas) | 0,3683 (0,031682 / 0,030688 / 0,026884) | 0,3690 (0,031682 / 0,030754 / 0,027203) | +0,0007 | ν_H λ_H π^{∗,pas} |
+| Frontière du coefficient de richesse en π\* | 85,1175 % | **93,1884 %** | +8,07 pt | idem ; à λ_H = 0,2 : 24,9425 % → 25,6496 % |
+| Boucle propre, i_D = 0 / 3 % ; π̄ = 10 %, i_D = 11 % | 0,96612 / 0,96706 ; 0,96727 | 0,96605 / 0,96710 ; 0,96733 | ≤ 6e−5 | λ_H inchangé ; ν_H ne joue que par i_D |
+| Boucle propre, λ_H × 0,5 / × 2 (i_D = 3 %) | 0,98352 / 0,93419 | 0,98354 / 0,93428 | ≤ 9e−5 | idem |
+| Continuum hors C2, écart à la lecture exacte, λ_H = 0,2 / 0,4 / 0,8 : 3 % ; 10 % | −3,35 / −1,29 / −0,22 % ; −19,76 / −8,58 / −1,56 % | −3,29 / −1,21 / −0,13 % ; −19,40 / −8,06 / −0,95 % | — | lecture exacte ν_H/(1 + ν_H n_a π^pas) (voir § 5.10) |
+| Part propre d'un transfert, 12 tours, 2 % / 10 % (i_D = 3 %) | 0,628 / 0,618 | **0,597 / 0,586** | −0,031 / −0,032 | α_Y plus bas |
+| Même part, λ_H × 0,5 / × 2 | 0,760 / 0,423 | 0,743 / 0,370 | — | idem |
+| Même part, i_D de l'état P (2,02 %) | 0,6268 | 0,5954 | — | pour mémoire ; le protocole publié garde 3 % |
+| Dépense cumulée d'une aubaine (tour 1), sur 3 / 12 / 36 / 60 tours | 0,643 / 0,734 / 0,875 / 0,939 | 0,605 / 0,705 / 0,862 / 0,932 | — | grandeur nouvelle, rapportée à la source (§ 5.3) |
+| Frontières de λ_H pour le seuil 12 (d) | 0,080 à 0,634 | **0,072 à 0,554** | — | idem |
+| Marge du plafond | 12,24 mois | **13,49 mois** | +1,25 | 12 (V/YD)/(C/YD) |
+| Impôts doublés : baisse du plan au tour suivant (ΔT_H = 16) | 10,12 | 9,48 | −0,64 | α_Y Γ^e plus bas |
+| Effet d'un changement de cible (2 % → 1 %) | +0,5543 % | **+0,5750 %** | +0,02 pt | terme ν_H λ_H π^{∗,pas} ; reste dans [0,3 % ; 0,8 %] |
+| m_H d'impact et de long terme (fiche 2) | 0,4808 ; 0,7922 | **non remesuré** | — | — |
+| Boucle conjointe (§ 3.C-10, point 8) | — | **non remesurée** ; voir C62 au § 5.7 | — | — |
+
+### 5.6 Conditions d'existence au point fixe (N : P avec ν_H = 1,1 ; n_a = 12, ν_G = 1,15)
+
+| Condition | π̄ = 0 | 2 % | 10 % | Verdict |
+|---|---|---|---|---|
+| Div_F > 0 : Div_F/(p v), % | 22,21 | 22,38 | 22,60 | tenue, = P |
+| Dividende stationnaire de la banque (`sec:banque-stationnaire`), par an | 0,029580 (P : 0,028758) | 0,032758 (0,031703) | 0,045511 (0,043554) | **tenue**, marge accrue par ϖ_D ΔD_H |
+| Coefficient de richesse λ_H/n_a + ν_H λ_H π^{∗,pas} − γ^e, par pas | 0,031682 | 0,030754 | 0,027203 | tenu |
+| ν_H λ_H < 1 | 0,44 | | | tenu |
+| Domaine de la table : ν_H > 0, 0 < λ_H ≤ n_a | 1,1 ; 0,4 | | | tenu, sans écrêtage |
+| D1 | 0,99175 | 0,99144 | 0,98737 | tenue (P : 0,99250 / 0,99221 / 0,98852) |
+| D2 | 0,99904 | 0,99712 | 0,98946 | tenue, = P |
+| Marge du plafond de E1 | 0,13785 | 0,17026 | 0,33230 | tenue, accrue (P : 0,13531 / 0,16319 / 0,31515) |
+| Plafond de E6 (valeur) | 1,12890 | 1,08283 | 0,88993 | P : 1,13469 / 1,09346 / 0,91028 ; nature inchangée |
+| Caisse des entreprises, phase 4 | 0,6947 | 0,6992 | 0,7063 | = P |
+| Caisse des ménages, phase 4 (`caisse_DH4`) | 1,0725 | 1,0727 | 1,0726 | tenue (P : 1,0800 à 2 %) |
+| `calculer` aux 18 points de la grille et au point ν_G = 1 | aucun refus | | | **vérifiée** |
+
+**Conditions d'arrêt du plan** : aucune condition au sens strict n'est rencontrée. Sous P228, la valeur recommandée (ν_H = 1,1 ; λ_H = 0,4) repose sur une source lue et tient les critères du plan. Elle reste à soumettre à l'absence d'objection de `jeu` et de `monnaie`.
+- Aucune valeur n'est hors domaine et aucune équation n'est à changer.
+- λ_H ne change pas l'état stationnaire.
+- La source de ν_H est lue : le « non trouvé » de P208 n'est pas invoqué.
+- **Non vérifié** : le maintien, par les bancs D et BF, de leur plafond de E1 et de E6 (P184). La mesure relève du rang 8. La marge de E1 monte et la valeur du plafond de E6 baisse de 1 % à 2 %.
+- **Un résultat publié sans verdict change de nature** : C62 (§ 5.7). Il est soumis au mainteneur (§ 5.8, question 4).
+
+### 5.7 Effet sur C62 et sur ζ_c (P224)
+
+Sorties : `sortie_zc.txt`, `sortie_c62H.txt`, `sortie_phi.txt`, `sortie_moteur.txt`. Lecture (c) de la maquette, pire des deux régimes de T4, μ̄ = 0,60.
+
+**Rayon sous φ = 0, π̄ = 2 %, selon ζ** :
+
+| Configuration | ζ = 4 | 6 | 8 | 10 | 12,56 | 17 | 20 | ζ_c (2 %) |
+|---|---|---|---|---|---|---|---|---|
+| A (ϑ = 0,10, ν_H = 1) : contrôle du § 3.13 | 1,001818 | 1,000125 | 1,000035 | 0,999942 | 0,999818 | 0,999596 | 0,999443 | **8,7633** |
+| **P** (ϑ = 0,15, ν_H = 1) | 1,002776 | 1,000530 | **1,000438** | 1,000341 | 1,000214 | 0,999988 | 0,999832 | **16,7632** |
+| P, λ_H = 0,2 | 1,003173 | 1,000641 | 1,000468 | 1,000293 | 1,000065 | 0,999664 | 0,999389 | 13,2842 |
+| A, ν_H = 1,1 (ϑ = 0,10) | 1,003333 | 1,001550 | 1,000622 | 1,000517 | 1,000382 | 1,000148 | 0,999989 | 19,7935 |
+| **N** (ϑ = 0,15, ν_H = 1,1) | 1,004125 | 1,002828 | **1,000995** | 1,000890 | 1,000755 | 1,000519 | 1,000360 | **aucun sur [0,5 ; 20]** |
+| N, λ_H = 0,35 | 1,004218 | 1,002899 | 1,001020 | 1,000905 | 1,000757 | 1,000498 | 1,000323 | aucun |
+| N, λ_H = 0,2 / 0,55 (ζ = 8) | | | 1,001200 / 1,000951 | | | | | aucun |
+| P, ν_H = 1,2 | 1,005204 | 1,004248 | 1,002847 (réelle) | 1,001366 | 1,001226 | 1,000985 | 1,000823 | aucun |
+
+**À ζ = 8, selon π̄ et φ** :
+
+| Configuration | φ = 0 : 0 % | 2 % | 10 % | φ = 1 : 0 / 2 / 10 % | φ\* à 2 % / 10 % | Doublement sous φ = 0, 2 % ; 10 % |
+|---|---|---|---|---|---|---|
+| A | 0,998235 | 1,000035 ∠ ±0,176° | 1,009661 | 0,997240 / 0,996922 / 0,997148 | 0,0111 / 0,5713 | 19 659 tours ; 72 tours |
+| **P** | 0,998668 | **1,000438 ∠ ±0,154°** | 1,010255 | 0,997246 / 0,996954 / 0,997202 | **0,1231 / 0,5874** | **1 584 tours (132 ans)** ; 68 tours |
+| **N** | 0,999272 | **1,000995 ∠ ±0,091°** | 1,011201 | 0,997282 / 0,997028 / 0,997334 | **0,2466 / 0,6151** | **697 tours (58 ans)** ; 62 tours |
+| N, λ_H = 0,35 | 0,999247 | 1,001020 ∠ ±0,092° | 1,011725 | 0,997238 / 0,996986 / 0,997323 | 0,2448 / 0,6140 | 680 ; 59 tours |
+
+Une seule traversée de 1 en φ sur une grille de 21 points, à chaque cas.
+
+**Corroboration sur le moteur** (`serieH.py`, Prony du § 3.13, choc θ_G aux tours 1 à 12, φ = 0, ζ = 8) :
+
+| Cas | Maquette | Moteur |
+|---|---|---|
+| Contrôle A, 2 %, choc de 1e−6, pas 3 000 à 12 000 | 1,000035 ∠ ±0,176° | 1,0000351 ∠ ±0,1757° |
+| P, 2 %, choc de 1e−6, pas 3 000 à 12 000 | 1,000437 ∠ ±0,154° | **1,0004375 ∠ ±0,1535°** (période 2 345 tours) |
+| N, 2 %, choc de 1e−9, pas 2 000 à 7 000, ordres 2, 4 et 6 | 1,000995 ∠ ±0,091° | **1,0009952 ∠ ±0,0909°** (période 3 959 tours) |
+| P, 10 %, pas 300 à 900, ordre 2 | 1,010255 | 1,0102558 (et 1,0208 ≈ λ², harmonique) |
+| N, 10 %, pas 300 à 900, ordre 2 | 1,011201 | 1,0112014 (et 1,0227 ≈ λ²) |
+
+À N et 2 %, un choc de 1e−6 sur 12 000 pas sort du régime linéaire : Prony y rend des racines réelles de 1,0147 et 1,0055. C'est pourquoi le choc de 1e−9 est retenu, sur une fenêtre plus courte. **Vérifiée.**
+
+**Note de méthode.** À 10 % sous φ = 0, la trajectoire de contrôle **non choquée** de 12 000 pas s'arrête au pas 2 936, sur la caisse de l'État en phase 7 (ligne 19a-banque). C'est le bruit d'arrondi qui croît à 1,0112 par pas. Les mesures à 10 % ont donc été faites sur 1 500 pas. Avec un choc de 1e−6, les trajectoires choquées s'arrêtent au pas 1 319 (N) et 1 421 (P) sur ti = 0 (frontière de #143), cas déjà connu de C62 à 10 % (§ 3.7). φ = 0 n'est pas la configuration de référence. **Vérifiée.**
+
+**Constats** :
+1. **λ_H agit peu sur C62.** À 2 %, le module à ζ = 8 vaut 1,000468, 1,000438 et 1,000431 pour λ_H = 0,2, 0,4 et 0,6 à ν_H = 1 ; 1,001200, 1,000995 et 1,000951 pour λ_H = 0,2, 0,4 et 0,55 à ν_H = 1,1. Il décroît avec λ_H. **Vérifiée.**
+2. **ν_H agit fortement.** À 2 % et ζ = 8, le module passe de 1,000438 (ν_H = 1) à 1,000995 (1,1) puis à 1,002847 (1,2), où la racine dominante devient réelle. À ν_H = 1,1, aucun ζ ≤ 20 ne ramène le rayon sous 1 (1,000360 à ζ = 20). **Vérifiée.** Mécanisme, **hypothèse** cohérente avec le § 3.13.6 : la dette consolidée D_c porte le canal rentier, et (ν) la relève de 22,8 % à 2 %.
+3. **ϑ = 0,15 (#130, déjà retenu par P225) avait déjà déplacé ζ_c de 8,76 à 16,76.** C'est un effet que le § 4 ne mesurait pas : C62 n'y était pas remesuré. La formulation adoptée pour M34 (P222, § 3.13.7) dit « À 2 %, le module passe 1 à ζ_c = 8,76 ». Elle ne vaut donc plus dès la table P, et le § 3.13.8 l'avait prévu (« marge infime », remesure après M34). **Vérifiée.** Ce point est à la frontière de `monnaie` (dette publique).
+4. **φ = 1 reste stable** dans tous les cas mesurés (rayons de 0,99660 à 0,99744). π̄ = 0 reste stable sous φ = 0. 10 % reste explosif, avec un doublement en 62 tours (5 ans) à N au lieu de 72. **Vérifiée.**
+
+**Formulation que la table N rendrait publiable** (proposition, à relire par `monnaie`) :
+
+> Sous φ = 0, à la table calibrée (ζ = 8, ϑ = 0,15, ν_H = 1,1), la boucle conjointe est explosive à 10 % (racine réelle de 1,011201, écart doublé en 62 tours), **faiblement explosive à 2 %** (paire complexe de module 1,000995 et de période voisine de 4 000 tours, enveloppe doublée en 697 tours, soit 58 ans) et stable à π̄ = 0 (0,999272). Couverture minimale qui stabilise : 0,247 à 2 %, 0,615 à 10 %. Le signe à 2 % ne dépend plus de ζ sur [0,5 ; 20], mais il dépend de ν_H et de ϑ : à ν_H = 1 et ϑ = 0,10, il basculait à ζ_c = 8,76. Valeurs de la maquette, corroborées par le moteur (1,0009952 et 1,0112014).
+
+ζ_c reste à remesurer au rang 8 (P224), avec λ_w (#45).
+
+### 5.8 Questions au mainteneur
+
+1. **Définition de ν_H.** Je propose le numéraire et les dépôts des ménages sur leur revenu disponible brut (F.2/B.6g, EA21, 2001–2023, 1,076). Autres définitions possibles :
+   - (b) le revenu net, B.6n (1,154) ;
+   - (c) la fenêtre 2010–2024 (1,154) ;
+   - (d) les actifs financiers nets, BF90 (2,309), que j'écarte, puisque le modèle n'a ni actions ni droits à pension et que la dette de référence passerait à 127 % du PIB.
+
+   *Avis : (a), avec le contrôle stock-flux (4,32 % observé contre 4,27 % dans le modèle).*
+2. **Valeur de ν_H** : 1,1 (ronde), 1,0995 (égalité exacte de B10 à 1,076), ou 1 (statu quo, 8,9 % sous la source) ? *Avis : **1,1**.* Elle change l'état de référence : dette consolidée +22,8 %, dette affichée de 31,6 à 38,4 % du PIB, déficit de 1,14 à 1,40 % du PIB, θ_G +0,0008 (§ 5.4).
+3. **λ_H** : 0,4 inchangé, déclaré « choix dans la fourchette lue » (aubaine sur un trimestre : 0,605, contre 0,5 à 0,9 chez Parker et al., 2011), ou 0,3, au centre de cette fourchette (0,701) ? *Avis : **0,4**.* Aucune source lue ne départage, λ_H ne change pas l'état stationnaire, et la source la plus directe (Fagereng et al., gains de loterie) est sur un hôte non ouvert : `www.duo.uio.no` ou `ifo.de` à autoriser pour la lire.
+4. **C62 à 2 % sous φ = 0** (frontière avec `monnaie`). À la table proposée, le module reste au-dessus de 1, comme à P (1,000438) et à A (1,000035) : le signe ne change pas. Mais la boucle devient **faiblement explosive**, avec un doublement en 58 ans, et le seuil chiffré de la formulation de P222 (« ζ_c = 8,76 ») ne vaut plus. ϑ = 0,15 (#130) l'avait déjà déplacé à 16,76, et ν_H = 1,1 le fait sortir du domaine de ζ. P230 couvre un changement de signe dû à #62 par la formulation de P222, sans arrêt. Ici, aucun signe ne change, mais les chiffres publiés de la formulation changent, dont une partie par #130.
+   *Avis : publier sous P230 les nombres du § 5.7, après relecture de `monnaie`. Ne pas garder ν_H = 1 pour préserver la formulation : ce serait caler un paramètre sur un résultat attendu, ce que le mainteneur a refusé pour ζ (§ 3.14). La propriété ne porte sur aucun verdict, et l'écart reste imperceptible sur une partie (§ 5.9).*
+5. **Dette de référence plus élevée** (38,4 % à 2 %, contre 81,8 % observés en moyenne pour la zone euro de 2001 à 2023, non comparable). *Avis : publiée sans cible. ν_H est le premier paramètre lu qui rapproche la dette du modèle de l'ordre de grandeur observé, mais ce n'est pas son objet.*
+
+### 5.9 Points pour `jeu` (je ne les tranche pas)
+
+- **Seuil du critère 12 (d)** (consultation prévue) :
+  - à ν_H = 1,1, la part propre d'un transfert dépensée en 12 tours passe de 0,63 à **0,60** ; le seuil [0,50 ; 0,85] tient pour 0,072 ≤ λ_H ≤ 0,554 ;
+  - la littérature lue (dépense totale de 0,5 à 0,9 sur un trimestre) est compatible avec ce seuil ;
+  - la phrase d'aide « part propre au ménage dépensée en 12 tours de 0,63 » (`sec:menages`, l. 2101) devient 0,60.
+- **Richesse en années de revenu** : le niveau normal affiché, « à la cible », passe de **1 an à 1,1 an**, et le ratio nominal de 0,98 à 1,08.
+- **Taux d'épargne nominal** : de 3,89 % à **4,27 %**. Il reste loin du taux d'épargne brut observé (13,6 %), qui comprend l'investissement en logement absent du modèle. L'aide doit le dire, sinon le joueur comparera le chiffre à celui de la presse.
+- **Dette publique de référence affichée** : de 31,6 % à **38,4 % du PIB** à 2 %, sans décision du joueur. C'est la contrepartie des dépôts des ménages (C42).
+- **C62** : sous φ = 0 à 2 %, l'enveloppe double en 58 ans (×2,05 sur 720 tours). C'est imperceptible sur une partie de 10 à 30 ans (durée : #155), et visible seulement sur la fenêtre de 60 ans. La leçon « financer les intérêts par le déficit est dangereux » vaut désormais aussi à 2 %, mais lentement.
+
+### 5.10 Surface pour `coder` et `docwriter` (rangs 3 à 9)
+
+- **Table du bloc 5** (`nations.moteur.parametres.menages`) : `nu_H` passe de 1,0 à 1,1 et reçoit sa source ; `lambda_H` garde 0,4 et reçoit sa source. Défaut `Parametres.nu_H` du script et déclarations de `nu_H` et `lambda_H` (l. 174 et 192, aujourd'hui « tab:calibration (indicative) »). Égalité tenue par `test_valeurs_indicatives_egales_a_celles_du_script`.
+- **Texte de source proposé pour `tab:calibration`** :
+  - ν_H : « Eurostat, comptes des secteurs (`nasa_10_f_bs`, `nasa_10_nf_tr`), ménages et ISBLSM (S14_S15), numéraire et dépôts (F.2) sur revenu disponible brut (B.6g), EA21, moyenne 2001–2023 : 1,076 an ; ν_H = R/(1 − R n_a π^{∗,pas}) à π\* = 2 % : 1,0995, arrondi à 1,1 ; contrôle : acquisition nette de F.2 sur B.6g, 4,32 % (2002–2023), contre 4,27 % dans le modèle ; consulté le 16/11/2026 » ;
+  - λ_H : « choix de conception dans la fourchette lue : dépense totale de 50 à 90 % d'un versement sur le trimestre de réception (Parker, Souleles, Johnson et McClelland, NBER WP 16684, 2011) ; dépense cumulée d'une aubaine sur 3 tours de 0,605 à ν_H = 1,1 ; correspondance contestée (versements annoncés, données américaines, ménage représentatif) ; effet richesse sur la richesse illiquide plus faible, non comparable ».
+- **Valeurs publiées des tests** :
+  - `tests/invariants/test_menages.py` : repères de la part (0,628 / 0,618 / 0,760 / 0,423 → 0,597 / 0,586 / 0,743 / 0,370), de la boucle propre (§ 5.5) et du continuum ;
+  - `tests/unitaires/test_menages.py` : changement de cible (0,5543 → 0,5750) ; coefficient × n_a (0,368 → 0,369) ; frontières en π\* (85,1175 → 93,1884 % ; à λ_H = 0,2 : 24,9425 → 25,6496 %) ; marge du plafond (12,24 → 13,49 mois) ; impôts doublés (10,12 → 9,48).
+- **Constat sur un test (à corriger au même commit, sans changer le protocole)** : `test_continuum_hors_c2_sur_la_forme_fermee` calcule la « lecture exacte » comme 1/(1 + n_a π^pas), sans ν_H. La fiche (§ 9.6) la définit à ν_H près, et la formule n'est juste qu'à ν_H = 1. À ν_H = 1,1, la forme correcte ν_H/(1 + ν_H n_a π^pas) donne les écarts du § 5.5. La forme actuelle les décalerait d'environ +10 %. **Vérifiée** par lecture du code (l. 573) et par recalcul.
+- **Spécification** : `sec:menages-stationnaire` (20 valeurs), `sec:menages-conditions` (frontière de π\*), `sec:menages` (« 0,63 », l. 2101 ; « 1 an », niveaux normaux), `tab:etat-stationnaire`, `tab:criteres-j3` (B10, B11, B16, B19 à B22), les 246 valeurs du § 5.4.4. Il faut aussi reprendre la formulation de C62 (`sec:finances_publiques-impots`, `sec:finances_publiques-conditions`, fiche 9, C62) selon la question 4.
+- **Fiche 5** : la réserve 7 est levée pour ν_H et maintenue pour λ_H ; la phrase « aucune source lue sur la richesse liquide (Fed Z.1 non lue, BCE inaccessible) » est remplacée par la source du § 5.2.
+- **Concordance** : aucun label ajouté ni retiré (90).
+
+### 5.11 Statut des conclusions
+
+- **Vérifiées** (commande et sortie, ou source citée) :
+  - rapports d'Eurostat F.2/B.6g, F.2/B.6n, (F.2 − F.4)/B.6g, BF90/B.6g, F/B.6g ; acquisition nette de F.2 ; taux d'épargne brut ; dette publique EA20 ;
+  - ν_H = 1,0995 tiré de 1,076 ; B10 = 1,076531 à N ;
+  - tableaux des § 5.4 à 5.6, et mécanisme (ν) bouclé (ΔD_c = ΔD_H) ;
+  - invariance exacte de l'état stationnaire en λ_H (grille entière, 449 valeurs publiées) ;
+  - frontières en λ_H du critère 12 (d) ; dépense cumulée d'une aubaine ; frontières de λ_H pour la fourchette de Parker et al. ;
+  - lignes du § 9.7 de la fiche 5 ; #80 toujours en échec ; C51 sans racine parasite ;
+  - C62 : rayons, ζ_c, φ\* et doublements de la maquette, corroborés par le moteur à P et N (2 % et 10 %) ;
+  - déplacement de ζ_c par ϑ (8,76 → 16,76) ;
+  - constat sur la lecture exacte du test du continuum.
+- **Vérifiées avec réserve** (résumés de `www.nber.org` rendus par l'outil) : Parker et al. (2011), Johnson et al. (2004), Kaplan et Violante (2011/2014). La période du chiffre « 50-90 % » est à confirmer sur l'article.
+- **Hypothèses** :
+  - correspondance entre la dépense d'une aubaine dans le modèle et les réponses aux versements fiscaux observées ;
+  - lecture de la cohérence stock-flux (croissance nominale voisine) ;
+  - mécanisme du changement de C62 par ν_H (canal rentier porté par D_c).
+- **Non vérifiées** :
+  - Fagereng, Holm et Natvik (2021) et Jappelli et Pistaferri (2014), sur des hôtes non ouverts ;
+  - Carroll, Otsuka et Slacalek, non relu ;
+  - m_H et la boucle conjointe du § 3.C-10 de la fiche 5 à N ;
+  - persistance (condition 10 de `jeu`) ;
+  - bancs d'empreintes à N (rang 8), dont le maintien du plafond des bancs D et BF ;
+  - tests du dépôt exécutés à N ;
+  - croissance nominale observée du revenu disponible (non lue).
+
 ## 6. #45 — Vitesse de correction salariale λ_w (bloc 3, travail)
 
 *Instruite par `macro` (expert pilote) le 16/11/2026, rang 1 de la branche « calibration » (PR #162, tête `d865683`). `git status` était vide après les sondes : aucun fichier du dépôt n'a été modifié. Les sondes sont hors dépôt (`<scratchpad>/outils45/`). Elles appellent sans les modifier `outils/etat_stationnaire.py`, `outils/maquette_conjointe.py`, `tests/invariants/socle_partiel.py` et les assistants de `tests/invariants/test_socle_complet.py`. Les chiffres du modèle sont des résultats du modèle, pas des faits. Les faits portent leur source et leur date. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**. Le périmètre est #45 réduite à λ_w (P204). β, a_π, a_I et λ_e restent hors périmètre (#163).*
