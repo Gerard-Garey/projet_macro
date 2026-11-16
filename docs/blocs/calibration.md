@@ -1077,3 +1077,325 @@ Je propose ce texte pour `sec:finances_publiques-impots`, `sec:finances_publique
 - question 4 (distribution nette, publiée avec la brute) : avis de `macro` suivi sous la délégation P211.
 - remesures de C62 (§ 3.13) : formulation du § 3.13.7 adoptée pour M34, sous relecture de `monnaie` (P222) ; issue #166 sur l'estimateur de C62, ajoutée au périmètre et traitée au rang 3 (P223) ; ζ_c remesuré au rang 8 (P224).
 - relecture de `monnaie` du § 3.13 (16/11/2026, sans réexécution) : conforme sur les quatre demandes ; aucun point bloquant avant M34 ; retouches 1 à 4 de la formulation du § 3.13.7 appliquées par la session sous P211 (« à 2 % » devant ζ_c ; 19 800 tours au module de la maquette, ln 2 / ln 1,000035 = 19 805, contre 19 748 au module du moteur ; « parité des racines réelles supérieures à 1 » ; réserve de calibration). Remarques de méthode consignées sans retouche : le signe de det(I − J) = Π(1 − λᵢ) ne change qu'au passage d'une racine réelle par 1, fait algébrique général, le lien propre au modèle étant celui de la pente dθ_G/dr̄ à ce déterminant (§ 3.13.5) ; le rayon 0,997975 du plan 2×2 sous taux tenu est celui d'un autre mode, puisque tenir le taux supprime l'intégrateur r̂\* qui porte le mode dominant (§ 3.13.6) ; mécanisme proposé, hypothèse : sous φ = 0, l'État finance par le déficit tous les intérêts nominaux, y compris la part qui compense l'inflation, d'où un danger croissant avec π̄.
+
+## 4. #130 — Écarts bancaires ϖ_L et ϖ_D, fonds propres visés ϑ (bloc 7) et taux réel neutre r̄ (bloc 8)
+
+*Instruite par `monnaie` (expert pilote) le 16/11/2026, rang 1 de la branche « calibration » (PR #162, tête `3da48c0`), après la section #55. `macro` est consulté ensuite sur le dividende et la distribution (§ 4.7). Les chiffres du modèle viennent de sondes hors dépôt qui appellent, sans le modifier, `outils/etat_stationnaire.py` (méthode au § 4.4.1). Ce sont des résultats du modèle, pas des faits. Les faits portent leur source et leur date. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**. La base est l'état à μ̄ = 0,60 et ζ = 8 des § 1 et 3 (P213, P218), notée **A** ; l'état proposé est noté **P**.*
+
+### 4.1 Grandeurs visées et correspondance avec le modèle
+
+| Grandeur | Définition dans le modèle | Unité | Dénominateur | Fenêtre |
+|---|---|---|---|---|
+| ϖ_L (B1) | i_{L,t} − i_{CB,t−1}, appliqué à **tout l'encours** L (ligne 9) | point de % par an, taux de flux | — | constant, tout π̄, tout n_a |
+| ϖ_D (B2) | i_{CB,t−1} − i_{D,t}, appliqué à **tous les dépôts** D_H + D_F (ligne 10), sans distinction de durée | point de % par an | — | idem |
+| ϑ (B6) | fonds propres visés E^Bk/L, L crédits de clôture | fraction | crédits aux entreprises (seuls crédits du modèle) | clôture |
+| r̄ (BC1, E4) | taux réel neutre de l'état stationnaire, Fisher sur la cible : 1 + i_CB = (1 + r̄)(1 + π\*) | % par an | — | état stationnaire |
+
+**Traits du modèle que la définition empirique doit respecter** (vérifiés sur `etat_stationnaire`, l. 401 à 465, et `sec:banque-stationnaire`) :
+
+| Trait | Dans le modèle | Conséquence pour la source |
+|---|---|---|
+| Taux directeur | Corridor de largeur nulle : i_res = i_B = i_CB (M32, M33) | Le taux observé comparable est le **taux du jour le jour du marché** (EONIA, puis €STR), qui suit le taux opérationnel en système de plancher comme en corridor ; pas le taux des opérations principales seul |
+| Crédit | Une seule classe : crédits aux entreprises, à taux révisé chaque pas (variable) | Taux des **crédits aux sociétés non financières** ; affaires nouvelles (prix vu par l'emprunteur, fiche 7 § 9.2) et encours en variante |
+| Dépôts | Une seule rémunération pour les dépôts des ménages et des entreprises, à vue ou non | **Taux moyen pondéré** des dépôts des ménages et des SNF (à vue, à terme, à préavis), pondéré par les encours |
+| Écart constant | ϖ_D ne dépend ni du niveau ni du sens du taux (bêta des dépôts égal à 1) | La moyenne observée dépend du régime de taux : à déclarer (§ 4.2) |
+| Fonds propres | E^Bk = ϑ L ; l'actif est L + B_Bk + Res ; titres publics et réserves ne portent aucune exigence | Sous les pondérations de Bâle 1988 (0 % État et banque centrale en monnaie nationale, 100 % secteur privé), **les actifs pondérés de la banque du modèle sont exactement L**. ϑ est donc un ratio de fonds propres sur actifs pondérés « Bâle I ». Le ratio observé (Bâle III, approches internes) a un dénominateur plus petit : écart déclaré |
+| Nature des fonds propres | Fonds propres purs, sans dette subordonnée | **CET1** (fonds propres de base de catégorie 1) plutôt que le ratio de solvabilité total, qui inclut des instruments de dette (AT1, Tier 2) |
+| Coûts | Aucun coût d'exploitation, aucune perte sur crédit, aucun impôt | Le rendement des fonds propres et la marge nette d'intérêt ne sont **pas des cibles** (fiche 7, critère 17) |
+
+**Formes fermées en jeu** (`sec:banque-stationnaire`) : n_a Π^Bk = i_CB E^Bk + ϖ_L L + ϖ_D D ; rendement des fonds propres i_CB + (ϖ_L + ϖ_D D/L)/ϑ ; part distribuée 1 − n_a(Γ̄ − 1)/rendement ; condition d'existence ϑ i_CB + ϖ_L + ϖ_D D/L ≥ ϑ n_a(Γ̄ − 1). Aucune vitesse n'y entre. **Vérifiée** (forme brute contre forme réduite, résidu ≤ 4,8e−15 dans `controles`).
+
+**Ce qui ne dépend pas des paramètres de #130** (mesuré, sortie `sortie_v1.txt`) : ϑ n'entre ni dans le bloc 6, ni dans les prix, ni dans le travail : capital, part salariale, I/PIB, D_F, distribution, Div_F, caisse des entreprises sont identiques à A au bit. ϖ_L et ϖ_D changent i_L, i_D, Div_F et la distribution, mais pas θ_G, ni la dette (à l'arrondi publié : les variations de Div_F et de Div_Bk se compensent dans le revenu des ménages, comme pour μ̄ au § 1.4.2). **Vérifiée.**
+
+### 4.2 Sources lues et citées
+
+**(a) Écart du crédit, lu.** BCE, statistiques de taux d'intérêt des IFM (MIR), lues sur le miroir DBnomics (`db.nomics.world`, pages des séries, mise à jour indiquée par la page ; tableau des valeurs embarqué), consultées le 16/11/2026 :
+- `ECB/MIR/M.U2.B.A2I.AM.R.A.2240.EUR.N` : indicateur composite du coût de l'emprunt des sociétés non financières (S.11), affaires nouvelles, zone euro à composition variable, mensuel, 2003-01 à 2026-08 ;
+- `ECB/MIR/M.U2.B.A20.A.R.A.2240.EUR.O` : crédits aux SNF, encours, toutes durées (variante) ;
+- taux du jour le jour : EONIA, moyenne mensuelle (`ECB/FM/M.U2.EUR.4F.MM.EONIA.HSTA`), jusqu'en 2019-09 ; €STR, moyenne mensuelle des observations quotidiennes (`ECB/EST/B.EU000A2X2A25.WT`), dès 2019-10. Sur le chevauchement 2019-10 à 2021-12, EONIA − €STR vaut 0,0850 point chaque mois (calculé) : le raccord déplace la moyenne 2003–2024 de moins de 0,01 point.
+
+| Fenêtre (moyenne de mois) | n | ϖ_L, affaires nouvelles | ϖ_L, encours | taux du jour le jour moyen |
+|---|---|---|---|---|
+| **2003–2024** | 264 | **2,09** | 2,30 | 1,07 |
+| 2003-01 à 2008-08 (avant la crise, corridor) | 68 | 1,64 | 1,94 | 2,80 |
+| 2003-01 à 2014-05 (taux positifs) | 137 | 2,16 | 2,51 | 1,70 |
+| 2014-06 à 2022-06 (taux négatifs) | 97 | 2,15 | 2,53 | −0,37 |
+| 2022-07 à 2024-12 (hausse des taux) | 30 | 1,52 | 0,56 | 2,85 |
+| 2003–2025 | 276 | 2,06 | 2,25 | 1,12 |
+
+Minimum et maximum mensuels, 2003–2024, affaires nouvelles : 1,21 et 3,16 points. L'écart sur les affaires nouvelles est **stable entre régimes** (1,5 à 2,2 points selon la fenêtre). L'écart sur les encours s'effondre en 2022–2024 parce que les encours à taux fixe ne suivent pas la hausse : c'est la transformation d'échéances, que le modèle n'a pas. Faits, **vérifiés** (sonde `ecarts.py`, sortie ci-dessus).
+
+**(b) Écart des dépôts, lu.** Mêmes statistiques, encours pondérés par les encours de la BSI (IFM hors SEBC, stocks de fin de mois) :
+- taux : dépôts à vue des ménages (`L21…2250.EUR.N`) et des SNF (`L21…2240.EUR.N`) ; dépôts à terme, encours (`L22.A…2250.EUR.O`, `L22.A…2240.EUR.O`) ; dépôts à préavis de 3 mois au plus des ménages (`L23.D…2250.EUR.N`), employé aussi pour les SNF, faute de série trouvée (part de 1,1 % des encours en décembre 2024) ;
+- poids : `ECB/BSI/M.U2.N.A.{L21,L22,L23}.A.1.U2.{2250,2240}.Z01.E`. En décembre 2024 : à vue 58,6 % (ménages 39,2, SNF 19,4), à terme 22,1 %, à préavis 19,3 %.
+
+| Fenêtre | ϖ_D, taux pondéré | ϖ_D, dépôts à vue des ménages seuls |
+|---|---|---|
+| 2003–2024 | **−0,05** | 0,67 |
+| **2003-01 à 2008-08** | **0,85** | 1,93 |
+| 2014-06 à 2022-06 | −0,74 | −0,43 |
+| **2022-07 à 2024-12** | **1,93** | 2,60 |
+| 2023–2025 | 1,97 | 2,71 |
+
+Minimum et maximum mensuels 2003–2024 (pondéré) : −1,29 et 2,77 points. Faits, **vérifiés**.
+
+**Lecture.** L'écart des dépôts **dépend du régime** : négatif quand le taux directeur est négatif (les banques n'ont pas reporté les taux négatifs sur les dépôts), positif et de l'ordre d'un à deux points quand le taux du jour le jour est voisin de 3 %. La moyenne longue (−0,05) est dominée par huit ans de taux négatifs, régime que l'état de référence du modèle n'a pas (i_CB = 3,02 % à π̄ = 2 %). La dépendance de l'écart au niveau du taux (« bêta des dépôts » inférieur à 1) est une **limite de la forme B2**, pas un objet de calibration. La littérature sur ce point (Drechsler, Savov et Schnabl, « The Deposits Channel of Monetary Policy », *QJE*, 2017) **n'a pas été lue** : aucun chiffre n'en est tiré.
+
+**(c) Fonds propres, lus.**
+- **Comité de Bâle sur le contrôle bancaire**, *International Convergence of Capital Measurement and Capital Standards*, Bâle, juillet 1988 (PDF de `www.bis.org`, lu le 16/11/2026 ; texte extrait par `pdftotext`) :
+  - § 44 (partie III, p. 14) : « the target standard ratio of capital to weighted risk assets should be set at 8% (of which the core capital element will be at least 4%) » ;
+  - annexe 2, « Risk weights by category of on-balance-sheet asset » (p. 21 et 22) : 0 % pour « Cash » et « Claims on central governments and central banks denominated in national currency and funded in that currency » ; 50 % pour « Loans fully secured by mortgage on residential property » ; 100 % pour « Claims on the private sector ».
+  - **Vérifiée.** Cela lève la réserve de `tab:calibration` (« texte non lu ») et de la fiche 7 § 9.2 (« lu dans un extrait de moteur de recherche »).
+- **BCE, statistiques de supervision bancaire** (MSU, « Significant institutions », échantillon variable), `ECB/SUP/Q.B01.W0._Z.I4008._T.SII._Z._Z._Z.PCT.C` (ratio CET1, % des actifs pondérés) et `…I4001…` (ratio de solvabilité total), DBnomics, consultés le 16/11/2026 :
+
+| Grandeur (MSU, établissements importants) | 2015T3–2024T4, moyenne (38 trimestres) | min ; max | 2024T4 |
+|---|---|---|---|
+| **CET1 / actifs pondérés** | **14,75 %** | 12,77 ; 15,97 | 15,97 % |
+| Fonds propres totaux / actifs pondérés | 18,51 % | 16,06 ; 20,10 | 20,10 % |
+
+- **BCE, BSI**, IFM hors SEBC, zone euro, stocks de décembre, « capital et réserves » (`L60.X.1.Z5.0000`) sur crédits (`A20.A.1.U2`), même consultation :
+
+| Rapport comptable | 2003–2024 (22 décembres) | min ; max |
+|---|---|---|
+| Capital et réserves / crédits aux SNF | 0,491 | 0,366 ; 0,595 |
+| … / crédits aux SNF et aux ménages | 0,221 | 0,173 ; 0,259 |
+| … / crédits à tous les résidents non IFM | 0,182 | 0,144 ; 0,215 |
+
+  Faits, **vérifiés** (sonde `theta.py`). Réserve : le bilan de la BSI est **agrégé, non consolidé** (les participations entre IFM ne sont pas éliminées) et le capital couvre aussi les titres, les prêts interbancaires et les actifs extérieurs. Ce rapport surestime les fonds propres qui adossent les crédits ; l'ampleur n'est pas mesurée.
+
+**Écart de définition déclaré (critère propre de #130).** ϑ est un rapport **fonds propres sur crédits**. Le ratio CET1 est un rapport **fonds propres sur actifs pondérés des risques**. Pour la banque du modèle, qui ne détient que des crédits aux entreprises, des titres publics et des réserves, les deux coïncident sous les pondérations de Bâle 1988 (100 % et 0 %, lues). Le ratio observé est calculé sous Bâle III, en grande partie par les approches internes, avec des pondérations des crédits aux entreprises en moyenne inférieures à 100 %. Le ratio observé rapporté à des actifs pondérés à 100 % serait donc plus bas que 14,75 %. L'ampleur n'est **pas vérifiée** : la densité des actifs pondérés (`I4011`) n'a pas été trouvée sur le miroir. **Contesté.**
+
+**(d) Taux réel neutre, lus.**
+- **BCE, *Economic Bulletin* 1/2024**, encadré « Estimates of the natural interest rate for the euro area: an update », C. Brand, N. Lisack et F. Mazelis (`www.ecb.europa.eu`, lu le 16/11/2026 par WebFetch, citations courtes rendues par l'outil). Définition : « the real rate of interest that is neither expansionary nor contractionary ». Depuis le second semestre 2023, les modèles de structure par terme et semi-structurels donnent des estimations comprises entre « about minus three-quarters of a percentage point to around half a percentage point ». Dernière observation : 2023T4.
+- **BCE, *Economic Bulletin* 1/2025**, encadré « Natural rate estimates for the euro area: insights, uncertainties and shortcomings » (même hôte, lu le même jour ; auteurs non restitués par l'outil). Fin 2024 : « the most recent estimates of real r\* span a range between -½% and +½% » ; avec les trois estimations de type Holston, Laubach et Williams, « the range of real r\* is -½% to 1% ». L'encadré souligne une incertitude « very high » et des bandes d'estimation qui « can span up to several percentage points ». Dernière observation : 2024T4 (2024T3 pour HLW).
+- **Réserve fédérale, *Summary of Economic Projections*, 16/09/2026**, tableau 1 (`www.federalreserve.gov`, lu le 16/11/2026) : taux des fonds fédéraux de long terme, médiane **3,2 %**, tendance centrale 3,0–3,6, étendue 2,9–3,9 ; inflation PCE de long terme 2,0. Le taux réel implicite (soustraction, 3,2 − 2,0) vaut **1,2 %**, tendance centrale 1,0 à 1,6 %, étendue 0,9 à 1,9 %. C'est une projection des participants au FOMC, pas une estimation économétrique.
+- **Non lus** : Holston, Laubach et Williams (2017, *Journal of International Economics*, et mises à jour de la Réserve fédérale de New York : hôte non ouvert) ; Laubach et Williams (2003) ; FMI, *Perspectives de l'économie mondiale*, avril 2023, chapitre 2 ; Borio et al. (BRI, *Working Paper* 685). Aucun chiffre n'en est tiré.
+
+**Fourchette lue de r̄** : de **−0,5 % à +1,0 %** pour la zone euro (BCE, fin 2024), de **0,9 % à 1,9 %** pour les États-Unis (FOMC, septembre 2026, étendue). Fourchette d'ensemble : **−0,5 % à +1,9 %**. Le niveau est **contesté** (critère 23 de la fiche 8) : les sources elles-mêmes le disent incertain de plusieurs points.
+
+### 4.3 Valeurs proposées et variantes
+
+**Écarts : ϖ_L = 0,02 et ϖ_D = 0,01, inchangés, désormais sourcés.**
+- ϖ_L = 0,02 : moyenne 2003–2024 de l'écart du coût composite de l'emprunt des SNF au taux du jour le jour, 2,09 points ; arrondie au point entier. Stable entre régimes (1,5 à 2,2). **Vérifiée.**
+- ϖ_D = 0,01 : moyenne des fenêtres de **taux positifs comparables à l'état de référence** (0,85 avant la crise ; 1,93 en 2022–2024). Valeur ronde dans cette plage. La moyenne longue (−0,05) n'est pas retenue : elle mêle un régime de taux négatifs que le modèle n'a pas. **Choix déclaré, source lue, fenêtre contestée.**
+- Motif supplémentaire : l'égalité ϖ_D = r̄ = 0,01 rend i_D nul à π̄ = 0. Les tests de stationnarité classent cette nullité en arithmétique exacte (`sec:calibration`, verdicts P94). Garder les deux valeurs évite de toucher cette liste.
+
+**ϑ proposé : 0,15.** C'est le ratio CET1 moyen des établissements importants du MSU, 2015T3–2024T4 (14,75 %), arrondi. Motifs :
+- c'est la seule mesure lue dont le dénominateur coïncide avec celui du modèle, sous les pondérations de Bâle 1988 (lues) ;
+- 0,10 est **sous toutes les observations** de la série (minimum 12,77 %) ; il ne dépasse que le minimum réglementaire de Bâle 1988 (8 %, dont 4 % de fonds propres de base) ;
+- le CET1 est la mesure la plus proche de fonds propres purs.
+
+Statut : **choix déclaré, source lue, écart de dénominateur contesté** (§ 4.2 (c)).
+
+**r̄ proposé : 0,01, inchangé, déclaré contesté.** Il est dans les deux fourchettes lues : borne haute de la zone euro (−0,5 à 1,0), bas de l'étendue du FOMC (0,9 à 1,9). C'est une valeur ronde, au milieu de la fourchette d'ensemble (−0,5 à 1,9). Elle garde r̄ < g (1 % contre 2 % de croissance de la productivité), propriété déjà publiée de l'état de référence. Statut : **choix de conception, fourchette lue, niveau contesté** (P208 ; critère 23).
+
+**Variantes mesurées** (sorties `sortie_v1.txt` et `sortie_v2.txt` ; à π̄ = 2 % sauf mention ; « publiées en écart » : nombre de valeurs publiées du script, sur 449, en écart à la publication actuelle) :
+
+| Variante | Paramètres | ROE % | Marge nette % | Dette consolidée | Part distribuée Bk | Existence, par an | Distribution, π̄ = 0 | Publiées en écart | Avis |
+|---|---|---|---|---|---|---|---|---|---|
+| A (base) | ϖ 0,02 / 0,01 ; ϑ 0,10 ; r̄ 0,01 | 36,15 | 2,497 | 0,25695 | 0,89025 | 0,032180 | 0,88598 | 185 | Statu quo de #130 |
+| **P, proposée** | **ϑ = 0,15** | **25,10** | **2,514** | **0,28785** | **0,84197** | **0,031703** | **0,88598** | 284 | **Recommandée** |
+| ϑ bas | ϑ = 0,08 | 44,43 | 2,490 | 0,24459 | 0,91071 | 0,032371 | 0,88598 | non relevé | Minimum de Bâle 1988 ; sous toutes les observations |
+| ϑ comptable | ϑ = 0,18 | 21,42 | 2,524 | 0,30639 | 0,81480 | 0,031417 | 0,88598 | non relevé | BSI, crédits aux non-IFM ; dénominateur trop large, bilan non consolidé |
+| Écarts d'avant la crise | ϖ_L 0,0165 ; ϖ_D 0,0085 | 30,68 | 2,119 | 0,25695 | 0,87069 | 0,026711 | 0,88735 | 234 | Fenêtre courte ; rend i_D ≠ 0 à π̄ = 0 |
+| Écarts longs | ϖ_L 0,021 ; ϖ_D 0 | — | — | — | — | 0,020053 | — | **refus du script** | Écartée : voir ci-dessous |
+| r̄ bas | r̄ = 0,005 | 35,62 | 2,463 | 0,25596 | 0,88863 | 0,031655 | 0,88741 | 328 | Dans les deux fourchettes de la zone euro ; i_D = −0,5 % à π̄ = 0 |
+| r̄ haut | r̄ = 0,015 | 36,67 | 2,530 | 0,25794 | 0,89183 | 0,032706 | 0,88452 | 333 | Tient la liste O1 de la première tentative (1,5 à 3 %), qui n'est pas une source |
+| r̄ = g | r̄ = 0,02 | 37,20 | 2,564 | 0,25894 | 0,89336 | 0,033232 | 0,88302 | 336 | Au-dessus des deux fourchettes lues (FOMC : 1,9 au plus) ; solde primaire stationnaire positif (+0,019 % à 2 %) |
+
+**Variante « écarts longs » (ϖ_D = 0) : l'état de référence existe, le script la refuse.** La marge d'existence est positive aux trois π̄ et aux trois n_a (0,020053 par an à π̄ = 2 %, n_a = 12). Mais `calculer` lève `HorsDomaine` dans `_canal_ecarts_nominaux` (l. 2268), qui force ϖ_L = 0 pour une mesure publiée : avec ϖ_D = 0 aussi, les deux écarts sont nuls et la condition d'existence échoue, comme publié (« avec des écarts nuls, elle échoue »). C'est une limite d'une mesure publiée, pas de l'état. **Vérifiée** (trace d'appel, sonde `wlong.py`). Elle n'est pas proposée.
+
+**Variantes de r̄** (π̄ = 0 / 2 / 10 %) : taux directeur i_CB = (1 + r̄)(1 + π̄) − 1, calculé à la main et égal au script.
+
+| r̄ | i_CB, % | Taux réel restitué, % | θ_G | Solde primaire, % du PIB | i_D à π̄ = 0 |
+|---|---|---|---|---|---|
+| 0,005 | 0,50 / 2,51 / 10,55 | 0,50 / 0,51 / 0,55 | 0,218839 / 0,220541 / 0,221662 | −0,146 / −0,373 / −0,518 | −0,50 % |
+| **0,01** | **1,00 / 3,02 / 11,10** | **1,00 / 1,02 / 1,10** | **0,218474 / 0,219573 / 0,219568** | **−0,097 / −0,243 / −0,239** | **0,00** |
+| 0,015 | 1,50 / 3,53 / 11,65 | 1,50 / 1,53 / 1,65 | 0,218107 / 0,218598 / 0,217456 | −0,048 / −0,113 / +0,043 | 0,50 % |
+| 0,02 | 2,00 / 4,04 / 12,20 | 2,00 / 2,04 / 2,20 | 0,217737 / 0,217615 / 0,215325 | +0,002 / +0,019 / +0,327 | 1,00 % |
+
+Le signe du solde primaire stationnaire suit celui de r̄ − g, à la dette consolidée près. À r̄ ≥ g, l'État dégage un excédent primaire à l'état stationnaire. C'est le résultat attendu de la dynamique de dette (condition de Domar), pas un fait empirique. **Vérifiée** (mesure) ; lecture : **hypothèse** de mécanisme, non décomposée.
+
+### 4.4 Tableau avant / après prédit
+
+#### 4.4.1 Méthode et commandes
+
+Sondes du scratchpad, lancées depuis `/home/user/projet_macro` à `3da48c0` (`git status` vide avant et après), dossier `<scratchpad>/outils130/` :
+- **`sonde130.py`** : importe `outils/etat_stationnaire.py` par son chemin, sans le modifier, et appelle `calculer(replace(Parametres(), mu_bar=0.60, zeta=8.0, **variante))`. Noms de champs exacts du script : `varpi_L`, `varpi_D`, `vartheta`, `rbar` (classe `Parametres`, l. 106 à 153). Lecture de la grille à (ν_G = 1,15, π̄, n_a = 12), clés de `valeurs` (l. 989).
+- **`sonde130b.py`** : nombre de valeurs publiées en écart, Δr̄_α de #80, plus grand résidu, caisse des entreprises.
+- **`tableau.py`** : tableau ci-dessous, et recensement des valeurs publiées qui changent entre A et P, par section.
+- **`dist.py`** : distribution sous Δϱ = −2 points (`etat_stationnaire(par, r_neutre=r̄ − 0,02, rho_bar_L=ϱ_L de l'état, controler=False)`, comme au § 3.4.1).
+- **`wlong.py`** : variante ϖ_D = 0.
+- **`divbk.py`** : variation du dividende de la banque et du revenu disponible de A à P ; marge d'existence sous écarts nuls.
+- **`ecarts.py`**, **`theta.py`**, **`dbn.py`** : lecture des séries de DBnomics et calcul des moyennes du § 4.2.
+- Commande type : `uv run python -I <scratchpad>/outils130/<sonde>.py '<variantes en JSON>'`. Sorties : `<scratchpad>/sortie_v1.txt`, `sortie_v2.txt`, `sortie_tableau.txt`.
+- **Contrôles** : à (μ̄, ζ) = (0,25 ; 4), la sonde retrouve les 449 valeurs publiées « égal » (0 en écart). À A, elle retrouve les 185 valeurs en écart du § 3.4.3, la distribution 0,88598 / 0,82751 / 0,72390 et, sous −2 points, 0,86624 / 0,79812 / 0,68114. Plus grand résidu à P : 4,79e−15.
+
+#### 4.4.2 `tab:etat-stationnaire` et valeurs résolues (n_a = 12, ν_G = 1,15) : P contre A, et contre `main`
+
+Une seule cause pour toutes les lignes qui changent de A à P, notée **(ϑ)** : E^Bk = ϑ L monte de 0,05 L, soit +0,031127 année de PIB à 2 %. Par l'identité C42, B − M^G = V_H + D_F − (1 − ϑ) L, la dette publique consolidée monte d'autant, moins une baisse de la richesse des ménages : ΔV_H = −0,000223. Celle-ci vient du dividende de la banque : ΔDiv_Bk = (i_CB − n_a γ̄) ΔE^Bk/n_a < 0, puisque i_CB = 3,02 % est sous la croissance nominale (n_a γ̄ = 3,967 %). D'où ΔD_c = +0,031127 − 0,000223 = +0,030904, conforme à la mesure. θ_G, résolu, monte parce que C baisse à production inchangée. Le déficit de Domar, n_a γ̄ D_c, et le canal rentier, proportionnel à D_c, montent d'environ 12 % (+12,03 % et +12,07 % à 2 %). **Vérifiée** (bouclage à la main contre la sortie).
+
+| Grandeur | `main` 0 / 2 / 10 % | A 0 / 2 / 10 % | **P** 0 / 2 / 10 % | P − A à 2 % | Explication |
+|---|---|---|---|---|---|
+| Capital (a), (b), (c) ; part salariale ; I/PIB | voir § 1.4.3 | § 1.4.3 | = A | 0 | ϑ n'entre pas dans les blocs 2 à 6 |
+| r̄, i_CB, taux réel restitué, ϱ_L, inflation | 1,00 ; 1,00 / 3,02 / 11,10 ; … | = `main` | = `main` | 0 | r̄, ϖ_L inchangés |
+| θ_G | 0,218474 / 0,219573 / 0,219568 | = `main` | **0,218765 / 0,219791 / 0,219626** | +0,000219 | (ϑ) : C plus bas |
+| Masse monétaire | 0,81917 / 0,81658 / 0,81108 | 0,81950 / 0,81723 / 0,81295 | **0,81921 / 0,81701 / 0,81289** | −0,00022 | (ϑ) : V_H plus bas |
+| Dette consolidée | 0,09884 / 0,25674 / 0,51013 | 0,09888 / 0,25695 / 0,51130 | **0,13862 / 0,28785 / 0,52800** | +0,03090 (+12,0 %) | (ϑ) : C42 |
+| Dette brute | 0,11987 / 0,27849 / 0,53645 | 0,11992 / 0,27871 / 0,53769 | **0,15972 / 0,30973 / 0,55457** | +0,03101 | (ϑ) |
+| Dette brute, ν_G = 1 | 0,11712 / 0,27564 / 0,53299 | 0,11717 / 0,27587 / 0,53421 | **0,15696 / 0,30687 / 0,55107** | +0,03100 | (ϑ) |
+| Dette brute affichée, % | 12,1 / 28,5 / 57,1 | 12,1 / 28,5 / 57,2 | **16,1 / 31,6 / 59,0** | +3,2 pt | (ϑ) |
+| Déficit (Domar), % du PIB | 0,1959 / 1,0185 / 5,9005 | 0,1960 / 1,0193 / 5,9141 | **0,2747 / 1,1419 / 6,1072** | +0,1226 pt | (ϑ) : n_a γ̄ D_c |
+| Solde primaire, % du PIB | −0,0971 / −0,2432 / −0,2381 | −0,0971 / −0,2433 / −0,2386 | **−0,1361 / −0,2726 / −0,2464** | −0,0293 pt | (ϑ) |
+
+**Valeurs résolues de `tab:criteres-j3` (π̄ = 2 %)** qui changent de A à P :
+
+| N° | `main` | A | **P** | Explication |
+|---|---|---|---|---|
+| B16 masse monétaire | 0,81658 | 0,81723 | **0,81701** | (ϑ) |
+| B17 fonds propres E^Bk/L | 0,1 | 0,1 | **0,15** | #130, par définition |
+| B19 encaisse du Trésor | 0,021748 | 0,021765 | **0,021875** | (ϑ) : M^G suit les paiements bruts, dont les intérêts de B |
+| B20 titres de la banque | 0,27849 | 0,27871 | **0,30973** | (ϑ) |
+| B21 dette consolidée | 0,25674 | 0,25695 | **0,28785** | (ϑ) |
+| B22 déficit public | 1,0185 % | 1,0193 % | **1,1419 %** | (ϑ) |
+
+Inchangées de A à P (écart relatif ≤ 3e−15) : B1 à B15, B18 (2 et 1 points), B24 à B26. B10 (0,980566) et B11 (3,8900 %) ne bougent pas : V_H et YD baissent dans la même proportion (règle de richesse). **Vérifiée.**
+
+**Contre `main`** : le tableau est celui du § 1.4, plus les lignes ci-dessus. Aucune ligne n'est due à ϖ_L, ϖ_D ni r̄, inchangés.
+
+#### 4.4.3 Autres valeurs publiées (surface de `docwriter`)
+
+233 valeurs publiées changent entre A et P (284 en écart à la publication actuelle, contre 185 à A). Répartition :
+
+| Endroit | Valeurs | Endroit | Valeurs |
+|---|---|---|---|
+| `sec:banque-stationnaire` | 66 | `sec:banque-restitution` | 6 |
+| `sec:finances_publiques-stationnaire` | 51 | `sec:banque-conditions` | 5 |
+| `tab:etat-stationnaire` | 24 | `sec:finances_publiques-restitution` | 4 |
+| `sec:banque_centrale-stationnaire` | 13 | fiche 9, § 3.C et § 9.6 | 4 |
+| `sec:finances_publiques-emission` | 12 (+3 avec `tab:calibration`) | `sec:finances_publiques-transferts`, fiche 9 § 6.3, fiche 9 § 3.C, `sec:banque-resultat` | 2 chacun |
+| `sec:banque_centrale-conditions` | 12 (+6 avec la fiche 9 § 3.Q, +1 avec la fiche 8 § 9.6) | `sec:finances_publiques-impots`, fiche 8 § 9.6 | 1 chacun |
+| `sec:banque_centrale-restitution` | 9 | `sec:finances_publiques-depense` | 7 |
+
+Phrases à reprendre en plus des nombres :
+- `sec:banque-stationnaire` : « Avec des écarts nuls, elle échoue […] marge de −0,000947 à π̄ = 2 % » devient −0,001421 (ϑ (i_CB − n_a γ̄), sonde `divbk.py` ; −0,001473 et −0,000700 à 0 et 10 %) ; « fonds propres ϑL : 0,08004 ; 0,06220 ; 0,03344 » ; la dépendance à n_a de la part distribuée (0,841495 / 0,841966 / 0,842146 pour n_a = 4, 12, 52) ; la décomposition de Δ(dette consolidée) entre 2 et 10 % (terme −ϑΔL) ;
+- `sec:banque-conditions` : le couplage ∂Div_Bk/∂I^plan = −ϑ lv\* passe de −0,04 à **−0,06** ;
+- `tab:calibration` : sources de ϖ_L, ϖ_D, ϑ, r̄ (texte au § 4.10) ;
+- fiche 7 et fiche 8 : « rendement des fonds propres de 37 % » ;
+- valeur indicative `fonds_propres_vises` de la table du bloc 7 et défaut `Parametres.vartheta` du script.
+
+**#80** : Δr̄_α passe de 0,2966 point (A) à **0,2764** point (P), et l'écart de C/Y_o de 0,6308 à 0,6904 point. Les deux restent au-dessus du seuil de 0,1 point : #80 reste en échec attendu, sans succès inattendu. **Vérifiée** (valeurs du script ; tests non exécutés à P).
+
+### 4.5 Conditions d'existence au point fixe (P : μ̄ = 0,60, ζ = 8, ϑ = 0,15 ; n_a = 12, ν_G = 1,15)
+
+| Condition | π̄ = 0 | 2 % | 10 % | Verdict |
+|---|---|---|---|---|
+| **Dividende stationnaire de la banque** (`sec:banque-stationnaire`) : ϑ i_CB + ϖ_L + ϖ_D D/L − ϑ n_a γ̄, par an | 0,028758 (A : 0,029253) | 0,031703 (0,032180) | 0,043554 (0,043789) | **tenue** ; baisse de ϑ(i_CB − n_a γ̄) = −0,00048 à 2 % |
+| Même marge, écarts nuls (pour mémoire, non admissible) | −0,001473 | −0,001421 | −0,000700 | échoue, comme publié |
+| Div_F ≥ 0 : Div_F/(p v), % | 22,21 | 22,38 | 22,60 | tenue, = A |
+| Coefficient de richesse ; ν_H λ_H < 1 (0,4) | = A | | | tenus, indépendants de #130 |
+| D1 | 0,99250 | 0,99221 | 0,98852 | tenue, = A |
+| D2 | 0,99904 | 0,99712 | 0,98946 | tenue, = A |
+| Marge du plafond de E1 | 0,13531 | 0,16319 | 0,31515 | tenue (A : 0,13375 / 0,15979 / 0,31057) |
+| Plafond de E6 (valeur) | 1,13469 | 1,09346 | 0,91028 | A : 1,13823 / 1,09859 / 0,91571 ; nature inchangée |
+| Caisse des entreprises, phase 4, (D_F + ΔL − WB)/D_F | 0,6947 | 0,6992 | 0,7063 | tenue, = A au bit |
+| Domaine : ϑ > 0 ; r̄ > −5 % (C51) ; ϖ sans condition de signe | 0,15 ; 0,01 | | | tenus, sans écrêtage |
+| `calculer` aux 18 points de la grille et au point ν_G = 1 | aucun refus | | | **vérifiée** |
+
+Mêmes conditions pour les variantes du § 4.3 : toutes tenues, sauf le refus du script sous ϖ_D = 0. **Aucune condition d'arrêt du plan n'est rencontrée** : aucune valeur hors domaine, aucune équation à changer, aucune vitesse en jeu.
+
+### 4.6 Grandeurs publiées sans cible
+
+| Grandeur (définition du script) | `main` = A, 0 / 2 / 10 % | **P**, 0 / 2 / 10 % | Observé, pour mémoire (non une cible) |
+|---|---|---|---|
+| Marge nette d'intérêt n_a Π^Bk/(L + B_Bk + Res), % par an, actif d'ouverture | 2,717 / 2,497 / 2,126 | **2,645 / 2,514 / 2,294** | MSU, établissements importants, `I2120` « Net interest margin » : 1,45 % (moyenne des T4, 2015–2024 ; 1,21 à 1,60). Définition de la BCE non relue |
+| Rendement des fonds propres n_a Π^Bk/E^Bk, % par an | 31,23 / 36,15 / 55,36 | **21,15 / 25,10 / 40,60** | MSU, `I2003` « Return on equity » : 5,96 % (moyenne des T4, 2015–2024 ; 1,53 à 9,54) |
+| Part distribuée Div_Bk/Π^Bk | 0,93655 / 0,89025 / 0,79105 | 0,90631 / 0,84197 / 0,71512 | non lue |
+| Π^Bk, % du PIB | A : 2,5010 / 2,2503 / 1,8553 (`main` : 2,4999 / 2,2485 / 1,8510, effet (P) du § 1) | 2,5407 / 2,3441 / 2,0412 | non lu |
+
+Le rendement des fonds propres reste quatre fois au-dessus de l'observé à P. C'est attendu : le modèle n'a ni coûts d'exploitation, ni pertes sur crédit, ni impôt sur la banque. C'est l'artefact déjà déclaré (fiche 7, critère 17). La marge nette d'intérêt du modèle dépasse l'observée d'environ un point. Le modèle applique ϖ_L à tous ses crédits, alors que le bilan observé contient des crédits immobiliers, des titres et de l'interbancaire. Les observations sont des **faits vérifiés** (DBnomics, 16/11/2026), leur comparaison au modèle une **lecture**.
+
+### 4.7 Effets sur #55 (distribution) et sur la caisse
+
+**Distribution de #55.** ϑ n'entre pas dans le bloc 6. À P, la distribution est **identique à A au bit** : 0,88598 / 0,82751 / 0,72390 à Δϱ = 0 ; 0,86624 / 0,79812 / 0,68114 sous Δϱ = −2 points, ζ = 8. La borne haute à π̄ = 0 (**0,886**, à 0,014 de 0,9) est inchangée. **Vérifiée** (`dist.py`).
+
+Sensibilité de la borne haute aux autres paramètres de #130 (π̄ = 0) :
+- r̄ = 0,005 : 0,88741 (+0,0014) ; r̄ = 0,015 : 0,88452 ; r̄ = 0,02 : 0,88302. Un r̄ plus bas rapproche de 0,9 : intérêts plus bas, Div_F plus haut.
+- ϖ_L = 0,0165 (et ϖ_D = 0,0085) : 0,88735 (+0,0014).
+- En extrapolant linéairement (**hypothèse**, non mesurée par bissection), la borne de 0,9 serait atteinte vers ϖ_L ≈ −1,6 % ou r̄ ≈ −3,9 %, loin des valeurs lues.
+
+Le critère de #55 tient donc à P, et sous toutes les variantes du § 4.3.
+
+**Caisse.**
+- Caisse des entreprises de phase 4 à l'état stationnaire : identique à A au bit (0,6947 / 0,6992 / 0,7063). Ni ϑ, ni ϖ, ni r̄ n'entrent dans D_F, ΔL ni WB. **Vérifiée** pour ϑ et ϖ ; pour r̄, valeurs `caisse_DF4` identiques (sortie `sonde130b.py`).
+- Frontière de caisse du pas 0 (§ 2.3.3) : déjà mesurée insensible, au plus 0,004 par an (ϑ = 0,08 et 0,15 donnent 3,533060). P ne la déplace pas. **Vérifiée** (mesure du § 2.3.3).
+- Frontière de S6 de #143 : Δϱ_lim = 13,231/ζ, indépendante de #130 (P215). r̄ n'y entre pas, puisque Δϱ est un écart à la norme. **Vérifiée** par P215 pour ϖ et ϑ ; pour r̄, **déduite**.
+
+**Point pour `macro`** (dividende et distribution) : le dividende de la banque baisse de 1,69 / 1,48 / 0,54 % à π̄ = 0 / 2 / 10 % à P (ΔDiv_Bk = (i_CB − n_a γ̄) ΔE^Bk/n_a < 0). Le revenu disponible baisse de 0,030 / 0,023 / 0,007 % du PIB (−0,034 % de YD à 2 %), et θ_G résolu monte de 0,000219 à 2 %. **Vérifiée** (`divbk.py`). C'est le seul canal de ϑ vers l'économie réelle à l'état stationnaire. À confirmer par `macro`.
+
+### 4.8 Questions au mainteneur
+
+1. **ϑ.** 0,15 (CET1 du MSU, 2015–2024, 14,75 %, dénominateur Bâle III déclaré contesté), 0,10 (statu quo, sous toutes les observations lues), ou 0,08 (minimum de Bâle 1988) ? *Avis : **0,15**.* Il change l'état de référence : dette consolidée +12 %, déficit +0,12 point de PIB, ROE de 36 % à 25 %. Il ne change ni la distribution de #55, ni la caisse.
+2. **ϖ_D et la fenêtre.** 0,01, sur les fenêtres de taux positifs (0,85 et 1,93), ou la moyenne longue (≈ 0, que le script refuse aujourd'hui) ? *Avis : **0,01**, la moyenne longue déclarée et écartée pour cause de régime.* La dépendance de l'écart au niveau du taux est une limite de B2, à consigner (issue proposée au § 4.11), sans changer d'équation dans cette branche.
+3. **ϖ_L** : 0,02, inchangé, sur l'écart des affaires nouvelles (2,09, 2003–2024). *Avis : oui.*
+4. **r̄** : 0,01, inchangé, déclaré « contesté ; fourchette lue de −0,5 % à +1,9 % (BCE 2025 ; FOMC 09/2026) » ? Ou 0,015 pour tenir la liste O1 de la première tentative (taux réel de 1,5 à 3 %) ? *Avis : **0,01**.* La liste O1 n'est pas une source, et 1,5 % sort de la fourchette de la zone euro lue. Le verdict « O1 non tenu à r̄ = 1 % » reste publié (D3). La liste O1 est « à confirmer par le mainteneur au jalon J3 » (`docs/exigences.md`, l. 44) : la question est à vous.
+5. **Zone de référence.** Toutes les sources de la branche sont de la zone euro (#92, #55, #130), sauf le FOMC, lu pour la seule fourchette de r̄. *Avis : garder la zone euro ; le FOMC élargit la fourchette, sans fixer la valeur.*
+
+### 4.9 Points pour `jeu` (je ne les tranche pas)
+
+- Un rendement des fonds propres de la banque de **25 %** (contre 36 %) reste irréaliste (≈ 6 % observé). L'aide doit dire qu'il s'agit d'un rendement **avant coûts d'exploitation**, que le socle n'a pas. Sinon, l'indicateur de la fiche détaillée de la banque induira le joueur en erreur.
+- La dette publique de référence affichée passe de **28,5 % à 31,6 % du PIB** à π̄ = 2 %, sans aucune décision du joueur : c'est le passif de l'État qui finance les fonds propres de la banque (C42). À expliquer si l'aide décompose la dette.
+- Les écarts de taux affichés (2 et 1 points) sont désormais adossés à une source ; le libellé peut le dire.
+- Sous un taux directeur négatif (r̄ bas ou désinflation), le modèle rend i_D < 0 sur tous les dépôts. Les données lues montrent que les banques ne l'ont pas fait. Un joueur qui pousse le taux sous zéro verra des dépôts à rendement négatif que l'expérience ne confirme pas (limite B2, § 4.8 q. 2).
+
+### 4.10 Surface pour `coder` et `docwriter` (rangs 3 à 9)
+
+- **Table du bloc 7** (`nations.moteur.parametres.banque`) : `fonds_propres_vises` 0,10 → 0,15 et sa source ; sources de `ecart_taux_credit` et `ecart_taux_depots`, valeurs inchangées. **Table du bloc 8** : source de `r_bar`, valeur inchangée. Défaut `Parametres.vartheta` du script et déclarations de `varpi_L`, `varpi_D`, `vartheta`, `rbar` (l. 162 et 171 à 173). Égalité tenue par `test_valeurs_indicatives_egales_a_celles_du_script` et `tests/unitaires/test_parametres_des_blocs_7_et_8.py`.
+- **Texte de source proposé pour `tab:calibration`** :
+  - ϖ_L : « BCE, MIR, coût composite de l'emprunt des SNF, affaires nouvelles, moins EONIA puis €STR, zone euro, moyenne mensuelle 2003–2024 : 2,09 points (encours : 2,30) ; DBnomics, consulté le 16/11/2026 » ;
+  - ϖ_D : « même source, taux des dépôts des ménages et des SNF pondéré par les encours de la BSI : 0,85 point (2003-01 à 2008-08) et 1,93 point (2022-07 à 2024-12) ; moyenne 2003–2024 de −0,05 point, dominée par les taux négatifs, écartée ; écart dépendant du régime (limite de B2) » ;
+  - ϑ : « BCE, statistiques de supervision, CET1 des établissements importants, moyenne 2015T3–2024T4 : 14,75 % des actifs pondérés ; égal à fonds propres sur crédits sous les pondérations de Bâle 1988 (§ 44 et annexe 2, lus) ; dénominateur Bâle III plus petit, écart non mesuré, contesté » ;
+  - r̄ : « choix de conception ; fourchette lue de −0,5 % à +1,0 % (BCE, *Economic Bulletin* 1/2025, fin 2024) et de 0,9 % à 1,9 % (FOMC, SEP du 16/09/2026, long terme, nominal moins 2 %) ; niveau contesté (critère 23) ».
+- **Tests** : la nullité de i_D à π\* = 0 reste valide (r̄ = ϖ_D) ; la liste des nullités est inchangée. B17 vaut 0,15. Le couplage publié vaut −0,06.
+- **Concordance** : aucun label ajouté ni retiré (90).
+
+### 4.11 Issue proposée (création sur accord)
+
+- **Titre** : Écart des dépôts dépendant du niveau du taux directeur (bêta des dépôts) : forme B2 à instruire
+- **Libellés** : `needs-triage`
+- **Corps** :
+
+> *Rédigé par l'agent monnaie (IA).*
+>
+> **Constat** (instruction de #130, 16/11/2026, `docs/blocs/calibration.md` § 4.2 (b)). L'écart entre le taux du jour le jour et le taux moyen des dépôts des ménages et des SNF de la zone euro (BCE, MIR et BSI, via DBnomics) dépend du régime : +0,85 point en 2003-01 à 2008-08, −0,74 point en 2014-06 à 2022-06 (taux négatifs non reportés sur les dépôts), +1,93 point en 2022-07 à 2024-12. La forme B2 (i_D = i_CB − ϖ_D, ϖ_D constant) impose un bêta des dépôts de 1 et des taux de dépôt négatifs sous un taux directeur négatif.
+>
+> **À faire.**
+> - Lire la littérature sur le canal des dépôts, notamment Drechsler, Savov et Schnabl (2017, *QJE*), et dire si une forme à bêta inférieur à 1 est nécessaire à la lisibilité ou à la justesse du levier de taux.
+> - Dire ses effets sur la condition d'existence du dividende de la banque, sur la condition C43 (rendement marginal de la richesse égal au taux directeur) et sur le canal rentier.
+>
+> **Hors périmètre** : la calibration de ϖ_D (#130), faite sur les fenêtres de taux positifs.
+>
+> **Liens** : #130, `sec:banque-taux`, fiche 7 critère 17, J4 (levier de taux) ou J6 (plancher des taux).
+
+### 4.12 Statut des conclusions
+
+- **Vérifiées** (commande et sortie, ou source citée) :
+  - écarts du crédit et des dépôts, toutes fenêtres (MIR, BSI, EONIA, €STR ; raccord de 8,5 points de base) ;
+  - Bâle 1988 (§ 44, annexe 2) ; CET1 et solvabilité du MSU ; rapports comptables de la BSI ;
+  - ROE et marge nette observés (MSU) ;
+  - fourchettes de r\* de la BCE (2024 et 2025, citations courtes de l'outil) et projection de long terme du FOMC (09/2026) ;
+  - tableaux des § 4.3 à 4.7 ; mécanisme (ϑ) bouclé à la main ;
+  - invariance de la distribution et de la caisse ;
+  - #80 toujours en échec ; refus du script sous ϖ_D = 0 et sa cause.
+- **Hypothèses** :
+  - lecture de ϑ comme ratio CET1 sous pondérations de Bâle I ;
+  - extrapolation linéaire de la borne 0,9 de la distribution ;
+  - mécanisme du solde primaire selon r̄ − g.
+- **Déduite** : indépendance de la frontière de S6 à r̄.
+- **Non vérifiées** :
+  - densité des actifs pondérés, donc l'ampleur de l'écart de dénominateur de ϑ ;
+  - définition exacte de `I2120` et `I2003` ;
+  - auteurs de l'encadré de 2025 ;
+  - Drechsler et al. (2017), Holston, Laubach et Williams, FMI 2023, BRI ;
+  - bancs d'empreintes et trajectoires choquées à P (rang 8) : le maintien du plafond des bancs D et BF n'est pas vérifié ;
+  - tests du dépôt exécutés à P.
