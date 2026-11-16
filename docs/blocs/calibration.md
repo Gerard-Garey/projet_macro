@@ -816,3 +816,20 @@ Le critère tient à **tout ζ ≤ 20** mesuré. Sous −2 points, la plus basse
   - postes D.43 à D.45 ;
   - millésime d'AMECO (§ 1.12) ;
   - Chirinko, Fazzari et Meyer (1999).
+
+### 3.14 Avis consultés et décisions du mainteneur (16/11/2026)
+
+**Avis de `monnaie`** (frontière dette publique, sur les sorties de `macro`, sans réexécution) : accepter ζ = 8 ; garder ζ = 4 pour préserver « explosif à 2 % » reviendrait à caler un paramètre sur un résultat attendu. Le rayon sous φ = 0 à 2 % passe sous 1 entre ζ = 8 et ζ = 12,56, à l'intérieur de la fourchette de σ lue : aucun verdict tranché n'est défendable à 2 %. À ζ = 8, maquette (1,000035) et moteur (ρ̂ non stabilisé, 0,999746 → 0,996747) divergent ; « converge » est prématuré. Formulation proposée : « explosif à 10 % ; quasi neutre à 2 %, signe dépendant de ζ ». Le rayon monte avec ζ à π̄ = 0, ce qui affaiblit l'hypothèse d'un simple frein par l'investissement. Remesures demandées avant M34 (§ 3.13). Littérature non relue dans la consultation.
+
+**Avis de `jeu`** (lecture des fiches, sans scénario) :
+- perte de « explosif à 2 % » : lisible, le joueur lit les précurseurs de M33, pas un rayon ; textes d'aide à reprendre sinon « à revoir » (signe d'une hausse de taux sous φ = 0, `docs/blocs/banque_centrale.md` l. 1368 et 1458 ; « double l'écart en 5 ans », `docs/blocs/finances_publiques.md` l. 1267) ;
+- « marge de 60 % » et dividendes à 22 % du PIB : à clarifier ; intituler « marge sur le coût salarial unitaire », afficher à côté de la part salariale, restituer la décomposition du § 1.6 et renvoyer à #164 ;
+- ζ = 8 : exiger un indicateur d'investissement au tour (#165) ; recalculer le libellé « −2 % d'investissement par point » après M34 ; l'aide ne cite pas la couverture minimale tant qu'elle n'est pas remesurée.
+
+**Décisions du mainteneur** :
+- question 1 : **ζ = 8** retenu comme valeur proposée de la table soumise à M34, déclaré « σ ≈ 0,64, niveau contesté » (P218) ;
+- question 2 : C62 remesuré avant M34 (écart maquette–moteur, ζ_c, couverture minimale, racines sous φ = 0), puis reformulé ; formulation visée « explosif à 10 % ; quasi neutre à 2 %, signe dépendant de ζ » (P219) ;
+- question 3 : κ inchangé, écart déclaré ; calage conjoint de κ et δ dans #164, où les mesures d'Eurostat sont versées en commentaire (P220) ;
+- indicateur d'investissement au tour : issue #165, rattachée au J4 (P221) ;
+- question 4 (distribution nette, publiée avec la brute) : avis de `macro` suivi sous la délégation P211.
+
