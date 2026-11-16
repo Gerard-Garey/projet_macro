@@ -51,7 +51,8 @@ les lignes 11a à 11c reposent sur les mêmes valeurs.
 - phase 5, après les blocs prix et production : lit p_t et le volume servi G^vol_t ; propose la
   ligne 2 (E2) ;
 - phase 6 : lit ses calculs de la phase 2 (T_H, Tr^lev, Tr et les trois termes de E7),
-  l'ouverture (K, L, D_F, i_L, i_D), les montants exécutés des lignes 1 à 5 et δ ; E5, E13
+  l'ouverture (K, L, D_F, i_L, i_D), les montants exécutés des lignes 1 à 5 et δ/n_a (grandeur
+  du moteur `delta_pas`, #144, point 2) ; E5, E13
   (première part) ; écrit `T_F` et `Tr_non_verses`, propose les lignes 6, 7 (T_H + T_F) et 11a à
   11c (termes de E7 de la phase 2) ; ne lit rien de ce qu'un autre bloc écrit dans la phase ;
 - phase 7, seul écrivain : lit les montants exécutés des lignes 2, 6, 7, 11a à 11c, puis 5, 10,
@@ -261,7 +262,8 @@ class FinancesPubliques:
         Siege("5", (), (Lecture("5", "p"), Lecture("5", "G_vol")), ("2",), (), ()),
         Siege("6", ("T_F", "Tr_non_verses"),
               (Lecture("2", "T_H"), Lecture("2", "Tr_lev"), Lecture("2", "Tr"),
-               Lecture("2", "iB_BH"), Lecture("2", "iB_BBk"), Lecture("2", "iB_BCB"))
+               Lecture("2", "iB_BH"), Lecture("2", "iB_BBk"), Lecture("2", "iB_BCB"),
+               Lecture("0", "delta_pas"))
               + _ouverture("K", "L", "D_F", "i_L", "i_D")
               + _grand_livre("1", "2", "3", "4", "5"),
               ("6", "7", "11a", "11b", "11c"), (), ()),
@@ -326,7 +328,7 @@ class FinancesPubliques:
             table.tau_F, vue.grand_livre.montant_execute_ligne("1"),
             vue.grand_livre.montant_execute_ligne("2"), vue.grand_livre.montant_execute_ligne("3"),
             vue.grand_livre.montant_execute_ligne("4"), vue.grand_livre.montant_execute_ligne("5"),
-            par_pas(vue.parametres.investissement.delta) * vue.ouverture.K,
+            vue.lire("delta_pas") * vue.ouverture.K,
             par_pas(TauxDeFlux(vue.ouverture.i_L)) * vue.ouverture.L, i_D_pas, vue.ouverture.D_F)
         Tr = vue.lire("Tr")
         _, Tr_non_verses = part_non_payee(vue.lire("Tr_lev"), Tr)

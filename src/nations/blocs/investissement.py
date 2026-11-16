@@ -44,14 +44,15 @@ l'arrondi (c < 1 par le domaine de δ, I_t ≥ 0 par S4 et N6).
   grandeurs du moteur (`facteur_g`, `pi_etoile_pas`) ; S1 à S4 ; écrit `varrho_L`,
   `tu_etoile`, `I_vol_plan` et `I_plan` (vers le bloc production), et recopie ϱ̄_L
   (`varrho_bar_L`, P128) ; ne lit aucun autre plan de la phase ;
-- phase 3 : lit son plan de la phase 2, K et L d'ouverture et la part refusée ς_{L,t} (entrée
-  de scénario `varsigma_L`, publiée en phase 0, nulle hors scénario) ; F1 ; écrit `Delta_L_d`
+- phase 3 : lit son plan de la phase 2, K et L d'ouverture, δ/n_a (grandeur du moteur
+  `delta_pas`, #144, point 2) et la part refusée ς_{L,t} (entrée de scénario `varsigma_L`,
+  publiée en phase 0, nulle hors scénario) ; F1 ; écrit `Delta_L_d`
   et propose la ligne 18 ;
 - phase 5, après les blocs prix et production : lit p_t, le volume servi I^vol_t, tu_t et y_t
   (phase 4), tu*_t (phase 2) ; propose la ligne 3 (S5) ; écrit ti_{t+1} (S6) et y_t, retenue
   comme `y_m1` ;
 - phase 6 : lit l'ouverture (K, L, D_F, i_L, i_D, T_{F,t−1}), le registre, les grandeurs du
-  moteur (Γ^e, π^{∗,pas}), les montants exécutés des lignes 18, 5, 1 et 2 dans la colonne des
+  moteur (Γ^e, π^{∗,pas}, δ/n_a), les montants exécutés des lignes 18, 5, 1 et 2 dans la colonne des
   entreprises (cellules signées, engagement 6 de #132) et v^e_{t+1}
   (`v_e_suivant`, phase 5) ; S7, F2, F4, F3 ; écrit `D_etoile_F` et `T_e_F`, propose les
   lignes 8 et 14 ; ne lit ni l'impôt ni les intérêts exécutés du pas ;
@@ -212,7 +213,8 @@ class Investissement:
                  Lecture("0", "pi_etoile_pas")),
               (), (), ("varrho_bar_L",)),
         Siege("3", ("Delta_L_d",),
-              _ouverture("K", "L") + (Lecture("0", "varsigma_L"), Lecture("2", "I_plan")),
+              _ouverture("K", "L") + (Lecture("0", "delta_pas"), Lecture("0", "varsigma_L"),
+                                      Lecture("2", "I_plan")),
               ("18",), (), ()),
         Siege("5", (),
               _ouverture("ti") + (Lecture("5", "p"), Lecture("5", "I_vol"), Lecture("4", "tu"),
@@ -221,7 +223,8 @@ class Investissement:
         Siege("6", ("D_etoile_F", "T_e_F"),
               _ouverture("K", "L", "D_F", "i_L", "i_D", "T_F_m1")
               + (Lecture(REGISTRE, "dernier_prix"), Lecture("0", "Gamma_e"),
-                 Lecture("0", "pi_etoile_pas"), Lecture(GRAND_LIVRE, "18"),
+                 Lecture("0", "pi_etoile_pas"), Lecture("0", "delta_pas"),
+                 Lecture(GRAND_LIVRE, "18"),
                  Lecture(GRAND_LIVRE, "5"), Lecture(GRAND_LIVRE, "1"), Lecture(GRAND_LIVRE, "2"),
                  Lecture("5", "v_e_suivant")),
               ("8", "14"), (), ()),
@@ -248,7 +251,7 @@ class Investissement:
     def phase_3(self, vue) -> None:
         """Demande de crédit et crédit servi (ligne 18)."""
         table = vue.parametres.investissement
-        Delta_L_d = demande_de_credit(table.lv_etoile, par_pas(table.delta), vue.ouverture.K,
+        Delta_L_d = demande_de_credit(table.lv_etoile, vue.lire("delta_pas"), vue.ouverture.K,
                                       vue.lire("I_plan"), vue.ouverture.L)
         vue.ecrire_pas("Delta_L_d", Delta_L_d)
         vue.proposer("18", {"Delta_L": credit_servi(vue.lire("varsigma_L"), Delta_L_d)})
@@ -275,7 +278,7 @@ class Investissement:
         interets_L = par_pas(TauxDeFlux(vue.ouverture.i_L)) * L
         vue.ecrire_pas("D_etoile_F", D_etoile_F)
         vue.ecrire_pas("T_e_F", T_e_F)
-        vue.proposer("8", {"deltaK": amortissement(par_pas(table.delta), vue.ouverture.K)})
+        vue.proposer("8", {"deltaK": amortissement(vue.lire("delta_pas"), vue.ouverture.K)})
         # Engagement 6 de #132 (ADR 0013, annotation du 15/11/2026 (J3-d2), point 7) : chaque
         # montant est lu dans la cellule des entreprises (`montant_execute`, signée : + crédité, −
         # débité), sous-colonne capital pour la ligne 18, courante pour les lignes 1, 2 et 5 ;

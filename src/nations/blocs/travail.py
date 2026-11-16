@@ -34,10 +34,11 @@ taux de croissance » : elle est convertie comme telle.
 **Phases** (`tab:travail-phases` ; ADR 0012, annotation du 13/11/2026,
 points 2.2 et 2.5) :
 
-- phase 1 : T2, T3 ; lit l'ouverture (W, U, μ̃, π^e) ; écrit l'état `W` (W_t,
-  lu sous `W_suivant`) ;
+- phase 1 : T2, T3 ; lit l'ouverture (W, U, μ̃, π^e) et f(g_pr) (phase 0,
+  `facteur_g_pr`, #144, point 2) ; écrit l'état `W` (W_t, lu sous
+  `W_suivant`) ;
 - phase 4, avant le bloc 2 : T4, T5, T6, T1 ; lit N*_t (phase 2), W_t
-  (phase 1) et l'ouverture (N, N^pa) ; écrit les états `N`, `U`, `N_pa` et
+  (phase 1), f(g_N) (phase 0, `facteur_g_N`) et l'ouverture (N, N^pa) ; écrit les états `N`, `U`, `N_pa` et
   propose la ligne 5.
 
 **Borne**, déclarée, sans paramètre (`sec:travail-conditions`) : la contrainte
@@ -126,16 +127,18 @@ class Travail:
 
     __slots__ = ()
     declaration = DeclarationDeBloc("travail", (
-        Siege("1", (), _ouverture("W", "U", "mu_tilde", "pi_e"), (), (), ("W",)),
+        Siege("1", (), _ouverture("W", "U", "mu_tilde", "pi_e") + (Lecture("0", "facteur_g_pr"),),
+              (), (), ("W",)),
         Siege("4", (),
-              _ouverture("N", "N_pa") + (Lecture("1", "W_suivant"), Lecture("2", "N_etoile")),
+              _ouverture("N", "N_pa") + (Lecture("0", "facteur_g_N"), Lecture("1", "W_suivant"),
+                                         Lecture("2", "N_etoile")),
               ("5",), (), ("U", "N", "N_pa")),
     ))
 
     def phase_1(self, vue) -> None:
         """Salaire relatif d'ouverture et salaire nominal du pas."""
         table = vue.parametres.travail
-        W = salaire(vue.ouverture.W, facteur_par_pas(vue.parametres.production.g_pr),
+        W = salaire(vue.ouverture.W, vue.lire("facteur_g_pr"),
                     facteur_par_pas(TauxDeCroissance(vue.ouverture.pi_e)),
                     par_pas(table.lambda_w), norme_de_part_salariale(vue.parametres.prix.mu_bar),
                     salaire_relatif(vue.ouverture.mu_tilde), table.beta, vue.ouverture.U,
@@ -145,7 +148,7 @@ class Travail:
     def phase_4(self, vue) -> None:
         """Emploi effectif, chômage, masse salariale (ligne 5), population active suivante."""
         table = vue.parametres.travail
-        facteur_N = facteur_par_pas(table.g_N)
+        facteur_N = vue.lire("facteur_g_N")
         N_pa = vue.ouverture.N_pa
         N = emploi(vue.lire("N_etoile"), vue.ouverture.N, N_pa, facteur_N,
                    par_pas(table.lambda_N))
