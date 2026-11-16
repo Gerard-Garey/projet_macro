@@ -79,8 +79,9 @@ class PlanHorsDomaine(RefusDuMoteur):
     point 4 ; P120, P129, #124).
 
     Levé par l'espace du pas à l'écriture, quel que soit l'écrivain, avant le refus générique
-    de finitude ; jamais d'écrêtage. Champs : pas, étape et bloc écrivain (apposés par la
-    vue), nom du plan ; la valeur et la condition sont dans le message.
+    de finitude ; jamais d'écrêtage. Champs : pas, étape et bloc écrivain (passés par tout
+    appelant de `VariablesDuPas.ecrire`, où ils sont obligatoires : la vue pour un bloc, le
+    moteur pour lui-même ; #137), nom du plan ; la valeur et la condition sont dans le message.
     """
 
 

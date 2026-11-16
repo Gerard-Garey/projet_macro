@@ -24,8 +24,9 @@ points 2.2 et 2.5) :
   K^vol) ; écrit `y`, `y_cap`, `tu` ;
 - phase 5 : N6, N7, N8 (ligne 4), N9, N10, N1 ; lit p_t, écrit avant lui par
   le bloc prix, les plans de dépense en u.m. (phase 2), UC (phase 2), y
-  (phase 4), (1 + g)^{1/n_a} (phase 0) et l'ouverture (v^e, IN^vol, IN, pr,
-  K^vol) ; écrit `v` et les volumes servis `C_vol`, `I_vol`, `G_vol`, propose
+  (phase 4), (1 + g)^{1/n_a}, f(g_pr) et δ/n_a (phase 0 : `facteur_g`,
+  `facteur_g_pr`, `delta_pas`, #144, point 2) et l'ouverture (v^e, IN^vol, IN,
+  pr, K^vol) ; écrit `v` et les volumes servis `C_vol`, `I_vol`, `G_vol`, propose
   la ligne 4 et écrit les quatre variables d'état (v^e, IN^vol, pr, K^vol).
 
 **Bornes**, toutes déclarées, sans paramètre (`sec:production-conditions`) :
@@ -51,7 +52,7 @@ suggère l'annotation du 13/11/2026, point 3.6. Aucune division par n_a hors de
 from __future__ import annotations
 
 from nations.moteur.contrat_bloc import OUVERTURE, DeclarationDeBloc, Lecture, Siege
-from nations.moteur.conversions import TauxDeFlux, facteur_par_pas, par_pas
+from nations.moteur.conversions import TauxDeFlux, par_pas
 
 # --------------------------------------------------------------------------
 # Équations N1 à N11 : fonctions pures
@@ -189,7 +190,8 @@ class Production:
               (), (), ()),
         Siege("5", ("v", "C_vol", "I_vol", "G_vol"),
               _ouverture("v_e", "IN_vol", "IN", "pr", "K_vol")
-              + (Lecture("0", "facteur_g"), Lecture("2", "C_plan"), Lecture("2", "I_plan"),
+              + (Lecture("0", "facteur_g"), Lecture("0", "facteur_g_pr"),
+                 Lecture("0", "delta_pas"), Lecture("2", "C_plan"), Lecture("2", "I_plan"),
                  Lecture("2", "G_plan"), Lecture("2", "UC"), Lecture("4", "y"),
                  Lecture("5", "p")),
               ("4",), (), ("v_e", "IN_vol", "pr", "K_vol")),
@@ -237,7 +239,6 @@ class Production:
         vue.ecrire_etat("v_e", ventes_anticipees(vue.ouverture.v_e, d,
                                                  vue.lire("facteur_g"), par_pas(table.lambda_v)))
         vue.ecrire_etat("IN_vol", IN_vol_suivant)
-        vue.ecrire_etat("pr", productivite_suivante(vue.ouverture.pr,
-                                                    facteur_par_pas(table.g_pr)))
-        vue.ecrire_etat("K_vol", capital_en_volume(
-            vue.ouverture.K_vol, par_pas(vue.parametres.investissement.delta), v_F))
+        vue.ecrire_etat("pr", productivite_suivante(vue.ouverture.pr, vue.lire("facteur_g_pr")))
+        vue.ecrire_etat("K_vol", capital_en_volume(vue.ouverture.K_vol, vue.lire("delta_pas"),
+                                                   v_F))

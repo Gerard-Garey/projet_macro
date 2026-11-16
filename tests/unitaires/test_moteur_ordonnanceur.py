@@ -10,6 +10,8 @@ Le générateur complet est celui de #98.
 """
 
 import dataclasses
+import importlib
+import inspect
 import itertools
 import math
 import re
@@ -35,7 +37,7 @@ from nations.moteur.contrat_bloc import (
     Siege,
     methode_de_l_etape,
 )
-from nations.moteur.conversions import facteur_par_pas
+from nations.moteur.conversions import facteur_par_pas, par_pas
 from nations.moteur.diagnostics import (
     DefautDeDeclaration,
     DepassementNumerique,
@@ -881,17 +883,21 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
             ("pr_suivant", e["pr"]), ("K_vol_suivant", e["K_vol"]),
             ("W", 1.0 + t), ("W_suivant", e["W"]), ("N", 1.0 + t),
             ("U_suivant", e["U"]), ("N_suivant", e["N"]), ("N_pa_suivant", e["N_pa"]))
-    # Croissance tendancielle et son facteur (annotation du 13/11/2026, point 4), aux tables
-    # de référence : g = (1 + g_pr)(1 + g_N) − 1 ; facteur, produit des conversions
-    # géométriques de g_pr et de g_N (P88).
-    g = (1.0 + 0.02) * (1.0 + 0.0) - 1.0
+    # Facteur de croissance tendancielle (annotation du 13/11/2026, point 4), aux tables de
+    # référence : produit des conversions géométriques de g_pr et de g_N (P88) ; g retirée
+    # (#144, point 3).
     facteur_g = facteur_par_pas(TauxDeCroissance(0.02)) * facteur_par_pas(TauxDeCroissance(0.0))
     # Puis la cible par pas, Γ^e et γ^e sur π*_t lue à l'ouverture (#61 ; ADR 0013, annotation
     # du 14/11/2026, point 7), π* reconduite par le bloc d'essai.
     f_cible = facteur_par_pas(TauxDeCroissance(e["pi_etoile"]))
     gamma_e = facteur_g * f_cible
-    tendance = (("g", g), ("facteur_g", facteur_g), ("pi_etoile_pas", f_cible - 1.0),
-                ("Gamma_e", gamma_e), ("gamma_e", gamma_e - 1.0))
+    # Conversions partagées (#144, point 2) : f(g_pr), f(g_N), puis `facteur_g`, puis δ/n_a.
+    conversions = (("facteur_g_pr", facteur_par_pas(TauxDeCroissance(0.02))),
+                   ("facteur_g_N", facteur_par_pas(TauxDeCroissance(0.0))),
+                   ("facteur_g", facteur_g),
+                   ("delta_pas", par_pas(PARAMETRES_DE_REFERENCE.investissement.delta)))
+    tendance = conversions + (
+        ("pi_etoile_pas", f_cible - 1.0), ("Gamma_e", gamma_e), ("gamma_e", gamma_e - 1.0))
     assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1),
                                            ("date_de_decision", True)) + tendance
     assert fins[13].grandeurs_ouverture == (("annee", 2), ("mois", 2),
@@ -905,7 +911,7 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
 
 def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
     """Critère de #61 (ADR 0013, annotation du 14/11/2026, point 7) : la fonction de Γ^e est
-    appelée une fois par pas, par la phase 0 de `executer_pas`, après `g` et `facteur_g` (les
+    appelée une fois par pas, par la phase 0 de `executer_pas`, après `facteur_g` (les
     grandeurs déjà calculées qu'elle reçoit), sur l'état d'ouverture du pas ; aucun bloc ne
     l'appelle."""
     appels = []
@@ -922,8 +928,24 @@ def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
     etat = etat_initial()
     for _ in range(3):
         etat = executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
-    precedentes = ("annee", "mois", "date_de_decision", "g", "facteur_g", "pi_etoile_pas")
+    precedentes = ("annee", "mois", "date_de_decision", "facteur_g_pr", "facteur_g_N",
+                   "facteur_g", "delta_pas", "pi_etoile_pas")
     assert appels == [(t, precedentes) for t in range(3)]
+
+
+def test_grandeur_d_ouverture_non_finie_refusee_au_nom_du_moteur_en_phase_0(monkeypatch):
+    """#137 : le moteur écrit les grandeurs calculées à l'ouverture sous (« 0 », `moteur`) ; une
+    grandeur non finie est refusée par l'espace du pas, refus qui nomme le pas, la phase 0 et le
+    moteur."""
+    remplacees = tuple(
+        GrandeurOuverture(g.nom, lambda etat, parametres, deja: float("inf"), g.label, g.unite)
+        if g.nom == "mois" else g for g in ordo.GRANDEURS_OUVERTURE)
+    monkeypatch.setattr(ordo, "GRANDEURS_OUVERTURE", remplacees)
+    o = ordonnanceur_d_essai(plans_nuls(1))
+    with pytest.raises(RefusDuMoteur, match="non finie") as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "0", MOTEUR, "mois")
 
 
 def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
@@ -1045,10 +1067,65 @@ def test_espace_du_pas_refuse_une_valeur_non_finie(valeur):
     """Constat 6 de l'audit de #97 : NaN et infinis refusés, éléments d'un n-uplet compris."""
     espace = ordo.VariablesDuPas(frozenset({"x"}), 3)
     with pytest.raises(RefusDuMoteur, match="non finie") as refus:
-        espace.ecrire("x", valeur)
-    assert (refus.value.t, refus.value.nom) == (3, "x")
-    espace.ecrire("x", (1.0, 2.0))
+        espace.ecrire("x", valeur, etape="4", bloc="production")
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        3, "4", "production", "x")
+    espace.ecrire("x", (1.0, 2.0), etape="4", bloc="production")
     assert espace.lire("x") == (1.0, 2.0)
+
+
+# Les quatre refus génériques de `VariablesDuPas.ecrire` (#137) : (cas, écriture préalable,
+# nom écrit, valeur, motif du message). Chacun nomme le pas, l'étape et le bloc écrivain.
+REFUS_GENERIQUES = (
+    ("nom non déclaré", None, "z", 1.0, "non déclarée"),
+    ("seconde écriture", ("x", 1.0), "x", 2.0, "seconde écriture"),
+    ("type refusé", None, "x", np.float64(1.0), "float, int, bool ou tuple de float"),
+    ("valeur non finie hors de DOMAINES_DU_PAS", None, "x", float("inf"), "non finie"),
+)
+
+
+@pytest.mark.parametrize("cas, prealable, nom, valeur, motif", REFUS_GENERIQUES,
+                         ids=[c[0] for c in REFUS_GENERIQUES])
+def test_refus_generique_nomme_le_pas_l_etape_et_le_bloc(cas, prealable, nom, valeur, motif):
+    """#137 : chaque refus générique de l'espace du pas nomme le pas, l'étape et le bloc
+    écrivain, comme `PlanHorsDomaine` ; le refus est un `RefusDuMoteur` générique, et le message
+    composé les cite."""
+    espace = ordo.VariablesDuPas(frozenset({"x"}), 7)
+    if prealable is not None:
+        espace.ecrire(*prealable, etape="3", bloc="travail")
+    with pytest.raises(RefusDuMoteur, match=motif) as refus:
+        espace.ecrire(nom, valeur, etape="3", bloc="travail")
+    assert type(refus.value) is RefusDuMoteur
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        7, "3", "travail", nom)
+    assert str(refus.value).startswith(f"pas 7, phase 3, bloc travail, « {nom} » : ")
+
+
+def test_ecriture_de_l_espace_du_pas_sans_etape_ni_bloc_impossible():
+    """#137 : l'étape et le bloc sont obligatoires, sans valeur par défaut (aucun appel ne peut
+    les omettre)."""
+    espace = ordo.VariablesDuPas(frozenset({"x"}), 0)
+    with pytest.raises(TypeError):
+        espace.ecrire("x", 1.0)
+    with pytest.raises(TypeError):
+        espace.ecrire("x", 1.0, etape="0")
+    with pytest.raises(TypeError):
+        espace.ecrire("x", 1.0, bloc=MOTEUR)
+    with pytest.raises(RefusDuMoteur, match="avant son écriture"):
+        espace.lire("x")
+
+
+def test_valeur_du_pas_suivant_non_finie_refusee_au_nom_du_bloc():
+    """#137 : `Vue.ecrire_etat` passe son étape et son bloc à l'espace du pas pour
+    `<nom>_suivant` : le refus de finitude nomme le bloc propriétaire et sa phase d'écriture."""
+    def ecrire_nan(vue, base):
+        vue.ecrire_etat("U", float("nan"))
+    o = ordonnanceur_d_essai(plans_nuls(1), actions=_remplacer_action("travail", "4",
+                                                                      ecrire_nan))
+    with pytest.raises(RefusDuMoteur, match="non finie") as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "4", "travail", "U" + SUFFIXE_SUIVANT)
 
 
 # --------------------------------------------------------------------------
@@ -1096,11 +1173,12 @@ def test_plan_hors_domaine_refuse_par_l_espace_du_pas(nom, valeur):
     with pytest.raises(RefusDuMoteur, match="avant son écriture"):
         espace.lire(nom)
     if type(valeur) in (int, tuple) or math.isfinite(valeur):
-        espace.ecrire("x", valeur)
+        espace.ecrire("x", valeur, etape="2", bloc="menages")
     else:
         with pytest.raises(RefusDuMoteur, match="non finie") as generique:
-            espace.ecrire("x", valeur)
+            espace.ecrire("x", valeur, etape="2", bloc="menages")
         assert type(generique.value) is RefusDuMoteur
+        assert (generique.value.etape, generique.value.bloc) == ("2", "menages")
 
 
 @pytest.mark.parametrize("nom", PLANS)
@@ -1108,7 +1186,7 @@ def test_plan_hors_domaine_refuse_par_l_espace_du_pas(nom, valeur):
 def test_plan_dans_le_domaine_admis_au_bit(nom, valeur):
     """−0,0, 0 et les plans positifs sont admis et relus au bit (signe de −0,0 compris)."""
     espace = ordo.VariablesDuPas(frozenset({nom}), 0)
-    espace.ecrire(nom, valeur)
+    espace.ecrire(nom, valeur, etape="2", bloc="menages")
     lu = espace.lire(nom)
     assert type(lu) is type(valeur) and bits_de_base(lu) == bits_de_base(valeur)
 
@@ -1340,6 +1418,64 @@ def test_montant_execute_declare_admis_a_l_execution():
                      if type(e) is ClotureDePhase and e.phase == "6")
     attendu = dict(cloture_6.montants)["6"]
     assert lus == [(sum(x for _, x in attendu), sum(x for _, x in attendu))]
+
+
+@pytest.mark.parametrize("radical, etape, poste", [
+    # Poste déclaré par le même bloc dans un autre siège (8 (b)) : droits par siège.
+    ("finances_publiques", "7", "M_G"),
+    # Siège qui déclare d'autres postes (M_G en 8 (b) ; Res et L_CB en 8 (c)).
+    ("finances_publiques", "8b", "Res"),
+    ("banque", "8c", "D_H"),
+    # Siège sans lecture de position ; poste hors de `NOMS_POSTES`.
+    ("production", "4", "K"),
+    ("banque", "8c", "zz"),
+], ids=["autre_siege", "autre_poste_8b", "autre_poste_8c", "sans_position", "poste_inconnu"])
+def test_position_non_declaree_refusee_a_l_execution(radical, etape, poste):
+    """#150, point 2 (P188 ; ADR 0013, annotation du 16/11/2026, point 5) : la vue du grand livre
+    ne rend la position courante d'un poste qu'au siège (bloc × étape) qui en a déclaré la
+    lecture ; sinon un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et le poste, jamais une
+    valeur (bloc d'essai fabriqué, hors du contrôle statique H5)."""
+    lus = []
+    o = ordonnanceur_d_essai(plans_nuls(1), actions=_remplacer_action(
+        radical, etape, lambda vue, base: (base(vue), lus.append(vue.grand_livre.position(poste)))))
+    with pytest.raises(RefusDuMoteur, match="position d'un poste non déclarée") as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, etape, radical, poste)
+    assert lus == []
+
+
+def test_position_declaree_admise_a_l_execution():
+    """#150, point 2 : une lecture de position déclarée reste admise (M_G en 8 (b) par l'État ;
+    Res et L_CB en 8 (c) par la banque, lus par l'action d'essai elle-même) et rend la position
+    courante du noyau ; la lecture de l'ouverture du grand livre n'est pas filtrée."""
+    lus = []
+
+    def lire(vue, base):
+        base(vue)
+        livre = vue.grand_livre
+        lus.append((livre.position("M_G"), livre.ouverture("Res")))
+    o = ordonnanceur_d_essai(tirer_plans(1), actions=_remplacer_action(
+        "finances_publiques", "8b", lire))
+    executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert len(lus) == 1 and all(type(x) is float for x in lus[0])
+    assert lus[0][1] == etat_initial().Res
+
+
+def test_lectures_de_position_des_blocs_reels_liste_fermee():
+    """#150, point 2 (P188) : liste fermée des lectures de position déclarées par les blocs réels
+    de `src/nations/blocs/` : (banque, 8 (c), Res) et (finances_publiques, 8 (b), M_G)."""
+    lectures = set()
+    for radical in RADICAUX_DES_BLOCS:
+        module = importlib.import_module(f"nations.blocs.{radical}")
+        classes = [c for _, c in inspect.getmembers(module, inspect.isclass)
+                   if c.__module__ == module.__name__ and "declaration" in vars(c)]
+        assert [(type(c.declaration), c.declaration.radical) for c in classes] == [
+            (DeclarationDeBloc, radical)]
+        lectures |= {(radical, siege.etape, lu.nom) for siege in classes[0].declaration.sieges
+                     for lu in siege.lit
+                     if lu.source == GRAND_LIVRE and lu.nom in cat.NOMS_POSTES}
+    assert lectures == {("banque", "8c", "Res"), ("finances_publiques", "8b", "M_G")}
 
 
 def test_indice_des_prix_non_ecrit_refuse():

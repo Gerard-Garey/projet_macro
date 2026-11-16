@@ -287,9 +287,11 @@ def defaut_du_registre(valeur: tuple[float, ...]) -> str | None:
 def defaut_de_domaine(nom: str, valeur: object) -> str | None:
     """Motif de refus d'un champ de bon type hors de son domaine, sinon `None`.
 
-    Seule fonction de domaine de `EtatPays`, appelée par la construction (état
-    initial, état de clôture de chaque pas), par la reprise et, pour une
-    variable d'état d'un bloc, par `Vue.ecrire_etat` : champs d'identité
+    Seule fonction de domaine de `EtatPays`, appelée à toute construction (état
+    initial, reprise ; à la clôture du pas, par `etat_de_cloture`, pour les champs
+    autres que les variables d'état des blocs, dont le domaine est contrôlé à
+    l'écriture par `Vue.ecrire_etat`, une fois par pas ; ADR 0013, annotation du
+    16/11/2026, point 1) : champs d'identité
     (`defaut_d_identite`), `t` (`defaut_de_t`), `registre_prix`
     (`defaut_du_registre`), variables des blocs (`DOMAINES_DES_BLOCS`, refus
     sous la forme « <valeur> hors du domaine <condition> », qui refuse aussi
@@ -316,24 +318,43 @@ def defaut_de_domaine(nom: str, valeur: object) -> str | None:
     return None
 
 
+def _controler_identite(nom: str, type_: type, valeur: object) -> None:
+    """Refuse un champ d'identité de type faux (`TypeError`) ou hors de son domaine
+    (`ValueError`)."""
+    if type(valeur) is not type_:
+        raise TypeError(f"EtatPays.{nom} : {type_.__name__} attendu, "
+                        f"{_valeur_en_clair(valeur)} reçu")
+    motif = defaut_de_domaine(nom, valeur)
+    if motif is not None:
+        raise ValueError(f"EtatPays.{nom} : {motif}")
+
+
+def _controler_type(variable: VariableEtat, valeur: object) -> None:
+    """Refuse une variable d'état qui n'a pas exactement son type déclaré (`TypeError`)."""
+    if not variable.admet(valeur):
+        raise TypeError(f"EtatPays.{variable.nom} : {variable.description_du_type()} "
+                        f"attendu, {_valeur_en_clair(valeur)} reçu")
+
+
+def _controler_domaine(nom: str, valeur: object) -> None:
+    """Refuse une variable d'état de bon type hors de son domaine (`ValueError`)."""
+    motif = defaut_de_domaine(nom, valeur)
+    if motif is not None:
+        raise ValueError(f"EtatPays.{nom} : {motif}")
+
+
 def _verifier_types(etat: object) -> None:
-    """Refuse un `EtatPays` dont un champ n'a pas exactement son type déclaré, ou hors domaine."""
+    """Refuse un `EtatPays` dont un champ n'a pas exactement son type déclaré, ou hors domaine.
+
+    Contrôle complet de toute construction par `EtatPays(...)` : état initial,
+    `dataclasses.replace`, reprise (D4) ; aucun argument ni champ ne le module.
+    """
     for nom, type_ in CHAMPS_D_IDENTITE:
-        valeur = getattr(etat, nom)
-        if type(valeur) is not type_:
-            raise TypeError(f"EtatPays.{nom} : {type_.__name__} attendu, "
-                            f"{_valeur_en_clair(valeur)} reçu")
-        motif = defaut_de_domaine(nom, valeur)
-        if motif is not None:
-            raise ValueError(f"EtatPays.{nom} : {motif}")
+        _controler_identite(nom, type_, getattr(etat, nom))
     for variable in VARIABLES:
         valeur = getattr(etat, variable.nom)
-        if not variable.admet(valeur):
-            raise TypeError(f"EtatPays.{variable.nom} : {variable.description_du_type()} "
-                            f"attendu, {_valeur_en_clair(valeur)} reçu")
-        motif = defaut_de_domaine(variable.nom, valeur)
-        if motif is not None:
-            raise ValueError(f"EtatPays.{variable.nom} : {motif}")
+        _controler_type(variable, valeur)
+        _controler_domaine(variable.nom, valeur)
 
 
 EtatPays = dataclasses.make_dataclass(
@@ -351,9 +372,50 @@ Champs engendrés depuis `CHAMPS_D_IDENTITE` et `VARIABLES`, tous obligatoires,
 sans valeur par défaut ; un champ de type faux est refusé à la construction
 (`TypeError`), un champ hors de son domaine aussi (`ValueError`, par
 `defaut_de_domaine` : identifiant, graine, t, niveaux du registre, variables
-des blocs).
+des blocs). L'état de clôture d'un pas est construit par `etat_de_cloture`, qui ne
+recontrôle pas le domaine des variables des blocs, contrôlé à leur écriture.
 L'état d'un monde est une séquence d'`EtatPays` triée par identifiant, par
 point de code Unicode.
 """
 
 CHAMPS = tuple(f.name for f in dataclasses.fields(EtatPays))
+
+# Propriétaires des variables d'état dont le domaine est contrôlé à la clôture du pas : le
+# moteur (t, registre) et le noyau (positions, V^flux) ; les variables des blocs, contrôlées à
+# l'écriture par `Vue.ecrire_etat`, n'y sont pas recontrôlées.
+_PROPRIETAIRES_CONTROLES_A_LA_CLOTURE = frozenset(
+    v.proprietaire for v in VARIABLES_MOTEUR + VARIABLES_NOYAU)
+
+
+def etat_de_cloture(champs: dict[str, object]) -> EtatPays:
+    """`EtatPays` du pas suivant, construit à la clôture du pas par `executer_pas`, seul
+    appelant (ADR 0013, annotation du 16/11/2026, point 1 ; #144, point 1).
+
+    `champs` porte exactement les champs de `EtatPays` (`TypeError` sinon, comme le
+    constructeur). Le type de **tous** les champs est contrôlé, et le domaine des champs
+    autres que les variables d'état des blocs (identité, `t`, registre, positions,
+    V^flux), par `defaut_de_domaine`, seule fonction de domaine, avec les refus de
+    `EtatPays` (`TypeError`, `ValueError`). Le domaine d'une variable d'état d'un bloc
+    n'est pas contrôlé une seconde fois : sa valeur ne vient que de `_Pas.etat_suivant`,
+    que seul `Vue.ecrire_etat` remplit, après son contrôle de domaine (une fois par
+    variable et par pas). L'objet est construit sans passer par `EtatPays.__post_init__`,
+    que rien ne module : l'état initial, `dataclasses.replace` et la reprise gardent le
+    contrôle complet.
+    """
+    if champs.keys() != set(CHAMPS):
+        manquants = [nom for nom in CHAMPS if nom not in champs]
+        en_trop = sorted(set(champs) - set(CHAMPS))
+        raise TypeError(f"état de clôture : champs manquants {manquants!r}, "
+                        f"champs non déclarés {en_trop!r}")
+    for nom, type_ in CHAMPS_D_IDENTITE:
+        _controler_identite(nom, type_, champs[nom])
+    controles = _PROPRIETAIRES_CONTROLES_A_LA_CLOTURE
+    for variable in VARIABLES:
+        valeur = champs[variable.nom]
+        _controler_type(variable, valeur)
+        if variable.proprietaire in controles:
+            _controler_domaine(variable.nom, valeur)
+    etat = object.__new__(EtatPays)
+    for nom in CHAMPS:
+        object.__setattr__(etat, nom, champs[nom])
+    return etat

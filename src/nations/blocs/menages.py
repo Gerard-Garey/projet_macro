@@ -22,7 +22,9 @@ fiche.
 **Lecture nette** (ADR 0013, annotation du 14/11/2026 (rang 1b de J3-d1), point 4 ; ADR 0012,
 A8.2 ; #103) : D_H, moyen de paiement soumis à la lecture nette du contrôle de caisse, est lu
 en D̃_H = max(0 ; D_H) par H5 (plafond) et dans la richesse sous la lecture nette,
-Ṽ_H = D̃_H + B_H, par H3 et H4 (V_H garde le seul sens de valeur nette du bilan) ;
+Ṽ_H = D̃_H + B_H, par H3 et H4 (V_H garde le seul sens de valeur nette du bilan). Localité
+(#142) : la phase passe D_H brut, et seules les fonctions balisées H3, H4 et H5 appliquent
+max(0 ; ·) ;
 une poussière d'arrondi sous zéro ne fait donc ni un plan négatif (refusé par `PlanHorsDomaine`)
 ni une richesse négative. B_H est lu tel quel (≡ 0 au socle, M27, lecture (c)). Le plan est borné
 exactement, C^plan ≤ max(0 ; D_H) ; la ligne 1 exécutée, p·v_H, peut le dépasser d'un ulp
@@ -69,30 +71,33 @@ def revenu_attendu(Gamma_e: float, YD_m1: float) -> float:
     return Gamma_e * YD_m1
 
 
-def richesse_visee(nu_H: float, n_a: int, YD_e: float, pi_etoile_pas: float,
-                   V_H_net: float) -> float:
+def richesse_visee(nu_H: float, n_a: int, YD_e: float, pi_etoile_pas: float, D_H: float,
+                   B_H: float) -> float:
     """H3 : V*_{H,t} = ν_H n_a (YD^e_t − π^{∗,pas}_t Ṽ_{H,t}), u.m. ; ν_H en années, n_a y
-    est un changement d'unité (années → pas), non une conversion ; `V_H_net` = Ṽ_{H,t} =
-    max(0 ; D_H) + B_H, lecture nette (non la valeur nette V_H du bilan)."""
+    est un changement d'unité (années → pas), non une conversion ; D_H reçu brut, lu ici en
+    Ṽ_{H,t} = max(0 ; D_H) + B_H (lecture nette, non la valeur nette V_H du bilan ; #142)."""
     # eq:menages-richesse-visee
+    V_H_net = max(0.0, D_H) + B_H
     return nu_H * n_a * (YD_e - pi_etoile_pas * V_H_net)
 
 
-def plan_de_la_regle(YD_e: float, gamma_e: float, V_H_net: float, lambda_H_pas: float,
-                     V_etoile_H: float) -> float:
+def plan_de_la_regle(YD_e: float, gamma_e: float, D_H: float, B_H: float,
+                     lambda_H_pas: float, V_etoile_H: float) -> float:
     """H4 : C^règle_t = YD^e_t − γ^e_t Ṽ_{H,t} − (λ_H/n_a)(V*_{H,t} − Ṽ_{H,t}), u.m.
-    par pas ; `V_H_net` = Ṽ_{H,t}, lecture nette (H3) ; `lambda_H_pas` = λ_H/n_a, converti
-    par `par_pas`."""
+    par pas ; D_H reçu brut, lu ici en Ṽ_{H,t} = max(0 ; D_H) + B_H, comme H3 (lecture
+    nette ; #142) ; `lambda_H_pas` = λ_H/n_a, converti par `par_pas`."""
     # eq:menages-plan-consommation
+    V_H_net = max(0.0, D_H) + B_H
     return YD_e - gamma_e * V_H_net - lambda_H_pas * (V_etoile_H - V_H_net)
 
 
-def budget_de_consommation(D_H_net: float, C_regle: float) -> float:
-    """H5 : C^plan_t = min{D̃_{H,t} ; max{0 ; C^règle_t}}, u.m. par pas ; `D_H_net` =
-    D̃_{H,t} = max(0 ; D_H), lecture nette, d'où C^plan ≥ 0 exactement. Plafond : borne à seuil
-    libre sur les dépôts d'ouverture ; plancher : contrainte de conservation, sans paramètre."""
+def budget_de_consommation(D_H: float, C_regle: float) -> float:
+    """H5 : C^plan_t = min{D̃_{H,t} ; max{0 ; C^règle_t}}, u.m. par pas ; D_H reçu brut, lu
+    ici en D̃_{H,t} = max(0 ; D_H) (lecture nette ; #142), d'où C^plan ≥ 0 exactement. Plafond :
+    borne à seuil libre sur les dépôts d'ouverture ; plancher : contrainte de conservation, sans
+    paramètre."""
     # eq:menages-budget-consommation
-    return min(D_H_net, max(0.0, C_regle))
+    return min(max(0.0, D_H), max(0.0, C_regle))
 
 
 def consommation(p: float, C_vol: float) -> float:
@@ -136,19 +141,18 @@ class Menages:
     def phase_2(self, vue) -> None:
         """Revenu attendu, richesse visée, plan de la règle et budget de consommation."""
         table = vue.parametres.menages
-        # Lecture nette (point 4) : D̃_H = max(0 ; D_H), dans Ṽ_H (H3, H4) et dans le
-        # plafond (H5) ; Ṽ_H n'est pas la valeur nette V_H du bilan.
-        D_H_net = max(0.0, vue.ouverture.D_H)
-        V_H_net = D_H_net + vue.ouverture.B_H
+        # Lecture nette (point 4 ; localité, #142) : D_H passé brut à H3, H4 et H5, qui le
+        # lisent en max(0 ; ·) ; aucune lecture nette dans la phase.
         YD_e = revenu_attendu(vue.lire("Gamma_e"), vue.ouverture.YD_m1)
         V_etoile_H = richesse_visee(table.nu_H, vue.parametres.cadre.pas_par_an, YD_e,
-                                    vue.lire("pi_etoile_pas"), V_H_net)
-        C_regle = plan_de_la_regle(YD_e, vue.lire("gamma_e"), V_H_net,
-                                   par_pas(table.lambda_H), V_etoile_H)
+                                    vue.lire("pi_etoile_pas"), vue.ouverture.D_H,
+                                    vue.ouverture.B_H)
+        C_regle = plan_de_la_regle(YD_e, vue.lire("gamma_e"), vue.ouverture.D_H,
+                                   vue.ouverture.B_H, par_pas(table.lambda_H), V_etoile_H)
         vue.ecrire_pas("YD_e", YD_e)
         vue.ecrire_pas("V_etoile_H", V_etoile_H)
         vue.ecrire_pas("C_regle", C_regle)
-        vue.ecrire_pas("C_plan", budget_de_consommation(D_H_net, C_regle))
+        vue.ecrire_pas("C_plan", budget_de_consommation(vue.ouverture.D_H, C_regle))
 
     def phase_5(self, vue) -> None:
         """Consommation exécutée (ligne 1), au prix du pas sur le volume servi."""

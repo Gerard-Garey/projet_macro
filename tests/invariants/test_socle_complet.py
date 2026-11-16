@@ -450,6 +450,65 @@ def test_un_seul_calcul_du_besoin_d_emission_par_pas(socle, monkeypatch):
         assert p["19a-ménages"] == 0.0
 
 
+def test_un_seul_calcul_des_interets_sur_titres_par_pas(socle, monkeypatch):
+    """Critère de #150, point 1 (ADR 0013, annotation du 16/11/2026, point 4) : la fonction
+    balisée E7 (`interets_sur_titres`) est appelée une fois par pas sur le moteur, en phase 2 ;
+    les lignes 11a à 11c proposées en phase 6 sont, au bit, les trois termes écrits en phase 2
+    (`iB_BH`, `iB_BBk`, `iB_BCB`), sur les encours d'ouverture, et leur somme forme le plafond
+    de E6 ; scénario du banc BF (sentier θ_CB = 0,5, ligne 11c non nulle ; placement raté
+    ς_B = 0,5 au pas 5 ; transferts ouverts au seul pas 6, plafond de E6 liant)."""
+    appels = []
+    original = bloc_9.interets_sur_titres
+
+    def compter(*args):
+        appels.append(args)
+        return original(*args)
+    monkeypatch.setattr(bloc_9, "interets_sur_titres", compter)
+    sentier = socle.sentier(0.02, theta_CB=0.5)
+    initial = socle.etat_initial(sentier)
+    _, releve = derouler(
+        socle, sentier, 24, initial=initial, varsigma_B=lambda t: 0.5 if t == 5 else 0.0,
+        bloc_9=bloc_9_compose(levier_au_tour(6, theta_Tr=TRANSFERTS_APRES_LE_PLACEMENT)))
+    assert len(appels) == 24
+    assert any(p["variables"]["Tr"] < p["variables"]["Tr_lev"] for p in releve.pas)
+    ouvertures = (initial,) + tuple(p["etat"] for p in releve.pas[:-1])
+    for p, o, (i_pas, *encours) in zip(releve.pas, ouvertures, appels, strict=True):
+        v = p["variables"]
+        assert i_pas == par_pas(TauxDeFlux(v["i_CB"])) and encours == [o.B_H, o.B_Bk, o.B_CB]
+        assert (p["11a"], p["11b"], p["11c"]) == (v["iB_BH"], v["iB_BBk"], v["iB_BCB"])
+        assert v["iB_BCB"] > 0.0 and v["iB_BBk"] > 0.0
+        assert v["Tr"] == bloc_9.transferts(v["Tr_lev"], o.M_G, v["T_H"],
+                                            v["iB_BH"] + v["iB_BBk"] + v["iB_BCB"], v["G_plan"])
+
+
+def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, monkeypatch):
+    """Critère de #144, point 1 (ADR 0013, annotation du 16/11/2026, point 1) : sur le socle
+    complet, `defaut_de_domaine` est appelée une fois par pas pour chaque variable d'état d'un
+    bloc (à l'écriture, par `Vue.ecrire_etat`), et une fois par pas pour chaque autre champ
+    (à la clôture, par `etat_de_cloture`) ; trajectoire inchangée au bit."""
+    nb_pas = 4
+    # Le moteur seul : la fabrique de `FinDePas` du `conftest` (contrôle complet propre aux
+    # tests) est retirée, sans quoi chaque champ serait compté une fois de plus par pas.
+    monkeypatch.setattr(ordo, "FinDePas", FinDePas)
+    sentier = socle.sentier(0.02)
+    initial = socle.etat_initial(sentier)
+    temoin, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    appels = []
+    original = schema.defaut_de_domaine
+
+    def compter(nom, valeur):
+        appels.append(nom)
+        return original(nom, valeur)
+    monkeypatch.setattr(schema, "defaut_de_domaine", compter)
+    final, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    assert final == temoin
+    blocs = {v.nom for v in schema.VARIABLES_DES_BLOCS}
+    assert len(blocs) == 20
+    compte = {nom: appels.count(nom) for nom in schema.CHAMPS}
+    assert compte == {nom: nb_pas for nom in schema.CHAMPS}
+    assert len(appels) == nb_pas * len(schema.CHAMPS)
+
+
 # --------------------------------------------------------------------------
 # Cas à la main (critère 1) et lecture de Π^CB (P90)
 # --------------------------------------------------------------------------
@@ -731,10 +790,9 @@ def test_theta_H_aux_deux_sens(socle, pi, publier):
     theta_vente = (pg["14"] - pb["14"]) / (pg["2"] - pb["2"])
     o = base.pas[n - 1]["etat"]
     v = pb["variables"]
-    D_F = max(0.0, o.D_F)
-    entrees = dict(D_F=D_F, Delta_L=pb["18"], C=pb["1"], G=pb["2"], WB=pb["5"],
+    entrees = dict(D_F=o.D_F, Delta_L=pb["18"], C=pb["1"], G=pb["2"], WB=pb["5"],
                    interets_L=par_pas(TauxDeFlux(o.i_L)) * o.L,
-                   interets_D_F=par_pas(TauxDeFlux(o.i_D)) * D_F, T_e_F=v["T_e_F"],
+                   i_D_pas=par_pas(TauxDeFlux(o.i_D)), T_e_F=v["T_e_F"],
                    D_etoile_F=v["D_etoile_F"])
     assert bloc_6.dividendes(**entrees) == pb["14"]
     delta_y = 1e-3 * v["y"]

@@ -15,6 +15,21 @@ g = (1 + g_pr)(1 + g_N) − 1, qui combine les tables de deux blocs et
 n'appartient à aucun, et son facteur par pas, calculés une fois par pas et lus
 par les blocs sans recalcul. Le facteur est le produit f(g_pr) · f(g_N),
 f = `facteur_par_pas` (P88 ; ADR 0013, annotation du 14/11/2026, point 7).
+g est retirée depuis #144, point 3 (ADR 0013, annotation du 16/11/2026,
+point 3 ; P51) : aucun lecteur, et un lecteur qui la recombinerait
+divergerait au bit de `facteur_g` (P88) ; elle reste une notation de la
+spécification (`sec:production-visee`).
+
+Conversions partagées (#144, point 2 ; ADR 0013, annotation du 16/11/2026,
+point 2) : la conversion d'un paramètre, invariante pendant une partie, est
+une grandeur d'ouverture si plus d'un siège la lit (bloc × étape, `_facteur_g`
+compris) ; lue par un seul siège, elle reste au site. Sont publiés à la suite
+de `date_de_decision` : `facteur_g_pr` = f(g_pr) (production, phase 5 ;
+travail, phase 1 ; `facteur_g`), `facteur_g_N` = f(g_N) (travail, phase 4 ;
+`facteur_g`), puis `facteur_g` = `facteur_g_pr` · `facteur_g_N`, et
+`delta_pas` = δ/n_a, converti par `par_pas` (production, phase 5 ;
+investissement, phases 3 et 6 ; finances publiques, phase 6). Aucun bloc ne
+les reconstruit (contrôle statique, `tests/invariants/test_lectures_statiques.py`).
 
 En J3-c (#61 ; ADR 0010, point 4 ; même annotation, point 7), suivent, dans
 cet ordre, la cible par pas π^{∗,pas}_t = f(π*_t) − 1, le **facteur de
@@ -32,7 +47,7 @@ from dataclasses import dataclass
 
 from nations.etat.unites import UNITES
 from nations.moteur import calendrier
-from nations.moteur.conversions import facteur_par_pas
+from nations.moteur.conversions import facteur_par_pas, par_pas
 from nations.moteur.parametres import TauxDeCroissance
 
 # Préfixe d'un label d'équation (`CONVENTIONS.md` § 2.1).
@@ -75,21 +90,34 @@ def _date_de_decision(etat: object, parametres: object, grandeurs: Mapping[str, 
     return calendrier.est_date_de_decision(etat.t)
 
 
-def _croissance_tendancielle(etat: object, parametres: object,
-                             grandeurs: Mapping[str, object]) -> float:
-    """g = (1 + g_pr)(1 + g_N) − 1, par an, des tables de la production et du travail
-    (définition de `sec:production-visee`, sans label propre)."""
-    return ((1.0 + parametres.production.g_pr.valeur)
-            * (1.0 + parametres.travail.g_N.valeur) - 1.0)
+def _facteur_g_pr(etat: object, parametres: object, grandeurs: Mapping[str, object]) -> float:
+    """f(g_pr), f = `facteur_par_pas` : facteur par pas de la productivité (renvoi :
+    `eq:moteur-conversion-croissance`), lu par la production (phase 5), le travail (phase 1)
+    et `facteur_g` (#144, point 2)."""
+    return facteur_par_pas(parametres.production.g_pr)
+
+
+def _facteur_g_N(etat: object, parametres: object, grandeurs: Mapping[str, object]) -> float:
+    """f(g_N), f = `facteur_par_pas` : facteur par pas de la population active (renvoi :
+    `eq:moteur-conversion-croissance`), lu par le travail (phase 4) et `facteur_g` (#144,
+    point 2)."""
+    return facteur_par_pas(parametres.travail.g_N)
 
 
 def _facteur_g(etat: object, parametres: object, grandeurs: Mapping[str, object]) -> float:
     """f(g_pr) · f(g_N), f = `facteur_par_pas`, égal à (1 + g)^{1/n_a} à l'arrondi près (P88 ;
     ADR 0013, annotation du 14/11/2026, point 7 ; #125, point 1) : le produit des facteurs par
     lesquels les blocs font croître pr et N^pa, non le facteur de g déjà arrondie, qui n'en
-    diffère au bit qu'à g_N ≠ 0. g reste publiée, mais `facteur_g` ne la lit plus."""
-    return (facteur_par_pas(parametres.production.g_pr)
-            * facteur_par_pas(parametres.travail.g_N))
+    diffère au bit qu'à g_N ≠ 0. Le produit lit `facteur_g_pr` et `facteur_g_N`, dans cet
+    ordre : même produit des mêmes facteurs, donc identique au bit (#144, point 2)."""
+    return grandeurs["facteur_g_pr"] * grandeurs["facteur_g_N"]
+
+
+def _delta_pas(etat: object, parametres: object, grandeurs: Mapping[str, object]) -> float:
+    """δ/n_a, converti par `par_pas` : taux d'amortissement par pas (renvoi :
+    `eq:moteur-conversion-taux`), lu par la production (phase 5), l'investissement (phases 3
+    et 6) et les finances publiques (phase 6) (#144, point 2)."""
+    return par_pas(parametres.investissement.delta)
 
 
 def _facteur_de_la_cible(etat: object) -> float:
@@ -123,13 +151,17 @@ GRANDEURS_OUVERTURE = (
     GrandeurOuverture("mois", _mois, "eq:moteur-calendrier-date", "sans dimension"),
     GrandeurOuverture("date_de_decision", _date_de_decision, "eq:moteur-date-decision",
                       "sans dimension"),
-    # Croissance tendancielle et son facteur par pas, en tête des grandeurs
-    # économiques, avant Γ^e (#61). Le label de `facteur_g` est un renvoi à la
-    # conversion qu'il appelle, non une balise (annotation du 07/10/2026 sur #97,
-    # point 7).
-    GrandeurOuverture("g", _croissance_tendancielle, None, "par an, taux de croissance"),
+    # Conversions partagées et facteur de croissance tendancielle, en tête des grandeurs
+    # économiques, avant Γ^e (#61 ; #144, point 2 ; ADR 0013, annotation du 16/11/2026,
+    # point 2). Labels de renvoi aux conversions, non balises (annotation du 07/10/2026 sur
+    # #97, point 7) ; facteurs et taux par pas « sans dimension » (P96).
+    GrandeurOuverture("facteur_g_pr", _facteur_g_pr, "eq:moteur-conversion-croissance",
+                      "sans dimension"),
+    GrandeurOuverture("facteur_g_N", _facteur_g_N, "eq:moteur-conversion-croissance",
+                      "sans dimension"),
     GrandeurOuverture("facteur_g", _facteur_g, "eq:moteur-conversion-croissance",
                       "sans dimension"),
+    GrandeurOuverture("delta_pas", _delta_pas, "eq:moteur-conversion-taux", "sans dimension"),
     # Cible par pas, facteur de croissance nominale attendue et son taux par pas, après
     # `facteur_g`, sur π*_t lue à l'ouverture (#61 ; ADR 0013, annotation du 14/11/2026,
     # point 7). La balise est dans la fonction de `Gamma_e` ; les deux autres labels sont des

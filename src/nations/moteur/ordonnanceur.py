@@ -47,7 +47,8 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
 - Un bloc reçoit une **vue** (`Vue`) par appel : l'état d'ouverture, les
   paramètres, les variables du pas qu'il a déclaré lire, le grand livre en
   lecture seule (montants exécutés des seules lignes qu'il a déclaré lire,
-  #100), `proposer` et `declarer_montant_couvert` pour ses seules
+  #100 ; positions courantes des seuls postes qu'il a déclaré lire, #150),
+  `proposer` et `declarer_montant_couvert` pour ses seules
   lignes déclarées dans l'étape (le proposant et le payeur apposés par la
   vue ; aucune en phase 9, où tout flux est refusé), les lectures du
   registre (le glissement refusé non fini ou hors de 1 + π_{t−1} > 0, précondition de
@@ -277,8 +278,11 @@ class VariablesDuPas:
     une valeur qui n'est pas de type de base fini (`float`, `int`, `bool`,
     n-uplet de `float`, sans NaN ni infini) est refusée ; une lecture d'un nom non encore écrit est refusée, jamais une
     valeur par défaut. Une variable de `DOMAINES_DU_PAS` hors de son domaine est refusée par
-    `PlanHorsDomaine`, avant le refus générique de finitude (NaN et ±∞ compris) ; l'étape et
-    le bloc écrivain sont apposés par la vue.
+    `PlanHorsDomaine`, avant le refus générique de finitude (NaN et ±∞ compris). Chaque refus
+    d'écriture nomme le pas, l'étape et le bloc écrivain, que l'appelant passe toujours : la
+    vue pour un bloc, le moteur pour lui-même (« 0 » pour les grandeurs calculées à
+    l'ouverture et les entrées de scénario, « 1 » pour les leviers ; #137 ; ADR 0013,
+    annotation du 16/11/2026, point 6).
     """
 
     __slots__ = ("_declares", "_t", "_valeurs")
@@ -288,24 +292,25 @@ class VariablesDuPas:
         self._t = t
         self._valeurs: dict[str, object] = {}
 
-    def ecrire(self, nom: str, valeur: object, *, etape: str | None = None,
-               bloc: str | None = None) -> None:
-        """Écrit `nom` ; `etape` et `bloc`, apposés par la vue, nomment l'écrivain dans le refus
-        de domaine."""
+    def ecrire(self, nom: str, valeur: object, *, etape: str, bloc: str) -> None:
+        """Écrit `nom` ; `etape` et `bloc`, obligatoires, nomment l'écrivain dans chaque refus
+        (#137)."""
         if nom not in self._declares:
-            raise RefusDuMoteur("variable du pas non déclarée", t=self._t, nom=nom)
+            raise RefusDuMoteur("variable du pas non déclarée", t=self._t, etape=etape,
+                                bloc=bloc, nom=nom)
         if nom in self._valeurs:
-            raise RefusDuMoteur("seconde écriture d'une variable du pas", t=self._t, nom=nom)
+            raise RefusDuMoteur("seconde écriture d'une variable du pas", t=self._t,
+                                etape=etape, bloc=bloc, nom=nom)
         if not _est_de_type_de_base(valeur):
             raise RefusDuMoteur(f"valeur {valeur!r} : float, int, bool ou tuple de float "
-                                "attendu", t=self._t, nom=nom)
+                                "attendu", t=self._t, etape=etape, bloc=bloc, nom=nom)
         domaine = DOMAINES_DU_PAS.get(nom)
         if domaine is not None and not domaine.predicat(valeur):
             raise PlanHorsDomaine(f"valeur {valeur!r} hors du domaine : {domaine.condition}",
                                   t=self._t, etape=etape, bloc=bloc, nom=nom)
         if not _est_finie(valeur):
             raise RefusDuMoteur(f"valeur {valeur!r} : valeur non finie refusée", t=self._t,
-                                nom=nom)
+                                etape=etape, bloc=bloc, nom=nom)
         self._valeurs[nom] = valeur
 
     def lire(self, nom: str) -> object:
@@ -331,7 +336,8 @@ class _Droits:
     """Droits d'un bloc dans une étape, arrêtés à l'assemblage.
 
     `lectures` : variables du pas lues ; `lignes_lues` : lignes dont le montant
-    exécuté est lu au grand livre ; `lignes` et `couvertes` : lignes proposées
+    exécuté est lu au grand livre ; `postes_lus` : postes dont la position
+    courante est lue au grand livre ; `lignes` et `couvertes` : lignes proposées
     et montants couverts déclarés.
     """
 
@@ -343,6 +349,7 @@ class _Droits:
     lignes: frozenset[str]
     couvertes: frozenset[str]
     lignes_lues: frozenset[str]
+    postes_lus: frozenset[str]
 
 
 class LectureDuGrandLivre:
@@ -353,7 +360,12 @@ class LectureDuGrandLivre:
     lecture dans son siège (`_Droits.lignes_lues`, arrêtées à l'assemblage
     après triangularité et colonne « Lisent ») ; une lecture non déclarée est
     un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et la ligne (#100).
-    Positions, ouverture, échelles et valeurs nettes ne sont pas filtrées.
+    La position courante d'un poste n'est rendue que si le bloc a déclaré sa
+    lecture dans son siège (`_Droits.postes_lus` ; admise à l'assemblage sans
+    triangularité ni colonne « Lisent ») ; une lecture non déclarée, poste
+    inconnu compris, est un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc
+    et le poste (ADR 0013, annotation du 16/11/2026, point 5 ; P188 ; #150).
+    Ouverture, échelles et valeurs nettes ne sont pas filtrées.
     """
 
     __slots__ = ("_droits", "_livre", "_t")
@@ -380,6 +392,11 @@ class LectureDuGrandLivre:
         return self._livre.montant_execute_ligne(ligne)
 
     def position(self, poste: str) -> float:
+        d = self._droits
+        if poste not in d.postes_lus:
+            raise RefusDuMoteur("lecture de la position d'un poste non déclarée par le bloc "
+                                "dans cette étape", t=self._t, etape=d.etape, bloc=d.radical,
+                                nom=poste)
         return self._livre.position(poste)
 
     def ouverture(self, poste: str) -> float:
@@ -465,16 +482,18 @@ class Vue:
         variable = schema.VARIABLE[nom]
         if not variable.admet(valeur):
             raise self._refus(f"valeur {valeur!r} : {variable.description_du_type()} attendu", nom)
-        # Domaine de la variable, par la seule fonction de domaine du schéma, dès l'écriture
-        # plutôt qu'à la construction de l'état de clôture (qui le contrôle encore) ; une
-        # valeur non finie est refusée par l'espace du pas, ci-dessous.
+        # Domaine de la variable, par la seule fonction de domaine du schéma : seul contrôle
+        # de domaine d'une variable d'état d'un bloc dans le pas, que `schema.etat_de_cloture`
+        # ne refait pas (ADR 0013, annotation du 16/11/2026, point 1 ; #144) ; une valeur non
+        # finie est refusée par l'espace du pas, ci-dessous.
         if _est_finie(valeur):
             motif = schema.defaut_de_domaine(nom, valeur)
             if motif is not None:
                 raise self._refus(f"valeur {motif}", nom)
         # Validation d'abord (domaine ci-dessus, finitude par l'espace du pas),
         # enregistrement ensuite : un refus laisse `etat_suivant` inchangé.
-        self._pas.espace.ecrire(nom + SUFFIXE_SUIVANT, valeur)
+        d = self._droits
+        self._pas.espace.ecrire(nom + SUFFIXE_SUIVANT, valeur, etape=d.etape, bloc=d.radical)
         etat_suivant[nom] = valeur
 
     def _ligne_non_declaree(self, ligne: str) -> RefusDuMoteur:
@@ -837,7 +856,7 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
     for radical, (_, sieges, _) in sorted(par_radical.items()):
         for identifiant, siege in sieges.items():
             groupe = places[identifiant][radical]
-            lectures, lignes_lues = set(), set()
+            lectures, lignes_lues, postes_lus = set(), set(), set()
             for lecture in siege.lit:
                 _controler_lecture(lecture.source, lecture.nom, identifiant, groupe,
                                    radical, rang, ecrivains, phase_de)
@@ -845,10 +864,13 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
                     lectures.add(lecture.nom)
                 elif lecture.source == GRAND_LIVRE and lecture.nom in LIGNE:
                     lignes_lues.add(lecture.nom)
+                elif lecture.source == GRAND_LIVRE:
+                    # Poste de `NOMS_POSTES` (contrôlé ci-dessus) : position courante.
+                    postes_lus.add(lecture.nom)
             droits[(radical, identifiant)] = _Droits(
                 radical, identifiant, frozenset(lectures), frozenset(siege.ecrit),
                 frozenset(siege.etat), frozenset(siege.propose), frozenset(siege.couvre),
-                frozenset(lignes_lues))
+                frozenset(lignes_lues), frozenset(postes_lus))
     _controler_lecture(ECRIVAIN_DE_L_INDICE[0], INDICE_DES_PRIX, "9", places["9"][MOTEUR],
                        MOTEUR, rang, ecrivains, phase_de)
     if ecrivains[INDICE_DES_PRIX][2] != ECRIVAIN_DE_L_INDICE[1]:
@@ -927,15 +949,15 @@ def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour
     lecture_des_grandeurs = MappingProxyType(grandeurs)
     for grandeur in GRANDEURS_OUVERTURE:
         valeur = grandeur.fonction(etat_ouverture, o.parametres, lecture_des_grandeurs)
-        espace.ecrire(grandeur.nom, valeur)
+        espace.ecrire(grandeur.nom, valeur, etape="0", bloc=MOTEUR)
         grandeurs[grandeur.nom] = valeur
     _verifier_entrees(entrees_du_tour, o.entrees, t)
     for nom, valeur in entrees_du_tour.scenario:
-        espace.ecrire(nom, valeur)
+        espace.ecrire(nom, valeur, etape="0", bloc=MOTEUR)
     # Phase 1, premier groupe : le moteur lit les leviers ; rien ne s'exécute
     # entre la phase 0 et lui.
     for nom, valeur in entrees_du_tour.leviers:
-        espace.ecrire(nom, valeur)
+        espace.ecrire(nom, valeur, etape="1", bloc=MOTEUR)
     # Étapes 1 à 8 (c) : blocs groupe par groupe, puis clôture et relevé.
     for identifiant, appels in o.etapes:
         for droits, methode in appels:
@@ -957,7 +979,9 @@ def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour
             raise RefusDuMoteur("variable d'état non écrite par son propriétaire dans le pas",
                                 t=t, etape="9", bloc=MOTEUR, nom=nom)
         champs[nom] = etat_suivant[nom]
-    etat_cloture = schema.EtatPays(**champs)
+    # Type de tous les champs, domaine des champs du moteur, du noyau et d'identité ; le
+    # domaine des variables des blocs a été contrôlé à leur écriture (#144, point 1).
+    etat_cloture = schema.etat_de_cloture(champs)
     observateur.relever(FinDePas(
         t, etat_cloture, espace.releve(o.ordre_des_variables),
         tuple((grandeur.nom, grandeurs[grandeur.nom]) for grandeur in GRANDEURS_OUVERTURE)))

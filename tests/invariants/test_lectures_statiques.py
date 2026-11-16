@@ -2,7 +2,9 @@
 
 Décision du mainteneur du 13/11/2026 (P58, P59) : les lectures de l'ouverture,
 des positions et du registre sont contrôlées **statiquement**, sans filtre à
-l'exécution. Le test lit l'arbre syntaxique de chaque module de
+l'exécution ; depuis P188 (ADR 0013, annotation du 16/11/2026, point 5 ; #150),
+les positions sont en outre filtrées à l'exécution par la vue (poste déclaré dans
+le siège), et le contrôle statique est maintenu. Le test lit l'arbre syntaxique de chaque module de
 `src/nations/blocs/` (hors `__init__.py`) ; chaque module porte un seul bloc,
 dont le radical est le nom du module.
 
@@ -83,9 +85,19 @@ dont le radical est le nom du module.
    une table liée à un nom, `c.pi_etoile`, un paramètre de fonction,
    `p.banque_centrale.pi_etoile`, un motif de classe `case C(pi_etoile=…)`).
    `vue.ouverture.pi_etoile` reste soumise au relevé (point 2) et au point 5.
-7. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
-   déclare pas), sauf le point 6.
-8. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
+7. **Aucune reconstruction d'une conversion partagée** (#144, point 2 ; ADR 0013,
+   annotation du 16/11/2026, point 2 ; modèle du point 5) : f(g_pr), f(g_N) et δ/n_a
+   sont des grandeurs d'ouverture (`facteur_g_pr`, `facteur_g_N`, `delta_pas`) que la
+   phase 0 calcule seule, et un bloc les lit. Est refusé, partout dans le module, tout
+   appel de `par_pas` ou de `facteur_par_pas` (sous son nom ou renommé à l'importation)
+   dont un argument **dépend de δ, g_pr ou g_N** : contient un attribut `delta`, `g_pr`
+   ou `g_N` (`table.delta`, `vue.parametres.production.g_pr`), ou un identifiant marqué
+   par la fermeture du graphe des liaisons du point 5, graines changées. `par_pas`, comme
+   `facteur_par_pas`, ne s'emploie qu'appelé directement (`c = par_pas` refusé). Une
+   autre conversion (`par_pas(table.lambda_v)`) reste admise.
+8. **Hors du contrôle** : `vue.parametres` (lecture de paramètres, que B2 ne
+   déclare pas), sauf les points 6 et 7.
+9. **Le contrôle sait échouer** : un module fictif par forme refusée, et une
    déclaration en trop ou en moins ; un essai par contournement connu (#121).
 
 Garde-fou (point 6 (a)) : aucun module de `src/` n'importe `tests` ni `outils`.
@@ -209,6 +221,11 @@ LOGARITHMES = frozenset({"log", "log1p", "log2", "log10"})
 FONCTIONS_DE_MATH_SURVEILLEES = RACINES | EXPONENTIELLES | LOGARITHMES | {"pow"}
 MOTIF_PUISSANCE = "puissance d'une grandeur qui dépend de π* refusée (recalcul de f(π*))"
 MOTIF_MATH = "sur une grandeur qui dépend de π* refusé (recalcul de f(π*))"
+# Point 7 (#144, point 2) : paramètres dont la conversion est une grandeur d'ouverture
+# (paramètre → grandeur à lire), et les deux conversions qui la reconstruiraient.
+CONVERSIONS_PARTAGEES = {"delta": "delta_pas", "g_pr": "facteur_g_pr", "g_N": "facteur_g_N"}
+CONVERSIONS_SURVEILLEES = frozenset({"par_pas", CONVERSION_GEOMETRIQUE})
+MOTIF_CONVERSION_PARTAGEE = "sur δ, g_pr ou g_N refusé (conversion partagée"
 # Point 6 (R2 de `monnaie`) : π* ne se lit que dans l'état d'ouverture.
 MOTIF_CIBLE_HORS_DE_L_ETAT = ("π* lue hors de l'état d'ouverture refusée (tout bloc lit π*_t, "
                               "vue.ouverture.pi_etoile ; ADR 0010 ; R2 de monnaie)")
@@ -649,14 +666,14 @@ def _contient_un_log_de(valeur: ast.AST, marques: set[str], logarithmes: set[str
     return False
 
 
-def _recalculs_de_gamma_e(arbre: ast.AST, parents: dict) -> list[str]:
+def _recalculs_de_gamma_e(arbre: ast.AST, parents: dict, graphe: _Graphe) -> list[str]:
     """Écarts du point 5 : reconstruction de f(π*) = (1 + π*)^{1/n_a}, donc de Γ^e ou de
-    π^{∗,pas}, dans un bloc (voir le docstring du module, point 5)."""
+    π^{∗,pas}, dans un bloc (voir le docstring du module, point 5) ; `graphe` : graphe des
+    liaisons du module, construit une fois pour les points 5 et 7."""
     alias = {a.asname or a.name for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom)
              for module, nom in _importations(n) if module == CONVERSIONS
              for a in n.names if a.name == nom == CONVERSION_GEOMETRIQUE}
     modules_math = _noms_de_math(arbre)
-    graphe = _graphe_des_liaisons(arbre, parents)
     marques = _fermeture(graphe, _contient_un_attribut_cible)
     # Identifiants liés au logarithme d'une grandeur marquée (y = math.log(1 + π*)).
     logarithmes = _fermeture(graphe, lambda v: _contient_un_log_de(v, marques, set(),
@@ -702,6 +719,41 @@ def _recalculs_de_gamma_e(arbre: ast.AST, parents: dict) -> list[str]:
                 refus = False
             if refus:
                 ecarts.append(f"ligne {n.lineno} : math.{fonction} {MOTIF_MATH} ({lire})")
+    return ecarts
+
+
+def _contient_un_parametre_converti(valeur: ast.AST) -> bool:
+    return any(isinstance(n, ast.Attribute) and n.attr in CONVERSIONS_PARTAGEES
+               for n in ast.walk(valeur))
+
+
+def _reconstructions_des_conversions_partagees(arbre: ast.AST, parents: dict,
+                                               graphe: _Graphe) -> list[str]:
+    """Écarts du point 7 : `par_pas` ou `facteur_par_pas` appliqué, dans un bloc, à une grandeur
+    qui dépend de δ, g_pr ou g_N (voir le docstring du module, point 7). L'emploi de
+    `facteur_par_pas` hors d'un appel direct est relevé par le point 5, celui de `par_pas` ici."""
+    alias = {(a.asname or a.name): a.name for n in ast.walk(arbre)
+             if isinstance(n, ast.ImportFrom)
+             for module, nom in _importations(n) if module == CONVERSIONS
+             for a in n.names if a.name == nom and nom in CONVERSIONS_SURVEILLEES}
+    marques = _fermeture(graphe, _contient_un_parametre_converti)
+
+    def depend(x: ast.AST) -> bool:
+        return any((isinstance(n, ast.Attribute) and (
+            n.attr in CONVERSIONS_PARTAGEES or n.attr in marques))
+            or (isinstance(n, ast.Name) and n.id in marques) for n in ast.walk(x))
+
+    lire = "lire " + ", ".join(sorted(CONVERSIONS_PARTAGEES.values())) + ", #144"
+    ecarts = []
+    for n in ast.walk(arbre):
+        if not (isinstance(n, ast.Name) and n.id in alias and isinstance(n.ctx, ast.Load)):
+            continue
+        appel = parents.get(n)
+        if not (isinstance(appel, ast.Call) and appel.func is n):
+            if alias[n.id] != CONVERSION_GEOMETRIQUE:
+                ecarts.append(f"ligne {n.lineno} : {n.id} employé hors d'un appel direct")
+        elif any(depend(x) for x in appel.args + [k.value for k in appel.keywords]):
+            ecarts.append(f"ligne {n.lineno} : {n.id} {MOTIF_CONVERSION_PARTAGEE} : {lire})")
     return ecarts
 
 
@@ -795,7 +847,9 @@ def analyser(texte: str, radical: str, declaration: DeclarationDeBloc | None) ->
             for sous in ast.walk(cible):
                 if isinstance(sous, ast.Attribute):
                     ecarts.append(f"ligne {sous.lineno} : affectation à un attribut refusée")
-    ecarts += _recalculs_de_gamma_e(arbre, parents)
+    graphe = _graphe_des_liaisons(arbre, parents)
+    ecarts += _recalculs_de_gamma_e(arbre, parents, graphe)
+    ecarts += _reconstructions_des_conversions_partagees(arbre, parents, graphe)
     if declaration is None:
         return ecarts + ["aucun bloc déclaré dans le module"]
     if declaration.radical != radical:
@@ -1526,8 +1580,9 @@ def test_recalcul_sous_un_autre_nom_refuse():
     # Une conversion géométrique sans π* ; π* lue sans conversion (BC1 lit le taux annuel) ; la
     # conversion linéaire d'une grandeur qui dépend de π* (BC6 convertit i_CB), hors du critère.
     # π* lue dans l'état d'ouverture (point 6, R2 de `monnaie` : forme réécrite au rang 4 de
-    # J3-c, la lecture dans la table étant refusée).
-    ("        f = facteur_par_pas(vue.parametres.production.g_pr)\n", ""),
+    # J3-c, la lecture dans la table étant refusée). La conversion géométrique de g_pr, forme
+    # admise jusqu'à #144, est refusée par le point 7 (`test_conversion_partagee_refusee`).
+    ("        f = facteur_par_pas(TauxDeCroissance(0.01))\n", ""),
     ("        c = vue.ouverture.pi_etoile\n        k = (1.0 + c) * 1.01\n", "LIT_LA_CIBLE"),
     ("        c = vue.ouverture.pi_etoile\n"
      "        k = par_pas(vue.parametres.prix.lambda_mu) * c\n", "LIT_LA_CIBLE"),
@@ -1620,4 +1675,94 @@ def test_cout_des_homonymes():
     ecarts = analyser(texte, "prix", None)
     duree = time.perf_counter() - debut
     assert any(MOTIF_GAMMA_E in e for e in ecarts)
+    assert duree < 5.0, duree
+
+
+# --------------------------------------------------------------------------
+# Aucune reconstruction d'une conversion partagée (point 7 ; #144, point 2)
+# --------------------------------------------------------------------------
+
+CONVERTIR_LINEAIRE = "def convertir(u):\n    return par_pas(u)\n"
+
+# (forme insérée dans `phase_5`, fonctions ajoutées au module) : chacune convertit δ, g_pr ou
+# g_N dans le bloc au lieu de lire `delta_pas`, `facteur_g_pr` ou `facteur_g_N`.
+CONVERSIONS_RECONSTRUITES = [
+    ("        c = par_pas(vue.parametres.investissement.delta)\n", ""),
+    ("        c = facteur_par_pas(vue.parametres.production.g_pr)\n", ""),
+    ("        c = facteur_par_pas(vue.parametres.travail.g_N)\n", ""),
+    ("        t = vue.parametres.investissement\n        c = par_pas(t.delta)\n", ""),
+    ("        c = par_pas(taux=vue.parametres.investissement.delta)\n", ""),
+    ("        c = par_pas(TauxDeFlux(vue.parametres.investissement.delta.valeur))\n", ""),
+    ("        x = vue.parametres.travail.g_N\n        y = x\n        c = facteur_par_pas(y)\n",
+     ""),
+    # Par une fonction, une lambda ou une méthode du module.
+    ("        c = convertir(vue.parametres.investissement.delta)\n", CONVERTIR_LINEAIRE),
+    ("        h = lambda u: par_pas(u)\n        c = h(vue.parametres.investissement.delta)\n",
+     ""),
+    ("        conv = convertir\n        c = conv(vue.parametres.investissement.delta)\n",
+     CONVERTIR_LINEAIRE),
+    (("        def k(u=vue.parametres.production.g_pr):\n"
+      "            return facteur_par_pas(u)\n        c = k()\n"), ""),
+]
+
+
+def _avec_conversion(forme: str, fonctions: str) -> str:
+    texte = _avec_forme(forme, fonctions)
+    return texte.replace("import TauxDeCroissance, facteur_par_pas, par_pas",
+                         "import TauxDeCroissance, TauxDeFlux, facteur_par_pas, par_pas", 1)
+
+
+@pytest.mark.parametrize("forme, fonctions", CONVERSIONS_RECONSTRUITES)
+def test_conversion_partagee_refusee(forme, fonctions):
+    """Point 7 (#144, point 2 ; ADR 0013, annotation du 16/11/2026, point 2) : `par_pas` ou
+    `facteur_par_pas` appliqué à δ, g_pr ou g_N, sous chaque forme de liaison suivie par le
+    point 5, est refusé ; ces conversions se lisent dans l'espace du pas."""
+    ecarts = analyser_texte(_avec_conversion(forme, fonctions))
+    assert any(MOTIF_CONVERSION_PARTAGEE in e for e in ecarts), ecarts
+
+
+def test_conversion_partagee_sous_un_autre_nom_refusee():
+    """Point 7 : la conversion linéaire renommée à l'importation est suivie sous son nom."""
+    texte = _avec_forme("        c = pp(vue.parametres.investissement.delta)\n", "")
+    texte = texte.replace("import TauxDeCroissance, facteur_par_pas, par_pas",
+                          "import TauxDeCroissance, facteur_par_pas, par_pas\n"
+                          "from nations.moteur.conversions import par_pas as pp", 1)
+    ecarts = analyser_texte(texte)
+    assert any(f"pp {MOTIF_CONVERSION_PARTAGEE}" in e for e in ecarts), ecarts
+
+
+def test_conversion_lineaire_hors_d_un_appel_direct_refusee():
+    """Point 7 : `par_pas` ne se lie ni ne se passe (`c = par_pas`, puis `c(table.delta)`
+    échapperait au contrôle) ; un seul écart pour `facteur_par_pas`, celui du point 5."""
+    ecarts = analyser_texte(_avec_forme("        c = par_pas\n", ""))
+    assert any("par_pas employé hors d'un appel direct" in e for e in ecarts), ecarts
+    ecarts = analyser_texte(_avec_forme("        c = facteur_par_pas\n", ""))
+    assert sum("employé hors d'un appel direct" in e for e in ecarts) == 1, ecarts
+
+
+@pytest.mark.parametrize("forme", [
+    "        c = par_pas(vue.parametres.prix.lambda_mu)\n",
+    "        c = par_pas(vue.parametres.investissement.lambda_ti)\n",
+    "        c = vue.parametres.investissement.delta.valeur * 2.0\n",
+])
+def test_autres_conversions_admises(forme):
+    """Point 7 : une autre conversion (vitesse propre au bloc, lue par un seul siège, qui reste
+    au site) et une lecture de δ sans conversion ne sont pas refusées par le point 7."""
+    assert analyser_texte(_avec_forme(forme, "")) == []
+
+
+def test_cout_du_point_7_au_pire_cas():
+    """Coût du point 7, même pire cas que `test_cout_de_la_fermeture_au_pire_cas` (chaîne de
+    2 000 liaisons dans l'ordre inverse de leur dépendance), graine δ : jugé en moins de 5 s."""
+    import time
+
+    n = 2000
+    lignes = [f"        x{k} = x{k - 1}\n" for k in range(n, 0, -1)]
+    forme = "".join(lignes) + "        x0 = 0.0\n" \
+        + "        x0 = vue.parametres.investissement.delta\n" + f"        f = par_pas(x{n})\n"
+    texte = _avec_forme(forme, "")
+    debut = time.perf_counter()
+    ecarts = analyser(texte, "prix", None)
+    duree = time.perf_counter() - debut
+    assert any(MOTIF_CONVERSION_PARTAGEE in e for e in ecarts)
     assert duree < 5.0, duree

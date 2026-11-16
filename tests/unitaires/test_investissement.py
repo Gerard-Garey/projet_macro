@@ -92,9 +92,8 @@ def test_etat_stationnaire_des_regles_par_appel_direct(stationnaire, pi, n_a):
     amort = bloc.amortissement(delta_pas, o["K"])
     D_etoile = bloc.depots_vises(par.nu_F, n_a, o["registre"][0], pis, s["ve_1"])
     T_e = bloc.impot_anticipe(gamma_e, o["T_F_m1"])
-    Div = bloc.dividendes(max(0.0, o["D_F"]), Delta_L, s["C"], s["G"], s["WB"],
-                          o["i_L"] / n_a * o["L"], o["i_D"] / n_a * max(0.0, o["D_F"]), T_e,
-                          D_etoile)
+    Div = bloc.dividendes(o["D_F"], Delta_L, s["C"], s["G"], s["WB"], o["i_L"] / n_a * o["L"],
+                          o["i_D"] / n_a, T_e, D_etoile)
     for nom, x, ref in (("S1", varrho_L, s["rho_L"]), ("S2", tu_etoile, s["tu_star"]),
                         ("S3", I_vol_plan, s["I_vol_plan"]), ("S4", I_plan, s["I_plan"]),
                         ("S5", I, s["I"]), ("S6", ti_1, s["ti_1"]), ("S7", amort, s["amort"]),
@@ -144,9 +143,11 @@ def test_impot_anticipe_sur_un_impot_non_nul(pi, T_F_m1):
 OUVERTURE_DU_CAS = {"D_H": 1500.0, "D_F": 250.0, "L": 936.4989, "B_H": 0.0, "B_Bk": 400.0,
                     "B_CB": 100.0, "Res": 50.0, "L_CB": 20.0, "M_G": 150.0, "K": 2341.2472,
                     "IN": 139.4480}
-# Flux du pas du cas (u.m.) : C + G, I, ΔIN, WB, lignes 9 et 10 (part des entreprises).
+# Flux du pas du cas (u.m.) : C + G, I, ΔIN, WB, lignes 9 et 10 (part des entreprises) ; taux
+# des dépôts par pas du cas, i_D/n_a, que F3 reçoit (#142) : iD_DF = i_D_pas × D_F, 0,625 exact.
+I_D_PAS_DU_CAS = 0.0025
 FLUX_DU_CAS = {"C": 107.5049, "I": 17.4951, "Delta_IN": 0.4610, "WB": 100.2312,
-               "iL_L": 2.3412, "iD_DF": 0.625}
+               "iL_L": 2.3412, "iD_DF": I_D_PAS_DU_CAS * OUVERTURE_DU_CAS["D_F"]}
 D_ETOILE_DU_CAS = 250.8265
 
 
@@ -189,8 +190,8 @@ def _cas_a_la_main(varsigma_L):
     Delta_L_d = bloc.demande_de_credit(TABLE.lv_etoile, delta_pas, o["K"], f["I"], o["L"])
     Delta_L = bloc.credit_servi(varsigma_L, Delta_L_d)
     amort = bloc.amortissement(delta_pas, o["K"])
-    Div = bloc.dividendes(o["D_F"], Delta_L, f["C"], 0.0, f["WB"], f["iL_L"], f["iD_DF"], 0.0,
-                          D_ETOILE_DU_CAS)
+    Div = bloc.dividendes(o["D_F"], Delta_L, f["C"], 0.0, f["WB"], f["iL_L"], I_D_PAS_DU_CAS,
+                          0.0, D_ETOILE_DU_CAS)
     gl = _derouler(_etat(o), {"1": {"C": f["C"]}, "3": {"I": f["I"]},
                               "4": {"Delta_IN": f["Delta_IN"]}, "5": {"WB": f["WB"]},
                               "8": {"deltaK": amort}, "9": {"iL_L": f["iL_L"]},
@@ -264,8 +265,8 @@ def test_repartition_d_un_choc_de_resultat(x):
     amort = bloc.amortissement(delta_pas, o["K"])
 
     def div_et_fu(WB):
-        div = bloc.dividendes(o["D_F"], Delta_L_d, f["C"], 0.0, WB, f["iL_L"], f["iD_DF"], 0.0,
-                              D_ETOILE_DU_CAS)
+        div = bloc.dividendes(o["D_F"], Delta_L_d, f["C"], 0.0, WB, f["iL_L"], I_D_PAS_DU_CAS,
+                              0.0, D_ETOILE_DU_CAS)
         return div, f["C"] + f["I"] + f["Delta_IN"] - WB - amort - f["iL_L"] + f["iD_DF"] - div
     div0, fu0 = div_et_fu(f["WB"])
     div1, fu1 = div_et_fu(f["WB"] + x)
@@ -318,6 +319,47 @@ def test_dividende_plancher_de_domaine(brut):
     assert div >= 0.0 and div == max(0.0, brut)
 
 
+# Ancienne composition (`05541fc`, avant #142) : la phase 6 lisait D_F en max(0 ; ·), calculait
+# les intérêts des dépôts sur D̃_F et passait les deux à F3 ; corps recopié tel quel.
+def _anciens_dividendes(D_F, Delta_L, C, G, WB, interets_L, interets_D_F, T_e_F, D_etoile_F):
+    return max(0.0, D_F + Delta_L + C + G - WB - interets_L + interets_D_F - T_e_F - D_etoile_F)
+
+
+def _ancienne_composition_de_f3(D_F, i_D_pas, Delta_L, C, G, WB, interets_L, T_e_F, D_etoile_F):
+    D_F_net = max(0.0, D_F)
+    interets_D_F = i_D_pas * D_F_net
+    return _anciens_dividendes(D_F_net, Delta_L, C, G, WB, interets_L, interets_D_F, T_e_F,
+                               D_etoile_F)
+
+
+def test_localite_lecture_nette_egale_au_bit_a_l_ancienne_composition():
+    """Critère de #142, écrit avant l'essai : F3 appelée directement avec D_F brut (D_F < 0 :
+    poussière et au-delà ; ±0) et i_D/n_a rend, au bit (`float.hex`, signe du zéro compris),
+    Div_F de l'ancienne composition « phase → max(0 ; ·), intérêts sur D̃_F → fonction »
+    (`05541fc`) ; cas du dividende positif et du plancher ; lot de 2 000 tirages (graine
+    déclarée). Pour que l'épreuve morde, D*_F est nul un cas sur deux : au moins 400 cas à
+    D_F < 0 ont un dividende positif, hors du plancher."""
+    rng = np.random.default_rng(20261116)
+    etat0 = _etat(dict(OUVERTURE_DU_CAS, D_F=0.0))
+    S_F = idt.echelle_bilan({q: getattr(etat0, q) for q in cat.NOMS_POSTES}, "entreprises")
+    negatifs = (-0.0, 0.0, -math.ulp(0.0), -math.ulp(1.0), -0.5 * EPSILON * S_F, -1.0, -1e9)
+    f = FLUX_DU_CAS
+    cas = [(d, f["WB"]) for d in negatifs] + [(d, 0.0) for d in negatifs]
+    cas += [(float(d), float(w)) for d, w in zip(rng.uniform(-1e4, 1e4, 2000),
+                                                  rng.uniform(0.0, 100.0, 2000))]
+    hors_du_plancher = 0
+    for k, (D_F, WB) in enumerate(cas):
+        entrees = {"Delta_L": 3.0 * (k % 4 - 1), "C": f["C"], "G": 0.5 * (k % 3), "WB": WB,
+                   "interets_L": f["iL_L"], "T_e_F": 0.1 * (k % 5),
+                   "D_etoile_F": D_ETOILE_DU_CAS if k % 2 else 0.0}
+        i_D_pas = I_D_PAS_DU_CAS * (1 + k % 5)
+        ancien = _ancienne_composition_de_f3(D_F, i_D_pas, **entrees)
+        nouveau = bloc.dividendes(D_F=D_F, i_D_pas=i_D_pas, **entrees)
+        assert nouveau.hex() == ancien.hex(), (D_F, WB)
+        hors_du_plancher += D_F < 0.0 and ancien > 0.0
+    assert hors_du_plancher >= 400, hors_du_plancher
+
+
 class _VueDEssai:
     """Vue d'essai d'une phase du bloc 6 : ouverture, paramètres, grandeurs et variables du pas
     lues ; montants exécutés du grand livre ; écritures relevées. Registre : P_{t−1} seul."""
@@ -357,7 +399,8 @@ class _VueDEssai:
 
 def _phase_6(D_F):
     etat = _etat(dict(OUVERTURE_DU_CAS, D_F=D_F))
-    lues = {"Gamma_e": 1.0033, "pi_etoile_pas": 0.00165, "v_e_suivant": 100.0}
+    lues = {"Gamma_e": 1.0033, "pi_etoile_pas": 0.00165, "v_e_suivant": 100.0,
+            "delta_pas": par_pas(TABLE.delta)}
     # Engagement 6 de #132 : F3 lit les cellules signées de la colonne des entreprises
     # (capital pour la ligne 18, courante pour 1, 2 et 5 ; WB débité, −100,2).
     montants = {("18", "entreprises_capital"): 3.0, ("1", "entreprises_courant"): 107.5,
@@ -452,10 +495,11 @@ def test_capital_comptable_sur_le_grand_livre_pas_enchaines():
 def test_declaration_conforme_a_tab_investissement_phases():
     """`tab:investissement-phases` et fiche 6, § 9.6, « Phases » (critère 3) : sièges en phases
     2, 3, 5, 6 et 9 ; phase 2 : ouverture, registre et grandeurs du moteur seulement (aucun plan
-    de la phase) ; phase 3 : ouverture, ς_L et le plan de la phase 2 ; phase 5 : p, I^vol (phase
-    5), tu, y (phase 4), tu* (phase 2) ; phase 6 : ni la ligne 7 (impôt), ni les lignes 9 et 10
-    (intérêts) du pas ; phase 9 : la ligne 7 seule, au grand livre. Lignes 18, 3, 8, 14 ;
-    états ϱ̄_L (2), ti et y_{t−1} (5), T_{F,t−1} (9)."""
+    de la phase) ; phase 3 : ouverture, δ/n_a (grandeur `delta_pas`, #144, point 2), ς_L et le
+    plan de la phase 2 ; phase 5 : p, I^vol (phase 5), tu, y (phase 4), tu* (phase 2) ; phase 6 :
+    δ/n_a (`delta_pas`), ni la ligne 7 (impôt), ni les lignes 9 et 10 (intérêts) du pas ; phase
+    9 : la ligne 7 seule, au grand livre. Lignes 18, 3, 8, 14 ; états ϱ̄_L (2), ti et y_{t−1}
+    (5), T_{F,t−1} (9)."""
     sieges = {s.etape: s for s in bloc.Investissement.declaration.sieges}
     assert set(sieges) == {"2", "3", "5", "6", "9"}
     deux = sieges["2"]
@@ -467,7 +511,8 @@ def test_declaration_conforme_a_tab_investissement_phases():
     assert (deux.propose, deux.etat) == ((), ("varrho_bar_L",))
     trois = sieges["3"]
     assert set(trois.lit) == {Lecture(OUVERTURE, "K"), Lecture(OUVERTURE, "L"),
-                              Lecture("0", "varsigma_L"), Lecture("2", "I_plan")}
+                              Lecture("0", "delta_pas"), Lecture("0", "varsigma_L"),
+                              Lecture("2", "I_plan")}
     assert (trois.ecrit, trois.propose, trois.etat) == (("Delta_L_d",), ("18",), ())
     cinq = sieges["5"]
     assert set(cinq.lit) == {Lecture(OUVERTURE, "ti"), Lecture("5", "p"), Lecture("5", "I_vol"),
@@ -477,6 +522,8 @@ def test_declaration_conforme_a_tab_investissement_phases():
     lues_au_grand_livre = {lu.nom for lu in six.lit if lu.source == GRAND_LIVRE}
     assert lues_au_grand_livre == {"18", "5", "1", "2"}
     assert not lues_au_grand_livre & {"7", "9", "10"}
+    assert {lu.nom for lu in six.lit if lu.source == "0"} == {"Gamma_e", "pi_etoile_pas",
+                                                             "delta_pas"}
     assert (six.propose, six.etat) == (("8", "14"), ())
     neuf = sieges["9"]
     assert neuf.lit == (Lecture(GRAND_LIVRE, "7"),) and neuf.etat == ("T_F_m1",)

@@ -248,7 +248,8 @@ def test_declaration_conforme_a_tab_production_phases():
     """`tab:production-phases` et ADR 0012, annotation du 13/11/2026, points 2.2 et 2.5 :
     phases 2, 4 et 5 ; N_t lu en phase 4 (écrit avant par le bloc travail), p_t en phase 5
     (écrit avant par le bloc prix) ; aucune lecture d'un plan de la phase 2 en phase 2 ; ligne
-    4 seule proposée ; aucune lecture de W en phase 5."""
+    4 seule proposée ; aucune lecture de W en phase 5 ; f(g_pr) et δ/n_a lus en phase 5 comme
+    grandeurs du moteur (`facteur_g_pr`, `delta_pas` ; #144, point 2)."""
     sieges = {s.etape: s for s in bloc.Production.declaration.sieges}
     assert tuple(sieges) == ("2", "4", "5")
     lus = {e: {(lu.source, lu.nom) for lu in s.lit} for e, s in sieges.items()}
@@ -256,4 +257,6 @@ def test_declaration_conforme_a_tab_production_phases():
     assert ("4", "N_suivant") in lus["4"] and ("5", "p") in lus["5"]
     assert not any(nom == "W_suivant" for _, nom in lus["5"])
     assert ("ouverture", "IN") in lus["5"]
+    assert {nom for source, nom in lus["5"] if source == "0"} == {"facteur_g", "facteur_g_pr",
+                                                                 "delta_pas"}
     assert [s.propose for s in sieges.values()] == [(), (), ("4",)]

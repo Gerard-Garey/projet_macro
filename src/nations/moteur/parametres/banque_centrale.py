@@ -18,9 +18,10 @@ Domaines (point 6), refusés à toute construction de la table, jamais écrêté
 (type ; facteur de Fisher de BC1 et f(π*) de Γ^e) ; r̄ > −5 % (C51 ; contient
 1 + r̄ > 0).
 
-Les labels `eq:banque_centrale-…` sont ceux de la fiche 8 (§ 9.1) ; ils entrent
-dans la spécification au passage de `docwriter` (rang 7 de J3-c, P62), avec
-`eq:moteur-croissance-nominale-attendue`.
+Les labels `eq:banque_centrale-…` sont ceux de la fiche 8 (§ 9.1) ; ils sont
+entrés dans la spécification au passage de `docwriter` (commit `99eea4a`, rang 4
+de J3-c, P62), après `eq:moteur-croissance-nominale-attendue` (commit `4d0430f`,
+rang 3).
 """
 
 from __future__ import annotations

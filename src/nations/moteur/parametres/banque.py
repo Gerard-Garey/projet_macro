@@ -11,8 +11,9 @@ Domaines (point 6), refusés à toute construction de la table, jamais écrêté
 ϖ_L et ϖ_D finis, **sans condition de signe** (la condition d'existence du
 dividende stationnaire les contraint, script) ; ϑ > 0.
 
-Les labels `eq:banque-…` sont ceux de la fiche 7 (§ 9.1) ; ils entrent dans la
-spécification au passage de `docwriter` (rang 7 de J3-c, P62).
+Les labels `eq:banque-…` sont ceux de la fiche 7 (§ 9.1) ; ils sont entrés dans
+la spécification au passage de `docwriter` (commit `7d90789`, rang 5 de J3-c,
+P62).
 """
 
 from __future__ import annotations

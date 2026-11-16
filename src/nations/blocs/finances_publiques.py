@@ -15,8 +15,8 @@ points 1 à 5 ; issue #132 et ses six engagements.
 directement, qui reçoivent des scalaires (taux déjà convertis au pas) ; les méthodes de phase
 lisent la vue, convertissent par `nations.moteur.conversions` seulement, appellent ces fonctions
 et écrivent. Γ^e_t et π^{∗,pas}_t sont des grandeurs du moteur (phase 0), lues sans recalcul.
-Chaque équation porte la balise de son label prévu (`tab:finances_publiques-equations`), posé dans
-la spécification au passage de `docwriter` (rang 6 de J3-d2, P62) ; E13 garde un label malgré ses
+Chaque équation porte la balise de son label (`tab:finances_publiques-equations`), posé dans la
+spécification avec son encadré « Lecture » depuis `a059d10` (P62) ; E13 garde un label malgré ses
 deux parts. i_B ≡ i_CB est une identité de notation (`sec:finances_publiques-taux`), sans balise
 ni variable.
 
@@ -34,18 +34,27 @@ algébriquement). Toute autre lecture brute de D_H, D_F ou M^G est un défaut (t
 et E9 une fois et propose les trois lignes 19a sur le même Em_t, sans attribut d'instance ni
 variable d'état.
 
+**Un seul calcul des intérêts sur titres par pas** (ADR 0013, annotation du 16/11/2026, point 4 ;
+#150, point 1) : la méthode de la phase 2 calcule E7 une fois et écrit ses trois termes en
+variables du pas, sous les noms des termes des lignes 11a à 11c (`iB_BH`, `iB_BBk`, `iB_BCB`),
+contrôlés en finitude seulement (i_CB peut être négatif) ; le plafond de E6 en forme la somme, et
+la phase 6 les lit et les propose, sans relire i_CB ni les encours de titres : le plafond de E6 et
+les lignes 11a à 11c reposent sur les mêmes valeurs.
+
 **Phases** (`tab:finances_publiques-phases`) :
 
 - phase 2 : lit l'ouverture (M^G, pr, N^pa, Y^HS_{t−1}, π*_t, B_H, B_Bk, B_CB, L^CB, Res), le
   registre (P_{t−1}), les grandeurs du moteur (Γ^e, π^{∗,pas}), i_CB (phase 1) et les paramètres
-  (table du bloc 9, U^eq du travail, r̄ de la banque centrale) ; E1, E4, E3, E6 ; écrit `G_vise`,
-  `G_plan` (vers le bloc production ; `DOMAINES_DU_PAS`), `T_cou`, `T_H`, `Tr_lev` et `Tr` ;
+  (table du bloc 9, U^eq du travail, r̄ de la banque centrale) ; E1, E4, E3, E7, E6 ; écrit
+  `G_vise`, `G_plan` (vers le bloc production ; `DOMAINES_DU_PAS`), `T_cou`, `T_H`, `Tr_lev`,
+  `Tr` et les trois termes de E7, `iB_BH`, `iB_BBk` et `iB_BCB` ;
 - phase 5, après les blocs prix et production : lit p_t et le volume servi G^vol_t ; propose la
   ligne 2 (E2) ;
-- phase 6 : lit ses calculs de la phase 2, i_CB, l'ouverture (B_H, B_Bk, B_CB, K, L, D_F, i_L,
-  i_D), les montants exécutés des lignes 1 à 5 et δ ; E5, E7, E13 (première part) ; écrit `T_F`
-  et `Tr_non_verses`, propose les lignes 6, 7 (T_H + T_F) et 11a à 11c ; ne lit rien de ce
-  qu'un autre bloc écrit dans la phase ;
+- phase 6 : lit ses calculs de la phase 2 (T_H, Tr^lev, Tr et les trois termes de E7),
+  l'ouverture (K, L, D_F, i_L, i_D), les montants exécutés des lignes 1 à 5 et δ/n_a (grandeur
+  du moteur `delta_pas`, #144, point 2) ; E5, E13
+  (première part) ; écrit `T_F` et `Tr_non_verses`, propose les lignes 6, 7 (T_H + T_F) et 11a à
+  11c (termes de E7 de la phase 2) ; ne lit rien de ce qu'un autre bloc écrit dans la phase ;
 - phase 7, seul écrivain : lit les montants exécutés des lignes 2, 6, 7, 11a à 11c, puis 5, 10,
   14 et 15 (colonne des ménages), M^G et D_H d'ouverture, ς_{B,t} (phase 0), π^{∗,pas}, θ_CB et
   Π^CB (phase 1), T^cou (phase 2) et ν_G ; E8 à E11, puis E12 ; écrit `M_G_etoile` et `Em`,
@@ -243,7 +252,8 @@ class FinancesPubliques:
 
     __slots__ = ()
     declaration = DeclarationDeBloc("finances_publiques", (
-        Siege("2", ("G_vise", "G_plan", "T_cou", "T_H", "Tr_lev", "Tr"),
+        Siege("2", ("G_vise", "G_plan", "T_cou", "T_H", "Tr_lev", "Tr", "iB_BH", "iB_BBk",
+                    "iB_BCB"),
               _ouverture("M_G", "pr", "N_pa", "Y_HS_m1", "pi_etoile", "B_H", "B_Bk", "B_CB",
                          "L_CB", "Res")
               + (Lecture(REGISTRE, "dernier_prix"), Lecture("0", "Gamma_e"),
@@ -252,8 +262,9 @@ class FinancesPubliques:
         Siege("5", (), (Lecture("5", "p"), Lecture("5", "G_vol")), ("2",), (), ()),
         Siege("6", ("T_F", "Tr_non_verses"),
               (Lecture("2", "T_H"), Lecture("2", "Tr_lev"), Lecture("2", "Tr"),
-               Lecture("1", "i_CB"))
-              + _ouverture("B_H", "B_Bk", "B_CB", "K", "L", "D_F", "i_L", "i_D")
+               Lecture("2", "iB_BH"), Lecture("2", "iB_BBk"), Lecture("2", "iB_BCB"),
+               Lecture("0", "delta_pas"))
+              + _ouverture("K", "L", "D_F", "i_L", "i_D")
               + _grand_livre("1", "2", "3", "4", "5"),
               ("6", "7", "11a", "11b", "11c"), (), ()),
         Siege("7", ("M_G_etoile", "Em"),
@@ -267,8 +278,9 @@ class FinancesPubliques:
     ))
 
     def phase_2(self, vue) -> None:
-        """Plan de dépense (E1), couverture des intérêts (E4), impôt des ménages (E3), transferts
-        (E6) ; ne lit que l'ouverture, la phase 1, le registre et le moteur."""
+        """Plan de dépense (E1), couverture des intérêts (E4), impôt des ménages (E3), intérêts sur
+        titres (E7, calculés une fois par pas, écrits en variables du pas), transferts (E6) ; ne
+        lit que l'ouverture, la phase 1, le registre et le moteur."""
         table = vue.parametres.finances_publiques
         P_m1 = vue.dernier_prix()
         pi_etoile_pas = vue.lire("pi_etoile_pas")
@@ -289,7 +301,7 @@ class FinancesPubliques:
         iB_BH, iB_BBk, iB_BCB = interets_sur_titres(par_pas(TauxDeFlux(i_CB)), vue.ouverture.B_H,
                                                     vue.ouverture.B_Bk, vue.ouverture.B_CB)
         # i_CB B_t/n_a de E6 : somme des trois termes de E7, dans l'ordre des lignes 11a à 11c,
-        # celle que la phase 7 relit au grand livre.
+        # celle que la phase 7 relit au grand livre ; la phase 6 propose ces mêmes termes.
         interets = iB_BH + iB_BBk + iB_BCB
         vue.ecrire_pas("G_vise", G_vise)
         vue.ecrire_pas("G_plan", G_plan)
@@ -297,6 +309,9 @@ class FinancesPubliques:
         vue.ecrire_pas("T_H", T_H)
         vue.ecrire_pas("Tr_lev", Tr_lev)
         vue.ecrire_pas("Tr", transferts(Tr_lev, vue.ouverture.M_G, T_H, interets, G_plan))
+        vue.ecrire_pas("iB_BH", iB_BH)
+        vue.ecrire_pas("iB_BBk", iB_BBk)
+        vue.ecrire_pas("iB_BCB", iB_BCB)
 
     def phase_5(self, vue) -> None:
         """Dépense exécutée (ligne 2), au prix du pas sur le volume servi."""
@@ -304,7 +319,7 @@ class FinancesPubliques:
 
     def phase_6(self, vue) -> None:
         """Transferts (ligne 6) et part non versée (E13), impôts (ligne 7 : E3, E5), intérêts sur
-        titres (lignes 11a à 11c, E7)."""
+        titres (lignes 11a à 11c : termes de E7 calculés en phase 2, lus sans recalcul)."""
         table = vue.parametres.finances_publiques
         i_D_pas = par_pas(TauxDeFlux(vue.ouverture.i_D))
         # E5 : intérêts et amortissement recalculés sur l'ouverture, comme F3 ; D_F reçu brut, lu
@@ -313,20 +328,17 @@ class FinancesPubliques:
             table.tau_F, vue.grand_livre.montant_execute_ligne("1"),
             vue.grand_livre.montant_execute_ligne("2"), vue.grand_livre.montant_execute_ligne("3"),
             vue.grand_livre.montant_execute_ligne("4"), vue.grand_livre.montant_execute_ligne("5"),
-            par_pas(vue.parametres.investissement.delta) * vue.ouverture.K,
+            vue.lire("delta_pas") * vue.ouverture.K,
             par_pas(TauxDeFlux(vue.ouverture.i_L)) * vue.ouverture.L, i_D_pas, vue.ouverture.D_F)
         Tr = vue.lire("Tr")
         _, Tr_non_verses = part_non_payee(vue.lire("Tr_lev"), Tr)
-        iB_BH, iB_BBk, iB_BCB = interets_sur_titres(par_pas(TauxDeFlux(vue.lire("i_CB"))),
-                                                    vue.ouverture.B_H, vue.ouverture.B_Bk,
-                                                    vue.ouverture.B_CB)
         vue.ecrire_pas("T_F", T_F)
         vue.ecrire_pas("Tr_non_verses", Tr_non_verses)
         vue.proposer("6", {"Tr": Tr})
         vue.proposer("7", {"T_H": vue.lire("T_H"), "T_F": T_F})
-        vue.proposer("11a", {"iB_BH": iB_BH})
-        vue.proposer("11b", {"iB_BBk": iB_BBk})
-        vue.proposer("11c", {"iB_BCB": iB_BCB})
+        vue.proposer("11a", {"iB_BH": vue.lire("iB_BH")})
+        vue.proposer("11b", {"iB_BBk": vue.lire("iB_BBk")})
+        vue.proposer("11c", {"iB_BCB": vue.lire("iB_BCB")})
 
     def phase_7(self, vue) -> None:
         """Encaisse visée (E8) et besoin d'émission (E9), calculés une fois ; souscriptions (E10,

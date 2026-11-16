@@ -6,12 +6,15 @@ aller-retour aux mêmes octets). Chaque test énonce une propriété (décompte,
 refus, égalité bit à bit), jamais une valeur à reproduire.
 """
 
+import ast
 import dataclasses
+import inspect
 import json
 import math
 import struct
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -931,3 +934,433 @@ def test_document_en_texte_refuse():
 def test_monde_vide_aller_retour():
     assert charger(sauvegarder([])) == ()
     assert sauvegarder(charger(sauvegarder([]))) == sauvegarder([])
+
+
+# --------------------------------------------------------------------------
+# Construction de clôture (#144, point 1 ; ADR 0013, annotation du 16/11/2026, point 1)
+# --------------------------------------------------------------------------
+
+SOURCE = Path(__file__).resolve().parents[2] / "src"
+
+
+def _champs(etat):
+    return {nom: getattr(etat, nom) for nom in CHAMPS}
+
+
+def test_etat_de_cloture_egal_au_constructeur_au_bit():
+    """Même objet que `EtatPays(**champs)` : type, égalité, hachage, bits, gel."""
+    etat = etat_pays()
+    cloture = schema.etat_de_cloture(_champs(etat))
+    assert type(cloture) is EtatPays
+    assert cloture == etat and hash(cloture) == hash(etat) and bits(cloture) == bits(etat)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        cloture.t = 1
+
+
+@pytest.mark.parametrize("nom, valeur", [
+    ("identifiant", ""), ("graine", -1), ("t", -1), ("t", 2**63),
+    ("registre_prix", (0.0,) * 13), ("D_H", float("nan")), ("V_flux_etat", float("inf")),
+])
+def test_etat_de_cloture_refuse_un_champ_hors_bloc_hors_domaine(nom, valeur):
+    """Le domaine des champs autres que les variables des blocs (identité, t, registre,
+    positions, V^flux) reste contrôlé à la clôture, avec le refus de `EtatPays`."""
+    champs = _champs(etat_pays())
+    assert nom in champs
+    champs[nom] = valeur
+    with pytest.raises(ValueError, match=f"EtatPays.{nom} : "):
+        schema.etat_de_cloture(champs)
+    with pytest.raises(ValueError, match=f"EtatPays.{nom} : "):
+        EtatPays(**champs)
+
+
+@pytest.mark.parametrize("nom, valeur", [
+    ("identifiant", 1), ("t", 0.0), ("registre_prix", (1.0,) * 12), ("D_H", 1),
+    ("U", 1), ("pi_e", np.float64(0.02)), ("mu_tilde", True),
+])
+def test_etat_de_cloture_controle_le_type_de_tous_les_champs(nom, valeur):
+    """Le type de tous les champs, variables des blocs comprises, est contrôlé à la clôture."""
+    champs = _champs(etat_pays())
+    champs[nom] = valeur
+    with pytest.raises(TypeError, match=f"EtatPays.{nom} : "):
+        schema.etat_de_cloture(champs)
+
+
+def test_etat_de_cloture_ne_recontrole_pas_le_domaine_des_variables_des_blocs():
+    """Le domaine d'une variable d'état d'un bloc n'est contrôlé qu'à l'écriture
+    (`Vue.ecrire_etat`) : appelée directement, `etat_de_cloture` ne le refait pas, quand le
+    constructeur, `dataclasses.replace` et la reprise le contrôlent toujours."""
+    champs = _champs(etat_pays())
+    champs["U"] = 1.2
+    cloture = schema.etat_de_cloture(champs)
+    assert cloture.U == 1.2
+    with pytest.raises(ValueError, match="EtatPays.U : 1.2 hors du domaine"):
+        EtatPays(**champs)
+    with pytest.raises(ValueError, match="EtatPays.U : 1.2 hors du domaine"):
+        dataclasses.replace(cloture, t=1)
+    with pytest.raises(SauvegardeRefusee):
+        charger(sauvegarder([cloture]))
+
+
+def test_etat_de_cloture_refuse_un_champ_manquant_ou_en_trop():
+    champs = _champs(etat_pays())
+    with pytest.raises(TypeError, match="champs manquants \\['U'\\]"):
+        schema.etat_de_cloture({k: v for k, v in champs.items() if k != "U"})
+    with pytest.raises(TypeError, match="champs non déclarés \\['S_banque'\\]"):
+        schema.etat_de_cloture({**champs, "S_banque": 1.0})
+
+
+def test_post_init_d_etat_pays_sans_argument_ni_champ_qui_le_module():
+    """Ni argument, ni `InitVar`, ni valeur par défaut ne module `EtatPays.__post_init__` : le
+    contrôle complet est celui de toute construction par le constructeur."""
+    assert EtatPays.__post_init__ is schema._verifier_types
+    assert tuple(inspect.signature(schema._verifier_types).parameters) == ("etat",)
+    assert tuple(EtatPays.__dataclass_fields__) == CHAMPS
+    for champ in EtatPays.__dataclass_fields__.values():
+        assert champ._field_type is dataclasses._FIELD
+        assert champ.default is dataclasses.MISSING
+        assert champ.default_factory is dataclasses.MISSING
+
+
+def _fonctions(arbre):
+    """(nom qualifié, nœud) de chaque fonction d'un module, méthodes comprises."""
+    for noeud in arbre.body:
+        if isinstance(noeud, ast.FunctionDef):
+            yield noeud.name, noeud
+        elif isinstance(noeud, ast.ClassDef):
+            for sous in noeud.body:
+                if isinstance(sous, ast.FunctionDef):
+                    yield f"{noeud.name}.{sous.name}", sous
+
+
+def _sites(predicat):
+    """(fichier relatif, fonction) de chaque nœud de `src/` qui vérifie `predicat`, hors de toute
+    fonction compris (« <module> »)."""
+    sites = set()
+    for chemin in sorted(SOURCE.rglob("*.py")):
+        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+        dans_une_fonction = set()
+        for nom, fonction in _fonctions(arbre):
+            for n in ast.walk(fonction):
+                dans_une_fonction.add(id(n))
+                if predicat(n):
+                    sites.add((chemin.relative_to(SOURCE).as_posix(), nom))
+        for n in ast.walk(arbre):
+            if id(n) not in dans_une_fonction and predicat(n):
+                sites.add((chemin.relative_to(SOURCE).as_posix(), "<module>"))
+    return sites
+
+
+def _noeuds_de_src():
+    """(fichier relatif, fonction, nœud, parent) de chaque nœud de chaque module de `src/`, module
+    entier (niveau module et classes imbriquées compris, « <module> » hors des fonctions de
+    `_fonctions`) ; parent : nœud qui le contient, None pour le module (réserve r2 de l'audit du
+    rang 3)."""
+    for chemin in sorted(SOURCE.rglob("*.py")):
+        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+        parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
+        fonctions = {id(n): nom for nom, f in _fonctions(arbre) for n in ast.walk(f)}
+        fichier = chemin.relative_to(SOURCE).as_posix()
+        for n in ast.walk(arbre):
+            yield fichier, fonctions.get(id(n), "<module>"), n, parents.get(id(n))
+
+
+def _nomme(n, nom):
+    return (isinstance(n, ast.Name) and n.id == nom) or (
+        isinstance(n, ast.Attribute) and n.attr == nom)
+
+
+def test_executer_pas_seul_appelant_de_etat_de_cloture():
+    """Test textuel (condition 1 de l'annotation) : dans `src/`, seul `executer_pas` nomme
+    `etat_de_cloture` hors de sa définition."""
+    sites = _sites(lambda n: _nomme(n, "etat_de_cloture"))
+    assert sites == {("nations/moteur/ordonnanceur.py", "executer_pas")}
+
+
+# Accès dynamiques aux attributs dans `src/` (`getattr`, `setattr`, `delattr`, `attrgetter`,
+# `methodcaller`, `getattr_static`, `__getattribute__`, `__setattr__`) dont le nom d'attribut
+# n'est pas une chaîne littérale : liste fermée des sites, mesurée le 16/11/2026 (M1 de l'audit
+# du rang 2 : un `getattr` à nom calculé sur le contexte du pas contournerait les tests textuels
+# de `etat_suivant` ; `operator.methodcaller`, m2 de la revue finale du rang 8 : il appelle une
+# méthode nommée par son premier argument).
+ACCES_DYNAMIQUES_ADMIS = {
+    ("nations/etat/sauvegarde.py", "sauvegarder"),
+    ("nations/etat/schema.py", "_verifier_types"),
+    ("nations/etat/schema.py", "etat_de_cloture"),
+    ("nations/moteur/ordonnanceur.py", "assembler"),
+    ("nations/moteur/parametres/__init__.py", "valider_table"),
+    ("nations/moteur/parametres/ensemble.py", "EnsembleDesParametres.__post_init__"),
+    ("nations/noyau/grand_livre.py", "ouvrir_pas"),
+}
+_ACCES_DYNAMIQUES = {"getattr", "setattr", "delattr", "attrgetter", "methodcaller",
+                     "getattr_static", "__getattribute__", "__setattr__", "__delattr__"}
+# Accès dynamiques dont le nom d'attribut est le premier argument (`attrgetter(nom)`,
+# `methodcaller(nom, *args)`), et non le deuxième (`getattr(objet, nom)`).
+_NOM_EN_PREMIER = {"attrgetter", "methodcaller"}
+# Références à un accès dynamique qui ne sont pas appelées directement (alias, argument, valeur
+# rendue ; réserve r1 de l'audit du rang 2) : (fichier, fonction, instruction), liste fermée.
+# Seule admise : `poser = object.__setattr__` dans `_construire`, constructeur privé de
+# `GrandLivre` (appelé par `ouvrir_pas` seul), où `poser` ne sert qu'à poser, sur l'objet neuf
+# `livre`, des attributs privés nommés par un littéral (contrôlé par le test).
+REFERENCES_DYNAMIQUES_ADMISES = {
+    ("nations/noyau/grand_livre.py", "_construire", "poser = object.__setattr__"),
+}
+
+
+def _acces_dynamique(n):
+    """Appel d'accès dynamique à un attribut (`getattr`, `object.__setattr__`,
+    `inspect.getattr_static`…)."""
+    if not isinstance(n, ast.Call):
+        return False
+    f = n.func
+    nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+    return nom in _ACCES_DYNAMIQUES
+
+
+def _reference_dynamique(n, parent):
+    """Référence (Load) à un accès dynamique qui n'est pas la fonction d'un appel direct
+    (`lire = getattr`, `poser = object.__setattr__`, `map(getattr, …)`), ou importation renommée
+    (`from inspect import getattr_static as lire`) : l'appel passe alors par un autre nom, que
+    `_acces_dynamique` ne voit pas."""
+    if isinstance(n, ast.alias):
+        return n.name.rsplit(".", 1)[-1] in _ACCES_DYNAMIQUES and n.asname not in (None, n.name)
+    nom = (n.id if isinstance(n, ast.Name) else n.attr if isinstance(n, ast.Attribute)
+           else None)
+    return (nom in _ACCES_DYNAMIQUES and isinstance(n.ctx, ast.Load)
+            and not (isinstance(parent, ast.Call) and parent.func is n))
+
+
+def _nom_litteral(n):
+    f = n.func
+    nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+    arguments = n.args[:1] if nom in _NOM_EN_PREMIER else n.args[1:2]
+    return (arguments[0].value if arguments and isinstance(arguments[0], ast.Constant)
+            and type(arguments[0].value) is str else None)
+
+
+def test_acces_dynamique_detecte():
+    """m2 de la revue finale du rang 8 (#150) : `operator.methodcaller`, sous son nom qualifié
+    ou importé de `operator` (renommé ou non), est un accès dynamique ; son nom de méthode est
+    son premier argument (littéral reconnu, `etat_suivant` compris), comme pour `attrgetter`,
+    qualifié ou non."""
+    def appels(source):
+        arbre = ast.parse(source)
+        return [(ast.unparse(n), _nom_litteral(n)) for n in ast.walk(arbre)
+                if _acces_dynamique(n)]
+
+    def references(source):
+        arbre = ast.parse(source)
+        parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
+        return [ast.unparse(parents[id(n)] if isinstance(n, ast.alias) else n)
+                for n in ast.walk(arbre) if _reference_dynamique(n, parents.get(id(n)))]
+    assert appels("operator.methodcaller(nom)(vue)") == [("operator.methodcaller(nom)", None)]
+    assert appels("from operator import methodcaller\nmethodcaller(nom, 1)(vue)") == [
+        ("methodcaller(nom, 1)", None)]
+    assert appels('operator.methodcaller("etat_suivant")(pas)') == [
+        ("operator.methodcaller('etat_suivant')", "etat_suivant")]
+    assert appels('methodcaller("ecrire", x)') == [("methodcaller('ecrire', x)", "ecrire")]
+    assert appels('operator.attrgetter("_pas")(vue)') == [
+        ("operator.attrgetter('_pas')", "_pas")]
+    assert appels('getattr(vue, "_pas")') == [("getattr(vue, '_pas')", "_pas")]
+    assert references("from operator import methodcaller as appeler") == [
+        "from operator import methodcaller as appeler"]
+    assert references("appeler = operator.methodcaller") == ["operator.methodcaller"]
+    assert references("map(methodcaller, noms)") == ["methodcaller"]
+    assert references("from operator import methodcaller") == []
+    assert appels("operator.itemgetter(0)(x)") == []
+
+
+def test_acces_dynamiques_aux_attributs_liste_fermee():
+    """M1 de l'audit du rang 2 (#144, point 1) : un accès dynamique à nom calculé n'existe que
+    sur une liste fermée de sites, sans `_Pas` ; un nom littéral `etat_suivant` ou `_pas` n'est
+    jamais lu dynamiquement. Réserve r1 (#144) : `getattr_static` est un accès dynamique, et toute
+    référence à un accès dynamique qui n'est pas appelée directement (alias) est sur une liste
+    fermée, `poser` de `_construire`, dont chaque appel nomme par un littéral un attribut privé
+    de l'objet neuf `livre`."""
+    assert _sites(lambda n: _acces_dynamique(n) and _nom_litteral(n) is None) == (
+        ACCES_DYNAMIQUES_ADMIS)
+    assert _sites(lambda n: _acces_dynamique(n)
+                  and _nom_litteral(n) in ("etat_suivant", "_pas")) == set()
+    references = {(fichier, nom, ast.unparse(parent))
+                  for fichier, nom, n, parent in _noeuds_de_src()
+                  if _reference_dynamique(n, parent)}
+    assert references == REFERENCES_DYNAMIQUES_ADMISES
+    arbre = ast.parse((SOURCE / "nations" / "noyau" / "grand_livre.py").read_text(
+        encoding="utf-8"))
+    construire = dict(_fonctions(arbre))["_construire"]
+    appels = [n for n in ast.walk(construire) if isinstance(n, ast.Call) and _nomme(n.func, "poser")]
+    assert appels and all(
+        isinstance(n.func, ast.Name) and len(n.args) == 3 and not n.keywords
+        and _nomme(n.args[0], "livre") and isinstance(n.args[1], ast.Constant)
+        and type(n.args[1].value) is str and n.args[1].value.startswith("_")
+        and n.args[1].value != "_pas" for n in appels), [ast.unparse(n) for n in appels]
+    assert [ast.unparse(n) for n in ast.walk(construire)
+            if _nomme(n, "poser") and isinstance(n.ctx, ast.Load)] == ["poser"] * len(appels)
+
+
+# Exécution de texte dans `src/` (décision du mainteneur du 16/11/2026) : aucun `eval`, `exec`,
+# `compile` ni `__import__` des primitives, liste vide imposée ; un texte exécuté contournerait
+# tous les tests textuels (accès dynamiques ci-dessus, `etat_suivant` ci-dessous). Sont visés
+# aussi les chemins par lesquels on atteint une primitive sous un nom calculé : l'espace des
+# primitives (`builtins`, `__builtins__`), `__self__` (`print.__self__` est le module
+# `builtins`), les tables d'espaces de noms (`globals`, `vars`, `sys.modules`, sous son nom,
+# importé de `sys` ou pris sur un alias de `sys` ; attributs `__globals__` d'une fonction,
+# `f_globals`, `f_builtins` et `f_locals` d'un cadre, P196) et l'importation dynamique
+# (`importlib`, `import_module`).
+EXECUTIONS_DE_TEXTE = {"eval", "exec", "compile", "__import__"}
+_ESPACES_DES_PRIMITIVES = {"builtins", "__builtins__"}
+_TABLES_D_ESPACES = {"globals", "vars"}
+_ATTRIBUTS_D_ESPACES = {"__globals__", "f_globals", "f_builtins", "f_locals"}
+_IMPORTATION_DYNAMIQUE = {"importlib", "import_module"}
+
+
+def _noms_importes_d_ailleurs(arbre):
+    """Noms liés par `from <module> import …` d'un module autre que l'espace des primitives
+    (`from re import compile`) : dans ce module, ce nom n'est pas la primitive."""
+    return {a.asname or a.name for n in ast.walk(arbre)
+            if isinstance(n, ast.ImportFrom) and n.module not in _ESPACES_DES_PRIMITIVES
+            for a in n.names}
+
+
+def _alias_de_sys(arbre):
+    """Noms sous lesquels le module lie `sys` (`import sys`, `import sys as s`), `sys` compris
+    dans tous les cas (au plus strict)."""
+    return {"sys"} | {a.asname or a.name for n in ast.walk(arbre) if isinstance(n, ast.Import)
+                      for a in n.names if a.name == "sys"}
+
+
+def _execution_de_texte(n, parent, importes=frozenset(), alias_de_sys=frozenset({"sys"})):
+    """Chemin vers une exécution de texte (voir ci-dessus) :
+
+    - nom (appelé ou non, alias compris) : `eval`, `exec`, `compile`, `__import__` des
+      primitives (non liés par `from <autre module> import`), `builtins`, `__builtins__`,
+      `globals`, `vars`, `importlib`, `import_module` ;
+    - attribut : `__self__`, `__builtins__`, `builtins`, `import_module`, `__globals__`,
+      `f_globals`, `f_builtins`, `f_locals`, `modules` pris sur `sys` ou sur un de ses alias
+      (`alias_de_sys`, `import sys as s` puis `s.modules`), ou une des quatre primitives prise
+      sur `builtins` ou `__builtins__` (`builtins.exec`) ; `re.compile`, `x.eval()` ne sont pas
+      visés ;
+    - importation : de `builtins` ou d'`importlib` (`import builtins`, `from builtins import
+      eval as e`, `import importlib.util`, `from importlib import import_module`), ou de
+      `modules` depuis `sys` (`from sys import modules`).
+    """
+    if isinstance(n, ast.Name):
+        if n.id in EXECUTIONS_DE_TEXTE:
+            return n.id not in importes
+        return n.id in _ESPACES_DES_PRIMITIVES | _TABLES_D_ESPACES | _IMPORTATION_DYNAMIQUE
+    if isinstance(n, ast.Attribute):
+        return (n.attr in _ESPACES_DES_PRIMITIVES | _ATTRIBUTS_D_ESPACES
+                | {"__self__", "import_module"}
+                or (n.attr == "modules" and isinstance(n.value, ast.Name)
+                    and n.value.id in alias_de_sys)
+                or (n.attr in EXECUTIONS_DE_TEXTE and isinstance(n.value, ast.Name)
+                    and n.value.id in _ESPACES_DES_PRIMITIVES))
+    if isinstance(n, ast.alias):
+        racines = _ESPACES_DES_PRIMITIVES | {"importlib"}
+        if isinstance(parent, ast.ImportFrom):
+            return ((parent.module or "").split(".")[0] in racines
+                    or (parent.module == "sys" and n.name == "modules"))
+        return n.name.split(".")[0] in racines
+    return False
+
+
+def test_aucune_execution_de_texte_dans_src():
+    """Décision du mainteneur du 16/11/2026, à côté du test des accès dynamiques : aucun chemin
+    vers une exécution de texte (`_execution_de_texte`) dans `src/`, module entier (liste vide
+    imposée)."""
+    arbres = {chemin.relative_to(SOURCE).as_posix(): ast.parse(
+        chemin.read_text(encoding="utf-8")) for chemin in SOURCE.rglob("*.py")}
+    importes = {fichier: _noms_importes_d_ailleurs(arbre) for fichier, arbre in arbres.items()}
+    alias_de_sys = {fichier: _alias_de_sys(arbre) for fichier, arbre in arbres.items()}
+    sites = {(fichier, nom, ast.unparse(parent if isinstance(n, ast.alias) else n))
+             for fichier, nom, n, parent in _noeuds_de_src()
+             if _execution_de_texte(n, parent, importes[fichier], alias_de_sys[fichier])}
+    assert sites == set()
+
+
+def test_execution_de_texte_detectee():
+    """Le prédicat de `test_aucune_execution_de_texte_dans_src` reconnaît chaque forme visée
+    (dont les formes de l'audit du rang 4, et celles de P196 : `__globals__`, `f_globals`,
+    `f_builtins`, `f_locals`, `modules` importé de `sys`, `sys` sous alias) et ignore `compile`
+    importé d'un autre module, `re.compile`, `x.eval()`, `x.evaluer(1)`, `modules` importé d'un
+    autre module ou pris sur un autre objet."""
+    def trouves(source):
+        arbre = ast.parse(source)
+        importes = _noms_importes_d_ailleurs(arbre)
+        alias_de_sys = _alias_de_sys(arbre)
+        parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
+        return [ast.unparse(parents[id(n)] if isinstance(n, ast.alias) else n)
+                for n in ast.walk(arbre)
+                if _execution_de_texte(n, parents.get(id(n)), importes, alias_de_sys)]
+    for source in ('eval("pas.etat_" + "suivant")', "exec(texte)", "c = compile",
+                   '__import__("os")', "import builtins", "from builtins import eval as e",
+                   "x = __builtins__", "m.__builtins__", "builtins.exec(t)",
+                   'print.__self__.eval("1")', 'globals()["__builtins__"]["eval"]',
+                   'sys.modules["builtins"].exec', 'importlib.import_module("builtins")',
+                   'vars(m)["eval"]', "import importlib", "import importlib.util",
+                   "from importlib import import_module as charger",
+                   # P196 : espaces de noms d'une fonction et d'un cadre ; `sys.modules` importé
+                   # par son nom ou pris sur un alias de `sys`.
+                   'f.__globals__["__builtins__"]', "cadre.f_globals", "cadre.f_builtins",
+                   "cadre.f_locals", "from sys import modules",
+                   'from sys import modules as m\nm["builtins"]',
+                   'import sys as s\ns.modules["builtins"]'):
+        assert trouves(source), source
+    assert trouves('import sys as s\ns.modules["builtins"]') == ['s.modules']
+    for source in ("from re import compile", 'from re import compile\ncompile("a")',
+                   're.compile("a")', "x.eval()", "x.evaluer(1)", "from paquet import modules",
+                   "x.modules", "import sys as s\ns.argv"):
+        assert trouves(source) == [], (source, trouves(source))
+
+
+def test_vue_ecrire_etat_seul_site_qui_remplit_etat_suivant():
+    """Test textuel (condition 2 de l'annotation) : dans `src/`, `etat_suivant` n'est rempli
+    (affectation indicée, méthode de mutation) que par `Vue.ecrire_etat`, après son contrôle de
+    domaine ; il n'est lié qu'à un dictionnaire vide dans `_Pas.__init__`, et n'est jamais
+    passé à une fonction."""
+    def rempli(n):
+        if isinstance(n, (ast.Assign, ast.AugAssign, ast.AnnAssign, ast.Delete)):
+            cibles = n.targets if isinstance(n, (ast.Assign, ast.Delete)) else [n.target]
+            return any(isinstance(c, ast.Subscript) and _nomme(c.value, "etat_suivant")
+                       for c in cibles)
+        return (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and _nomme(n.func.value, "etat_suivant"))
+    assert _sites(rempli) == {("nations/moteur/ordonnanceur.py", "Vue.ecrire_etat")}
+
+    def passe(n):
+        return isinstance(n, ast.Call) and any(
+            _nomme(a, "etat_suivant") for a in (*n.args, *(k.value for k in n.keywords)))
+    assert _sites(passe) == set()
+
+    def lie(n):
+        return isinstance(n, (ast.Assign, ast.AnnAssign)) and any(
+            isinstance(c, ast.Attribute) and c.attr == "etat_suivant"
+            for c in (n.targets if isinstance(n, ast.Assign) else [n.target]))
+    assert _sites(lie) == {("nations/moteur/ordonnanceur.py", "_Pas.__init__")}
+    # Lecture de l'attribut (M1 de l'audit du rang 2 : alias) : seulement dans `ecrire_etat`
+    # et `executer_pas`, et seulement pour lier le nom local `etat_suivant`, qui n'est lu que
+    # dans un test d'appartenance ou un indice (jamais rendu à un autre nom, ni passé).
+    # Module entier (réserve r2 de l'audit du rang 2) : niveau module et classes imbriquées
+    # compris, « <module> » hors des fonctions et méthodes de premier niveau.
+    lus, lus_hors_liaison, noms_detournes = set(), set(), set()
+    for fichier, nom, n, parent in _noeuds_de_src():
+        if (isinstance(n, ast.Attribute) and n.attr == "etat_suivant"
+                and isinstance(n.ctx, ast.Load)):
+            lus.add((fichier, nom))
+            if not (isinstance(parent, ast.Assign) and parent.value is n
+                    and [ast.unparse(c) for c in parent.targets] == ["etat_suivant"]):
+                lus_hors_liaison.add((fichier, nom, ast.unparse(parent)))
+        if (isinstance(n, ast.Name) and n.id == "etat_suivant"
+                and isinstance(n.ctx, ast.Load)
+                and not isinstance(parent, (ast.Compare, ast.Subscript))):
+            noms_detournes.add((fichier, nom, ast.unparse(parent)))
+    assert lus == {("nations/moteur/ordonnanceur.py", "Vue.ecrire_etat"),
+                   ("nations/moteur/ordonnanceur.py", "executer_pas")}
+    assert lus_hors_liaison == set()
+    assert noms_detournes == set()
+    # Dans `Vue.ecrire_etat`, l'enregistrement suit le contrôle de domaine.
+    arbre = ast.parse((SOURCE / "nations" / "moteur" / "ordonnanceur.py").read_text(
+        encoding="utf-8"))
+    ecrire_etat = dict(_fonctions(arbre))["Vue.ecrire_etat"]
+    controle = min(n.lineno for n in ast.walk(ecrire_etat) if _nomme(n, "defaut_de_domaine"))
+    enregistrement = max(n.lineno for n in ast.walk(ecrire_etat) if rempli(n))
+    assert controle < enregistrement
