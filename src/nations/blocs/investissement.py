@@ -22,8 +22,9 @@ grandeurs du moteur (phase 0), lues sans recalcul. Les douze labels `eq:investis
 
 **Lecture nette** (ADR 0013, annotation du 14/11/2026 (rang 1b de J3-d1), point 4 ; ADR 0012,
 A8.2 ; #103) : D_F, moyen de paiement soumis à la lecture nette du contrôle de caisse, est lu en
-max(0 ; D_F) par F3, dans le terme de dépôts et dans les intérêts, comme B4. K et L ne sont pas
-des moyens de paiement et sont lus tels quels.
+max(0 ; D_F) par F3, dans le terme de dépôts et dans les intérêts, comme B4. Localité (#142) :
+la phase 6 passe D_F brut, et seule la fonction balisée F3 applique max(0 ; ·). K et L ne sont
+pas des moyens de paiement et sont lus tels quels.
 
 **Plans dans leur domaine par la forme** (point 4 ; P120) : I^{vol,plan} ≥ 0 tient par S3
 (ti > 0 et y_{t−1} ≥ 0, domaines de l'état ; exponentielle positive), I^plan ≥ 0 par S4
@@ -163,13 +164,18 @@ def impot_anticipe(Gamma_e: float, T_F_m1: float) -> float:
 
 
 def dividendes(D_F: float, Delta_L: float, C: float, G: float, WB: float, interets_L: float,
-               interets_D_F: float, T_e_F: float, D_etoile_F: float) -> float:
-    """F3 : Div_{F,t} = max{0 ; D_{F,t} + ΔL_t + C_t + G_t − WB_t − i_{L,t} L_t/n_a
-    + i_{D,t} D_{F,t}/n_a − T^e_{F,t} − D*_{F,t+1}}, u.m. par pas, ligne 14, versée en dernier ;
-    intérêts recalculés sur les encours et les taux d'ouverture, D_F reçu en max(0 ; ·) (lecture
-    nette). Le plancher est une contrainte de domaine de la ligne 14 (M28 (e)), sans paramètre."""
+               i_D_pas: float, T_e_F: float, D_etoile_F: float) -> float:
+    """F3 : Div_{F,t} = max{0 ; D̃_{F,t} + ΔL_t + C_t + G_t − WB_t − i_{L,t} L_t/n_a
+    + i_{D,t} D̃_{F,t}/n_a − T^e_{F,t} − D*_{F,t+1}}, u.m. par pas, ligne 14, versée en dernier ;
+    intérêts recalculés sur les encours et les taux d'ouverture (`interets_L` = i_L L/n_a ;
+    `i_D_pas` = i_D/n_a, converti par `par_pas`) ; D_F reçu brut, lu ici en D̃_F = max(0 ; D_F),
+    dans le terme de dépôts et dans les intérêts (lecture nette ; #142), comme E5. Le plancher est
+    une contrainte de domaine de la ligne 14 (M28 (e)), sans paramètre."""
     # eq:investissement-dividendes
-    return max(0.0, D_F + Delta_L + C + G - WB - interets_L + interets_D_F - T_e_F - D_etoile_F)
+    D_F_net = max(0.0, D_F)
+    interets_D_F = i_D_pas * D_F_net
+    return max(0.0, D_F_net + Delta_L + C + G - WB - interets_L + interets_D_F - T_e_F
+               - D_etoile_F)
 
 
 def sortie(cellule: float) -> float:
@@ -260,8 +266,6 @@ class Investissement:
         (ligne 14), en dernier."""
         table = vue.parametres.investissement
         L = vue.ouverture.L
-        # Lecture nette (point 4) : D_F en max(0 ; ·), dans le terme de dépôts et les intérêts.
-        D_F = max(0.0, vue.ouverture.D_F)
         P_m1 = vue.dernier_prix()
         pi_etoile_pas = vue.lire("pi_etoile_pas")
         D_etoile_F = depots_vises(table.nu_F, vue.parametres.cadre.pas_par_an, P_m1,
@@ -269,20 +273,20 @@ class Investissement:
         T_e_F = impot_anticipe(vue.lire("Gamma_e"), vue.ouverture.T_F_m1)
         # Intérêts recalculés sur les encours et les taux d'ouverture (M31, C41), non lus.
         interets_L = par_pas(TauxDeFlux(vue.ouverture.i_L)) * L
-        interets_D_F = par_pas(TauxDeFlux(vue.ouverture.i_D)) * D_F
         vue.ecrire_pas("D_etoile_F", D_etoile_F)
         vue.ecrire_pas("T_e_F", T_e_F)
         vue.proposer("8", {"deltaK": amortissement(par_pas(table.delta), vue.ouverture.K)})
         # Engagement 6 de #132 (ADR 0013, annotation du 15/11/2026 (J3-d2), point 7) : chaque
         # montant est lu dans la cellule des entreprises (`montant_execute`, signée : + crédité, −
         # débité), sous-colonne capital pour la ligne 18, courante pour les lignes 1, 2 et 5 ;
-        # la sortie WB en est l'opposé (`sortie`).
+        # la sortie WB en est l'opposé (`sortie`). Lecture nette (point 4 ; localité, #142) :
+        # D_F passé brut à F3, qui le lit en max(0 ; ·) dans le terme de dépôts et les intérêts.
         vue.proposer("14", {"Div_F": dividendes(
-            D_F, vue.grand_livre.montant_execute("18", "entreprises_capital"),
+            vue.ouverture.D_F, vue.grand_livre.montant_execute("18", "entreprises_capital"),
             vue.grand_livre.montant_execute("1", "entreprises_courant"),
             vue.grand_livre.montant_execute("2", "entreprises_courant"),
             sortie(vue.grand_livre.montant_execute("5", "entreprises_courant")), interets_L,
-            interets_D_F, T_e_F, D_etoile_F)})
+            par_pas(TauxDeFlux(vue.ouverture.i_D)), T_e_F, D_etoile_F)})
 
     def phase_9(self, vue) -> None:
         """Impôt des entreprises exécuté du pas, retenu pour le pas suivant (M29)."""
