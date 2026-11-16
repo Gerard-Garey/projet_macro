@@ -414,7 +414,8 @@ def _lignes_executees(*lignes):
 # OUVERTURE, REGISTRE, GRAND_LIVRE (montants exécutés, ou M^{G,8a} en 8 (b)), ou la phase de
 # l'écriture lue (« 0 » : grandeurs du moteur et entrées de scénario). Paramètres des tables :
 # non déclarés comme lectures. Phase 6, « ses calculs de la phase 2 » : T_H, Tr^lev, Tr et les
-# trois termes de E7 (ADR 0013, annotation du 16/11/2026, point 4 ; #150, point 1).
+# trois termes de E7 (ADR 0013, annotation du 16/11/2026, point 4 ; #150, point 1). Phase 6, δ :
+# lu en δ/n_a, grandeur du moteur `delta_pas` (même annotation, point 2 ; #144, point 2).
 TABLEAU_DES_PHASES = {
     "2": (_ouvertures("M_G", "B_H", "B_Bk", "B_CB", "L_CB", "Res", "pr", "N_pa", "Y_HS_m1",
                       "pi_etoile")
@@ -424,7 +425,8 @@ TABLEAU_DES_PHASES = {
     "5": ({Lecture("5", "p"), Lecture("5", "G_vol")}, set()),
     "6": (_ouvertures("K", "L", "D_F", "i_L", "i_D")
           | {Lecture("2", "T_H"), Lecture("2", "Tr_lev"), Lecture("2", "Tr"),
-             Lecture("2", "iB_BH"), Lecture("2", "iB_BBk"), Lecture("2", "iB_BCB")}
+             Lecture("2", "iB_BH"), Lecture("2", "iB_BBk"), Lecture("2", "iB_BCB"),
+             Lecture("0", "delta_pas")}
           | _lignes_executees("1", "2", "3", "4", "5"),
           {"T_F", "Tr_non_verses"}),
     "7": (_ouvertures("M_G", "D_H")

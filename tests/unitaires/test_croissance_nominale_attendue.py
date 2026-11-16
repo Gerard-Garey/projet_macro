@@ -61,9 +61,11 @@ def test_gamma_e_egal_a_la_forme_directe(g_pr, g_n, pi):
 
 def test_gamma_e_apres_g_et_facteur_g_dans_l_ordre_de_l_annotation():
     """Point 7 : `g`, `facteur_g`, puis `pi_etoile_pas`, `Gamma_e`, `gamma_e`, chacun une seule
-    fois dans `GRANDEURS_OUVERTURE` (grandeurs de la phase 0, C3)."""
+    fois dans `GRANDEURS_OUVERTURE` (grandeurs de la phase 0, C3) ; `facteur_g_pr` et
+    `facteur_g_N` avant `facteur_g`, `delta_pas` après (#144, point 2)."""
     noms = [g.nom for g in GRANDEURS_OUVERTURE]
-    assert noms[3:] == ["g", "facteur_g", "pi_etoile_pas", "Gamma_e", "gamma_e"]
+    assert noms[3:] == ["g", "facteur_g_pr", "facteur_g_N", "facteur_g", "delta_pas",
+                        "pi_etoile_pas", "Gamma_e", "gamma_e"]
     assert len(noms) == len(set(noms))
 
 

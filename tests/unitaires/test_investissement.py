@@ -399,7 +399,8 @@ class _VueDEssai:
 
 def _phase_6(D_F):
     etat = _etat(dict(OUVERTURE_DU_CAS, D_F=D_F))
-    lues = {"Gamma_e": 1.0033, "pi_etoile_pas": 0.00165, "v_e_suivant": 100.0}
+    lues = {"Gamma_e": 1.0033, "pi_etoile_pas": 0.00165, "v_e_suivant": 100.0,
+            "delta_pas": par_pas(TABLE.delta)}
     # Engagement 6 de #132 : F3 lit les cellules signées de la colonne des entreprises
     # (capital pour la ligne 18, courante pour 1, 2 et 5 ; WB débité, −100,2).
     montants = {("18", "entreprises_capital"): 3.0, ("1", "entreprises_courant"): 107.5,
@@ -494,10 +495,11 @@ def test_capital_comptable_sur_le_grand_livre_pas_enchaines():
 def test_declaration_conforme_a_tab_investissement_phases():
     """`tab:investissement-phases` et fiche 6, § 9.6, « Phases » (critère 3) : sièges en phases
     2, 3, 5, 6 et 9 ; phase 2 : ouverture, registre et grandeurs du moteur seulement (aucun plan
-    de la phase) ; phase 3 : ouverture, ς_L et le plan de la phase 2 ; phase 5 : p, I^vol (phase
-    5), tu, y (phase 4), tu* (phase 2) ; phase 6 : ni la ligne 7 (impôt), ni les lignes 9 et 10
-    (intérêts) du pas ; phase 9 : la ligne 7 seule, au grand livre. Lignes 18, 3, 8, 14 ;
-    états ϱ̄_L (2), ti et y_{t−1} (5), T_{F,t−1} (9)."""
+    de la phase) ; phase 3 : ouverture, δ/n_a (grandeur `delta_pas`, #144, point 2), ς_L et le
+    plan de la phase 2 ; phase 5 : p, I^vol (phase 5), tu, y (phase 4), tu* (phase 2) ; phase 6 :
+    δ/n_a (`delta_pas`), ni la ligne 7 (impôt), ni les lignes 9 et 10 (intérêts) du pas ; phase
+    9 : la ligne 7 seule, au grand livre. Lignes 18, 3, 8, 14 ; états ϱ̄_L (2), ti et y_{t−1}
+    (5), T_{F,t−1} (9)."""
     sieges = {s.etape: s for s in bloc.Investissement.declaration.sieges}
     assert set(sieges) == {"2", "3", "5", "6", "9"}
     deux = sieges["2"]
@@ -509,7 +511,8 @@ def test_declaration_conforme_a_tab_investissement_phases():
     assert (deux.propose, deux.etat) == ((), ("varrho_bar_L",))
     trois = sieges["3"]
     assert set(trois.lit) == {Lecture(OUVERTURE, "K"), Lecture(OUVERTURE, "L"),
-                              Lecture("0", "varsigma_L"), Lecture("2", "I_plan")}
+                              Lecture("0", "delta_pas"), Lecture("0", "varsigma_L"),
+                              Lecture("2", "I_plan")}
     assert (trois.ecrit, trois.propose, trois.etat) == (("Delta_L_d",), ("18",), ())
     cinq = sieges["5"]
     assert set(cinq.lit) == {Lecture(OUVERTURE, "ti"), Lecture("5", "p"), Lecture("5", "I_vol"),
@@ -519,6 +522,8 @@ def test_declaration_conforme_a_tab_investissement_phases():
     lues_au_grand_livre = {lu.nom for lu in six.lit if lu.source == GRAND_LIVRE}
     assert lues_au_grand_livre == {"18", "5", "1", "2"}
     assert not lues_au_grand_livre & {"7", "9", "10"}
+    assert {lu.nom for lu in six.lit if lu.source == "0"} == {"Gamma_e", "pi_etoile_pas",
+                                                             "delta_pas"}
     assert (six.propose, six.etat) == (("8", "14"), ())
     neuf = sieges["9"]
     assert neuf.lit == (Lecture(GRAND_LIVRE, "7"),) and neuf.etat == ("T_F_m1",)

@@ -296,14 +296,17 @@ def test_empreinte_quatre_variables_sans_registre_ni_tirage():
 
 def test_declaration_conforme_a_tab_travail_phases():
     """`tab:travail-phases` et ADR 0012, annotation du 13/11/2026, points 2.2 et 2.5 : phases 1
-    et 4 ; en phase 1, lectures de l'ouverture seules, exactement W, U, μ̃ et π^e (jamais π*
-    ni Γ^e à la place de π^e, ni le registre) ; en phase 4, N* (phase 2), W_t (phase 1),
-    N et N^pa d'ouverture, aucune lecture de y, y^cap ni tu ; ligne 5 seule proposée."""
+    et 4 ; en phase 1, lectures de l'ouverture, exactement W, U, μ̃ et π^e (jamais π* ni Γ^e
+    à la place de π^e, ni le registre), et f(g_pr) du moteur (`facteur_g_pr`, #144, point 2) ;
+    en phase 4, N* (phase 2), W_t (phase 1), f(g_N) du moteur (`facteur_g_N`), N et N^pa
+    d'ouverture, aucune lecture de y, y^cap ni tu ; ligne 5 seule proposée."""
     sieges = {s.etape: s for s in bloc.Travail.declaration.sieges}
     assert tuple(sieges) == ("1", "4")
-    assert set(sieges["1"].lit) == {Lecture(OUVERTURE, n) for n in ("W", "U", "mu_tilde", "pi_e")}
+    assert set(sieges["1"].lit) == {Lecture(OUVERTURE, n) for n in (
+        "W", "U", "mu_tilde", "pi_e")} | {Lecture("0", "facteur_g_pr")}
     assert set(sieges["4"].lit) == {Lecture(OUVERTURE, "N"), Lecture(OUVERTURE, "N_pa"),
-                                    Lecture("1", "W_suivant"), Lecture("2", "N_etoile")}
+                                    Lecture("0", "facteur_g_N"), Lecture("1", "W_suivant"),
+                                    Lecture("2", "N_etoile")}
     lus = {lu.nom for s in sieges.values() for lu in s.lit}
     assert not lus & {"y", "y_cap", "tu", "pi_etoile", "Gamma_e", "gamma_e"}
     assert [s.propose for s in sieges.values()] == [(), ("5",)]

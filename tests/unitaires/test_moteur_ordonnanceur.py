@@ -37,7 +37,7 @@ from nations.moteur.contrat_bloc import (
     Siege,
     methode_de_l_etape,
 )
-from nations.moteur.conversions import facteur_par_pas
+from nations.moteur.conversions import facteur_par_pas, par_pas
 from nations.moteur.diagnostics import (
     DefautDeDeclaration,
     DepassementNumerique,
@@ -892,8 +892,13 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
     # du 14/11/2026, point 7), π* reconduite par le bloc d'essai.
     f_cible = facteur_par_pas(TauxDeCroissance(e["pi_etoile"]))
     gamma_e = facteur_g * f_cible
-    tendance = (("g", g), ("facteur_g", facteur_g), ("pi_etoile_pas", f_cible - 1.0),
-                ("Gamma_e", gamma_e), ("gamma_e", gamma_e - 1.0))
+    # Conversions partagées (#144, point 2) : f(g_pr), f(g_N), puis `facteur_g`, puis δ/n_a.
+    conversions = (("facteur_g_pr", facteur_par_pas(TauxDeCroissance(0.02))),
+                   ("facteur_g_N", facteur_par_pas(TauxDeCroissance(0.0))),
+                   ("facteur_g", facteur_g),
+                   ("delta_pas", par_pas(PARAMETRES_DE_REFERENCE.investissement.delta)))
+    tendance = (("g", g),) + conversions + (
+        ("pi_etoile_pas", f_cible - 1.0), ("Gamma_e", gamma_e), ("gamma_e", gamma_e - 1.0))
     assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1),
                                            ("date_de_decision", True)) + tendance
     assert fins[13].grandeurs_ouverture == (("annee", 2), ("mois", 2),
@@ -924,7 +929,8 @@ def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
     etat = etat_initial()
     for _ in range(3):
         etat = executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
-    precedentes = ("annee", "mois", "date_de_decision", "g", "facteur_g", "pi_etoile_pas")
+    precedentes = ("annee", "mois", "date_de_decision", "g", "facteur_g_pr", "facteur_g_N",
+                   "facteur_g", "delta_pas", "pi_etoile_pas")
     assert appels == [(t, precedentes) for t in range(3)]
 
 
