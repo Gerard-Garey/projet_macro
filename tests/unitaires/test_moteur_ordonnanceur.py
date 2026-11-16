@@ -926,6 +926,21 @@ def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
     assert appels == [(t, precedentes) for t in range(3)]
 
 
+def test_grandeur_d_ouverture_non_finie_refusee_au_nom_du_moteur_en_phase_0(monkeypatch):
+    """#137 : le moteur écrit les grandeurs calculées à l'ouverture sous (« 0 », `moteur`) ; une
+    grandeur non finie est refusée par l'espace du pas, refus qui nomme le pas, la phase 0 et le
+    moteur."""
+    remplacees = tuple(
+        GrandeurOuverture(g.nom, lambda etat, parametres, deja: float("inf"), g.label, g.unite)
+        if g.nom == "mois" else g for g in ordo.GRANDEURS_OUVERTURE)
+    monkeypatch.setattr(ordo, "GRANDEURS_OUVERTURE", remplacees)
+    o = ordonnanceur_d_essai(plans_nuls(1))
+    with pytest.raises(RefusDuMoteur, match="non finie") as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "0", MOTEUR, "mois")
+
+
 def test_fin_de_pas_independante_de_l_ordre_de_la_liste_de_blocs():
     """L'ordre déclaré ne dépend pas de l'ordre de la liste passée à `assembler` : trois
     ordres de la liste, mêmes `FinDePas` (égales et bit à bit)."""
@@ -1045,10 +1060,65 @@ def test_espace_du_pas_refuse_une_valeur_non_finie(valeur):
     """Constat 6 de l'audit de #97 : NaN et infinis refusés, éléments d'un n-uplet compris."""
     espace = ordo.VariablesDuPas(frozenset({"x"}), 3)
     with pytest.raises(RefusDuMoteur, match="non finie") as refus:
-        espace.ecrire("x", valeur)
-    assert (refus.value.t, refus.value.nom) == (3, "x")
-    espace.ecrire("x", (1.0, 2.0))
+        espace.ecrire("x", valeur, etape="4", bloc="production")
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        3, "4", "production", "x")
+    espace.ecrire("x", (1.0, 2.0), etape="4", bloc="production")
     assert espace.lire("x") == (1.0, 2.0)
+
+
+# Les quatre refus génériques de `VariablesDuPas.ecrire` (#137) : (cas, écriture préalable,
+# nom écrit, valeur, motif du message). Chacun nomme le pas, l'étape et le bloc écrivain.
+REFUS_GENERIQUES = (
+    ("nom non déclaré", None, "z", 1.0, "non déclarée"),
+    ("seconde écriture", ("x", 1.0), "x", 2.0, "seconde écriture"),
+    ("type refusé", None, "x", np.float64(1.0), "float, int, bool ou tuple de float"),
+    ("valeur non finie hors de DOMAINES_DU_PAS", None, "x", float("inf"), "non finie"),
+)
+
+
+@pytest.mark.parametrize("cas, prealable, nom, valeur, motif", REFUS_GENERIQUES,
+                         ids=[c[0] for c in REFUS_GENERIQUES])
+def test_refus_generique_nomme_le_pas_l_etape_et_le_bloc(cas, prealable, nom, valeur, motif):
+    """#137 : chaque refus générique de l'espace du pas nomme le pas, l'étape et le bloc
+    écrivain, comme `PlanHorsDomaine` ; le refus est un `RefusDuMoteur` générique, et le message
+    composé les cite."""
+    espace = ordo.VariablesDuPas(frozenset({"x"}), 7)
+    if prealable is not None:
+        espace.ecrire(*prealable, etape="3", bloc="travail")
+    with pytest.raises(RefusDuMoteur, match=motif) as refus:
+        espace.ecrire(nom, valeur, etape="3", bloc="travail")
+    assert type(refus.value) is RefusDuMoteur
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        7, "3", "travail", nom)
+    assert str(refus.value).startswith(f"pas 7, phase 3, bloc travail, « {nom} » : ")
+
+
+def test_ecriture_de_l_espace_du_pas_sans_etape_ni_bloc_impossible():
+    """#137 : l'étape et le bloc sont obligatoires, sans valeur par défaut (aucun appel ne peut
+    les omettre)."""
+    espace = ordo.VariablesDuPas(frozenset({"x"}), 0)
+    with pytest.raises(TypeError):
+        espace.ecrire("x", 1.0)
+    with pytest.raises(TypeError):
+        espace.ecrire("x", 1.0, etape="0")
+    with pytest.raises(TypeError):
+        espace.ecrire("x", 1.0, bloc=MOTEUR)
+    with pytest.raises(RefusDuMoteur, match="avant son écriture"):
+        espace.lire("x")
+
+
+def test_valeur_du_pas_suivant_non_finie_refusee_au_nom_du_bloc():
+    """#137 : `Vue.ecrire_etat` passe son étape et son bloc à l'espace du pas pour
+    `<nom>_suivant` : le refus de finitude nomme le bloc propriétaire et sa phase d'écriture."""
+    def ecrire_nan(vue, base):
+        vue.ecrire_etat("U", float("nan"))
+    o = ordonnanceur_d_essai(plans_nuls(1), actions=_remplacer_action("travail", "4",
+                                                                      ecrire_nan))
+    with pytest.raises(RefusDuMoteur, match="non finie") as refus:
+        executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "4", "travail", "U" + SUFFIXE_SUIVANT)
 
 
 # --------------------------------------------------------------------------
@@ -1096,11 +1166,12 @@ def test_plan_hors_domaine_refuse_par_l_espace_du_pas(nom, valeur):
     with pytest.raises(RefusDuMoteur, match="avant son écriture"):
         espace.lire(nom)
     if type(valeur) in (int, tuple) or math.isfinite(valeur):
-        espace.ecrire("x", valeur)
+        espace.ecrire("x", valeur, etape="2", bloc="menages")
     else:
         with pytest.raises(RefusDuMoteur, match="non finie") as generique:
-            espace.ecrire("x", valeur)
+            espace.ecrire("x", valeur, etape="2", bloc="menages")
         assert type(generique.value) is RefusDuMoteur
+        assert (generique.value.etape, generique.value.bloc) == ("2", "menages")
 
 
 @pytest.mark.parametrize("nom", PLANS)
@@ -1108,7 +1179,7 @@ def test_plan_hors_domaine_refuse_par_l_espace_du_pas(nom, valeur):
 def test_plan_dans_le_domaine_admis_au_bit(nom, valeur):
     """−0,0, 0 et les plans positifs sont admis et relus au bit (signe de −0,0 compris)."""
     espace = ordo.VariablesDuPas(frozenset({nom}), 0)
-    espace.ecrire(nom, valeur)
+    espace.ecrire(nom, valeur, etape="2", bloc="menages")
     lu = espace.lire(nom)
     assert type(lu) is type(valeur) and bits_de_base(lu) == bits_de_base(valeur)
 
