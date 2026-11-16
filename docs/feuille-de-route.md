@@ -2,7 +2,7 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; le reste est dans `docs/feuille-de-route-historique.md` (parties A à G et leurs compléments, sans rien supprimé ni réécrit), dont la « Lecture des renvois » dit où lire chaque renvoi absent de la tête.
 
-**Dernière mise à jour** : 16/11/2026, rang 1 de la branche « calibration », allègement de la tête (`architect`) — `main` = `890471b` ; branche de travail `claude/j3-calibration` à `ca0ba93`, PR brouillon #162 ; plan **décidé** (§ 1), rang 1 en cours, découpage de J3-e à J3-g décidé (§ 2), décisions P204 à P212 (§ 4). Mises à jour antérieures et extraits sortis : historique, partie G et ses compléments, puis `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 16/11/2026, rang 1 de la branche « calibration », allègement de la tête (`architect`) — `main` = `890471b` ; branche de travail `claude/j3-calibration` à `ca0ba93`, PR brouillon #162 ; plan **décidé** (§ 1), rang 1 en cours, découpage de J3-e à J3-g décidé (§ 2), décisions P204 à P212 et P225 à P227 (§ 4 ; P213 à P224 : index). Mises à jour antérieures et extraits sortis : historique, partie G et ses compléments, puis `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
@@ -117,6 +117,7 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 | #164 | δ et consommation de capital fixe ; dividendes dans la valeur ajoutée | hors branche (P214) | née de l'instruction de #92 |
 | #165 | Indicateur d'investissement au tour | J4 (P221) | avis de `jeu` sur ζ = 8 |
 | #166 | Estimateur de C62 (racine complexe) | calibration, rang 3 (P223) | ajout au périmètre |
+| #167 | Bêta des dépôts (limite de B2) | J4 ou J6 (P227) | née de l'instruction de #130 |
 
 **Points ouverts sans issue** : mutant équivalent B_Bk/Res dans B5, à rouvrir avec le corridor (J6, P116) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e1 ; A1 compare les deux) ; réserves mineures de J3-d2 non corrigées (lectures de `TABLEAU_DES_PHASES` non reliées au `.tex`, contrôle de priorité du critère 12 doublé par le noyau pour les erreurs qui créent un découvert, coût du socle complet publié sans verdict jusqu'à G1, J3-g2) ; divergences du texte de l'ADR 0013 relevées par l'ADR 0014 (n5.1, n1.5, n6.3, n1.4, n7.5 ; compte rendu du rang 9, PR #151), sans effet sur les règles : première annotation possible de l'ADR 0014. Levé : branche distante `ccr-063dc6fc-vo9lzk` (absente de `git ls-remote origin` le 16/11/2026, `architect-approfondi`).
 
@@ -185,6 +186,12 @@ P200 à P203 (ouverture, #157 à #161, m1, ADR 0014) et P213 à P224 (ci-dessous
 | P212 | 16/11/2026 | Découpage de J3-e à J3-g en sept branches (lignes 12 à 18 du § 2, indicatives jusqu'au point d'étape qui précède chacune) ; #157 en correctif rapide (`tests:` seul, résultats identiques, aucune documentation de fond ; sinon J3-e2) ; #158 en J3-e2 ; #159 à #161 et #156 en J3-g1. | Q9 |
 
 **P213 à P224** (rang 1, instruction ; `docs/blocs/calibration.md`, P205) : #92, P213 et P214 (§ 1 ; #164) ; #143, P215 à P217 (§ 2 ; commentaire sur #143) ; #55, P218 à P224 (§ 3, § 3.13 ; #164, #165, #166, PR #162). Texte inchangé : historique, partie G, complément du rang 1 de la calibration.
+
+| N° | Date | Décision | Où elle est consignée |
+|---|---|---|---|
+| P225 | 16/11/2026 | #130 : ϑ = 0,15 proposé pour M34 (CET1 du MSU, 14,75 % ; dénominateur contesté) ; dette consolidée de référence +12 %. | calibration.md § 4 |
+| P226 | 16/11/2026 | #130 : ϖ_L = 0,02, ϖ_D = 0,01, r̄ = 0,01 (contesté) inchangés et sourcés ; zone euro de référence. | calibration.md § 4 |
+| P227 | 16/11/2026 | Bêta des dépôts (limite de B2) : #167, hors branche. | #167 |
 
 Questions Q1 à Q9 du 16/11/2026, avec leurs options et la recommandation d'`architect-approfondi` : `git show afa9e89:docs/feuille-de-route.md`, § 4. Le mainteneur a retenu l'option recommandée pour chacune (P204 à P212).
 
