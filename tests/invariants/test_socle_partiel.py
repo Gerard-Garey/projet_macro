@@ -178,14 +178,13 @@ def test_720_pas_sans_arret_et_identites(trajectoires, socle, pi, publier):
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
 def test_croissance_tendancielle_du_moteur_egale_au_script(trajectoires, pi):
-    """Annotation du 13/11/2026, point 4 : g et (1 + g)^{1/n_a}, calculés une fois par pas en
-    phase 0 depuis les tables de référence, égalent au bit g et le facteur de volume du script
-    (`facteurs`), à chaque pas."""
+    """Annotation du 13/11/2026, point 4 : (1 + g)^{1/n_a}, calculé une fois par pas en phase 0
+    depuis les tables de référence, égale au bit le facteur de volume du script (`facteurs`), à
+    chaque pas ; g n'est plus publiée (#144, point 3)."""
     tr = trajectoires[pi]
     f = tr.sentier.facteurs
-    attendu_g = (1 + tr.sentier.par.g_pr) * (1 + tr.sentier.par.g_N) - 1
     for p in tr.releve.pas:
-        assert p["grandeurs"]["g"].hex() == attendu_g.hex()
+        assert "g" not in p["grandeurs"]
         assert p["grandeurs"]["facteur_g"].hex() == f["volume"].hex()
 
 
@@ -204,9 +203,11 @@ def test_cible_en_vigueur_constante_et_gamma_e_de_la_phase_0(trajectoires, pi, p
     ouvertures = [tr.initial] + [p["etat"] for p in tr.releve.pas]
     assert all(e.pi_etoile == tr.initial.pi_etoile for e in ouvertures)
     pire_direct = pire_script = 0.0
+    # g = (1 + g_pr)(1 + g_N) − 1, recalculée ici : elle n'est plus publiée (#144, point 3).
+    g_tendancielle = (1 + tr.sentier.par.g_pr) * (1 + tr.sentier.par.g_N) - 1
     for t, p in enumerate(tr.releve.pas):
         g = p["grandeurs"]
-        direct = ((1.0 + g["g"]) * (1.0 + ouvertures[t].pi_etoile)) ** (1.0 / N_A)
+        direct = ((1.0 + g_tendancielle) * (1.0 + ouvertures[t].pi_etoile)) ** (1.0 / N_A)
         pire_direct = max(pire_direct, abs(g["Gamma_e"] / direct - 1.0))
         pire_script = max(pire_script, abs(g["Gamma_e"] / tr.sentier.facteurs["nominal"] - 1.0))
         assert g["gamma_e"] == g["Gamma_e"] - 1.0
@@ -323,8 +324,9 @@ def test_cible_en_vigueur_hors_du_sentier_reconduite_au_bit(socle, pi_0, publier
     releve = Releve()
     socle.derouler(initial, NB_PAS, socle.ordonnanceur(sentier), releve)
     assert all(p["etat"].pi_etoile == pi_0 for p in releve.pas)
-    pire = max(abs(p["grandeurs"]["Gamma_e"]
-                   / ((1.0 + p["grandeurs"]["g"]) * (1.0 + pi_0)) ** (1.0 / N_A) - 1.0)
+    # g recalculée : elle n'est plus publiée (#144, point 3).
+    g = (1 + sentier.par.g_pr) * (1 + sentier.par.g_N) - 1
+    pire = max(abs(p["grandeurs"]["Gamma_e"] / ((1.0 + g) * (1.0 + pi_0)) ** (1.0 / N_A) - 1.0)
                for p in releve.pas)
     assert pire <= 1e-15
     publier(f"Cible hors du sentier (M1 de l'audit), π̄ = 2 %, π*_0 = {100 * pi_0:g} %", [

@@ -51,7 +51,8 @@ def test_gamma_e_egal_a_la_forme_directe(g_pr, g_n, pi):
     − 1 ; forme exécutée `facteur_g` · f(π*) au bit ; γ^e = Γ^e − 1 et π^{∗,pas} = f(π*) − 1 au
     bit."""
     v = grandeurs(pi, g_pr, g_n)
-    direct = ((1.0 + v["g"]) * (1.0 + pi)) ** (1.0 / N_A)
+    g = (1.0 + g_pr) * (1.0 + g_n) - 1.0  # g n'est plus publiée (#144, point 3)
+    direct = ((1.0 + g) * (1.0 + pi)) ** (1.0 / N_A)
     assert abs(v["Gamma_e"] / direct - 1.0) <= SEUIL_DIRECT
     f_cible = facteur_par_pas(TauxDeCroissance(pi))
     assert v["Gamma_e"].hex() == (v["facteur_g"] * f_cible).hex()
@@ -60,11 +61,11 @@ def test_gamma_e_egal_a_la_forme_directe(g_pr, g_n, pi):
 
 
 def test_gamma_e_apres_g_et_facteur_g_dans_l_ordre_de_l_annotation():
-    """Point 7 : `g`, `facteur_g`, puis `pi_etoile_pas`, `Gamma_e`, `gamma_e`, chacun une seule
-    fois dans `GRANDEURS_OUVERTURE` (grandeurs de la phase 0, C3) ; `facteur_g_pr` et
-    `facteur_g_N` avant `facteur_g`, `delta_pas` après (#144, point 2)."""
+    """Point 7 : `facteur_g`, puis `pi_etoile_pas`, `Gamma_e`, `gamma_e`, chacun une seule fois
+    dans `GRANDEURS_OUVERTURE` (grandeurs de la phase 0, C3) ; `facteur_g_pr` et `facteur_g_N`
+    avant `facteur_g`, `delta_pas` après (#144, point 2) ; `g` retirée (#144, point 3)."""
     noms = [g.nom for g in GRANDEURS_OUVERTURE]
-    assert noms[3:] == ["g", "facteur_g_pr", "facteur_g_N", "facteur_g", "delta_pas",
+    assert noms[3:] == ["facteur_g_pr", "facteur_g_N", "facteur_g", "delta_pas",
                         "pi_etoile_pas", "Gamma_e", "gamma_e"]
     assert len(noms) == len(set(noms))
 

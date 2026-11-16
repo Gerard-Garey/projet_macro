@@ -285,18 +285,20 @@ def test_comparer_grandeurs_seules_differentes_code_3(emp, tmp_path, capsys):
 @pytest.mark.parametrize("sens", ["ajout", "retrait"])
 def test_ajout_ou_retrait_d_une_grandeur_d_ouverture_code_3(emp, racine, tmp_path, monkeypatch,
                                                             capsys, sens):
-    """m-c (P189) : l'ajout d'une grandeur d'ouverture sans lecteur, ou le retrait de `g`
-    (aucun lecteur, #144 point 3), laisse les trajectoires identiques au bit : code 3."""
-    reference = _reference(emp, tmp_path, ("socle complet", "essai pur"))
+    """m-c (P189) : l'ajout d'une grandeur d'ouverture sans lecteur, ou son retrait (forme du
+    retrait de `g`, #144 point 3 : la référence porte la grandeur, la mesure ne la porte plus),
+    laisse les trajectoires identiques au bit : code 3."""
     grandeurs = racine.ordo.GRANDEURS_OUVERTURE
+    type_ = type(grandeurs[0])
+    avec_essai = grandeurs + (type_("grandeur_d_essai", lambda e, p, d: 1.0, None,
+                                    "sans dimension"),)
     if sens == "ajout":
-        type_ = type(grandeurs[0])
-        nouvelles = grandeurs + (type_("grandeur_d_essai", lambda e, p, d: 1.0, None,
-                                       "sans dimension"),)
+        reference = _reference(emp, tmp_path, ("socle complet", "essai pur"))
+        monkeypatch.setattr(racine.ordo, "GRANDEURS_OUVERTURE", avec_essai)
     else:
-        nouvelles = tuple(g for g in grandeurs if g.nom != "g")
-        assert len(nouvelles) == len(grandeurs) - 1
-    monkeypatch.setattr(racine.ordo, "GRANDEURS_OUVERTURE", nouvelles)
+        monkeypatch.setattr(racine.ordo, "GRANDEURS_OUVERTURE", avec_essai)
+        reference = _reference(emp, tmp_path, ("socle complet", "essai pur"))
+        monkeypatch.setattr(racine.ordo, "GRANDEURS_OUVERTURE", grandeurs)
     capsys.readouterr()
     assert emp.main(["--bancs", "socle complet", "essai pur", "--pas", "2", "--comparer",
                      str(reference)]) == 3

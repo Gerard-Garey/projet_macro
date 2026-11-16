@@ -883,10 +883,9 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
             ("pr_suivant", e["pr"]), ("K_vol_suivant", e["K_vol"]),
             ("W", 1.0 + t), ("W_suivant", e["W"]), ("N", 1.0 + t),
             ("U_suivant", e["U"]), ("N_suivant", e["N"]), ("N_pa_suivant", e["N_pa"]))
-    # Croissance tendancielle et son facteur (annotation du 13/11/2026, point 4), aux tables
-    # de référence : g = (1 + g_pr)(1 + g_N) − 1 ; facteur, produit des conversions
-    # géométriques de g_pr et de g_N (P88).
-    g = (1.0 + 0.02) * (1.0 + 0.0) - 1.0
+    # Facteur de croissance tendancielle (annotation du 13/11/2026, point 4), aux tables de
+    # référence : produit des conversions géométriques de g_pr et de g_N (P88) ; g retirée
+    # (#144, point 3).
     facteur_g = facteur_par_pas(TauxDeCroissance(0.02)) * facteur_par_pas(TauxDeCroissance(0.0))
     # Puis la cible par pas, Γ^e et γ^e sur π*_t lue à l'ouverture (#61 ; ADR 0013, annotation
     # du 14/11/2026, point 7), π* reconduite par le bloc d'essai.
@@ -897,7 +896,7 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
                    ("facteur_g_N", facteur_par_pas(TauxDeCroissance(0.0))),
                    ("facteur_g", facteur_g),
                    ("delta_pas", par_pas(PARAMETRES_DE_REFERENCE.investissement.delta)))
-    tendance = (("g", g),) + conversions + (
+    tendance = conversions + (
         ("pi_etoile_pas", f_cible - 1.0), ("Gamma_e", gamma_e), ("gamma_e", gamma_e - 1.0))
     assert fins[0].grandeurs_ouverture == (("annee", 1), ("mois", 1),
                                            ("date_de_decision", True)) + tendance
@@ -912,7 +911,7 @@ def test_fin_de_pas_porte_variables_et_grandeurs():
 
 def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
     """Critère de #61 (ADR 0013, annotation du 14/11/2026, point 7) : la fonction de Γ^e est
-    appelée une fois par pas, par la phase 0 de `executer_pas`, après `g` et `facteur_g` (les
+    appelée une fois par pas, par la phase 0 de `executer_pas`, après `facteur_g` (les
     grandeurs déjà calculées qu'elle reçoit), sur l'état d'ouverture du pas ; aucun bloc ne
     l'appelle."""
     appels = []
@@ -929,7 +928,7 @@ def test_gamma_e_calcule_une_seule_fois_par_pas_en_phase_0(monkeypatch):
     etat = etat_initial()
     for _ in range(3):
         etat = executer_pas(etat, ENTREES_VIDES, o, ObservateurNul())
-    precedentes = ("annee", "mois", "date_de_decision", "g", "facteur_g_pr", "facteur_g_N",
+    precedentes = ("annee", "mois", "date_de_decision", "facteur_g_pr", "facteur_g_N",
                    "facteur_g", "delta_pas", "pi_etoile_pas")
     assert appels == [(t, precedentes) for t in range(3)]
 
