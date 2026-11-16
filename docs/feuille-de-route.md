@@ -157,28 +157,14 @@ M1 à M33 sont arrêtées par le mainteneur du 29/09/2026 au 04/10/2026 ; dates,
 
 **Décisions du mainteneur du 14/11/2026 au rang 1a de J3-d1 (P119 à P141) et du 15/11/2026 (P142 à P146)** : historique, partie E, § 4 (sorties de la tête le 15/11/2026, point d'étape après la fusion de la PR #136, texte inchangé), en vigueur ; le plan de J3-d2 cite P121, P122, P124, P125, P127, P129, P133 à P138, P140, P141 et P145.
 
-### Décisions P156 à P171 (rangs 1a à 7 de J3-d2), 15/11/2026
+**Décisions du mainteneur du 15/11/2026, rangs 1a à 7 de J3-d2 (P156 à P171), et erratum de P165** : historique, partie F, complément du 16/11/2026 (sorties de la tête au rang 1b de la branche « forme du code », texte inchangé), en vigueur.
 
-P147 à P155 (point d'étape après la PR #136, Q1 à Q10), en vigueur : historique, partie E, complément du rang 8 de J3-d2 (texte inchangé) ; Q1 à Q10 : partie E, § 4. P156 à P163 : arbitrages R1 à R8 du rang 1a, selon l'avis des experts ; détail dans les critères de la fiche de J3-d2. Depuis le 16/11/2026, un renvoi « § 1 » de P156 à P171 se lit dans l'historique, partie F, § 1. P166 à P171 : décisions du mainteneur sur les rangs 5 à 7.
+### Décisions P172 et suivantes (branche « forme du code »), 16/11/2026
+
+Questions qui les fondent : ci-dessous (Q1 à Q8) et ADR 0013, annotation du 16/11/2026 (Q-1b-1, Q-1b-2).
 
 | N° | Date | Décision | Question |
 |---|---|---|---|
-| P156 | 15/11/2026 | C59 en deux niveaux de seuil (1e−12·S par pas ; 1e−10 relatif sur 720 pas pour production, prix, taux, revenus, dette consolidée) ; ν_G de 1,1 à 1,2, référence 1,15 ; Res et L^CB sous forme exacte en stocks ; correction prospective avant tout essai, ancien seuil publié. | R1 |
-| P157 | 15/11/2026 | C60 et ligne « Perte » de la fiche 8 : ΔE^CB_t = −(perte non couverte)_t à 1e−12·S^CB ; « ligne nommée » lue sous QM2 (a) ; cas (ii) par appel direct. | R2 |
-| P158 | 15/11/2026 | Critère 11 complété des trois points de `jeu` : n_a ∈ {12 ; 52} ; cas au-delà de la marge (+25 % ; +60 % à π̄ = 10 %) ; marge publiée sous la forme exacte de `macro`. | R3 |
-| P159 | 15/11/2026 | ς_B sous Em < 0 : forme uniforme, déclarée en `\limites`. | R4 |
-| P160 | 15/11/2026 | « Neutralité de s_CB » de la fiche 8 jugée dans J3-d2 avec C59 (précise P90). | R5 |
-| P161 | 15/11/2026 | Ligne du J1 « dette/PIB égal au moteur à t = 0 » → J3-e, remplacée dans J3-d2 par dette consolidée/(n_a PIB) dans la liste de P94 ; C51 publiée à ζ = 4 indicatif, verdict « à ζ calibré » → branche de calibration. | R6 |
-| P162 | 15/11/2026 | P122 se lit « réaffirmation avec le bloc 9 réel des lignes (b) appuyées sur le bloc d'essai 9 » (liste au § 1). | R7 |
-| P163 | 15/11/2026 | Continuum connu de r̂\* (P101, #131) exclu de la condition d'arrêt « état d'arrivée dépendant d'une vitesse ». | R8 |
-| P164 | 15/11/2026 | Décisions de forme F1 à F11 du rang 1a (critères précisés du § 1), prises par la session sous la délégation P153 (P118, P133). | F1 à F11 |
-| P165 | 15/11/2026 | Table `finances_publiques` dans `EnsembleDesParametres` (F1, H3.5 étendus, forme de `menages`) : ν_G, U^eq, valeurs à levier fermé de θ_G, θ_Tr, τ_H, τ_F, φ (paramètres au J3, comme π\* sous BC4 ; commandes au J4, G4, sans drapeau de mode) ; conditions jointes dans `__post_init__`. Forme, session sous P153, **confirmée le 15/11/2026** ; ADR 0013, rang 1b de J3-d2, point 8. | rang 1b |
-| P166 | 15/11/2026 | « Délais » des fiches 5 et 6 (P162) : publiés comme **méthode substituée**, passage apparié du moteur au lieu de l'appel direct prévu. | rang 5 |
-| P167 | 15/11/2026 | C62 : critère d'homogénéité reporté à #147 ; publication sans marque de régime linéaire. | rang 5 |
-| P168 | 15/11/2026 | Temps de doublement sans reprise à 2 % : « 382 tours » remplacé par « 381 tours (maquette 381,6) », 382 barré (`7d34b9b`). | rang 6 |
-| P169 | 15/11/2026 | Critère 12 : les sous-points non jugés sont rendus jugés par des tests (`6b959f7`), non reclassés. | rang 7 |
-| P170 | 15/11/2026 | Tableau des phases du bloc 9 complété par `docwriter` dans la branche, exception de la règle 9 (`df4e3b9`), lien au `.tex` tenu par un test exact (`f1c8f2f`). | rang 7 |
-| P171 | 15/11/2026 | Issues créées : #147 (C62, régime linéaire), #148 (B_Bk, B_CB ≥ 0 sans contrôle), #149 (glossaire « proposée » périmé), #150 (forme du code du bloc 9) ; commentaire de `monnaie` versé sur #81 (taux directeur négatif, tours 11 à 19 à π\* = 0). | rang 7 |
 | P172 | 16/11/2026 | Q1 (a) : périmètre de la branche « forme du code » = #137, #142, #144, #150 avec `Closes` ; le point 3 de #150 (E5 par colonne) est détaché dans #152, pour le J5. | rang 0 |
 | P173 | 16/11/2026 | Q2 (a) : banc d'empreintes SHA-256 (socle complet, bancs de P87 et de J3-d1) versé au rang 1a comme script d'`outils/`, rattaché à #144. | rang 0 |
 | P174 | 16/11/2026 | Q3 (a) : #149 cinquième issue du périmètre, au passage unique de `docwriter` ; reprise de la fiche 8 (« Neutralité de s_CB », grille « borne m·M^G/B ») versée sur #149, validée par `monnaie`. | rang 0 |
@@ -195,8 +181,9 @@ P147 à P155 (point d'étape après la PR #136, Q1 à Q10), en vigueur : histori
 | P185 | 16/11/2026 | Rang 1a commité « conforme avec réserves » après la reprise unique ; mineurs restants d'`audit` (m-a héritage accepté trop largement, m-b docstring de BF, m-c code de sortie) corrigés au rang 2 avec #144 point 1. | rang 1a |
 | P186 | 16/11/2026 | m-c : un écart des seules grandeurs d'ouverture (retrait de `g`, #144 point 3) sort en code 3, « trajectoires identiques, grandeurs d'ouverture différentes » ; critère tenu, écart déclaré dans le commit. | rang 1a |
 | P187 | 16/11/2026 | Rang 4 (#150 point 1) : si E7 devient une variable du pas, le critère est jugé sur `etats` et `montants` égaux au bit et sur les variables préexistantes ; la variable ajoutée est déclarée ; référence non régénérée. | rang 1a |
-
-*Erratum de transcription de P165 (15/11/2026, rang 8 ; décision inchangée)* : (1) U^eq **n'est pas** dans la table `finances_publiques` ; sa seule maison reste la table du travail (H3.3 ; spécification l. 3212, « paramètre du bloc travail ») ; (2) la section ne déclare aucune condition jointe entre champs de la table, `__post_init__` n'appelle que `valider_table`. Le code est conforme à la spécification (`src/nations/moteur/parametres/finances_publiques.py:23-32`) ; ADR 0013, annotation du rang 8 de J3-d2.
+| P188 | 16/11/2026 | Q-1b-1 : réouverture de a100.4 pour les seules lectures de position : `LectureDuGrandLivre.position` refuse à l'exécution un poste non déclaré (`RefusDuMoteur`, pas, étape, bloc, poste) ; liste fermée (banque 8c `Res` ; finances publiques 8b `M_G`) tenue par un test (#150 point 2). | rang 1b |
+| P189 | 16/11/2026 | Q-1b-2 : le code 3 du banc d'empreintes (P186) couvre l'ajout comme le retrait de grandeurs d'ouverture (`facteur_g_pr`, `facteur_g_N`, `delta_pas` ; `g`), écart déclaré dans le commit. | rang 1b |
+| P190 | 16/11/2026 | Rangs 2 à 5 conduits à la main par la session (`coder` → `audit` léger, une reprise au plus, commit après verdict), sans le workflow `circuit-technique`. | rang 1b |
 
 ### Questions au mainteneur du 16/11/2026 (point d'étape après la PR #146, rang 0 de la branche « forme du code »)
 

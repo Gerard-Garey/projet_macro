@@ -434,3 +434,75 @@ Rédigée par `architect` (Opus, sans Fable) au rang 8 de J3-d2 (PR #146, tête 
 **Effet sur les résultats** : aucun.
 
 Issues : #106, #132, #133 ; renvois : `docs/feuille-de-route.md` § 1 et § 4 (P51, P76, P165).
+
+### Annotation du 16/11/2026 (rang 1b de la branche « forme du code ») : domaine contrôlé une fois, conversions partagées publiées, retrait de `g`, E7 en variables du pas, lectures de position filtrées, refus avec étape et bloc
+
+Rédigée par `architect` (Opus, sans Fable) au rang 1b de la branche « forme du code » (`claude/j3-forme-du-code`, PR #151, tête `0d35718`), sous P172 à P187 (`docs/feuille-de-route.md` § 1 et § 4) et la délégation P175, **avant le code de #137, #144 et #150**. Elle fixe la forme des contrats partagés touchés (`docs/agents/routage.md` § 4.2) ; le point 5 rouvre a100.4 pour les seules positions (question Q-1b-1). Aucune équation ni coefficient ne change. Constats faits à `0d35718`.
+
+1. **Domaine d'une variable d'état de bloc contrôlé une fois par pas** (#144, point 1 ; D1, B2, B5). Constat : `Vue.ecrire_etat` appelle `schema.defaut_de_domaine` (`ordonnanceur.py:471-474`), puis `schema.EtatPays(**champs)` (`:960`) le rappelle pour les mêmes valeurs (`schema.py:334`).
+   - **Lieu retenu : l'écriture.** `Vue.ecrire_etat` reste le seul contrôle de domaine des variables d'état des blocs : le refus nomme le pas, l'étape et le bloc, et aucune valeur hors domaine n'est lisible sous `<nom>_suivant` dans la suite du pas. Une valeur non finie reste refusée par l'espace du pas.
+   - **Construction de clôture** : une fonction de `nations.etat.schema`, `etat_de_cloture`, construit l'`EtatPays` du pas suivant. Elle contrôle le type de tous les champs et le domaine des autres champs (identité, `t`, registre, positions, V^flux), par `defaut_de_domaine`, seule fonction de domaine ; elle ne contrôle pas une seconde fois le domaine des variables d'état des blocs. Trois conditions : `executer_pas` en est le seul appelant dans `src/` ; `Vue.ecrire_etat` est le seul site qui remplit `_Pas.etat_suivant`, après le contrôle ; ni argument, ni champ, ni valeur par défaut ne module `EtatPays.__post_init__`. Les deux premières sont tenues par des tests textuels. Le mécanisme de construction est laissé à `coder`.
+   - **Inchangé** : construction de l'état initial, `dataclasses.replace` et reprise (D4, hors chemin chaud), qui contrôlent tous les domaines. **D1 se lit** : « appelée à toute construction (état initial, reprise ; à la clôture du pas, pour les champs autres que les variables d'état des blocs, dont le domaine est contrôlé à l'écriture, une fois par pas) ».
+   - **Garantie** : aucun `EtatPays` hors domaine. La valeur d'une variable d'état de bloc ne vient que de `etat_suivant`, qui ne reçoit qu'une valeur contrôlée, et le moteur refuse une variable non écrite (`ordonnanceur.py:955-958`).
+   - **Test de décompte** : sur un pas du socle complet, `defaut_de_domaine` est appelée une fois par variable d'état de bloc. Une valeur hors domaine d'un champ du moteur passée à `etat_de_cloture` reste refusée.
+   - **Options écartées** : (b) contrôle à la seule construction de clôture : refus tardif, sans l'étape ni le bloc, après des lectures de `<nom>_suivant` hors domaine (exception non typée possible) ; (c) argument ou `InitVar` qui désactive le contrôle dans `EtatPays` : drapeau de mode.
+2. **Conversions partagées publiées une fois par pas, en grandeurs d'ouverture** (#144, point 2 ; C3, F2, H4).
+   - **Règle** : la conversion d'un paramètre, invariante pendant une partie, devient une grandeur d'ouverture (C3) si plus d'un siège la lit (bloc × étape, `_facteur_g` du moteur compris) ou si elle combine les tables de plusieurs blocs (précédent de `facteur_g`, H4). Lue par un seul siège, elle reste au site, calculée une fois par pas. C'est le cas de 1/κ (production, phase 4) et des vitesses λ.
+   - **Grandeurs ajoutées**, à la suite de `date_de_decision` :
+     - `facteur_g_pr` = f(g_pr) : production (5), travail (1), `facteur_g` ;
+     - `facteur_g_N` = f(g_N) : travail (4), `facteur_g` ;
+     - `facteur_g` = `facteur_g_pr` · `facteur_g_N`, même produit dans le même ordre, donc identique au bit ;
+     - `delta_pas` = `par_pas(δ)` : production (5), investissement (3 et 6), finances publiques (6).
+   - **Forme des grandeurs ajoutées** : label renvoi (`eq:moteur-conversion-croissance` ou `eq:moteur-conversion-taux`), non balise. Unité « sans dimension » (P96). Lecture par `Lecture("0", …)`.
+   - **Reconstruction refusée dans un bloc** : contrôle statique de `par_pas` ou `facteur_par_pas` appliqué à `delta`, `g_pr` ou `g_N` (modèle de Γ^e, annotation du rang 9 de J3-c, point 3). Le test « conversion unique » n'a aucune exemption nouvelle.
+   - **Options écartées** :
+     - (b) champ dérivé des tables de paramètres (F) : forme nouvelle du contrat des tables. `valider_table`, `varier` et les tests qui parcourent les champs devraient exclure des champs non déclarés (H3.5). Écartée pour une économie de quelques divisions par pas ;
+     - (c) toutes les conversions de paramètres en grandeurs : perte de localité, puisque les vitesses propres à un bloc passeraient au moteur.
+3. **`g` retirée** (#144, point 3 ; C3, H4 ; règle de P51, retrait faute de lecteur déclaré). Constat : aucun `Lecture("0", "g")` dans `src/`, `tests/` ni `outils/`, et `_facteur_g` ne lit plus g depuis P88. Le risque d'un futur lecteur qui recombinerait g et divergerait au bit de `facteur_g` (P88) disparaît avec la grandeur.
+   - g reste une **notation** de la spécification (définie au `sec:production-visee`), sans label.
+   - **Écart attendu au banc d'empreintes** : code 3, par le retrait de g et l'ajout des trois grandeurs du point 2 (P186 ; question Q-1b-2). L'écart est déclaré dans le commit.
+4. **E7 calculé une fois par pas, en variables du pas** (#150, point 1 ; tableau du bloc 9 de l'annotation du rang 1b de J3-d2, point 1 ; P187).
+   - **Écriture** : `phase_2` écrit `iB_BH`, `iB_BBk` et `iB_BCB`, les trois termes de E7. Ce sont les noms des termes des lignes 11a à 11c (« une valeur, un nom »). Le domaine se réduit à la finitude seule : le taux i_CB peut être négatif.
+   - **Lecture** : `phase_6` lit ces trois variables (`Lecture("2", …)`) et les propose. Le siège 6 ne lit plus i_CB ni B_H, B_Bk, B_CB.
+   - **Contrôle** : la somme de E6 reste formée en phase 2 sur les mêmes valeurs. Un test de décompte vérifie un appel de `interets_sur_titres` par pas.
+   - **`tab:phases` inchangé** : le bloc 9 écrit déjà en phase 2, et la colonne « Lisent » de la phase 6 contient 2 (B1).
+   - **`tab:finances_publiques-phases` change** : la phase 2 écrit les trois termes, la phase 6 les lit dans « ses calculs de la phase 2 » et ne lit plus la phase 1. Le lien exact de P170 (`test_tab_finances_publiques_phases_porte_chaque_ecriture`) échoue donc entre le commit `code:` et le passage de `docwriter`. Il est marqué en échec attendu strict, avec renvoi à #150, et la marque est retirée par un commit `tests:` qui suit immédiatement le commit `docs:` (précédent de `G_vise` et `T_F`, `f1c8f2f`).
+   - **Critère** : jugé sur `etats` et `montants` et sur les variables du pas préexistantes (P187).
+5. **Lecture d'une position filtrée à l'exécution** (#150, point 2 ; B2, B3, B5 ; **rouvre a100.4 pour les positions**).
+   - **Constat mesuré** : H5 refuse déjà, dans `src/nations/blocs/`, une position lue sans déclaration dans son siège. Une copie de `finances_publiques.py` qui lit `B` au lieu de `M_G` en 8b donne deux écarts (« 'B' faite, non déclarée », « 'M_G' déclarée, jamais faite »). Le trou porte sur l'exécution (`LectureDuGrandLivre.position`, `ordonnanceur.py:382-383`) et sur les blocs hors de H5 (blocs d'essai, H6).
+   - **Forme** : les droits du siège retiennent les postes déclarés (`Lecture(GRAND_LIVRE, poste)`, poste de `NOMS_POSTES`). `position` refuse un poste non déclaré par `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et le poste, comme `_verifier_ligne`.
+   - **À l'assemblage** : le contrôle est inchangé (position admise sans triangularité ni colonne « Lisent »). « Toujours admise » (`contrat_bloc.py:28`) se lit « admise à l'assemblage, lue seulement si déclarée ».
+   - **Liste fermée, tenue par un test** : (`banque`, 8c, `Res`) et (`finances_publiques`, 8b, `M_G`).
+   - **Inchangé** : ouverture, échelles et valeurs nettes restent non filtrées à l'exécution (H5.3 les refuse).
+   - **Motif de la réouverture** : même garantie à l'exécution que les montants exécutés (a100.1 à a100.3), pour les blocs d'essai ; coût d'une recherche dans un ensemble par lecture, deux par pas.
+   - **Option écartée** : maintien de a100.4, avec la docstring corrigée et un test de texte fabriqué sous H5. C'est la recommandation de repli de Q-1b-1.
+6. **#137 et #142** (B4 ; aucun contrat partagé).
+   - **#137** : `VariablesDuPas.ecrire(nom, valeur, *, etape, bloc)`, étape et bloc obligatoires, sans valeur par défaut. Les quatre refus génériques les portent. Le moteur passe (« 0 », `moteur`) pour les grandeurs et les entrées, (« 1 », `moteur`) pour les leviers. `Vue.ecrire_etat` passe son étape et son bloc pour `<nom>_suivant`.
+   - **Interface des refus typés inchangée** : `ArretMoteur` a déjà les champs. Le refus de lecture avant écriture est hors de #137. B4 se lit : « chaque refus d'écriture nomme le pas, l'étape et le bloc écrivain ».
+   - **#142** : fonctions des blocs 5 et 6 seulement, sans importateur hors de `tests/` (`grep` de `nations.blocs` dans `src/` et `outils/` : vide). Balises inchangées.
+
+**Décomptes attendus** :
+- grandeurs d'ouverture : **8 → 10**, dans l'ordre `annee`, `mois`, `date_de_decision`, `facteur_g_pr`, `facteur_g_N`, `facteur_g`, `delta_pas`, `pi_etoile_pas`, `Gamma_e`, `gamma_e` ;
+- variables du pas du bloc 9 en phase 2 : six → neuf ;
+- schéma inchangé (v5, 38 variables) ;
+- concordance inchangée (**90 labels**, aucune balise nouvelle) ;
+- `tab:phases` inchangé.
+
+**Arrêt du § 1** (« contrat partagé à modifier au-delà de l'annotation du rang 1b ») : non déclenché si le code suit les points 1 à 6.
+
+**Effet sur les résultats** : aucun sur `etats` et `montants`. Les grandeurs d'ouverture (points 2 et 3) et les variables du pas (point 4) changent, avec un écart déclaré.
+
+**Surface documentaire** (rang 7, `docwriter`) :
+- `sec:cadre-calendrier` : décompte « huit » des grandeurs, phrase « g reste publiée », grandeurs ajoutées, `facteur_g` ;
+- encadré de `eq:moteur-croissance-nominale-attendue` : « facteur_g qui fait croître… dans leurs blocs » ;
+- paragraphe « Ordonnanceur » : liste des grandeurs ;
+- lectures des tableaux de phases des blocs 2, 3, 6 et 9 : δ, g_pr, g_N lus en phase 0 ;
+- `tab:finances_publiques-phases` (point 4) et phase de E7 dans le récapitulatif du bloc 9 ;
+- textes du contrôle de domaine et des lectures de position (`sec:cadre-phases`) ;
+- journal des changements.
+
+**Questions au mainteneur, décidées le 16/11/2026** :
+- **Q-1b-1** : réouverture de a100.4 confirmée pour les seules lectures de position, au point 5 (P188).
+- **Q-1b-2** : le code 3 de P186 couvre l'ajout de grandeurs d'ouverture comme le retrait de g (P189).
+
+Issues : #137, #142, #144, #150 ; renvois : `docs/feuille-de-route.md` § 1 et § 4 (P51, P88, P170, P175, P186, P187), #125.
