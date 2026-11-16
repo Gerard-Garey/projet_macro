@@ -2119,3 +2119,388 @@ Ce que cela change pour C62 (P219, P222, P224) :
 - **question 4** (coût de désinflation et ordre entre λ_w et #163) : **réservée au mainteneur avec M34** ; recommandation de `macro`, `monnaie` et `jeu` : committer λ_w au rang 7, publier le coût « non calibré, #163 », et consigner dans M34 la condition « #163 traitée avant la démonstration J4 » ;
 - **question 6** (instabilité 17, M27) : pas une condition d'arrêt (aucune équation changée, instabilité qui disparaît ; avis de `macro` et `monnaie`) ; ligne 17 à republier par `docwriter` : « explosive à λ_w = 1 ; stable à λ_w = 0,18 (maquette, table de `main`) ; non mesurée à la table proposée » ; l'issue du § 6.10 est **rédigée, non créée** (P229).
 
+## 7. Dossier M34 : table calibrée entière et tableau prédit consolidé
+
+*Préparé par `macro` (expert pilote) le 16/11/2026, sous P206 et P231, pour la décision M34 (rang 2). Dépôt à `5cfcd14`, puis `fe320ed` (deux commits `docs:` seuls, § 5.12 et P233, sans effet sur les mesures) ; `git status` vide avant et après. Sondes hors dépôt, dossier `<scratchpad>/m34/` ; elles appellent sans les modifier `outils/etat_stationnaire.py`, `outils/maquette_conjointe.py`, `tests/invariants/socle_partiel.py` et les assistants de `tests/invariants/test_socle_complet.py`. Ce sont des résultats du modèle, pas des faits. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**. Deux variantes : **T1**, la table proposée (μ̄ = 0,60 ; ζ = 8 ; ϑ = 0,15 ; ν_H = 1,1 ; λ_H = 0,4 ; λ_w = 0,18 ; β = 2 ; le reste inchangé) ; **T0**, la même avec ν_H = 1 (repli si #62 n'était pas retenue). Depuis P233, T1 est la table proposée entière. **Consultation de `monnaie`** : l'agent `macro` n'a pas d'outil pour lancer un autre agent ; les lignes de la banque (§ 7.11) sont à lui soumettre par la session. Son avis du § 5.12 couvre déjà C62 à T1 et la dette de référence ; les chiffres qu'il y cite sont retrouvés ici à l'identique (§ 7.7).*
+
+### 7.1 Méthode, commandes et contrôles
+
+Commande type, depuis `/home/user/projet_macro` : `uv run python -I <scratchpad>/m34/<sonde>.py <arguments>`. Sorties : `<scratchpad>/m34/sortie_*.txt`.
+- **`base34.py`** : importe le script par son chemin et définit la chaîne cumulée des rangs 3 à 7, `calculer(replace(Parametres(), **table))`. Noms de champs exacts de `Parametres` (l. 106 à 153) : `mu_bar`, `zeta`, `vartheta`, `nu_H`, `lambda_H`, `lambda_w`, `beta` ; inchangés : `varpi_L`, `varpi_D`, `rbar`, `kappa`, `delta`, `sigma`, `tu_bar`, `lv`, `nu_F`, `tau_H`, `nu_G`, `eta_r`, `a_pi`, `a_I`, `lambda_e` et les autres.
+- **`tab34.py`** : `tab:etat-stationnaire` et B1 à B26 aux trois π̄, sur les états main, #92, #55, #130, #62, #45 et T0 ; écart maximal de grille (18 points, toutes les clés) entre commits successifs ; valeurs publiées du script qui changent, par commit et par section ; #80 et racines parasites de C51. `gen34.py` en tire les tableaux ci-dessous, sans recopie à la main.
+- **`cond34.py`** : conditions d'existence aux 18 points de la grille (π̄ × n_a × ν_G), à main, T0 et T1.
+- **`c62_34.py`** : C62 dans la maquette (`rayon_c`, pire des deux régimes de T4 ; racine dominante de `jacobiennes_carte`), φ = 0 et φ = 1, grille de ζ de 0,5 à 20, ζ_c et φ\* par `frontiere`. **`pli34.py`** : nature de la traversée à π̄ = 0.
+- **`serie34.py`** (sonde `serieH.py` du § 5.4.1, étendue à λ_w par `varier(REF.travail, lambda_w=…)` et `sentier(…, lambda_w=…)`) puis **`analyse34.py`** (Prony du § 3.13) : série signée Δi_CB du moteur sous φ = 0, choc θ_G aux tours 1 à 12.
+- **`ins17_34.py`** : instabilité 17 et lectures voisines (`carte_menages`), `mc.BASE` remplacée en mémoire.
+- **`maq34.py`** : relevé des chiffres publiés de la maquette (`releve`, `evaluer`), défauts de `Parametres` remplacés en mémoire.
+- **`c51_34.py`** : racines de la lecture (α) sous φ = 0 et φ = 1 (méthode du § 3.13.5).
+- **`banque34.py`**, **`decomp34.py`** : lignes de la banque, distribution, décomposition par issue.
+
+**Contrôles** (tous retrouvés) :
+- `main` : 449 valeurs publiées « égal », plus grand résidu 4,636e−15 ; maquette : 9 écarts préexistants sur 148 ;
+- valeurs en écart à la publication : 173 (#92), 185 (#55), 284 (#130), 309 (#62), comme aux § 1.4.5, 3.4.3, 4.4.3 et 5.4.4 ;
+- maquette, φ = 0, ζ = 8 : 1,000035 (A), 1,000438 (P), 1,000995 (N), 1,000490 (P avec λ_w = 0,18, § 6.4.5) ; ζ_c = 8,7633 (A) et 16,7632 (P) ;
+- moteur (Prony), contrôle A : 1,0000351 ∠ ±0,1757° ; choc de 1 %, 10 %, contrôle A : arrêt au pas 543, comme au § 3.4.4 ;
+- instabilité 17, table de `main` : 1,0275 / 1,0029 / 1,0561 / 1,0580, frontières 0,586 et 0,604 ; à λ_w = 0,18 : 0,9867 / 0,9870 / 0,9940 / 0,9887 (§ 6.6 : 0,9871 pour le deuxième, écart d'arrondi à la quatrième décimale) ;
+- C51 sous φ = 0 à ζ = 8, ϑ = 0,10 : 1,422 % / 5,238 %, 1,000 % / 3,506 %, −1,198 % / 0,573 % (§ 3.13.5).
+
+**Vérifiée.**
+
+### 7.2 Table des paramètres
+
+| Paramètre (champ du script ; table du moteur) | Avant (`main`) | **T1** | T0 | Statut de la source | Section | Décision |
+|---|---|---|---|---|---|---|
+| μ̄, marge normale (`mu_bar` ; bloc 4, `MU_BAR`) | 0,25 | **0,60** | 0,60 | Source lue : BCE, *Economic Bulletin* 4/2023, part salariale de la zone euro 1998–2023, 62,4 % de la valeur ajoutée brute au prix de base ; écart au coût des facteurs contesté (AMECO ALCD2 : 63,11 %, § 1.12) | § 1 | P213 (proposée) |
+| ζ, élasticité de ti au taux réel (`zeta` ; bloc 6, `ZETA`) | 4 | **8** | 8 | Source lue, niveau contesté : σ ≈ 0,64 sous ζ = σ/(ϱ̄_L + δ) (hypothèse) ; Klump, McAdam et Willman (2011), Gilchrist et Zakrajšek (2007) | § 3 | P218 |
+| ϑ, fonds propres visés (`vartheta` ; bloc 7, `fonds_propres_vises`) | 0,10 | **0,15** | 0,15 | Source lue : CET1 des établissements importants du MSU, 2015T3–2024T4, 14,75 % ; dénominateur contesté | § 4 | P225 |
+| ϖ_L, écart du crédit (`varpi_L`) | 0,02 | 0,02 | 0,02 | Source lue (MIR, 2003–2024 : 2,09 points) ; valeur inchangée | § 4 | P226 |
+| ϖ_D, écart des dépôts (`varpi_D`) | 0,01 | 0,01 | 0,01 | Source lue, fenêtre contestée (0,85 et 1,93 point sur les fenêtres de taux positifs) | § 4 | P226 ; limite de B2 : #167 |
+| r̄, taux réel neutre (`rbar` ; bloc 8) | 0,01 | 0,01 | 0,01 | Choix de conception, contesté ; fourchette lue −0,5 à 1,9 % | § 4 | P226 (P208) |
+| ν_H, richesse visée (`nu_H` ; bloc 5) | 1 | **1,1** | **1** | T1 : source lue, Eurostat F.2/B.6g, EA21, 2001–2023, 1,076 an → 1,0995, arrondi ; T0 : valeur indicative, sans source (8,9 % sous la source) | § 5 | P233 (T1 proposée) |
+| λ_H, vitesse de richesse (`lambda_H` ; bloc 5) | 0,4 | 0,4 | 0,4 | Choix déclaré dans la fourchette lue (Parker et al., NBER WP 16684, résumé ; correspondance hypothèse) | § 5 | P233 |
+| λ_w, vitesse salariale (`lambda_w` ; bloc 3, `LAMBDA_W`) | 1 | **0,18** | **0,18** | Choix déclaré, sources lues : pente λ_w β = 0,36 (Tagliati, BCE OP 232 ; Galí, NBER WP 15758) ; vitesse contestée (Blanchard et Katz contre Blanchflower et Oswald) | § 6 | P232 |
+| β, effet du chômage (`beta` ; bloc 3) | 2 | 2 | 2 | Inchangé, conforme à la fiche 3 ; hors périmètre (P204) ; variante V4 consignée | § 6 | P232 |
+| κ, δ (`kappa`, `delta`) | 1,6 ; 0,05 | inchangés | inchangés | Écart de B12 déclaré (+19 % sur le PIB, +7 % sur la valeur ajoutée) ; calage conjoint dans #164 | § 3 | P220 ; #164 |
+| a_π, a_I, λ_e (bloc 8) | 0,5 ; 0,25 ; 0,2 | inchangés | inchangés | Non calibrés : #163 (C7) | § 6 | P204 ; ordre : question 3 du § 7.13 |
+| Tous les autres paramètres | — | inchangés | inchangés | — | — | — |
+
+**Domaine** : chaque valeur est dans le domaine de sa table et du script (`controler_domaine` sans refus à T1 et à T0 ; ν_H λ_H = 0,44 et 0,40 ; 0 < λ_w ≤ n_a ; 0 ≤ ζ ≤ 20 ; ϑ > 0). Aucun écrêtage. **Vérifiée** (`cond34.py`).
+
+### 7.3 Tableau avant / après prédit : `tab:etat-stationnaire` (n_a = 12, ν_G = 1,15 sauf mention)
+
+Explications par issue, une cause chacune (vérifiées aux sections citées et remesurées ici) :
+- **(P)**, #92 (§ 1.4.2) : le PIB baisse d'un facteur 1/1,000404, 1/1,000804 et 1/1,002298 à π̄ = 0, 2 et 10 %, parce que ΔIN est valorisé à UC = p/(1 + μ̄). Les niveaux de D_H, YD, C, G, I, L, D_F, B, M^G, T_H, Π^Bk, Div_Bk et K sont inchangés : chaque ratio au PIB monte de ce facteur. La part salariale suit ω̄ = 1/(1 + μ̄).
+- **#55** : ζ n'entre pas à Δϱ = 0. Écart de grille nul, au bit (§ 3.4.2 ; remesuré : écart maximal 0 sur les 18 points).
+- **(ϑ)**, #130 (§ 4.4.2) : E^Bk = ϑ L monte de 0,05 L ; par C42, la dette consolidée monte d'autant, moins ΔV_H dû au dividende de la banque ; C baisse, θ_G résolu monte.
+- **(ν)**, #62 (§ 5.4.2) : D_H monte de 10,09 % à 2 % ; par C42, ΔD_c = ΔD_H ; θ_G résolu monte (C/YD plus bas).
+- **#45** : λ_w n'entre pas dans l'état d'arrivée. Écart de grille nul, au bit (§ 6.4.2 ; remesuré).
+- **T0 = état après #130**, au bit : λ_w ne change rien (remesuré : écart de grille 0, 0 valeur publiée changée entre l'état #130 et T0).
+
+La dernière colonne numérique décompose l'écart total à 2 % dans l'ordre #92, #130, #62 (#55 et #45 : 0). Sortie : `sortie_tab34.txt`, `sortie_decomp34.txt`.
+
+| Grandeur | `main` 0 / 2 / 10 % | **T1** 0 / 2 / 10 % | T0 0 / 2 / 10 % | T1 − `main` à 2 % = #92 + #130 + #62 | Explication |
+|---|---|---|---|---|---|
+| Capital (a), volume | 2,000 / 2,000 / 2,000 | **2,000 / 2,000 / 2,000** | 2,000 / 2,000 / 2,000 | 0 | aucune issue (κ, t̄u inchangés) |
+| Capital (b), prix courant | 2,0009 / 1,9973 / 1,9836 | **2,0017 / 1,9989 / 1,9882** | 2,0017 / 1,9989 / 1,9882 | +0,001607 = +0,00161 + 0 + 0 | #92 seul, effet (P) : PIB plus petit (ΔIN valorisé à UC = p/(1 + μ̄)) |
+| Capital (c), comptable | 2,0009 / 1,5551 / 0,8360 | **2,0017 / 1,5563 / 0,8379** | 2,0017 / 1,5563 / 0,8379 | +0,001251 = +0,00125 + 0 + 0 | #92 seul, (P) |
+| Part salariale | 0,80037 / 0,79890 / 0,79344 | **0,62554 / 0,62465 / 0,62130** | 0,62554 / 0,62465 / 0,62130 | −0,1743 = −0,174 + 0 + 0 | #92 seul : ω̄ = 1/(1 + μ̄), 0,8 → 0,625 |
+| r̄, % | 1,00 / 1,00 / 1,00 | **1,00 / 1,00 / 1,00** | 1,00 / 1,00 / 1,00 | 0 | aucune (r̄ = 0,01 inchangé, P226) |
+| Taux directeur, % | 1,00 / 3,02 / 11,10 | **1,00 / 3,02 / 11,10** | 1,00 / 3,02 / 11,10 | 0 | aucune |
+| Taux réel restitué, % | 1,00 / 1,02 / 1,10 | **1,00 / 1,02 / 1,10** | 1,00 / 1,02 / 1,10 | 0 | aucune |
+| ϱ_L, % | 3,000 / 2,961 / 2,818 | **3,000 / 2,961 / 2,818** | 3,000 / 2,961 / 2,818 | 0 | aucune (ϖ_L inchangé) |
+| Inflation, % | 0 / 2 / 10 | **0 / 2 / 10** | 0 / 2 / 10 | 0 | aucune |
+| Hausse par pas, % | 0,00000 / 0,16516 / 0,79741 | **0,00000 / 0,16516 / 0,79741** | 0,00000 / 0,16516 / 0,79741 | 0 | aucune |
+| θ_G | 0,218474 / 0,219573 / 0,219568 | **0,219575 / 0,220584 / 0,220187** | 0,218765 / 0,219791 / 0,219626 | +0,001011 = +1,11e−16 + 0,000219 + 0,000793 | #130 (ϑ) puis #62 (ν) : C plus bas, θ_G résolu plus haut ; #92 et #55 : 0 |
+| I/PIB, % | 13,970 / 13,945 / 13,849 | **13,976 / 13,956 / 13,881** | 13,976 / 13,956 / 13,881 | +0,01122 = +0,0112 + 0 + 0 | #92 seul, (P) ; I inchangé |
+| Masse monétaire | 0,81917 / 0,81658 / 0,81108 | **0,88503 / 0,88265 / 0,87848** | 0,81921 / 0,81701 / 0,81289 | +0,06608 = +0,000657 − 0,000223 + 0,0656 | #92 (P) + ; #130 (ϑ) − (V_H) ; #62 (ν) + (D_H) |
+| Dette consolidée | 0,09884 / 0,25674 / 0,51013 | **0,20444 / 0,35350 / 0,59359** | 0,13862 / 0,28785 / 0,52800 | +0,09676 = +0,000207 + 0,0309 + 0,0656 | #92 (P) ; #130 (ϑ) : C42 ; #62 (ν) : C42, ΔD_c = ΔD_H |
+| Dette brute | 0,11987 / 0,27849 / 0,53645 | **0,22568 / 0,37564 / 0,62091** | 0,15972 / 0,30973 / 0,55457 | +0,09715 = +0,000224 + 0,031 + 0,0659 | idem |
+| Dette brute, ν_G = 1 | 0,11712 / 0,27564 / 0,53299 | **0,22291 / 0,37274 / 0,61731** | 0,15696 / 0,30687 / 0,55107 | +0,0971 = +0,000222 + 0,031 + 0,0659 | idem |
+| Dette brute affichée, % | 12,1 / 28,5 / 57,1 | **22,8 / 38,4 / 66,0** | 16,1 / 31,6 / 59,0 | +9,925 = +0,0229 + 3,17 + 6,73 | idem |
+| Déficit (Domar), % du PIB | 0,1959 / 1,0185 / 5,9005 | **0,4052 / 1,4023 / 6,8659** | 0,2747 / 1,1419 / 6,1072 | +0,3838 = +0,000819 + 0,123 + 0,26 | idem : n_a γ̄ D_c |
+| Solde primaire, % du PIB | −0,0971 / −0,2432 / −0,2381 | **−0,2007 / −0,3348 / −0,2770** | −0,1361 / −0,2726 / −0,2464 | −0,09163 = −0,000196 − 0,0293 − 0,0622 | idem : (i_CB/n_a − γ̄) D_c |
+
+
+À 0 et 10 %, la décomposition a la même forme (sortie `sortie_decomp34.txt`). Exemples : dette consolidée +0,10560 à 0 % (= +0,00004 + 0,03974 + 0,06582) et +0,08346 à 10 % (= +0,00117 + 0,01670 + 0,06559) ; θ_G +0,001101 à 0 % (= 0 + 0,000291 + 0,000810) et +0,000619 à 10 % (= 0 + 0,000058 + 0,000560). Lignes inchangées de `main` à T1 (écart nul à toutes les décimales publiées) : capital (a), r̄, taux directeur, taux réel restitué, ϱ_L, inflation, hausse par pas. **Vérifiée.**
+
+**T0 contre T1** : seules les lignes (ν) diffèrent ; T0 est le tableau P du § 4.4.2, au bit.
+
+### 7.4 Valeurs résolues B1 à B26 (n_a = 12, ν_G = 1,15)
+
+Les valeurs résolues de `tab:criteres-j3` sont publiées à π̄ = 2 % ; elles sont données ici aux trois π̄, comme le demande A2.
+
+| N° | `main` 0 / 2 / 10 % | **T1** 0 / 2 / 10 % | T0 0 / 2 / 10 % | Explication |
+|---|---|---|---|---|
+| B1 | 1,4 / 1,4 / 1,4 | **1,4 / 1,4 / 1,4** | 1,4 / 1,4 / 1,4 | aucune |
+| B2 | 0,80 / 0,80 / 0,80 | **0,80 / 0,80 / 0,80** | 0,80 / 0,80 / 0,80 | aucune |
+| B3, % | 5,0 / 5,0 / 5,0 | **5,0 / 5,0 / 5,0** | 5,0 / 5,0 / 5,0 | aucune |
+| B4 | 0,800369 / 0,798903 / 0,793445 | **0,625541 / 0,624645 / 0,621303** | 0,625541 / 0,624645 / 0,621303 | #92 |
+| B5, % | 2,00 / 2,00 / 2,00 | **2,00 / 2,00 / 2,00** | 2,00 / 2,00 / 2,00 | aucune |
+| B6 | 0,25 / 0,25 / 0,25 | **0,60 / 0,60 / 0,60** | 0,60 / 0,60 / 0,60 | #92, par définition |
+| B7, % | 0 / 2 / 10 | **0 / 2 / 10** | 0 / 2 / 10 | aucune |
+| B9, % | 1,00 / 1,02 / 1,10 | **1,00 / 1,02 / 1,10** | 1,00 / 1,02 / 1,10 | aucune |
+| B10 | 1,000000 / 0,980566 / 0,912667 | **1,100000 / 1,076531 / 0,995242** | 1,000000 / 0,980566 / 0,912667 | #62 : ν_H/(1 + ν_H n_a π^{∗,pas}) |
+| B11, % | 1,9819 / 3,8900 / 10,5565 | **2,1801 / 4,2707 / 11,5116** | 1,9819 / 3,8900 / 10,5565 | #62 |
+| B12 | 2,00092 / 1,99726 / 1,98361 | **2,00173 / 1,99887 / 1,98817** | 2,00173 / 1,99887 / 1,98817 | #92 (P) |
+| B13, % | 13,970 / 13,945 / 13,849 | **13,976 / 13,956 / 13,881** | 13,976 / 13,956 / 13,881 | #92 (P) |
+| B14 | 0,4 / 0,4 / 0,4 | **0,4 / 0,4 / 0,4** | 0,4 / 0,4 / 0,4 | aucune |
+| B15 | 0,16636 / 0,16605 / 0,16492 | **0,16643 / 0,16619 / 0,16530** | 0,16643 / 0,16619 / 0,16530 | #92 (P) |
+| B16 | 0,81917 / 0,81658 / 0,81108 | **0,88503 / 0,88265 / 0,87848** | 0,81921 / 0,81701 / 0,81289 | #92, #130, #62 |
+| B17 | 0,10 / 0,10 / 0,10 | **0,15 / 0,15 / 0,15** | 0,15 / 0,15 / 0,15 | #130, par définition |
+| B19 | 0,021027 / 0,021748 / 0,026322 | **0,021242 / 0,022141 / 0,027318** | 0,021101 / 0,021875 / 0,026566 | #92 (P), #130 (ϑ), #62 (ν) : M^G suit les paiements bruts |
+| B20 | 0,11987 / 0,27849 / 0,53645 | **0,22568 / 0,37564 / 0,62091** | 0,15972 / 0,30973 / 0,55457 | #92, #130, #62 |
+| B21 | 0,09884 / 0,25674 / 0,51013 | **0,20444 / 0,35350 / 0,59359** | 0,13862 / 0,28785 / 0,52800 | #92, #130, #62 |
+| B22, % | 0,1959 / 1,0185 / 5,9005 | **0,4052 / 1,4023 / 6,8659** | 0,2747 / 1,1419 / 6,1072 | #92, #130, #62 |
+
+
+Lignes sans clé numérique dans le script, inchangées par construction : **B8** (π^e − π\* = 0), **B18** (i_L − i_CB = 2 points et i_CB − i_D = 1 point aux trois π̄, mesurés), **B24** (croissance de y = 2 %, g_pr et g_N inchangés), **B25** (r̂\* − r̄ = 0 exactement, mesuré), **B26** (i_CB − i^règle = 0 exactement). B23 est fusionnée dans B19. B5 se lit comme (1 + hausse_salaire_an)/(1 + glissement) − 1 = 2,00 %. **Vérifiée** (`tab34.py`).
+
+### 7.5 Prédit par commit (rangs 3 à 7) : référence « mesuré égal au prédit à 1e−9 » (P206)
+
+**Quatre états distincts seulement.** La chaîne cumulée ne produit que quatre états stationnaires : E0 = `main` ; E1 = après #92, identique au bit après #55 ; E2 = après #130, identique au bit à T0 ; E3 = après #62, identique au bit après #45 (= T1). Écarts de grille mesurés entre commits successifs (`tab34.py`, 18 points, toutes les clés) : #92 → #55 : **0** ; #62 → #45 : **0** ; état #130 → T0 : **0**. Entre #55 et #130 comme entre #130 et #62, le plus grand écart relatif de la grille porte sur `epargne_residu`, résidu d'arrondi de l'ordre de 1e−16 en valeur absolue (relatif sans objet sur une grandeur nulle), qui n'entre dans aucun tableau jugé.
+
+| Rang | Commit | État avant → après | `tab:etat-stationnaire` et B1 à B26 | Valeurs publiées du script qui changent (sur 449) | En écart à la publication après le commit | Chiffres de la maquette non égaux (écart + sans mesure, sur 148) |
+|---|---|---|---|---|---|---|
+| 3 | #92 (μ̄) | E0 → E1 | lignes (P) et part salariale, B4, B6, B12, B13, B15, B16, B19 à B22 | 194 | 173 | 35 (9 avant) |
+| 4 | #55 (ζ) | E1 → E1 | **aucune** (au bit) | 12 (mesure (α) de #80, § 3.4.3) | 185 | 72 |
+| 5 | #130 (ϑ ; sources de ϖ_L, ϖ_D, r̄) | E1 → E2 | θ_G, lignes de dette et de déficit, B16, B17, B19 à B22 | 233 | 284 | 73 |
+| 6 | #62 (ν_H, λ_H), **T1** | E2 → E3 | θ_G, masse monétaire, dette et déficit, B10, B11, B16, B19 à B22 | 246 | 309 | 72 |
+| 6 | #62, **T0** (ν_H = 1 ; sources seules) | E2 → E2 | **aucune** ; commit sans changement de valeur : critère « identique au bit » | 0 | 284 | 73 |
+| 7 | #45 (λ_w) | E3 → E3 (T1) ou E2 → E2 (T0) | **aucune** (au bit ; critère propre de #45, ≤ 1e−12) | 0 | 309 (T1) ; 284 (T0) | 83 (75 + 8 sans mesure), T1 comme T0 |
+
+Un commit par issue, dans l'ordre du plan (rangs 3 à 7). Les comptes de la maquette sont cumulés à chaque état (`maq34.py`), non différenciés par commit : le nombre de chiffres qui changent à chaque commit n'est **pas mesuré**. **Vérifiée** (`sortie_tab34.txt`, `sortie_maq34.txt`, `sortie_maq34_etapes.txt`).
+
+**Valeurs de référence**, 10 chiffres significatifs, `valeurs` du script à (ν_G, π̄, n_a = 12) ; elles se reproduisent par `calculer(replace(Parametres(), **table))` avec la table cumulée du commit. Lignes absentes : constantes de E0 à E3 (capital (a) = 2 ; r̄ = 1 ; taux directeur 1 / 3,02 / 11,1 ; taux réel restitué 1 / 1,02 / 1,1 ; ϱ_L 3 / 2,960784314 / 2,818181818 ; inflation 0 / 2 / 10 ; hausse par pas 0 / 0,1651581302 / 0,7974140429 ; B1 1,4 ; B2 0,8 ; B3 0,05 ; B5 2 ; B14 0,4 ; B18 2 et 1 ; B25 0). B4 = part salariale, B6 = 0,25 puis 0,6 dès E1, B12 = capital (b), B13 = I/PIB, B16 = masse monétaire, B20 = dette brute (ν_G = 1,15), B21 = dette consolidée.
+
+| Grandeur (clé de `valeurs`, ν_G) | E0 = `main` | E1 = après #92 (= après #55) | E2 = après #130 (= T0) | E3 = après #62 (= T1) |
+|---|---|---|---|---|
+| Capital (b), prix courant (`K_courant`, 1,15) | 2,000923178 / 1,997258541 / 1,983611826 | 2,001731658 / 1,9988652 / 1,988170605 | 2,001731658 / 1,9988652 / 1,988170605 | 2,001731658 / 1,9988652 / 1,988170605 |
+| Capital (c), comptable (`K_comptable`, 1,15) | 2,000923178 / 1,555096263 / 0,8359781761 | 2,001731658 / 1,556347232 / 0,8378994388 | 2,001731658 / 1,556347232 / 0,8378994388 | 2,001731658 / 1,556347232 / 0,8378994388 |
+| Part salariale (`part_salariale`, 1,15) | 0,8003692711 / 0,7989034166 / 0,7934447306 | 0,6255411431 / 0,624645375 / 0,6213033141 | 0,6255411431 / 0,624645375 / 0,6213033141 | 0,6255411431 / 0,624645375 / 0,6213033141 |
+| θ_G (`theta_G`, 1,15) | 0,2184743768 / 0,219572848 / 0,219567785 | 0,2184743768 / 0,219572848 / 0,219567785 | 0,2187652899 / 0,2197913784 / 0,2196262804 | 0,2195754371 / 0,220583889 / 0,2201867129 |
+| I/PIB, % (`I_sur_PIB`, 1,15) | 13,97024066 / 13,94465454 / 13,84937458 | 13,97588538 / 13,95587207 / 13,8812035 | 13,97588538 / 13,95587207 / 13,8812035 | 13,97588538 / 13,95587207 / 13,8812035 |
+| Masse monétaire (`masse_monetaire`, 1,15) | 0,8191730634 / 0,8165753482 / 0,8110836466 | 0,8195040532 / 0,8172322275 / 0,8129476962 | 0,819207001 / 0,8170093975 / 0,8128883615 | 0,8850281093 / 0,8826537543 / 0,878475765 |
+| Dette consolidée (`dette_consolidee`, 1,15) | 0,09884071938 / 0,2567406936 / 0,5101315032 | 0,09888065632 / 0,256947224 / 0,5113038982 | 0,1386182373 / 0,2878513386 / 0,5280025523 | 0,2044393457 / 0,3534956955 / 0,5935899558 |
+| Dette brute (`dette_brute`, 1,15) | 0,119867657 / 0,2784883444 / 0,5364538062 | 0,1199160899 / 0,2787123693 / 0,5376866957 | 0,1597196103 / 0,3097268108 / 0,5545687375 | 0,2256814061 / 0,3756369498 / 0,6209079682 |
+| Dette brute, ν_G = 1 (`dette_brute`, 1,00) | 0,1171227293 / 0,275644561 / 0,5329887162 | 0,1171700531 / 0,2758662983 / 0,5342136422 | 0,1569649656 / 0,3068663132 / 0,5510715427 | 0,2229083955 / 0,3727416977 / 0,6173118022 |
+| Dette brute affichée, % (`dette_brute_affichee`, 1,15) | 12,11583628 / 28,45087904 / 57,06550997 | 12,12073172 / 28,47376583 / 57,19665913 | 16,14394322 / 31,64225795 / 58,99249376 | 22,81114885 / 38,3757584 / 66,04935866 |
+| Déficit (Domar), % du PIB (`deficit_i`, 1,15) | 0,1958921808 / 1,01850789 / 5,900522757 | 0,1959713317 / 1,01932721 / 5,914083464 | 0,2747271465 / 1,141925946 / 6,107231285 | 0,4051778408 / 1,402341599 / 6,865859138 |
+| Solde primaire, % du PIB (`primaire`, 1,15) | −0,09705146142 / −0,2431509952 / −0,2380630719 | −0,0970906754 / −0,2433465936 / −0,2386101935 | −0,1361089093 / −0,2726149037 / −0,2464029545 | −0,2007384951 / −0,334784599 / −0,2770106285 |
+| B10 (`richesse_YD`, 1,15) | 1 / 0,9805661827 / 0,9126671662 | 1 / 0,9805661827 / 0,9126671662 | 1 / 0,9805661827 / 0,9126671662 | 1,1 / 1,076530691 / 0,9952421511 |
+| B11 (`epargne`, 1,15) | 1,981897562 / 3,889973107 / 10,55651994 | 1,981897562 / 3,889973107 / 10,55651994 | 1,981897562 / 3,889973107 / 10,55651994 | 2,180087319 / 4,270670874 / 11,51163754 |
+| B15 (`depots_F`, 1,15) | 0,1663589407 / 0,1660542588 / 0,164919656 | 0,1664261586 / 0,1661878382 / 0,1652986779 | 0,1664261586 / 0,1661878382 / 0,1652986779 | 0,1664261586 / 0,1661878382 / 0,1652986779 |
+| B17 (`E_sur_L`, 1,15) | 0,1 / 0,1 / 0,1 | 0,1 / 0,1 / 0,1 | 0,15 / 0,15 / 0,15 | 0,15 / 0,15 / 0,15 |
+| B19 (`encaisse`, 1,15) | 0,0210269376 / 0,02174765084 / 0,02632230301 | 0,02103543361 / 0,02176514534 / 0,02638279749 | 0,02110137305 / 0,02187547219 / 0,0265661852 | 0,02124206041 / 0,02214125431 / 0,02731801243 |
+| B22 (`deficit_ii`, 1,15) | 0,1958921808 / 1,01850789 / 5,900522757 | 0,1959713317 / 1,01932721 / 5,914083464 | 0,2747271465 / 1,141925946 / 6,107231285 | 0,4051778408 / 1,402341599 / 6,865859138 |
+
+**Lecture du critère sur une valeur prédite nulle.** L'écart relatif n'est pas défini quand la valeur prédite vaut 0 : inflation et hausse par pas à π̄ = 0, B8, B25, B26 (et `i_D` à π̄ = 0, 8,7e−16, hors des tableaux). Je propose de lire « ≤ 1e−9 relatif » comme « ≤ 1e−12 en valeur absolue, dans l'unité de la grandeur » pour ces seules valeurs, comme A2 pour les grandeurs nulles. C'est une précision de critère, réservée au mainteneur (question 6 du § 7.13), à fixer avant le premier commit.
+
+**Visa demandé** : la colonne E1 couvre les commits #92 et #55, E2 le commit #130 (et les commits #62 et #45 sous T0), E3 les commits #62 et #45 sous T1.
+
+### 7.6 Conditions d'existence (T1 et T0 ; π̄ ∈ {0 ; 2 ; 10 %} ; n_a ∈ {4 ; 12 ; 52} ; ν_G = 1,15)
+
+Sortie : `sortie_cond34.txt`. Valeurs à n_a = 4 / 12 / 52, dans l'ordre π̄ = 0 / 2 / 10 % à l'intérieur de chaque cellule.
+
+| Condition | T1 | T0 | Verdict |
+|---|---|---|---|
+| Div_F > 0 : Div_F/(p v) | n_a = 12 : 0,22213 / 0,22378 / 0,22597 ; n_a = 4 et 52 : 0,2221 à 0,2261 | identique à T1 | tenue (ν_H n'entre pas dans le bloc 6) |
+| Dividende stationnaire de la banque, marge par an (`existence_Bk`) | n_a = 12 : 0,029580 / 0,032758 / 0,045511 ; n_a = 4 : 0,029575 / 0,032751 / 0,045495 ; n_a = 52 : 0,029583 / 0,032760 / 0,045517 | n_a = 12 : 0,028758 / 0,031703 / 0,043554 ; n_a = 4 : 0,028753 / 0,031696 / 0,043528 ; n_a = 52 : 0,028760 / 0,031706 / 0,043563 | tenue |
+| Coefficient de richesse λ_H/n_a + ν_H λ_H π^{∗,pas} − γ^e, par pas | n_a = 4 : 0,095037 / 0,092233 / 0,081414 ; 12 : 0,031682 / 0,030754 / 0,027203 ; 52 : 0,007311 / 0,007098 / 0,006283 | n_a = 4 : 0,095037 / 0,092035 / 0,080449 ; 12 : 0,031682 / 0,030688 / 0,026884 ; 52 : 0,007311 / 0,007083 / 0,006210 | tenu |
+| ν_H λ_H < 1 | 0,44 | 0,40 | tenu |
+| D1 | 0,98713 à 0,99175 | 0,98830 à 0,99250 | tenue |
+| D2 | 0,96899 à 0,99978 | identique à T1 | tenue |
+| Marge du plafond de E1 | 0,13665 à 0,33341 | 0,13410 à 0,31640 | tenue |
+| Plafond de E6 (valeur) | 0,85052 à 1,13109 | 0,87053 à 1,13688 | > 0 ; nature inchangée |
+| Caisse des entreprises, phase 4 (`caisse_DF4`) | n_a = 4 : 0,0842 / 0,0976 / 0,1192 ; 12 : 0,6947 / 0,6992 / 0,7063 ; 52 : 0,9296 / 0,9306 / 0,9322 | identique à T1 | tenue, **y compris à n_a = 4** (constat du § 1.5, dû à #92 ; `main` : −0,1789 / −0,1655 / −0,1439) |
+| Caisse des ménages, phase 4 (`caisse_DH4`) | 1,0167 à 1,2180 | 1,0184 à 1,2400 | tenue |
+| `calculer` aux 18 points et au point ν_G = 1 | aucun refus ; plus grand résidu 6,651e−15 | aucun refus ; 4,792e−15 | **vérifiée** |
+
+Au point de référence ν_G = 1 (hors domaine, déclaré), la marge de E1 descend à 0,00677 (T1, n_a = 4, π̄ = 0) et 0,00384 (T0), positives. **Aucune condition d'existence n'est violée, ni aucune condition d'arrêt du plan rencontrée par interaction des paramètres.** **Vérifiée.**
+
+### 7.7 C62 à T1 et à T0
+
+Sorties : `sortie_c62_34.txt`, `sortie_moteur34.txt`, `sortie_pli34.txt`, `sortie_choc1pc34.txt`. Maquette conjointe, lecture (c), pire des deux régimes de T4, ζ = 8 sauf mention ; doublement = ln 2 / ln ρ, en tours.
+
+**Maquette, à ζ = 8** :
+
+| Table | φ = 0 : π̄ = 0 | φ = 0 : 2 % | φ = 0 : 10 % | φ = 1 : 0 / 2 / 10 % | φ\* à 2 % / 10 % (φ lu continu) | Doublement sous φ = 0 : 2 % ; 10 % |
+|---|---|---|---|---|---|---|
+| **T1** | 0,999538 (paire, ∠ ±0,193°) | **1,000891, paire ∠ ±0,0844°, période 4 267 tours** | **1,008216, réelle** | 0,997701 / 0,997460 / 0,997414 | **0,2860 / 0,6325** | **778 tours (65 ans) ; 85 tours (7,1 ans)** |
+| **T0** | 0,999071 (paire, ∠ ±0,227°) | **1,000490, paire ∠ ±0,1410°, période 2 554 tours** | **1,007513, réelle** | 0,997752 / 0,997502 / 0,997336 | **0,1789 / 0,6100** | **1 416 tours (118 ans) ; 93 tours (7,7 ans)** |
+| Contrôle P (ν_H = 1, λ_w = 1) | 0,998668 | 1,000438 | 1,010255 | 0,997246 / 0,996954 / 0,997202 | 0,1231 / 0,5874 | 1 584 ; 68 |
+| Contrôle N (ν_H = 1,1, λ_w = 1) | 0,999272 | 1,000995 | 1,011201 | 0,997282 / 0,997028 / 0,997334 | 0,2466 / 0,6151 | 697 ; 62 |
+
+Une seule traversée de 1 en φ sur 21 points, à chaque cas. Enveloppe sur 720 tours sous φ = 0 à 2 % : ×1,90 (T1), ×1,42 (T0). **Vérifiée** (maquette).
+
+**ζ_c sur [2 ; 20]** (rayon sous φ = 0, ζ ∈ {2 ; 4 ; 6 ; 8 ; 10 ; 12,56 ; 15 ; 17 ; 20}) :
+- **À 2 %, aucun ζ_c** à T1 ni à T0. T1 : de 1,004314 (ζ = 2) à 1,000790 (ζ = 20), décroissant ; T0 : de 1,003457 à 1,000469, non monotone entre 6 et 12,56 (1,000481 ; 1,000490 ; 1,000492 ; 1,000491). La boucle est faiblement explosive à 2 % sur tout le domaine de ζ mesuré.
+- **À 10 %**, aucun ζ_c : de 1,009462 à 1,003264 (T1), de 1,008902 à 1,003013 (T0).
+- **À π̄ = 0, un ζ_c existe dans le domaine** : **3,6605 (T1)** et **2,4926 (T0)**. En deçà, la boucle est explosive à π̄ = 0 (T1 : 1,001587 à ζ = 2 ; T0 : 1,000490). La racine qui traverse est **réelle** (argument 0 à ζ = 2 et 3), et la pente dθ_G/dr̄ du script au point de référence s'y annule (−7,5e−8 à T1, −1,7e−7 à T0) : c'est la coïncidence du § 3.13.5, retrouvée. Ce ζ_c est identique à celui de P (2,4926) et de N (3,6605) : il ne dépend pas de λ_w, ce qu'on attend d'une traversée réelle, liée à l'état stationnaire. **Vérifiée.** Conséquence : la phrase « à π̄ = 0, le rayon est inférieur à 1 sur [2 ; 20] » (§ 3.13.3, mesurée à ϑ = 0,10) ne vaut plus dès ϑ = 0,15 ; à la table retenue, elle se lit « stable à π̄ = 0 pour ζ ≥ 3,66 (T1) ».
+
+**Corroboration par le moteur** (Prony sur la série signée Δi_CB, φ = 0, ζ = 8, choc θ_G aux tours 1 à 12) :
+
+| Cas | Maquette | Moteur | Fenêtre et choc |
+|---|---|---|---|
+| T1, 2 % | 1,000891 ∠ ±0,0844° (4 267 tours) | **1,0008906 ∠ ±0,0844° (4 265 tours)** ; 1,0008908 (4 264) sur 3 000 à 12 000 | choc de 1e−9 ; pas 2 000 à 7 000, ordres 2 et 4 ; résidu relatif 2e−8 |
+| T0, 2 % | 1,000490 ∠ ±0,1410° (2 554 tours) | **1,0004886 ∠ ±0,1410° (2 554 tours)** | choc de 1e−9 ; pas 3 000 à 12 000, ordres 2 et 4, et 2 000 à 7 000 |
+| T1, 10 % | 1,008216 | **1,0082205** (et 1,0034) | choc de 1e−6 ; pas 300 à 900, ordre 2 ; 1 500 pas sans arrêt |
+| T0, 10 % | 1,007513 | **1,0075154** | idem |
+
+Accord de 3e−7 (T1) et 1,1e−6 (T0) sur le module, 0,0002° sur l'argument. Changements de signe de Δi_CB à T1, 2 % : pas 1 851, 3 984, 6 117, 8 250, 10 383 (demi-période 2 133 pas). **Vérifiée.**
+
+**Protocole du test C62 « choc de 1 % »** (720 pas ; publié à ζ = 8 et ϑ = 0,10 : arrêt au pas 543 à 10 %, retrouvé) : à T1 et à T0, **aucun arrêt en 720 pas**, ni à 2 % ni à 10 %. À 10 %, Δi_CB atteint +104,6 points au pas 720 (T1) et +63,9 points (T0) : l'explosion demeure, plus lente (λ_w = 0,18). La valeur publiée « arrêt au pas 543 » disparaît ; la frontière de #143 n'est pas atteinte en 720 pas. À 2 %, Δi_CB vaut +0,35 point au pas 720 (T1). **Vérifiée** (moteur, protocole rejoué hors pytest ; les deux tests C62 ne sont pas exécutés par pytest à T1).
+
+**C51, ligne (b), citée par C62** (`c51_34.py`, lecture (α), θ_G visé de l'état à 2 %, pente dθ_G/dr̄ entre parenthèses) :
+
+| Table | π̄ = 0 | 2 % | 10 % |
+|---|---|---|---|
+| T1, φ = 0 | 1,637 % (+0,101) ; 3,477 % (−0,095) | 1,000 % (+0,053) ; 2,018 % (−0,052) | −2,435 % (+0,153) ; 0,499 % (−0,142) |
+| T0, φ = 0 | 1,456 % (+0,170) ; 4,713 % (−0,154) | 1,000 % (+0,102) ; 3,048 % (−0,096) | −1,461 % (+0,093) ; 0,469 % (−0,088) |
+| T1, φ = 1 | 1,270 % (+0,322) | 1,000 % (+0,320) | 1,278 % (+0,292) |
+| T0, φ = 1 | 1,276 % (+0,321) | 1,000 % (+0,319) | 1,199 % (+0,293) |
+
+Sous φ = 0, réduite de 5 % (#88) : T1 −1,800 % / 7,519 %, −2,856 % / 6,484 %, −5,599 % / 4,246 % ; T0 −1,578 % / 8,414 %, −2,549 % / 7,268 %, −5,131 % / 4,781 %. Comme au § 3.13.5 : à 2 %, la pente au point de référence est positive, la méthode des racines ne voit pas la paire complexe ; à 10 %, la racine haute à pente négative est cohérente avec la racine réelle de 1,0082. **Vérifiée.**
+
+**Formulation à publier** (remplace celle de P232, qui vaut à T0 ; chiffres de T1, déjà cités par `monnaie` au § 5.12 et retrouvés ici) :
+
+> **Sous φ = 0** (intérêts financés par le déficit), à la table calibrée (μ̄ = 0,60 ; ζ = 8 ; ϑ = 0,15 ; ν_H = 1,1 ; λ_H = 0,4 ; λ_w = 0,18), la boucle conjointe est :
+> - **explosive à 10 %** : racine réelle de 1,008216, écart doublé en 85 tours (7 ans) ; couverture minimale qui stabilise 0,63 (maquette, φ lu continu) ;
+> - **faiblement explosive à 2 %** sur tout ζ ∈ [2 ; 20] mesuré : paire complexe de module 1,000891 à ζ = 8 (de 1,00079 à 1,00431 sur [2 ; 20]), période voisine de 4 270 tours, enveloppe doublée en 778 tours (65 ans) ; couverture minimale 0,29 ;
+> - **stable à π̄ = 0** au ζ retenu (0,999538), explosive à π̄ = 0 pour ζ < 3,66 (racine réelle).
+>
+> **Sous φ = 1**, elle est stable : 0,997701 / 0,997460 / 0,997414 à 0, 2 et 10 %.
+>
+> Valeurs de la maquette conjointe. Le moteur retrouve la racine dominante par identification : 1,0008906 ∠ ±0,084° à 2 %, 1,0082205 à 10 %. Les estimateurs par fenêtres ne mesurent pas une racine complexe de période plus longue que leur horizon (#166). La méthode des racines sous φ = 0 ne détecte que la parité des racines réelles supérieures à 1 : elle corrobore 10 %, pas 2 %. Le signe à 2 % ne dépend plus de ζ sur [2 ; 20], mais il dépend du reste de la calibration (ϑ, ν_H) : à ϑ = 0,10, ν_H = 1 et λ_w = 1, il basculait à ζ_c = 8,76. Résultat du modèle à la calibration de M34.
+
+Variante T0 de la même phrase : 1,000490 (de 1,00047 à 1,00346 sur [2 ; 20]), période 2 554 tours, doublement en 1 416 tours (118 ans), couverture 0,18 ; 10 % : 1,007513, 93 tours, couverture 0,61 ; π̄ = 0 : 0,999071, explosive pour ζ < 2,49 ; moteur 1,0004886 et 1,0075154. C'est la formulation de P232, complétée de π̄ = 0 et du moteur.
+
+Ce qui ne doit plus être dit : « quasi neutre à 2 %, signe dépendant de ζ » (P219, P222) ; « ζ_c = 8,76 » comme seuil de la table retenue ; « stable à π̄ = 0 » sans le domaine de ζ ; « arrêt au pas 543 » à 10 % ; « double l'écart en 5 ans ».
+
+### 7.8 Instabilité 17 (lecture (a) des ménages) à T1 et à T0
+
+Sorties : `sortie_ins17_34.txt`, confirmées par le relevé de la maquette (`sortie_maq34.txt`). Maquette ménages (`carte_menages`), rayons ; θ_H = 0,8 puis 1, régime de hausse puis de baisse.
+
+| Table | Lecture (a) : 0,8 h / 0,8 b / 1 h / 1 b | n_a = 4 | Frontières ν_H et h (publiées 0,586 et 0,604) | Glissement dans le seul terme d'entretien (a_entretien) | Haig-Simons sur le glissement, θ_H = 1 (h / b) ; idem par pas | Lecture retenue (c), M27 |
+|---|---|---|---|---|---|---|
+| `main` (contrôle) | 1,0275 / 1,0029 / 1,0561 / 1,0580 | 1,0907 | 0,586 ; 0,604 | 1,0304 / 1,0058 / 1,0591 / 1,0610 | 1,0231 / 1,0271 ; 1,0223 / 1,0218 | 0,9640 / 0,9617 / 0,9564 / 0,9537 |
+| μ̄ = 0,60, λ_w = 1, ν_H = 1 (après #92) | 1,0041 / 0,9851 / 1,0596 / 1,0618 | 1,0178 | **0,924 ; 0,930** | 1,0070 / 0,9879 / 1,0626 / 1,0648 | 1,0264 / 1,0302 ; 1,0219 / 1,0212 | 0,9645 / 0,9627 / 0,9565 / 0,9537 |
+| **T0** | 0,9828 / 0,9832 / **0,9985** / 0,9932 | 0,9469 | n'existent plus (rayon < 1 de ν_H = 0,3 à 2) | 0,9830 / 0,9834 / **1,0014** / 0,9961 | 0,9802 / 0,9795 ; 0,9842 / 0,9818 | 0,9775 / 0,9779 / 0,9733 / 0,9735 |
+| **T1** | 0,9831 / 0,9835 / **1,0019** / 0,9965 | 0,9479 | n'existent plus | 0,9833 / 0,9836 / **1,0044** / 0,9990 | 0,9797 / 0,9790 ; 0,9898 / 0,9871 | 0,9776 / 0,9779 / 0,9733 / 0,9736 |
+
+Constats :
+1. **À T1, la lecture (a) est faiblement explosive dans une configuration sur quatre** : θ_H = 1, régime de hausse, 1,0019 (période 17,8 tours). La lecture « a_entretien » l'est aussi dans la même configuration (1,0044). Les trois autres configurations sont stables. **Vérifiée** (deux chemins : sonde et relevé).
+2. **À T0, la lecture (a) est stable dans les quatre** (max 0,9985), mais « a_entretien » est explosive pour θ_H = 1, hausse (1,0014). **Vérifiée.**
+3. Le motif publié de M27 (« lecture (a) explosive ») ne tient donc **ni partout, ni nulle part** à la table retenue : il tient dans la configuration θ_H = 1, où les ménages reçoivent aussi le résultat des entreprises, ce qui est le cas du socle (YD contient Div_F et Div_Bk). Que cette configuration soit la plus représentative du socle est une **hypothèse**.
+4. **#92 seul déplace déjà la ligne 17** : les frontières passent de 0,586 à 0,924 (ν_H) et de 0,604 à 0,930 (h), et la configuration θ_H = 0,8, baisse passe sous 1 (0,9851). La surface du § 1.4.5 ne listait pas ces chiffres de la maquette : 26 chiffres de la maquette changent avec μ̄ (§ 7.10).
+5. La lecture retenue (c) est stable à T1 et à T0 (0,9733 à 0,9779), plus lente qu'à `main` (λ_w plus bas). **Vérifiée.**
+
+Ce n'est pas une condition d'arrêt (aucune équation à changer ; la lecture (a) est écartée par M27 et n'est pas exécutée par le moteur), mais la phrase de republication décidée au § 6.13 (« stable à λ_w = 0,18 (maquette, table de `main`) ; non mesurée à la table proposée ») est à remplacer (question 4 du § 7.13), et le corps de l'issue du § 6.10 à amender (§ 7.14).
+
+### 7.9 #80 et C51 à T1 et à T0
+
+| Grandeur (script, `superneutralite`, ζ de la table) | `main` | #92 | #55 | **T0** (= #130) | **T1** (= #62 = #45) | Seuil |
+|---|---|---|---|---|---|---|
+| Δr̄_α, point (libellé publié « (ζ = 4) » à reprendre) | 0,632318 | 0,632318 | 0,296551 | **0,276390** | **0,277898** | < 0,1 |
+| Écart de C/Y_o sous (α), point | 0,632684 | 0,632684 | 0,630807 | **0,690396** | **0,853730** | < 0,1 |
+| r̄_α à π\* = 0 / 2 / 10 %, % (C51, φ = 1) | — | — | — | 1,276 / 1,000 / 1,199 | 1,270 / 1,000 / 1,278 | racine unique |
+| Racines parasites à 0, 2 et 10 % (φ = 1) | aucune | aucune | aucune | aucune | aucune | aucune |
+
+**#80 reste en échec attendu à T1 et à T0** (les deux grandeurs restent au-dessus de 0,1 point) : aucun succès inattendu prévu ; les deux tests `xfail(strict=True)` ne sont pas exécutés ici. **C51 tient** sous φ = 1 (racine unique sur [−60 % ; 100 %], aucun refus de `calculer`). Sous φ = 0, deux racines à chaque π̄ (§ 7.7). **Vérifiée** (valeurs du script ; tests non exécutés).
+
+### 7.10 Valeurs publiées en écart : surface de `docwriter`
+
+**Script d'état stationnaire** (449 valeurs ; `verdict` ≠ « égal » contre la publication actuelle) : **309 à T1, 284 à T0**.
+
+| Section | T1 | T0 |
+|---|---|---|
+| `sec:banque-stationnaire` | 75 | 73 |
+| `sec:finances_publiques-stationnaire` | 52 | 49 |
+| `tab:etat-stationnaire` | 36 | 36 |
+| `sec:investissement-stationnaire` | 28 | 28 |
+| `sec:menages-stationnaire` | 20 | 0 |
+| `sec:finances_publiques-emission` (+ avec `tab:calibration`) | 12 (+3) | 12 (+3) |
+| `sec:banque_centrale-conditions` (+ fiche 9 § 3.Q ; + fiche 8 § 9.6) | 12 (+6 ; +1) | 12 (+6 ; +1) |
+| `sec:banque_centrale-stationnaire` | 10 | 12 |
+| `sec:banque_centrale-restitution` | 9 | 8 |
+| `sec:finances_publiques-depense` | 7 | 7 |
+| `sec:banque-restitution` | 6 | 6 |
+| `sec:travail-stationnaire` | 5 | 5 |
+| `sec:banque-conditions` | 5 | 5 |
+| `sec:finances_publiques-restitution` | 4 | 4 |
+| fiche 9 § 3.C et § 9.6 | 4 | 4 |
+| `sec:prix-stationnaire` | 3 | 3 |
+| `sec:finances_publiques-transferts`, fiche 9 § 6.3, fiche 9 § 3.C, `sec:banque-resultat` | 2 chacune | 2 chacune |
+| `sec:finances_publiques-impots`, fiche 8 § 9.6 | 1 chacune | 1 chacune |
+| `sec:finances_publiques-caisse` | 1 | 0 |
+
+Par commit : 194 (#92), 12 (#55), 233 (#130), 246 (#62 sous T1 ; 0 sous T0), 0 (#45) valeurs changent ; détail par section dans `sortie_tab34.txt`. **Vérifiée.**
+
+**Maquette conjointe** (148 chiffres relevés par `releve`) : **75 en écart et 8 sans mesure à T1 comme à T0**, contre 9 écarts préexistants à `main`.
+
+| Famille (ligne du `.tex`) | Non égaux à T1 | Exemple, publié → T1 |
+|---|---|---|
+| `socle` : rayons, racines, demi-vies, grilles, marge conjointe (l. 3015, 3455) | 25 + 6 sans mesure | demi-vie du socle 240 → 272,5 tours ; période à 10 % 3 617 → 1 796 tours ; facteur de marge conjointe 1,7135 : plus de frontière sur [1 ; 2] |
+| `finances` : C62 (l. 3256, 4079, et 8 chiffres sans ligne, préexistants) | 17 | rayon sous φ = 0, 1,001818 → 1,000891 (2 %) et 1,011036 → 1,008216 (10 %) ; doublement 381,6 → 778,4 et 63 → 84,7 ; φ\* 0,174 → 0,286 et 0,650 → 0,632 |
+| `menages_inflation` (l. 1918, 4142) | 14 | a_entretien 1,059130 → 1,00437 ; Haig-Simons sur le glissement 1,0231 → 0,9797 |
+| `instabilite17` (l. 4142, l. 115) | 6 + 2 sans mesure | § 7.8 ; frontières 0,586 et 0,604 disparues |
+| `salaires_prix` (l. 1695) | 7 | boucle salaires – prix 0,8969 → 0,9357 (λ_w ; indépendante de μ̄) |
+| `menages` (l. 2001) | 6 | 0,9640 → 0,9776 |
+
+Comptes cumulés par état (non égaux) : 9 (`main`), 35 (#92), 72 (#55), 73 (#130), 72 (#62), 83 (#45). Les 26 chiffres apportés par #92 (ménages, ménages et inflation, instabilité 17) ne figuraient pas dans la surface du § 1.4.5. **Vérifiée** (`sortie_maq34.txt`, `sortie_maq34_etapes.txt`).
+
+**Texte à reprendre en plus des nombres** (renvois) : `tab:calibration` (lignes μ̄, ζ, ϑ, ϖ_L, ϖ_D, r̄, ν_H, λ_H, λ_w ; textes de source des § 3.11, 4.10, 5.10, 6.11) ; statut de `tab:etat-stationnaire` (« la part salariale de 0,80 tient à μ̄ = 0,25 », « la dette consolidée de 0,26 », « le taux d'épargne de 3,89 % », dépendance à n_a et point n_a = 4) ; C62 (§ 7.7) ; ligne 17 de `tab:instabilites` (§ 7.8) ; `sec:travail-conditions` (§ 6.4.7) ; coût de la désinflation « non calibré, #163 » (§ 6.4.7, 13,89 point-années par point par la formule) ; « 21 occurrences de ζ = 4 » (§ 3.11) ; repères de `sec:menages` (§ 5.10).
+
+### 7.11 Lignes de la banque (à soumettre à `monnaie`)
+
+`sortie_banque34.txt`, n_a = 12, ν_G = 1,15, 0 / 2 / 10 % :
+
+| Grandeur | `main` | T0 | **T1** | Explication de T0 à T1 |
+|---|---|---|---|---|
+| B17 E^Bk/L | 0,10 | 0,15 | 0,15 | #130, par définition |
+| B18 écarts | 2 et 1 points | idem | idem | ϖ inchangés |
+| Rendement des fonds propres, % par an | 31,23 / 36,15 / 55,36 | 21,15 / 25,10 / 40,60 | **21,70 / 25,81 / 41,91** | (ν) : ϖ_D ΔD_H accroît le résultat, E^Bk inchangé |
+| Marge nette d'intérêt, % par an | 2,717 / 2,497 / 2,126 | 2,645 / 2,514 / 2,294 | **2,540 / 2,414 / 2,204** | (ν) : l'actif grossit des titres B_Bk |
+| Part distribuée Div_Bk/Π^Bk | 0,9365 / 0,8903 / 0,7910 | 0,9063 / 0,8420 / 0,7151 | **0,9087 / 0,8463 / 0,7240** | (ν) |
+| Π^Bk, % du PIB | 2,4999 / 2,2485 / 1,8510 | 2,5407 / 2,3441 / 2,0412 | **2,6065 / 2,4097 / 2,1068** | (ν) |
+| Marge d'existence du dividende, par an | 0,029253 / 0,032180 / 0,043789 | 0,028758 / 0,031703 / 0,043554 | **0,029580 / 0,032758 / 0,045511** | (ν) : ϖ_D D/L monte |
+| Canal rentier (`canal_rentier`) | 0,1514 / 0,3870 / 0,7205 | 0,2124 / 0,4337 / 0,7441 | **0,3129 / 0,5311 / 0,8284** | (ν) : proportionnel à D_c |
+| B19, B20, B21, B22 | § 7.4 | | | |
+
+Distribution des entreprises (#55), identique à T1 et T0 : 0,88598 / 0,82751 / 0,72390 ; sous −2 points, 0,86624 / 0,79812 / 0,68114, dans [0,2 ; 0,9]. **Vérifiée** (mesure). Le jugement de fond sur ces lignes revient à `monnaie` (pilote du bloc 7, frontière dette publique) : **non consulté par `macro`** dans ce dossier.
+
+### 7.12 Risques signalés pour le rang 8 (non mesurés ; aucun banc de 720 pas lancé)
+
+- **Bancs D et BF** (P184) : à T1, la marge de E1 monte (0,17026 contre 0,15979 à 2 %) et la valeur du plafond de E6 baisse (1,08283 contre 1,09859). Lecture statique, **hypothèse** : le banc D (θ_G × 1,25, × 1,60 à 10 %) dépasserait encore le plafond de E1 dès le pas 0 (1,25 × (1 − 0,17) ≈ 1,04 > 1 ; à 10 %, 1,60 × (1 − 0,33) ≈ 1,07) ; le banc BF lierait plus tôt E6. **Non vérifié** : dynamique et λ_w = 0,18 changent les trajectoires.
+- **Frontière de #143** : à T1 et T0, le choc de 1 % sous φ = 0 à 10 % ne l'atteint plus en 720 pas (§ 7.7) ; les bancs d'empreintes à φ = 1 ne sont pas mesurés.
+- **Stationnarité** (`test_stationnarite_du_socle_complet`) : à λ_w = 0,18, la demi-vie du socle sous φ = 1 passe de 240 à 272,5 tours (maquette) : l'horizon S2 (20 demi-vies) s'allonge ; l'arrondi s'amortit plus lentement. **Non vérifié.**
+- **Test zéro à φ = 1** (demandé par `monnaie`, § 5.12) : relève de J3-e1 ; le rayon de la maquette sous φ = 1 reste sous 1 à T1 (0,997460 à 2 %). **Non vérifié** sur le moteur.
+
+### 7.13 Questions réservées au mainteneur pour M34
+
+1. **Table entière** : T1 (proposée sous P228 à P233) ou T0 (repli, ν_H = 1) ? *Avis : **T1**.* Chaque valeur repose sur une source lue ou un choix déclaré dans une fourchette lue ; aucune condition d'existence ni d'arrêt n'est rencontrée (§ 7.6) ; `jeu` et `monnaie` n'ont pas d'objection (§ 3.14, 4.13, 5.12, 6.13).
+2. **Visa du tableau prédit** (P206) : colonnes E1, E2, E3 du § 7.5 comme référence « mesuré égal au prédit à 1e−9 » de chaque commit. *Avis : viser.*
+3. **Ordre entre λ_w et #163** (§ 6.7, question 4 ; P232). À λ_e = 0,2 inchangé, le coût en chômage d'un choc d'anticipations passe de 2,45 à 13,6 point-années par point (formule 1/(λ_e λ_w β) ; mesure moteur non refaite). *Avis (`macro`, `monnaie`, `jeu`) : committer λ_w au rang 7, publier ce coût « non calibré, #163 », et consigner dans M34 la condition « #163 traitée avant la démonstration J4 ».* Alternatives : avancer #163, ou tenir λ_w jusqu'à #163.
+4. **Instabilité 17** (§ 7.8). Republication de la ligne 17 à la table retenue. *Avis : « explosive à λ_w = 1 (table indicative) ; à la table de M34, faiblement explosive pour θ_H = 1, régime de hausse (1,0019 ; a_entretien 1,0044), stable dans les trois autres configurations ; frontières en ν_H et h disparues ». Pas une condition d'arrêt ; issue du § 6.10 à créer avec le corps amendé du § 7.14 (P229).*
+5. **C62** : formulation du § 7.7 (T1) au lieu de celles de P222 et P232. *Avis : l'adopter, ζ_c restant à remesurer au rang 8 (P224) ; elle tient compte de la corroboration par le moteur et du ζ_c à π̄ = 0 que `monnaie` demandait (§ 5.12).*
+6. **Critère sur les valeurs prédites nulles** (§ 7.5) : « ≤ 1e−12 en valeur absolue » pour les seules valeurs prédites exactement nulles. *Avis : l'écrire dans le plan avant le premier commit (précision prospective du critère, non un déplacement).*
+7. **Dette de référence** (§ 5.8, question 5 ; § 4.14) : 38,4 % du PIB affiché à 2 % (T1), 31,6 % (T0), 28,5 % (`main`) ; 81,8 % observés (EA20, 2001–2023), non comparable (ni non-résidents, ni assureurs, ni titres des ménages). *Avis : publiée sans cible ; réserve de `monnaie` pour les seuils futurs de la prime souveraine, rapportés à la dette du modèle.*
+8. **Surface de #92** : 26 chiffres de la maquette (ménages, instabilité 17) changent avec μ̄ et manquaient au § 1.4.5. *Avis : les verser à la surface du commit #92 ; aucune décision de fond.*
+9. **Questions encore ouvertes des sections 1 à 6**, sans effet sur la table : millésime d'AMECO (§ 1.12) ; période du chiffre « 50-90 % » de Parker et al. à confirmer sur l'article, et Fagereng, Holm et Natvik (2021) sur un hôte non ouvert (§ 5.2) ; OCDE 1997 et une source de ratio de sacrifice (§ 6.12, #163) ; coupe du seul canal rentier (§ 3.13.6). Aucune ne bloque M34.
+
+### 7.14 Corps amendé de l'issue du § 6.10 (création sur accord, P229)
+
+- **Titre** : Instabilité 17 : remesurer la lecture (a) des ménages à la calibration de M34 et réexaminer le motif de stabilité de M27
+- **Libellés** : `needs-triage`
+- **Corps** :
+
+> *Rédigé par l'agent macro (IA).*
+>
+> **Constat** (`docs/blocs/calibration.md`, § 6.6 et § 7.8 ; `outils/maquette_conjointe.py`, `carte_menages`). La ligne 17 de `tab:instabilites` et `sec:menages-inflation` donnent la lecture (a) des ménages comme explosive : 1,0275 / 1,0029 / 1,0561 / 1,0580 (θ_H = 0,8 puis 1, régimes de hausse puis de baisse), stable seulement pour ν_H < 0,586 ou h < 0,604. Ces valeurs sont mesurées à la table indicative (μ̄ = 0,25, λ_w = 1). À la table de M34 (μ̄ = 0,60, ν_H = 1,1, λ_w = 0,18) : 0,9831 / 0,9835 / **1,0019** / 0,9965 ; lecture « a_entretien » : 0,9833 / 0,9836 / **1,0044** / 0,9990 ; frontières en ν_H et h disparues sur [0,3 ; 2]. μ̄ seul les déplace déjà (0,924 et 0,930). La lecture retenue (c) reste stable (0,9733 à 0,9779).
+>
+> **À faire.**
+> - Republier la ligne 17 et l'instabilité voisine (glissement de Haig-Simons) à la calibration de M34.
+> - Dire si le motif de stabilité de M27 tient encore : la lecture (a) reste explosive dans la seule configuration θ_H = 1 (ménages qui reçoivent le résultat des entreprises, comme au socle).
+> - C26 porte sur la lecture (b) (`monnaie`, § 6.13) : la stabilité de (a) ne la déclenche pas.
+>
+> **Hors périmètre** : les valeurs de λ_w (#45) et de ν_H (#62) ; la loi d'anticipation (#163).
+>
+> **Liens** : #45, #62, #92, #58, #65, M27, `tab:instabilites`, `sec:menages-inflation`.
+
+### 7.15 Statut des conclusions
+
+- **Vérifiées** (commande et sortie) :
+  - tableau prédit aux trois π̄ et décomposition par issue ; quatre états distincts ; écarts de grille nuls pour #55, #45 et T0 ;
+  - valeurs publiées du script par commit et par section ; chiffres de la maquette par état ;
+  - conditions d'existence aux 18 points, à T1 et T0 ;
+  - C62 dans la maquette (rayons, nature, ζ_c, φ\*, doublements), corroboré par le moteur à 2 et 10 % (T1 et T0) ; ζ_c à π̄ = 0 et sa nature réelle ; protocole du choc de 1 % rejoué ;
+  - C51 sous φ = 0 et φ = 1 ; #80 (valeurs du script) ;
+  - instabilité 17 et lectures voisines, par deux chemins ;
+  - lignes de la banque (mesure).
+- **Hypothèses** :
+  - représentativité de la configuration θ_H = 1 pour le socle (§ 7.8) ;
+  - lecture statique des bancs D et BF (§ 7.12) ;
+  - correspondances déjà déclarées dans les sections 1 à 6 (σ, pentes salariales, aubaine).
+- **Non vérifiées** :
+  - bancs d'empreintes, stationnarité du socle complet, test zéro et tests du dépôt à T1 (rang 8, J3-e1) ;
+  - nombre de chiffres de la maquette qui changent à chaque commit (seuls les comptes cumulés sont mesurés) ;
+  - consultation de `monnaie` sur les lignes de la banque (§ 7.11), non faite par `macro`.
