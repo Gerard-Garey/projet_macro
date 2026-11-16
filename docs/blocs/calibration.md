@@ -1399,3 +1399,11 @@ Le critère de #55 tient donc à P, et sous toutes les variantes du § 4.3.
   - Drechsler et al. (2017), Holston, Laubach et Williams, FMI 2023, BRI ;
   - bancs d'empreintes et trajectoires choquées à P (rang 8) : le maintien du plafond des bancs D et BF n'est pas vérifié ;
   - tests du dépôt exécutés à P.
+
+### 4.13 Avis de `macro` (expert consulté, 16/11/2026)
+
+Lecture du § 4 et du script (`outils/etat_stationnaire.py`, l. 449 à 466), sans réexécution des sondes :
+- **Mécanisme et bouclage (§ 4.4.2) : conforme.** X0 = −L + D_F + E^Bk, donc D_c = D_H + X0 et V_H = D_H ; Div_Bk = Π^Bk − γ̄ E^Bk. ΔD_c = +0,031127 − 0,000223 en découle exactement (**vérifiée**, lecture du code). Retouches de rédaction, prospectives (le texte de `monnaie` reste publié) : (1) « seul canal » est trop fort : s'y ajoutent deux effets de second ordre (ϖ_D ΔD_H et la taxe t_cou sur D_c) et la composition C/G (θ_G) ; (2) le revenu disponible baisse de 0,023 % du PIB et non de 0,0295 %, parce que l'impôt τ_H = 0,25 en absorbe une part (0,0295 × 0,75 ≈ 0,022 ; **hypothèse**, calcul à la main, non décomposé).
+- **Dette de référence à 31,6 % du PIB : aucune objection.** Les bandes de B20 à B22 et le critère 15 portent sur l'écart à la valeur résolue, non sur un niveau ; la fiche 9, critère 22, signalait la dette « basse, environ 26 % (C-3) » (**vérifiée**). Pour `docwriter` : la forme fermée du critère 5 (b) contient E^Bk/(12 PIB) ; citer ϑ parmi les paramètres qui fixent le ratio (critère 5 (c)). Pour `jeu` (hypothèse) : un paramètre prudentiel qui déplace la dette de 3 points peut surprendre le joueur.
+- **Signe du solde primaire (§ 4.3) : retouche.** À l'état stationnaire, le solde primaire vaut (i_CB/n_a − γ̄) D_c par pas, i_CB annuel composé et γ̄ mensuel : son signe suit i_CB/n_a − γ̄, non r̄ − g. Recalcul : +1,51e−5 par mois à r̄ = 0,02 et π̄ = 0 ; +6,94e−5 à r̄ = 0,015 et π̄ = 10 %, positif alors que r̄ < g (effet de convention de composition, croissant avec π̄). La phrase « le signe du solde primaire stationnaire suit celui de r̄ − g, à la dette consolidée près » est donc inexacte ; la lecture passe de « hypothèse » à « **vérifiée** (identité) » sous la forme corrigée. Recalcul refait par la session (`python3`, mêmes valeurs).
+
