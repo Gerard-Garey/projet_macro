@@ -1077,10 +1077,11 @@ def test_executer_pas_seul_appelant_de_etat_de_cloture():
 
 
 # Accès dynamiques aux attributs dans `src/` (`getattr`, `setattr`, `delattr`, `attrgetter`,
-# `getattr_static`, `__getattribute__`, `__setattr__`) dont le nom d'attribut n'est pas une chaîne
-# littérale : liste fermée des sites, mesurée le 16/11/2026 (M1 de l'audit du rang 2 : un
-# `getattr` à nom calculé sur le contexte du pas contournerait les tests textuels de
-# `etat_suivant`).
+# `methodcaller`, `getattr_static`, `__getattribute__`, `__setattr__`) dont le nom d'attribut
+# n'est pas une chaîne littérale : liste fermée des sites, mesurée le 16/11/2026 (M1 de l'audit
+# du rang 2 : un `getattr` à nom calculé sur le contexte du pas contournerait les tests textuels
+# de `etat_suivant` ; `operator.methodcaller`, m2 de la revue finale du rang 8 : il appelle une
+# méthode nommée par son premier argument).
 ACCES_DYNAMIQUES_ADMIS = {
     ("nations/etat/sauvegarde.py", "sauvegarder"),
     ("nations/etat/schema.py", "_verifier_types"),
@@ -1090,8 +1091,11 @@ ACCES_DYNAMIQUES_ADMIS = {
     ("nations/moteur/parametres/ensemble.py", "EnsembleDesParametres.__post_init__"),
     ("nations/noyau/grand_livre.py", "ouvrir_pas"),
 }
-_ACCES_DYNAMIQUES = {"getattr", "setattr", "delattr", "attrgetter", "getattr_static",
-                     "__getattribute__", "__setattr__", "__delattr__"}
+_ACCES_DYNAMIQUES = {"getattr", "setattr", "delattr", "attrgetter", "methodcaller",
+                     "getattr_static", "__getattribute__", "__setattr__", "__delattr__"}
+# Accès dynamiques dont le nom d'attribut est le premier argument (`attrgetter(nom)`,
+# `methodcaller(nom, *args)`), et non le deuxième (`getattr(objet, nom)`).
+_NOM_EN_PREMIER = {"attrgetter", "methodcaller"}
 # Références à un accès dynamique qui ne sont pas appelées directement (alias, argument, valeur
 # rendue ; réserve r1 de l'audit du rang 2) : (fichier, fonction, instruction), liste fermée.
 # Seule admise : `poser = object.__setattr__` dans `_construire`, constructeur privé de
@@ -1126,10 +1130,43 @@ def _reference_dynamique(n, parent):
 
 
 def _nom_litteral(n):
-    arguments = n.args[1:2] if not (isinstance(n.func, ast.Name)
-                                    and n.func.id == "attrgetter") else n.args[:1]
+    f = n.func
+    nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+    arguments = n.args[:1] if nom in _NOM_EN_PREMIER else n.args[1:2]
     return (arguments[0].value if arguments and isinstance(arguments[0], ast.Constant)
             and type(arguments[0].value) is str else None)
+
+
+def test_acces_dynamique_detecte():
+    """m2 de la revue finale du rang 8 (#150) : `operator.methodcaller`, sous son nom qualifié
+    ou importé de `operator` (renommé ou non), est un accès dynamique ; son nom de méthode est
+    son premier argument (littéral reconnu, `etat_suivant` compris), comme pour `attrgetter`,
+    qualifié ou non."""
+    def appels(source):
+        arbre = ast.parse(source)
+        return [(ast.unparse(n), _nom_litteral(n)) for n in ast.walk(arbre)
+                if _acces_dynamique(n)]
+
+    def references(source):
+        arbre = ast.parse(source)
+        parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
+        return [ast.unparse(parents[id(n)] if isinstance(n, ast.alias) else n)
+                for n in ast.walk(arbre) if _reference_dynamique(n, parents.get(id(n)))]
+    assert appels("operator.methodcaller(nom)(vue)") == [("operator.methodcaller(nom)", None)]
+    assert appels("from operator import methodcaller\nmethodcaller(nom, 1)(vue)") == [
+        ("methodcaller(nom, 1)", None)]
+    assert appels('operator.methodcaller("etat_suivant")(pas)') == [
+        ("operator.methodcaller('etat_suivant')", "etat_suivant")]
+    assert appels('methodcaller("ecrire", x)') == [("methodcaller('ecrire', x)", "ecrire")]
+    assert appels('operator.attrgetter("_pas")(vue)') == [
+        ("operator.attrgetter('_pas')", "_pas")]
+    assert appels('getattr(vue, "_pas")') == [("getattr(vue, '_pas')", "_pas")]
+    assert references("from operator import methodcaller as appeler") == [
+        "from operator import methodcaller as appeler"]
+    assert references("appeler = operator.methodcaller") == ["operator.methodcaller"]
+    assert references("map(methodcaller, noms)") == ["methodcaller"]
+    assert references("from operator import methodcaller") == []
+    assert appels("operator.itemgetter(0)(x)") == []
 
 
 def test_acces_dynamiques_aux_attributs_liste_fermee():
