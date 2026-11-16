@@ -5,7 +5,9 @@ le script lui-même, pas ici. Vérifiés : encodage sans ambiguïté, détermini
 même empreinte), sensibilité à un écart d'un ulp (état, montant de clôture, variable du pas ;
 grandeurs d'ouverture hors empreinte), refus bruyant d'un bloc manquant (en appel direct et sur
 une racine extraite sans un module de bloc), arrêt du moteur consigné comme écart (code 1),
-écart signalé par `--comparer` (code 1).
+écart signalé par `--comparer` (code 1) ; réserves du rang 1a (P185) : sous-classe d'un bloc
+réel refusée (code 2), bloc 9 composé admis dans les seuls bancs D et BF (m-a), écart des
+seules grandeurs d'ouverture en code 3, ajout comme retrait (m-c ; P186, P189).
 """
 
 import dataclasses
@@ -174,3 +176,137 @@ def test_comparer_signale_un_ecart(emp, tmp_path, capsys):
     assert "essai pur, π* = 0.02, empreinte" in capsys.readouterr().err
     # Nombre de pas différent : écart, jamais une comparaison silencieuse.
     assert emp.main(["--bancs", "essai pur", "--pas", "2", "--comparer", str(reference)]) == 1
+
+
+# --------------------------------------------------------------------------
+# Réserves du rang 1a (P185) : m-a (bloc réel), m-c (code 3)
+# --------------------------------------------------------------------------
+
+
+def _remplacer(blocs, radical, bloc):
+    return tuple(bloc if b.declaration.radical == radical else b for b in blocs)
+
+
+def test_sous_classe_vide_d_un_bloc_reel_refusee(emp, racine):
+    """m-a : une sous-classe vide d'un bloc réel, définie hors de `nations.blocs`, n'est pas un
+    bloc réel (test strict sur `type(b).__module__`), quel que soit le banc, bloc 9 des bancs D
+    et BF compris."""
+    s = racine.socle
+    for banc, radical in ((emp.SANS_X4, "production"), (emp.SOCLE_COMPLET, "production"),
+                          (emp.SOCLE_COMPLET_D, "production"),
+                          (emp.SOCLE_COMPLET, "finances_publiques"),
+                          (emp.SOCLE_COMPLET_D, "finances_publiques"),
+                          (emp.SOCLE_COMPLET_BF, "finances_publiques")):
+        blocs, _, _ = racine.construire(banc, 0.02)
+        reel, = (b for b in blocs if b.declaration.radical == radical)
+        classe = type(reel)
+        if classe.__module__ != f"nations.blocs.{radical}":
+            classe = classe.__bases__[0]
+        vide = type(f"{classe.__name__}Vide", (classe,), {"__slots__": ()})()
+        assert type(vide).__module__ == __name__
+        with pytest.raises(emp.BancNonConforme, match=f"manquants : \\['{radical}'\\]"):
+            emp.verifier_blocs(banc, _remplacer(blocs, radical, vide), s.RADICAUX)
+
+
+def test_bloc_9_compose_admis_dans_les_seuls_bancs_d_et_bf(emp, racine):
+    """m-a : le bloc 9 composé (module des scénarios du socle complet, base directe unique la
+    classe réelle) est réel dans les bancs D et BF, et refusé ailleurs ; une composition à deux
+    bases ou d'une autre base est refusée."""
+    s = racine.socle
+    for banc in (emp.SOCLE_COMPLET_D, emp.SOCLE_COMPLET_BF):
+        blocs, _, _ = racine.construire(banc, 0.02)
+        compose, = (b for b in blocs if b.declaration.radical == "finances_publiques")
+        assert type(compose).__module__ == emp.MODULE_DU_SOCLE_COMPLET
+        emp.verifier_blocs(banc, blocs, s.RADICAUX)
+    blocs, _, _ = racine.construire(emp.SOCLE_COMPLET, 0.02)
+    with pytest.raises(emp.BancNonConforme, match="manquants : \\['finances_publiques'\\]"):
+        emp.verifier_blocs(emp.SOCLE_COMPLET, _remplacer(blocs, "finances_publiques", compose),
+                           s.RADICAUX)
+    reel = type(compose).__bases__[0]
+
+    class Melange:
+        __slots__ = ()
+    deux_bases = type("Deux", (reel, Melange), {"__slots__": (),
+                                                "__module__": emp.MODULE_DU_SOCLE_COMPLET})()
+    fausse_base = type("Faux", (type(compose),), {"__slots__": (),
+                                                  "__module__": emp.MODULE_DU_SOCLE_COMPLET})()
+    for intrus in (deux_bases, fausse_base):
+        with pytest.raises(emp.BancNonConforme, match="manquants : \\['finances_publiques'\\]"):
+            emp.verifier_blocs(emp.SOCLE_COMPLET_D, _remplacer(blocs, "finances_publiques",
+                                                               intrus), s.RADICAUX)
+
+
+def test_sous_classe_vide_d_un_bloc_reel_sort_en_code_2(emp, racine, monkeypatch, capsys):
+    """m-a : par le script, un banc dont un bloc réel est remplacé par une sous-classe vide est
+    un refus (code 2), jamais une empreinte."""
+    construire = emp.Racine.construire
+
+    def construire_avec_une_sous_classe(self, banc, pi):
+        blocs, initial, derouler = construire(self, banc, pi)
+        reel, = (b for b in blocs if b.declaration.radical == "travail")
+        vide = type("TravailVide", (type(reel),), {"__slots__": ()})()
+        return _remplacer(blocs, "travail", vide), initial, derouler
+    monkeypatch.setattr(emp.Racine, "construire", construire_avec_une_sous_classe)
+    assert emp.main(["--bancs", "J3-d1 sans X4", "--pas", "1"]) == emp.REFUS == 2
+    assert "manquants : ['travail']" in capsys.readouterr().err
+
+
+def _reference(emp, tmp_path, bancs=("essai pur",)):
+    reference = tmp_path / "reference.json"
+    assert emp.main(["--bancs", *bancs, "--pas", "2", "--ecrire", str(reference)]) == 0
+    return reference
+
+
+def test_comparer_grandeurs_seules_differentes_code_3(emp, tmp_path, capsys):
+    """m-c (P186, P189) : seules les sous-empreintes `grandeurs` diffèrent : code 3,
+    « trajectoires identiques, grandeurs d'ouverture différentes » ; dès qu'une empreinte de
+    trajectoire diffère aussi, code 1."""
+    reference = _reference(emp, tmp_path)
+    document = json.loads(reference.read_text(encoding="utf-8"))
+    document["bancs"]["essai pur"]["0.02"]["grandeurs"] = "0" * 64
+    reference.write_text(json.dumps(document), encoding="utf-8")
+    capsys.readouterr()
+    assert emp.main(["--bancs", "essai pur", "--pas", "2", "--comparer", str(reference)]) == 3
+    err = capsys.readouterr().err
+    assert "trajectoires identiques, grandeurs d'ouverture différentes" in err
+    assert "essai pur, π* = 0.02, grandeurs" in err
+    for partie in ("empreinte", "etats", "montants", "variables"):
+        autre = json.loads(json.dumps(document))
+        autre["bancs"]["essai pur"]["0.1"][partie] = "0" * 64
+        reference.write_text(json.dumps(autre), encoding="utf-8")
+        capsys.readouterr()
+        assert emp.main(["--bancs", "essai pur", "--pas", "2", "--comparer",
+                         str(reference)]) == 1, partie
+        err = capsys.readouterr().err
+        assert f"essai pur, π* = 0.1, {partie}" in err and "grandeurs" in err
+        assert "trajectoires identiques" not in err
+
+
+@pytest.mark.parametrize("sens", ["ajout", "retrait"])
+def test_ajout_ou_retrait_d_une_grandeur_d_ouverture_code_3(emp, racine, tmp_path, monkeypatch,
+                                                            capsys, sens):
+    """m-c (P189) : l'ajout d'une grandeur d'ouverture sans lecteur, ou le retrait de `g`
+    (aucun lecteur, #144 point 3), laisse les trajectoires identiques au bit : code 3."""
+    reference = _reference(emp, tmp_path, ("socle complet", "essai pur"))
+    grandeurs = racine.ordo.GRANDEURS_OUVERTURE
+    if sens == "ajout":
+        type_ = type(grandeurs[0])
+        nouvelles = grandeurs + (type_("grandeur_d_essai", lambda e, p, d: 1.0, None,
+                                       "sans dimension"),)
+    else:
+        nouvelles = tuple(g for g in grandeurs if g.nom != "g")
+        assert len(nouvelles) == len(grandeurs) - 1
+    monkeypatch.setattr(racine.ordo, "GRANDEURS_OUVERTURE", nouvelles)
+    capsys.readouterr()
+    assert emp.main(["--bancs", "socle complet", "essai pur", "--pas", "2", "--comparer",
+                     str(reference)]) == 3
+    assert "trajectoires identiques, grandeurs d'ouverture différentes" in (
+        capsys.readouterr().err)
+
+
+def test_aide_cite_les_codes_de_sortie(emp, capsys):
+    with pytest.raises(SystemExit):
+        emp.main(["--help"])
+    aide = " ".join(capsys.readouterr().out.split())
+    assert "3 trajectoires identiques, grandeurs d'ouverture différentes" in aide
+    assert "3 si seules les grandeurs d'ouverture diffèrent" in aide
