@@ -95,8 +95,9 @@ informatifs, non comparés (un banc arrêté garde `exclues_presentes`, relevé
 jusqu'à l'arrêt). Refus (code 2) : nom exclu qui n'est une variable du pas
 d'aucun banc mesuré (faute de frappe : jamais une exclusion silencieuse ;
 contrôle après le déroulé ; si un banc s'est arrêté, un nom non relevé n'est
-pas conclu inconnu, l'arrêt donne le code 1) ; comparaison à une référence
-mesurée **avec** exclusion, quelles que soient les exclusions de la mesure
+pas conclu inconnu : il est consigné à part (`exclues_non_etablies`, remarque
+distincte des arrêts, non décomptée parmi eux) et l'arrêt donne le code 1) ;
+comparaison à une référence mesurée **avec** exclusion, quelles que soient les exclusions de la mesure
 (elle porte par construction les variables exclues, dont la valeur n'est pas
 hachée : P187 non jugeable). Seule une référence sans exclusion est
 comparable à une mesure avec exclusion, si les variables exclues en sont
@@ -154,8 +155,11 @@ même nombre de pas, même version d'encodage). Codes de sortie :
   exclusion) ;
 - 3 : trajectoires identiques, seules les sous-empreintes `grandeurs`
   diffèrent (ajout ou retrait de grandeurs d'ouverture, P186, P189) : critère
-  tenu, écart à déclarer dans le commit ; avec `--exclure-variables`, critère
-  de P187 tenu (variable du pas ajoutée, trajectoire préexistante identique).
+  tenu, écart à déclarer dans le commit.
+
+Avec `--exclure-variables`, les codes 0 et 3 valent tous deux « critère de
+P187 tenu » (variable du pas ajoutée, trajectoire préexistante identique) :
+3 si, en plus, les grandeurs d'ouverture diffèrent, 0 sinon.
 """
 
 from __future__ import annotations
@@ -487,8 +491,10 @@ def agreger(paires) -> str:
 
 def empreintes(racine: Racine, bancs=BANCS, nb_pas: int = NB_PAS, exclues=()) -> dict:
     """Document des empreintes : variables exclues (P187), bancs → π* → empreintes, empreintes
-    par banc, globale (None si un banc s'est arrêté), arrêts. Refus (`BancNonConforme`) si un
-    nom exclu n'est une variable du pas d'aucun banc mesuré, à aucun π* ni aucun pas."""
+    par banc, globale (None si un banc s'est arrêté), arrêts (les seuls arrêts réels), noms
+    exclus non relevés avant un arrêt (`exclues_non_etablies`, remarque à part). Refus
+    (`BancNonConforme`) si un nom exclu n'est une variable du pas d'aucun banc mesuré, à aucun
+    π* ni aucun pas, sans qu'aucun banc se soit arrêté."""
     exclues = tuple(sorted(set(exclues)))
     points = tuple(racine.socle.POINTS_PI)
     par_banc, globales_par_banc, arrets = {}, {}, []
@@ -504,12 +510,10 @@ def empreintes(racine: Racine, bancs=BANCS, nb_pas: int = NB_PAS, exclues=()) ->
     presentes = {nom for par_pi in par_banc.values() for v in par_pi.values()
                  for nom in v.get("exclues_presentes", ())}
     inconnues = [nom for nom in exclues if nom not in presentes]
-    if inconnues and arrets:
-        # Un banc arrêté a pu s'arrêter avant de relever le nom : inconnu non conclu, l'arrêt
-        # est un écart (code 1).
-        arrets.append(f"variables exclues {inconnues} non relevées avant l'arrêt : "
-                      "inconnues non établies")
-    elif inconnues:
+    # Un banc arrêté a pu s'arrêter avant de relever le nom : inconnu non conclu, consigné à
+    # part (ce n'est pas un arrêt) ; l'arrêt est un écart (code 1).
+    non_etablies = inconnues if arrets else []
+    if inconnues and not arrets:
         raise BancNonConforme(
             f"variables exclues {inconnues} : variable du pas d'aucun banc mesuré "
             f"({', '.join(bancs)}, {nb_pas} pas) ; refusé, jamais une exclusion silencieuse")
@@ -523,6 +527,7 @@ def empreintes(racine: Racine, bancs=BANCS, nb_pas: int = NB_PAS, exclues=()) ->
         "par_banc": globales_par_banc,
         "globale": agreger((b, globales_par_banc[b]) for b in bancs) if complets else None,
         "arrets": arrets,
+        "exclues_non_etablies": non_etablies,
         # Information, non comparée.
         "plateforme": {"python": platform.python_version(), "systeme": platform.system(),
                        "machine": platform.machine()},
@@ -544,7 +549,9 @@ def comparer(mesure: dict, reference: dict) -> list[str]:
         for pi, valeurs in par_pi.items():
             ref = reference["bancs"][banc].get(pi, {})
             if "arret" in valeurs or "arret" in ref:
-                if valeurs != ref:
+                # Seul le contenu de l'arrêt se compare : `exclues_presentes` (avec exclusion)
+                # est informatif.
+                if valeurs.get("arret") != ref.get("arret"):
                     ecarts.append(f"{banc}, π* = {pi}, arrêt : mesuré {valeurs.get('arret')}, "
                                   f"référence {ref.get('arret')}")
                 continue
@@ -653,7 +660,8 @@ def main(argv=None) -> int:
                "2 refus (banc non conforme, racine invalide, fichier illisible, variable "
                "exclue inconnue ou présente dans la référence, référence mesurée avec "
                "exclusion) ; 3 trajectoires identiques, grandeurs d'ouverture différentes "
-               "(P186, P189 ; avec --exclure-variables, critère de P187 tenu)")
+               "(P186, P189) ; avec --exclure-variables, 0 et 3 valent tous deux critère de "
+               "P187 tenu (3 si en plus les grandeurs d'ouverture diffèrent)")
     parser.add_argument("--racine", type=Path, default=RACINE_DU_DEPOT,
                         help="arbre à mesurer (src/, tests/, outils/) ; défaut : le dépôt")
     parser.add_argument("--pas", type=int, default=NB_PAS, help=f"nombre de pas (défaut {NB_PAS})")
@@ -692,6 +700,11 @@ def main(argv=None) -> int:
         for ligne in document["arrets"]:
             print(f"  {ligne}", file=sys.stderr)
         code = ECART
+    if document["exclues_non_etablies"]:
+        print(f"variables exclues non relevées avant l'arrêt "
+              f"({len(document['exclues_non_etablies'])}) : "
+              f"{', '.join(document['exclues_non_etablies'])} ; inconnues non établies",
+              file=sys.stderr)
     if reference is not None:
         try:
             non_etablies = verifier_exclusions(document, reference)
