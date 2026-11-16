@@ -1407,3 +1407,10 @@ Lecture du § 4 et du script (`outils/etat_stationnaire.py`, l. 449 à 466), san
 - **Dette de référence à 31,6 % du PIB : aucune objection.** Les bandes de B20 à B22 et le critère 15 portent sur l'écart à la valeur résolue, non sur un niveau ; la fiche 9, critère 22, signalait la dette « basse, environ 26 % (C-3) » (**vérifiée**). Pour `docwriter` : la forme fermée du critère 5 (b) contient E^Bk/(12 PIB) ; citer ϑ parmi les paramètres qui fixent le ratio (critère 5 (c)). Pour `jeu` (hypothèse) : un paramètre prudentiel qui déplace la dette de 3 points peut surprendre le joueur.
 - **Signe du solde primaire (§ 4.3) : retouche.** À l'état stationnaire, le solde primaire vaut (i_CB/n_a − γ̄) D_c par pas, i_CB annuel composé et γ̄ mensuel : son signe suit i_CB/n_a − γ̄, non r̄ − g. Recalcul : +1,51e−5 par mois à r̄ = 0,02 et π̄ = 0 ; +6,94e−5 à r̄ = 0,015 et π̄ = 10 %, positif alors que r̄ < g (effet de convention de composition, croissant avec π̄). La phrase « le signe du solde primaire stationnaire suit celui de r̄ − g, à la dette consolidée près » est donc inexacte ; la lecture passe de « hypothèse » à « **vérifiée** (identité) » sous la forme corrigée. Recalcul refait par la session (`python3`, mêmes valeurs).
 
+### 4.14 Décisions du mainteneur sur la section (16/11/2026)
+
+- Question 1 : **ϑ = 0,15** retenu comme valeur proposée de la table soumise à M34 (CET1 du MSU ; écart de dénominateur déclaré contesté) (P225).
+- Questions 2 à 5 : ϖ_L = 0,02, ϖ_D = 0,01 (fenêtres de taux positifs ; moyenne longue écartée) et r̄ = 0,01 (contesté, fourchette lue −0,5 à 1,9 %) inchangés et sourcés ; zone euro de référence, FOMC pour la seule fourchette de r̄ (P226).
+- Issue proposée au § 4.11 : créée, #167 (bêta des dépôts, limite de B2), hors branche (P227).
+- Retouches de `macro` (§ 4.13) : suivies sous la délégation P211 dans le texte publié par `docwriter`.
+
