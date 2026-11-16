@@ -277,8 +277,11 @@ class VariablesDuPas:
     une valeur qui n'est pas de type de base fini (`float`, `int`, `bool`,
     n-uplet de `float`, sans NaN ni infini) est refusée ; une lecture d'un nom non encore écrit est refusée, jamais une
     valeur par défaut. Une variable de `DOMAINES_DU_PAS` hors de son domaine est refusée par
-    `PlanHorsDomaine`, avant le refus générique de finitude (NaN et ±∞ compris) ; l'étape et
-    le bloc écrivain sont apposés par la vue.
+    `PlanHorsDomaine`, avant le refus générique de finitude (NaN et ±∞ compris). Chaque refus
+    d'écriture nomme le pas, l'étape et le bloc écrivain, que l'appelant passe toujours : la
+    vue pour un bloc, le moteur pour lui-même (« 0 » pour les grandeurs calculées à
+    l'ouverture et les entrées de scénario, « 1 » pour les leviers ; #137 ; ADR 0013,
+    annotation du 16/11/2026, point 6).
     """
 
     __slots__ = ("_declares", "_t", "_valeurs")
@@ -288,24 +291,25 @@ class VariablesDuPas:
         self._t = t
         self._valeurs: dict[str, object] = {}
 
-    def ecrire(self, nom: str, valeur: object, *, etape: str | None = None,
-               bloc: str | None = None) -> None:
-        """Écrit `nom` ; `etape` et `bloc`, apposés par la vue, nomment l'écrivain dans le refus
-        de domaine."""
+    def ecrire(self, nom: str, valeur: object, *, etape: str, bloc: str) -> None:
+        """Écrit `nom` ; `etape` et `bloc`, obligatoires, nomment l'écrivain dans chaque refus
+        (#137)."""
         if nom not in self._declares:
-            raise RefusDuMoteur("variable du pas non déclarée", t=self._t, nom=nom)
+            raise RefusDuMoteur("variable du pas non déclarée", t=self._t, etape=etape,
+                                bloc=bloc, nom=nom)
         if nom in self._valeurs:
-            raise RefusDuMoteur("seconde écriture d'une variable du pas", t=self._t, nom=nom)
+            raise RefusDuMoteur("seconde écriture d'une variable du pas", t=self._t,
+                                etape=etape, bloc=bloc, nom=nom)
         if not _est_de_type_de_base(valeur):
             raise RefusDuMoteur(f"valeur {valeur!r} : float, int, bool ou tuple de float "
-                                "attendu", t=self._t, nom=nom)
+                                "attendu", t=self._t, etape=etape, bloc=bloc, nom=nom)
         domaine = DOMAINES_DU_PAS.get(nom)
         if domaine is not None and not domaine.predicat(valeur):
             raise PlanHorsDomaine(f"valeur {valeur!r} hors du domaine : {domaine.condition}",
                                   t=self._t, etape=etape, bloc=bloc, nom=nom)
         if not _est_finie(valeur):
             raise RefusDuMoteur(f"valeur {valeur!r} : valeur non finie refusée", t=self._t,
-                                nom=nom)
+                                etape=etape, bloc=bloc, nom=nom)
         self._valeurs[nom] = valeur
 
     def lire(self, nom: str) -> object:
@@ -474,7 +478,8 @@ class Vue:
                 raise self._refus(f"valeur {motif}", nom)
         # Validation d'abord (domaine ci-dessus, finitude par l'espace du pas),
         # enregistrement ensuite : un refus laisse `etat_suivant` inchangé.
-        self._pas.espace.ecrire(nom + SUFFIXE_SUIVANT, valeur)
+        d = self._droits
+        self._pas.espace.ecrire(nom + SUFFIXE_SUIVANT, valeur, etape=d.etape, bloc=d.radical)
         etat_suivant[nom] = valeur
 
     def _ligne_non_declaree(self, ligne: str) -> RefusDuMoteur:
@@ -927,15 +932,15 @@ def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour
     lecture_des_grandeurs = MappingProxyType(grandeurs)
     for grandeur in GRANDEURS_OUVERTURE:
         valeur = grandeur.fonction(etat_ouverture, o.parametres, lecture_des_grandeurs)
-        espace.ecrire(grandeur.nom, valeur)
+        espace.ecrire(grandeur.nom, valeur, etape="0", bloc=MOTEUR)
         grandeurs[grandeur.nom] = valeur
     _verifier_entrees(entrees_du_tour, o.entrees, t)
     for nom, valeur in entrees_du_tour.scenario:
-        espace.ecrire(nom, valeur)
+        espace.ecrire(nom, valeur, etape="0", bloc=MOTEUR)
     # Phase 1, premier groupe : le moteur lit les leviers ; rien ne s'exécute
     # entre la phase 0 et lui.
     for nom, valeur in entrees_du_tour.leviers:
-        espace.ecrire(nom, valeur)
+        espace.ecrire(nom, valeur, etape="1", bloc=MOTEUR)
     # Étapes 1 à 8 (c) : blocs groupe par groupe, puis clôture et relevé.
     for identifiant, appels in o.etapes:
         for droits, methode in appels:
