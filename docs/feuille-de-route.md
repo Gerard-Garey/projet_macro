@@ -187,6 +187,8 @@ Questions qui les fondent : ci-dessous (Q1 à Q8) et ADR 0013, annotation du 16/
 | P191 | 16/11/2026 | Bloc 7 (`banque.py`, `phase_6`) : lecture nette de D_H et D_F encore en phase, même écart que #142 ; issue à part, #156, hors de la branche. | rang 3 |
 | P192 | 16/11/2026 | Double contrôle de domaine à la reprise (`sauvegarde.py`), hors chemin chaud : laissé, sans issue. | rang 3 |
 | P193 | 16/11/2026 | `eval`, `exec`, `compile` et `__import__` interdits dans `src/` par un test, au rang 4 (réserve mineure de l'audit du rang 3). | rang 3 |
+| P194 | 16/11/2026 | P188 limitée aux lectures de position : `valeur_nette_stock` et `valeur_nette_flux` restent non filtrées, comme documenté ; `docwriter` le dit au rang 7. | rang 4 |
+| P195 | 16/11/2026 | Docstrings périmées de `parametres/banque.py` et `parametres/banque_centrale.py` (« au passage de `docwriter` », au futur, labels déjà posés) corrigées dans la branche, commit `code:` à part rattaché à #150 (docstrings). | rang 4 |
 
 ### Questions au mainteneur du 16/11/2026 (point d'étape après la PR #146, rang 0 de la branche « forme du code »)
 
