@@ -19,7 +19,7 @@ suivant (C1, C2). Sources d'une lecture :
 
 - `"ouverture"` : un champ de l'état d'ouverture (toujours admise) ;
 - `"registre"` : une fonction de lecture du registre (`dernier_prix`,
-  `glissement`, `variation_sur_le_tour` ; toujours admise) ;
+  `glissement` ; toujours admise) ;
 - `"grand_livre"` : le montant exécuté d'une ligne (identifiant du
   catalogue), admis si l'étape de la ligne est close avant l'étape lectrice
   et si la phase de la ligne figure dans la colonne « Lisent » de la phase
@@ -49,7 +49,7 @@ REGISTRE = "registre"
 GRAND_LIVRE = "grand_livre"
 
 # Lectures du registre offertes par la vue (ADR 0012, F3).
-LECTURES_DU_REGISTRE = ("dernier_prix", "glissement", "variation_sur_le_tour")
+LECTURES_DU_REGISTRE = ("dernier_prix", "glissement")
 
 # Suffixe de la valeur du pas suivant d'une variable d'état, déposée dans
 # l'espace du pas à son écriture (C2).

@@ -3,10 +3,10 @@
 **Bancs** (critère « Branche » de la feuille de route, § 1 ; P124) : socle
 partiel d'essai, blocs 2 à 8 réels (`blocs_reels()`), bloc d'essai 9 avec la
 **couverture X4** (`socle.couverture_x4()`) ; n_a = 12, ν_G = 1,15, π* ∈ {0 ;
-2 % ; 10 %}. Deux variantes (`BANCS`), P141 (a) : **X4 seule** (E1, E2 et X4,
+2 % ; 10 %}. Deux variantes (`BANCS`), P141 (a) : **X4 seule** (X1, X2 et X4,
 émission aux montants du sentier ; lecture littérale de P124, banc de la mesure
 de référence de `macro`, rang 4), **banc du verdict** du critère « Branche » ;
-**X4 + E3** (E1 à E3 et X4, `composer` ; avis de `macro`, rang 1a de J3-d1,
+**X4 + X3** (X1 à X3 et X4, `composer` ; avis de `macro`, rang 1a de J3-d1,
 § 6), publié en **contrôle** du même critère, et banc des scénarios (lignes
 (b-E4)). Contre-épreuve publiée sans verdict : le même relevé sans X4.
 **Étiquette** de toute mesure : celle de son banc (`BANCS`), qui contient
@@ -23,7 +23,7 @@ conjointe (#114).
   T^cou) ; ϱ̄_L tenue au bit (P128). Hors seuil sans erreur de code : condition
   d'arrêt de la branche (P134), verdict « non tenu » sans échec attendu.
 - **X4** (ADR 0013, annotation de J3-d1, point 7) : ligne 7 = T_H du sentier +
-  T^cou ; composition avec E3 indépendante de l'ordre ; refus sur un bloc 9
+  T^cou ; composition avec X3 indépendante de l'ordre ; refus sur un bloc 9
   réel ; jamais dans le banc de P87.
 - **Fiche 5, « Bornes » (d)**, sous la correction prospective de #103 : en O2
   (G^plan × 1,01 et × 1,05 aux tours 1 à 12), D_H + ε S^H ≥ 0 à la fin de chaque
@@ -42,11 +42,11 @@ ci-dessus) : `SEUIL_X4`, 1e−12 × max_t |T^cou|, pour l'égalité de T^cou à 
 mise en œuvre de référence du test (forme de la maquette de `macro`, assiette
 B_H + B_Bk + Res − L^CB), sur un choc qui l'éloigne de zéro.
 
-Les scénarios tournent sur le banc X4 + E3 : sur X4 seule, l'émission aux
+Les scénarios tournent sur le banc X4 + X3 : sur X4 seule, l'émission aux
 montants du sentier laisse l'écart des paiements au compte du Trésor, et le
 noyau arrête en phase 5 sous G^plan × 1,05 (M^G < 0 ; pas 3 à π* = 0 et 2 %,
 pas 9 à 10 % ; aucun arrêt sous × 1,01 ; mesuré au rang 5), artefact du bloc
-d'essai 9 que E3 referme (précédent de P95) ; fait du banc publié sans verdict
+d'essai 9 que X3 referme (précédent de P95) ; fait du banc publié sans verdict
 (`test_arret_de_x4_seule_en_o2_fait_du_banc`, P141 (a)).
 """
 
@@ -68,11 +68,11 @@ from nations.observation.observateur import FinDePas
 N_A = PAS_PAR_AN.valeur
 NB_PAS = 720
 EPS = CADRE.tolerance_identite_pas
-X4_E3, X4_SEULE = "X4 + E3", "X4 seule"
-BANCS = {X4_E3: "blocs 2 à 8 réels ; bloc d'essai 9 avec E1 à E3 ; couverture X4 active",
-         X4_SEULE: ("blocs 2 à 8 réels ; bloc d'essai 9 avec E1, E2, émission aux montants du "
+X4_X3, X4_SEULE = "X4 + X3", "X4 seule"
+BANCS = {X4_X3: "blocs 2 à 8 réels ; bloc d'essai 9 avec X1 à X3 ; couverture X4 active",
+         X4_SEULE: ("blocs 2 à 8 réels ; bloc d'essai 9 avec X1, X2, émission aux montants du "
                     "sentier ; couverture X4 active")}
-ETIQUETTE = BANCS[X4_E3]
+ETIQUETTE = BANCS[X4_X3]
 BANC_DU_VERDICT = X4_SEULE  # P141 (a)
 # Seuils écrits avant l'essai (critère « Branche » ; P94, P121, P124).
 SEUIL_RELATIF = 1e-9
@@ -118,8 +118,8 @@ def _choc_de_g(facteur):
 
 def options_du_banc(socle, banc):
     """Options de `blocs` du banc nommé (`BANCS`)."""
-    if banc == X4_E3:
-        return socle.composer(socle.couverture_x4(), socle.emission_e3())
+    if banc == X4_X3:
+        return socle.composer(socle.couverture_x4(), socle.emission_x3())
     return socle.couverture_x4()
 
 
@@ -296,7 +296,7 @@ def test_stationnarite_partielle_de_la_branche(banc, socle, nom_du_banc, pi, pub
     """Critère « Branche » (P94 étendue, P121, P124) : max_t |x_t/x̄_t − 1| ≤ 1e−9 ; une grandeur
     nulle par le calcul (`socle.est_nulle`), |x_t| ≤ 1e−12 à son échelle ; ϱ̄_L égale au bit à
     sa valeur résolue ; publié grandeur par grandeur, avec la dérive des positions par fenêtre
-    de 360 pas. Verdict sur le banc X4 seule (P141 (a)) ; X4 + E3 publié en contrôle, sans
+    de 360 pas. Verdict sur le banc X4 seule (P141 (a)) ; X4 + X3 publié en contrôle, sans
     verdict."""
     sentier, initial, releve = banc[nom_du_banc, pi]
     series, nulles, pires, hors = juger(socle, sentier, initial, releve)
@@ -327,7 +327,7 @@ def test_stationnarite_partielle_de_la_branche(banc, socle, nom_du_banc, pi, pub
 
 def test_contre_epreuve_sans_x4(socle, publier):
     """Contre-épreuve d'`audit` (rang 5), publiée sans verdict : le relevé du critère « Branche »
-    sur le banc sans X4 (E1, E2, émission aux montants du sentier). Les π* où il sort des seuils
+    sur le banc sans X4 (X1, X2, émission aux montants du sentier). Les π* où il sort des seuils
     sont ceux où X4 discrimine sur 720 pas ; mesuré au rang 5 : π* = 10 % seul (dérive des
     positions sans X4 de 8,6e−12 à 2 %, 3,7e−8 à 10 %)."""
     lignes, discrimine = [], []
@@ -345,7 +345,7 @@ def test_contre_epreuve_sans_x4(socle, publier):
         " ; ".join(f"{100 * pi:g} %" for pi in discrimine) if discrimine else "aucun π*")
         + " (sans X4, échec à ces π* seulement)")
     publier("Contre-épreuve sans X4 du critère « Branche », 720 pas (blocs 2 à 8 réels ; bloc "
-            "d'essai 9 avec E1, E2, émission aux montants du sentier ; X4 inactive ; sans "
+            "d'essai 9 avec X1, X2, émission aux montants du sentier ; X4 inactive ; sans "
             "verdict)", lignes)
 
 
@@ -398,7 +398,7 @@ def test_x4_egale_la_forme_de_reference_sous_un_choc(socle, pi, publier):
     référence φ (i_CB − i_ref) (B_H + B_Bk + Res − L^CB)/n_a (maquette de `macro`) à 1e−12 près
     de max_t |T^cou|."""
     sentier = socle.sentier(pi)
-    initial, releve = derouler(socle, sentier, 120, options_du_banc(socle, X4_E3), ADVERSE[1])
+    initial, releve = derouler(socle, sentier, 120, options_du_banc(socle, X4_X3), ADVERSE[1])
     ouvertures = [initial] + [p["etat"] for p in releve.pas[:-1]]
     r_bar = sentier.par.rbar
     tcou = [p["variables"]["T_cou"] for p in releve.pas]
@@ -418,19 +418,19 @@ def test_x4_egale_la_forme_de_reference_sous_un_choc(socle, pi, publier):
                                f"{pire:.1e} u.m. (seuil 1e−12 × max |T^cou|)"])
 
 
-def test_composition_de_x4_et_e3_independante_de_l_ordre(socle):
-    """Composition (ADR 0013, annotation de J3-d1, point 7) : `composer(X4, E3)` et
-    `composer(E3, X4)` rendent la même déclaration et les mêmes règles ; X4 touche le siège 6
-    (ligne 7), E3 le siège 7 (lignes 19a) ; deux options sur le même siège ou la même ligne sont
+def test_composition_de_x4_et_x3_independante_de_l_ordre(socle):
+    """Composition (ADR 0013, annotation de J3-d1, point 7) : `composer(X4, X3)` et
+    `composer(X3, X4)` rendent la même déclaration et les mêmes règles ; X4 touche le siège 6
+    (ligne 7), X3 le siège 7 (lignes 19a) ; deux options sur le même siège ou la même ligne sont
     refusées."""
-    x4, e3 = socle.couverture_x4(), socle.emission_e3()
-    a, b = socle.composer(x4, e3), socle.composer(e3, x4)
+    x4, x3 = socle.couverture_x4(), socle.emission_x3()
+    a, b = socle.composer(x4, x3), socle.composer(x3, x4)
     assert a["declarations"] == b["declarations"]
     assert a["lignes"] == b["lignes"]
     assert set(a["lignes"]) == {"7", "19a-BC", "19a-ménages", "19a-banque"}
     propre = socle.declaration_d_essai("finances_publiques")
     for base, compose in zip(propre.sieges, a["declarations"]["finances_publiques"].sieges):
-        attendu = {"6": x4, "7": e3}.get(base.etape)
+        attendu = {"6": x4, "7": x3}.get(base.etape)
         if attendu is None:
             assert compose == base
         else:
@@ -504,12 +504,12 @@ def test_x4_hors_du_banc_de_p87(socle, monkeypatch):
     """P124 (constat m2 de l'audit du rang 5) : les options que l'ordonnanceur du banc de P87
     (`test_boucle_t3_bc3.ordonnanceur`, contrôle et choc de G^plan) passe au socle ne portent
     ni `T_cou` dans la déclaration de `finances_publiques`, ni la règle de ligne 7 de X4. La
-    garde est éprouvée : si X4 est injectée dans le banc (E3 composée avec X4), elle la voit."""
+    garde est éprouvée : si X4 est injectée dans le banc (X3 composée avec X4), elle la voit."""
     relevees = _options_du_banc_de_p87(socle, monkeypatch)
     assert len(relevees) == 2
     assert not any(_porte_x4(socle, options) for options in relevees)
-    emission = socle.emission_e3
-    monkeypatch.setattr(socle, "emission_e3",
+    emission = socle.emission_x3
+    monkeypatch.setattr(socle, "emission_x3",
                         lambda: socle.composer(emission(), socle.couverture_x4()))
     injectees = _options_du_banc_de_p87(socle, monkeypatch)
     assert all(_porte_x4(socle, options) for options in injectees)
@@ -598,7 +598,7 @@ def test_bornes_d_de_la_fiche_5_en_o2(socle, pi, monkeypatch, publier):
     for nom, facteur in O2.items():
         caisse = CaisseParPhase(idt.verifier_caisse)
         monkeypatch.setattr(idt, "verifier_caisse", caisse)
-        initial, releve = derouler(socle, sentier, NB_PAS, options_du_banc(socle, X4_E3),
+        initial, releve = derouler(socle, sentier, NB_PAS, options_du_banc(socle, X4_X3),
                                    facteur)
         monkeypatch.setattr(idt, "verifier_caisse", caisse.original)
         assert len(releve.pas) == NB_PAS
@@ -629,10 +629,10 @@ def test_bornes_c_de_la_fiche_6_signe_et_delai(socle, pi, monkeypatch, publier):
     l'être au plus tard au tour 12 + 12) ; aucun arrêt du noyau. Sans critère d'arrivée (P124) :
     l'écart final est publié."""
     sentier = socle.sentier(pi)
-    _, controle = derouler(socle, sentier, NB_PAS, options_du_banc(socle, X4_E3))
+    _, controle = derouler(socle, sentier, NB_PAS, options_du_banc(socle, X4_X3))
     caisse = CaisseParPhase(idt.verifier_caisse)
     monkeypatch.setattr(idt, "verifier_caisse", caisse)
-    _, choc = derouler(socle, sentier, NB_PAS, options_du_banc(socle, X4_E3), ADVERSE[1])
+    _, choc = derouler(socle, sentier, NB_PAS, options_du_banc(socle, X4_X3), ADVERSE[1])
     monkeypatch.setattr(idt, "verifier_caisse", caisse.original)
     assert len(choc.pas) == NB_PAS
     i_c = [p["variables"]["I_plan"] for p in controle.pas]
@@ -673,8 +673,8 @@ def test_bornes_c_de_la_fiche_6_signe_et_delai(socle, pi, monkeypatch, publier):
 def test_arret_de_x4_seule_en_o2_fait_du_banc(socle, publier):
     """P141 (a), publié sans verdict : sur le banc X4 seule (émission d'essai figée aux montants
     du sentier), O2 arrête le noyau sur M^G < 0 en phase 5 (mesuré au rang 5 : sous G^plan ×
-    1,05, pas 3 à π* = 0 et 2 %, pas 9 à 10 % ; aucun arrêt sous × 1,01). Fait du banc, non du bloc 5 : E3 referme l'écart des paiements (précédent de
-    P95), d'où le banc X4 + E3 des scénarios. Aucune assertion de verdict ; le test vérifie
+    1,05, pas 3 à π* = 0 et 2 %, pas 9 à 10 % ; aucun arrêt sous × 1,01). Fait du banc, non du bloc 5 : X3 referme l'écart des paiements (précédent de
+    P95), d'où le banc X4 + X3 des scénarios. Aucune assertion de verdict ; le test vérifie
     seulement que la mesure a été faite."""
     lignes = []
     for pi in socle.POINTS_PI:

@@ -36,8 +36,8 @@ du sentier. Le bloc d'essai 8 a une variante à π^e choqué (`choc_pi_e`),
 injecté dans l'état d'ouverture : π^e_0 dans l'état initial, π^e_{t+1} écrite
 en phase 1. **Réserve de `monnaie`** : hors du sentier, le bloc d'essai à
 π^e = π* coupe la boucle T3 ↔ BC3 ; toute mesure dynamique faite sur ce socle
-avec le bloc d'essai 8 et sans les options d'E3 porte l'étiquette `ETIQUETTE` et ne
-vaut pas verdict de boucle conjointe ; une mesure où le bloc 8 est réel ou E3
+avec le bloc d'essai 8 et sans les options d'X3 porte l'étiquette `ETIQUETTE` et ne
+vaut pas verdict de boucle conjointe ; une mesure où le bloc 8 est réel ou X3
 active porte l'étiquette de son banc (réserve mineure de `monnaie`, rang 6).
 Le bloc d'essai 8 écrit aussi la cible en vigueur π*_{t+1} = π*_t, **lue à
 l'ouverture** (`vue.ouverture.pi_etoile`, lecture déclarée), par la règle
@@ -50,19 +50,20 @@ du script ; hors du sentier (π*_0 ≠ π̄), elle reste à π*_0.
 (bloc 8 : `i_regle`, `i_CB`, `theta_CB`, `Pi_CB`, écrits en phase 1 aux valeurs du
 sentier par le bloc d'essai 8, par BC1, BC5 et BC6 par le bloc réel, #91).
 
-**Bloc d'essai 9 (P95, rang 4 de J3-c)** : E1, il déclare le montant couvert de
+**Bloc d'essai 9 (P95, rang 4 de J3-c ; exigences nommées X1 à X4, #133, distinctes
+des équations E1 à E13 du bloc État et dette)** : X1, il déclare le montant couvert de
 la ligne 16 sur Π^CB **lu en phase 1** (`Pi_CB`, variable du pas du bloc 8), non
-sur le sentier ; E2, il propose les lignes 11a à 11c selon E7, au taux du tour
+sur le sentier ; X2, il propose les lignes 11a à 11c selon E7, au taux du tour
 `i_CB` lu en phase 1, converti au pas, sur les encours d'ouverture B_H, B_Bk et
-B_CB. **E3 (P95, rang 6 de J3-c)**, pour les essais avec choc, par les options
-de `emission_e3()` : il propose les trois lignes 19a selon E8 à E11
+B_CB. **X3 (P95, rang 6 de J3-c)**, pour les essais avec choc, par les options
+de `emission_x3()` : il propose les trois lignes 19a selon E8 à E11
 (`sec:finances_publiques-emission`) sur les lignes 2, 6, 7 et 11a à 11c
 exécutées, Π^CB et θ_CB lus en phase 1 et M^G d'ouverture, ν_G et ς_B du
 sentier ; sans ces options, l'émission reste aux montants du sentier (cas
 d'essai de la linéarisation, où les positions ont des flux exogènes). **X4
 (P124, rang 5 de J3-d1)**, couverture des intérêts, par les options de
 `couverture_x4()` : ligne 7 = T_H du sentier + T^cou, banc de la stationnarité
-partielle de J3-d1, jamais dans le banc de P87 ; `composer` assemble X4 et E3
+partielle de J3-d1, jamais dans le banc de P87 ; `composer` assemble X4 et X3
 sans dépendre de l'ordre.
 
 **Tables des blocs 7 et 8 (réserve R1 de `monnaie`, rang 4 de J3-c ; étendue
@@ -95,6 +96,7 @@ from dataclasses import dataclass, fields, replace
 from fractions import Fraction
 from pathlib import Path
 
+from nations.blocs import finances_publiques as bloc_9
 from nations.blocs.banque import refinancement
 from nations.etat import schema
 from nations.etat.schema import EtatPays
@@ -115,20 +117,23 @@ from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
 
 RACINE = Path(__file__).resolve().parents[2]
-ETIQUETTE = "π^e exogène (bloc d'essai 8) ; émission aux montants du sentier (E3 inactive)"
+ETIQUETTE = "π^e exogène (bloc d'essai 8) ; émission aux montants du sentier (X3 inactive)"
 GRAINE = 20261113
 NU_G = 1.15  # ν_G retenu (décision du mainteneur du 05/10/2026, #84) ; synthèse du rang 1a, § 6
 POINTS_PI = (0.0, 0.02, 0.10)
 # Entrées du tour du socle (B3, B5 ; ADR 0012, B5, phase 0) : la part refusée de la hausse de
 # crédit demandée ς_{L,t}, entrée de scénario publiée en phase 0 et lue par F1 du bloc 6 réel
 # (#67 ; `sec:investissement-financement`, `sec:banque-offre`), nulle hors scénario de refus
-# (C31) ; aucun levier. Le bloc d'essai 6 ne la lit pas.
-ENTREES_DU_SOCLE = DeclarationDesEntrees(("varsigma_L",), ())
+# (C31) ; la part non souscrite du reliquat de l'émission ς_{B,t}, lue par E11 du bloc 9 réel
+# (#132 ; `sec:banque-placement`), nulle hors scénario de placement raté ; aucun levier. Les
+# blocs d'essai 6 et 9 ne les lisent pas (X3 lit ς_B du sentier).
+ENTREES_DU_SOCLE = DeclarationDesEntrees(("varsigma_L", "varsigma_B"), ())
 
 
-def entrees_du_tour(varsigma_L: float = 0.0) -> EntreesDuTour:
-    """Entrées d'un pas du socle : ς_{L,t} (`float`), nulle hors scénario."""
-    return EntreesDuTour((("varsigma_L", float(varsigma_L)),), ())
+def entrees_du_tour(varsigma_L: float = 0.0, varsigma_B: float = 0.0) -> EntreesDuTour:
+    """Entrées d'un pas du socle : ς_{L,t} et ς_{B,t} (`float`), nulles hors scénario."""
+    return EntreesDuTour((("varsigma_L", float(varsigma_L)), ("varsigma_B", float(varsigma_B))),
+                         ())
 
 
 ENTREES_SANS_SCENARIO = entrees_du_tour()
@@ -175,10 +180,11 @@ class Sentier:
 
 
 def sentier(pi: float, **variations: float) -> Sentier:
-    """Sentier du script à π̄ = π* = `pi`, ν_G = 1,15, autres paramètres par défaut (égaux aux
-    tables du moteur, P63) ou variés par `variations` (noms de `Parametres` du script)."""
+    """Sentier du script à π̄ = π* = `pi`, ν_G = 1,15 (passé explicitement : le défaut du script,
+    1, est hors domaine), autres paramètres par défaut (égaux aux tables du moteur, P63) ou variés
+    par `variations` (noms de `Parametres` du script, ν_G compris : C59, #132)."""
     es = script()
-    par = replace(es.Parametres(), pi_cible=pi, nu_G=NU_G, **variations)
+    par = replace(es.Parametres(), pi_cible=pi, **{"nu_G": NU_G, **variations})
     es.controler_domaine(par)
     e = es.etat_stationnaire(par)
     o = es.ouverture(e, par)
@@ -232,6 +238,8 @@ VARIABLES_D_ETAT = {
     # recopiée en phase 2 (P128).
     "ti": ("ti_1", CONSTANTE), "y_m1": ("y", VOLUME), "T_F_m1": ("T_F", NOMINAL),
     "varrho_bar_L": ("rho_bar_L", CONSTANTE),
+    # Bloc 9 (schéma v5, #132) : Y^HS_t, écrite en phase 7 (E12), retenue pour le pas suivant.
+    "Y_HS_m1": ("Y_HS", NOMINAL),
 }
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
@@ -242,10 +250,11 @@ OUVERTURE_DES_VARIABLES = {
     "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "i_L": "i_L", "i_D": "i_D",
     "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible", "YD_m1": "YD_m1",
     "ti": "ti", "y_m1": "y_m1", "T_F_m1": "T_F_m1", "varrho_bar_L": "rho_bar_L",
+    "Y_HS_m1": "Y_HS_m1",
 }
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
-# Les lignes 1 à 3 (acheteurs, p × volume servi), 11a à 11c (E7, bloc d'essai 9, E2) et 21 (B7,
+# Les lignes 1 à 3 (acheteurs, p × volume servi), 11a à 11c (E7, bloc d'essai 9, X2) et 21 (B7,
 # forme exacte) n'y sont pas.
 LIGNES_DU_SENTIER = {
     "4": {"Delta_IN": "dIN"}, "5": {"WB": "WB"}, "6": {"Tr": "Tr"},
@@ -261,7 +270,7 @@ ACHETEURS = (("menages", "1", "C", "C_vol", "C_plan"),
              ("investissement", "3", "I", "I_vol", "I_plan"),
              ("finances_publiques", "2", "G", "G_vol", "G_plan"))
 
-# Lignes 11a à 11c (E7), proposées par le bloc d'essai 9 (E2) : ligne → (terme, encours
+# Lignes 11a à 11c (E7), proposées par le bloc d'essai 9 (X2) : ligne → (terme, encours
 # d'ouverture des titres).
 INTERETS_SUR_TITRES = {"11a": ("iB_BH", "B_H"), "11b": ("iB_BBk", "B_Bk"),
                        "11c": ("iB_BCB", "B_CB")}
@@ -298,11 +307,11 @@ def _lectures(radical: str, etape: str) -> tuple[Lecture, ...]:
     if (radical, etape) == ("banque", "8c"):
         lectures += [Lecture(GRAND_LIVRE, "Res"), Lecture(GRAND_LIVRE, "L_CB")]
     if (radical, etape) == ("finances_publiques", "6"):
-        # E2 : lignes 11a à 11c selon E7, au taux du tour sur les encours d'ouverture.
+        # X2 : lignes 11a à 11c selon E7, au taux du tour sur les encours d'ouverture.
         lectures += [Lecture("1", "i_CB")] + [Lecture(OUVERTURE, encours) for _, encours
                                               in INTERETS_SUR_TITRES.values()]
     if (radical, etape) == ("finances_publiques", "8b"):
-        # E1 : montant couvert de la ligne 16 sur Π^CB lu en phase 1.
+        # X1 : montant couvert de la ligne 16 sur Π^CB lu en phase 1.
         lectures += [Lecture(GRAND_LIVRE, "M_G"), Lecture("1", "Pi_CB")]
     if (radical, etape) == ("banque_centrale", "1"):
         lectures.append(Lecture(OUVERTURE, "pi_etoile"))
@@ -381,7 +390,7 @@ class _BlocDEssai:
                 vue.proposer(ligne, {terme: sentier.valeur(cle, NOMINAL, t, echelle)
                                      for terme, cle in LIGNES_DU_SENTIER[ligne].items()})
         if siege.couvre:
-            # E1 : Π^CB du pas, lu en phase 1 ; une perte est un résultat négatif.
+            # X1 : Π^CB du pas, lu en phase 1 ; une perte est un résultat négatif.
             perte = vue.lire("Pi_CB")
             if perte < 0.0:
                 vue.declarer_montant_couvert(
@@ -411,7 +420,7 @@ def classe_d_essai(radical: str, sentier: Sentier, *, echelle: float = 1.0,
     refus à l'assemblage) ; `regles` donne, pour une variable d'état du radical, une règle
     d'essai (vue, sentier, t) → valeur du pas suivant, à la place du sentier (cas d'essai de
     la linéarisation) ; `lignes` donne, pour une ligne proposée par le radical, une règle
-    d'essai (vue, sentier) → montants par terme, à la place du sentier (E3) ;
+    d'essai (vue, sentier) → montants par terme, à la place du sentier (X3) ;
     `chocs_des_plans` : plan → facteur(t) multipliant le plan du sentier au pas t (un plan absent
     n'est pas choqué)."""
     declaration = declaration_d_essai(radical) if declaration is None else declaration
@@ -467,7 +476,7 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
     réel par radical, #113, #50, #51) ; `declarations` remplace la déclaration d'un radical ;
     `regles` : variable d'état → règle d'essai, passée au bloc de son propriétaire, ajoutée à
     `REGLES_PAR_DEFAUT` (et prioritaire sur elles) ; `lignes` : ligne → règle d'essai, passée
-    au bloc d'essai de son proposant (E3) ; `chocs_des_plans` : plan (`PLANS_DES_ACHETEURS`) →
+    au bloc d'essai de son proposant (X3) ; `chocs_des_plans` : plan (`PLANS_DES_ACHETEURS`) →
     facteur(t), passé au bloc d'essai de son écrivain. Une clé de `lignes`, de `declarations`,
     de `regles` ou de `chocs_des_plans` dont le radical (proposant, propriétaire ou écrivain)
     est remplacé par un bloc réel, ou une ligne qu'aucun siège ne propose, ou un plan inconnu,
@@ -531,16 +540,37 @@ def blocs(sentier: Sentier, *, echelle: float = 1.0,
     return tuple(rendus)
 
 
+# Radicaux des bancs partiels : le bloc 9 réel (#132) n'y entre pas. Les bancs de P87 et de
+# J3-d1 gardent le bloc d'essai 9 (X1 à X4 ; ADR 0013, annotation du 15/11/2026 (J3-d2), point
+# 6), et `blocs_reels` rend les blocs 2 à 8 ; le banc du socle complet prend
+# `blocs_du_socle_complet`.
+RADICAUX_DES_BANCS_PARTIELS = RADICAUX[:-1]
+
+
 def blocs_reels() -> tuple[object, ...]:
-    """Les blocs réels de `src/nations/blocs/`, dans l'ordre des radicaux : un module par
-    radical, dont l'unique classe déclarée sous ce radical est instanciée (ADR 0012, annotation
-    du 13/11/2026, point 5 : chaque module porte un seul bloc, dont le radical est le nom du
-    module). Au rang 6 de J3-c : la production (#113), le travail (#50), les prix (#51), la
-    banque (#90) et la banque centrale (#91) ; au rang 3 de J3-d1, les ménages (#60) ; au rang 4,
-    l'investissement (#67)."""
+    """Les blocs réels de `src/nations/blocs/` des bancs partiels (`RADICAUX_DES_BANCS_PARTIELS`,
+    blocs 2 à 8), dans l'ordre des radicaux : un module par radical, dont l'unique classe
+    déclarée sous ce radical est instanciée (ADR 0012, annotation du 13/11/2026, point 5 : chaque
+    module porte un seul bloc, dont le radical est le nom du module). Au rang 6 de J3-c : la
+    production (#113), le travail (#50), les prix (#51), la banque (#90) et la banque centrale
+    (#91) ; au rang 3 de J3-d1, les ménages (#60) ; au rang 4, l'investissement (#67). Le bloc 9
+    réel (#132) n'y est pas : `blocs_du_socle_complet`."""
+    return _blocs_des_modules(RADICAUX_DES_BANCS_PARTIELS)
+
+
+def blocs_du_socle_complet() -> tuple[object, ...]:
+    """Les huit blocs réels du socle complet (blocs 2 à 9, aucun bloc d'essai ; #132, J3-d2),
+    dans l'ordre des radicaux ; refus si un module manque."""
+    rendus = _blocs_des_modules(RADICAUX)
+    if len(rendus) != len(RADICAUX):
+        raise AssertionError("socle complet : un module de bloc manque dans src/nations/blocs/")
+    return rendus
+
+
+def _blocs_des_modules(radicaux: tuple[str, ...]) -> tuple[object, ...]:
     dossier = RACINE / "src" / "nations" / "blocs"
     rendus = []
-    for radical in RADICAUX:
+    for radical in radicaux:
         if not (dossier / f"{radical}.py").exists():
             continue
         module = importlib.import_module(f"nations.blocs.{radical}")
@@ -563,10 +593,17 @@ PARAMETRES_DES_TABLES_DU_SENTIER = types.MappingProxyType({
     "banque_centrale": types.MappingProxyType({"a_pi": "a_pi", "a_I": "a_I",
                                                "lambda_e": "lambda_e", "theta_CB": "theta_CB",
                                                "pi_etoile": "pi_cible", "r_bar": "rbar"}),
+    # Bloc 9 (P165) : θ_G n'est pas un paramètre du script, qui le résout ; il est lu sur l'état
+    # d'ouverture du sentier (`THETA_G_DU_SENTIER`).
+    "finances_publiques": types.MappingProxyType({"nu_G": "nu_G", "theta_G": "theta_G",
+                                                  "theta_Tr": "theta_Tr", "tau_H": "tau_H",
+                                                  "tau_F": "tau_F", "phi": "phi"}),
 })
+# Paramètre lu sur l'ouverture du sentier, non sur `sentier.par` (résolu par le script).
+THETA_G_DU_SENTIER = "theta_G"
 if any(set(noms) != {f.name for f in fields(getattr(PARAMETRES_DE_REFERENCE, radical))}
        for radical, noms in PARAMETRES_DES_TABLES_DU_SENTIER.items()):
-    raise AssertionError("socle partiel : un paramètre des blocs 7 ou 8 sans valeur du sentier")
+    raise AssertionError("socle partiel : un paramètre des blocs 7 à 9 sans valeur du sentier")
 
 
 class TableHorsDuSentier(ValueError):
@@ -582,17 +619,19 @@ def _valeur_de_champ(valeur) -> float:
 
 
 def parametres_du_sentier(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE):
-    """Réserve R1 de `monnaie`, étendue aux tables des blocs 7 et 8 : les tables `parametres`,
-    dont celles des blocs 7 et 8 portent les valeurs avec lesquelles le script a construit le
-    sentier (`sentier.par`, `PARAMETRES_DES_TABLES_DU_SENTIER`) ; π* du sentier est la valeur
-    initiale de l'état π*_0. Table par table : une table de référence (inchangée) est alignée
-    sur le sentier (`varier`, paramètres du script) ; une table de l'appelant est gardée telle
-    quelle, et refusée (`TableHorsDuSentier`) si un de ses paramètres diffère de celui du
-    sentier : jamais écrasée en silence. Sans écart, `parametres` est rendu tel quel."""
+    """Réserve R1 de `monnaie`, étendue aux tables des blocs 7 et 8, puis du bloc 9 (#132) : les
+    tables `parametres`, dont celles des blocs 7 à 9 portent les valeurs avec lesquelles le script
+    a construit le sentier (`sentier.par`, `PARAMETRES_DES_TABLES_DU_SENTIER` ; θ_G résolu, lu sur
+    l'ouverture du sentier) ; π* du sentier est la valeur initiale de l'état π*_0. Table par
+    table : une table de référence (inchangée) est alignée sur le sentier (`varier`, paramètres
+    du script) ; une table de l'appelant est gardée telle quelle, et refusée
+    (`TableHorsDuSentier`) si un de ses paramètres diffère de celui du sentier : jamais écrasée
+    en silence. Sans écart, `parametres` est rendu tel quel."""
     alignees = {}
     for radical, noms in PARAMETRES_DES_TABLES_DU_SENTIER.items():
         table = getattr(parametres, radical)
-        du_sentier = {champ: getattr(sentier.par, nom) for champ, nom in noms.items()}
+        du_sentier = {champ: (float(sentier.o[nom]) if nom == THETA_G_DU_SENTIER
+                              else getattr(sentier.par, nom)) for champ, nom in noms.items()}
         if table == getattr(PARAMETRES_DE_REFERENCE, radical):
             alignee = varier(table, **du_sentier)
             if alignee != table:
@@ -748,12 +787,12 @@ def prix_exogene_marge_identite(echelle: float = 1.0) -> dict:
 
 
 # --------------------------------------------------------------------------
-# Bloc d'essai 9, E3 (P95, rang 6 de J3-c) : émission selon E8 à E11
+# Bloc d'essai 9, X3 (P95, rang 6 de J3-c) : émission selon E8 à E11
 # --------------------------------------------------------------------------
 
-# Lignes exécutées que lit E3 (`sec:finances_publiques-emission`, « variables ») : dépense (2),
+# Lignes exécutées que lit X3 (`sec:finances_publiques-emission`, « variables ») : dépense (2),
 # transferts (6), impôts (7, T_H + T_F) et intérêts sur titres (11a à 11c, E7).
-LIGNES_LUES_PAR_E3 = ("2", "6", "7", "11a", "11b", "11c")
+LIGNES_LUES_PAR_X3 = ("2", "6", "7", "11a", "11b", "11c")
 
 
 def besoin_d_emission(vue: ordo.Vue, sentier: Sentier) -> tuple[float, float]:
@@ -763,7 +802,7 @@ def besoin_d_emission(vue: ordo.Vue, sentier: Sentier) -> tuple[float, float]:
     u.m. ; ν_G du sentier (1,15, `NU_G`). Appelé par les règles 19a-BC et 19a-banque, une fois
     chacune par pas, sur les mêmes lectures : un calcul unique demanderait un état caché dans le
     bloc d'essai ; le même Em_t des deux appels est vérifié au bit
-    (`test_e3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque`)."""
+    (`test_x3_un_meme_em_par_pas_pour_19a_bc_et_19a_banque`)."""
     livre = vue.grand_livre
     interets = sum(livre.montant_execute_ligne(ligne) for ligne in ("11a", "11b", "11c"))
     paiements_bruts = (livre.montant_execute_ligne("2") + livre.montant_execute_ligne("6")
@@ -793,18 +832,18 @@ def _souscription_banque(vue: ordo.Vue, sentier: Sentier) -> dict:
     return {"Delta_BBk_prim": (1.0 - sentier.par.varsigma_B) * (besoin - part_cb)}
 
 
-def emission_e3() -> dict:
-    """Options de `blocs` : le bloc d'essai 9 propose les lignes 19a selon E8 à E11 (E3, P95),
-    déclaration d'essai complétée des lectures de E3 en phase 7 (lignes exécutées
-    `LIGNES_LUES_PAR_E3`, Π^CB et θ_CB de la phase 1, M^G d'ouverture). Après le versement de
+def emission_x3() -> dict:
+    """Options de `blocs` : le bloc d'essai 9 propose les lignes 19a selon E8 à E11 (X3, P95),
+    déclaration d'essai complétée des lectures de X3 en phase 7 (lignes exécutées
+    `LIGNES_LUES_PAR_X3`, Π^CB et θ_CB de la phase 1, M^G d'ouverture). Après le versement de
     Π^CB en 8 (b), le compte du Trésor vaut M^G*_t (`sec:finances_publiques-emission`) : sous
     un choc, l'émission absorbe l'écart des paiements, que les montants du sentier laissaient
     au compte du Trésor. Mesure du rang 6 (blocs 2, 3, 4, 7 et 8 réels, 720 pas) : l'arrêt
     du compte du Trésor en phase 5 hors du sentier (marche de cible π*_0 = 1 %, pas 72 ; cas
-    E2, pas 16) disparaît sous E3, mais les dépôts des entreprises s'épuisent plus tard en
+    X2, pas 16) disparaît sous X3, mais les dépôts des entreprises s'épuisent plus tard en
     phase 4 (pas 186 et 295) : plans nominaux exogènes des blocs d'essai 5 et 6."""
     propre = declaration_d_essai("finances_publiques")
-    lectures = (tuple(Lecture(GRAND_LIVRE, ligne) for ligne in LIGNES_LUES_PAR_E3)
+    lectures = (tuple(Lecture(GRAND_LIVRE, ligne) for ligne in LIGNES_LUES_PAR_X3)
                 + (Lecture("1", "Pi_CB"), Lecture("1", "theta_CB"), Lecture(OUVERTURE, "M_G")))
     sieges = tuple(replace(s, lit=s.lit + lectures) if s.etape == "7" else s
                    for s in propre.sieges)
@@ -854,11 +893,11 @@ def _impots_avec_couverture(vue: ordo.Vue, sentier: Sentier) -> dict:
 def couverture_x4() -> dict:
     """Options de `blocs` : le bloc d'essai 9 propose la ligne 7 sous la couverture X4 (P124 ; ADR
     0013, annotation de J3-d1, point 7 ; `CONTEXT.md`, « Couverture X4 »), déclaration d'essai
-    complétée en phase 6 des lectures de X4 (`LECTURES_DE_X4`, celles déjà déclarées pour E2 non
+    complétée en phase 6 des lectures de X4 (`LECTURES_DE_X4`, celles déjà déclarées pour X2 non
     répétées) et de la variable du pas `T_cou`. Nulle sur le sentier (i_CB = i_ref), elle referme
     le canal rentier du banc de stationnarité partielle de J3-d1. Jamais dans le banc de P87 ;
     refusée sur un bloc 9 réel (`OptionSansBlocDEssai`, par `blocs`) ; composable avec
-    `emission_e3()` par `composer`, dans les deux ordres. Toute mesure faite avec elle porte
+    `emission_x3()` par `composer`, dans les deux ordres. Toute mesure faite avec elle porte
     l'étiquette `ETIQUETTE_X4`."""
     propre = declaration_d_essai("finances_publiques")
 
@@ -880,7 +919,7 @@ class OptionsIncompatibles(ValueError):
 
 
 def composer(*options: dict) -> dict:
-    """Composition d'options de `blocs` de la forme d'`emission_e3()` et de `couverture_x4()`
+    """Composition d'options de `blocs` de la forme d'`emission_x3()` et de `couverture_x4()`
     (`declarations`, `lignes`). Pour un radical déclaré par plusieurs options, chaque siège est
     pris de l'unique option qui le modifie par rapport à `declaration_d_essai` ; deux options qui
     modifient le même siège, ou proposent une règle pour la même ligne, sont refusées
@@ -1078,10 +1117,90 @@ GRANDEURS_NULLES_DE_J3D1 = types.MappingProxyType({
 })
 
 
-def est_nulle(cle: str, tables, sentier: Sentier) -> bool:
-    """D1, P121 : la grandeur `cle` est nulle par le calcul de `GRANDEURS_NULLES` ou de
-    `GRANDEURS_NULLES_DE_J3D1`, aux tables `tables` et sur le sentier `sentier`."""
+def _taux_directeur_exact(tables) -> Fraction:
+    """i_CB au point fixe de BC1 sur les tables (r̂* = r̄, π_{t−1} = π*), en exact."""
+    bc = tables.banque_centrale
+    return (1 + _exact(bc.r_bar)) * (1 + _exact(bc.pi_etoile)) - 1
+
+
+# Grandeurs nulles propres au banc du socle complet (bloc 9 réel, #132 ; F3 et P121 précisés au
+# rang 1a de J3-d2), hors des relevés de P87 et de J3-d1. Même forme que `GRANDEURS_NULLES`, mais
+# le calcul reçoit aussi l'état d'ouverture **réellement exécuté** `o` (`EtatPays`) : (tables `t`,
+# sentier `s`, ouverture `o`) → nulle ou non. Chaque prédicat teste toute la condition de son
+# libellé : paramètres des tables du bloc 9 (τ_F, θ_Tr) et du bloc 8 (θ_CB, r̄, π*), positions et
+# variables d'état de l'ouverture (B_H, B_CB, L^CB, Res, E^CB, T_{F,t−1}, r̂*) ; la ligne
+# 19a-ménages nulle est la règle E10 (M27), évaluée par la fonction du bloc. Les grandeurs listées
+# sont jugées **au bit** (|x| = 0), sauf T^cou (1e−12 S^G, F3 : i_CB de BC1 sous r̂* intégrateur,
+# non exacte au fil des pas).
+GRANDEURS_NULLES_DU_SOCLE_COMPLET = types.MappingProxyType({
+    "T_F (E5)": ("τ_F = 0 (M33) : impôt des entreprises nul",
+                 lambda t, s, o: _exact(t.finances_publiques.tau_F) == 0),
+    "T^e_F": ("τ_F = 0 et T_{F,t−1} = 0 à l'ouverture : impôt anticipé Γ^e T_{F,t−1} nul",
+              lambda t, s, o: _exact(t.finances_publiques.tau_F) == 0 and o.T_F_m1 == 0.0),
+    "Tr (E6)": ("θ_Tr = 0 (M33) : transferts nuls", lambda t, s, o: _exact(
+        t.finances_publiques.theta_Tr) == 0),
+    "ligne 6": ("θ_Tr = 0 : ligne 6 nulle", lambda t, s, o: _exact(
+        t.finances_publiques.theta_Tr) == 0),
+    "transferts non versés (E13)": ("θ_Tr = 0 : Tr^lev = 0, rien de non versé",
+                                    lambda t, s, o: _exact(t.finances_publiques.theta_Tr) == 0),
+    "B_H": ("B_H = 0 à l'ouverture et ligne 19a-ménages nulle (E10, M27, lecture (c))",
+            lambda t, s, o: o.B_H == 0.0 and _souscription_des_menages_nulle(t)),
+    "ligne 11a": ("B_H = 0 à l'ouverture et 19a-ménages nulle : intérêts des ménages sur titres "
+                  "nuls", lambda t, s, o: o.B_H == 0.0 and _souscription_des_menages_nulle(t)),
+    "ligne 19a-ménages": ("E10 : ΔB^prim_H = 0 (M27), règle évaluée par la fonction du bloc",
+                          lambda t, s, o: _souscription_des_menages_nulle(t)),
+    "ΔB^prim_CB (19a-BC)": ("θ_CB = 0 (BC5, E10)",
+                            lambda t, s, o: _exact(t.banque_centrale.theta_CB) == 0),
+    "B_CB": ("θ_CB = 0 et B_CB,0 = 0 : titres de la banque centrale nuls",
+             lambda t, s, o: _exact(t.banque_centrale.theta_CB) == 0 and o.B_CB == 0.0),
+    "ligne 11c": ("θ_CB = 0 et B_CB,0 = 0 : intérêts de la banque centrale sur titres nuls",
+                  lambda t, s, o: _exact(t.banque_centrale.theta_CB) == 0 and o.B_CB == 0.0),
+    "E^CB (V^flux)": (("E^CB_0 = 0 et Π^CB ≥ 0 sur le sentier (i_CB > 0 ; à l'ouverture B_CB ≥ 0, "
+                       "L^CB ≥ 0, Res = 0) : Π^CB versé en entier (ligne 16, BC9), fonds propres "
+                       "nuls"),
+                      lambda t, s, o: (getattr(o, cat.VALEUR_NETTE_FLUX["banque_centrale"])
+                                       == 0.0 and _resultat_cb_positif(t, o))),
+    "perte non couverte (E13)": ("Π^CB ≥ 0 sur le sentier (i_CB > 0 ; à l'ouverture B_CB ≥ 0, "
+                                 "L^CB ≥ 0, Res = 0)",
+                                 lambda t, s, o: _resultat_cb_positif(t, o)),
+    # T^cou = φ (i_CB − i^ref) A/n_a (E4) : i_CB de BC1, (1 + r̂*)(1 + π*) + a_π (π_{t−1} − π*)
+    # − 1, sur l'état r̂* ; i^ref = (1 + r̄)(1 + π*) − 1 sur la table r̄ ; π* d'ouverture des deux
+    # côtés. Au point fixe de BC1 (π_{t−1} = π*), i_CB = i^ref si et seulement si r̂*_0, lu sur
+    # l'état d'ouverture exécuté, égale r̄, paramètre de la table : condition sur deux sources
+    # distinctes (un état initial au r̂* déplacé la rend fausse, alors que r̂*_0 du script vaut r̄
+    # par construction, `etat_stationnaire`). Jugée à 1e−12 S^G (F3), non au bit : π_{t−1}, lu au
+    # registre des prix, et r̂*, intégrateur, ne sont pas exacts au fil des pas.
+    "T^cou (E4)": ("i_CB = i^ref au point fixe de BC1 : r̂*_0 de l'ouverture exécutée égal à r̄ "
+                   "de la table",
+                   lambda t, s, o: _exact(o.r_hat_etoile) == _exact(t.banque_centrale.r_bar)),
+})
+
+
+def _souscription_des_menages_nulle(tables) -> bool:
+    """E10 évaluée par la fonction du bloc 9 (`souscriptions_banque_centrale_et_menages`) sur un
+    besoin d'émission non nul : ΔB^prim_H = 0 au bit (M27)."""
+    return bloc_9.souscriptions_banque_centrale_et_menages(
+        _valeur_de_champ(tables.banque_centrale.theta_CB), 1.0)[1] == 0.0
+
+
+def _resultat_cb_positif(tables, o: EtatPays) -> bool:
+    """Π^CB = i_CB (B_CB + L^CB − Res)/n_a ≥ 0 (BC6, i_B = i_res = i_CB) : i_CB > 0 au point fixe
+    de BC1 en exact, et, sur l'ouverture exécutée, B_CB ≥ 0, L^CB ≥ 0 et Res = 0."""
+    return (_taux_directeur_exact(tables) > 0 and o.B_CB >= 0.0 and o.L_CB >= 0.0
+            and o.Res == 0.0)
+
+
+def est_nulle(cle: str, tables, sentier: Sentier, ouverture: EtatPays | None = None) -> bool:
+    """D1, P121 : la grandeur `cle` est nulle par le calcul de `GRANDEURS_NULLES`, de
+    `GRANDEURS_NULLES_DE_J3D1` ou de `GRANDEURS_NULLES_DU_SOCLE_COMPLET`, aux tables `tables` et
+    sur le sentier `sentier` ; pour la dernière liste, sur l'état d'ouverture exécuté
+    `ouverture`, obligatoire (refus sinon, jamais un état reconstruit en silence)."""
     for liste in (GRANDEURS_NULLES, GRANDEURS_NULLES_DE_J3D1):
         if cle in liste:
             return bool(liste[cle][1](tables, sentier))
+    if cle in GRANDEURS_NULLES_DU_SOCLE_COMPLET:
+        if ouverture is None:
+            raise TypeError(f"{cle} : nullité du socle complet jugée sur l'état d'ouverture "
+                            "exécuté, à passer explicitement")
+        return bool(GRANDEURS_NULLES_DU_SOCLE_COMPLET[cle][1](tables, sentier, ouverture))
     return False

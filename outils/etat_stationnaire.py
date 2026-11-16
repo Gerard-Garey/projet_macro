@@ -1745,6 +1745,17 @@ def _fisher_hors_cible(par: Parametres, pi_bar: float, varpi_L: float) -> dict[s
     return {"i_L": 100 * i_L, "rho_L": 100 * rho_L, "d_rho": 100 * (rho_L - rho(par.pi_cible)[1])}
 
 
+def _allocation_hors_cible(par: Parametres, pi_bar: float, zeta: float) -> dict[str, float]:
+    """Illustration de `sec:investissement-taux` (limites), suite de `_fisher_hors_cible` (écart ϖ_L de `par`) :
+    allocation stationnaire sous S2 à l'écart Δϱ, pour l'élasticité ζ donnée (non celle de `par`). Rend le taux
+    d'utilisation tu = t̄u e^{ζΔϱ} (fraction de la capacité normale) et le capital en volume rapporté à la production
+    annuelle κ/tu, en années (même forme que `etat_stationnaire`, K^vol = n_a κ y/tu), t̄u et κ de `par` (calibration
+    indicative) ; Δϱ par an ; arithmétique sans état résolu (catégorie S)."""
+    d_rho = _fisher_hors_cible(par, pi_bar, par.varpi_L)["d_rho"] / 100
+    tu = par.tu_bar * math.exp(zeta * d_rho)
+    return {"tu": tu, "capital": par.kappa / tu}
+
+
 # (section, description, valeur publiée, fonction de calcul dans l'unité publiée, catégorie)
 # Catégories : A (à reproduire, lue sur l'état résolu), S (arithmétique de la spécification : formule ou limite
 # sans état résolu, sur des entrées d'illustration de la spécification ou sur les paramètres de la configuration ;
@@ -1947,6 +1958,25 @@ VALEURS_PUBLIEES: tuple[tuple[str, str, str, object, str], ...] = (
      lambda c: _fisher_hors_cible(c.base, 0.10, 0.0)["i_L"], "S"),
     ("sec:investissement-taux", "ϱ_L sans écart (Fisher) à π̄ = 10 %, π* = 2 %, %", "8,92",
      lambda c: _fisher_hors_cible(c.base, 0.10, 0.0)["rho_L"], "S"),
+    # Autres valeurs de la même section, comparées depuis #101 : i_L,0 de la configuration de contrôle (A) ; Δϱ à
+    # π̄ = 0 et allocation stationnaire sous S2 à ζ = 4, 8 et 17 (paragraphe des limites, S).
+    ("sec:investissement-taux", "i_L,0 sans écart (Fisher), 2 %, %", "3,02", lambda c: c.v(cfg="C-F")["i_L"], "A"),
+    ("sec:investissement-taux", "Δϱ à π̄ = 0, π* = 2 %, point", "-1,98",
+     lambda c: _fisher_hors_cible(c.base, 0.0, c.base.varpi_L)["d_rho"], "S"),
+    ("sec:investissement-taux", "tu à π̄ = 10 %, ζ = 4", "1,098",
+     lambda c: _allocation_hors_cible(c.base, 0.10, 4.0)["tu"], "S"),
+    ("sec:investissement-taux", "capital à π̄ = 10 %, ζ = 4, an de production", "1,457",
+     lambda c: _allocation_hors_cible(c.base, 0.10, 4.0)["capital"], "S"),
+    ("sec:investissement-taux", "tu à π̄ = 10 %, ζ = 8", "1,508",
+     lambda c: _allocation_hors_cible(c.base, 0.10, 8.0)["tu"], "S"),
+    ("sec:investissement-taux", "capital à π̄ = 10 %, ζ = 8, an de production", "1,061",
+     lambda c: _allocation_hors_cible(c.base, 0.10, 8.0)["capital"], "S"),
+    ("sec:investissement-taux", "capital à π̄ = 0, ζ = 4, ans de production", "2,165",
+     lambda c: _allocation_hors_cible(c.base, 0.0, 4.0)["capital"], "S"),
+    ("sec:investissement-taux", "capital à π̄ = 0, ζ = 8, ans de production", "2,343",
+     lambda c: _allocation_hors_cible(c.base, 0.0, 8.0)["capital"], "S"),
+    ("sec:investissement-taux", "capital à π̄ = 0, ζ = 17, ans de production", "2,801",
+     lambda c: _allocation_hors_cible(c.base, 0.0, 17.0)["capital"], "S"),
     ("sec:banque-taux", "ϱ̄_L à 0 %, %", "3,000", lambda c: c.v(pi=0.0)["rho_L"], "A"),
     ("sec:banque-taux", "ϱ̄_L à 2 % (tab:calibration), %", "2,961", lambda c: c.v()["rho_L"], "A"),
     ("sec:banque-taux", "ϱ̄_L à 10 %, %", "2,818", lambda c: c.v(pi=0.10)["rho_L"], "A"),

@@ -8,7 +8,7 @@ recopiées) ; résultat et lignes exécutées ; cible (ADR 0010, test 4) ; parti
 (G^plan −5 % aux tours 1 à 12, marche de cible de ±1 point, taux négatif) et
 « Empreinte » (reprise exacte, tenue par `test_socle_partiel.py` avec tous les
 blocs réels, et la part du bloc, par `test_budget.py`). S'y ajoutent les blocs
-d'essai 9 E1 (couverture de la ligne 16 sur Π^CB lu en phase 1) et E2 (lignes
+d'essai 9 X1 (couverture de la ligne 16 sur Π^CB lu en phase 1) et X2 (lignes
 11a à 11c selon E7), P95. Seuils écrits avant l'essai (fiche 8, § 9.6), non
 déplacés.
 
@@ -219,7 +219,7 @@ def _resultat_et_lignes(releve, initial):
 def test_resultat_egal_aux_lignes_executees(trajectoires, pi, publier):
     """Fiche 8, § 9.6, « Résultat et lignes exécutées » : à chaque pas, Π^CB_t écrit en phase 1
     égale les lignes 11c + 13 − 12 exécutées, à 1e−12 × S^CB, sur 720 pas ; la ligne 16
-    exécutée égale Π^CB (BC9) ; les lignes 11a à 11c du bloc d'essai 9 suivent E7 (E2)."""
+    exécutée égale Π^CB (BC9) ; les lignes 11a à 11c du bloc d'essai 9 suivent E7 (X2)."""
     _, initial, releve = trajectoires[pi]
     pire, pire_e7 = _resultat_et_lignes(releve, initial)
     assert pire <= SEUIL_CB and pire_e7 <= SEUIL_CB
@@ -239,8 +239,8 @@ def _avec_titres_a_la_banque_centrale(initial, part=0.2, decalage_r_hat=0.01):
                                r_hat_etoile=initial.r_hat_etoile + decalage_r_hat)
 
 
-def test_e2_et_resultat_avec_titres_et_reserves(socle, publier):
-    """Bloc d'essai 9, E2 (P95), et forme générale de BC6 hors du socle : B_CB > 0, Res > 0 et
+def test_x2_et_resultat_avec_titres_et_reserves(socle, publier):
+    """Bloc d'essai 9, X2 (P95), et forme générale de BC6 hors du socle : B_CB > 0, Res > 0 et
     i_CB hors du sentier à l'ouverture ; sur 6 pas, les lignes 11a à 11c exécutées suivent E7
     au taux du tour lu en phase 1, et Π^CB = 11c + 13 − 12 exécutées, à 1e−12 × S^CB ; la
     ligne 11c et la ligne 12 ne sont pas nulles au premier pas. Horizon court : hors du
@@ -253,14 +253,14 @@ def test_e2_et_resultat_avec_titres_et_reserves(socle, publier):
     assert releve.pas[0]["11c"] > 0.0 and releve.pas[0]["12"] > 0.0
     pire, pire_e7 = _resultat_et_lignes(releve, initial)
     assert pire <= SEUIL_CB and pire_e7 <= SEUIL_CB
-    publier(f"Bloc 8 et bloc d'essai 9 (E2), B_CB = Res = 20 % de B_Bk, r̂*_0 = r̄ + 1 point, "
+    publier(f"Bloc 8 et bloc d'essai 9 (X2), B_CB = Res = 20 % de B_Bk, r̂*_0 = r̄ + 1 point, "
             f"6 pas ({ETIQUETTES})", [
                 f"max |Π^CB − (11c + 13 − 12)|/S^CB = {pire:.1e} ; max |ligne 11x − E7|/S^CB "
                 f"= {pire_e7:.1e} (seuil 1e−12)"])
 
 
 # --------------------------------------------------------------------------
-# Cible (ADR 0010, test 4), bornes, taux négatif et E1
+# Cible (ADR 0010, test 4), bornes, taux négatif et X1
 # --------------------------------------------------------------------------
 
 
@@ -331,9 +331,9 @@ def test_bornes_depense_reduite_prescription_exacte(socle, pi, publier):
                                 f"{100 * minimum:.6f} % par an"])
 
 
-def test_taux_negatif_perte_versee_et_couverte_par_e1(socle, publier):
+def test_taux_negatif_perte_versee_et_couverte_par_x1(socle, publier):
     """Fiche 8, § 9.6, « Bornes » (taux négatif) et partie (a) de « Perte » dans le moteur ; bloc
-    d'essai 9, E1 (P95) : à π* = 0, r̂*_0 = −3 % donne une prescription négative ; i_CB l'égale
+    d'essai 9, X1 (P95) : à π* = 0, r̂*_0 = −3 % donne une prescription négative ; i_CB l'égale
     exactement, sans plancher ; Π^CB < 0 ; la ligne 16 proposée et exécutée égale Π^CB, sans
     troncature, le bloc d'essai 9 en déclarant le montant couvert sur Π^CB lu en phase 1 ; la
     couverture intégrale (compte du Trésor suffisant) laisse E^CB inchangée, par le stock, à
@@ -354,7 +354,7 @@ def test_taux_negatif_perte_versee_et_couverte_par_e1(socle, publier):
         assert abs(e_apres - e_avant) <= SEUIL_CB * echelle_cb(o)
     publier(f"Bloc 8, taux négatif (π* = 0, r̂*_0 = −3 %), 12 pas ({ETIQUETTES})", [
         f"i_CB = i^règle = {100 * v['i_CB']:.4f} % par an ; Π^CB = {v['Pi_CB']:.3e} u.m. ; "
-        "ligne 16 exécutée = Π^CB (E1) ; E^CB inchangée"])
+        "ligne 16 exécutée = Π^CB (X1) ; E^CB inchangée"])
 
 
 # --------------------------------------------------------------------------

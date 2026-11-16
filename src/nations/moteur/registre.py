@@ -8,23 +8,21 @@ de l'état ». Le registre est la variable d'état `registre_prix` du moteur :
 de longueur fixe, jamais un historique.
 
 Les fonctions de ce module sont les **seules qui indexent le registre** :
-aucun bloc ne l'indexe ; il lit ses trois fonctions de lecture par sa vue.
+aucun bloc ne l'indexe ; il lit ses deux fonctions de lecture par sa vue.
 
 - `avancer(registre, P_t)` : couche moteur de la phase 9 ; P_t entre,
   P_{t−n_a−1} sort, une copie sans calcul ;
 - `dernier_prix` : P_{t−1}, dernier prix connu, lu par les règles en phase 1 ;
 - `glissement` : glissement annuel du tour précédent, π_{t−1} = P_{t−1} /
   P_{t−1−n_a} − 1 ; le glissement du tour t se lit sur le registre avancé
-  (`glissement(avancer(registre, P_t))`), dès la phase 5 ;
-- `variation_sur_le_tour` : variation de l'indice sur le dernier tour clos,
-  P_{t−1} / P_{t−1−n_m} − 1.
+  (`glissement(avancer(registre, P_t))`), dès la phase 5.
 """
 
 from __future__ import annotations
 
 import math
 
-from nations.moteur.parametres.cadre import PAS_PAR_AN, PAS_PAR_TOUR
+from nations.moteur.parametres.cadre import PAS_PAR_AN
 
 # n_a + 1 niveaux (ADR 0008, II.3). Recopié dans `schema.NIVEAUX_DU_REGISTRE`
 # (la couche `etat` n'importe pas `moteur`) ; l'égalité est figée par
@@ -58,9 +56,3 @@ def glissement(registre: tuple[float, ...]) -> float:
     _verifier(registre)
     # eq:moteur-glissement
     return registre[0] / registre[PAS_PAR_AN.valeur] - 1.0
-
-
-def variation_sur_le_tour(registre: tuple[float, ...]) -> float:
-    """Variation de l'indice sur le dernier tour clos : P_{t−1} / P_{t−1−n_m} − 1."""
-    _verifier(registre)
-    return registre[0] / registre[PAS_PAR_TOUR.valeur] - 1.0

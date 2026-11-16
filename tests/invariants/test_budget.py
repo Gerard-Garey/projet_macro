@@ -283,11 +283,37 @@ def mesurer_part(socle, radical: str, reels=()) -> tuple[float, list[float], int
         blocs = socle.blocs(sentier, reels=reels)
         blocs = tuple(envelopper(b, durees) if b.declaration.radical == radical else b
                       for b in blocs)
-        o = ordo.assembler(PHASES, blocs, PARAMETRES_DE_REFERENCE, socle.ENTREES_DU_SOCLE)
+        o = ordo.assembler(PHASES, blocs, socle.parametres_du_sentier(sentier),
+                           socle.ENTREES_DU_SOCLE)
         socle.derouler(socle.etat_initial(sentier), NB_PAS_DU_COUT, o, ObservateurNul())
         parts.append(durees[0] * 1e3 / NB_PAS_DU_COUT)
         appels = durees[1]
     return min(parts), parts, appels
+
+
+def test_total_du_socle_complet(socle, publier):
+    """Coût total du pas du socle complet (blocs 2 à 9 réels, #132), publié sans verdict
+    (critère du budget de J3 : J3-g, G1) : durée de `executer_pas`, `ObservateurNul`, π* = 2 %,
+    720 pas, min sur 5 répétitions ; ms par pas mensuel et par pays-semaine (52/12 semaines par
+    pas)."""
+    sentier = socle.sentier(PI_DE_LA_PART)
+    o = ordo.assembler(PHASES, socle.blocs_du_socle_complet(),
+                       socle.parametres_du_sentier(sentier), socle.ENTREES_DU_SOCLE)
+    durees = []
+    for _ in range(REPETITIONS_DU_COUT):
+        debut = time.perf_counter()
+        socle.derouler(socle.etat_initial(sentier), NB_PAS_DU_COUT, o, ObservateurNul())
+        durees.append((time.perf_counter() - debut) * 1e3 / NB_PAS_DU_COUT)
+    total = min(durees)
+    semaine = total / (52 / 12)
+    publier("Coût total du pas du socle complet (#132 ; sans verdict, budget : J3-g)", [
+        f"{total:.4f} ms par pas mensuel (répétitions : " + ", ".join(f"{x:.4f}" for x in durees)
+        + f") ; {semaine:.4f} ms par pays-semaine (budget 1 ms) ; budget du socle complet "
+        f"{BUDGET_DU_SOCLE_MS_PAR_PAS} ms par pas, publié sans verdict",
+        "plateforme : " + ("référence" if PLATEFORME_DE_REFERENCE
+                           else "hors référence (ADR 0003, M16)"),
+    ])
+    assert total > 0.0
 
 
 def cout_du_chronometre_par_appel(nb: int = 100_000) -> float:
@@ -342,9 +368,9 @@ def test_instrument_de_la_part_d_un_bloc(socle, publier):
 def test_part_de_chaque_bloc_reel(socle, publier):
     """P57 : part de chaque bloc réel de `src/nations/blocs/` ≤ 0,48 ms par pas mensuel
     (alerte non bloquante au-dessus de 0,2760 ms) sur la plateforme de référence ; projection
-    cumulée publiée sans seuil. Avant le premier bloc réel (#113), la mesure est publiée vide
-    et le test se termine par un saut qui le dit."""
-    reels = socle.blocs_reels()
+    cumulée publiée sans seuil. Depuis le bloc 9 réel (#132, J3-d2), mesurée sur le socle complet
+    (`blocs_du_socle_complet`, blocs 2 à 9 réels, aucun bloc d'essai)."""
+    reels = socle.blocs_du_socle_complet()
     lignes, parts = [], {}
     for bloc in reels:
         radical = bloc.declaration.radical
@@ -365,8 +391,9 @@ def test_part_de_chaque_bloc_reel(socle, publier):
                       f"{total:.4f} ms par pas, à comparer à {BUDGET_DU_SOCLE_MS_PAR_PAS} ms "
                       "(sans seuil)")
     publier("Part de chaque bloc réel dans le coût (P57)", [
-        "définition : durée cumulée des appels aux méthodes d'étape du bloc, socle partiel "
-        "d'essai, π* = 2 %, 720 pas, min sur 5 répétitions ; ms par pas mensuel",
+        "définition : durée cumulée des appels aux méthodes d'étape du bloc, socle complet "
+        "(blocs 2 à 9 réels, #132), π* = 2 %, 720 pas, min sur 5 répétitions ; ms par pas "
+        "mensuel",
         *(lignes or ["aucun bloc réel dans src/nations/blocs/"]),
         projection,
         "plateforme : " + ("référence, critère contrôlé" if PLATEFORME_DE_REFERENCE

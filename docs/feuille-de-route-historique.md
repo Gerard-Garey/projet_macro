@@ -4,7 +4,237 @@ Tenu par `architect`. Ce fichier reçoit, **sans rien supprimer ni réécrire**,
 
 Chaque condensation ajoute une partie, la plus récente en tête. Une partie est figée.
 
-**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro. Un renvoi à P74 à P86, ou à une branche fusionnée jusqu'à J3-a, absent de la tête, se lit dans la partie B (ajoutée le 14/11/2026). Un renvoi à la fiche de J3-c, au relevé d'issues du 14/11/2026 après la PR #117 ou à P87 à P99, absent de la tête, se lit dans la partie C (ajoutée le 14/11/2026, après la fusion de la PR #129). Un renvoi au plan de J3-d1 (rangs 0 à 8), à P100 à P118, aux mises à jour de la tête du 13/11 au 14/11/2026 ou aux lignes du § 7 de la PR #118 à la PR #128, absent de la tête, se lit dans la partie D (ajoutée le 15/11/2026, rang 8 de J3-d1).
+**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro. Un renvoi à P74 à P86, ou à une branche fusionnée jusqu'à J3-a, absent de la tête, se lit dans la partie B (ajoutée le 14/11/2026). Un renvoi à la fiche de J3-c, au relevé d'issues du 14/11/2026 après la PR #117 ou à P87 à P99, absent de la tête, se lit dans la partie C (ajoutée le 14/11/2026, après la fusion de la PR #129). Un renvoi au plan de J3-d1 (rangs 0 à 8), à P100 à P118, aux mises à jour de la tête du 13/11 au 14/11/2026 ou aux lignes du § 7 de la PR #118 à la PR #128, absent de la tête, se lit dans la partie D (ajoutée le 15/11/2026, rang 8 de J3-d1). Un renvoi à la fiche de J3-d1 (état et critères à la fusion de la PR #136), au relevé d'issues du 14/11/2026 après la PR #129, à P119 à P146 ou aux mises à jour de la tête du 14/11/2026 après la PR #129 et du 15/11/2026 (rangs 4 et 5 de J3-d1), absent de la tête, se lit dans la partie E (ajoutée le 15/11/2026, point d'étape après la fusion de la PR #136). Un renvoi à P147 à P155, à la ligne du § 7 de la PR #129 ou aux mises à jour de la tête des rangs 0 et 1a de J3-d2, absent de la tête, se lit dans la partie E, complément du rang 8 de J3-d2.
+
+## Partie E : extraits de la tête sortis le 15/11/2026 (point d'étape après la fusion de la PR #136, rang 0 de J3-d2), figés
+
+Sortis de `docs/feuille-de-route.md` à `30078bb` (`main`, commit de fusion de la PR #136), pour tenir la tête sous son plafond de 60 ko (P76) : texte inchangé, titres décalés d'un niveau. Les numéros P-n restent stables ; ces décisions restent en vigueur tant qu'aucune décision ultérieure ne les remplace.
+
+### En-tête (extrait : mises à jour de la tête du 14/11/2026, après la PR #129, au 15/11/2026, rangs 4 et 5 de J3-d1)
+
+**Mise à jour précédente** : 15/11/2026, fin des rangs 4 et 5 de J3-d1 (session, `060933a`) — branche `claude/j3-menages-investissement` ; état au § 1, décisions P130 à P141 au § 4.
+
+**Mise à jour antérieure** : 14/11/2026, point d'étape après la fusion de la PR #129 (`architect-approfondi`) — `main` = `731aac3` (commit de fusion, parents `6a22d39` et `6632dce`) ; aucune branche de travail ouverte ; J3-c consignée (§ 7) ; découpage de J3-d proposé (§ 1, § 2), décisions P111 à P118 (§ 4) ; fiche de J3-c, relevé du 14/11/2026 après la PR #117, P87 à P99 sortis vers l'historique, partie C (P76). Mises à jour plus anciennes : historique, partie D, en-tête, puis historique de Git (`git log -- docs/feuille-de-route.md`).
+
+### 1. Branche de travail en cours (extrait : fiche de J3-d1, à la fusion de la PR #136)
+
+**J3-d1** (`claude/j3-menages-investissement`, PR #136, ouverte depuis `main` à `731aac3`) : plan, état et critères ci-dessous. Fiche de J3-c, figée à la fusion de la PR #129 : historique, partie C, § 1.
+
+#### Plan proposé pour J3-d1 « ménages et investissement » (`claude/j3-menages-investissement`) — domaine des plans (#124), ménages (#60), investissement (#67), labels de d et tu (#123), signes sous lecture nette (#103)
+
+Plan (rangs 0 à 8 ; proposé par `architect-approfondi` le 14/11/2026, décidé par le mainteneur le même jour, P111 à P118) : historique, partie D, § 1, texte inchangé. Issues avec `Closes` : #124, #60, #67, #123, #103 (P112) ; ordre #124 → #60 → #67, #123 avec #67 ; délégation technique reconduite (P118).
+
+**État au 15/11/2026, rang 8 (consignation)** — tête `414a8a4` ; rangs 0 à 7 faits ; restent la sortie du brouillon et la fusion par le mainteneur :
+- **rangs 0 à 5** : `49fba27` à `ea2e0da` (P111 à P141 ; passation de la PR #136 du 15/11/2026) ; critère « Branche » **tenu** sur le banc X4 seule aux trois π\* (pire relatif 1,8e−12, pire nulle 1,8e−14) ; sans X4, 3,7e−8 à 10 % (canal rentier confirmé) ;
+- **rang 6** (`docwriter`, un commit `docs:` par issue) : `e953afc` (#124), `b5e98f8` (#60), `fae37b3` (#67), `362ef4b` (#123), `1af1b88` (#103) ; validation de `macro` et de `monnaie` (M^G) conforme avec réserves ; reprises `d3635ed`, `ed4c9c2`, `4c5ce65`, `4b8ce65`, `f9e04d7`, `5e5662b` ; `coder` : `046fcde` (lecture nette nommée D̃_H, Ṽ_H ; résultats identiques au bit), `bfbddae` (refus de crédit publié sur 40 pas) ;
+- **rang 7** (revue finale complète, règle 10) : `audit` **non conforme** sur M1 (bornes (b) du bloc 6 affirmées pour tout le domaine, alors que S6 rend ti = 0 au-delà d'une frontière), `macro-approfondi` conforme avec réserves, `/code-review` (effort medium) ; reprise `4792a79`, `6e7db86` (M1 en voie 2, P145 ; remarques r1 et r2 d'`audit` du rang 5), `fc48f6e`, `f232b70`, `414a8a4` (réserves de `macro` sur ce diff) ;
+- **verdicts** : concordance **77** labels (P142) ; parts P57 sur la plateforme de référence (run 43700445516 sur `bfbddae`) : ménages 0,0081 ms, investissement 0,0186 ms par pays-pas, seuil 0,48 ms, tenu — remplacent « ≤ 0,029 ms hors plateforme » ; « Vitesses » de la fiche 5 non tenu en relatif, tenu sous P130 ; « Endettement, dépôts » de la fiche 6 non tenu (#139) ; bornes (b) de la fiche 6 tenues sur le lot |Δϱ| ≤ 0,1 par an, frontière de S6 publiée (P145) ; bornes (c) en constat sans verdict (#140) ;
+- **escalades, relances et arrêts** (aussi dans la PR) : `macro` (contrôle du diff correctif) et `macro-approfondi` (revue finale) arrêtés à leur limite de tours, chacun relancé une fois pour rendre son rapport ; aucune consultation Fable (budget de J3-d1 : 0 sur 3) ;
+- **restent ouvertes après la fusion** : #139 et #140 (décisions réservées au mainteneur), #11 et #14 (hors branche) ; #138 fermée par `ea2e0da` ; #141 à #145 créées (P146).
+
+**Critères d'acceptation, écrits avant l'essai** (précisés au rang 1a, jamais après une mesure) :
+- **#124** : la voie retenue refuse (exception typée, jamais écrêtage) un plan C_plan, I_plan ou G_plan négatif et d < 0, sur le cas de l'issue (C_plan = −1,0) et sur un lot adverse ; trajectoires de la référence identiques au bit (tableau avant / après sans ligne).
+- **#60** : lignes (a) et (b) de la fiche 5, § 9.6, à leurs seuils ; état stationnaire égal au script à 1e−10 relatif à n_a = 12, π\* ∈ {0 ; 2 ; 10 %} (P56, P77), n_a ∈ {4 ; 52} couvert par le script ; YD égal aux lignes exécutées à 1e−12 × S ; plan insensible au registre de l'indice (écart nul, #58) ; B_H ≡ 0 exactement ; boucle propre de module < 1 ; refus au chargement hors du domaine ; ~~sept labels~~ *(correction du 14/11/2026, avant tout essai, P119 : H1 a déjà son label depuis #61)* six labels (H2 à H7).
+- **#67** : lignes (a) et (b) de la fiche 6, § 9.6 ; état stationnaire égal au script (mêmes seuil et grille) ; Div ≥ 0 en contrainte de domaine (M28) ; λ_ti dans le domaine de stabilité mesuré de la fiche ; domaine strict de K (P80) ; table du bloc 6 complète ; lignes (c) des fiches 7 et 8 à un bloc près à leurs seuils de fiche ; ~~onze labels~~ *(correction du 15/11/2026, avant l'essai du décompte, P142 : F1 porte aussi `eq:investissement-credit-servi`)* douze labels.
+- **#123** : labels de d et de tu, une balise chacun (P83) ; ω\* et g inchangées.
+- **#103** : critères et contraintes de signe de D_H, D_F et M^G réécrits sous la lecture nette et le contrat de poussière ; correction prospective, ancien critère publié avec sa date.
+- **Branche** : stationnarité partielle à 1e−9 sur 720 pas aux trois π\*, blocs 2 à 8 réels, bloc d'essai 9, liste de P94 étendue aux grandeurs des blocs 5 et 6, ~~grandeurs nulles par liste déclarée (P100)~~ *(correction du 14/11/2026, avant tout essai, P121, P124)* : nullités calculées (P121) ; bloc d'essai 9 avec la couverture X4 (P124), étiquette « couverture X4 active » ; T^cou ajouté aux grandeurs nulles ; concordance attendue à ~~77 labels (57 + 7 + 11 + 2, à confirmer au rang 1a)~~ *(correction du 14/11/2026, avant tout essai, P119)* ~~76 labels (57 + 6 + 11 + 2)~~ *(correction du 15/11/2026, avant l'essai du décompte, P142)* 77 labels (57 + 6 + 12 + 2) ; part de chaque bloc ≤ 0,48 ms (alerte 0,276 ms) ; verdicts de P87 sur le banc de J3-c inchangés.
+
+**Conditions d'arrêt** : contrat partagé à modifier au-delà de l'annotation du rang 1b ; drapeau de mode dans `src/` ; stationnarité partielle hors seuil sans erreur de code ; arrêt du noyau sur le sentier (caisse nette, Res < 0) ; état d'arrivée dépendant d'une vitesse d'ajustement (`docs/exigences.md` § 2.7) ; boucle propre de module ≥ 1 ; instabilité connue réapparue ; part d'un bloc au-dessus de 0,48 ms ; chiffre publié non reproduit.
+
+**Effet attendu sur les résultats** : premiers résultats du moteur pour les blocs 5 et 6 ; aucun résultat final, aucune référence ; #124 sans effet sur la trajectoire de référence.
+
+### 3. Issues hors plan (extrait : relevé du 14/11/2026 après la PR #129, mis à jour le 15/11/2026 au rang 8 de J3-d1)
+
+*Relevé du 14/11/2026* (point d'étape après la fusion de la PR #129, `main` = `731aac3`) : **49 issues ouvertes** (`list_issues`, état ouvert) ; #119, #121, #61, #91 et #90 fermées par la PR #129 ; #130 à #135 créées le 14/11/2026. Rattachements décidés : P111 à P117 (§ 4). Relevés antérieurs : historique, partie C, § 3 (14/11/2026, après la PR #117), et partie A, § 3. La colonne « Branche prévue » n'est pas reportée sur GitHub. *Mise à jour du 15/11/2026 (rang 8 de J3-d1)* : #137 à #145 créées ; #124, #60, #67, #123, #103 et #138 fermées à la fusion de la PR #136 ; rattachement de #137 et #141 à #145 au point d'étape après J3-d1.
+
+| Issue | Objet | Branche prévue | Remarque |
+|---|---|---|---|
+| #10 | Registre d'exemptions de la concordance | hors plan | aucune exemption prévue |
+| #11, #14 | Dependabot ; ruleset de `main` | mainteneur, hors branche | `ready-for-human` depuis le 30/09/2026 (Q9) |
+| #37 | Aucun levier d'offre au socle | J4, au plus tard J7 | M26, M28 |
+| #45, #55, #62, #92, #130 | Calibrations (λ_w ; fiche 6 ; ν_H et λ_H ; μ̄ ; ϖ_L, ϖ_D, ϑ, r̄) | calibration (P43 (a), P115) | #55 recoupe #92 |
+| #46, #47, #48 | Okun ; prix administrés ; levier de répartition | J4 (#47 puis J7) | inchangé |
+| #52, #53, #63, #70, #79, #81, #82 | Restitutions et scénarios O2, O3 | J4 | inchangé |
+| #54, #56 | Aller-retour de π\* ; signe net d'une hausse de taux | J4, sans `Closes` | condition (c) du levier de cible sur #54 (P99) |
+| #57 | Crises de crédit sous la règle F | J6 | inchangé |
+| #60 | `menages.py` | **J3-d1, rang 3** | H1 tenue par le moteur (M30, #61 ; P119) ; six labels |
+| #64 | S-ζ hors cible durable | J5 | inchangé |
+| #67 | `investissement.py` | **J3-d1, rang 4** | avec #123, P80 et les lignes (c) à un bloc près (P90) |
+| #78, #89 | Coût de la dette ; stratégie dominante | J4 (#78 puis J6) | #89 dépend de #88 |
+| #80 | Superneutralité (critère 13 de la fiche 8) | hors branche, échec attendu | voie (c) de M32 maintenue (P89) ; condition (c) du levier de cible sur #54 (P99) |
+| #87, #88, #111, #116 | D_F ≥ 0 hors stationnaire ; fenêtre longue ; trajectoires C-HS ; maquette | J3-f (P42, P60) | #116 → #111 |
+| #101 | Test de source de `sec:investissement-taux` | J3-d2 (P113) | après J3-d1, qui peut republier des valeurs de la section |
+| #103 | Signes sous lecture nette (D_H, D_F, M^G) | **J3-d1, rangs 1a et 6** | entière, M^G compris (`monnaie`) |
+| #106 | Consommateur de `variation_sur_le_tour` | J3-d2 (P51) | retrait sauf consommateur déclaré, constaté une fois les blocs du socle tous écrits |
+| #108 | Identifiants Cn et Co | J5 | P46 (a) |
+| #110 | Processeur de l'exécuteur en CI | J3-g (P60) | inchangé |
+| #114 | Critère I1 : lignes « J3 » au socle complet | J3-e | reçoit la mesure de #131 et les lignes (c) des fiches 5 et 6 (15/11/2026) |
+| #115 | Radical `observation` | J3-e | inchangé |
+| #120 | `Cadre` à n_a ≠ 12 | J3-e (P82) | option (a) |
+| #122 | IN^vol = 0 ⇒ IN = 0 à l'état chargé | J3-e (P84) | inchangé |
+| #123 | Définitions exécutées non numérotées | **J3-d1, rang 4** (P83) | labels de d et tu |
+| #124 | Domaine de d ≥ 0 | **J3-d1, rang 2** (P84) | voie (a) ou (b) choisie par `macro` au rang 1a |
+| #125 | Facteur de croissance par pas | point 2 : J3-f ; points 3 à 6 : J3-e (P84) | point 1 réalisé en J3-c (P88) |
+| #131 | BC2 en log, terme de Jensen de r̂\* | J3-e, mesure à #114 (P101) | fait nouveau de la passation de la PR #129 versé en commentaire (P117) |
+| #132 | Module du bloc 9 `finances_publiques.py` | J3-d2 (P113) | reçoit le double appel de `besoin_d_emission` |
+| #133 | Collision E1–E3 / E1–E13 | J3-d2, avant #132 (P113, P114) | bloc d'essai 9 gardé (P114) |
+| #134 | Encadré des vitesses, mentions de `scenarios/` | J3-d2 (P113) | |
+| #135 | `tab:phases` et levier de taux au J4 | J4 | recoupe #54, #56 |
+| #137, #142, #144 | Refus génériques sans étape ; localité de la lecture nette (max(0 ; ·) hors des fonctions balisées) ; travail redondant du chemin chaud | point d'étape après J3-d1 | forme du code |
+| #139, #140 | Critère « Endettement, dépôts » ; bornes (c) de la fiche 6 | mainteneur (P140, P141) | échec attendu strict ; constat sans verdict |
+| #141 | Restitution du refus de crédit | J4 | avec #70 ; mesure de `macro` en commentaire |
+| #143 | S6 : ti = 0 au-delà d'une frontière ; domaine du taux réel ou forme bornée de S2/S6 | point d'étape après J3-d1 | P145 ; question à `monnaie` (caisse des entreprises) |
+| #145 | Condition du coefficient de richesse sur π\* de la table | point d'étape après J3-d1 | recoupe le levier de cible (#54) |
+
+**Points ouverts sans issue** (revue finale de J3-c, passation de la PR #129) : mutant équivalent B_Bk/Res dans B5, à rouvrir avec le corridor (J6, P116) ; nullités de Res (H) et de ξ déclarées non calculées dans `GRANDEURS_NULLES` → J3-d1, rang 5 (faites, P121, `ea2e0da`) ; deux appels de `besoin_d_emission` par pas (bloc d'essai 9) → #132.
+
+**Dépendances ajoutées** (14/11/2026, après la PR #129) : #103 (critère de M^G) → #132 ; J3-d1 → #101 ; #133 → #132 ; achèvement des blocs du socle → #106 ; branche de calibration → J3-e (état initial résolu et test zéro sur paramètres calibrés). **Retirées** : « module du bloc 9, issue à créer » (créée : #132) ; lignes renvoyées au module du bloc 9 → #132. **Inchangées** : #124 → blocs acheteurs réels ; #60 → #67 ; #131 → #114 ; celles de l'historique, partie C, § 3. **Ajoutées le 15/11/2026** : engagements de J3-d1 → #132 ; avis de `monnaie` sur la caisse des entreprises → #143 ; #141 → J4 (avec #70).
+
+### 4. Décisions du mainteneur (extrait)
+
+#### Décisions du mainteneur du 14/11/2026 au rang 1a de J3-d1 (P119 et suivants) et du 15/11/2026 (P142 et suivants)
+
+P132 à P137 règlent la session des rangs 4 et 5 (mainteneur absent) ; P138, P139 et P141, prises par délégation, sont confirmées par P144. P142 à P146 : session du 15/11/2026 (rangs 6 à 8), mainteneur présent.
+
+| N° | Décision |
+|---|---|
+| P119 | (Rang 1a de J3-d1, Q1 et Q7 de `macro`) Propriétaire de H1 déjà fixé : le moteur (M30, #61, `eq:moteur-croissance-nominale-attendue`) ; actes de forme : mention datée au § 9.1 de la fiche 5, critère de #60 à six labels, critère « Branche » à 76 labels (57 + 6 + 11 + 2) ; #67 ne dépend plus de H1. |
+| P120 | (Q2) #124 par la **voie (a)** : domaine ≥ 0 (valeurs finies) sur chaque plan (C^plan, I^plan, G^plan), refus à l'écriture par exception typée, sans écrêtage ; condition : H5 lit max(0 ; D_H), E1 lit max(0 ; M^G) (#103) ; domaine des variables du pas annoté au rang 1b. Écartée : voie (b), qui laisse passer des signes mêlés. |
+| P121 | (Q4) Grandeurs nulles **calculées** : Res (H) par test de signe (L^CB/S^CB ≥ 1e−6), ξ par égalité au bit de IN^vol_0 et IN\*_0, T_F et sa ligne 7 sur τ_F du bloc d'essai 9 ; remplacent la déclaration de `GRANDEURS_NULLES` (réserve de la revue finale de J3-c). |
+| P122 | (Q5) Lignes (c) des fiches 5 et 6 **partagées** : J3-d2 (#132) pour celles qui portent sur une règle du bloc 9, #114 pour les propriétés du système fermé (test zéro, superneutralité, C36, rayon de la boucle). Précise P90. |
+| P123 | (Q6) Lignes « Vitesses » des fiches 5 et 6 sur un banc à **prix endogènes** ; écart à 6 480 pas publié sans verdict. |
+| P124 | (Q3 de `macro`, avis concordant de `monnaie`) Banc de stationnarité partielle de J3-d1 : **couverture des intérêts X4** ajoutée au bloc d'essai 9 (φ = 1 ; T_H = T_H du sentier + φ(i_CB − i_ref)(B − M^G − E^CB)/n_a), en **option de composition** dans `tests/` sur le précédent d'`emission_e3()`, jamais dans le banc de P87 (verdicts de P87 identiques au bit). Motif : sans elle, la maquette donne un rayon de 1,0012 ; 1,0053 ; 1,0160 à π\* = 0 ; 2 ; 10 % (canal rentier) ; avec, 0,9992 ; 0,9992 ; 0,9996. Réserves écrites avant l'essai : i_ref = (1 + r̄)(1 + π\*_t) − 1, π\* lu à l'ouverture, conversion linéaire /n_a ; assiette lue brute ; T^cou dans `GRANDEURS_NULLES` à 1e−12 S^G, calculé ; aucun critère d'arrivée sur 720 pas à 10 % pour les lignes à choc long (demi-vie de 1 799 pas : signe et délai seulement) ; nom X4, pas E4 (#133) ; option refusée sur un bloc 9 réel. Écartées : (ii) π\* = 10 % « non concluant » ; (iii) taux exogène. |
+| P125 | (#103, `monnaie`) M^G sous la lecture nette : E1 lit max(0 ; M^G) (A8.2, déjà prescrit) ; **E6 (ii)** : M^G brut sous le max(0 ; ·) extérieur, exception déclarée ; **E9 et E4 : M^G brut**, exception d'identité sur le modèle d'E^Bk ; textes des l. ~3342, ~3356 et ~3194 de la spécification réécrits en correction prospective au passage de `docwriter` de J3-d1 (commit `docs:` de #103), ancien texte publié avec sa date ; code dans #132. |
+| P126 | Écart à l'ADR 0012, A8.1 (E1 et H5 « exactes par construction », alors que p·(G^plan/p) ≠ G^plan dans environ 5,7 % des tirages, mesure de `monnaie` confirmée par la session : 0,0572 au-dessus, 0,0568 au-dessous sur 10^5 tirages) : **annotation de l'ADR 0013** au rang 1b, poussière d'un ulp admise sous la lecture nette (#103), comme pour D_H et D_F. Écartée : forme exacte de la ligne 2 et de H5. |
+| P127 | (Rang 1b de J3-d1, Q1 d'`architect-approfondi`) Variables d'état qui retiennent une grandeur du pas : suffixe `_m1` partout (`YD_m1`, `y_m1`, `T_F_m1`), H1.1 complété. ADR 0013, annotation de J3-d1. |
+| P128 | (Q2) ϱ̄_L : variable d'état d'`investissement`, recopiée de l'ouverture à chaque pas (phase 2), contrat C2 inchangé. Écartée : catégorie « constante résolue » d'`EtatPays`. |
+| P129 | (Q3) Domaine des plans (P120) : liste fermée `DOMAINES_DU_PAS` du moteur, contrôlée à l'écriture pour tout écrivain, exception `PlanHorsDomaine`. Écartée : domaine porté par chaque écrivain. |
+| P130 | (Rang 3 de J3-d1, Q1 de `macro`) Critère « Vitesses » de la fiche 5 : **verdict « non tenu » publié** (taux d'épargne nominal sur 12 tours, écart relatif après 720 pas entre λ_H × 0,5 et × 2 : 7,9e−6 ; 2,0e−6 ; 4,0e−8 à π\* = 0 ; 2 ; 10 %, seuil 1e−6) ; **correction prospective** du 14/11/2026, postérieure à l'observation et déclarée comme telle : taux d'épargne mesuré en **écart absolu ≤ 1e−6** (fraction du revenu), autres ratios inchangés en relatif, plus la propriété « écart divisé par au moins 100 entre 720 et 1 440 pas ». Motif : écart relatif pris sur un solde (amplification (C/YD)/s ≈ 49 à π\* = 0) ; aucun continuum (≤ 2,5e−12 à 2 160 pas). Écartées : (i) maintien en échec attendu ; (iii) horizon de 1 440 pas. |
+| P131 | (Rang 3 de J3-d1, réserve r1 d'`audit`) Critère corrigé de P130 **jugé à π\* = 2 % seul**, comme le critère d'origine ; π\* = 0 et 10 % publiés sans verdict (P123), aucune extension après observation. Issue #138 (« `choc_pi_e` ignoré sans message quand le bloc 8 est réel ») créée sur accord. |
+| P132 | (14/11/2026, mainteneur absent jusqu'à la session suivante) Périmètre de la session : **rangs 4 et 5 de J3-d1**, puis passation ; rangs 6 à 8 à la session suivante. |
+| P133 | Délégation : une option (i)/(ii) recommandée par un agent et approuvée sans désaccord par l'expert pilote (`macro`, ou `monnaie` pour le crédit) est appliquée et consignée « P-n, par délégation, à confirmer », sauf désaccord entre agents, changement de résultat final ou contradiction avec un ADR ou une décision M-n : alors arrêt et passation. |
+| P134 | Critère écrit avant l'essai non tenu sans erreur de code : critère d'un bloc (fiches 5 et 6) → verdict « non tenu » publié, échec attendu strict renvoyant à une issue créée, poursuite ; condition d'arrêt de la branche (stationnarité hors seuil, y compris à π\* = 10 % seul ; instabilité ; arrêt du noyau ; part d'un bloc > 0,48 ms) → arrêt et passation. |
+| P135 | Issues proposées par les agents créées par la session (`needs-triage`), listées dans la passation. |
+| P136 | Seconde reprise `coder` → `audit` accordée si les constats restants sont mineurs ou de forme, notée dans la PR ; constat bloquant ou majeur persistant → arrêt et passation. |
+| P137 | Une consultation Fable au plus dans les cas du § 4.1 de `docs/agents/routage.md`, sans nouvel accord, notée dans la PR. |
+| P138 | **Par délégation (P133), confirmée le 15/11/2026 (P144)** (rang 4 de J3-d1, constat M1 d'`audit`, recommandation de `monnaie`, pilote du crédit, sans désaccord) : domaine [0 ; 1] des entrées de scénario ς_L (et ς_B au bloc 9) contrôlé **par le moteur à leur publication en phase 0**, par refus typé sans écrêtage (table fermée des domaines des entrées, sur le modèle de `DOMAINES_DU_PAS`, P129) ; conforme à la spécification (l. ~2546, ~2634, dont le lieu du contrôle est à corriger au rang 6). Contrat partagé étendu : annotation de l'ADR 0013 à faire au rang 8 (faite : annotation du 15/11/2026). |
+| P139 | **Par délégation (P133), confirmée le 15/11/2026 (P144)** (rang 4, Q3 de `coder`, recommandation de `macro`) : bornes (b) du bloc 6 lues « pour toute entrée dans le domaine déclaré » ; dépassement des exponentielles de S2, S3 et S6 refusé par un refus typé du moteur ; η_r, ζ ≤ 20 déclarés comme bornes de domaine de la table `investissement`. |
+| P140 | (Rang 4, P134) Critère « Endettement, dépôts » de la fiche 6 non tenu (1,1e−5 à 2 160 pas, seuil 1e−6 ; convergence oscillante de module ≈ 0,997, 4,4e−16 à 12 000 pas) : échec attendu strict renvoyant à l'issue #139 ; correction prospective proposée par `macro` (max sur [4 320 ; 4 680] pas ≤ 1e−6, module ≤ 0,998) **réservée au mainteneur**. Boucle conjointe (b-x) en régime B : mesure publiée sans verdict (#114). λ_ti × 2 au-dessus du seuil à m = 0,8 : déjà publié par la fiche, reporté à #114. |
+| P141 | **Par délégation (P133), confirmée le 15/11/2026 (P144)** (rang 5 de J3-d1, recommandations de `macro`, sans désaccord) : (a) le verdict du critère « Branche » se rend sur le banc **X4 seule** (lecture littérale de P124), X4 + E3 publié en contrôle ; les scénarios des fiches 5 et 6 (O2, G × 0,95) tournent sur X4 + E3 (précédent de P95), l'arrêt de X4 seule en O2 ~~(M^G < 0 au pas 3, émission d'essai figée)~~ *(précision du 15/11/2026, remesure de `coder`)* (sous G^plan × 1,05 seulement : M^G < 0 en phase 5, pas 3 à π\* = 0 et 2 %, pas 9 à 10 % ; aucun arrêt sous × 1,01 ; émission d'essai figée) publié comme fait du banc ; (b) B8, B25, B26, E^CB et le résidu de B19 restent des nullités déclarées (elles ne dépendent que de règles ; une déclaration à tort fait échouer le test, sens prudent), motif écrit au commentaire de `GRANDEURS_NULLES` ; (c) D_H publié aussi en mois de consommation, sans verdict. Intention de dimensionnement des bornes (c) de la fiche 6 et refus de la moitié du crédit : **réservés au mainteneur** (P140), issue #140. |
+| P142 | (15/11/2026, validation du rang 6, constat M2) F1 porte un **second label** `eq:investissement-credit-servi` (crédit servi sous ς_L, ligne 18), balise dans `credit_servi` (`ed4c9c2`) ; concordance 76 → **77**. Correction du critère de décompte **avant son essai** (le décompte se juge à la concordance, après le rang 6) : critère de #67, « onze labels » → douze ; critère « Branche », 76 → 77 (§ 1) ; ADR 0013, annotation de J3-d1, point 8 (annotation du 15/11/2026) ; fiche 6, § 9.1 (mention datée). |
+| P143 | (Même validation, constat m6) ζ s'écrit « 4 (hypothèse, indicative) » dans `tab:calibration`, avec la contrainte J3 et ses équivalents (`ed4c9c2`, `5e5662b`) ; calibration : #55 (branche de calibration, P115). |
+| P144 | **P138, P139 et P141 confirmées** ; la mention « à confirmer » est levée (§ 4) ; P138 annotée dans l'ADR 0013 (contrat partagé étendu, annotation du 15/11/2026). |
+| P145 | (Revue finale, constat M1 d'`audit`) Bornes (b) du bloc 6, **voie 2** : établies sur le lot \|Δϱ\| ≤ 0,1 par an (restriction déclarée ; `6e7db86`, `fc48f6e`) ; frontière de S6 publiée sans verdict par un test versionné (ti_{t+1} = 0 dès Δϱ = 3,307756 par an à ζ = 4, 0,661551 à ζ = 20 ; refus du domaine ti > 0 au-delà) ; P139 « pour toute entrée dans le domaine déclaré » se lit restreinte à ce lot jusqu'à #143. Borne de domaine du taux réel ou forme bornée de S2/S6 : **#143**, avec la question à `monnaie` sur l'arrêt antérieur du noyau à ζ = 4 (intérêts de la ligne 9 > D_F). Écartée : voie 1, borne de domaine posée dans la branche. |
+| P146 | Issues créées sur accord : #141 (restitution du refus de crédit, J4), #142 (localité de la lecture nette), #143 (frontière de S6), #144 (travail redondant du chemin chaud), #145 (coefficient de richesse sur π\* de la table) ; commentaires versés sur #114 (lignes (c) des fiches 5 et 6), #131, #132 (engagements de J3-d1), #139 (banc de l'endettement), #141 (mesure de `macro`), #143 (frontière, question à `monnaie`). |
+
+**Points ouverts au 15/11/2026, rang 8 de J3-d1** : #139 et #140 (réservées au mainteneur) ; #11 et #14 (hors branche) ; rattachement de #137 et #141 à #145 au point d'étape après J3-d1 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2). Branches distantes `claude/cr-*` et `ccr-*` : supprimées (`git ls-remote --heads origin` au 15/11/2026 : `main` et la branche de travail seules).
+
+### Complément sorti le 15/11/2026 au rang 1a de J3-d2 (branche `claude/j3-finances-publiques`, tête `142b556`, PR #146)
+
+Sortis de `docs/feuille-de-route.md` à `142b556` pour tenir la tête sous son plafond de 60 ko (P76) : texte inchangé, titres décalés d'un niveau. Les décisions P147 à P155 restent dans la tête (§ 4), seules les questions Q1 à Q10 qui les fondent sont ici.
+
+### En-tête (extrait : mises à jour de la tête du 15/11/2026, rang 8 de J3-d1 et rang 0 de J3-d2)
+
+**Dernière mise à jour** : 15/11/2026, point d'étape après la fusion de la PR #136, rang 0 de J3-d2 (`architect-approfondi`) — `main` = `30078bb` (commit de fusion, parents `731aac3` et `1e7f736`) ; branche de travail `claude/j3-finances-publiques`, créée depuis `30078bb`, sans PR à cette date ; J3-d1 consignée (§ 2, § 6, § 7) ; plan de J3-d2 proposé (§ 1) ; questions Q1 à Q10 tranchées le même jour par le mainteneur (P147 à P155, § 4) ; PR brouillon #146 ; fiche de J3-d1, relevé du 14/11/2026 après la PR #129, P119 à P146 sortis vers l'historique, partie E (P76).
+
+**Mise à jour précédente** : 15/11/2026, rang 8 de J3-d1 (consignation avant la sortie du brouillon, `architect`) — `main` = `731aac3` ; branche `claude/j3-menages-investissement`, tête `414a8a4` (PR #136) ; état au § 1 ; décisions P142 à P146 au § 4 ; P100 à P118 sortis vers l'historique, partie D (#119, P76). Mises à jour plus anciennes : historique, partie E, en-tête, puis partie D, en-tête, puis historique de Git (`git log -- docs/feuille-de-route.md`).
+
+### 1. Branche de travail en cours (extrait : classement proposé au rang 0 de J3-d2, arrêté au rang 1a par P155 et P160 à P162)
+
+**Classement proposé des lignes « J3 » du § 9.6 de la fiche 9** (proposition d'`architect`, à confirmer ou corriger par `macro` au rang 1a ; aucune ligne n'a été essayée) :
+- (a) exigées dans la branche : état stationnaire (critère 4), cas à la main (critère 1), parts non payées (critère 12), caisse (critère 11), lecture nette, neutralité de m et de s_CB (C59), couverture (E4, C45), bornes (critère 16), phases et empreinte (critères 2 et 19), coût (critère 20) ;
+- (b) publiées sans verdict : racine (C51), θ_H (C52), pays joué (C62) ;
+- (c) renvoyées : test zéro (critère 15) → J3-e ; vitesses et arrivée (critère 7) et stabilité sur le moteur (critère 8) → #114 et J3-f (S1, S2) ; « −2 points » (#55) et calibration (critère 22) → branche de calibration ; critère 13 de la fiche 8 → #80, échec attendu inchangé.
+
+### 2. Branches suivantes (extrait : lignes 7 à 9, branches fusionnées)
+
+| Ordre | Branche | Issues | Motif du regroupement et état |
+|---|---|---|---|
+| 7 | J3-b `claude/j3-economie-reelle` | #112, #113, #50, #51, #104 | **Fusionnée le 14/11/2026** (PR #117, `688f299`) : § 7. |
+| 8 | J3-c `claude/j3-monnaie` | #119, #121, #61, #91, #90 avec `Closes` ; #80 sans `Closes` | **Fusionnée le 14/11/2026** (PR #129, `731aac3`) : § 7. |
+| 9 | J3-d1 `claude/j3-menages-investissement` | #124, #60, #67, #123, #103 ; rattachés : domaine de K et table du bloc 6 (P80), lignes (c) des fiches 7 et 8 à un bloc près (P90) | **Fusionnée le 15/11/2026** (PR #136, `30078bb`) : § 7. |
+
+### 4. Décisions du mainteneur (extrait : introduction des M-n ; questions Q1 à Q10 du 15/11/2026)
+
+M1 à M19 sont datées du 29/09/2026, M20 à M23 du 30/09/2026, M24 du 02/10/2026, M25 à M30 du 03/10/2026, toutes arrêtées par le mainteneur. M1 à M15 sont consignées dans l'ADR 0001 (§ Décision, point de même numéro) ; M16 dans l'ADR 0003 ; M17 précise M6 dans l'ADR 0001 ; M18 à M21 n'ont pas d'ADR (règles de procédure) ; M22 est consignée dans l'ADR 0005 (accepté le 30/09/2026) et dans la fiche `docs/blocs/temps_comptabilite.md` § 8 ; M23 est consignée dans l'ADR 0006 ; M24 est consignée dans la fiche `docs/blocs/production.md` § 8 et, pour sa lecture (b) qui modifie un contrat partagé, dans l'ADR 0007 (accepté le 02/10/2026, qui complète l'ADR 0005 sans le réécrire). M25 et M26 sont consignées dans les fiches `docs/blocs/travail.md` § 8 et `docs/blocs/prix.md` § 8 et, pour les deux contrats partagés qu'elles modifient (conversion des taux de croissance et d'inflation ; phase de l'indice des prix), dans l'ADR 0008 (proposé puis accepté le 03/10/2026, avec son point II.3 ; il révise en partie l'ADR 0005, annotation datée de celui-ci). M27 et M28 sont consignées dans les fiches `docs/blocs/menages.md` § 8 et `docs/blocs/investissement.md` § 8 ; M29 dans l'ADR 0009 ; M30 dans l'ADR 0010. La forme canonique du numéro est `Mn` (`M16`), citée telle quelle dans les fiches comparatives, la spécification (provenance des équations, `CONVENTIONS.md` § 2.3) et les issues ; « M-n » désigne une décision quelconque dans la prose. Trois décisions de mise en œuvre sont consignées par annotation d'ADR sans numéro (elles ne changent aucune décision numérotée) : garder `outils/compiler_specification.sh` (29/09/2026, ADR 0004, pt 4) ; déclarer le hook `preparer_latex.sh` en `SessionStart` (29/09/2026, ADR 0004, pt 5) ; règle 4 de la concordance, une décision par mention, le pluriel « décisions M3 et M16 » et la forme groupée « (M3, M16) » restant refusés (30/09/2026, ADR 0004, pt 6, et `CONVENTIONS.md` § 9).
+
+#### Questions au mainteneur du 15/11/2026 (point d'étape après la PR #136) et décisions P147 à P155
+
+Posées par `architect-approfondi` au rang 0 de J3-d2 (`6e8b9e2`) ; tranchées par le mainteneur le 15/11/2026, toutes selon l'avis d'`architect` (tableau des décisions sous celui des questions).
+
+| N° | Question | Options | Avis d'`architect` |
+|---|---|---|---|
+| Q1 | Périmètre de J3-d2 avec `Closes` | (a) #133, #132, #106, #101, #134 (P113) ; (b) #142 à la place de #101, #101 renvoyée à la calibration ; (c) ajout de #143, #139 ou #140 (six issues ou plus, hors de la règle des trois à cinq) | (a) : aucun fait nouveau ne rouvre P113 ; la localité de la lecture nette est imposée au bloc 9 par un critère de #132, si bien que #142 n'a plus qu'à l'étendre aux blocs 5 et 6 (Q5). |
+| Q2 | #143 (frontière de S6) : entrée dans J3-d2 et voie | (0) statu quo jusqu'au J4 : restriction \|Δϱ\| ≤ 0,1 par an déclarée (P145), arrêt diagnostiqué au-delà ; (1) borne de domaine du taux réel du crédit, liée au domaine du levier de taux (J4) ; (3) forme bornée de S2 ou de S6, qui **rouvre M28** (décision M-n nouvelle citant M28, fiche 6 rouverte, circuit 1) | **Hors J3-d2** : bloc 6, et non bloc 9 ; aucune trajectoire prévue en J3 n'approche la frontière (Δϱ ≈ 13,23/ζ par an, soit 3,31 à ζ = 4 et 0,66 à ζ = 20, contre 0,02 pour le critère « −2 points ») ; la question à `monnaie` sur la caisse des entreprises n'a pas de réponse. Sur le fond, sans trancher : (1) au J4, parce qu'à ζ = 4 le noyau refuse déjà le pas dès i_{L,0} ≈ 3,25 par an, avant la frontière de S6 (≈ 3,42) : une forme bornée de S6 seule n'y élargirait pas le domaine (*hypothèse* tirée des mesures de #143, non remesurée) ; (3) à instruire si ζ calibré (#55) rapproche la frontière d'une plage plausible. Instruction : avis de `monnaie` et de `macro`, hors branche, avant la branche de calibration. |
+| Q3 | #139 (critère « Endettement, dépôts » de la fiche 6, P140) | (i) correction de `macro` : maximum de l'écart sur [4 320 ; 4 680] pas ≤ 1e−6 et module ≤ 0,998 par pas entre 1 440 et 4 320 pas ; (ii) horizon en demi-vies de la racine dominante, H = 20 demi-vies (règle du critère 7 de la fiche 9 et de C36 (ii-b)), sur la valeur propre publiée 0,99720 : demi-vie 247,2 pas, H ≈ 4 944 pas ; (iii) échec attendu maintenu, critère rejugé sur le socle complet (banc sans blocs d'essai de banque et de banque centrale, remarque de `macro` du 15/11/2026) | (ii), jugé sur le socle complet comme en (iii) : une règle déjà écrite ailleurs plutôt qu'une fenêtre choisie après observation ; la correction reste postérieure à l'observation et se déclare comme telle (précédent P130), l'ancien verdict publié ; exécution en J3-e avec #114. |
+| Q4 | #140 (bornes (c) de la fiche 6, P141) | (i) retirer « dimensionné pour… » ou le reporter sur le refus de crédit ; (ii) scénario adverse dimensionné par un calcul à la main fait avant l'essai ; dans les deux cas, test du refus de la moitié du crédit (C31) | (i), report sur le refus de crédit : #124 refuse G^plan < 0 et l'extrapolation de #140 (non mesurée) suggère qu'aucun choc sur G seul n'annule I^plan ; (ii) coûte un calcul qui ne se vérifie qu'à l'essai. Exécution en J3-e avec #114. |
+| Q5 | #137, #142, #144 (forme du code) | (a) branche technique `claude/j3-forme-du-code`, circuit 3 (workflow `circuit-technique`), après J3-d2 et avant la calibration ; (b) #137 en correctif rapide dès maintenant, #142 et #144 en (a) ; (c) les trois en J3-g (budget) | (a) : trois issues sans effet sur les trajectoires, mêmes modules (ordonnanceur ; blocs 2, 5 et 6), mesure P57 avant / après sur le socle complet, une fois le bloc 9 écrit ; #137 n'est pas un correctif rapide au sens strict si un test des messages l'accompagne (deux domaines). Insère une branche entre J3-d2 et la calibration (P115) : accord requis. |
+| Q6 | #141 et #145 | #141 → J4 avec #70 ; #145 → J4 avec le levier de cible (#54) | Confirmer : ni l'une ni l'autre ne touche une trajectoire de J3. |
+| Q7 | Délégation pour J3-d2 | (a) reconduire P118 (délégation technique) et P133, P134, P136, P137 ; (b) P118 seule | (a) : appliquées sans incident en J3-d1 (P144 confirme P138, P139, P141) ; les critères de fiche et les résultats finaux restent au mainteneur. |
+| Q8 | ADR 0013 : 78 697 octets (`wc -c`), dont état consolidé 38 865 octets (Contexte à Conséquences, sous le plafond de 40 ko de P97) et annotations ≈ 39,8 ko | (a) annotation du rang 1b de J3-d2 dans l'ADR 0013, reconsolidation par un ADR nouveau au point d'étape après J3-d2 ; (b) reconsolidation avant le rang 1b ; (c) en J3-g | (a) : les tables des neuf blocs ne sont complètes qu'après J3-d2 ; reconsolider avant obligerait à le refaire. L'ADR nouveau serait un ADR d'architecture (cas Fable du § 4.1 de `docs/agents/routage.md`), à décider alors. |
+| Q9 | Plan de J3-d2 (§ 1) : rangs, critères, conditions d'arrêt, classement proposé du § 9.6 | approuver ; amender | Approuver ; le classement est confirmé ou corrigé par `macro` au rang 1a, avant tout essai. |
+| Q10 | Rappel : #11, #14 (mainteneur, hors branche) | — | Sans décision. |
+
+**Points ouverts au 15/11/2026, après la fusion de la PR #136** : rang 1a de J3-d2 ; instruction de #143 (P148) ; #11 et #14 (Q10) ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61).
+
+### 8. Escalades, relances et arrêts hors branche (extrait : lignes du 14/11/2026 ; ligne du 15/11/2026, rang 0 de J3-d2, sortie au rang 1b)
+
+| Date | Fiche / modèle / critère déclenché / statut obtenu / suite |
+|---|---|
+| 14/11/2026 | Point d'étape après la PR #117 (plan de J3-c) / `architect` / Opus / seuil § 4.3 atteint par P76 (b) (remplacement de l'ADR 0012 comme document de lecture) / `revue requise`, P74 à P86 décidés le 14/11/2026 / Fable proposé et décliné par le mainteneur ; budget Fable de J3-c : 0 sur 3. |
+| 14/11/2026 | Point d'étape après la PR #129 (découpage de J3-d, plan de J3-d1) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d1) / `revue requise`, Q1 à Q9 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d1 : 0 sur 3. |
+| 15/11/2026 | Point d'étape après la PR #136 (plan de J3-d2, rang 0) / `architect-approfondi` / Opus `high` (mission de jugement, P85) / aucun seuil § 4.3 atteint (annotation de l'ADR 0013 renvoyée au rang 1b de J3-d2, reconsolidation en Q8) / `revue requise`, Q1 à Q10 (§ 4) / aucune consultation Fable ; budget prévu pour J3-d2 : 0 sur 3 ; décisions P147 à P155 ; reportée dans la PR #146.
+
+### Complément sorti le 15/11/2026 au rang 8 de J3-d2 (branche `claude/j3-finances-publiques`, tête `f1c8f2f`, PR #146)
+
+Sortis de `docs/feuille-de-route.md` à `f1c8f2f` pour tenir la tête sous son plafond de 60 ko (P76) : texte inchangé, titres décalés d'un niveau. P147 à P155 restent en vigueur ; P156 à P165 restent dans la tête (§ 4).
+
+### En-tête (extrait : mises à jour de la tête du 15/11/2026, rangs 0 et 1a de J3-d2)
+
+**Dernière mise à jour** : 15/11/2026, rang 1a de J3-d2 (`architect`) — branche `claude/j3-finances-publiques`, tête `142b556` (PR #146) ; lectures de `macro-approfondi`, `monnaie` et `jeu` consignées au § 1 (classement du § 9.6 arrêté, critères précisés avant tout essai) ; décisions P156 à P164 (§ 4) ; questions Q1 à Q10, classement proposé et mise à jour du rang 8 de J3-d1 sortis vers l'historique, partie E (P76).
+
+**Mise à jour précédente** : 15/11/2026, point d'étape après la fusion de la PR #136, rang 0 de J3-d2 (`architect-approfondi`) — `main` = `30078bb` ; P147 à P155 (§ 4). Texte complet et mises à jour plus anciennes : historique, partie E, en-tête, puis partie D, en-tête, puis historique de Git (`git log -- docs/feuille-de-route.md`).
+
+### 1. Branche de travail en cours (extrait : surface d'impact documentaire notée au rang 1a de J3-d2)
+
+**Surface d'impact documentaire notée au rang 1a** (pour `docwriter` au rang 6, sans décision) : fiche 9, § 9.1, 9.4, 9.6 en retard sur la spécification (E12 en phase 7 ; E13 à deux parts ; m → ν_G ; neutralité 1,1 → 1,2 ; condition des intérêts impayables de `sec:finances_publiques`) ; `\limites` de ς_B sous Em < 0 (P159).
+
+### 2. Branches suivantes (extrait : ordre des modules de J3-b à J3-d)
+
+Ordre des modules : J3-b (blocs 2 à 4) → J3-c (blocs 7, 8 et #61) → J3-d (blocs 5, 6 et 9) (P41 (a)), découpée en J3-d1 (blocs 5 et 6) puis J3-d2 (bloc 9) (P111) ; π\*_t est écrite par le bloc 8 (P34 (a)) et lue par les blocs 5 et 6. Le découpage de la queue de J3 (J3-e à J3-g) se fixe au point d'étape de J3-d (P61), soit après J3-d2 ; J3-e compte déjà plus de cinq sujets.
+
+### 3. Issues hors plan (extrait : lignes du relevé du 15/11/2026 regroupées au rang 8 de J3-d2, et points ouverts sans issue)
+
+| #101 | Test de source de `sec:investissement-taux` | **J3-d2, rang 2** (P113) | J3-d1 fusionnée : la dépendance est levée |
+| #106 | Consommateur de `variation_sur_le_tour` | **J3-d2, rang 4** (P51) | retrait sauf consommateur déclaré, constaté après #132 |
+| #132 | Module du bloc 9 `finances_publiques.py` | **J3-d2, rangs 1a, 3 et 6** (P113) | six engagements de J3-d1, lignes (c) (P90, P122), double appel de `besoin_d_emission` |
+| #133 | Collision E1–E3 / E1–E13 | **J3-d2, rangs 2 et 6**, avant #132 (P114) | X1 à X3, X4 déjà nommée (P124) |
+| #134 | Encadré des vitesses, mentions de `scenarios/` | **J3-d2, rang 6** (P113) | `docwriter` seul |
+
+**Points ouverts sans issue** : mutant équivalent B_Bk/Res dans B5, à rouvrir avec le corridor (J6, P116) ; deux appels de `besoin_d_emission` par pas (bloc d'essai 9) → #132 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; taille de l'ADR 0013 (Q8).
+
+### 4. Décisions du mainteneur (extrait : P147 à P155, points ouverts du rang 1b de J3-d2)
+
+| N° | Date | Décision | Question |
+|---|---|---|---|
+| P147 | 15/11/2026 | Périmètre de J3-d2 avec `Closes` : #133, #132, #106, #101, #134 (P113 maintenue). | Q1 (a) |
+| P148 | 15/11/2026 | #143 hors de J3-d2 ; voie retenue : borne de domaine du taux réel du crédit, liée au domaine du levier de taux (J4) ; instruction par `monnaie` et `macro` hors branche, avant la branche de calibration ; M28 n'est pas rouverte. | Q2 (1) |
+| P149 | 15/11/2026 | #139 : critère « Endettement, dépôts » de la fiche 6 corrigé par un horizon de 20 demi-vies de la racine dominante (valeur propre publiée 0,99720, H ≈ 4 944 pas), jugé sur le socle complet ; correction postérieure à l'observation, déclarée comme telle (précédent P130), ancien verdict publié ; exécution en J3-e avec #114. | Q3 (ii) |
+| P150 | 15/11/2026 | #140 : intention « dimensionné pour… » des bornes (c) de la fiche 6 reportée sur le refus de crédit ; test du refus de la moitié du crédit (C31) ; exécution en J3-e avec #114. | Q4 (i) |
+| P151 | 15/11/2026 | #137, #142, #144 : branche technique `claude/j3-forme-du-code` (circuit 3), après J3-d2 et avant la branche de calibration, qu'elle précède (précise P115). | Q5 (a) |
+| P152 | 15/11/2026 | #141 au J4 avec #70 ; #145 au J4 avec le levier de cible (#54). | Q6 |
+| P153 | 15/11/2026 | Délégation pour J3-d2 : P118 (délégation technique), P133, P134, P136 et P137 reconduites ; critères de fiche et résultats finaux réservés au mainteneur. | Q7 (a) |
+| P154 | 15/11/2026 | ADR 0013 annoté au rang 1b de J3-d2, puis reconsolidé par un ADR nouveau au point d'étape après J3-d2 (consultation Fable du § 4.1 à décider alors). | Q8 (a) |
+| P155 | 15/11/2026 | Plan de J3-d2 (§ 1) approuvé ; le classement des lignes « J3 » du § 9.6 de la fiche 9 est confirmé ou corrigé par `macro` au rang 1a, avant tout essai. | Q9 |
+
+**Points ouverts au 15/11/2026, rang 1b de J3-d2** : instruction de #143 (P148) ; #11 et #14 ; résolution de l'état initial par `scenarios/` sans dupliquer le script (J3-e, § 2) ; découpage de J3-e à J3-g au point d'étape après J3-d2 (P61) ; issue proposée par `jeu`, non créée (ou amendement de #82) : grandeurs du bloc 9 calculées hors interface au J4 ; durée d'une partie non fixée (#56).
+
+### 7. Branches fusionnées (extrait : ligne de J3-c)
+
+| Branche | PR | Jalon | Fusion | Détail |
+|---|---|---|---|---|
+| `claude/j3-monnaie` | #129 | J3 (J3-c) | 14/11/2026, 17:44 UTC, commit de fusion `731aac3` (parents `6a22d39`, `6632dce`), par le mainteneur | Issues fermées par `Closes` : #119, #121, #61, #91, #90 (absentes du relevé du 14/11/2026 après la PR #129) ; #80 sans `Closes`, ouverte (échec attendu). 24 commits hors fusion (5 `code:`, 3 `tests:`, 16 `docs:` ; `git rev-list --no-merges 6a22d39..6632dce`). Rangs et SHA : historique, partie C, § 1, et corps de la PR #129. Décisions : P74 à P110. Fable : 0 sur 3. Premiers résultats du moteur pour les blocs 7 et 8, aucun résultat final ; `tests/references/` intact. Concordance : 57 labels. Issues nées de la branche : #130 à #135. |
 
 ## Partie D : extraits de la tête sortis le 15/11/2026 (rang 8 de J3-d1), figés
 

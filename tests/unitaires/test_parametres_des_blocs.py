@@ -214,16 +214,18 @@ def test_ensemble_des_tables():
     de doublure (annotation du 13/11/2026, point 6 (b)) ; variation contrôlée. J3-c (ADR 0013,
     annotation du 14/11/2026, point 6 ; H3.5) : `banque` et `banque_centrale` à la suite. J3-d1
     (annotation du 14/11/2026 (rang 1b de J3-d1), point 2) : `menages` entre `prix` et
-    `investissement`."""
-    from nations.moteur.parametres import menages
+    `investissement`. J3-d2 (annotation du 15/11/2026 (rang 1b de J3-d2), point 8 ; P165) :
+    `finances_publiques`, dernier."""
+    from nations.moteur.parametres import finances_publiques, menages
     noms = ["cadre", "production", "travail", "prix", "menages", "investissement", "banque",
-            "banque_centrale"]
+            "banque_centrale", "finances_publiques"]
     assert [f.name for f in dataclasses.fields(EnsembleDesParametres)] == noms
     p = PARAMETRES_DE_REFERENCE
     assert (p.cadre, p.production, p.travail, p.prix, p.menages, p.investissement, p.banque,
-            p.banque_centrale) == (
+            p.banque_centrale, p.finances_publiques) == (
         CADRE, production.PRODUCTION, travail.TRAVAIL, prix.PRIX, menages.MENAGES,
-        investissement.INVESTISSEMENT, banque.BANQUE, banque_centrale.BANQUE_CENTRALE)
+        investissement.INVESTISSEMENT, banque.BANQUE, banque_centrale.BANQUE_CENTRALE,
+        finances_publiques.FINANCES_PUBLIQUES)
     for nom in noms:
         with pytest.raises(DefautDeDeclaration, match=nom):
             dataclasses.replace(p, **{nom: object()})

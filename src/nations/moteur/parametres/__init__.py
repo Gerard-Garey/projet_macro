@@ -20,7 +20,9 @@ Modules :
 - un module par bloc (`nations.moteur.parametres.<radical>` : `production`,
   `travail`, `prix`, et `investissement` réduit à δ en J3-b ; ADR 0012,
   annotation du 13/11/2026, point 3 ; puis `banque` et `banque_centrale` en
-  J3-c, ADR 0013, annotation du 14/11/2026, point 6) : déclarations `Parametre` et une
+  J3-c, ADR 0013, annotation du 14/11/2026, point 6 ; `menages` et `investissement` complète
+  en J3-d1 ; `finances_publiques` en J3-d2, annotation du 15/11/2026, point 8) :
+  déclarations `Parametre` et une
   **table** immuable dont les champs portent les mêmes noms, validée à toute
   construction (`valider_table`) ; valeurs par archétype dans `scenarios/`
   (F1, J3-e) ;

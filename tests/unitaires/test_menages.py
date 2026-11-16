@@ -192,7 +192,8 @@ def _etat_du_cas():
     variables = {"v_e": 1.0, "IN_vol": 1.4, "pr": 1.0, "K_vol": 24.0, "W": 0.8, "U": 0.05,
                  "N": 0.95, "N_pa": 1.0, "mu_tilde": 0.2, "YD_m1": 80.0, "ti": 0.14,
                  "y_m1": 1.0, "T_F_m1": 0.0, "varrho_bar_L": 0.0296, "i_L": 0.05,
-                 "i_D": 0.03, "pi_e": 0.02, "r_hat_etoile": 0.01, "pi_etoile": 0.02}
+                 "i_D": 0.03, "pi_e": 0.02, "r_hat_etoile": 0.01, "pi_etoile": 0.02,
+                 "Y_HS_m1": 80.0}
     return schema.EtatPays(identifiant="A", graine=1, t=0,
                            registre_prix=tuple(1.02 ** (-u / 12) for u in range(1, 14)),
                            **OUVERTURE_DU_CAS, **v, **variables)

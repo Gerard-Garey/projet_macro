@@ -29,7 +29,8 @@ Champs de `EtatPays`, dans l'ordre :
   point 1), par radical dans l'ordre des blocs, chaque radical déclarant les
   siennes dans son module de `etat/` : `production` (v^e, IN^vol, pr, K^vol),
   `travail` (W, U, N, N^pa), `prix` (μ̃), `menages` (YD_{t−1}), `investissement`
-  (ti, y_{t−1}, T_{F,t−1}, ϱ̄_L), `banque` (i_L, i_D), `banque_centrale` (π^e, r̂*, π*).
+  (ti, y_{t−1}, T_{F,t−1}, ϱ̄_L), `banque` (i_L, i_D), `banque_centrale` (π^e, r̂*, π*),
+  `finances_publiques` (Y^HS_{t−1}).
 
 L'échelle S des bilans n'est pas dans l'état : c'est une grandeur dérivée,
 recalculée à l'ouverture de chaque pas, reprise comprise (C96-2). Aucun
@@ -53,6 +54,9 @@ liste des champs, d'un type, d'une unité ou d'une sémantique) :
   modifie le schéma (#60, rang 3, `YD_m1`) et jusqu'à la fusion de J3-d1, sans
   incrément pendant la branche ; une sauvegarde v3 est refusée (D4). YD_{t−1} au
   rang 3 (#60) ; ti, y_{t−1}, T_{F,t−1} et ϱ̄_L au rang 4 (#67).
+- **5** (15/11/2026, #132 ; ADR 0013, annotation du 15/11/2026 (J3-d2)) : Y^HS_{t−1}.
+  Version fixée dès le premier commit de #132 qui modifie le schéma et jusqu'à la fusion de
+  J3-d2, sans incrément pendant la branche ; une sauvegarde v4 est refusée (D4).
 """
 
 from __future__ import annotations
@@ -65,6 +69,7 @@ import unicodedata
 from nations.etat import (
     banque,
     banque_centrale,
+    finances_publiques,
     investissement,
     menages,
     prix,
@@ -76,7 +81,7 @@ from nations.etat import (
 from nations.etat.variables import TYPES, Invariance, VariableEtat
 from nations.noyau.catalogue import NOMS_POSTES, SECTEURS, VALEUR_NETTE_FLUX
 
-VERSION_SCHEMA = 4
+VERSION_SCHEMA = 5
 
 # Longueur du registre de l'indice des prix : n_a + 1 niveaux (ADR 0008, II.3).
 # Copie de `nations.moteur.registre.NIVEAUX` (= PAS_PAR_AN.valeur + 1), que
@@ -109,7 +114,7 @@ VARIABLES_NOYAU = tuple(
 # Modules de déclarations des blocs, dans l'ordre des blocs (annotation du
 # 13/11/2026, point 1.5) : chacun porte `VARIABLES` et `DOMAINES`.
 _MODULES_DES_BLOCS = (production, travail, prix, menages, investissement, banque,
-                      banque_centrale)
+                      banque_centrale, finances_publiques)
 VARIABLES_DES_BLOCS = tuple(v for module in _MODULES_DES_BLOCS for v in module.VARIABLES)
 
 # Le schéma : toutes les déclarations, dans l'ordre des champs de `EtatPays`.

@@ -5,8 +5,9 @@ mainteneur du 13/11/2026, P69). L'objet `parametres` passé à `assembler`
 (signature inchangée) est un `EnsembleDesParametres` : un champ par table,
 `cadre`, `production`, `travail`, `prix`, `menages`, `investissement`, puis `banque` et
 `banque_centrale` (ADR 0013, annotation du 14/11/2026, point 6 ; H3.5 ; `menages` entre
-`prix` et `investissement` : annotation du 14/11/2026 (rang 1b de J3-d1), point 2). Les blocs le
-lisent par la vue (`vue.parametres.<radical>.<nom>`), jamais en important un
+`prix` et `investissement` : annotation du 14/11/2026 (rang 1b de J3-d1), point 2), puis
+`finances_publiques`, dernier (annotation du 15/11/2026 (rang 1b de J3-d2), point 8 ;
+P165). Les blocs le lisent par la vue (`vue.parametres.<radical>.<nom>`), jamais en important un
 module de table, ce qui lirait la valeur indicative au lieu de celle du
 scénario ; `executer_pas` passe `parametres.cadre` à `ouvrir_pas` (lettre de
 A3.1). Module à part de `nations.moteur.parametres`, pour éviter le cycle avec
@@ -39,6 +40,10 @@ from nations.moteur.parametres.banque_centrale import (
     TableBanqueCentrale,
 )
 from nations.moteur.parametres.cadre import CADRE, Cadre
+from nations.moteur.parametres.finances_publiques import (
+    FINANCES_PUBLIQUES,
+    TableFinancesPubliques,
+)
 from nations.moteur.parametres.investissement import INVESTISSEMENT, TableInvestissement
 from nations.moteur.parametres.menages import MENAGES, TableMenages
 from nations.moteur.parametres.prix import PRIX, TablePrix
@@ -58,13 +63,15 @@ class EnsembleDesParametres:
     investissement: TableInvestissement
     banque: TableBanque
     banque_centrale: TableBanqueCentrale
+    finances_publiques: TableFinancesPubliques
 
     def __post_init__(self) -> None:
         for nom, attendu in (("cadre", Cadre), ("production", TableProduction),
                              ("travail", TableTravail), ("prix", TablePrix),
                              ("menages", TableMenages),
                              ("investissement", TableInvestissement), ("banque", TableBanque),
-                             ("banque_centrale", TableBanqueCentrale)):
+                             ("banque_centrale", TableBanqueCentrale),
+                             ("finances_publiques", TableFinancesPubliques)):
             valeur = getattr(self, nom)
             if type(valeur) is not attendu:
                 raise DefautDeDeclaration(f"table {type(valeur).__name__} : {attendu.__name__} "
@@ -92,4 +99,5 @@ def coefficient_de_richesse(parametres: EnsembleDesParametres) -> float:
 
 
 PARAMETRES_DE_REFERENCE = EnsembleDesParametres(CADRE, PRODUCTION, TRAVAIL, PRIX, MENAGES,
-                                                INVESTISSEMENT, BANQUE, BANQUE_CENTRALE)
+                                                INVESTISSEMENT, BANQUE, BANQUE_CENTRALE,
+                                                FINANCES_PUBLIQUES)

@@ -362,13 +362,16 @@ def test_phases_lecture_hors_ordre_refusee(socle, etape, lecture, motif):
 
 
 def test_le_bloc_reel_est_trouve_par_le_socle(socle):
-    """`blocs_reels` rend un bloc par module de `src/nations/blocs/`, dans l'ordre des
-    radicaux, dont celui de `production.py` en tête ; substitués à leurs blocs d'essai, ils sont
-    assemblés avec les autres."""
+    """`blocs_du_socle_complet` rend un bloc par module de `src/nations/blocs/`, dans l'ordre
+    des radicaux, dont celui de `production.py` en tête ; `blocs_reels` les mêmes hors du bloc 9
+    (bancs partiels, #132) ; substitués à leurs blocs d'essai, ils sont assemblés avec les
+    autres."""
     reels = socle.blocs_reels()
     modules = sorted(p.stem for p in (socle.RACINE / "src" / "nations" / "blocs").glob("*.py")
                      if p.name != "__init__.py")
-    assert sorted(b.declaration.radical for b in reels) == modules
+    assert sorted(b.declaration.radical for b in socle.blocs_du_socle_complet()) == modules
+    assert sorted(b.declaration.radical for b in reels) == [
+        m for m in modules if m != "finances_publiques"]
     assert type(reels[0]) is Production
     blocs = socle.blocs(socle.sentier(0.02), reels=reels)
     assert [b.declaration.radical for b in blocs] == list(socle.RADICAUX)

@@ -1214,7 +1214,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 - **Stabilité du pays joué.**
   - φ\* est confirmé : ≤ 0 / 0,1305 / 0,4871 à π̄ = 0 / 2 / 10 %.
     - *Annotation du 15/10/2026 (#65).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), φ\* = 0,174 / 0,650 à 2 / 10 % (≤ 0 à 0 %) (`outils/maquette_conjointe.py`) ; 0,1305 / 0,4871 ont été mesurés avant l'amendement.
-  - Sans reprise (E-HS), l'écart double en 382 tours (≈ 32 ans) à 2 % et en **63 tours (≈ 5 ans) à 10 %** (`qg.py`).
+  - Sans reprise (E-HS), l'écart double en 382 tours (≈ 32 ans) à 2 % et en **63 tours (≈ 5 ans) à 10 %** (`qg.py`). *[Annotation du 15/11/2026 (#132, rang 6 de J3-d2) : 381 tours (maquette 381,6 = ln 2/ln 1,001818 ; « 382 » arrondissait) ; le moteur mesure 381 et 63 tours en régime linéaire, et 320 et 31 tours par la méthode du choc de 1 % (F11), qui ne sont pas des racines (`sec:finances_publiques-conditions` de la spécification).]*
   - Recommandation, en trois points :
     - la reprise est automatique (φ = 1), et le levier d'impôt du joueur est τ_H, T9 s'y ajoutant ;
     - φ n'est **pas** exposé comme levier, son seuil de stabilité bougeant avec π̄ : ce serait un mur invisible ;
@@ -1263,7 +1263,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
   - « Intérêts financés par le déficit » (φ = 0) : écart déclaré, accompagné de ses deux précurseurs.
   - Un changement du barème garde la couverture.
 - **Ce qui reste exclu, c'est un curseur continu.** Le seuil de stabilité φ\* vaut ≤ 0 / 0,13 / 0,49 à π̄ = 0 / 2 / 10 %. Les mesures de `jeu` montrent aussi qu'à φ = 0,5 et 10 %, le taux directeur devient presque inerte (P_36 −0,015 %).
-- **C62, rédaction amendée** : « φ n'est pas un levier continu. La couverture des intérêts est un levier distinct du barème, à deux valeurs, 1 par défaut et 0 en écart déclaré. Sont publiés φ\* par π̄, et les temps de doublement sous φ = 0 : 382 tours à 2 % et 63 tours à 10 %. »
+- **C62, rédaction amendée** : « φ n'est pas un levier continu. La couverture des intérêts est un levier distinct du barème, à deux valeurs, 1 par défaut et 0 en écart déclaré. Sont publiés φ\* par π̄, et les temps de doublement sous φ = 0 : 382 tours à 2 % et 63 tours à 10 %. » *[Annotation du 15/11/2026 (#132, rang 6 de J3-d2) : 381 tours (maquette 381,6 = ln 2/ln 1,001818 ; « 382 » arrondissait) ; le moteur mesure 381 et 63 tours en régime linéaire, et 320 et 31 tours par la méthode du choc de 1 % (F11), qui ne sont pas des racines (`sec:finances_publiques-conditions` de la spécification).]*
 - À signaler : à 10 %, φ = 0 double l'écart en 5 ans environ. L'affichage des précurseurs n'est donc pas facultatif.
 
 ### 6.5 Avis général
@@ -1298,7 +1298,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
   - Elle n'est active que si i_CB < 0 et que le placement rate au même tour. Ensuite, E^CB < 0 est déclaré, et la condition Π^CB ≥ 0 est rompue.
   - Cas (ii) du critère 12. Recapitalisation au J6.
 - **C61 (critère 13, toute réouverture de C30, de la conversion ou des écarts).** Remesurer le critère conjointement sur les trois sources : elles se compensent, et une réouverture isolée aggrave l'écart (jusqu'à 1,30 point).
-- **C62 (fiche 9, `jeu`, J4).** φ n'est pas un levier. Publier φ\* par π̄, ainsi que les temps de doublement de E (382 et 63 tours).
+- **C62 (fiche 9, `jeu`, J4).** φ n'est pas un levier. Publier φ\* par π̄, ainsi que les temps de doublement de E (382 et 63 tours). *[Annotation du 15/11/2026 (#132, rang 6 de J3-d2) : 381 tours (maquette 381,6 = ln 2/ln 1,001818 ; « 382 » arrondissait) ; le moteur mesure 381 et 63 tours en régime linéaire, et 320 et 31 tours par la méthode du choc de 1 % (F11), qui ne sont pas des racines (`sec:finances_publiques-conditions` de la spécification).]*
 - **C63 (fiche 7, critère 4 (c)).** Si des écarts réels sont retenus un jour, corriger le critère de façon prospective (lettre nominale) et prendre une décision citant M31.
 
 ### 6.7 Points signalés à `jeu` (non tranchés)
@@ -1645,6 +1645,8 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 | `eq:finances_publiques-assiette-impot` | E12 | assiette Y^HS_t, variable d'état du pas suivant | Y^HS_t = WB_t + i_{D,t}D_{H,t}/n_a + Div_{F,t} + Div_{Bk,t} − π\*^pas_t·D_{H,t} : montants exécutés des lignes 5, 10 (part des ménages), 14 et 15 ; D_{H,t} d'ouverture | 9 | dérivée (colonne des ménages, hors Tr et impôts) ; la déduction de l'érosion relève du choix de conception (H3) | M29 (ADR 0009) ; § 3.C-9 ; QM4 |
 | `eq:finances_publiques-parts-non-payees` | E13 | parts non payées nommées : transferts non versés (Tr^lev_t − Tr_t) ; impôt non recouvré ; perte de la banque centrale non couverte | montant proposé moins montant exécuté, ligne par ligne, dans l'ordre de priorité du § 9.4 | 2 et 6 (Tr), 6 (impôt), 8 (b) (perte) | choix de conception | `sec:cadre-caisse` l. 482 ; ADR 0005, point 10 ; § 3.N-3 ; C60 ; M33. Forme d'enregistrement : QM2 ; siège en 8 (b) : QM3 |
 
+*Annotation du 15/11/2026 (#132, rang 6 de J3-d2, `docwriter`). La spécification fait foi (`sec:finances_publiques`, `tab:finances_publiques-equations`, `tab:correspondance`) ; ce tableau garde sa rédaction du 04/10/2026. Les treize labels y sont posés, chacun avec sa balise dans `src/nations/blocs/finances_publiques.py` (concordance stricte : 90 labels, 90 balises). Écarts de ce tableau à l'état exécuté : notation de l'ADR 0011 (« Notation ») et de la décision du mainteneur du 04/10/2026, m → ν_G, P → PB_t, s_G, s_Tr, s_CB → θ_G, θ_Tr, θ_CB, ŷ_t → y^pot_t ; E1 lit max(0 ; M^G_t) (P125) ; E5 lit D̃_F = max(0 ; D_F) ; E12 s'écrit en phase 7, non en 9 (ADR 0011, P3), lit D̃_H = max(0 ; D_H) et déduit T^cou_t (décision du mainteneur du 04/10/2026) ; E13 a deux parts, les transferts non versés (phase 6) et la perte non couverte (8 (b)), sous un seul label ; l'impôt non recouvré n'en est pas une : au socle, c'est un défaut vérifié par le noyau (ADR 0011, P4) ; ς_B est publiée par le moteur en phase 0 (P138), non par la banque ; E6, E9 et l'assiette de E4 lisent M^G brut, liste fermée (ADR 0013, annotation du 15/11/2026 (J3-d2), point 4).*
+
 **Contrôle mécanique des labels.**
 - Les treize labels vérifient l'expression régulière de `CONVENTIONS.md` § 2.1, `eq:[a-z][a-z0-9_]*-[a-z0-9]+(-[a-z0-9]+)*`.
 - Contrôle : `uv run --no-project python`, sortie « [True × 13] 13 ».
@@ -1764,7 +1766,7 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
    - La dépendance de la dette à π̄ est de +0,253 an de PIB entre 2 et 10 % (C30 et YD^HS, § 3.C-3).
 2. **Ratio de dette bas et non sourcé** : environ 26 % du PIB à 2 % (C55).
 3. **Dominance budgétaire en pays joué (φ = 0).**
-   - Rayon 1,001818 à 2 % et 1,011036 à 10 % ; l'écart double en 382 et en 63 tours (§ 6.4).
+   - Rayon 1,001818 à 2 % et 1,011036 à 10 % ; l'écart double en 382 et en 63 tours (§ 6.4). *[Annotation du 15/11/2026 (#132, rang 6 de J3-d2) : 381 tours (maquette 381,6 = ln 2/ln 1,001818 ; « 382 » arrondissait) ; le moteur mesure 381 et 63 tours en régime linéaire, et 320 et 31 tours par la méthode du choc de 1 % (F11), qui ne sont pas des racines (`sec:finances_publiques-conditions` de la spécification).]*
    - Formulation : « dominance budgétaire, par analogie avec Leeper (1991) ; mécanisme : canal rentier, non explosion de la dette » (§ 6.1, Q5).
 4. **Couverture non nulle après un choc permanent** : T^cou/PIB = +0,276 % après G +1 % permanente (§ 6.1, Q2).
 5. **Nouveau palier sous taux tenu** : +0,396 point au tour 120 et +0,596 au tour 2 400 (§ 3.C-4).
@@ -1814,6 +1816,8 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
   - Le traitement reste à fixer avec `architect` au J2 (noyau) : ordre interne, vérification seule, ou ligne nommée calculée par le noyau. Les deux derniers seraient une modification.
 
 ### 9.4 Propriétaires et phases des lignes de `tab:matrice-flux`
+
+*Annotation du 15/11/2026 (#132, rang 6 de J3-d2, `docwriter`). La spécification fait foi (`sec:finances_publiques-phases`, `tab:finances_publiques-phases`, transcription de la déclaration du bloc vérifiée par un test ; ADR 0013, annotation du 15/11/2026 (J3-d2), point 1). Écarts de ce paragraphe à l'état exécuté, sans réécriture : E12 s'écrit en phase 7 (ADR 0011, P3 ; M29), si bien que la ligne « 9 » du tableau des phases ci-dessous est périmée ; E13 a deux parts, en phase 6 et en 8 (b), sans condition (QM3 tranchée) ; m s'écrit ν_G, d'où M^G_0 = ν_G PB_0/Γ̄ ; en phase 7, le bloc lit M^G_t brut et D̃_H à l'ouverture, non B_t, les intérêts étant lus au grand livre ; la condition des intérêts impayables s'écrit M^G_t − G_t + T_{H,t} + T_{F,t} < i_CB B_t/n_a, la dépense étant payée avant eux (`sec:finances_publiques-transferts`, encadré de E7).*
 
 **Relevé des 28 lignes** (critère 3).
 - Sortie de `uv run python outils/verifier_matrices.py --strict` à `9cc1ead`, code de sortie 0 :
@@ -1983,7 +1987,7 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai : critère
 | J3 | Couverture (E4 ; C45) | Appel direct : +1 point de i_CB → ΔT^cou = Δ·(B − M^G − E^CB)/n_a au tour n ; ΔYD des ménages au tour 1 nulle (§ 7 : +0,000 %) ; φ = 0 → T^cou = 0 | 1e−12 relatif |
 | J3 | Vitesses et arrivée (critère 7 ; C36) | Le bloc 9 n'a aucune vitesse. Branches ×0,5 et ×2 des autres blocs : point fixe identique ; arrivée après trois chocs (dépense +1 % aux tours 1 à 12 ; marche de π\* +1 point ; π^e +1 point) ; G +1 % permanente : arrivée à moins de 1e−3 en 20 demi-vies (maquette : 1,9e−8 au tour 5 500) | 1e−6 relatif après H = max(720 ; 20 demi-vies), H déclaré avant l'essai |
 | J3 | Stabilité (critère 8 ; C36 (i)) | Rayon < 1 à la calibration (maquette 0,997486 à 2 %) et dans la grille (pire cas 0,998883) ; gain statique < 0 (maquette −0,2208 % de y par point) | exigence |
-| J3 | Pays joué (C62) | φ\* publié par π̄ (≤ 0 / 0,131 / 0,487) ; temps de doublement sous φ = 0 (382 et 63 tours) | publication |
+| J3 | Pays joué (C62) | φ\* publié par π̄ (≤ 0 / 0,131 / 0,487) ; temps de doublement sous φ = 0 (382 et 63 tours ; *381 tours, maquette 381,6, annotation du 15/11/2026 ci-dessous*) | publication |
 | J3 | Racine (C51) | ~~r̄ > −5 % : racine unique dans le domaine ; voisinage dynamique de la racine parasite mesuré~~ φ = 1 : racine unique, sans racine parasite, à ζ calibré ; φ = 0 : racines publiées avec le signe de dθ_G/dr̂\*, trajectoire classée sans présomption, aucune arrivée exigée (correction prospective du 05/10/2026, `6631f7d`, `bfb01f8`) | publication |
 | J3 | θ_H (C52 ; critère 14) | θ_H au sens de la l. 1543 (0 sous HS) et part de la vente imprévue (0,498) ; rayon de la boucle de `sec:menages` refait avec les impôts | publication |
 | J3 | Bornes (critère 16) | Placement raté de moitié pendant 12 tours ; dépense doublée pendant 12 tours (#53) | plafond de E1 désactivé au plus tard 12 tours après la fin du choc, sans réactivation |
@@ -1998,6 +2002,8 @@ Chaque test énonce une propriété et un seuil écrits avant l'essai : critère
 | J4 | Restitution (#82) | Niveaux normaux restitués égaux à ceux du script ; scénario O2 (G +5 % pendant 12 tours, à 2 % et à 10 %), écarts aux tours 12, 60 et 120 | 1e−9 relatif |
 
 *Annotation du 15/10/2026 (#65, #107 ; décision inchangée).* Lignes « Stabilité » et « Pays joué » : sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), la maquette conjointe de la spécification (`outils/maquette_conjointe.py`, lecture (c) du rayon) donne 0,997118 à 2 %, pire cas 0,998732 sur les 29 branches de la grille G que le socle exécute, et φ\* ≤ 0 / 0,174 / 0,650 ; les valeurs de ces lignes ont été mesurées avant l'amendement et restent publiées. Les critères du jalon J3 sont arrêtés dans `tab:criteres-j3` de la spécification (S1).
+
+*Annotation du 15/11/2026 (#132, rang 6 de J3-d2, `docwriter` ; critères précisés avant tout essai par P156 à P164, `docs/feuille-de-route.md` § 1).* Verdicts et publications sur le socle complet : spécification, `sec:finances_publiques-conditions` (« Verdicts sur le socle complet ») et `sec:calibration` (« Stationnarité du socle complet ») ; aucune ligne (a) n'échoue. Lignes de ce tableau en retard sur la spécification, sans réécriture : « Neutralité de m et de s_CB » se lit ν_G porté de 1,1 à 1,2, référence 1,15 (et non m de 1 à 1,1), θ_CB de 0 à 0,05 puis 0,5, seuils de 1e−10 relatif sur 720 pas et de 1e−12·S par pas, réserves et refinancement à leur forme exacte (P156, P160) ; « Lecture nette » se lit M^G + ε S^G ≥ 0, E1 lisant max(0 ; M^G) et E6 M^G brut (P125) ; « Cas à la main » : s_CB se lit θ_CB ; « Pays joué » : voir l'annotation des temps de doublement ci-dessus et les deux méthodes publiées ; « État stationnaire » : M^G\* = ν_G·PB, et le facteur de Domar de référence est celui du script, non de la maquette (précédent P77).
 
 ### 9.7 Conditions transmises
 

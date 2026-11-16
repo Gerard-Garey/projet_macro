@@ -9,7 +9,7 @@ dont le radical est le nom du module.
 1. **Relevé**, dans chaque méthode `phase_<étape>`, sur son paramètre de vue :
    `vue.ouverture.<champ>` (champ de `schema.CHAMPS`) ; `vue.grand_livre.position`,
    `montant_execute` et `montant_execute_ligne` ; `vue.dernier_prix()`,
-   `vue.glissement()`, `vue.variation_sur_le_tour()` ; `vue.lire`,
+   `vue.glissement()` ; `vue.lire`,
    `vue.ecrire_pas`, `vue.ecrire_etat`, `vue.proposer`,
    `vue.declarer_montant_couvert`.
 2. **Vérification** : pour chaque siège, l'ensemble relevé égale l'ensemble
@@ -957,6 +957,9 @@ MUTATIONS = [
      "grand_livre 'IN' faite, non déclarée"),
     ("vue.ecrire_pas(\"xi\", xi)", "vue.ecrire_pas(\"xi\", vue.glissement())",
      "registre 'glissement' faite, non déclarée"),
+    # Lecture du registre retirée faute de lecteur à la fin du rang 3 (#106, P51).
+    ("vue.ecrire_pas(\"xi\", xi)", "vue.ecrire_pas(\"xi\", vue.variation_sur_le_tour())",
+     "accès inconnu vue.variation_sur_le_tour"),
     ("vue.ecrire_pas(\"xi\", xi)", "vue.ecrire_pas(\"xi\", vue.ouverture.W)",
      "ouverture 'W' faite, non déclarée"),
     ("vue.ecrire_pas(\"xi\", xi)", "vue.ecrire_pas(\"xi\", vue.ouverture.S_banque)",
