@@ -1737,3 +1737,16 @@ Ce que cela change pour C62 (P219, P222, P224) :
   - OCDE 1997 ; une source de ratio de sacrifice ;
   - bancs, C62 et instabilité 17 à la table P complète, avec ν_H de #62 (rang 8) ;
   - tests du dépôt exécutés à λ_w = 0,18 ; coût en chômage remesuré sur le moteur.
+
+### 6.13 Avis consultés et décisions (16/11/2026, délégation P228)
+
+**Avis de `jeu`** : **pas d'objection**. Vitesse salariale lisible (demi-vie de 46 tours, dans une partie de 60 à 120 tours, `docs/exigences.md` O5). Coût de désinflation de 13,6 point-années par point (formule, non mesurée sur le moteur) : non bloquant maintenant, mais il rendrait « laisser filer l'inflation » dominant ; **à revoir avant la démonstration J4** : #163 doit passer avant J4, sinon le point devient bloquant ; d'ici là, publié « non calibré, #163 ». À clarifier : délai du levier « pouvoir de négociation » (#48) dans l'aide ; cycle salaires – prix de 94 à 110 tours, à signaler par un indicateur de l'écart du salaire réel à sa norme ; borne N ≤ N^pa atteinte en surchauffe (préexistant).
+
+**Avis de `monnaie`** : **pas d'objection**, avec réserves. Indexation de SN sur π^e à coefficient 1 juste pour le moteur (C1) ; transposition des pentes estimées sous indexation partielle plausible, non démontrée (hypothèse). Coût de 13,89 point-années par point vérifié par la formule 1/(λ_e λ_w β) ; l'excès vient de λ_e, non sourcé (#163) ; aucun verdict de désinflation ne doit en dépendre avant #163. C62 : formulation juste, à retoucher (ci-dessous). Instabilité 17 : à republier avec une issue hors branche, sans arrêt ; C26 porte sur la lecture (b), non sur la lecture (a) (`nations_et_marches.tex` l. 1920 et 4021, vérifié) : la stabilité de (a) ne déclenche pas C26 et ne rouvre pas M27 d'elle-même.
+
+**Décisions de la session sous délégation** (P228 à P230 ; M34 réservée au mainteneur) :
+- **λ_w = 0,18** retenu comme valeur proposée de la table soumise à M34, β = 2 inchangé (questions 1 à 3 : avis de `macro` suivis ; V4 consignée comme variante) (P232) ;
+- **formulation de C62 visée pour M34** (P230 ; retouches (a) à (e) de `monnaie`) : « Sous φ = 0, à la table proposée (μ̄ = 0,60, ζ = 8, ϑ = 0,15, λ_w = 0,18) : faiblement explosive à 2 % sur ζ ∈ [2 ; 20] mesuré (module 1,00049 à ζ = 8, de 1,00047 à 1,00346 sur [2 ; 20] ; doublement en 1 415 tours) ; explosive à 10 % (doublement en 93 tours ; couverture minimale 0,61 dans la maquette, φ lu continu) ; stable sous φ = 1 (0,997502 à 2 %). Valeurs de la maquette, à remesurer au rang 8 (P224). » Elle remplace la formulation du § 3.13.7 (P222), qui ne tient plus à la table proposée ;
+- **question 4** (coût de désinflation et ordre entre λ_w et #163) : **réservée au mainteneur avec M34** ; recommandation de `macro`, `monnaie` et `jeu` : committer λ_w au rang 7, publier le coût « non calibré, #163 », et consigner dans M34 la condition « #163 traitée avant la démonstration J4 » ;
+- **question 6** (instabilité 17, M27) : pas une condition d'arrêt (aucune équation changée, instabilité qui disparaît ; avis de `macro` et `monnaie`) ; ligne 17 à republier par `docwriter` : « explosive à λ_w = 1 ; stable à λ_w = 0,18 (maquette, table de `main`) ; non mesurée à la table proposée » ; l'issue du § 6.10 est **rédigée, non créée** (P229).
+
