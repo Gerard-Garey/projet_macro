@@ -2,7 +2,7 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; l'historique (fiches des branches fusionnées, relevés d'issues antérieurs, décisions sans numéro M, points P1 à P73 et D1 à D13, détail des branches fusionnées jusqu'à J3-a) est dans `docs/feuille-de-route-historique.md`, sans rien supprimé ni réécrit ; partie B (14/11/2026, rang 9 de J3-c) : P74 à P86, pistes du § 5, branches fusionnées jusqu'à J3-a. Partie C (14/11/2026, après la fusion de la PR #129) : fiche de J3-c, relevé d'issues du 14/11/2026 après la PR #117, P87 à P99, points ouverts du rang 9. Partie D (15/11/2026, rang 8 de J3-d1) : mises à jour de la tête du 13/11 au 14/11/2026 (rang 9 de J3-c), plan de J3-d1 (rangs 0 à 8), P100 à P118, points ouverts au 14/11/2026 après la PR #129, lignes du § 7 de la PR #118 à la PR #128. Partie E (15/11/2026, point d'étape après la fusion de la PR #136) : mises à jour de la tête du 14/11/2026 après la PR #129 et du 15/11/2026 (rangs 4 et 5 de J3-d1), fiche de J3-d1, relevé d'issues du 14/11/2026 après la PR #129, P119 à P146, points ouverts du rang 8 de J3-d1. Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » se lit dans l'historique, partie A, au même §. Partie E complétée au rang 1a de J3-d2 (`142b556`) : en-têtes, classement proposé du § 9.6, Q1 à Q10, introduction des M-n, lignes des § 2 et § 8 ; puis au rang 8 de J3-d2 (`f1c8f2f`) : en-têtes, lignes des § 1 à 3, P147 à P155, ligne de J3-c au § 7. Partie F (16/11/2026, point d'étape après la fusion de la PR #146) : mise à jour de la tête du rang 8 de J3-d2, fiche de J3-d2, relevé d'issues du 15/11/2026 après la PR #136, points ouverts du rang 8 de J3-d2, ligne de J3-d1 au § 7.
 
-**Dernière mise à jour** : 16/11/2026, point d'étape après la fusion de la PR #146, rang 0 de la branche « forme du code » (`architect`) — `main` = `2744be3` (commit de fusion, parents `30078bb` et `59e1c1b`) ; branche de travail `claude/j3-forme-du-code`, créée depuis `2744be3`, PR brouillon #151 ; J3-d2 consignée (§ 2, § 6, § 7) ; plan décidé (§ 1 ; P172 à P179, § 4) ; fiche de J3-d2, relevé du 15/11/2026, points ouverts du rang 8 de J3-d2 et ligne de J3-d1 du § 7 sortis vers l'historique, partie F (P76). Mises à jour antérieures : historique, partie F, en-tête, puis partie E (compléments), puis partie D, puis `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 16/11/2026, rang 5 de la branche « forme du code » (session principale) — `main` = `2744be3` ; branche de travail `claude/j3-forme-du-code`, PR brouillon #151 ; rangs 0 à 5 faits (commits du rang 5 : `a379ad7` à `789d854`) ; restent les rangs 6 à 9 (§ 1) ; décisions P172 à P196 (§ 4). Mises à jour antérieures : historique, parties F, E, puis `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
@@ -19,13 +19,13 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 | Rang | Étape | Agent | Circuit |
 |---|---|---|---|
-| 0 | Point d'étape et plan (présente mise à jour) ; partie F de l'historique ; PR brouillon | `architect`, session | `docs:` |
-| 1a | Mesures « avant » : banc d'empreintes du socle complet en script d'`outils/` (Q2) ; empreintes à `2744be3`, arbre identique à `59e1c1b` (`git diff 59e1c1b 2744be3` vide) ; parts P57 et noyau seul lus dans le journal du job « Tests » du run 43758540925 (`59e1c1b`) | `coder` → `audit` (script) ; session (journal) | 3 |
-| 1b | Annotation de l'ADR 0013 : forme des contrats touchés (#144 points 1 à 3, #150 points 1 et 2) ; décomptes attendus (grandeurs d'ouverture, variables du pas) | `architect` | § 4.2 |
-| 2 | #137, puis #144 point 1 (`ordonnanceur.py`, même module, deux commits) | `coder` → `audit` | 3 |
-| 3 | #142 (`menages.py`, `investissement.py`) | `coder` → `audit` | 3 |
-| 4 | #150 points 1 et 2, docstrings (`finances_publiques.py`, `contrat_bloc.py`, `Vue`) | `coder` → `audit` | 3 |
-| 5 | #144 points 2 et 3 (production, travail, investissement, finances publiques, `ouverture.py`) : en dernier, sur les fichiers déjà touchés par #142 et #150 | `coder` → `audit` | 3 |
+| 0 | **Fait** (`eff1c3f`, `084e2d1`) — Point d'étape et plan (présente mise à jour) ; partie F de l'historique ; PR brouillon | `architect`, session | `docs:` |
+| 1a | **Fait** (`6a2a544` à `0d35718` ; P57 « avant » : PR #151) — Mesures « avant » : banc d'empreintes du socle complet en script d'`outils/` (Q2) ; empreintes à `2744be3`, arbre identique à `59e1c1b` (`git diff 59e1c1b 2744be3` vide) ; parts P57 et noyau seul lus dans le journal du job « Tests » du run 43758540925 (`59e1c1b`) | `coder` → `audit` (script) ; session (journal) | 3 |
+| 1b | **Fait** (`f177cac`) — Annotation de l'ADR 0013 : forme des contrats touchés (#144 points 1 à 3, #150 points 1 et 2) ; décomptes attendus (grandeurs d'ouverture, variables du pas) | `architect` | § 4.2 |
+| 2 | **Fait** (`4d44393` à `05541fc`) — #137, puis #144 point 1 (`ordonnanceur.py`, même module, deux commits) | `coder` → `audit` | 3 |
+| 3 | **Fait** (`160ba06` à `0e200fc`) — #142 (`menages.py`, `investissement.py`) | `coder` → `audit` | 3 |
+| 4 | **Fait** (`ecf9513` à `3c8508c`) — #150 points 1 et 2, docstrings (`finances_publiques.py`, `contrat_bloc.py`, `Vue`) | `coder` → `audit` | 3 |
+| 5 | **Fait** (`a379ad7` à `789d854`) — #144 points 2 et 3 (production, travail, investissement, finances publiques, `ouverture.py`) : en dernier, sur les fichiers déjà touchés par #142 et #150 | `coder` → `audit` | 3 |
 | 6 | Mesures « après » : empreintes, parts P57 et noyau seul sur la plateforme de référence ; contrôle de `macro` (#142, #150) | session ; `macro` | — |
 | 7 | Passage unique de `docwriter` si une `\code{}`, un tableau ou un décompte change (surfaces d'impact des commits), un commit `docs:` par issue | `docwriter` ; `macro` valide | règle 9 |
 | 8 | Revue finale complète du `git diff main...HEAD`, `/code-review` | `audit` | règle 10 |
@@ -189,6 +189,7 @@ Questions qui les fondent : ci-dessous (Q1 à Q8) et ADR 0013, annotation du 16/
 | P193 | 16/11/2026 | `eval`, `exec`, `compile` et `__import__` interdits dans `src/` par un test, au rang 4 (réserve mineure de l'audit du rang 3). | rang 3 |
 | P194 | 16/11/2026 | P188 limitée aux lectures de position : `valeur_nette_stock` et `valeur_nette_flux` restent non filtrées, comme documenté ; `docwriter` le dit au rang 7. | rang 4 |
 | P195 | 16/11/2026 | Docstrings périmées de `parametres/banque.py` et `parametres/banque_centrale.py` (« au passage de `docwriter` », au futur, labels déjà posés) corrigées dans la branche, commit `code:` à part rattaché à #150 (docstrings). | rang 4 |
+| P196 | 16/11/2026 | Test d'exécution de texte (P193) : trous relevés par l'audit du rang 4 comblés au rang 5 (`__globals__`, `f_globals`, `f_builtins`, `f_locals`, `sys` sous alias, `from sys import modules`) ; runpy, pickle, code et breakpoint hors de P193. | rang 4 |
 
 ### Questions au mainteneur du 16/11/2026 (point d'étape après la PR #146, rang 0 de la branche « forme du code »)
 
