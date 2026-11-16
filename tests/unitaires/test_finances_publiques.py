@@ -413,17 +413,18 @@ def _lignes_executees(*lignes):
 # #132 qui suit (écritures `G_vise` en phase 2 et `T_F` en phase 6, que le tableau omet). Sources :
 # OUVERTURE, REGISTRE, GRAND_LIVRE (montants exécutés, ou M^{G,8a} en 8 (b)), ou la phase de
 # l'écriture lue (« 0 » : grandeurs du moteur et entrées de scénario). Paramètres des tables :
-# non déclarés comme lectures. Phase 6, « ses calculs de la phase 2 » : T_H, Tr^lev et Tr.
+# non déclarés comme lectures. Phase 6, « ses calculs de la phase 2 » : T_H, Tr^lev, Tr et les
+# trois termes de E7 (ADR 0013, annotation du 16/11/2026, point 4 ; #150, point 1).
 TABLEAU_DES_PHASES = {
     "2": (_ouvertures("M_G", "B_H", "B_Bk", "B_CB", "L_CB", "Res", "pr", "N_pa", "Y_HS_m1",
                       "pi_etoile")
           | {Lecture(REGISTRE, "dernier_prix"), Lecture("1", "i_CB"), Lecture("0", "Gamma_e"),
              Lecture("0", "pi_etoile_pas")},
-          {"G_vise", "G_plan", "T_cou", "T_H", "Tr_lev", "Tr"}),
+          {"G_vise", "G_plan", "T_cou", "T_H", "Tr_lev", "Tr", "iB_BH", "iB_BBk", "iB_BCB"}),
     "5": ({Lecture("5", "p"), Lecture("5", "G_vol")}, set()),
-    "6": (_ouvertures("B_H", "B_Bk", "B_CB", "K", "L", "D_F", "i_L", "i_D")
-          | {Lecture("1", "i_CB"), Lecture("2", "T_H"), Lecture("2", "Tr_lev"),
-             Lecture("2", "Tr")}
+    "6": (_ouvertures("K", "L", "D_F", "i_L", "i_D")
+          | {Lecture("2", "T_H"), Lecture("2", "Tr_lev"), Lecture("2", "Tr"),
+             Lecture("2", "iB_BH"), Lecture("2", "iB_BBk"), Lecture("2", "iB_BCB")}
           | _lignes_executees("1", "2", "3", "4", "5"),
           {"T_F", "Tr_non_verses"}),
     "7": (_ouvertures("M_G", "D_H")
@@ -434,11 +435,16 @@ TABLEAU_DES_PHASES = {
     "8b": ({Lecture("1", "Pi_CB"), Lecture(GRAND_LIVRE, "M_G")}, {"perte_non_couverte"}),
 }
 # Écriture de chaque variable du pas dans la colonne « Le bloc écrit » du tableau (fragment
-# LaTeX ou libellé) ; `G_vise` et `T_F` : écritures à ajouter par `docwriter`.
+# LaTeX ou libellé) ; `G_vise` et `T_F` : écritures à ajouter par `docwriter` ; `iB_BH`, `iB_BBk`
+# et `iB_BCB` (#150, point 1) : termes de E7, écrits en phase 2, à ajouter par `docwriter` au
+# rang 7 de la branche « forme du code ».
 ECRITURES_DU_TABLEAU = {
     "2": {"G_vise": "plan non plafonné", "G_plan": r"$G^{\mathrm{plan}}_t$",
           "T_cou": r"$T^{\mathrm{cou}}_t$", "T_H": r"$T_{H,t}$",
-          "Tr_lev": r"$\mathit{Tr}^{\mathrm{lev}}_t$", "Tr": r"$\mathit{Tr}_t$"},
+          "Tr_lev": r"$\mathit{Tr}^{\mathrm{lev}}_t$", "Tr": r"$\mathit{Tr}_t$",
+          "iB_BH": r"$i_{\mathit{CB},t}B_{H,t}/n_a$",
+          "iB_BBk": r"$i_{\mathit{CB},t}B_{\mathit{Bk},t}/n_a$",
+          "iB_BCB": r"$i_{\mathit{CB},t}B_{\mathit{CB},t}/n_a$"},
     "5": {},
     "6": {"T_F": r"$T_{F,t}$", "Tr_non_verses": "transferts non versés"},
     "7": {"M_G_etoile": r"$M^{G*}_t$", "Em": r"$\mathit{Em}_t$"},
@@ -490,15 +496,41 @@ def test_declaration_conforme_a_tab_finances_publiques_phases():
                for lu in sieges["7"].lit if lu.source == GRAND_LIVRE)
 
 
+# Termes de E7 écrits en phase 2 (#150, point 1), que `tab:finances_publiques-phases` ne porte
+# qu'au passage de `docwriter` (rang 7 de la branche « forme du code ») : exclus du lien exact
+# ordinaire, contrôlés seuls en échec attendu strict.
+TERMES_E7 = ("iB_BH", "iB_BBk", "iB_BCB")
+
+
+def _ecritures_absentes(cellules, noms):
+    return {(etape, nom) for etape, ecritures in ECRITURES_DU_TABLEAU.items()
+            for nom, fragment in ecritures.items()
+            if nom in noms and fragment not in cellules[etape]}
+
+
 def test_tab_finances_publiques_phases_porte_chaque_ecriture():
     """Lien entre la transcription et la spécification : chaque écriture de variable du pas de
     `TABLEAU_DES_PHASES` figure, sous son écriture `ECRITURES_DU_TABLEAU`, dans la cellule « Le
-    bloc écrit » de sa phase dans `tab:finances_publiques-phases`."""
+    bloc écrit » de sa phase dans `tab:finances_publiques-phases`, hors des trois termes de E7
+    (`TERMES_E7`, test suivant)."""
     cellules = _colonne_ecrite_du_tableau()
     assert {e: set(m) for e, m in ECRITURES_DU_TABLEAU.items()} == {
         e: ecrit for e, (_, ecrit) in TABLEAU_DES_PHASES.items()}
-    absentes = {(etape, nom) for etape, ecritures in ECRITURES_DU_TABLEAU.items()
-                for nom, fragment in ecritures.items() if fragment not in cellules[etape]}
+    autres = {nom for ecritures in ECRITURES_DU_TABLEAU.values() for nom in ecritures
+              if nom not in TERMES_E7}
+    absentes = _ecritures_absentes(cellules, autres)
+    assert not absentes, sorted(absentes)
+
+
+@pytest.mark.xfail(strict=True, reason="#150, point 1 : les trois termes de E7 (iB_BH, iB_BBk, "
+                   "iB_BCB) sont écrits en phase 2 ; tab:finances_publiques-phases les porte au "
+                   "passage de docwriter (rang 7 de la branche « forme du code ») ; marque "
+                   "retirée par le commit tests: qui suit le commit docs:")
+def test_tab_finances_publiques_phases_porte_les_termes_de_e7():
+    """Lien exact pour les trois termes de E7 seuls (`TERMES_E7`) : chacun figure, sous son
+    écriture `ECRITURES_DU_TABLEAU`, dans la cellule « Le bloc écrit » de la phase 2."""
+    assert set(TERMES_E7) <= set(ECRITURES_DU_TABLEAU["2"])
+    absentes = _ecritures_absentes(_colonne_ecrite_du_tableau(), TERMES_E7)
     assert not absentes, sorted(absentes)
 
 

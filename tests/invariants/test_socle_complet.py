@@ -450,6 +450,37 @@ def test_un_seul_calcul_du_besoin_d_emission_par_pas(socle, monkeypatch):
         assert p["19a-ménages"] == 0.0
 
 
+def test_un_seul_calcul_des_interets_sur_titres_par_pas(socle, monkeypatch):
+    """Critère de #150, point 1 (ADR 0013, annotation du 16/11/2026, point 4) : la fonction
+    balisée E7 (`interets_sur_titres`) est appelée une fois par pas sur le moteur, en phase 2 ;
+    les lignes 11a à 11c proposées en phase 6 sont, au bit, les trois termes écrits en phase 2
+    (`iB_BH`, `iB_BBk`, `iB_BCB`), sur les encours d'ouverture, et leur somme forme le plafond
+    de E6 ; scénario du banc BF (sentier θ_CB = 0,5, ligne 11c non nulle ; placement raté
+    ς_B = 0,5 au pas 5 ; transferts ouverts au seul pas 6, plafond de E6 liant)."""
+    appels = []
+    original = bloc_9.interets_sur_titres
+
+    def compter(*args):
+        appels.append(args)
+        return original(*args)
+    monkeypatch.setattr(bloc_9, "interets_sur_titres", compter)
+    sentier = socle.sentier(0.02, theta_CB=0.5)
+    initial = socle.etat_initial(sentier)
+    _, releve = derouler(
+        socle, sentier, 24, initial=initial, varsigma_B=lambda t: 0.5 if t == 5 else 0.0,
+        bloc_9=bloc_9_compose(levier_au_tour(6, theta_Tr=TRANSFERTS_APRES_LE_PLACEMENT)))
+    assert len(appels) == 24
+    assert any(p["variables"]["Tr"] < p["variables"]["Tr_lev"] for p in releve.pas)
+    ouvertures = (initial,) + tuple(p["etat"] for p in releve.pas[:-1])
+    for p, o, (i_pas, *encours) in zip(releve.pas, ouvertures, appels, strict=True):
+        v = p["variables"]
+        assert i_pas == par_pas(TauxDeFlux(v["i_CB"])) and encours == [o.B_H, o.B_Bk, o.B_CB]
+        assert (p["11a"], p["11b"], p["11c"]) == (v["iB_BH"], v["iB_BBk"], v["iB_BCB"])
+        assert v["iB_BCB"] > 0.0 and v["iB_BBk"] > 0.0
+        assert v["Tr"] == bloc_9.transferts(v["Tr_lev"], o.M_G, v["T_H"],
+                                            v["iB_BH"] + v["iB_BBk"] + v["iB_BCB"], v["G_plan"])
+
+
 def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, monkeypatch):
     """Critère de #144, point 1 (ADR 0013, annotation du 16/11/2026, point 1) : sur le socle
     complet, `defaut_de_domaine` est appelée une fois par pas pour chaque variable d'état d'un
