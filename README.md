@@ -81,10 +81,11 @@ Relevé du coût du noyau seul dans des journaux bruts du job « Tests » de la 
 uv run python outils/releve_cout_ci.py <journaux…> [--commit SHA] [--json]
 ```
 
-Empreintes SHA-256 des trajectoires de huit bancs (socle complet, avec et sans choc ; P87 ; J3-d1 ; essai pur), aux trois π\*, sur 720 pas : un événement par clôture de phase et par fin de pas, encodage documenté dans le script ; `--racine` exécute un autre arbre (version « avant » extraite avec `src/` par `git archive`) ; code de sortie 0 identique, 1 écart de trajectoire ou arrêt du moteur, 2 refus (module ou bloc manquant, bloc non conforme), 3 trajectoires identiques mais grandeurs d'ouverture différentes (écart à déclarer, P186, P189) ; référence de la branche « forme du code » : `outils/empreintes_des_bancs_59e1c1b.json` (#144, P173, P184) :
+Empreintes SHA-256 des trajectoires de huit bancs (socle complet, avec et sans choc ; P87 ; J3-d1 ; essai pur), aux trois π\*, sur 720 pas : un événement par clôture de phase et par fin de pas, encodage documenté dans le script ; `--racine` exécute un autre arbre (version « avant » extraite avec `src/`, `tests/` et `outils/` : `git archive <sha> src tests outils | tar -x -C DOSSIER`) ; `--exclure-variables` retire des variables du pas ajoutées et déclarées de la sous-empreinte `variables`, pour juger le critère de P187 contre une référence mesurée sans exclusion, où ces variables doivent être absentes ; code de sortie 0 identique, 1 écart de trajectoire, arrêt du moteur ou absence non établie d'une variable exclue, 2 refus (module ou bloc manquant, bloc non conforme ; variable exclue inconnue ou présente dans la référence, référence mesurée avec exclusion), 3 trajectoires identiques mais grandeurs d'ouverture différentes (écart à déclarer, P186, P189) ; avec `--exclure-variables`, les codes 0 et 3 valent critère de P187 tenu ; référence de la branche « forme du code » : `outils/empreintes_des_bancs_59e1c1b.json` (#144, P173, P184), à comparer depuis #150 (point 1) avec `--exclure-variables iB_BH iB_BBk iB_BCB` (P187) :
 
 ```bash
-uv run python outils/empreintes_des_bancs.py [--racine DOSSIER] [--bancs NOMS] [--pas N] [--ecrire FICHIER] [--comparer FICHIER]
+uv run python outils/empreintes_des_bancs.py [--racine DOSSIER] [--bancs NOMS] [--pas N] [--ecrire FICHIER] [--comparer FICHIER] [--exclure-variables NOMS]
+uv run python outils/empreintes_des_bancs.py --comparer outils/empreintes_des_bancs_59e1c1b.json --exclure-variables iB_BH iB_BBk iB_BCB
 ```
 
 Compilation de la spécification (XeLaTeX ; MiKTeX sur le poste local, TeX Live en session cloud et en CI) :
