@@ -2,7 +2,7 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; le reste est dans `docs/feuille-de-route-historique.md` (parties A à G et leurs compléments, sans rien supprimé ni réécrit), dont la « Lecture des renvois » dit où lire chaque renvoi absent de la tête.
 
-**Dernière mise à jour** : 16/11/2026, rang 1 de la branche « calibration », allègement de la tête (`architect`) — `main` = `890471b` ; branche de travail `claude/j3-calibration` à `ca0ba93`, PR brouillon #162 ; plan **décidé** (§ 1), rang 1 en cours, découpage de J3-e à J3-g décidé (§ 2), décisions P204 à P212 et P225 à P232 (§ 4 ; P213 à P224 : index). Mises à jour antérieures et extraits sortis : historique, partie G et ses compléments, puis `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 16/11/2026, rang 1 de la branche « calibration », allègement de la tête (`architect`) — `main` = `890471b` ; branche de travail `claude/j3-calibration` à `ca0ba93`, PR brouillon #162 ; plan **décidé** (§ 1), rang 1 en cours, découpage de J3-e à J3-g décidé (§ 2), décisions P204 à P212 et P225 à P233 (§ 4 ; P213 à P224 : index). Mises à jour antérieures et extraits sortis : historique, partie G et ses compléments, puis `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
@@ -197,6 +197,7 @@ P200 à P203 (ouverture, #157 à #161, m1, ADR 0014) et P213 à P224 (ci-dessous
 | P230 | 16/11/2026 | Un changement de signe du module de C62 à 2 % dû à #62 ou #45 est publié et couvert par la formulation de P222, sans arrêt. | calibration.md § 3.13 |
 | P231 | 16/11/2026 | Rang 1 terminé : dossier M34 (table entière, tableau prédit consolidé) préparé dans la fiche, sans code, puis handoff. Toute question bloquante : arrêt, travail enregistré, handoff. | calibration.md |
 | P232 | 16/11/2026 | Session, sous P228 (aucune objection de `jeu` ni de `monnaie`) : #45, λ_w = 0,18 proposé pour M34, β = 2 ; formulation de C62 à la table proposée remplaçant celle de P222 (P230). Réservés à M34 : ordre entre λ_w et #163 (condition proposée : #163 avant la démonstration J4). Issue sur l'instabilité 17 rédigée, non créée (P229). | calibration.md § 6.13 |
+| P233 | 16/11/2026 | Session, sous P228 (aucune objection de `jeu` ni de `monnaie`) : #62, ν_H = 1,1 et λ_H = 0,4 proposés pour M34 ; dette de référence publiée sans cible ; correction du test du continuum avec le commit de #62. Rang 1 instruit. | calibration.md § 5.11 |
 
 Questions Q1 à Q9 du 16/11/2026, avec leurs options et la recommandation d'`architect-approfondi` : `git show afa9e89:docs/feuille-de-route.md`, § 4. Le mainteneur a retenu l'option recommandée pour chacune (P204 à P212).
 
