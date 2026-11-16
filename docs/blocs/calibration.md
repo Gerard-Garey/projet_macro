@@ -1414,3 +1414,326 @@ Lecture du § 4 et du script (`outils/etat_stationnaire.py`, l. 449 à 466), san
 - Issue proposée au § 4.11 : créée, #167 (bêta des dépôts, limite de B2), hors branche (P227).
 - Retouches de `macro` (§ 4.13) : suivies sous la délégation P211 dans le texte publié par `docwriter`.
 
+## 6. #45 — Vitesse de correction salariale λ_w (bloc 3, travail)
+
+*Instruite par `macro` (expert pilote) le 16/11/2026, rang 1 de la branche « calibration » (PR #162, tête `d865683`). `git status` était vide après les sondes : aucun fichier du dépôt n'a été modifié. Les sondes sont hors dépôt (`<scratchpad>/outils45/`). Elles appellent sans les modifier `outils/etat_stationnaire.py`, `outils/maquette_conjointe.py`, `tests/invariants/socle_partiel.py` et les assistants de `tests/invariants/test_socle_complet.py`. Les chiffres du modèle sont des résultats du modèle, pas des faits. Les faits portent leur source et leur date. Chaque conclusion est marquée **vérifiée**, **hypothèse** ou **non vérifiée**. Le périmètre est #45 réduite à λ_w (P204). β, a_π, a_I et λ_e restent hors périmètre (#163).*
+
+### 6.1 Grandeurs visées et correspondance avec le modèle
+
+**Règle exécutée** (`eq:travail-salaire`, `nations.blocs.travail.salaire`, l. 81 à 91 ; appelée en phase 1 avec `par_pas(table.lambda_w)`, l. 141 à 145 ; **active** au socle complet) :
+
+ln W_t = ln W_{t−1} + (1/n_a)[ln(1 + g_pr) + ln(1 + π^e_t)] + (λ_w/n_a)[ln(ω*/ω_{t−1}) − β(U_{t−1} − U^eq)], avec ω* = 1/(1 + μ̄).
+
+Coefficients effectifs aujourd'hui : λ_w = 1 par an (`nations.moteur.parametres.travail.LAMBDA_W`, défaut `Parametres.lambda_w` du script), β = 2, U^eq = 0,05, n_a = 12.
+
+**Définitions** (n_a = 12) :
+
+| Grandeur | Définition | Unité, dénominateur, fenêtre |
+|---|---|---|
+| λ_w, vitesse d'ajustement salarial | Part λ_w/n_a de l'écart [ln(ω*/ω) − β(U − U^eq)] qui passe dans le salaire nominal à chaque tour | Par an, taux de flux linéaire (P65) ; domaine 0 < λ_w ≤ n_a |
+| Correction annuelle c | 1 − (1 − λ_w/12)^12 : part d'un écart de salaire réel résorbée en 12 tours, à prix exogènes et U = U^eq | Fraction de l'écart initial ; 12 tours |
+| Demi-vie de SN | ln 2 / [−ln(1 − λ_w/n_a)], valeur propre du salaire à prix exogènes (critère 5 (b) de la fiche 3) | Tours |
+| Pente (effet de niveau) | λ_w·β : hausse du salaire nominal sur 12 tours par point d'écart durable U − U^eq, marge à sa norme, π^e donnée | Points de hausse annuelle par point de chômage, par an |
+| β, semi-élasticité de long terme | −∂ ln(salaire réel visé)/∂U ; β = e/U*, où e est l'élasticité de la courbe des salaires en ln U | Sans dimension, par unité de taux de chômage |
+
+**Correspondance avec les sources** :
+- Un coefficient ρ du salaire retardé en données annuelles donne c = 1 − ρ, d'où λ_w = 12(1 − ρ^{1/12}).
+- Un coefficient de correction d'erreur annuel donne c directement.
+- Une pente en données trimestrielles non annualisées (Galí) se multiplie par 4. Une pente en glissement annuel (BCE) se lit telle quelle.
+- **Hypothèse.** Ces pentes viennent de formes réduites sans terme de niveau. Elles sont comparables à λ_w·β seulement si la marge reste à sa norme. Sous SN, un ω variable ajoute le terme ln(ω*/ω), que ces régressions omettent.
+- **Hypothèse.** Les sources indexent sur l'inflation passée avec un coefficient inférieur à 1, alors que SN indexe sur π^e avec un coefficient de 1 (frontière avec `monnaie`, § 6.9).
+
+### 6.2 Sources lues et citées
+
+Toutes les sources ont été lues le 16/11/2026, en PDF, sur `www.nber.org` et `www.ecb.europa.eu`. Les pages sont celles des versions lues.
+
+**(S1) D. G. Blanchflower et A. J. Oswald, « The Wage Curve Reloaded », NBER WP 11338, 2005** (texte extrait par `pdftotext`).
+- **Données** : panel d'États américains, 1980–2001, cellules État-année (1 122 observations), donc **annuel**. Salaire horaire (CPS ORG) en logarithme, sur le logarithme du chômage de l'État, avec indicatrices d'année : les salaires sont **relatifs** entre États.
+- **Élasticité de long terme** : environ −0,1. La méta-analyse de Nijkamp et Poot la ramène à −0,07 après correction du biais de publication (p. 4). Bande du livre de 1994 : « −0.05 to −0.20 » (p. 4, note 5). Tableau 1, colonne 2 : −0,08 (p. 11). Colonnes 6 et 7, les plus complètes : environ −0,1 (p. 12).
+- **Coefficient du salaire retardé ρ (salaire horaire)** :
+  - 0,955 sans effets fixes d'État (tableau 1, colonne 1, p. 11), spécification que les auteurs jugent trop simple ;
+  - 0,699 avec effets fixes (tableau 1, colonne 2, p. 11) ;
+  - 0,60 dans la spécification préférée, salaire retardé instrumenté (tableau 4, partie C, ligne 4, p. 15) ;
+  - 0,81 et 0,71 (tableau 5, colonnes 1 et 2, p. 15).
+- **Gains annuels** (CPS de mars, tableau 6, p. 16) : environ 0,35 avec effets d'État, d'année et de branche ; environ 0,13 avec tendances d'État.
+- **Conversions** :
+  - salaire horaire, ρ de 0,81 à 0,60 : c de 0,19 à 0,40, soit λ_w de 0,209 à 0,500 ;
+  - gains annuels, ρ de 0,35 et 0,13 : c de 0,65 et 0,87, soit λ_w de 1,005 et 1,876.
+- **Vérifiée.** Les gains annuels n'étaient pas cités dans la fiche 3. λ_w = 1 leur correspond, mais pas aux salaires horaires que les auteurs privilégient.
+
+**(S2) O. J. Blanchard et L. F. Katz, « Wage Dynamics: Reconciling Theory and Evidence », NBER WP 6924, février 1999** (PDF numérisé, lu en images).
+- **Fréquence** : la relation américaine (1) est estimée sur des « aggregate (annual) time series data » (p. 2).
+- **Correction d'erreur** (équation (6), p. 5) : coefficient du terme de correction « close to zero », de signe souvent faux, pour les États-Unis ; « In most European countries […] the error correction term comes in with a significant, and right signed coefficient. On average, (1 − μλ) is around 0.25 » (p. 5). Les estimations européennes sont renvoyées à OCDE 1997, **non lu**, sans fréquence explicite.
+- **Biais des données régionales** (p. 7) : avec des effets fixes d'année, l'effet du salaire agrégé retardé est absorbé, d'où un **biais vers le bas** de γ, le coefficient du salaire retardé. Les vitesses régionales de S1 surestimeraient donc la vitesse agrégée. C'est un argument de S2, non une mesure ; S1 n'y répond pas dans les passages lus (p. 11 à 16).
+- **Correspondance** (équations (3) à (6), p. 3 à 5) : le β de Blanchard et Katz est la pente d'impact, et β/(1 − μλ) est la semi-élasticité de long terme. Le λ_w de SN correspond à 1 − μλ, et la pente d'impact λ_w·β de SN à leur β.
+- Conversion : c = 0,25 par an donne λ_w = 0,284. Si c était trimestriel, c annuel vaudrait 0,684 et λ_w 1,097.
+- **Vérifiée**, à une réserve près : la fréquence européenne n'est pas écrite. La lire comme annuelle, dans le cadre annuel du texte, est une **hypothèse**. `sec:travail-conditions` dit déjà « de fréquence non précisée ».
+
+**(S3) J. Galí, « The Return of the Wage Phillips Curve », NBER WP 15758, février 2010** (texte extrait).
+- **Données** : trimestrielles, États-Unis, taux de chômage civil (p. 18). Tableau 1 : gains des salariés de production et hors encadrement, 1964T1–2009T3 ; colonnes 7 et 8 arrêtées à 2007T4. Tableau 2 : rémunération, depuis 1948T1. L'inflation en glissement est « expressed as a quarterly rate to facilitate comparison of coefficients » (p. 23).
+- **Effet de niveau** δ = −(ψ0 + ψ1), coefficients du chômage courant et retardé (tableau 1, p. 38 du PDF ; tableau 2, même page) :
+
+| Colonne | Indexation | δ, gains (tableau 1) | 4δ, par an | δ, rémunération (tableau 2) | 4δ, par an |
+|---|---|---|---|---|---|
+| (3) | glissement, u_t seul | 0,079 | 0,316 | 0,087 | 0,348 |
+| (5) | trimestre sur trimestre | 0,177 − 0,153 = 0,024 | 0,096 | 0,227 − 0,189 = 0,038 | 0,152 |
+| (6) | glissement | 0,377 − 0,304 = 0,073 | 0,292 | 0,387 − 0,310 = 0,077 | 0,308 |
+| (7) | trimestre sur trimestre, jusqu'à 2007T4 | 0,334 − 0,294 = 0,040 | 0,160 | 0,241 − 0,189 = 0,052 | 0,208 |
+| (8) | glissement, jusqu'à 2007T4 | 0,552 − 0,453 = 0,099 | **0,396** | 0,397 − 0,301 = 0,096 | 0,384 |
+
+- **Indexation** : 0,565 à 0,687 (glissement), 0,415 à 0,522 (trimestre sur trimestre).
+- **Vérifiée.** La fourchette 0,29–0,40 de la fiche 3 est celle des colonnes en glissement. Toutes colonnes confondues, l'effet de niveau va de **0,10 à 0,40** par an. Sa borne haute exacte est 0,396.
+
+**(S4, source nouvelle) F. Tagliati, « Wage growth in the euro area: a Phillips curve analysis using panel data », encadré 2 (p. 20–21) de C. Nickel, E. Bobeica, G. Koester, E. Lis et M. Porqueddu (dir.), *Understanding low wage growth in the euro area and European countries*, BCE, Occasional Paper n° 232, septembre 2019, révisé en décembre 2020** (`ecb.europa.eu/pub/pdf/scpops/ecb.op232~4b89088255.en.pdf`, texte extrait).
+- **Données** : panel des 19 pays de la zone euro, 2000T1–2018T4. Variable expliquée : glissement annuel de la rémunération par salarié, avec effets fixes pays et pondération par le PIB.
+- **Pentes** (tableau A, p. 21) : taux de chômage −0,317 (0,050) ; **écart de chômage −0,364 (0,085)** ; mesures larges du chômage −0,25 à −0,26.
+- **Indexation** sur l'inflation passée : 0,39 à 0,42.
+- C'est la seule pente lue de la **zone de référence** (P226), et l'écart de chômage est le concept de SN (U − U^eq). Sa variable expliquée est déjà en glissement annuel, d'où une pente de **0,32 à 0,36** par an.
+- **Vérifiée.**
+
+**Synthèse des fourchettes lues** :
+- **Vitesse c** :
+  - agrégée : ≈ 0 aux États-Unis, 0,25 en Europe (S2) ;
+  - régionale, borne haute selon S2 : 0,19 à 0,40 pour les salaires horaires, 0,65 à 0,87 pour les gains annuels (S1).
+- **Pente** : 0,29 à 0,40 en glissement aux États-Unis (S3 ; 0,10 à 0,40 toutes colonnes) ; 0,32 à 0,36 dans la zone euro (S4).
+- **β** : avec β = 2, la pente sourcée de 0,29 à 0,40 exige λ_w de 0,145 à 0,198 ; celle de la zone euro, de 0,158 à 0,182.
+
+### 6.3 Valeur proposée et variantes
+
+**Proposée : λ_w = 0,18 par an**, à β = 2 inchangé.
+- Pente λ_w·β = **0,36**, égale à la pente de l'écart de chômage dans la zone euro (S4 : 0,364) et dans la fourchette de S3 (0,29 à 0,40).
+- Correction annuelle c = **0,166** : dans la fourchette agrégée de S2 (≈ 0 à 0,25), sous la borne basse régionale de S1 (0,19), que S2 tient pour surestimée (p. 7).
+- Demi-vie de SN : **45,86 tours**.
+- Statut : **choix déclaré, sources lues ; vitesse contestée (S1 contre S2 ; fréquence de S2 présumée)**.
+
+| Variante | λ_w | c | Demi-vie de SN (tours) | Pente | Vitesse (S1, S2) | Pente (S3, S4) | Avis |
+|---|---|---|---|---|---|---|---|
+| V0, statu quo | 1 | 0,648 | 7,97 | 2,00 | au-dessus de S2 et de S1 (salaire horaire) ; dans S1 (gains annuels) | 5 à 7 fois la pente lue | Écartée : critère de #45 non tenu |
+| **V1, proposée** | **0,18** | **0,166** | **45,86** | **0,36** | dans S2 (agrégé) ; sous S1 (salaire horaire, régional) | dans S3 et S4 | **Recommandée** |
+| V2, valeur ronde | 0,20 | 0,183 | 41,24 | 0,40 | idem V1 | au bord de S3 (0,396), au-dessus de S4 (0,364) | Acceptable. Égale à λ_e = 0,2 : même demi-vie de 41,2 tours que l'anticipation (§ 6.9) |
+| V3, vitesse européenne | 0,284 | 0,250 | 28,94 | 0,57 | = S2 (Europe) ; dans S1 (salaire horaire) | 1,4 fois S3 et 1,6 fois S4 | Écartée : la pente sort de la fourchette |
+| V4, hors périmètre | 0,25 avec β = 1,4 | 0,223 | 32,92 | 0,35 | près de S2 (Europe) ; dans S1 | dans S3 et S4 | Concilie les deux critères, mais change β (élasticité corrigée de −0,07, S1 p. 4). Hors de #45 réduite (P204) : question 3 |
+| Bord bas de la pente | 0,145 | 0,136 | 57,02 | 0,29 | dans S2 | bord de S3 | Pour mémoire |
+| V1 × 0,5 et × 2 (critère 5 (b)) | 0,09 et 0,36 | 0,086 et 0,303 | 92,07 et 22,76 | 0,18 et 0,72 | — | — | Publiés, sans exigence de bande |
+
+**Vérifiée** (valeurs calculées, `boucle45.py`, `var45.py`).
+
+### 6.4 Tableau avant / après prédit
+
+#### 6.4.1 Méthode et commandes
+
+Les commandes ont été lancées depuis `/home/user/projet_macro` à `d865683`, sous la forme `uv run python -I <scratchpad>/outils45/<sonde>.py <arguments>`.
+- **`es45.py`** : appelle `calculer(replace(Parametres(), **table, lambda_w=x))` sur la table de `main` et sur la table P (μ̄ = 0,60, ζ = 8, ϑ = 0,15). Elle compare **toutes les feuilles** du résultat (9 698), y compris les 449 valeurs publiées. `es45b.py` donne les résidus des contrôles.
+- **`moteur45.py 720 x…`** : socle complet du moteur, 720 pas sans choc depuis l'état résolu, aux trois π\*. Les paramètres sont ceux du dépôt, et seule λ_w change (`varier`). La sonde juge le critère « Branche » (`juger`) et compare chaque champ d'état, pas par pas, au déroulé à λ_w = 1.
+- **`boucle45.py`** et **`var45.py`** : critère 5 (d) (`carte_offre(m, "regle", True, lambda_w=x)`, π^e = π\* exogène), à μ̄ = 0,25 et 0,60 ; demi-vies ; variantes.
+- **`socle45.py ϑ x…`** : lecture (c) du socle (`lectures`, pire des deux régimes de T4), sous φ = 1 et φ = 0, à π̄ = 0, 2 et 10 %, μ̄ = 0,60 et ζ = 8. Elle donne ζ_c par `frontiere` sur [2 ; 20] et φ\* sur [0 ; 1].
+- **`bancs45.py x…`** : bancs D et BF du moteur (constructions d'`outils/empreintes_des_bancs.py`), 720 pas, table du dépôt, seule λ_w changée.
+- **`maq45.py x`** : relevé des chiffres publiés de la maquette (`releve`, `evaluer`). Seul le défaut λ_w de `Parametres` change, en mémoire.
+- **Contrôles** :
+  - à λ_w = 1, `socle45.py 0.10 1.0` retrouve les valeurs du § 3.13 : 1,000035 ∠ ±0,176°, ζ_c = 8,7633, φ\* = 0,0111 et 0,5713 ;
+  - `boucle45.py` retrouve les rayons publiés de la boucle salaires – prix : 0,8969 / 0,9068 / 0,9225 / 0,9385 et 0,9172 ;
+  - `maq45.py 1.0` donne 9 écarts, tous préexistants dans le dépôt (`uv run python outils/maquette_conjointe.py` en donne les mêmes 9, à la même tête) ;
+  - les sorties sont dans `<scratchpad>/outils45/sortie_*.txt`.
+
+#### 6.4.2 État stationnaire : inchangé (aucune condition d'arrêt)
+
+| Mesure | Résultat | Verdict |
+|---|---|---|
+| Script, table de `main` et table P, λ_w ∈ {0,18 ; 0,2 ; 0,284 ; 0,5 ; 2} contre 1 | 9 698 feuilles : écart relatif maximal **0**, au bit. Valeurs publiées en écart : 0/449 (`main`) et 284/449 (P), identiques à λ_w = 1 | **Inchangé au bit** ; critère « ≤ 1e−12 » tenu |
+| Seule feuille qui bouge (λ_w = 2 et 12, table P) | Résidu d'arrondi du contrôle de la seconde route (P2) : 5,8e−16 contre 2,3e−16. Plus grand résidu des contrôles inchangé, 4,79e−15 | Arrondi, sans objet |
+| Moteur, 720 pas, λ_w ∈ {0,18 ; 0,2 ; 0,284} | Critère « Branche » tenu aux trois π\* : 0 hors seuil ; pire écart relatif 2,4e−13 à 7,1e−13, contre 2,0e−13 à 8,2e−13 à λ_w = 1 | Tenu |
+| Moteur, écart au déroulé à λ_w = 1 | ≤ 1,9e−13 relatif, sauf π^e à π\* = 0, grandeur nulle à son échelle. Seuls les arrondis diffèrent : ils s'amortissent au rythme de SN | Aucun déplacement de l'état d'arrivée |
+
+`tab:etat-stationnaire` et les valeurs résolues B1 à B26 ne changent pas, ni à la table de `main` ni à la table P. λ_w figure dans les `VITESSES` du script, qui n'entrent pas dans l'état d'arrivée. Le terme qu'elle multiplie est nul au point fixe (ω = ω\*, U = U^eq). **Vérifiée** (mesure et lecture du code, `etat_stationnaire.py` l. 205 à 211 et 588 à 590).
+
+#### 6.4.3 Demi-vie de la règle SN (à prix exogènes)
+
+| | `main` (λ_w = 1) | Après (λ_w = 0,18) |
+|---|---|---|
+| Valeur propre du salaire | 0,916667 | 0,985000 |
+| Demi-vie | **7,97 tours** | **45,86 tours** (3,8 ans) |
+| Correction annuelle | 0,648 | 0,166 |
+| × 0,5 / × 2 | 16,29 / 3,80 tours | 92,07 / 22,76 tours |
+
+L'issue annonçait « environ 16 à 29 tours ». Ce chiffre supposait λ_w = 0,284 à 0,5, c'est-à-dire une vitesse sans contrainte de pente. **Vérifiée.**
+
+#### 6.4.4 Critère 5 (d) de la fiche 3 (boucle salaires – prix ; = 5 (e) de la fiche 4)
+
+π^e = π\* = 2 %, rayon hors de la racine nominale (racine nominale à ≤ 4,6e−11 de 1) :
+
+| m | λ_w = 1 (publié) | **λ_w = 0,18** | λ_w = 0,09 | λ_w = 0,36 |
+|---|---|---|---|---|
+| 0,5 | 0,8969 (période 145, demi-vie 6,4) | **0,9357** (96 ; 10,4) | 0,9389 | 0,9289 |
+| 0,6 | 0,9068 (105 ; 7,1) | **0,9471** (94 ; 12,7) | 0,9503 | 0,9402 |
+| 0,7 | 0,9225 (95 ; 8,6) | **0,9596** (98 ; 16,8) | 0,9627 | 0,9529 |
+| 0,8 | 0,9385 (95 ; 10,9) | **0,9724** (110 ; 24,7) | 0,9754 | 0,9660 |
+| Marge constante, m = 0,6 | 0,9172 | 0,9404 | — | — |
+
+Période en tours, demi-vie en tours.
+- Les rayons sont identiques à μ̄ = 0,25 et à μ̄ = 0,60 : la forme logarithmique rend la boucle indépendante de μ̄.
+- **Exigence tenue** : rayon < 1 à la calibration et aux variantes × 0,5 et × 2.
+- La boucle est plus lente. Sa période reste de 94 à 110 tours (8 à 9 ans), dans la fenêtre de 60 à 120 tours du critère 11 (d).
+- **Vérifiée** (maquette).
+
+#### 6.4.5 Socle conjoint, C62 et ζ_c (μ̄ = 0,60, ζ = 8, n_a = 12)
+
+| Configuration | φ = 1 : 0 / 2 / 10 % | φ = 0 : 0 / 2 / 10 % | ζ_c à 2 %, φ = 0 | φ\* 2 % / 10 % | Doublement sous φ = 0, 2 % / 10 % |
+|---|---|---|---|---|---|
+| ϑ = 0,10, λ_w = 1 (§ 3.13, contrôle) | 0,997240 / 0,996922 / 0,997148 | 0,998235 / **1,000035** / 1,009661 | **8,763** | 0,0111 / 0,5713 | 19 805 / 72 tours |
+| ϑ = 0,10, λ_w = 0,18 | — | ζ = 8 : 1,000184 à 2 % | **aucun sur [2 ; 20]** (1,002882 à ζ = 2, 1,000191 à ζ = 20) | 0,0745 / 0,5946 | — |
+| **ϑ = 0,15**, λ_w = 1 (table P sans #45) | 0,997246 / 0,996954 / 0,997202 | 0,998668 / **1,000438** / 1,010255 | **16,763** | 0,1231 / 0,5874 | 1 583 / 68 tours |
+| **ϑ = 0,15, λ_w = 0,18 (table P avec #45)** | **0,997752 / 0,997502 / 0,997336** | **0,999071 / 1,000490 / 1,007513** | **aucun sur [2 ; 20]** (1,003457 à ζ = 2 ; 1,000469 à ζ = 20) | **0,1789 / 0,6100** | **1 415 / 93 tours** |
+| ϑ = 0,15, λ_w = 0,2 / 0,284 / 0,5 | 0,997423 / 0,997226 / 0,997051 à 2 % | 1,000486 / 1,000473 / 1,000454 à 2 % | aucun sur [2 ; 20] | 0,1723 / 0,1544 / 0,1356 à 2 % | — |
+
+À 2 %, sous φ = 0, la racine dominante est une paire complexe dans toutes les configurations (périodes de 2 049 à 2 554 tours). À 10 %, elle est réelle. **Vérifiée** (maquette).
+
+Ce que cela change pour C62 (P219, P222, P224) :
+- **Constat indépendant de #45.** ϑ = 0,15 (#130), seul, déplace déjà ζ_c de 8,76 à **16,76**, soit σ_c ≈ 16,76 × (0,029608 + 0,05) ≈ 1,33 sous la correspondance du § 3.1 (**hypothèse**). C'est au-dessus de la fourchette de σ lue (0,5 à 1,0). **Vérifiée** pour ζ_c ; σ_c est une hypothèse.
+- Avec λ_w = 0,18, **aucun ζ_c n'existe dans le domaine** (ζ ≤ 20, P139). À 2 % et sous φ = 0, la boucle est faiblement explosive pour tout ζ : module 1,00049, enveloppe doublée en 1 415 tours (118 ans), imperceptible sur une partie.
+- La formule adoptée pour M34, « quasi neutre à 2 %, signe dépendant de ζ », **ne tient plus** à la table P, avec ou sans #45 (question 5).
+- À 10 %, λ_w = 0,18 **ralentit** la dérive (doublement en 93 tours contre 68) et relève φ\* de 0,587 à 0,610.
+- La réserve du § 3.13.8 se confirme : la marge de 3,5e−5 à 2 % change de signe avec le reste de la calibration (ϑ, λ_w).
+- Sous φ = 1 (socle de référence), le rayon reste sous 1 : 0,997502 à 2 %, demi-vie de 277 tours, contre 227.
+
+#### 6.4.6 Bancs choqués (moteur, 720 pas ; table du dépôt, seule λ_w change)
+
+| Banc, π\* | Grandeur (écart au sentier sans choc) | λ_w = 1 | λ_w = 0,284 | **λ_w = 0,18** |
+|---|---|---|---|---|
+| D, 2 % (θ_G × 1,25, tours 1 à 12) | Arrêt ; plafond de E1 | aucun ; actif au pas 0 | aucun ; actif au pas 0 | **aucun ; actif au pas 0** |
+| | Pic du glissement des prix − π\* | +16,00 pt (pas 13) | +10,43 pt | **+9,54 pt** |
+| | Pic de i_CB − ī | +9,99 pt (pas 15) | +6,52 pt | **+5,95 pt** |
+| | U − U^eq extrême | −5,00 pt (borne N ≤ N^pa) | −5,00 pt | −5,00 pt |
+| | U − U^eq au pas 719 | −0,009 pt | −0,038 pt | **−0,068 pt** |
+| D, 10 % (× 1,60) | Pic de récession U − U^eq | +12,41 pt (pas 22) | +7,23 pt | **+5,84 pt** (pas 26) |
+| | Pic du glissement − π\* | +48,7 pt | +35,3 pt | **+33,3 pt** |
+| D, 0 % | Pic du glissement − π\* | +15,48 pt | +10,07 pt | +9,21 pt |
+| BF, 2 % (ς_B = 0,5 au pas 5, θ_CB = 0,5) | Arrêt ; plafond de E6 (Tr/Tr^lev au pas 6) | aucun ; 0,4954, non versés > 0 | idem | **idem** |
+| | Pic du glissement − π\* | +6,21 pt | +3,15 pt | **+2,71 pt** |
+| BF, 0 et 10 % | Plafond de E6 | 0,4989 et 0,4814 | idem | idem |
+
+- **Aucun banc arrêté.** D lie encore le plafond de E1, et BF celui de E6 (P184).
+- Une vitesse salariale plus faible amortit la spirale salaires – prix : le pic d'inflation baisse d'environ 40 %, la récession qui suit à 10 % de moitié.
+- Le retour est plus lent : écart résiduel de chômage de −0,07 point au bout de 60 ans à 2 %.
+- La borne N ≤ N^pa est atteinte dans les deux cas.
+- **Vérifiée** sur le moteur, à la table de `main`. Les bancs à la table P sont **non mesurés** (rang 8).
+
+#### 6.4.7 Autres valeurs publiées (surface de `docwriter`)
+
+**Maquette conjointe** (`maq45.py 0.18`, table de `main`) :
+- 148 chiffres relevés : **67 en écart**, contre 9 à λ_w = 1, tous préexistants ;
+- **8 sans mesure**, parce que la frontière publiée n'existe plus dans son intervalle.
+
+| Endroit (ligne du `.tex`) | Chiffres | Exemple, publié → λ_w = 0,18 |
+|---|---|---|
+| `sec:prix-conditions` (l. 1695) | 7 | boucle salaires – prix, § 6.4.4 |
+| `sec:menages-inflation` (l. 1918), `tab:instabilites` (l. 4142) | 12 + 6 | lecture (a), terme d'entretien : 1,030357 / 1,005801 / 1,059130 / 1,060998 → **0,98682 / 0,98721 / 0,99696 / 0,99161** ; glissement de Haig-Simons : 1,0231 / 1,0271 → 0,9798 / 0,9792 |
+| `sec:menages-conditions` (l. 2001) | 6 | 0,9640 → ≈ 0,977 |
+| `sec:banque_centrale-conditions` et `sec:finances_publiques-conditions` (l. 3015, 3455) | 21 | demi-vie du socle 240 → 247,5 tours ; marge conjointe (facteur 1,7135 sur β, a_π, η_r) : **plus de frontière sur [1 ; 2]** |
+| `sec:finances_publiques-impots` (l. 3256) | 6 | doublement sous φ = 0 : 381,6 → 421,6 ; 63 → 85,3 tours (ζ = 4) |
+| l. 115 et l. 4079 | 3 | lecture (a) à n_a = 4 : 1,0415 → 0,9588 |
+| Frontières disparues | 8 | ν_H = 0,586 et h = 0,604 (instabilité 17) ; facteur de la marge conjointe et ses périodes |
+
+**Texte de la spécification** :
+- `sec:travail-conditions`, `\limites`, « Calibration » : à réécrire avec S1 à S4 (§ 6.2).
+- `sec:banque_centrale-…` : ratio de sacrifice 1/(λ_e λ_w β) = 2,5 et coût en chômage 2,5000 / 2,4510 (`tests/invariants/test_boucle_t3_bc3.py`, l. 519) ; ils deviennent **13,89 / 13,62** point-années par point à λ_w = 0,18 (formule, **vérifiée** ; mesure moteur non refaite).
+- `tab:calibration` : ligne λ_w.
+- Fiche 3, § 3.N-7 et § 3.N-11.
+
+### 6.5 Conditions d'existence et domaine
+
+- Domaine 0 < λ_w ≤ n_a : 0,18 est tenu, sans écrêtage.
+- λ_w n'entre dans aucune condition d'existence du point fixe (Div_F, dividende de la banque, ν_H λ_H, coefficient de richesse, D1, D2, E1, E6, caisse) : le script est identique au bit (§ 6.4.2).
+- Aucune équation, aucune phase ni aucune variable d'état ne change.
+- **Aucune condition d'arrêt du plan n'est rencontrée** : l'état stationnaire est inchangé, aucun banc n'est arrêté, et D et BF lient leur plafond.
+- Deux constats touchent des résultats publiés hors de #45 : C62 (§ 6.4.5) et l'instabilité 17 (§ 6.6). Le mainteneur dit s'ils sont une « question de fond hors des cinq issues » (questions 5 et 6).
+- **Vérifiée.**
+
+### 6.6 Instabilité connue n° 17 : conditionnelle à λ_w (constat)
+
+- `tab:instabilites`, ligne 17, et `sec:menages-inflation` motivent l'écart de la lecture (a) des ménages (#58 ; M27) par une boucle « explosive » : 1,0275 / 1,0029 / 1,0561 / 1,0580, mesurée à λ_w = 1.
+- À λ_w = 0,284, trois configurations sur quatre passent sous 1 (0,985 / 0,985 / **1,0046** / 0,998).
+- À λ_w = 0,18, **les quatre passent sous 1** (0,9867 / 0,9871 / 0,9940 / 0,9887), et n_a = 4 aussi (0,9588).
+- Les frontières ν_H < 0,586 et h < 0,604 n'existent plus. L'instabilité voisine (glissement de Haig-Simons, 1,0223 / 1,0218) passe à 0,98 environ.
+- L'instabilité n'est pas réintroduite : elle disparaît à la vitesse sourcée. Mais le motif de stabilité publié de M27 ne tient qu'à λ_w = 1.
+- **Vérifiée** (maquette, table de `main`). À μ̄ = 0,60 et ν_H recalibré (#62) : **non mesuré**.
+
+### 6.7 Questions au mainteneur
+
+1. **Valeur de λ_w** : 0,18 (pente de la zone euro), 0,20 (valeur ronde, au bord de la pente lue, égale à λ_e) ou 0,284 (vitesse européenne de S2, pente hors fourchette) ? *Avis : **0,18**.*
+2. **Lecture du critère de #45 pour la vitesse.** λ_w = 0,18 donne c = 0,166. C'est dans la fourchette agrégée de S2 (≈ 0 à 0,25), mais sous la fourchette régionale de S1 (0,19 à 0,40), que S2 juge biaisée vers le haut (p. 7 ; argument non mesuré). *Avis : retenir la fourchette agrégée et déclarer S1 comme borne haute régionale, contestée.* Aucune valeur de λ_w à β = 2 n'est à la fois dans S1 (salaire horaire) et dans la pente de S3 et S4 : l'intersection est vide, de 0,198 à 0,209.
+3. **β hors périmètre** (P204). Avec β = 1,4 (élasticité corrigée de −0,07), λ_w = 0,25 tiendrait les deux fourchettes (variante V4). *Avis : garder β = 2, conforme (fiche 3) ; consigner V4 comme variante, sans issue tant qu'aucune mesure ne le demande.*
+4. **Coût de la désinflation.** À λ_e = 0,2 inchangé, le coût en chômage d'un choc d'anticipations passe de 2,45 à **13,6** point-années par point (× 5,6). Aucune source de ratio de sacrifice n'a été lue : **non vérifié**. *Avis : committer λ_w au rang 7 comme prévu, publier ce coût « non calibré, #163 », et instruire #163 dès J3-f1.* Un ordre différent (#163 avancée, ou λ_w tenu jusqu'à #163) est à vous.
+5. **C62.** À la table P, la formule « quasi neutre à 2 %, signe dépendant de ζ » (P219, P222) ne tient plus : ϑ = 0,15 seul donne ζ_c = 16,76, et avec λ_w = 0,18 il n'y a plus de ζ_c sur [2 ; 20]. *Avis : formule visée pour M34 : « à 2 %, faiblement explosive sur tout le domaine de ζ (module 1,00049 ; doublement en 1 415 tours) ; explosive à 10 % (doublement en 93 tours ; couverture minimale 0,61) » ; remesure sur le moteur au rang 8 (P224).*
+6. **Instabilité 17 et M27.** Est-ce une question de fond hors des cinq issues, donc une condition d'arrêt ? *Avis : non pour #45 (aucune équation à changer). Republier la ligne 17 sous la forme « explosive à λ_w = 1 ; stable à λ_w calibrée », et ouvrir une issue sur le motif de M27 (§ 6.10), hors branche.*
+
+### 6.8 Points pour `jeu` (je ne les tranche pas)
+
+- **Vitesse salariale perçue.**
+  - Un écart du salaire réel à sa norme se résorbe de moitié en **46 tours (près de 4 ans)**, contre 8 tours aujourd'hui.
+  - Un point de chômage au-dessus de la normale freine la hausse des salaires de **0,36 point par an**, contre 2 points.
+  - Le levier « pouvoir de négociation » (#48, J4), qui passe par ω\*, agirait en quelques années, non en quelques mois.
+- **Boucle salaires – prix** : cycle de 8 à 9 ans (94 à 110 tours), visible sur une partie de 60 à 120 tours, plus lent à s'amortir (demi-vie de 10 à 25 tours selon m).
+- **Chocs** :
+  - une relance excessive produit un pic d'inflation d'environ 40 % plus bas (9,5 contre 16 points) ;
+  - à 10 %, la récession qui suit est deux fois moins profonde ;
+  - le retour à la normale est plus long, le joueur voit donc les séquelles plus longtemps.
+- **Désinflation** : à loi d'anticipation inchangée, elle coûterait environ 13,6 points-années de chômage par point (question 4), un coût que le joueur percevrait comme prohibitif tant que #163 n'est pas traitée.
+- À 2 %, sous φ = 0, aucun effet perceptible (doublement en 118 ans).
+
+### 6.9 Points pour `monnaie` (frontière inflation et dette publique)
+
+- **Indexation.** SN indexe sur π^e avec un coefficient de 1. Les sources indexent sur l'inflation passée avec 0,39 à 0,42 (S4) ou 0,565 à 0,687 (S3). Les pentes lues sont estimées sous cette indexation partielle, et leur transposition à SN est une **hypothèse**.
+- **C7 et #163** : coût en chômage multiplié par 5,6 (question 4). λ_w = 0,20 donnerait λ_w = λ_e et deux persistances égales (demi-vie de 41,2 tours), coïncidence sans effet visible sur les rayons mesurés (§ 6.4.4 et 6.4.5 ; racine double non recherchée, **non vérifiée**).
+- **C62** : formulation de la question 5, à relire. ζ_c dépend de ϑ (#130) autant que de λ_w.
+- **Instabilité 17, M27 et C26** : la lecture (a) devient stable à λ_w calibré (§ 6.6), ce qui touche la clause de réouverture C26 (`sec:menages-inflation`).
+
+### 6.10 Issue proposée (création sur accord)
+
+- **Titre** : Instabilité 17 conditionnelle à λ_w : remesurer la lecture (a) des ménages à la calibration de M34 et réexaminer le motif de stabilité de M27
+- **Libellés** : `needs-triage`
+- **Corps** :
+
+> *Rédigé par l'agent macro (IA).*
+>
+> **Constat** (instruction de #45, 16/11/2026, `docs/blocs/calibration.md` § 6.6, `outils/maquette_conjointe.py`, table de `main`). La ligne 17 de `tab:instabilites` et `sec:menages-inflation` donnent la lecture (a) des ménages (glissement mesuré au lieu de la cible dans Γ^e de H2 et dans le terme d'entretien de H4) comme explosive : 1,0275 / 1,0029 / 1,0561 / 1,0580, et stable seulement pour ν_H < 0,586 ou h < 0,604. Ces valeurs sont mesurées à λ_w = 1. À λ_w = 0,18, valeur proposée par #45, les quatre rayons valent 0,9867 / 0,9871 / 0,9940 / 0,9887 ; à λ_w = 0,284, 0,985 / 0,985 / 1,0046 / 0,998. Les deux frontières n'existent plus sur [0,3 ; 1].
+>
+> **À faire.**
+> - Remesurer la ligne 17 et l'instabilité voisine (glissement de Haig-Simons) à la calibration retenue par M34 (μ̄, ϑ, ν_H, λ_w).
+> - Dire si le motif de stabilité de M27 (lecture (c) sur la cible déclarée) tient encore, et si la clause C26 doit être relue.
+>
+> **Hors périmètre** : la valeur de λ_w (#45) ; la loi d'anticipation (#163).
+>
+> **Liens** : #45, #58, #65, M27, `tab:instabilites`, `sec:menages-inflation`.
+
+### 6.11 Surface pour `coder` et `docwriter` (rangs 7 à 9)
+
+- **Valeurs et sources**
+  - Table du bloc 3 : `LAMBDA_W` 1,0 → 0,18 et sa source.
+  - Défaut `Parametres.lambda_w` du script et sa déclaration (l. 140 et 187).
+  - L'égalité est tenue par `test_valeurs_indicatives_egales_a_celles_du_script`.
+- **Texte de source proposé pour `tab:calibration`** : « 0,18 par an : pente λ_w β = 0,36 point de hausse annuelle du salaire par point d'écart de chômage, égale à la pente de l'écart de chômage dans un panel de 19 pays de la zone euro (−0,364, glissement annuel de la rémunération par salarié, 2000T1–2018T4 ; F. Tagliati, BCE, Occasional Paper 232, 2019, encadré 2, tableau A) et dans la fourchette de 0,29 à 0,40 des États-Unis (Galí, NBER WP 15758, 2010, tableau 1, colonnes 6 et 8, ×4) ; correction annuelle 0,166, sous la correction européenne de 0,25 (Blanchard et Katz, NBER WP 6924, 1999, p. 5, fréquence présumée annuelle) ; la persistance régionale américaine (0,60 à 0,81, Blanchflower et Oswald, NBER WP 11338, 2005, p. 11 et 15) est tenue pour une borne haute contestée ; consulté le 16/11/2026 ».
+- **Valeurs publiées** : celles du § 6.4.7, qui sont des valeurs de la maquette conjointe et du script ; les demi-vies du § 6.4.3 ; `sec:travail-conditions`.
+- **Tests** : `tests/unitaires/test_travail.py` l. 133 (tuple paramétré qui contient 0,91667) est à relire par `coder` (non vérifié). Le banc P87 (`test_boucle_t3_bc3.py`) change de trajectoire, ce qui est attendu.
+- **Concordance** : aucun label ajouté ni retiré (90).
+
+### 6.12 Statut des conclusions
+
+- **Vérifiées** (source citée, ou commande et sortie) :
+  - S1 à S4, contre leur texte ; conversions ;
+  - λ_w n'entre dans l'état stationnaire, ni du script (au bit, deux tables) ni du moteur (critère « Branche », 720 pas, trois π\*) ;
+  - demi-vies ; critère 5 (d) à la calibration et aux variantes ;
+  - rayons du socle sous φ = 0 et φ = 1 ; ζ_c, φ\* et doublements ;
+  - bancs D et BF (table de `main`) ;
+  - chiffres de la maquette en écart et frontières disparues ;
+  - instabilité 17 à λ_w = 0,18 et 0,284 ;
+  - formule du coût en chômage.
+- **Hypothèses** :
+  - comparabilité des pentes de formes réduites sans terme de niveau avec λ_w β, marge à sa norme ;
+  - transposition de l'indexation partielle ;
+  - fréquence annuelle de la correction européenne de S2 ;
+  - σ_c ≈ 1,33 (correspondance du § 3.1) ;
+  - biais régional de S1 selon S2 (argument de S2, non mesuré).
+- **Non vérifiées** :
+  - OCDE 1997 ; une source de ratio de sacrifice ;
+  - bancs, C62 et instabilité 17 à la table P complète, avec ν_H de #62 (rang 8) ;
+  - tests du dépôt exécutés à λ_w = 0,18 ; coût en chômage remesuré sur le moteur.
