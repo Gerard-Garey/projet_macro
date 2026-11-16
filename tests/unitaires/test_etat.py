@@ -1165,11 +1165,14 @@ def test_acces_dynamiques_aux_attributs_liste_fermee():
 # tous les tests textuels (accès dynamiques ci-dessus, `etat_suivant` ci-dessous). Sont visés
 # aussi les chemins par lesquels on atteint une primitive sous un nom calculé : l'espace des
 # primitives (`builtins`, `__builtins__`), `__self__` (`print.__self__` est le module
-# `builtins`), les tables d'espaces de noms (`globals`, `vars`, `sys.modules`) et l'importation
-# dynamique (`importlib`, `import_module`).
+# `builtins`), les tables d'espaces de noms (`globals`, `vars`, `sys.modules`, sous son nom,
+# importé de `sys` ou pris sur un alias de `sys` ; attributs `__globals__` d'une fonction,
+# `f_globals`, `f_builtins` et `f_locals` d'un cadre, P196) et l'importation dynamique
+# (`importlib`, `import_module`).
 EXECUTIONS_DE_TEXTE = {"eval", "exec", "compile", "__import__"}
 _ESPACES_DES_PRIMITIVES = {"builtins", "__builtins__"}
 _TABLES_D_ESPACES = {"globals", "vars"}
+_ATTRIBUTS_D_ESPACES = {"__globals__", "f_globals", "f_builtins", "f_locals"}
 _IMPORTATION_DYNAMIQUE = {"importlib", "import_module"}
 
 
@@ -1181,32 +1184,44 @@ def _noms_importes_d_ailleurs(arbre):
             for a in n.names}
 
 
-def _execution_de_texte(n, parent, importes=frozenset()):
+def _alias_de_sys(arbre):
+    """Noms sous lesquels le module lie `sys` (`import sys`, `import sys as s`), `sys` compris
+    dans tous les cas (au plus strict)."""
+    return {"sys"} | {a.asname or a.name for n in ast.walk(arbre) if isinstance(n, ast.Import)
+                      for a in n.names if a.name == "sys"}
+
+
+def _execution_de_texte(n, parent, importes=frozenset(), alias_de_sys=frozenset({"sys"})):
     """Chemin vers une exécution de texte (voir ci-dessus) :
 
     - nom (appelé ou non, alias compris) : `eval`, `exec`, `compile`, `__import__` des
       primitives (non liés par `from <autre module> import`), `builtins`, `__builtins__`,
       `globals`, `vars`, `importlib`, `import_module` ;
-    - attribut : `__self__`, `__builtins__`, `builtins`, `import_module`, `sys.modules`, ou une
-      des quatre primitives prise sur `builtins` ou `__builtins__` (`builtins.exec`) ;
-      `re.compile`, `x.eval()` ne sont pas visés ;
+    - attribut : `__self__`, `__builtins__`, `builtins`, `import_module`, `__globals__`,
+      `f_globals`, `f_builtins`, `f_locals`, `modules` pris sur `sys` ou sur un de ses alias
+      (`alias_de_sys`, `import sys as s` puis `s.modules`), ou une des quatre primitives prise
+      sur `builtins` ou `__builtins__` (`builtins.exec`) ; `re.compile`, `x.eval()` ne sont pas
+      visés ;
     - importation : de `builtins` ou d'`importlib` (`import builtins`, `from builtins import
-      eval as e`, `import importlib.util`, `from importlib import import_module`).
+      eval as e`, `import importlib.util`, `from importlib import import_module`), ou de
+      `modules` depuis `sys` (`from sys import modules`).
     """
     if isinstance(n, ast.Name):
         if n.id in EXECUTIONS_DE_TEXTE:
             return n.id not in importes
         return n.id in _ESPACES_DES_PRIMITIVES | _TABLES_D_ESPACES | _IMPORTATION_DYNAMIQUE
     if isinstance(n, ast.Attribute):
-        return (n.attr in _ESPACES_DES_PRIMITIVES | {"__self__", "import_module"}
+        return (n.attr in _ESPACES_DES_PRIMITIVES | _ATTRIBUTS_D_ESPACES
+                | {"__self__", "import_module"}
                 or (n.attr == "modules" and isinstance(n.value, ast.Name)
-                    and n.value.id == "sys")
+                    and n.value.id in alias_de_sys)
                 or (n.attr in EXECUTIONS_DE_TEXTE and isinstance(n.value, ast.Name)
                     and n.value.id in _ESPACES_DES_PRIMITIVES))
     if isinstance(n, ast.alias):
         racines = _ESPACES_DES_PRIMITIVES | {"importlib"}
         if isinstance(parent, ast.ImportFrom):
-            return (parent.module or "").split(".")[0] in racines
+            return ((parent.module or "").split(".")[0] in racines
+                    or (parent.module == "sys" and n.name == "modules"))
         return n.name.split(".")[0] in racines
     return False
 
@@ -1215,35 +1230,48 @@ def test_aucune_execution_de_texte_dans_src():
     """Décision du mainteneur du 16/11/2026, à côté du test des accès dynamiques : aucun chemin
     vers une exécution de texte (`_execution_de_texte`) dans `src/`, module entier (liste vide
     imposée)."""
-    importes = {chemin.relative_to(SOURCE).as_posix(): _noms_importes_d_ailleurs(
-        ast.parse(chemin.read_text(encoding="utf-8"))) for chemin in SOURCE.rglob("*.py")}
+    arbres = {chemin.relative_to(SOURCE).as_posix(): ast.parse(
+        chemin.read_text(encoding="utf-8")) for chemin in SOURCE.rglob("*.py")}
+    importes = {fichier: _noms_importes_d_ailleurs(arbre) for fichier, arbre in arbres.items()}
+    alias_de_sys = {fichier: _alias_de_sys(arbre) for fichier, arbre in arbres.items()}
     sites = {(fichier, nom, ast.unparse(parent if isinstance(n, ast.alias) else n))
              for fichier, nom, n, parent in _noeuds_de_src()
-             if _execution_de_texte(n, parent, importes[fichier])}
+             if _execution_de_texte(n, parent, importes[fichier], alias_de_sys[fichier])}
     assert sites == set()
 
 
 def test_execution_de_texte_detectee():
     """Le prédicat de `test_aucune_execution_de_texte_dans_src` reconnaît chaque forme visée
-    (dont les formes de l'audit du rang 4) et ignore `compile` importé d'un autre module,
-    `re.compile`, `x.eval()` et `x.evaluer(1)`."""
+    (dont les formes de l'audit du rang 4, et celles de P196 : `__globals__`, `f_globals`,
+    `f_builtins`, `f_locals`, `modules` importé de `sys`, `sys` sous alias) et ignore `compile`
+    importé d'un autre module, `re.compile`, `x.eval()`, `x.evaluer(1)`, `modules` importé d'un
+    autre module ou pris sur un autre objet."""
     def trouves(source):
         arbre = ast.parse(source)
         importes = _noms_importes_d_ailleurs(arbre)
+        alias_de_sys = _alias_de_sys(arbre)
         parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
         return [ast.unparse(parents[id(n)] if isinstance(n, ast.alias) else n)
                 for n in ast.walk(arbre)
-                if _execution_de_texte(n, parents.get(id(n)), importes)]
+                if _execution_de_texte(n, parents.get(id(n)), importes, alias_de_sys)]
     for source in ('eval("pas.etat_" + "suivant")', "exec(texte)", "c = compile",
                    '__import__("os")', "import builtins", "from builtins import eval as e",
                    "x = __builtins__", "m.__builtins__", "builtins.exec(t)",
                    'print.__self__.eval("1")', 'globals()["__builtins__"]["eval"]',
                    'sys.modules["builtins"].exec', 'importlib.import_module("builtins")',
                    'vars(m)["eval"]', "import importlib", "import importlib.util",
-                   "from importlib import import_module as charger"):
+                   "from importlib import import_module as charger",
+                   # P196 : espaces de noms d'une fonction et d'un cadre ; `sys.modules` importé
+                   # par son nom ou pris sur un alias de `sys`.
+                   'f.__globals__["__builtins__"]', "cadre.f_globals", "cadre.f_builtins",
+                   "cadre.f_locals", "from sys import modules",
+                   'from sys import modules as m\nm["builtins"]',
+                   'import sys as s\ns.modules["builtins"]'):
         assert trouves(source), source
+    assert trouves('import sys as s\ns.modules["builtins"]') == ['s.modules']
     for source in ("from re import compile", 'from re import compile\ncompile("a")',
-                   're.compile("a")', "x.eval()", "x.evaluer(1)"):
+                   're.compile("a")', "x.eval()", "x.evaluer(1)", "from paquet import modules",
+                   "x.modules", "import sys as s\ns.argv"):
         assert trouves(source) == [], (source, trouves(source))
 
 
