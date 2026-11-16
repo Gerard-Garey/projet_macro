@@ -1073,4 +1073,4 @@ Je propose ce texte pour `sec:finances_publiques-impots`, `sec:finances_publique
 - question 3 : κ inchangé, écart déclaré ; calage conjoint de κ et δ dans #164, où les mesures d'Eurostat sont versées en commentaire (P220) ;
 - indicateur d'investissement au tour : issue #165, rattachée au J4 (P221) ;
 - question 4 (distribution nette, publiée avec la brute) : avis de `macro` suivi sous la délégation P211.
-
+- remesures de C62 (§ 3.13) : formulation du § 3.13.7 adoptée pour M34, sous relecture de `monnaie` (P222) ; issue #166 sur l'estimateur de C62, ajoutée au périmètre et traitée au rang 3 (P223) ; ζ_c remesuré au rang 8 (P224).
