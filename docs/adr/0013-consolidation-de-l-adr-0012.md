@@ -5,6 +5,8 @@ date: 2026-11-14
 
 # Document de lecture de l'ADR 0012 : état en vigueur au 14/11/2026 des interfaces du noyau, de l'ordonnanceur et du schéma d'état, consolidé sans décision nouvelle ; les annotations futures vont ici
 
+> **Consolidé par l'ADR 0014** (*mention du 16/11/2026*, décision P176 du mainteneur). L'état en vigueur du présent ADR et de ses annotations est consolidé, sans décision nouvelle, dans `docs/adr/0014-consolidation-de-l-adr-0013.md`, sous les mêmes étiquettes. Le présent texte reste intact et fait foi ; il ne reçoit plus d'annotation : les annotations futures de ces contrats vont à l'ADR 0014.
+
 > **Statut « accepté » le 14/11/2026, par décision du mainteneur** (P76, option (b), #119), sans Fable (seuil § 4.3 de `docs/agents/routage.md` atteint, consultation déclinée). Rédigé par `architect-approfondi` (Opus, effort `high`) au rang 1b de J3-c (`claude/j3-monnaie`, PR #129, tête `d246c28`).
 
 ## Contexte
