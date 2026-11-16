@@ -7,7 +7,10 @@ grandeurs d'ouverture hors empreinte), refus bruyant d'un bloc manquant (en appe
 une racine extraite sans un module de bloc), arrêt du moteur consigné comme écart (code 1),
 écart signalé par `--comparer` (code 1) ; réserves du rang 1a (P185) : sous-classe d'un bloc
 réel refusée (code 2), bloc 9 composé admis dans les seuls bancs D et BF (m-a), écart des
-seules grandeurs d'ouverture en code 3, ajout comme retrait (m-c ; P186, P189).
+seules grandeurs d'ouverture en code 3, ajout comme retrait (m-c ; P186, P189) ; variables du pas
+exclues (`--exclure-variables`, P187) : nom inconnu refusé, seule `variables` changée, noms
+consignés dans le document, règles de comparabilité à une référence (référence avec
+exclusion refusée : M1 de l'audit), banc arrêté (m1).
 """
 
 import dataclasses
@@ -312,3 +315,206 @@ def test_aide_cite_les_codes_de_sortie(emp, capsys):
     aide = " ".join(capsys.readouterr().out.split())
     assert "3 trajectoires identiques, grandeurs d'ouverture différentes" in aide
     assert "3 si seules les grandeurs d'ouverture diffèrent" in aide
+    assert "référence mesurée avec exclusion" in aide and "critère de P187 tenu" in aide
+
+
+# --------------------------------------------------------------------------
+# Variables exclues (`--exclure-variables`, P187)
+# --------------------------------------------------------------------------
+
+EXCLUES = ("iB_BH", "iB_BBk", "iB_BCB")
+BANCS_COURTS = ("socle complet", "essai pur")
+
+
+def test_nom_exclu_inconnu_refuse_code_2(emp, racine, capsys):
+    """Un nom qui n'est une variable du pas d'aucun banc mesuré est refusé (code 2), y compris
+    à côté de noms valides, et y compris quand il n'existe que dans un banc non mesuré : jamais
+    une exclusion silencieuse d'une faute de frappe."""
+    for bancs, noms in ((BANCS_COURTS, ("iB_BH", "iB_BHH")), (("essai pur",), ("iB_BH",))):
+        capsys.readouterr()
+        assert emp.main(["--bancs", *bancs, "--pas", "1", "--exclure-variables",
+                         *noms]) == emp.REFUS == 2
+        err = capsys.readouterr().err
+        assert "refus" in err and "variable du pas d'aucun banc mesuré" in err
+    with pytest.raises(emp.BancNonConforme, match="iB_BHH"):
+        emp.empreintes(racine, ("socle complet",), 1, ("iB_BHH",))
+
+
+def test_exclusion_ne_change_que_les_variables(emp, racine):
+    """L'exclusion change `variables` et l'empreinte qui en dépend (banc à π*, banc, globale),
+    et seulement elles : `etats`, `montants` et `grandeurs` égaux ; sans retrait, la
+    sous-empreinte est celle de la mesure sans exclusion ; un banc sans ces variables est
+    inchangé."""
+    sans = emp.empreintes(racine, BANCS_COURTS, NB_PAS_COURT)
+    avec = emp.empreintes(racine, BANCS_COURTS, NB_PAS_COURT, EXCLUES)
+    assert sans["variables_exclues"] == [] and avec["variables_exclues"] == sorted(EXCLUES)
+    for pi, v in avec["bancs"]["socle complet"].items():
+        s = sans["bancs"]["socle complet"][pi]
+        for partie in ("etats", "montants", "grandeurs"):
+            assert v[partie] == s[partie], (pi, partie)
+        assert v["variables"] != s["variables"] and v["empreinte"] != s["empreinte"]
+        assert v["variables_sans_exclusion"] == s["variables"]
+        assert v["exclues_presentes"] == sorted(EXCLUES)
+        assert "variables_sans_exclusion" not in s and "exclues_presentes" not in s
+    for pi, v in avec["bancs"]["essai pur"].items():
+        s = sans["bancs"]["essai pur"][pi]
+        assert {p: v[p] for p in s} == s and v["exclues_presentes"] == []
+    assert avec["par_banc"]["essai pur"] == sans["par_banc"]["essai pur"]
+    assert avec["par_banc"]["socle complet"] != sans["par_banc"]["socle complet"]
+    assert avec["globale"] != sans["globale"]
+
+
+def test_hacheur_retire_les_seules_variables_exclues(emp, racine):
+    """Fin de pas fabriquée : exclure `b` équivaut à ne pas l'avoir écrite ; état et grandeurs
+    inchangés."""
+    _, initial, _ = racine.construire(emp.SOCLE_COMPLET, 0.02)
+
+    def fin(variables):
+        return racine.fin_de_pas(t=0, etat=initial, variables_du_pas=variables,
+                                 grandeurs_ouverture=(("g", 1.0),))
+    avec_b = (("a", 1.0), ("b", 3.0))
+    exclu = emp.Hacheur(racine.champs, racine.cloture, racine.fin_de_pas, {"b"})
+    exclu.relever(fin(avec_b))
+    sans_b = _hacher(emp, racine, (fin((("a", 1.0),)),))
+    complet = _hacher(emp, racine, (fin(avec_b),))
+    assert exclu.complet.hexdigest() == sans_b.complet.hexdigest()
+    for partie in emp.PARTIES + emp.HORS_EMPREINTE:
+        assert exclu.parties[partie].hexdigest() == sans_b.parties[partie].hexdigest()
+    assert exclu.sans_exclusion.hexdigest() == complet.parties["variables"].hexdigest()
+    assert exclu.exclues_presentes == {"b"}
+
+
+def test_document_json_porte_les_noms_exclus(emp, tmp_path, capsys):
+    """`--ecrire` consigne les noms exclus (triés, sans doublon), l'affichage les cite ; sans
+    l'option, la liste est vide."""
+    chemin = tmp_path / "avec.json"
+    assert emp.main(["--bancs", *BANCS_COURTS, "--pas", "1", "--ecrire", str(chemin),
+                     "--exclure-variables", "iB_BH", "iB_BCB", "iB_BBk", "iB_BH"]) == 0
+    assert "variables du pas exclues (P187) : iB_BBk, iB_BCB, iB_BH" in capsys.readouterr().out
+    document = json.loads(chemin.read_text(encoding="utf-8"))
+    assert document["variables_exclues"] == ["iB_BBk", "iB_BCB", "iB_BH"]
+    assert document["bancs"]["socle complet"]["0.02"]["exclues_presentes"] == document[
+        "variables_exclues"]
+    assert emp.main(["--bancs", "essai pur", "--pas", "1", "--ecrire", str(chemin)]) == 0
+    assert json.loads(chemin.read_text(encoding="utf-8"))["variables_exclues"] == []
+
+
+def _ecrire(emp, tmp_path, nom, exclues=()):
+    chemin = tmp_path / nom
+    options = ["--exclure-variables", *exclues] if exclues else []
+    assert emp.main(["--bancs", *BANCS_COURTS, "--pas", "2", "--ecrire", str(chemin),
+                     *options]) == 0
+    return chemin
+
+
+def _comparer(emp, chemin, exclues=()):
+    options = ["--exclure-variables", *exclues] if exclues else []
+    return emp.main(["--bancs", *BANCS_COURTS, "--pas", "2", "--comparer", str(chemin),
+                     *options])
+
+
+def test_comparaison_avec_exclusion(emp, tmp_path, capsys):
+    """Règles de comparabilité (P187 : seules des variables absentes de la référence
+    s'excluent) :
+    - référence sans exclusion où les variables exclues sont **absentes** (simulée par une
+      mesure avec exclusion dont la clé `variables_exclues` est retirée) : code 0 ;
+    - référence sans exclusion qui **porte** les variables exclues : refus (code 2), et une
+      seule présence établie (un π* sur trois) suffit ;
+    - référence mesurée avec exclusion, mesure sans, avec les mêmes ou d'autres exclusions :
+      refus (code 2) ;
+    - référence sans exclusion, `variables` différente des deux sous-empreintes à tous les π* :
+      écart (code 1), absence non établie signalée et décomptée."""
+    sans = _ecrire(emp, tmp_path, "sans.json")
+    avec = _ecrire(emp, tmp_path, "avec.json", EXCLUES)
+    absentes = json.loads(avec.read_text(encoding="utf-8"))
+    del absentes["variables_exclues"]
+    absentes_chemin = tmp_path / "absentes.json"
+    absentes_chemin.write_text(json.dumps(absentes), encoding="utf-8")
+    assert _comparer(emp, absentes_chemin, EXCLUES) == 0
+    capsys.readouterr()
+    assert _comparer(emp, sans, EXCLUES) == 2
+    err = capsys.readouterr().err
+    assert "présentes dans la référence" in err and "socle complet, π* = 0.02" in err
+    assert "essai pur" not in err
+    for exclues in (EXCLUES, (), ("iB_BH",)):
+        capsys.readouterr()
+        assert _comparer(emp, avec, exclues) == 2, exclues
+        assert "référence mesurée avec exclusion" in capsys.readouterr().err
+    document = json.loads(sans.read_text(encoding="utf-8"))
+    une_seule = json.loads(json.dumps(document))
+    for pi in ("0.0", "0.02"):
+        une_seule["bancs"]["socle complet"][pi]["variables"] = "0" * 64
+    sans.write_text(json.dumps(une_seule), encoding="utf-8")
+    capsys.readouterr()
+    assert _comparer(emp, sans, EXCLUES) == 2
+    err = capsys.readouterr().err
+    assert "présentes dans la référence" in err and "socle complet, π* = 0.1" in err
+    assert "π* = 0.02" not in err
+    for valeurs in document["bancs"]["socle complet"].values():
+        valeurs["variables"] = "0" * 64
+    sans.write_text(json.dumps(document), encoding="utf-8")
+    assert _comparer(emp, sans, EXCLUES) == 1
+    err = capsys.readouterr().err
+    assert "socle complet, π* = 0.1, variables" in err
+    assert err.count("absence dans la référence non établie") == 3
+    # En-tête : écarts de trajectoire, grandeurs et absences non établies, tous décomptés.
+    entete, = (ligne for ligne in err.splitlines() if ligne.startswith("ÉCART"))
+    assert entete.endswith(f"({sum(ligne.startswith('  ') for ligne in err.splitlines())}) :")
+
+
+def test_exclusions_symetriques_masqueraient_un_ecart_refus(emp, racine, tmp_path, monkeypatch,
+                                                            capsys):
+    """M1 de l'audit : une variable exclue présente dans la référence et altérée (iB_BH + 1)
+    laisse égaux les documents mesurés avec les mêmes exclusions (l'écart serait masqué) ; la
+    comparaison à une référence mesurée avec exclusion est donc refusée (code 2)."""
+    reference = _ecrire(emp, tmp_path, "avec.json", EXCLUES)
+    relever = emp.Hacheur.relever
+
+    def relever_altere(self, e):
+        if type(e) is racine.fin_de_pas:
+            e = dataclasses.replace(e, variables_du_pas=tuple(
+                (nom, v + 1.0 if nom == "iB_BH" else v) for nom, v in e.variables_du_pas))
+        relever(self, e)
+    monkeypatch.setattr(emp.Hacheur, "relever", relever_altere)
+    altere = tmp_path / "altere.json"
+    assert emp.main(["--bancs", *BANCS_COURTS, "--pas", "2", "--ecrire", str(altere),
+                     "--exclure-variables", *EXCLUES]) == 0
+    un, deux = (json.loads(f.read_text(encoding="utf-8")) for f in (reference, altere))
+    assert emp.comparer(deux, un) == []  # masquage, sans la règle de refus
+    assert deux["bancs"]["socle complet"]["0.02"]["variables_sans_exclusion"] != (
+        un["bancs"]["socle complet"]["0.02"]["variables_sans_exclusion"])
+    capsys.readouterr()
+    assert _comparer(emp, reference, EXCLUES) == 2
+    assert "P187 non jugeable" in capsys.readouterr().err
+
+
+def test_banc_arrete_nom_exclu_non_conclu_inconnu(emp, racine, monkeypatch, capsys):
+    """m1 de l'audit : un banc arrêté garde les noms exclus relevés jusqu'à l'arrêt ; un nom
+    non relevé parce que le seul banc qui le porte s'est arrêté n'est pas conclu inconnu :
+    code 1 (arrêt), jamais un refus (code 2)."""
+    executer = racine.ordo.executer_pas
+
+    class DefautFabrique(Exception):
+        pass
+
+    def arreter_au_pas(t_arret):
+        def executer_puis_arreter(etat, *args, **kwargs):
+            if etat.t == t_arret:
+                raise DefautFabrique("arrêt fabriqué")
+            return executer(etat, *args, **kwargs)
+        return executer_puis_arreter
+    monkeypatch.setattr(racine.ordo, "executer_pas", arreter_au_pas(3))
+    v = emp.empreinte_du_banc(racine, emp.SOCLE_COMPLET, 0.02, 5, EXCLUES)
+    assert v["arret"]["pas"] == 3 and v["exclues_presentes"] == sorted(EXCLUES)
+    capsys.readouterr()
+    assert emp.main(["--bancs", "socle complet", "--pas", "5", "--exclure-variables",
+                     *EXCLUES]) == 1
+    err = capsys.readouterr().err
+    assert "socle complet, π* = 0.02 : arrêt au pas 3, DefautFabrique" in err
+    assert "refus" not in err
+    monkeypatch.setattr(racine.ordo, "executer_pas", arreter_au_pas(0))
+    assert emp.main(["--bancs", "socle complet", "--pas", "5", "--exclure-variables",
+                     *EXCLUES]) == 1
+    err = capsys.readouterr().err
+    assert "arrêt au pas 0" in err and "inconnues non établies" in err
+    assert "refus" not in err
