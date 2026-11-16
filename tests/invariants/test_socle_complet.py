@@ -450,6 +450,34 @@ def test_un_seul_calcul_du_besoin_d_emission_par_pas(socle, monkeypatch):
         assert p["19a-ménages"] == 0.0
 
 
+def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, monkeypatch):
+    """Critère de #144, point 1 (ADR 0013, annotation du 16/11/2026, point 1) : sur le socle
+    complet, `defaut_de_domaine` est appelée une fois par pas pour chaque variable d'état d'un
+    bloc (à l'écriture, par `Vue.ecrire_etat`), et une fois par pas pour chaque autre champ
+    (à la clôture, par `etat_de_cloture`) ; trajectoire inchangée au bit."""
+    nb_pas = 4
+    # Le moteur seul : la fabrique de `FinDePas` du `conftest` (contrôle complet propre aux
+    # tests) est retirée, sans quoi chaque champ serait compté une fois de plus par pas.
+    monkeypatch.setattr(ordo, "FinDePas", FinDePas)
+    sentier = socle.sentier(0.02)
+    initial = socle.etat_initial(sentier)
+    temoin, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    appels = []
+    original = schema.defaut_de_domaine
+
+    def compter(nom, valeur):
+        appels.append(nom)
+        return original(nom, valeur)
+    monkeypatch.setattr(schema, "defaut_de_domaine", compter)
+    final, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    assert final == temoin
+    blocs = {v.nom for v in schema.VARIABLES_DES_BLOCS}
+    assert len(blocs) == 20
+    compte = {nom: appels.count(nom) for nom in schema.CHAMPS}
+    assert compte == {nom: nb_pas for nom in schema.CHAMPS}
+    assert len(appels) == nb_pas * len(schema.CHAMPS)
+
+
 # --------------------------------------------------------------------------
 # Cas à la main (critère 1) et lecture de Π^CB (P90)
 # --------------------------------------------------------------------------

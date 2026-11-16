@@ -29,6 +29,33 @@ def _charger(nom, chemin):
     return module
 
 
+@pytest.fixture(autouse=True)
+def etat_de_fin_de_pas_controle_en_entier(request, monkeypatch):
+    """Contrôle complet de chaque état de fin de pas, sur toutes les trajectoires des tests
+    d'invariants (#144, point 1 ; M1 de l'audit du rang 2 de la branche « forme du code »).
+
+    Le moteur ne recontrôle pas, à la clôture, le domaine des variables d'état des blocs
+    (`schema.etat_de_cloture`) : il est contrôlé à l'écriture par `Vue.ecrire_etat`, seul site
+    qui remplit `_Pas.etat_suivant` (tests textuels de `tests/unitaires/test_etat.py`). Pour
+    qu'une valeur entrée par une voie que ces tests textuels ne voient pas (`getattr` dynamique,
+    alias) soit refusée quand même, la `FinDePas` que construit `executer_pas` passe ici par une
+    fabrique qui reconstruit l'état par le constructeur (`EtatPays(**champs)`, contrôle complet)
+    avant de rendre la `FinDePas` réelle (le type relevé par les observateurs est inchangé).
+    Sans coût pour le moteur : tests seulement ; les tests du budget (`budget`), qui
+    chronomètrent le moteur, en sont exclus.
+    """
+    if request.node.get_closest_marker("budget") is not None:
+        return
+    from nations.etat import schema
+    from nations.moteur import ordonnanceur
+    from nations.observation.observateur import FinDePas
+
+    def fin_de_pas_controlee(t, etat, *args, **kwargs):
+        schema.EtatPays(**{nom: getattr(etat, nom) for nom in schema.CHAMPS})
+        return FinDePas(t, etat, *args, **kwargs)
+    monkeypatch.setattr(ordonnanceur, "FinDePas", fin_de_pas_controlee)
+
+
 @pytest.fixture(scope="session")
 def generateur():
     """Module `tests/invariants/generateur_j2.py`, le générateur de flux de #98."""

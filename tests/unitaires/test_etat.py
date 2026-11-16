@@ -6,12 +6,15 @@ aller-retour aux mêmes octets). Chaque test énonce une propriété (décompte,
 refus, égalité bit à bit), jamais une valeur à reproduire.
 """
 
+import ast
 import dataclasses
+import inspect
 import json
 import math
 import struct
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -931,3 +934,230 @@ def test_document_en_texte_refuse():
 def test_monde_vide_aller_retour():
     assert charger(sauvegarder([])) == ()
     assert sauvegarder(charger(sauvegarder([]))) == sauvegarder([])
+
+
+# --------------------------------------------------------------------------
+# Construction de clôture (#144, point 1 ; ADR 0013, annotation du 16/11/2026, point 1)
+# --------------------------------------------------------------------------
+
+SOURCE = Path(__file__).resolve().parents[2] / "src"
+
+
+def _champs(etat):
+    return {nom: getattr(etat, nom) for nom in CHAMPS}
+
+
+def test_etat_de_cloture_egal_au_constructeur_au_bit():
+    """Même objet que `EtatPays(**champs)` : type, égalité, hachage, bits, gel."""
+    etat = etat_pays()
+    cloture = schema.etat_de_cloture(_champs(etat))
+    assert type(cloture) is EtatPays
+    assert cloture == etat and hash(cloture) == hash(etat) and bits(cloture) == bits(etat)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        cloture.t = 1
+
+
+@pytest.mark.parametrize("nom, valeur", [
+    ("identifiant", ""), ("graine", -1), ("t", -1), ("t", 2**63),
+    ("registre_prix", (0.0,) * 13), ("D_H", float("nan")), ("V_flux_etat", float("inf")),
+])
+def test_etat_de_cloture_refuse_un_champ_hors_bloc_hors_domaine(nom, valeur):
+    """Le domaine des champs autres que les variables des blocs (identité, t, registre,
+    positions, V^flux) reste contrôlé à la clôture, avec le refus de `EtatPays`."""
+    champs = _champs(etat_pays())
+    assert nom in champs
+    champs[nom] = valeur
+    with pytest.raises(ValueError, match=f"EtatPays.{nom} : "):
+        schema.etat_de_cloture(champs)
+    with pytest.raises(ValueError, match=f"EtatPays.{nom} : "):
+        EtatPays(**champs)
+
+
+@pytest.mark.parametrize("nom, valeur", [
+    ("identifiant", 1), ("t", 0.0), ("registre_prix", (1.0,) * 12), ("D_H", 1),
+    ("U", 1), ("pi_e", np.float64(0.02)), ("mu_tilde", True),
+])
+def test_etat_de_cloture_controle_le_type_de_tous_les_champs(nom, valeur):
+    """Le type de tous les champs, variables des blocs comprises, est contrôlé à la clôture."""
+    champs = _champs(etat_pays())
+    champs[nom] = valeur
+    with pytest.raises(TypeError, match=f"EtatPays.{nom} : "):
+        schema.etat_de_cloture(champs)
+
+
+def test_etat_de_cloture_ne_recontrole_pas_le_domaine_des_variables_des_blocs():
+    """Le domaine d'une variable d'état d'un bloc n'est contrôlé qu'à l'écriture
+    (`Vue.ecrire_etat`) : appelée directement, `etat_de_cloture` ne le refait pas, quand le
+    constructeur, `dataclasses.replace` et la reprise le contrôlent toujours."""
+    champs = _champs(etat_pays())
+    champs["U"] = 1.2
+    cloture = schema.etat_de_cloture(champs)
+    assert cloture.U == 1.2
+    with pytest.raises(ValueError, match="EtatPays.U : 1.2 hors du domaine"):
+        EtatPays(**champs)
+    with pytest.raises(ValueError, match="EtatPays.U : 1.2 hors du domaine"):
+        dataclasses.replace(cloture, t=1)
+    with pytest.raises(SauvegardeRefusee):
+        charger(sauvegarder([cloture]))
+
+
+def test_etat_de_cloture_refuse_un_champ_manquant_ou_en_trop():
+    champs = _champs(etat_pays())
+    with pytest.raises(TypeError, match="champs manquants \\['U'\\]"):
+        schema.etat_de_cloture({k: v for k, v in champs.items() if k != "U"})
+    with pytest.raises(TypeError, match="champs non déclarés \\['S_banque'\\]"):
+        schema.etat_de_cloture({**champs, "S_banque": 1.0})
+
+
+def test_post_init_d_etat_pays_sans_argument_ni_champ_qui_le_module():
+    """Ni argument, ni `InitVar`, ni valeur par défaut ne module `EtatPays.__post_init__` : le
+    contrôle complet est celui de toute construction par le constructeur."""
+    assert EtatPays.__post_init__ is schema._verifier_types
+    assert tuple(inspect.signature(schema._verifier_types).parameters) == ("etat",)
+    assert tuple(EtatPays.__dataclass_fields__) == CHAMPS
+    for champ in EtatPays.__dataclass_fields__.values():
+        assert champ._field_type is dataclasses._FIELD
+        assert champ.default is dataclasses.MISSING
+        assert champ.default_factory is dataclasses.MISSING
+
+
+def _fonctions(arbre):
+    """(nom qualifié, nœud) de chaque fonction d'un module, méthodes comprises."""
+    for noeud in arbre.body:
+        if isinstance(noeud, ast.FunctionDef):
+            yield noeud.name, noeud
+        elif isinstance(noeud, ast.ClassDef):
+            for sous in noeud.body:
+                if isinstance(sous, ast.FunctionDef):
+                    yield f"{noeud.name}.{sous.name}", sous
+
+
+def _sites(predicat):
+    """(fichier relatif, fonction) de chaque nœud de `src/` qui vérifie `predicat`, hors de toute
+    fonction compris (« <module> »)."""
+    sites = set()
+    for chemin in sorted(SOURCE.rglob("*.py")):
+        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+        dans_une_fonction = set()
+        for nom, fonction in _fonctions(arbre):
+            for n in ast.walk(fonction):
+                dans_une_fonction.add(id(n))
+                if predicat(n):
+                    sites.add((chemin.relative_to(SOURCE).as_posix(), nom))
+        for n in ast.walk(arbre):
+            if id(n) not in dans_une_fonction and predicat(n):
+                sites.add((chemin.relative_to(SOURCE).as_posix(), "<module>"))
+    return sites
+
+
+def _nomme(n, nom):
+    return (isinstance(n, ast.Name) and n.id == nom) or (
+        isinstance(n, ast.Attribute) and n.attr == nom)
+
+
+def test_executer_pas_seul_appelant_de_etat_de_cloture():
+    """Test textuel (condition 1 de l'annotation) : dans `src/`, seul `executer_pas` nomme
+    `etat_de_cloture` hors de sa définition."""
+    sites = _sites(lambda n: _nomme(n, "etat_de_cloture"))
+    assert sites == {("nations/moteur/ordonnanceur.py", "executer_pas")}
+
+
+# Accès dynamiques aux attributs dans `src/` (`getattr`, `setattr`, `delattr`, `attrgetter`,
+# `__getattribute__`, `__setattr__`) dont le nom d'attribut n'est pas une chaîne littérale :
+# liste fermée des sites, mesurée le 16/11/2026 (M1 de l'audit du rang 2 : un `getattr` à nom
+# calculé sur le contexte du pas contournerait les tests textuels de `etat_suivant`).
+ACCES_DYNAMIQUES_ADMIS = {
+    ("nations/etat/sauvegarde.py", "sauvegarder"),
+    ("nations/etat/schema.py", "_verifier_types"),
+    ("nations/etat/schema.py", "etat_de_cloture"),
+    ("nations/moteur/ordonnanceur.py", "assembler"),
+    ("nations/moteur/parametres/__init__.py", "valider_table"),
+    ("nations/moteur/parametres/ensemble.py", "EnsembleDesParametres.__post_init__"),
+    ("nations/noyau/grand_livre.py", "ouvrir_pas"),
+}
+_ACCES_DYNAMIQUES = {"getattr", "setattr", "delattr", "attrgetter", "__getattribute__",
+                     "__setattr__", "__delattr__"}
+
+
+def _acces_dynamique(n):
+    """Appel d'accès dynamique à un attribut (`getattr`, `object.__setattr__`…)."""
+    if not isinstance(n, ast.Call):
+        return False
+    f = n.func
+    nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+    return nom in _ACCES_DYNAMIQUES
+
+
+def _nom_litteral(n):
+    arguments = n.args[1:2] if not (isinstance(n.func, ast.Name)
+                                    and n.func.id == "attrgetter") else n.args[:1]
+    return (arguments[0].value if arguments and isinstance(arguments[0], ast.Constant)
+            and type(arguments[0].value) is str else None)
+
+
+def test_acces_dynamiques_aux_attributs_liste_fermee():
+    """M1 de l'audit du rang 2 (#144, point 1) : un accès dynamique à nom calculé n'existe que
+    sur une liste fermée de sites, sans `_Pas` ; un nom littéral `etat_suivant` ou `_pas` n'est
+    jamais lu dynamiquement."""
+    assert _sites(lambda n: _acces_dynamique(n) and _nom_litteral(n) is None) == (
+        ACCES_DYNAMIQUES_ADMIS)
+    assert _sites(lambda n: _acces_dynamique(n)
+                  and _nom_litteral(n) in ("etat_suivant", "_pas")) == set()
+
+
+def test_vue_ecrire_etat_seul_site_qui_remplit_etat_suivant():
+    """Test textuel (condition 2 de l'annotation) : dans `src/`, `etat_suivant` n'est rempli
+    (affectation indicée, méthode de mutation) que par `Vue.ecrire_etat`, après son contrôle de
+    domaine ; il n'est lié qu'à un dictionnaire vide dans `_Pas.__init__`, et n'est jamais
+    passé à une fonction."""
+    def rempli(n):
+        if isinstance(n, (ast.Assign, ast.AugAssign, ast.AnnAssign, ast.Delete)):
+            cibles = n.targets if isinstance(n, (ast.Assign, ast.Delete)) else [n.target]
+            return any(isinstance(c, ast.Subscript) and _nomme(c.value, "etat_suivant")
+                       for c in cibles)
+        return (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and _nomme(n.func.value, "etat_suivant"))
+    assert _sites(rempli) == {("nations/moteur/ordonnanceur.py", "Vue.ecrire_etat")}
+
+    def passe(n):
+        return isinstance(n, ast.Call) and any(
+            _nomme(a, "etat_suivant") for a in (*n.args, *(k.value for k in n.keywords)))
+    assert _sites(passe) == set()
+
+    def lie(n):
+        return isinstance(n, (ast.Assign, ast.AnnAssign)) and any(
+            isinstance(c, ast.Attribute) and c.attr == "etat_suivant"
+            for c in (n.targets if isinstance(n, ast.Assign) else [n.target]))
+    assert _sites(lie) == {("nations/moteur/ordonnanceur.py", "_Pas.__init__")}
+    # Lecture de l'attribut (M1 de l'audit du rang 2 : alias) : seulement dans `ecrire_etat`
+    # et `executer_pas`, et seulement pour lier le nom local `etat_suivant`, qui n'est lu que
+    # dans un test d'appartenance ou un indice (jamais rendu à un autre nom, ni passé).
+    lus, lus_hors_liaison, noms_detournes = set(), set(), set()
+    for chemin in sorted(SOURCE.rglob("*.py")):
+        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+        parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
+        fichier = chemin.relative_to(SOURCE).as_posix()
+        for nom, fonction in _fonctions(arbre):
+            for n in ast.walk(fonction):
+                parent = parents.get(id(n))
+                if (isinstance(n, ast.Attribute) and n.attr == "etat_suivant"
+                        and isinstance(n.ctx, ast.Load)):
+                    lus.add((fichier, nom))
+                    if not (isinstance(parent, ast.Assign) and parent.value is n
+                            and [ast.unparse(c) for c in parent.targets] == ["etat_suivant"]):
+                        lus_hors_liaison.add((fichier, nom, ast.unparse(parent)))
+                if (isinstance(n, ast.Name) and n.id == "etat_suivant"
+                        and isinstance(n.ctx, ast.Load)
+                        and not isinstance(parent, (ast.Compare, ast.Subscript))):
+                    noms_detournes.add((fichier, nom, ast.unparse(parent)))
+    assert lus == {("nations/moteur/ordonnanceur.py", "Vue.ecrire_etat"),
+                   ("nations/moteur/ordonnanceur.py", "executer_pas")}
+    assert lus_hors_liaison == set()
+    assert noms_detournes == set()
+    # Dans `Vue.ecrire_etat`, l'enregistrement suit le contrôle de domaine.
+    arbre = ast.parse((SOURCE / "nations" / "moteur" / "ordonnanceur.py").read_text(
+        encoding="utf-8"))
+    ecrire_etat = dict(_fonctions(arbre))["Vue.ecrire_etat"]
+    controle = min(n.lineno for n in ast.walk(ecrire_etat) if _nomme(n, "defaut_de_domaine"))
+    enregistrement = max(n.lineno for n in ast.walk(ecrire_etat) if rempli(n))
+    assert controle < enregistrement
