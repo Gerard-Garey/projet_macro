@@ -15,6 +15,10 @@ g = (1 + g_pr)(1 + g_N) − 1, qui combine les tables de deux blocs et
 n'appartient à aucun, et son facteur par pas, calculés une fois par pas et lus
 par les blocs sans recalcul. Le facteur est le produit f(g_pr) · f(g_N),
 f = `facteur_par_pas` (P88 ; ADR 0013, annotation du 14/11/2026, point 7).
+g est retirée depuis #144, point 3 (ADR 0013, annotation du 16/11/2026,
+point 3 ; P51) : aucun lecteur, et un lecteur qui la recombinerait
+divergerait au bit de `facteur_g` (P88) ; elle reste une notation de la
+spécification (`sec:production-visee`).
 
 Conversions partagées (#144, point 2 ; ADR 0013, annotation du 16/11/2026,
 point 2) : la conversion d'un paramètre, invariante pendant une partie, est
@@ -86,14 +90,6 @@ def _date_de_decision(etat: object, parametres: object, grandeurs: Mapping[str, 
     return calendrier.est_date_de_decision(etat.t)
 
 
-def _croissance_tendancielle(etat: object, parametres: object,
-                             grandeurs: Mapping[str, object]) -> float:
-    """g = (1 + g_pr)(1 + g_N) − 1, par an, des tables de la production et du travail
-    (définition de `sec:production-visee`, sans label propre)."""
-    return ((1.0 + parametres.production.g_pr.valeur)
-            * (1.0 + parametres.travail.g_N.valeur) - 1.0)
-
-
 def _facteur_g_pr(etat: object, parametres: object, grandeurs: Mapping[str, object]) -> float:
     """f(g_pr), f = `facteur_par_pas` : facteur par pas de la productivité (renvoi :
     `eq:moteur-conversion-croissance`), lu par la production (phase 5), le travail (phase 1)
@@ -113,8 +109,7 @@ def _facteur_g(etat: object, parametres: object, grandeurs: Mapping[str, object]
     ADR 0013, annotation du 14/11/2026, point 7 ; #125, point 1) : le produit des facteurs par
     lesquels les blocs font croître pr et N^pa, non le facteur de g déjà arrondie, qui n'en
     diffère au bit qu'à g_N ≠ 0. Le produit lit `facteur_g_pr` et `facteur_g_N`, dans cet
-    ordre : même produit des mêmes facteurs, donc identique au bit (#144, point 2). g reste
-    publiée, mais `facteur_g` ne la lit plus."""
+    ordre : même produit des mêmes facteurs, donc identique au bit (#144, point 2)."""
     return grandeurs["facteur_g_pr"] * grandeurs["facteur_g_N"]
 
 
@@ -156,13 +151,10 @@ GRANDEURS_OUVERTURE = (
     GrandeurOuverture("mois", _mois, "eq:moteur-calendrier-date", "sans dimension"),
     GrandeurOuverture("date_de_decision", _date_de_decision, "eq:moteur-date-decision",
                       "sans dimension"),
-    # Croissance tendancielle et son facteur par pas, en tête des grandeurs
-    # économiques, avant Γ^e (#61). Le label de `facteur_g` est un renvoi à la
-    # conversion qu'il appelle, non une balise (annotation du 07/10/2026 sur #97,
-    # point 7).
-    GrandeurOuverture("g", _croissance_tendancielle, None, "par an, taux de croissance"),
-    # Conversions partagées (#144, point 2 ; ADR 0013, annotation du 16/11/2026, point 2) :
-    # labels de renvoi, non balises ; facteurs et taux par pas « sans dimension » (P96).
+    # Conversions partagées et facteur de croissance tendancielle, en tête des grandeurs
+    # économiques, avant Γ^e (#61 ; #144, point 2 ; ADR 0013, annotation du 16/11/2026,
+    # point 2). Labels de renvoi aux conversions, non balises (annotation du 07/10/2026 sur
+    # #97, point 7) ; facteurs et taux par pas « sans dimension » (P96).
     GrandeurOuverture("facteur_g_pr", _facteur_g_pr, "eq:moteur-conversion-croissance",
                       "sans dimension"),
     GrandeurOuverture("facteur_g_N", _facteur_g_N, "eq:moteur-conversion-croissance",
