@@ -995,11 +995,13 @@ Je propose ce texte pour `sec:finances_publiques-impots`, `sec:finances_publique
 
 > **Sous φ = 0** (intérêts financés par le déficit), à ζ = 8, la boucle conjointe est **explosive à 10 %** et **quasi neutre à 2 %**, avec **un signe qui dépend de ζ**. Elle est stable à π̄ = 0.
 > - **À 10 %** : racine réelle de 1,009661, écart doublé en 72 tours (6 ans). Couverture minimale qui stabilise : 0,571. La boucle reste explosive sur tout le domaine de ζ mesuré, de 0,5 à 20.
-> - **À 2 %** : paire complexe de module 1,000035 et de période voisine de 2 050 tours (171 ans). L'enveloppe de l'écart double en 19 750 tours environ, et croît de 2,6 % en 720 tours. Couverture minimale : 0,011.
-> - **Le module passe 1 à ζ_c = 8,76**, soit σ ≈ 0,70 sous la correspondance ζ = σ/(ϱ̄_L + δ). Ce seuil se trouve dans la fourchette de σ lue (0,5 à 1,0) : la boucle est faiblement explosive en deçà et faiblement amortie au-delà.
+> - **À 2 %** : paire complexe de module 1,000035 et de période voisine de 2 050 tours (171 ans). L'enveloppe de l'écart double en 19 800 tours environ, et croît de 2,6 % en 720 tours. Couverture minimale : 0,011.
+> - **À 2 %, le module passe 1 à ζ_c = 8,76**, soit σ ≈ 0,70 sous la correspondance ζ = σ/(ϱ̄_L + δ). Ce seuil se trouve dans la fourchette de σ lue (0,5 à 1,0) : la boucle est faiblement explosive en deçà et faiblement amortie au-delà.
 > - **À π̄ = 0** : module de 0,998235.
 >
-> Ce sont des valeurs de la maquette conjointe. Le moteur retrouve la racine dominante par identification sur 12 000 pas : 1,0000351 de période 2 049 tours à 2 %, 1,0096608 à 10 %, 0,9999998 à ζ_c. Les estimateurs par fenêtres ne mesurent pas une racine complexe de période plus longue que leur horizon. La méthode des racines sous φ = 0 ne voit que les racines réelles : elle corrobore 10 %, pas 2 %.
+> Ce sont des valeurs de la maquette conjointe. Le moteur retrouve la racine dominante par identification sur 12 000 pas : 1,0000351 de période 2 049 tours à 2 %, 1,0096608 à 10 %, 0,9999998 à ζ_c. Les estimateurs par fenêtres ne mesurent pas une racine complexe de période plus longue que leur horizon. La méthode des racines sous φ = 0 ne détecte que la parité des racines réelles supérieures à 1 : elle corrobore 10 %, pas 2 %.
+>
+> Résultat du modèle sous la calibration soumise à M34 ; ζ_c reste à remesurer (rang 8, P224).
 
 **Ce que le texte ne doit pas dire** :
 - « stable à 2 % » : le module 1,000035 est au-dessus de 1 ;
@@ -1008,7 +1010,7 @@ Je propose ce texte pour `sec:finances_publiques-impots`, `sec:finances_publique
 - un temps de doublement à 2 % issu des estimateurs par fenêtres (0,999746, 0,997465 : artefacts de phase).
 
 À reprendre aussi :
-- les valeurs « 381 tours » et « 63 tours », qui deviennent environ 19 750 et 72 tours à ζ = 8 ;
+- les valeurs « 381 tours » et « 63 tours », qui deviennent environ 19 800 (maquette ; 19 750 au module du moteur) et 72 tours à ζ = 8 ;
 - « 0,174 et 0,650 », qui deviennent 0,011 et 0,571 ;
 - « double l'écart en 5 ans » (fiche 9, l. 1267, relevé par `jeu`), qui devient 6 ans à 10 %.
 
@@ -1074,3 +1076,4 @@ Je propose ce texte pour `sec:finances_publiques-impots`, `sec:finances_publique
 - indicateur d'investissement au tour : issue #165, rattachée au J4 (P221) ;
 - question 4 (distribution nette, publiée avec la brute) : avis de `macro` suivi sous la délégation P211.
 - remesures de C62 (§ 3.13) : formulation du § 3.13.7 adoptée pour M34, sous relecture de `monnaie` (P222) ; issue #166 sur l'estimateur de C62, ajoutée au périmètre et traitée au rang 3 (P223) ; ζ_c remesuré au rang 8 (P224).
+- relecture de `monnaie` du § 3.13 (16/11/2026, sans réexécution) : conforme sur les quatre demandes ; aucun point bloquant avant M34 ; retouches 1 à 4 de la formulation du § 3.13.7 appliquées par la session sous P211 (« à 2 % » devant ζ_c ; 19 800 tours au module de la maquette, ln 2 / ln 1,000035 = 19 805, contre 19 748 au module du moteur ; « parité des racines réelles supérieures à 1 » ; réserve de calibration). Remarques de méthode consignées sans retouche : le signe de det(I − J) = Π(1 − λᵢ) ne change qu'au passage d'une racine réelle par 1, fait algébrique général, le lien propre au modèle étant celui de la pente dθ_G/dr̄ à ce déterminant (§ 3.13.5) ; le rayon 0,997975 du plan 2×2 sous taux tenu est celui d'un autre mode, puisque tenir le taux supprime l'intégrateur r̂\* qui porte le mode dominant (§ 3.13.6) ; mécanisme proposé, hypothèse : sous φ = 0, l'État finance par le déficit tous les intérêts nominaux, y compris la part qui compense l'inflation, d'où un danger croissant avec π̄.
