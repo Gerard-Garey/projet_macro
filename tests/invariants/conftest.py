@@ -36,13 +36,18 @@ def etat_de_fin_de_pas_controle_en_entier(request, monkeypatch):
 
     Le moteur ne recontrôle pas, à la clôture, le domaine des variables d'état des blocs
     (`schema.etat_de_cloture`) : il est contrôlé à l'écriture par `Vue.ecrire_etat`, seul site
-    qui remplit `_Pas.etat_suivant` (tests textuels de `tests/unitaires/test_etat.py`). Pour
-    qu'une valeur entrée par une voie que ces tests textuels ne voient pas (`getattr` dynamique,
-    alias) soit refusée quand même, la `FinDePas` que construit `executer_pas` passe ici par une
+    qui remplit `_Pas.etat_suivant`. La `FinDePas` que construit `executer_pas` passe ici par une
     fabrique qui reconstruit l'état par le constructeur (`EtatPays(**champs)`, contrôle complet)
     avant de rendre la `FinDePas` réelle (le type relevé par les observateurs est inchangé).
-    Sans coût pour le moteur : tests seulement ; les tests du budget (`budget`), qui
-    chronomètrent le moteur, en sont exclus.
+
+    **Portée** (réserve r2 de l'audit du rang 2) : les seules trajectoires des tests d'invariants
+    (`tests/invariants/`, fixture `autouse`), hors des tests du budget (`budget`), qui
+    chronomètrent le moteur ; ni les tests unitaires ni le moteur hors des tests n'y passent. Sur
+    ces trajectoires, c'est la **garde principale** : elle refuse un état de fin de pas hors
+    domaine quelle que soit la voie d'entrée de la valeur. Les tests textuels de
+    `tests/unitaires/test_etat.py` (seul site qui remplit `etat_suivant`, accès dynamiques et
+    alias sur liste fermée) viennent **en appoint** : ils couvrent tout `src/`, mais seulement les
+    voies qu'ils savent reconnaître. Sans coût pour le moteur : tests seulement.
     """
     if request.node.get_closest_marker("budget") is not None:
         return

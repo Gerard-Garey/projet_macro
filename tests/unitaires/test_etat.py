@@ -1050,6 +1050,20 @@ def _sites(predicat):
     return sites
 
 
+def _noeuds_de_src():
+    """(fichier relatif, fonction, nœud, parent) de chaque nœud de chaque module de `src/`, module
+    entier (niveau module et classes imbriquées compris, « <module> » hors des fonctions de
+    `_fonctions`) ; parent : nœud qui le contient, None pour le module (réserve r2 de l'audit du
+    rang 3)."""
+    for chemin in sorted(SOURCE.rglob("*.py")):
+        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+        parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
+        fonctions = {id(n): nom for nom, f in _fonctions(arbre) for n in ast.walk(f)}
+        fichier = chemin.relative_to(SOURCE).as_posix()
+        for n in ast.walk(arbre):
+            yield fichier, fonctions.get(id(n), "<module>"), n, parents.get(id(n))
+
+
 def _nomme(n, nom):
     return (isinstance(n, ast.Name) and n.id == nom) or (
         isinstance(n, ast.Attribute) and n.attr == nom)
@@ -1063,9 +1077,10 @@ def test_executer_pas_seul_appelant_de_etat_de_cloture():
 
 
 # Accès dynamiques aux attributs dans `src/` (`getattr`, `setattr`, `delattr`, `attrgetter`,
-# `__getattribute__`, `__setattr__`) dont le nom d'attribut n'est pas une chaîne littérale :
-# liste fermée des sites, mesurée le 16/11/2026 (M1 de l'audit du rang 2 : un `getattr` à nom
-# calculé sur le contexte du pas contournerait les tests textuels de `etat_suivant`).
+# `getattr_static`, `__getattribute__`, `__setattr__`) dont le nom d'attribut n'est pas une chaîne
+# littérale : liste fermée des sites, mesurée le 16/11/2026 (M1 de l'audit du rang 2 : un
+# `getattr` à nom calculé sur le contexte du pas contournerait les tests textuels de
+# `etat_suivant`).
 ACCES_DYNAMIQUES_ADMIS = {
     ("nations/etat/sauvegarde.py", "sauvegarder"),
     ("nations/etat/schema.py", "_verifier_types"),
@@ -1075,17 +1090,39 @@ ACCES_DYNAMIQUES_ADMIS = {
     ("nations/moteur/parametres/ensemble.py", "EnsembleDesParametres.__post_init__"),
     ("nations/noyau/grand_livre.py", "ouvrir_pas"),
 }
-_ACCES_DYNAMIQUES = {"getattr", "setattr", "delattr", "attrgetter", "__getattribute__",
-                     "__setattr__", "__delattr__"}
+_ACCES_DYNAMIQUES = {"getattr", "setattr", "delattr", "attrgetter", "getattr_static",
+                     "__getattribute__", "__setattr__", "__delattr__"}
+# Références à un accès dynamique qui ne sont pas appelées directement (alias, argument, valeur
+# rendue ; réserve r1 de l'audit du rang 2) : (fichier, fonction, instruction), liste fermée.
+# Seule admise : `poser = object.__setattr__` dans `_construire`, constructeur privé de
+# `GrandLivre` (appelé par `ouvrir_pas` seul), où `poser` ne sert qu'à poser, sur l'objet neuf
+# `livre`, des attributs privés nommés par un littéral (contrôlé par le test).
+REFERENCES_DYNAMIQUES_ADMISES = {
+    ("nations/noyau/grand_livre.py", "_construire", "poser = object.__setattr__"),
+}
 
 
 def _acces_dynamique(n):
-    """Appel d'accès dynamique à un attribut (`getattr`, `object.__setattr__`…)."""
+    """Appel d'accès dynamique à un attribut (`getattr`, `object.__setattr__`,
+    `inspect.getattr_static`…)."""
     if not isinstance(n, ast.Call):
         return False
     f = n.func
     nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
     return nom in _ACCES_DYNAMIQUES
+
+
+def _reference_dynamique(n, parent):
+    """Référence (Load) à un accès dynamique qui n'est pas la fonction d'un appel direct
+    (`lire = getattr`, `poser = object.__setattr__`, `map(getattr, …)`), ou importation renommée
+    (`from inspect import getattr_static as lire`) : l'appel passe alors par un autre nom, que
+    `_acces_dynamique` ne voit pas."""
+    if isinstance(n, ast.alias):
+        return n.name.rsplit(".", 1)[-1] in _ACCES_DYNAMIQUES and n.asname not in (None, n.name)
+    nom = (n.id if isinstance(n, ast.Name) else n.attr if isinstance(n, ast.Attribute)
+           else None)
+    return (nom in _ACCES_DYNAMIQUES and isinstance(n.ctx, ast.Load)
+            and not (isinstance(parent, ast.Call) and parent.func is n))
 
 
 def _nom_litteral(n):
@@ -1098,11 +1135,29 @@ def _nom_litteral(n):
 def test_acces_dynamiques_aux_attributs_liste_fermee():
     """M1 de l'audit du rang 2 (#144, point 1) : un accès dynamique à nom calculé n'existe que
     sur une liste fermée de sites, sans `_Pas` ; un nom littéral `etat_suivant` ou `_pas` n'est
-    jamais lu dynamiquement."""
+    jamais lu dynamiquement. Réserve r1 (#144) : `getattr_static` est un accès dynamique, et toute
+    référence à un accès dynamique qui n'est pas appelée directement (alias) est sur une liste
+    fermée, `poser` de `_construire`, dont chaque appel nomme par un littéral un attribut privé
+    de l'objet neuf `livre`."""
     assert _sites(lambda n: _acces_dynamique(n) and _nom_litteral(n) is None) == (
         ACCES_DYNAMIQUES_ADMIS)
     assert _sites(lambda n: _acces_dynamique(n)
                   and _nom_litteral(n) in ("etat_suivant", "_pas")) == set()
+    references = {(fichier, nom, ast.unparse(parent))
+                  for fichier, nom, n, parent in _noeuds_de_src()
+                  if _reference_dynamique(n, parent)}
+    assert references == REFERENCES_DYNAMIQUES_ADMISES
+    arbre = ast.parse((SOURCE / "nations" / "noyau" / "grand_livre.py").read_text(
+        encoding="utf-8"))
+    construire = dict(_fonctions(arbre))["_construire"]
+    appels = [n for n in ast.walk(construire) if isinstance(n, ast.Call) and _nomme(n.func, "poser")]
+    assert appels and all(
+        isinstance(n.func, ast.Name) and len(n.args) == 3 and not n.keywords
+        and _nomme(n.args[0], "livre") and isinstance(n.args[1], ast.Constant)
+        and type(n.args[1].value) is str and n.args[1].value.startswith("_")
+        and n.args[1].value != "_pas" for n in appels), [ast.unparse(n) for n in appels]
+    assert [ast.unparse(n) for n in ast.walk(construire)
+            if _nomme(n, "poser") and isinstance(n.ctx, ast.Load)] == ["poser"] * len(appels)
 
 
 def test_vue_ecrire_etat_seul_site_qui_remplit_etat_suivant():
@@ -1132,24 +1187,20 @@ def test_vue_ecrire_etat_seul_site_qui_remplit_etat_suivant():
     # Lecture de l'attribut (M1 de l'audit du rang 2 : alias) : seulement dans `ecrire_etat`
     # et `executer_pas`, et seulement pour lier le nom local `etat_suivant`, qui n'est lu que
     # dans un test d'appartenance ou un indice (jamais rendu à un autre nom, ni passé).
+    # Module entier (réserve r2 de l'audit du rang 2) : niveau module et classes imbriquées
+    # compris, « <module> » hors des fonctions et méthodes de premier niveau.
     lus, lus_hors_liaison, noms_detournes = set(), set(), set()
-    for chemin in sorted(SOURCE.rglob("*.py")):
-        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
-        parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
-        fichier = chemin.relative_to(SOURCE).as_posix()
-        for nom, fonction in _fonctions(arbre):
-            for n in ast.walk(fonction):
-                parent = parents.get(id(n))
-                if (isinstance(n, ast.Attribute) and n.attr == "etat_suivant"
-                        and isinstance(n.ctx, ast.Load)):
-                    lus.add((fichier, nom))
-                    if not (isinstance(parent, ast.Assign) and parent.value is n
-                            and [ast.unparse(c) for c in parent.targets] == ["etat_suivant"]):
-                        lus_hors_liaison.add((fichier, nom, ast.unparse(parent)))
-                if (isinstance(n, ast.Name) and n.id == "etat_suivant"
-                        and isinstance(n.ctx, ast.Load)
-                        and not isinstance(parent, (ast.Compare, ast.Subscript))):
-                    noms_detournes.add((fichier, nom, ast.unparse(parent)))
+    for fichier, nom, n, parent in _noeuds_de_src():
+        if (isinstance(n, ast.Attribute) and n.attr == "etat_suivant"
+                and isinstance(n.ctx, ast.Load)):
+            lus.add((fichier, nom))
+            if not (isinstance(parent, ast.Assign) and parent.value is n
+                    and [ast.unparse(c) for c in parent.targets] == ["etat_suivant"]):
+                lus_hors_liaison.add((fichier, nom, ast.unparse(parent)))
+        if (isinstance(n, ast.Name) and n.id == "etat_suivant"
+                and isinstance(n.ctx, ast.Load)
+                and not isinstance(parent, (ast.Compare, ast.Subscript))):
+            noms_detournes.add((fichier, nom, ast.unparse(parent)))
     assert lus == {("nations/moteur/ordonnanceur.py", "Vue.ecrire_etat"),
                    ("nations/moteur/ordonnanceur.py", "executer_pas")}
     assert lus_hors_liaison == set()
