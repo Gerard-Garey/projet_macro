@@ -22,11 +22,12 @@ entrées ς_L = ς_B = 0 sauf mention) :
   11), scénario de `test_caisse_sur_le_moteur` ; lie le plafond de E1, Π^CB < 0
   en phase 8 (b) à π* = 0 et le plancher de F3 ;
 - `socle complet BF` (P184, choisi par `macro`), « placement raté puis
-  transferts, titres à la banque centrale » : sentier à θ_CB = 0,5, ς_B = 0,5
-  au pas 5, bloc 9 réel composé `bloc_9_compose(levier_au_tour(6,
-  theta_Tr=TRANSFERTS_APRES_LE_PLACEMENT))`, second déroulé de
-  `test_placement_rate_de_moitie_sur_un_tour` ; lie ς_B > 0 dans E11, le
-  plafond de E6, la part non payée de E13 et le terme 11c de E7 ;
+  transferts, titres à la banque centrale » : variante à θ_CB = 0,5 (P184) du
+  second déroulé de `test_placement_rate_de_moitie_sur_un_tour` (le test joue
+  le sentier par défaut) : ς_B = 0,5 au pas 5, bloc 9 réel composé
+  `bloc_9_compose(levier_au_tour(6, theta_Tr=TRANSFERTS_APRES_LE_PLACEMENT))` ;
+  lie ς_B > 0 dans E11, le plafond de E6, la part non payée de E13 et le terme
+  11c de E7 ;
 - `P87` : blocs 2, 3, 4, 7 et 8 réels, blocs d'essai 5, 6 et 9, émission X3,
   λ_e de la table (`tests/invariants/test_boucle_t3_bc3.py`, contrôle sans
   choc) ;
@@ -46,9 +47,14 @@ module introuvable à l'import (`ImportError`, par exemple un fichier de
 `src/nations/blocs/` absent de la version « avant » extraite) ; banc dont les
 blocs ne sont pas, dans l'ordre canonique, un par radical, réels exactement
 pour `BLOCS_REELS_ATTENDUS` (`blocs_reels()` saute en silence un module
-absent) ; paquet `nations` chargé hors de `<racine>/src`.
+absent) ; paquet `nations` chargé hors de `<racine>/src`. Un bloc est **réel**
+si sa classe est définie dans `nations.blocs.<radical>` (`type(bloc).__module__`,
+test strict : une sous-classe d'un bloc réel définie ailleurs est refusée) ;
+seule exception, le bloc 9 composé des bancs D et BF (`BANCS_A_BLOC_9_COMPOSE`) :
+classe définie dans le module des scénarios du socle complet
+(`MODULE_DU_SOCLE_COMPLET`), de base directe unique la classe réelle (P185, m-a).
 
-**Arrêt du moteur = écart** (code 1) : toute autre exception levée pendant la
+**Arrêt du moteur = écart de trajectoire** (code 1) : toute autre exception levée pendant la
 construction, l'assemblage ou le déroulé d'un banc (défaut comptable, refus
 du moteur ou de proposition, erreur de code d'une version mutée) est
 consignée pour ce banc et ce π* (type, message, pas atteint) à la place de
@@ -71,10 +77,10 @@ Un état est le n-uplet des (nom, valeur) de ses champs, dans l'ordre de
 `nations.etat.schema.CHAMPS`. **Sous-empreintes**, pour localiser un écart :
 `etats` (I et états des F), `montants` (C), `variables` (variables des F), et
 `grandeurs` (grandeurs calculées à l'ouverture, n-uplet trié par nom, par fin
-de pas). `grandeurs` est publiée et comparée (écart signalé à part) mais
-**n'entre ni dans l'empreinte du banc ni dans la globale** : ce sont des
-fonctions de l'état, et #144 (point 3) peut en retirer une sans changer la
-trajectoire.
+de pas). `grandeurs` est publiée et comparée (écart signalé à part, code 3)
+mais **n'entre ni dans l'empreinte du banc ni dans la globale** : ce sont des
+fonctions de l'état, et #144 (points 2 et 3) en ajoute et en retire sans
+changer la trajectoire (P186, P189).
 
 **Pays.** Un seul pays (« A ») par banc ; s'il y en avait plusieurs (J5), ils
 seraient hachés dans l'ordre canonique de leur identifiant (refus sinon).
@@ -109,9 +115,16 @@ arrêté n'a pas d'empreinte agrégée.
 racine est placé en tête de `sys.path`, et le script refuse de tourner si le
 paquet `nations` chargé n'en vient pas. `--ecrire` écrit les empreintes en
 JSON ; `--comparer` les compare à un JSON écrit par `--ecrire` (mêmes bancs,
-même nombre de pas, même version d'encodage). Codes de sortie : 0 conforme,
-1 écart (tous listés) ou arrêt du moteur, 2 refus (banc non conforme, racine
-invalide, fichier illisible).
+même nombre de pas, même version d'encodage). Codes de sortie :
+
+- 0 : conforme (trajectoires et grandeurs d'ouverture identiques) ;
+- 1 : une empreinte de trajectoire diffère (empreinte, `etats`, `montants`,
+  `variables`, banc, globale, ou version, pas, π*, bancs), ou arrêt du moteur ;
+  tous les écarts sont listés, ceux des grandeurs d'ouverture compris ;
+- 2 : refus (banc non conforme, racine invalide, fichier illisible) ;
+- 3 : trajectoires identiques, seules les sous-empreintes `grandeurs`
+  diffèrent (ajout ou retrait de grandeurs d'ouverture, P186, P189) : critère
+  tenu, écart à déclarer dans le commit.
 """
 
 from __future__ import annotations
@@ -158,6 +171,13 @@ BLOCS_REELS_ATTENDUS = {
 }
 PARTIES = ("etats", "montants", "variables")
 HORS_EMPREINTE = ("grandeurs",)
+# Bancs dont le bloc 9 est le bloc réel composé dans `tests/` (`bloc_9_compose`), et nom sous
+# lequel le module des scénarios du socle complet est chargé (P185, m-a).
+BANCS_A_BLOC_9_COMPOSE = frozenset({SOCLE_COMPLET_D, SOCLE_COMPLET_BF})
+RADICAL_DU_BLOC_COMPOSE = "finances_publiques"
+MODULE_DU_SOCLE_COMPLET = "empreintes_socle_complet"
+# Codes de sortie (voir le docstring du module).
+CONFORME, ECART, REFUS, GRANDEURS_SEULES = 0, 1, 2, 3
 
 
 class BancNonConforme(RuntimeError):
@@ -257,7 +277,7 @@ class Racine:
             from nations.observation.observateur import FinDePas
             invariants = racine / "tests" / "invariants"
             self.socle = _charger("socle_partiel", invariants / "socle_partiel.py")
-            self.complet = _charger("empreintes_socle_complet",
+            self.complet = _charger(MODULE_DU_SOCLE_COMPLET,
                                     invariants / "test_socle_complet.py")
             self.boucle = _charger("empreintes_boucle_t3_bc3",
                                    invariants / "test_boucle_t3_bc3.py")
@@ -340,11 +360,24 @@ def _charger(nom: str, chemin: Path):
     return module
 
 
-def _est_reel(bloc) -> bool:
-    """Bloc réel : sa classe, ou une de ses bases (bloc 9 composé dans `tests/`), est définie
-    dans `nations.blocs.<radical>`."""
-    module = f"nations.blocs.{bloc.declaration.radical}"
-    return any(classe.__module__ == module for classe in type(bloc).__mro__)
+def _est_reel(bloc, banc: str) -> bool:
+    """Bloc réel : sa classe est définie dans `nations.blocs.<radical>` (test strict sur
+    `type(bloc).__module__`). Seule exception (P185, m-a) : le bloc 9 composé des bancs D et
+    BF, dont la classe est définie dans le module des scénarios du socle complet et a pour base
+    directe unique la classe réelle du bloc 9."""
+    radical = bloc.declaration.radical
+    module = f"nations.blocs.{radical}"
+    classe = type(bloc)
+    if classe.__module__ == module:
+        return True
+    if banc not in BANCS_A_BLOC_9_COMPOSE or radical != RADICAL_DU_BLOC_COMPOSE:
+        return False
+    if classe.__module__ != MODULE_DU_SOCLE_COMPLET or len(classe.__bases__) != 1:
+        return False
+    base, = classe.__bases__
+    reel = sys.modules.get(module)
+    return (base.__module__ == module and reel is not None
+            and getattr(reel, base.__name__, None) is base)
 
 
 def verifier_blocs(banc: str, blocs, radicaux: tuple[str, ...]) -> None:
@@ -356,7 +389,7 @@ def verifier_blocs(banc: str, blocs, radicaux: tuple[str, ...]) -> None:
         manquants = sorted(set(radicaux) - set(trouves))
         raise BancNonConforme(f"banc {banc} : radicaux {trouves}, attendus {tuple(radicaux)}"
                               + (f" ; manquants : {manquants}" if manquants else ""))
-    reels = {b.declaration.radical for b in blocs if _est_reel(b)}
+    reels = {b.declaration.radical for b in blocs if _est_reel(b, banc)}
     attendus = BLOCS_REELS_ATTENDUS[banc]
     if reels != attendus:
         raise BancNonConforme(
@@ -432,8 +465,8 @@ def empreintes(racine: Racine, bancs=BANCS, nb_pas: int = NB_PAS) -> dict:
 
 
 def comparer(mesure: dict, reference: dict) -> list[str]:
-    """Écarts entre deux documents (liste vide si identiques), plateforme exclue ; un arrêt
-    est un écart ; un écart des seules grandeurs d'ouverture est signalé à part."""
+    """Écarts de trajectoire entre deux documents (liste vide si identiques), plateforme et
+    grandeurs d'ouverture exclues (`comparer_grandeurs`) ; un arrêt est un écart."""
     ecarts = []
     for cle in ("version_encodage", "nb_pas", "points_pi"):
         if mesure.get(cle) != reference.get(cle):
@@ -454,17 +487,30 @@ def comparer(mesure: dict, reference: dict) -> list[str]:
                 if valeurs[partie] != ref.get(partie):
                     ecarts.append(f"{banc}, π* = {pi}, {partie} : mesuré {valeurs[partie]}, "
                                   f"référence {ref.get(partie)}")
-            for partie in HORS_EMPREINTE:
-                if valeurs[partie] != ref.get(partie):
-                    ecarts.append(f"{banc}, π* = {pi}, {partie} (grandeurs d'ouverture, hors "
-                                  f"empreinte du banc) : mesuré {valeurs[partie]}, référence "
-                                  f"{ref.get(partie)}")
     for banc, hexa in mesure["par_banc"].items():
         if hexa != reference["par_banc"].get(banc):
             ecarts.append(f"{banc}, empreinte du banc : mesuré {hexa}, "
                           f"référence {reference['par_banc'].get(banc)}")
     if mesure["globale"] != reference["globale"]:
         ecarts.append(f"globale : mesuré {mesure['globale']}, référence {reference['globale']}")
+    return ecarts
+
+
+def comparer_grandeurs(mesure: dict, reference: dict) -> list[str]:
+    """Écarts des seules sous-empreintes `grandeurs` (grandeurs calculées à l'ouverture, hors
+    empreinte du banc), pour les bancs et π* communs aux deux documents et sans arrêt ; le
+    reste relève de `comparer`."""
+    ecarts = []
+    for banc, par_pi in mesure.get("bancs", {}).items():
+        for pi, valeurs in par_pi.items():
+            ref = reference.get("bancs", {}).get(banc, {}).get(pi, {})
+            if "arret" in valeurs or "arret" in ref:
+                continue
+            for partie in HORS_EMPREINTE:
+                if valeurs.get(partie) != ref.get(partie):
+                    ecarts.append(f"{banc}, π* = {pi}, {partie} (grandeurs d'ouverture, hors "
+                                  f"empreinte du banc) : mesuré {valeurs.get(partie)}, "
+                                  f"référence {ref.get(partie)}")
     return ecarts
 
 
@@ -482,7 +528,11 @@ def afficher(document: dict, racine: Path) -> None:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        epilog="codes de sortie : 0 conforme ; 1 écart de trajectoire ou arrêt du moteur ; "
+               "2 refus (banc non conforme, racine invalide, fichier illisible) ; 3 "
+               "trajectoires identiques, grandeurs d'ouverture différentes (P186, P189)")
     parser.add_argument("--racine", type=Path, default=RACINE_DU_DEPOT,
                         help="arbre à mesurer (src/, tests/, outils/) ; défaut : le dépôt")
     parser.add_argument("--pas", type=int, default=NB_PAS, help=f"nombre de pas (défaut {NB_PAS})")
@@ -490,7 +540,8 @@ def main(argv=None) -> int:
                         help="bancs à mesurer, dans l'ordre de BANCS")
     parser.add_argument("--ecrire", type=Path, help="écrire les empreintes en JSON")
     parser.add_argument("--comparer", type=Path,
-                        help="comparer à un JSON écrit par --ecrire (code 1 si écart)")
+                        help="comparer à un JSON écrit par --ecrire (code 1 si une trajectoire "
+                             "diffère, 3 si seules les grandeurs d'ouverture diffèrent)")
     args = parser.parse_args(argv)
     if args.pas < 1:
         parser.error("--pas doit être ≥ 1")
@@ -500,30 +551,41 @@ def main(argv=None) -> int:
                      if args.comparer else None)
     except (OSError, ValueError) as erreur:
         print(f"refus : référence illisible ({erreur})", file=sys.stderr)
-        return 2
+        return REFUS
     try:
         racine = Racine(args.racine)
         document = empreintes(racine, bancs, args.pas)
     except BancNonConforme as erreur:
         print(f"refus : {erreur}", file=sys.stderr)
-        return 2
+        return REFUS
     afficher(document, racine.racine)
     if args.ecrire:
         args.ecrire.write_text(json.dumps(document, ensure_ascii=False, indent=1) + "\n",
                                encoding="utf-8")
-    code = 0
+    code = CONFORME
     if document["arrets"]:
         print(f"ARRÊT du moteur ({len(document['arrets'])}) :", file=sys.stderr)
         for ligne in document["arrets"]:
             print(f"  {ligne}", file=sys.stderr)
-        code = 1
+        code = ECART
     if reference is not None:
         ecarts = comparer(document, reference)
+        grandeurs = comparer_grandeurs(document, reference)
         if ecarts:
-            print(f"ÉCART à {args.comparer} ({len(ecarts)}) :", file=sys.stderr)
-            for ligne in ecarts:
+            print(f"ÉCART de trajectoire à {args.comparer} ({len(ecarts) + len(grandeurs)}) :",
+                  file=sys.stderr)
+            for ligne in ecarts + grandeurs:
                 print(f"  {ligne}", file=sys.stderr)
-            return 1
+            return ECART
+        if code != CONFORME:
+            return code
+        if grandeurs:
+            print(f"trajectoires identiques, grandeurs d'ouverture différentes de "
+                  f"{args.comparer} ({len(grandeurs)}) : écart à déclarer (P186, P189)",
+                  file=sys.stderr)
+            for ligne in grandeurs:
+                print(f"  {ligne}", file=sys.stderr)
+            return GRANDEURS_SEULES
         print(f"identique à {args.comparer}")
     return code
 
