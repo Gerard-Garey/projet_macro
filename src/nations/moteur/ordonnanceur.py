@@ -47,7 +47,8 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
 - Un bloc reçoit une **vue** (`Vue`) par appel : l'état d'ouverture, les
   paramètres, les variables du pas qu'il a déclaré lire, le grand livre en
   lecture seule (montants exécutés des seules lignes qu'il a déclaré lire,
-  #100), `proposer` et `declarer_montant_couvert` pour ses seules
+  #100 ; positions courantes des seuls postes qu'il a déclaré lire, #150),
+  `proposer` et `declarer_montant_couvert` pour ses seules
   lignes déclarées dans l'étape (le proposant et le payeur apposés par la
   vue ; aucune en phase 9, où tout flux est refusé), les lectures du
   registre (le glissement refusé non fini ou hors de 1 + π_{t−1} > 0, précondition de
@@ -335,7 +336,8 @@ class _Droits:
     """Droits d'un bloc dans une étape, arrêtés à l'assemblage.
 
     `lectures` : variables du pas lues ; `lignes_lues` : lignes dont le montant
-    exécuté est lu au grand livre ; `lignes` et `couvertes` : lignes proposées
+    exécuté est lu au grand livre ; `postes_lus` : postes dont la position
+    courante est lue au grand livre ; `lignes` et `couvertes` : lignes proposées
     et montants couverts déclarés.
     """
 
@@ -347,6 +349,7 @@ class _Droits:
     lignes: frozenset[str]
     couvertes: frozenset[str]
     lignes_lues: frozenset[str]
+    postes_lus: frozenset[str]
 
 
 class LectureDuGrandLivre:
@@ -357,7 +360,12 @@ class LectureDuGrandLivre:
     lecture dans son siège (`_Droits.lignes_lues`, arrêtées à l'assemblage
     après triangularité et colonne « Lisent ») ; une lecture non déclarée est
     un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc et la ligne (#100).
-    Positions, ouverture, échelles et valeurs nettes ne sont pas filtrées.
+    La position courante d'un poste n'est rendue que si le bloc a déclaré sa
+    lecture dans son siège (`_Droits.postes_lus` ; admise à l'assemblage sans
+    triangularité ni colonne « Lisent ») ; une lecture non déclarée, poste
+    inconnu compris, est un `RefusDuMoteur` qui nomme le pas, l'étape, le bloc
+    et le poste (ADR 0013, annotation du 16/11/2026, point 5 ; P188 ; #150).
+    Ouverture, échelles et valeurs nettes ne sont pas filtrées.
     """
 
     __slots__ = ("_droits", "_livre", "_t")
@@ -384,6 +392,11 @@ class LectureDuGrandLivre:
         return self._livre.montant_execute_ligne(ligne)
 
     def position(self, poste: str) -> float:
+        d = self._droits
+        if poste not in d.postes_lus:
+            raise RefusDuMoteur("lecture de la position d'un poste non déclarée par le bloc "
+                                "dans cette étape", t=self._t, etape=d.etape, bloc=d.radical,
+                                nom=poste)
         return self._livre.position(poste)
 
     def ouverture(self, poste: str) -> float:
@@ -843,7 +856,7 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
     for radical, (_, sieges, _) in sorted(par_radical.items()):
         for identifiant, siege in sieges.items():
             groupe = places[identifiant][radical]
-            lectures, lignes_lues = set(), set()
+            lectures, lignes_lues, postes_lus = set(), set(), set()
             for lecture in siege.lit:
                 _controler_lecture(lecture.source, lecture.nom, identifiant, groupe,
                                    radical, rang, ecrivains, phase_de)
@@ -851,10 +864,13 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
                     lectures.add(lecture.nom)
                 elif lecture.source == GRAND_LIVRE and lecture.nom in LIGNE:
                     lignes_lues.add(lecture.nom)
+                elif lecture.source == GRAND_LIVRE:
+                    # Poste de `NOMS_POSTES` (contrôlé ci-dessus) : position courante.
+                    postes_lus.add(lecture.nom)
             droits[(radical, identifiant)] = _Droits(
                 radical, identifiant, frozenset(lectures), frozenset(siege.ecrit),
                 frozenset(siege.etat), frozenset(siege.propose), frozenset(siege.couvre),
-                frozenset(lignes_lues))
+                frozenset(lignes_lues), frozenset(postes_lus))
     _controler_lecture(ECRIVAIN_DE_L_INDICE[0], INDICE_DES_PRIX, "9", places["9"][MOTEUR],
                        MOTEUR, rang, ecrivains, phase_de)
     if ecrivains[INDICE_DES_PRIX][2] != ECRIVAIN_DE_L_INDICE[1]:

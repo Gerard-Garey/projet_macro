@@ -25,7 +25,10 @@ suivant (C1, C2). Sources d'une lecture :
   et si la phase de la ligne figure dans la colonne « Lisent » de la phase
   lectrice (ou est la phase lectrice), la phase des contreparties de
   règlement 17, 20 et 22 étant la phase 8 (elles sont rattachées à la
-  sous-phase 8 (c)) ; ou la position courante d'un poste (toujours admise) ;
+  sous-phase 8 (c)) ; ou la position courante d'un poste (de `NOMS_POSTES`),
+  admise à l'assemblage, lue seulement si déclarée : la vue refuse à
+  l'exécution la position d'un poste que le siège ne déclare pas (ADR 0013,
+  annotation du 16/11/2026, point 5 ; P188) ;
 - l'identifiant d'une étape (`"0"` à `"9"`, `"8a"`…) : une variable du pas
   écrite dans cette étape (grandeur d'ouverture et entrée de scénario en
   `"0"`, levier en `"1"`, variable d'un bloc ; valeur du pas suivant d'une
