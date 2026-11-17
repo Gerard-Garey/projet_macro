@@ -75,7 +75,12 @@ PI_ETOILE = Parametre(
 
 R_BAR = Parametre(
     "r_bar", "r̄", 0.01, "par an, taux de croissance",
-    "tab:calibration (indicative) ; C51 ; unité P96",
+    "choix de conception, niveau contesté (critère 23 de la fiche 8 ; P208) ; fourchette lue de "
+    "−0,5 % à +1,0 % (BCE, Economic Bulletin 1/2025, encadré « Natural rate estimates for the euro "
+    "area: insights, uncertainties and shortcomings », fin 2024, lu le 16/11/2026) et de 0,9 % à "
+    "1,9 % (Réserve fédérale, Summary of Economic Projections du 16/09/2026, tableau 1, long terme, "
+    "taux nominal moins 2 %, lu le 16/11/2026) ; fourchette d'ensemble de −0,5 % à +1,9 % ; "
+    "tab:calibration ; décision M34 ; C51 ; unité P96",
     ("eq:banque_centrale-regle-taux", "eq:banque_centrale-taux-neutre"),
     domaine("r̄ > −5 % (C51 ; contient 1 + r̄ > 0)", lambda x: x > -0.05))
 

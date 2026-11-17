@@ -124,7 +124,7 @@ class Parametres:
     nu_F: float = 1 / 6
     varpi_L: float = 0.02
     varpi_D: float = 0.01
-    vartheta: float = 0.10
+    vartheta: float = 0.15
     nu_H: float = 1.0
     tau_H: float = 0.25
     tau_F: float = 0.0
@@ -159,7 +159,13 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "g_pr": ("par an, taux de croissance", "décision du mainteneur du 05/10/2026 (#84, point 1, lecture I1)", "N9"),
     "g_N": ("par an, taux de croissance", "décision du mainteneur du 05/10/2026 (#84, point 1, lecture I1)", "T1"),
     "pi_cible": ("par an, taux de croissance (inflation)", "tab:calibration ; π̄ = π* (C2)", "BC4"),
-    "rbar": ("par an, taux réel de Fisher sur la cible", "tab:calibration (indicative)", "BC1, E4"),
+    "rbar": ("par an, taux réel de Fisher sur la cible",
+             ("choix de conception, niveau contesté (critère 23 de la fiche 8 ; P208) ; fourchette lue de −0,5 % à "
+              "+1,0 % (BCE, Economic Bulletin 1/2025, encadré « Natural rate estimates for the euro area: insights, "
+              "uncertainties and shortcomings », fin 2024, lu le 16/11/2026) et de 0,9 % à 1,9 % (Réserve fédérale, "
+              "Summary of Economic Projections du 16/09/2026, tableau 1, long terme, taux nominal moins 2 %, lu le "
+              "16/11/2026) ; fourchette d'ensemble de −0,5 % à +1,9 % ; tab:calibration ; décision M34"),
+             "BC1, E4"),
     "sigma": ("années de ventes", "tab:calibration (indicative)", "N2"),
     "kappa": ("années", "tab:calibration (indicative)", "N11"),
     "tu_bar": ("fraction de la capacité normale", "tab:calibration (indicative)", "S2"),
@@ -175,9 +181,34 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "U_eq": ("fraction de la population active", "tab:calibration (hypothèse)", "T3, E1"),
     "lv": ("fraction du capital comptable", "tab:calibration (hypothèse)", "F1"),
     "nu_F": ("années de ventes", "tab:calibration (hypothèse)", "F2"),
-    "varpi_L": ("par an, taux de flux", "tab:calibration (indicative), décision M31", "B1"),
-    "varpi_D": ("par an, taux de flux", "tab:calibration (indicative), décision M31", "B2"),
-    "vartheta": ("fraction des crédits de clôture", "tab:calibration (hypothèse)", "B6"),
+    "varpi_L": ("par an, taux de flux",
+                ("BCE, statistiques de taux d'intérêt des IFM (MIR), indicateur composite du coût de l'emprunt des "
+                 "sociétés non financières, affaires nouvelles (ECB/MIR/M.U2.B.A2I.AM.R.A.2240.EUR.N), moins le taux "
+                 "du jour le jour (EONIA jusqu'en 2019-09, puis €STR), zone euro, moyenne mensuelle 2003-2024 : "
+                 "2,09 points (encours : 2,30) ; DBnomics, consulté le 16/11/2026 ; arrondi au point ; "
+                 "tab:calibration ; décision M34 ; M31"),
+                "B1"),
+    "varpi_D": ("par an, taux de flux",
+                ("BCE, MIR et BSI : taux des dépôts des ménages et des sociétés non financières (à vue, à terme, à "
+                 "préavis), pondéré par les encours de la BSI, moins le taux du jour le jour (EONIA puis €STR) ; taux "
+                 "des MIR : dépôts à vue des ménages et des SNF (L21…2250.EUR.N, L21…2240.EUR.N), dépôts à terme, "
+                 "encours (L22.A…2250.EUR.O, L22.A…2240.EUR.O), dépôts à préavis de 3 mois au plus des ménages "
+                 "(L23.D…2250.EUR.N, employé aussi pour les SNF) ; poids de la BSI : "
+                 "ECB/BSI/M.U2.N.A.{L21,L22,L23}.A.1.U2.{2250,2240}.Z01.E ; zone "
+                 "euro : 0,85 point (2003-01 à 2008-08) et 1,93 point (2022-07 à 2024-12), fenêtres de taux "
+                 "positifs ; moyenne 2003-2024 de −0,05 point, dominée par les taux négatifs, écartée ; fenêtre "
+                 "contestée ; écart dépendant du régime (limite de B2, #167) ; DBnomics, consulté le 16/11/2026 ; "
+                 "tab:calibration ; décision M34 ; M31"),
+                "B2"),
+    "vartheta": ("fraction des crédits de clôture",
+                 ("BCE, statistiques de supervision bancaire (MSU), ratio CET1 des établissements importants "
+                  "(ECB/SUP/Q.B01.W0._Z.I4008._T.SII._Z._Z._Z.PCT.C), moyenne 2015T3-2024T4 : 14,75 % des actifs "
+                  "pondérés des risques ; DBnomics, consulté le 16/11/2026 ; définition déclarée : ϑ rapporte les "
+                  "fonds propres aux crédits, distinct d'un ratio sur actifs pondérés, auquel il est égal sous les "
+                  "pondérations de Bâle 1988 (Comité de Bâle, juillet 1988, § 44 et annexe 2, lus le 16/11/2026) ; "
+                  "dénominateur de Bâle III plus petit, écart non mesuré, contesté ; arrondi ; tab:calibration ; "
+                  "décision M34"),
+                 "B6"),
     "nu_H": ("années de revenu de Haig-Simons", "tab:calibration (indicative)", "H3"),
     "tau_H": ("fraction de l'assiette", "tab:calibration (indicative)", "E3"),
     "tau_F": ("fraction de l'assiette", "sec:finances_publiques-stationnaire (nul au socle)", "E5"),
@@ -1226,7 +1257,8 @@ GRANDEURS: tuple[Grandeur, ...] = (
     Grandeur("titres_Bk", "titres de la banque b_Bk = B_Bk/(n_a PIB)", "années de PIB", "n_a PIB", OUV,
              "sec:banque-stationnaire (#83)"),
     Grandeur("Pi_Bk", "résultat de la banque Π^Bk/PIB", "% du PIB", "PIB du pas", PAS, "sec:banque-stationnaire"),
-    Grandeur("roe", "rendement des fonds propres n_a Π^Bk/E^Bk", "% par an", "E^Bk d'ouverture", PAS,
+    Grandeur("roe", "rendement des fonds propres n_a Π^Bk/E^Bk, brut, nominal, sans charges d'exploitation, pertes "
+             "ni impôt (Π^Bk ne contient que les marges d'intérêt ; décision M34)", "% par an", "E^Bk d'ouverture", PAS,
              "sec:banque-stationnaire"),
     Grandeur("part_distribuee_Bk", "part distribuée Div_Bk/Π^Bk (marge de Div_Bk ≥ 0)", "sans dimension", "Π^Bk", PAS,
              "sec:banque-stationnaire"),
@@ -1234,7 +1266,8 @@ GRANDEURS: tuple[Grandeur, ...] = (
              "état stationnaire", "sec:banque-stationnaire"),
     Grandeur("part_titres", "part des titres dans l'actif b_Bk/(l + b_Bk + res)", "fraction", "actif d'ouverture", OUV,
              "sec:banque-stationnaire (#83)"),
-    Grandeur("marge_nette", "marge nette d'intérêt n_a Π^Bk/(L + B_Bk + Res)", "% par an", "actif d'ouverture", PAS,
+    Grandeur("marge_nette", "marge nette d'intérêt : ratio Π^Bk/actif, n_a Π^Bk/(L + B_Bk + Res) (décision M34)",
+             "% par an", "actif d'ouverture", PAS,
              "sec:banque-stationnaire (#83)"),
     Grandeur("domar_E_Bk", "déficit de Domar dû aux fonds propres n_a(Γ̄ − 1) e_Bk", "% du PIB", "PIB annuel",
              "état stationnaire", "sec:banque-conditions"),
@@ -2168,6 +2201,7 @@ VALEURS_PUBLIEES += (
 # ces publications qui diffèrent des défauts actuels de `Parametres` sont rétablis par `ENTREES_D_ORIGINE`.
 ENTREES_D_ORIGINE: dict[str, float] = {
     "mu_bar": 0.25,  # μ̄ avant la décision M34 (#92) : valeur des publications barrées
+    "vartheta": 0.10,  # ϑ avant la décision M34 (#130) : valeur des publications barrées
 }
 VALEURS_CONTRE_EPREUVE: tuple[tuple[str, str, str, object, str], ...] = tuple(
     ("sec:banque-stationnaire", f"illustration : {nom} à {int(round(100 * pi))} %", pub,
@@ -2348,18 +2382,21 @@ VALEURS_PUBLIEES += tuple(
         (("refinancement", "refinancement", 1, 1.0, ", ν_G = 1"), ("0,018282", "0,018904", "0,022857")),
         (("dette consolidée c", "c", 1, _NU, ""), ("0,09884", "0,25674", "0,51013")),
         (("résultat Π^Bk/PIB", "Pi_Bk", 0.01, _NU, ""), ("0,02500", "0,02249", "0,01851")),
-        (("rendement des fonds propres, %", "roe", 1, _NU, ""), ("31,23", "36,15", "55,36")),
+        (("rendement des fonds propres (brut, nominal, sans charges), %", "roe", 1, _NU, ""),
+         ("31,23", "36,15", "55,36")),
         (("part distribuée", "part_distribuee", 1, _NU, ""), ("0,93655", "0,89025", "0,79105")),
         (("part des titres dans l'actif", "part_titres", 1, _NU, ", ν_G = 1,15"), ("0,1303", "0,3093", "0,6160")),
         (("part des titres dans l'actif", "part_titres", 1, 1.0, ", ν_G = 1"), ("0,1277", "0,3071", "0,6145")),
-        (("marge nette d'intérêt, %", "marge_nette", 1, _NU, ", ν_G = 1,15"), ("2,717", "2,497", "2,126")),
-        (("marge nette d'intérêt, %", "marge_nette", 1, 1.0, ", ν_G = 1"), ("2,725", "2,505", "2,134")),
+        (("marge nette d'intérêt (Π^Bk/actif), %", "marge_nette", 1, _NU, ", ν_G = 1,15"),
+         ("2,717", "2,497", "2,126")),
+        (("marge nette d'intérêt (Π^Bk/actif), %", "marge_nette", 1, 1.0, ", ν_G = 1"), ("2,725", "2,505", "2,134")),
         (("marge d'existence, par an", "existence", 1, _NU, ""), ("0,0293", "0,0322", "0,0438")),
         (("canal rentier, % de YD par point", "canal_rentier", 1, _NU, ""), ("0,151", "0,387", "0,721")),
     )
     for pi, pub in zip(POINTS_PI, pubs, strict=True)
 ) + tuple(
-    ("sec:banque-stationnaire", f"rendement des fonds propres, variante basse, {round(100 * pi)} %, %", pub,
+    ("sec:banque-stationnaire",
+     f"rendement des fonds propres (brut, nominal, sans charges), variante basse, {round(100 * pi)} %, %", pub,
      (lambda c, pi=pi: c.banque(pi=pi, nu=_NU, varpi_L=0.004, varpi_D=0.00214)["roe"]), "B-2")
     for pi, pub in zip(POINTS_PI, ("7,19", "9,83", "20,29"), strict=True)
 ) + tuple(

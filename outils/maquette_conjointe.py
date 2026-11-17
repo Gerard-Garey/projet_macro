@@ -927,6 +927,9 @@ AJOUTS_GRILLE = ("zeta",)
 # Marge conjointe (mesure publiée, relevée depuis sa citation) : gains de la boucle salaire -- taux réel multipliés ensemble.
 GAINS_ENSEMBLE = ("beta", "a_pi", "eta_r")
 BORNES_MARGE = (1.0, 2.0)  # intervalle encadrant du facteur commun (contrôlé par `frontiere`)
+# Intervalle de la frontière du seul régime de hausse (`frontiere_marge`), élargi à [1 ; 3] par décision du
+# mainteneur du 17/11/2026 (#130, M34) : à ϑ = 0,15, la lecture (c) de ce régime passe 1 au-delà de 2.
+BORNES_MARGE_HAUSSE = (1.0, 3.0)
 
 
 def branches_grille() -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]:
@@ -1004,8 +1007,8 @@ def marge_conjointe() -> dict[str, object]:
 @lru_cache(maxsize=None)
 def frontiere_marge(regime: str) -> float:
     """Facteur commun de β, a_π et η_r où la lecture (c) d'un seul régime de l'emploi passe 1 (π̄ = 2 %),
-    bissection sur `BORNES_MARGE`."""
-    return frontiere(lambda x: lectures(_ensemble(x), regime).rayon_c, *BORNES_MARGE)
+    bissection sur `BORNES_MARGE_HAUSSE`."""
+    return frontiere(lambda x: lectures(_ensemble(x), regime).rayon_c, *BORNES_MARGE_HAUSSE)
 
 
 def _ensemble_sans_aI(f_aI: float = 1e-3):
