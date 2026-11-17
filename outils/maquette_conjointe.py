@@ -1277,7 +1277,7 @@ def releve() -> list[Chiffre]:
             _r(lambda: carte_offre(0.8, "regle", psi_xi=10.0)))
 
     # sec:prix-conditions : boucle salaires -- prix.
-    for m, r in zip(M4, ("0,8969", "0,9068", "0,9225", "0,9385")):
+    for m, r in zip(M4, ("0,9357", "0,9471", "0,9596", "0,9724")):
         ajouter(f"salaires_prix.rayon.m{m}", r, "rayon", "offre", f"P1 à P3, T2, T3, π^e = π̄, m = {m}",
                 _r(lambda m=m: carte_offre(m, "regle", True)))
     # λ_w relative à la table (× 0,5 et × 2 de `BASE.lambda_w`, décision du mainteneur du 17/11/2026, #45) : les valeurs
@@ -1285,18 +1285,18 @@ def releve() -> list[Chiffre]:
     # moitié et au double de leur valeur dans la table (3 ; 1,5 ; 1,2).
     variantes_sp = (
         ("toutes÷2", {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6, "lambda_w": BASE.lambda_w * 0.5},
-         ("0,9479", "0,9714")),
+         ("0,9650", "0,9841")),
         ("toutes×2", {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4, "lambda_w": BASE.lambda_w * 2},
-         ("0,8070", "0,8583")),
-        ("lambda_w×2", {"lambda_w": BASE.lambda_w * 2}, ("0,9322", "0,9351")),
-        ("psi×2", {"psi_xi": 1.0}, ("0,9163", "0,9346")),
+         ("0,8900", "0,9555")),
+        ("lambda_w×2", {"lambda_w": BASE.lambda_w * 2}, ("0,9289", "0,9660")),
+        ("psi×2", {"psi_xi": 1.0}, ("0,9473", "0,9747")),
     )
     for nom, kw, rayons in variantes_sp:
         for quel, pub in zip(("min", "max"), rayons):
             ajouter(f"salaires_prix.rayon.{nom}.{quel}", pub, "rayon", "offre",
                     f"P1 à P3, T2, T3, {nom}, m = 0,5 à 0,8",
                     _extremes(lambda m, kw=kw: spectre(carte_offre(m, "regle", True, **kw)).rayon, M4, quel))
-    ajouter("salaires_prix.rayon.marge_constante.m0.6", "0,9172", "rayon", "offre",
+    ajouter("salaires_prix.rayon.marge_constante.m0.6", "0,9404", "rayon", "offre",
             "marge constante μ̄, T2, T3, m = 0,6", _r(lambda: carte_offre(0.6, "marge", True)))
     ajouter("salaires_prix.racine_nominale", "10^{-9}", "racine nominale", "offre",
             "plus grand |λ − 1| de la racine nominale, m = 0,5 à 0,8",
