@@ -132,7 +132,7 @@ class Parametres:
     theta_CB: float = 0.0
     phi: float = 1.0
     nu_G: float = 1.0
-    zeta: float = 4.0
+    zeta: float = 8.0
     eta_r: float = 2.0
     lambda_ti: float = 0.02
     lambda_v: float = 3.0
@@ -186,7 +186,15 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "phi": ("sans dimension, {0 ; 1}", "sec:finances_publiques-stationnaire (φ = 1)", "E4"),
     "nu_G": ("multiple des paiements bruts d'un pas", "grille de #84 (ν_G = 1 : point de référence)", "E8"),
     "zeta": ("par unité de taux réel annuel",
-             "valeur de la maquette (sec:finances_publiques-stationnaire) ; n'entre que si Δϱ ≠ 0", "S2"),
+             ("R. Klump, P. McAdam et A. Willman, « The normalized CES production function: theory and empirics », "
+              "BCE, Working Paper Series n° 1294, février 2011, tableau 2, p. 30, lu le 16/11/2026 : élasticité de "
+              "substitution de la zone euro 0,7 (1970-2003) et 0,95-1,05 (1970-1997), « generally below unity » ; "
+              "S. Gilchrist et E. Zakrajšek, « Investment and the Cost of Capital: New Evidence from the Corporate Bond "
+              "Market », NBER Working Paper 13174, juin 2007, p. 21, lu le 16/11/2026 : firmes américaines émettrices "
+              "d'obligations (zone : États-Unis ; fenêtre : non relevée par la fiche), élasticité de long terme du "
+              "capital au coût d'usage égale à 1 ; fourchette lue de σ de 0,5 à 1,0, niveau contesté ; ζ = 8 ⇒ σ ≈ 0,64 "
+              "sous ζ = σ/(ϱ̄_L + δ) (hypothèse) ; tab:calibration ; décision M34"),
+             "S2"),
     "eta_r": ("par unité de taux réel annuel", "tab:calibration (indicative)", "S3"),
     "lambda_ti": ("par an, vitesse", "tab:calibration (indicative)", "S6"),
     "lambda_v": ("par an, vitesse", "tab:calibration (indicative)", "N1"),
@@ -1497,7 +1505,7 @@ ALLOCATIONS_MESUREES = (
     "C/(p v)", "G/(p v)", "I/(p v)", "ΔIN/(p v)", "T^cou/PIB",
 )
 TOL_INVARIANCE = 1e-12  # invariance exacte, relative
-# Sensibilité à ζ (décision de `macro`, complément de #84) : le verdict reste jugé à ζ du paramètre (4) ; l'étendue
+# Sensibilité à ζ (décision de `macro`, complément de #84) : le verdict reste jugé à ζ du paramètre (8, M34) ; l'étendue
 # des allocations de la liste L2 est publiée en mesure sur la plage de la table, ζ ∈ {4 ; 8}, et à ζ = 2 en
 # illustration, sans verdict. Les allocations qui en dépendent (par r̄_α) sont mesurées, non supposées.
 ZETA_PLAGE = (4.0, 8.0)
@@ -2432,7 +2440,7 @@ VALEURS_PUBLIEES += tuple(
      "+0,074", lambda c: _hausse_d_un_point(c, 0.0, 8.0), "A"),
     ("sec:banque_centrale-stationnaire", "L^CB_0 à 2 %, ν_G = 1,15, u.m.", "0,248264",
      lambda c: ouverture(c.etat(nu=_NU), c.par(nu=_NU))["L_CB"], "A"),
-    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 4), point", "0,632",
+    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 8), point", "0,632",
      lambda c: 100 * c.alpha()["delta_r_alpha"], "D"),
     ("sec:banque_centrale-conditions", "(α) : écart de C/Y_o, point", "0,633",
      lambda c: 100 * c.alpha()["allocations"]["C/Y_o"], "D"),
