@@ -2,7 +2,7 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; le reste est dans `docs/feuille-de-route-historique.md` (parties A à G et leurs compléments, sans rien supprimé ni réécrit), dont la « Lecture des renvois » dit où lire chaque renvoi absent de la tête.
 
-**Dernière mise à jour** : 17/11/2026, rang 2 de la branche « calibration », décision **M34** du mainteneur (§ 4) — `main` = `890471b` ; branche de travail `claude/j3-calibration` à `1727b61`, PR brouillon #162 ; plan **décidé** (§ 1), rangs 0 à 2 faits, rangs 3 à 7 ouverts, découpage de J3-e à J3-g décidé (§ 2), décisions P204 à P212 et P225 à P233 (§ 4 ; P213 à P224 : index). Mises à jour antérieures et extraits sortis : historique, partie G et ses compléments, puis `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 17/11/2026, rang 2 de la branche « calibration », décision **M34** du mainteneur (§ 4) — `main` = `890471b` ; branche de travail `claude/j3-calibration` à `1727b61`, PR brouillon #162 ; plan **décidé** (§ 1), rangs 0 à 2 faits, rangs 3 à 7 ouverts, découpage de J3-e à J3-g décidé (§ 2), décisions P204 à P212 et P225 à P238 (§ 4 ; P213 à P224 : index). Mises à jour antérieures et extraits sortis : historique, partie G et ses compléments, puis `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
@@ -203,6 +203,11 @@ P200 à P203 (ouverture, #157 à #161, m1, ADR 0014) et P213 à P224 (ci-dessous
 | P231 | 16/11/2026 | Rang 1 terminé : dossier M34 (table entière, tableau prédit consolidé) préparé dans la fiche, sans code, puis handoff. Toute question bloquante : arrêt, travail enregistré, handoff. | calibration.md |
 | P232 | 16/11/2026 | Session, sous P228 (aucune objection de `jeu` ni de `monnaie`) : #45, λ_w = 0,18 proposé pour M34, β = 2 ; formulation de C62 à la table proposée remplaçant celle de P222 (P230). Réservés à M34 : ordre entre λ_w et #163 (condition proposée : #163 avant la démonstration J4). Issue sur l'instabilité 17 rédigée, non créée (P229). | calibration.md § 6.13 |
 | P233 | 16/11/2026 | Session, sous P228 (aucune objection de `jeu` ni de `monnaie`) : #62, ν_H = 1,1 et λ_H = 0,4 proposés pour M34 ; dette de référence publiée sans cible ; correction du test du continuum avec le commit de #62. Rang 1 instruit. | calibration.md § 5.12 |
+| P234 | 17/11/2026 | Rang 5 (#130) : la frontière du régime de hausse de la maquette conjointe est cherchée sur [1 ; 3] (`BORNES_MARGE_HAUSSE`) au lieu d'être publiée « sans objet » ; écart au critère « Diff » accepté. | constat A1 de l'audit ; commit `3c8156e` |
+| P235 | 17/11/2026 | Rang 6 (#62) : dans `test_spectre_restreint_retire_les_racines_des_identites`, l'amas des racines nulles est apparié par multiplicité (`SEUIL_AMAS_NUL` = 1e−5), la tolérance 1e−7 gardée pour les autres racines. | commit `399323c` |
+| P236 | 17/11/2026 | Rang 7 (#45) : correction **prospective** de l'horizon des critères « une vitesse ne détermine pas l'état d'arrivée » (fiche 3, crit. 4 : 720 → 2 880 pas ; fiche 6, crit. 6 : 2 160 → 6 480 pas ; seuil 1e−6 inchangé) ; ancien verdict publié : échec à l'ancien horizon (2,98e−6 sur ω ; 4,1e−6 sur K/Y), transitoire de la branche lente λ_w × 0,5, sans continuum d'équilibres. | rang 7 |
+| P237 | 17/11/2026 | Rang 7 (#45) : #139 remise en échec attendu (`xfail(strict)`), son passage du rang 6 tenant à la phase d'une oscillation. | #139 |
+| P238 | 17/11/2026 | Rang 7 (#45) : `BORNES_MARGE` de la marge conjointe élargie à [1 ; 3] (frontière 2,7826 à λ_w = 0,18) ; les frontières en ν_H et h de l'instabilité 17 restent « sans objet » (M34). | rang 7 |
 
 Questions Q1 à Q9 du 16/11/2026, avec leurs options et la recommandation d'`architect-approfondi` : `git show afa9e89:docs/feuille-de-route.md`, § 4. Le mainteneur a retenu l'option recommandée pour chacune (P204 à P212).
 
