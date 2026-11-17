@@ -34,8 +34,13 @@ from nations.moteur.parametres.cadre import PAS_PAR_AN
 _N_A = PAS_PAR_AN.valeur
 
 MU_BAR = Parametre(
-    "mu_bar", "μ̄", 0.25, "fraction",
-    "tab:calibration (hypothèse) ; P71",
+    "mu_bar", "μ̄", 0.60, "fraction",
+    "K. Bodnár et M. Mohr, « The development of the wage share in the euro area since the start "
+    "of the pandemic », BCE, Economic Bulletin 4/2023, encadré, note du graphique A, consulté le "
+    "16/11/2026 : part salariale de la zone euro, rémunération des salariés corrigée des "
+    "indépendants sur la valeur ajoutée brute au prix de base, moyenne 1998-2023, 62,4 % ; "
+    "écart au coût des facteurs contesté (AMECO ALCD2, EA20, 1998-2023 : 63,11 %, consulté le "
+    "16/11/2026) ; μ̄ = 0,60 ⇒ ω̄ = 1/(1 + μ̄) = 0,625 ; tab:calibration ; décision M34 ; P71",
     ("eq:prix-marge", "eq:travail-salaire"),
     domaine("μ̄ > 0 (condition de conception et d'existence de l'état stationnaire : une marge "
             "nulle ou négative ne couvre pas l'amortissement, P71 ; elle contient le domaine de "

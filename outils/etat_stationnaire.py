@@ -118,7 +118,7 @@ class Parametres:
     kappa: float = 1.6
     tu_bar: float = 0.8
     delta: float = 0.05
-    mu_bar: float = 0.25
+    mu_bar: float = 0.60
     U_eq: float = 0.05
     lv: float = 0.4
     nu_F: float = 1 / 6
@@ -164,7 +164,14 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "kappa": ("années", "tab:calibration (indicative)", "N11"),
     "tu_bar": ("fraction de la capacité normale", "tab:calibration (indicative)", "S2"),
     "delta": ("par an, taux de flux", "tab:calibration (hypothèse)", "N10, S7"),
-    "mu_bar": ("fraction du coût unitaire", "tab:calibration (hypothèse)", "P2, T3"),
+    "mu_bar": ("fraction du coût unitaire",
+               ("K. Bodnár et M. Mohr, « The development of the wage share in the euro area since the start of "
+                "the pandemic », BCE, Economic Bulletin 4/2023, encadré, note du graphique A, consulté le "
+                "16/11/2026 : part salariale de la zone euro, rémunération des salariés corrigée des indépendants "
+                "sur la valeur ajoutée brute au prix de base, moyenne 1998-2023, 62,4 % ; écart au coût des "
+                "facteurs contesté (AMECO ALCD2, EA20, 1998-2023 : 63,11 %, consulté le 16/11/2026) ; "
+                "μ̄ = 0,60 ⇒ ω̄ = 1/(1 + μ̄) = 0,625 ; tab:calibration ; décision M34"),
+               "P2, T3"),
     "U_eq": ("fraction de la population active", "tab:calibration (hypothèse)", "T3, E1"),
     "lv": ("fraction du capital comptable", "tab:calibration (hypothèse)", "F1"),
     "nu_F": ("années de ventes", "tab:calibration (hypothèse)", "F2"),
@@ -2149,7 +2156,11 @@ VALEURS_PUBLIEES += (
 # Hors du bilan des valeurs en vigueur (revue finale, rang 8 ; décision du mainteneur du 05/10/2026, point A).
 # Catégorie B-1 : formes du bloc 7 appelées avec v_H = 0,7 et m = 0,25/12, entrées d'illustration de la
 # publication au commit 54edad8 (valeurs barrées) ; elles attribuent l'écart de la republication (B-2) à ces
-# deux entrées seules. Catégorie N : valeurs barrées calculées à un ν_G non retenu (1 ou 1,1).
+# deux entrées seules. Catégorie N : valeurs barrées calculées à un ν_G non retenu (1 ou 1,1). Les paramètres de
+# ces publications qui diffèrent des défauts actuels de `Parametres` sont rétablis par `ENTREES_D_ORIGINE`.
+ENTREES_D_ORIGINE: dict[str, float] = {
+    "mu_bar": 0.25,  # μ̄ avant la décision M34 (#92) : valeur des publications barrées
+}
 VALEURS_CONTRE_EPREUVE: tuple[tuple[str, str, str, object, str], ...] = tuple(
     ("sec:banque-stationnaire", f"illustration : {nom} à {int(round(100 * pi))} %", pub,
      (lambda c, pi=pi, cle=cle, f=f: f * c.banque(pi=pi, **ILL)[cle]), "B-1")
@@ -2750,7 +2761,9 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
         "reference_hors_domaine": hors_reference,
         "niveaux": niveaux, "propositions": propositions, "republication": republication,
         "fermeture": calc.fermeture(), "superneutralite": calc.alpha(), "publiees": table_publiees(calc),
-        "historique": table_historique(calc), "contre_epreuve": table_publiees(calc, VALEURS_CONTRE_EPREUVE),
+        "historique": table_historique(calc),
+        "contre_epreuve": table_publiees(Calculs(replace(base, **ENTREES_D_ORIGINE), calc.nu_g_retenu),
+                                         VALEURS_CONTRE_EPREUVE),
         "cf": {pi: calc.v(pi, 12, 1.0, "C-F") for pi in POINTS_PI},
     }
 
