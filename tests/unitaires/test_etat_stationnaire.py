@@ -757,7 +757,8 @@ def test_refus_a_lv_equivalent_a_la_table_calibree(stationnaire, base, nu_H, lv,
                 stationnaire.etat_stationnaire(p)
         elif e["marge_E1_montant"] <= 0:
             e1_seul.append((p.pi_cible, p.n_a))
-    assert len(refus) == 5 and e1_seul == [(0.02, 4)]
+    assert refus == [(0.0, 4), (0.0, 12), (0.0, 52), (0.02, 12), (0.02, 52)]
+    assert e1_seul == [(0.02, 4)]
     for pi, n_a in ((0.0, 4), (0.0, 12), (0.0, 52), (0.02, 4), (0.02, 12), (0.02, 52)):
         p = replace(variante, nu_G=1.15, pi_cible=pi, n_a=n_a)
         e = stationnaire.etat_stationnaire(p, controler=False)
@@ -1685,12 +1686,12 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
 
 
 def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
-    """« Δr̄_α […] ne descend pas sous 0,160 point sur la grille de ζ mesurée, de 2 à 200 (minimum vers ζ ≈ 63 ; 0,1614
-    à ζ = 68, où était le minimum, 0,1428 barré, à la calibration indicative) » : à la table T1, Δr̄_α a un minimum
-    local entier à ζ = 63, égal à 0,160 à la dernière décimale publiée, sous lequel il ne descend pas sur une grille
-    de pas 10 de 2 à 200, ni à ζ = 1 000 ; en contre-épreuve, à ϑ = 0,10 et ν_H = 1 (valeur barrée, #130 et #62), de
-    même à ζ = 68, égal à 0,1428. Grille complète des ζ entiers de 2 à 200 mesurée hors batterie (30 s) : même
-    minimum, 63 et 68."""
+    """« Δr̄_α […] atteint sur la grille de ζ mesurée, de 2 à 200, un minimum de 0,160 point (0,1598) vers
+    ζ ≈ 63 (0,1614 à ζ = 68, où était le minimum, 0,1428 barré, à la calibration indicative) » : à la table T1,
+    Δr̄_α a un minimum local entier à ζ = 63, égal à 0,160 à la dernière décimale publiée, sous lequel il ne descend
+    pas sur une grille de pas 10 de 2 à 200, ni à ζ = 1 000 ; en contre-épreuve, à ϑ = 0,10 et ν_H = 1 (valeur
+    barrée, #130 et #62), de même à ζ = 68, égal à 0,1428. Grille complète des ζ entiers de 2 à 200 mesurée hors
+    batterie (30 s) : même minimum, 63 et 68."""
     for calc, zeta_min, publie in (
             (stationnaire.Calculs(base), 63, "0,160"),
             (stationnaire.Calculs(replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"],
