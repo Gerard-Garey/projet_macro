@@ -511,7 +511,8 @@ def test_seuils_d1_et_d2_en_equilibre_partiel(publier):
     lignes.append(f"(d2) e_I(1) = {maintenu[0] / ref[0] - 1.0:.4%} ; e_I(12) = {e12:.4%} ; "
                   f"e_I(120) = {e120:.4%} ; rapport = {e120 / e12:.4f}")
     assert e120 / e12 >= SEUIL_D2
-    publier("Bloc 6, (d1) et (d2) en équilibre partiel (ζ = 4, λ_ti = 0,02, π* = 2 %)", lignes)
+    publier(f"Bloc 6, (d1) et (d2) en équilibre partiel (ζ = {TABLE.zeta:g}, λ_ti = 0,02, π* = 2 %)",
+            lignes)
 
 
 def _evaluer(fonction, *arguments):
@@ -562,10 +563,10 @@ def test_frontiere_de_la_double_precision_des_bornes_b(socle, publier):
     d'environ −745 et déborde au-delà d'environ +709 (`math.exp` lève `OverflowError`, que le
     moteur traduit en `DepassementNumerique` : test de ce nom plus bas). Dans le domaine déclaré (ζ ≤ 20), S6 rend ti_{t+1} = 0,0 exactement dès que
     Δϱ = ϱ_L − ϱ̄_L dépasse la frontière publiée ici, mesurée par bisection sur
-    `utilisation_visee` puis `part_visee_suivante` à ζ = 4 (référence) et 20 (borne haute),
-    ti du sentier résolu à π* = 2 %, tu = t̄u, t̄u et λ_ti/n_a de la table ; i_L équivalent par
-    S1 inversée (ϱ̄_L du sentier) ; formes fermées en contrôle, écart publié. Le pas est alors
-    refusé par le moteur en phase 5 (`test_part_visee_nulle_refusee_par_le_moteur`). Le lot de
+    `utilisation_visee` puis `part_visee_suivante` au ζ de la table (8, M34 ; référence) et à
+    20 (borne haute), ti du sentier résolu à π* = 2 %, tu = t̄u, t̄u et λ_ti/n_a de la table ;
+    i_L équivalent par S1 inversée (ϱ̄_L du sentier) ; formes fermées en contrôle, écart publié.
+    Le pas est alors refusé par le moteur en phase 5 (`test_part_visee_nulle_refusee_par_le_moteur`). Le lot de
     10^5 tirages est jugé par `tests/unitaires/test_investissement.py`."""
     mesures = [
         ("plan, −η_r Δϱ = +746", _evaluer(bloc.plan_en_volume, 0.14, 1.0, 1.0, 746.0, -1.0, 0.0)),
@@ -961,15 +962,15 @@ def test_depassement_de_l_exponentielle_refuse_par_le_moteur(socle):
 
 def test_part_visee_nulle_refusee_par_le_moteur(socle):
     """Décision du mainteneur du 15/11/2026 (constat M1 d'`audit`, #143) : au-delà de la frontière
-    de S6 publiée (ζ = 4, test `test_frontiere_de_la_double_precision_des_bornes_b`), le pas ne
-    rend pas de valeur silencieuse : ti_{t+1} = 0,0 est refusé par `RefusDuMoteur` (domaine
+    de S6 publiée (ζ de la table, `test_frontiere_de_la_double_precision_des_bornes_b`), le pas
+    ne rend pas de valeur silencieuse : ti_{t+1} = 0,0 est refusé par `RefusDuMoteur` (domaine
     ti > 0 de l'état), qui nomme le pas 0, la phase 5, le bloc investissement et « ti » (Δϱ à
     la frontière + 0,01 par an). En deçà, le côté positif de la frontière est jugé par appel
-    direct (test précédent). Sur ce socle (μ̄ = 0,60, ζ = 4), S6 lie avant la caisse à π̄ = 2 % :
-    le premier i_{L,0} arrêté est la frontière de S6 elle-même (≈ 3,424 par an) ; à π̄ = 0, le
-    pas échoue d'abord en phase 6 par `DefautComptable` (caisse des entreprises, ligne 9) pour
-    i_{L,0} ≳ 2,74 par an, sous la frontière de S6 (≈ 3,338 par an). i_{L,0} par S1 inversée
-    sur ϱ̄_L et π* du sentier à 2 %."""
+    direct (test précédent). Sur ce socle (μ̄ = 0,60, ζ = 8, M34), S6 lie avant la caisse des
+    entreprises aux trois π̄ : le premier i_{L,0} arrêté au pas 0, mesuré par bissection, est
+    la frontière de S6 elle-même (Δϱ ≈ 1,654 par an ; i_{L,0} ≈ 1,684 / 1,737 / 1,950 par an
+    à π̄ = 0 / 2 / 10 %), refusé en phase 5 (à ζ = 4, la caisse liait la première à π̄ = 0).
+    i_{L,0} par S1 inversée sur ϱ̄_L et π* du sentier à 2 %."""
     import dataclasses
     from nations.moteur import ordonnanceur as ordo
     from nations.moteur.diagnostics import RefusDuMoteur

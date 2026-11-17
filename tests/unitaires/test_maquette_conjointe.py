@@ -199,9 +199,53 @@ EN_ATTENTE_DE_REPUBLICATION_92 = frozenset(
        for lecture in ("a_entretien", "hs_glissement", "hs_glissement_pas")
        for theta in ("0.8", "1.0") for regime in ("hausse", "baisse")}
     | {"menages_inflation.a.periode.max", "menages_inflation.hs_glissement_pas.periode.max"})
+#
+# #55 (ζ = 4 → 8, M34) : les 37 chiffres ci-dessous lisent ζ dans la carte du socle (S2 hors de l'état stationnaire) :
+# rayons, racines, périodes et demi-vies du socle, grilles, marge conjointe, φ*, rayons et doublements sous φ = 0
+# et φ = 0,5 de la fiche 9. Publiés à ζ = 4 jusqu'au passage unique de `docwriter` (règle 9), retirés par le commit
+# `tests:` qui suit le commit `docs:` de #55.
+EN_ATTENTE_DE_REPUBLICATION_55 = frozenset({
+    "finances.doublement.phi0.pi0.02",
+    "finances.doublement.phi0.pi0.1",
+    "finances.phi_star.pi0.02",
+    "finances.phi_star.pi0.1",
+    "finances.rayon.phi0.5.pi0.02.specification",
+    "finances.rayon.phi0.5.pi0.1.ecartees",
+    "finances.rayon.phi0.5.pi0.1.specification",
+    "finances.rayon.phi0.pi0.02",
+    "finances.rayon.phi0.pi0.1",
+    "socle.demi_vie.pi0",
+    "socle.demi_vie.pi0.02",
+    "socle.grille.pire",
+    "socle.grille.pire.pi0",
+    "socle.grille.pire.pi0.1",
+    "socle.grille.vitesses÷2",
+    "socle.grille_zeta.pire",
+    "socle.grille_zeta.pire.pi0",
+    "socle.grille_zeta.pire.pi0.1",
+    "socle.marge_conjointe.facteur",
+    "socle.marge_conjointe.facteur.hausse",
+    "socle.marge_conjointe.x0.5",
+    "socle.marge_conjointe.x2.a_I÷100.hausse.ecart",
+    "socle.marge_conjointe.x2.a_I÷1000.hausse",
+    "socle.marge_conjointe.x2.a_I÷1000.hausse.ecart",
+    "socle.marge_conjointe.x2.a_I÷1000.hausse.paire",
+    "socle.marge_conjointe.x2.baisse",
+    "socle.marge_conjointe.x2.hausse",
+    "socle.periode.pi0.1.hausse",
+    "socle.racine.pi0.1.baisse.imaginaire",
+    "socle.racine.pi0.1.hausse.imaginaire",
+    "socle.racine.pi0.1.hausse.reelle",
+    "socle.rayon.pi0.02.baisse",
+    "socle.rayon.pi0.02.hausse",
+    "socle.rayon.pi0.1.baisse",
+    "socle.rayon.pi0.1.hausse",
+    "socle.rayon.pi0.baisse",
+    "socle.rayon.pi0.hausse",
+})
 ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"} | {
     f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)}
-) | EN_ATTENTE_DE_REPUBLICATION_92
+) | EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
 
 
 def test_ensemble_des_ecarts_fige(maquette):

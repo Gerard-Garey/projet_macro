@@ -883,7 +883,24 @@ def test_seuil_derniere_decimale(stationnaire):
 # branche (rang 9, règle 9) ; le commit `tests:` qui les retire de la liste suit le commit `docs:`. Toute autre
 # valeur reste égale à la dernière décimale publiée ; un écart qui se résorbe fait aussi échouer la batterie.
 # Les rangs suivants de la branche (#130, #62) étendent la liste.
-EN_ATTENTE_DE_REPUBLICATION = frozenset({
+#
+# #55 (ζ = 4 → 8, M34) : les 12 valeurs de la mesure (α) de #80 (lecture (α), Δϱ ≠ 0 entre deux cibles), publiées à
+# ζ = 4 ; l'état stationnaire de référence ne lit pas ζ (Δϱ = 0) et ne change pas.
+EN_ATTENTE_DE_REPUBLICATION_55 = frozenset({
+    ("sec:banque_centrale-conditions", "(α) : écart de C/Y_o, point"),
+    ("sec:banque_centrale-conditions", "(α) : écart de ti, point"),
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point"),
+    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point"),
+    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point"),
+    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 8), point"),
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 0 %, %"),
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 1 %, %"),
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 3 %, %"),
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 4 %, %"),
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"),
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 10 %, %"),
+})
+EN_ATTENTE_DE_REPUBLICATION = EN_ATTENTE_DE_REPUBLICATION_55 | frozenset({
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"),
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"),
     ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"),
@@ -1062,14 +1079,15 @@ EN_ATTENTE_DE_REPUBLICATION = frozenset({
 
 def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
     """Valeurs en vigueur (spécification et fiches 8 et 9 republiées) : toutes égales à la dernière décimale
-    publiée, hors des 173 valeurs en attente de republication (#92, liste exacte) ; aucune valeur barrée n'y figure
+    publiée, hors des 185 valeurs en attente de republication (#92 et #55, liste exacte) ; aucune valeur barrée n'y
+    figure
     (catégories B-1 et N en contre-épreuve)."""
     lignes = resultat["publiees"]
     assert len(lignes) == 449
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
     assert sum(1 for l in lignes if l["categorie"] == "S") == 20
     assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
-    assert len(EN_ATTENTE_DE_REPUBLICATION) == 173
+    assert len(EN_ATTENTE_DE_REPUBLICATION_55) == 12 and len(EN_ATTENTE_DE_REPUBLICATION) == 185
     assert {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"} == EN_ATTENTE_DE_REPUBLICATION
     for l in lignes:
         if (l["section"], l["grandeur"]) in EN_ATTENTE_DE_REPUBLICATION:
@@ -1082,7 +1100,7 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
 
 def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     """C4 de `macro` (rang 7) : les 29 valeurs visées et republiées (spécification, commit 8b9fa94 ; fiches 8 et 9)
-    sont égales au script, hors de celles en attente de republication (#92) ; aucune n'est republiée à son
+    sont égales au script, hors de celles en attente de republication (#92, #55) ; aucune n'est republiée à son
     ancienne valeur ; l'historique (commit 9c8bdbd) garde les 29 anciennes valeurs, toutes en écart, chacune égale
     à sa valeur figée en littéral (`ANCIENNES_PUBLIEES`)."""
     historique = resultat["historique"]
@@ -1098,8 +1116,8 @@ def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 449 valeurs comparées, 256 égales sur l'état résolu, 20 égales en arithmétique de la "
-            "spécification (catégorie S, sans état résolu), 173 écarts (publiés avec leur explication ; aucun "
+    assert ("Bilan : 449 valeurs comparées, 244 égales sur l'état résolu, 20 égales en arithmétique de la "
+            "spécification (catégorie S, sans état résolu), 185 écarts (publiés avec leur explication ; aucun "
             "n'est masqué).") in texte
     assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
@@ -1297,13 +1315,14 @@ def test_alpha_allocations_independantes_de_zeta_seuil_monnaie(stationnaire, bas
 
 
 def test_sensibilite_a_zeta_publiee(stationnaire, base, resultat):
-    """`macro` : verdict jugé à ζ = 4 ; étendue des allocations L2 publiée à ζ ∈ {4 ; 8} et à ζ = 2 (illustration) ;
+    """`macro` : verdict jugé au ζ de la table (8, M34 ; #55) ; étendue des allocations L2 publiée à ζ ∈ {4 ; 8} et
+    à ζ = 2 (illustration) ;
     les allocations dépendantes de ζ (mesurées) sont C/Y_o, ti et T^cou/PIB, exclues des tests d'invariance."""
-    assert base.zeta == 4.0 and stationnaire.ZETA_PLAGE == (4.0, 8.0) and stationnaire.ZETA_ILLUSTRATION == 2.0
+    assert base.zeta == 8.0 and stationnaire.ZETA_PLAGE == (4.0, 8.0) and stationnaire.ZETA_ILLUSTRATION == 2.0
     sn = resultat["superneutralite"]
     assert set(sn["zeta"]) == {2.0, 4.0, 8.0}
     for q in stationnaire.ALLOCATIONS_VERDICT:  # à ζ du paramètre, l'étendue publiée est celle du verdict
-        assert sn["zeta"][4.0]["allocations"][q] == sn["allocations"][q]
+        assert sn["zeta"][8.0]["allocations"][q] == sn["allocations"][q]
     assert sn["dependantes_de_zeta"] == ["C/Y_o", "ti", "T^cou/PIB"]
     assert not set(sn["dependantes_de_zeta"]) & set(ALLOCATIONS_ZETA)
     assert not set(sn["dependantes_de_zeta"]) & {"C/PIB", "G/PIB", "I/PIB", "ΔIN/PIB"}
