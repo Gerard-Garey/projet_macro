@@ -1413,12 +1413,12 @@ L'écart de traçabilité E^CB vient du diagnostic `ECB` de `m9.py:209`, qui som
 
      | φ | 0 | 0,1 | 0,25 | 0,5 | 1 |
      |---|---|---|---|---|---|
-     | π̄ = 2 % : rayon | 1,000891 | 1,000575 | 0,999076 | 0,997792 | 0,997486 |
+     | π̄ = 2 % : rayon | 1,000891 | 1,000585 | 1,000115 | 0,999293 | 0,997460 |
      | π̄ = 2 % : P_36 | +0,033 % | +0,001 % | −0,045 % | −0,112 % | −0,226 % |
-     | π̄ = 10 % : rayon | 1,008216 | 1,008794 | 1,005564 | 0,999488 | 0,997558 |
+     | π̄ = 10 % : rayon | 1,008216 | 1,007014 | 1,005077 | 1,000784 | 0,997414 |
      | π̄ = 10 % : P_36 | +0,463 % | +0,327 % | +0,164 % | −0,015 % | −0,248 % |
 
-     > *Annotation du 17/11/2026 (M34, #55, #130, #62, #45 ; republication à la table T1, rang 9 de la calibration ; décision inchangée).* Rayons à φ = 0, maquette conjointe (`outils/maquette_conjointe.py`, lecture (c), table T1, ζ = 8) : 1,000891 à 2 % et 1,008216 à 10 % (~~1,001818~~ et ~~1,011036~~ à la calibration indicative). Les autres colonnes, les lignes P_36 et la note du 15/10/2026 restent à la calibration indicative, non remesurées ici ; le seuil de couverture qui stabilise vaut 0,286 et 0,632 à la table T1 (spécification, `sec:finances_publiques-impots`).
+     > *Annotation du 17/11/2026 (M34, #55, #130, #62, #45 ; republication à la table T1, rang 9 de la calibration ; décision inchangée).* Rayons des deux lignes, maquette conjointe (`outils/maquette_conjointe.py`, lecture (c), pire des deux régimes, table T1, ζ = 8), à φ = 0 / 0,1 / 0,25 / 0,5 / 1 : 1,000891 / 1,000585 / 1,000115 / 0,999293 / 0,997460 à 2 % et 1,008216 / 1,007014 / 1,005077 / 1,000784 / 0,997414 à 10 % ; valeurs d'origine de la table, mesurées avant l'amendement de E12 : ~~1,001818 / 1,000575 / 0,999076 / 0,997792 / 0,997486~~ et ~~1,011036 / 1,008794 / 1,005564 / 0,999488 / 0,997558~~. À la table T1, la boucle diverge encore à 10 % pour φ = 0,5 et ne se stabilise à 2 % qu'au-delà de φ = 0,25 : le motif du refus d'un curseur continu tient. Les lignes P_36 (trajectoires) et la note du 15/10/2026 restent à la calibration indicative, non remesurées ici ; le seuil de couverture qui stabilise vaut 0,286 et 0,632 à la table T1 (spécification, `sec:finances_publiques-impots`).
 
    - Un curseur φ aurait une zone dangereuse qui se déplace avec l'inflation, sans signal. À φ = 0,5 et 10 %, le taux directeur devient presque inerte (P_36 −0,015 %) : le budget désactiverait en silence le levier monétaire.
    - *Annotation du 15/10/2026 (#65, remesure ; décision inchangée, motif renforcé).* Sous l'assiette E12 amendée le 04/10/2026 (−T^cou_t, § 8), rayons (lecture (c)) à φ = 0 / 0,1 / 0,25 / 0,5 / 1 : 1,001818 / 1,000927 / 0,999364 / 0,998471 / 0,997118 à 2 % et 1,011036 / 1,009342 / 1,006885 / 1,002898 / 0,997045 à 10 % (`outils/maquette_conjointe.py`). À φ = 0,5 et 10 %, la boucle diverge : le taux directeur n'y est pas « presque inerte », il cesse de stabiliser. Les P_36 ne sont pas remesurés (trajectoires, #111). Le refus d'un curseur continu en est renforcé (M33) ; à porter à `jeu`.

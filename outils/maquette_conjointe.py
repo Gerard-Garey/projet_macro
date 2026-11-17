@@ -1482,21 +1482,21 @@ def releve() -> list[Chiffre]:
             ou=socle_bc)
 
     # sec:finances_publiques-impots, sec:ecartees et fiche 9 (finances_publiques.md, § 7) : couverture φ (E4).
-    # La table de la fiche 9 est antérieure à l'amendement de E12 du 04/10/2026 : ses valeurs non nulles en φ
-    # sont des écarts déclarés par la spécification (valeurs barrées) ; la fiche ne les barre pas.
+    # La table de la fiche 9 (§ 7) est republiée à la table T1 (annotation du 17/11/2026) ; ses valeurs d'origine,
+    # antérieures à l'amendement de E12 du 04/10/2026, y sont barrées dans l'annotation, hors des lignes relevées.
     impots, ecartees = ("sec:finances_publiques-impots",), ("sec:ecartees",)
     fiche9 = ("docs/blocs/finances_publiques.md",)
     for pi, pub in ((0.02, "0,286"), (0.10, "0,632")):
         ajouter(f"finances.phi_star.pi{pi:g}", pub, "frontière", "socle",
                 f"couverture φ de E4 où la lecture (c) passe 1, pire des deux régimes, π̄ = {pi:.0%}",
                 lambda pi=pi: phi_star(pi), ou=impots + ecartees)
-    table_phi = {0.02: ("1,000891", "1,000575", "0,999076", "0,997792", "0,997486"),
-                 0.10: ("1,008216", "1,008794", "1,005564", "0,999488", "0,997558")}
+    table_phi = {0.02: ("1,000891", "1,000585", "1,000115", "0,999293", "0,997460"),
+                 0.10: ("1,008216", "1,007014", "1,005077", "1,000784", "0,997414")}
     for pi, pubs in table_phi.items():
         for phi, pub in zip(PHI_TABLE + (1.0,), pubs):
             ajouter(f"finances.rayon.phi{phi:g}.pi{pi:g}", pub, "rayon", "socle",
                     f"couverture φ = {phi:g} (E4), π̄ = {pi:.0%}, pire des deux régimes, lecture (c)"
-                    + ("" if phi == 0.0 else " ; valeur de la fiche 9, mesurée avant l'amendement de E12"),
+                    + ("" if phi == 0.0 else " ; valeur de la fiche 9, republiée à la table T1 le 17/11/2026"),
                     lambda pi=pi, phi=phi: rayon_phi(pi, phi), ou=fiche9 + (impots if phi == 0.0 else ()))
     for pi, pub in ((0.02, "0,999293"), (0.10, "1,000784")):
         ajouter(f"finances.rayon.phi0.5.pi{pi:g}.specification", pub, "rayon", "socle",
