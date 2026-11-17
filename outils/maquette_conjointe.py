@@ -1280,10 +1280,15 @@ def releve() -> list[Chiffre]:
     for m, r in zip(M4, ("0,8969", "0,9068", "0,9225", "0,9385")):
         ajouter(f"salaires_prix.rayon.m{m}", r, "rayon", "offre", f"P1 à P3, T2, T3, π^e = π̄, m = {m}",
                 _r(lambda m=m: carte_offre(m, "regle", True)))
+    # λ_w relative à la table (× 0,5 et × 2 de `BASE.lambda_w`, décision du mainteneur du 17/11/2026, #45) : les valeurs
+    # absolues 0,5 et 2,0 étaient la moitié et le double de λ_w = 1. λ_v, λ_IN et λ_μ restent des littéraux, égaux à la
+    # moitié et au double de leur valeur dans la table (3 ; 1,5 ; 1,2).
     variantes_sp = (
-        ("toutes÷2", {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6, "lambda_w": 0.5}, ("0,9479", "0,9714")),
-        ("toutes×2", {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4, "lambda_w": 2.0}, ("0,8070", "0,8583")),
-        ("lambda_w×2", {"lambda_w": 2.0}, ("0,9322", "0,9351")),
+        ("toutes÷2", {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6, "lambda_w": BASE.lambda_w * 0.5},
+         ("0,9479", "0,9714")),
+        ("toutes×2", {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4, "lambda_w": BASE.lambda_w * 2},
+         ("0,8070", "0,8583")),
+        ("lambda_w×2", {"lambda_w": BASE.lambda_w * 2}, ("0,9322", "0,9351")),
         ("psi×2", {"psi_xi": 1.0}, ("0,9163", "0,9346")),
     )
     for nom, kw, rayons in variantes_sp:
