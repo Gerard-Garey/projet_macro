@@ -203,12 +203,12 @@ def test_points_fixes_et_racine_nominale(maquette):
         assert x["remesure"] is None or math.isfinite(x["remesure"])
 
 
-# Chiffres du relevé en écart, liste exacte (#65) : la valeur de la fiche 5 à n_a = 4 (cause non établie) et les
-# 8 rayons de la table φ de la fiche 9, mesurés avant l'amendement de E12 (historique de la spécification,
-# ligne 30). Aucun chiffre en vigueur de la spécification n'y figure : un chiffre en vigueur qui passe en écart,
+# Chiffres du relevé en écart, liste exacte (#65) : la valeur de la fiche 5 à n_a = 4 (cause non établie). Les
+# 8 rayons φ ≠ 0 de la table φ de la fiche 9, en écart depuis l'amendement de E12 (historique de la spécification,
+# ligne 30), sont republiés à la table T1 dans la fiche (reprise du rang 9, constat m1 de `macro`) et reproduits.
+# Aucun chiffre en vigueur de la spécification n'y figure : un chiffre en vigueur qui passe en écart,
 # ou en « sans objet », fait échouer la batterie ; un écart qui se résorbe aussi, la liste est alors à revoir.
-ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"} | {
-    f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)})
+ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"})
 #
 # Calibration du socle (M34) : la spécification republiée au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a) écrit
 # en vigueur les chiffres de la table T1 (#92, #55, #130, #62, #45), tous reproduits. Six chiffres sont sans objet à
@@ -233,11 +233,11 @@ VARIANTES_RELATIVES_45 = ("toutes÷2", "toutes×2", "lambda_w×2")
 
 
 def test_ensemble_des_ecarts_fige(maquette):
-    """Liste exacte : 15 chiffres non reproduits sur 148, 9 en écart, antérieurs à M34 (`ECARTS_ATTENDUS`), et 6 sans
+    """Liste exacte : 7 chiffres non reproduits sur 148, 1 en écart, antérieur à M34 (`ECARTS_ATTENDUS`), et 6 sans
     objet à la table T1 (`SANS_OBJET_M34`) ; tous les autres, dont ceux republiés à la table T1, sont reproduits."""
     r = maquette.calculer()
     assert len(r["releve"]) == 148
-    assert len(ECARTS_ATTENDUS) == 9 and len(SANS_OBJET_M34) == 6 and not ECARTS_ATTENDUS & SANS_OBJET_M34
+    assert len(ECARTS_ATTENDUS) == 1 and len(SANS_OBJET_M34) == 6 and not ECARTS_ATTENDUS & SANS_OBJET_M34
     assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == NON_REPRODUITS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_M34
