@@ -1311,11 +1311,15 @@ def _ecarts_de_taux_sous_phi_nul(socle, sentier, facteur, nb_pas):
 # (`docs/blocs/calibration.md` § 3.13.2). Fenêtre : seconde moitié des pas où |Δi_CB| n'a pas
 # crû de plus de `CROISSANCE_LINEAIRE` fois son maximum des `PAS_D_AMPLITUDE` premiers pas (choc
 # et suites immédiates), pour rester dans le régime linéaire et laisser s'éteindre les racines
-# dominées. Ordre 2 et facteur 30, mesurés à ζ = 8 sur la série du choc de 1e−6 : à π* = 10 %,
-# la racine identifiée vaut 1,0096618 au facteur 30 et reste à 3e−6 près jusqu'au facteur 200
-# (1,0096651, max |Δi_CB| de la fenêtre 9,4e−5) ; au facteur 300, l'harmonique de la
-# non-linéarité (≈ λ²) l'emporte (1,0155), et 1,0203 au facteur 1 000 : marge d'environ ×6,7 ;
-# à π* = 2 %, la fenêtre n'atteint aucun de ces facteurs sur 2 700 pas (1,0000351 partout).
+# dominées. Ordre 2 et facteur 30, mesurés à ζ = 8 sur la série du choc de 1e−6, à l'état E1
+# (`8df010b` : ϑ = 0,10, ν_H = 1, λ_w = 1) : à π* = 10 %, la racine identifiée vaut 1,0096618 au
+# facteur 30 et reste à 3e−6 près jusqu'au facteur 200 (1,0096651, max |Δi_CB| de la fenêtre
+# 9,4e−5) ; au facteur 300, l'harmonique de la non-linéarité (≈ λ²) l'emporte (1,0155), et 1,0203
+# au facteur 1 000 : marge d'environ ×6,7 ; à π* = 2 %, la fenêtre n'atteint aucun de ces facteurs
+# sur 2 700 pas (1,0000351 partout). Remesuré à la table T1 (rang 8 de la calibration, #166) : à
+# π* = 10 %, 1,0082166 au facteur 30 (pas 270 à 540), 1,0082170 à 100, 1,0082175 à 200, 1,0082180
+# à 300 (max |Δi_CB| de la fenêtre 6,5e−5), puis 1,01858 au facteur 1 000 (pas 484 à 968) : marge
+# d'environ ×10 ; à π* = 2 %, aucun facteur atteint sur 2 700 pas (1,0008907 partout).
 ORDRE_PRONY = 2
 PAS_D_AMPLITUDE = 24
 CROISSANCE_LINEAIRE = 30.0
