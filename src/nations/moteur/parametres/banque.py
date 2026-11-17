@@ -34,19 +34,45 @@ _SANS_SIGNE = ("sans condition de signe (la condition d'existence du dividende s
 
 VARPI_L = Parametre(
     "varpi_L", "ϖ_L", 0.02, "par an, taux de flux",
-    "tab:calibration (indicative) ; M31 ; P96",
+    "BCE, statistiques de taux d'intérêt des IFM (MIR), indicateur composite du coût de "
+    "l'emprunt des sociétés non financières, affaires nouvelles "
+    "(ECB/MIR/M.U2.B.A2I.AM.R.A.2240.EUR.N), moins le taux du jour le jour de la zone euro "
+    "(EONIA, moyenne mensuelle, ECB/FM/M.U2.EUR.4F.MM.EONIA.HSTA, jusqu'en septembre 2019, puis "
+    "€STR, moyenne mensuelle des observations quotidiennes, ECB/EST/B.EU000A2X2A25.WT), zone euro, "
+    "moyenne mensuelle 2003-2024 : 2,09 points (encours : 2,30) ; "
+    "DBnomics, consulté le 16/11/2026 ; arrondi au point ; tab:calibration ; décision M34 ; M31 ; "
+    "P96",
     ("eq:banque-taux-credit",),
     domaine(_SANS_SIGNE, lambda x: True))
 
 VARPI_D = Parametre(
     "varpi_D", "ϖ_D", 0.01, "par an, taux de flux",
-    "tab:calibration (indicative) ; M31 ; P96",
+    "BCE, MIR et BSI : taux des dépôts des ménages et des sociétés non financières (à vue, à "
+    "terme, à préavis), pondéré par les encours de la BSI, moins le taux du jour le jour (EONIA "
+    "puis €STR) ; taux des MIR : dépôts à vue des ménages et des SNF (L21…2250.EUR.N, "
+    "L21…2240.EUR.N), dépôts à terme, encours (L22.A…2250.EUR.O, L22.A…2240.EUR.O), dépôts à "
+    "préavis de 3 mois au plus des ménages (L23.D…2250.EUR.N, employé aussi pour les SNF) ; poids "
+    "de la BSI : ECB/BSI/M.U2.N.A.{L21,L22,L23}.A.1.U2.{2250,2240}.Z01.E ; zone euro : 0,85 "
+    "point (2003-01 à 2008-08) et 1,93 point (2022-07 à 2024-12), "
+    "fenêtres de taux positifs ; moyenne 2003-2024 de −0,05 point, dominée par les taux négatifs, "
+    "écartée ; fenêtre contestée ; écart dépendant du régime (limite de B2, #167) ; DBnomics, "
+    "consulté le 16/11/2026 ; tab:calibration ; décision M34 ; M31 ; P96",
     ("eq:banque-taux-depots",),
     domaine(_SANS_SIGNE, lambda x: True))
 
 VARTHETA = Parametre(
-    "vartheta", "ϑ", 0.10, "fraction",
-    "tab:calibration (hypothèse) ; M31 ; P96",
+    "vartheta", "ϑ", 0.15, "fraction",
+    "BCE, statistiques de supervision bancaire (MSU), ratio CET1 des établissements importants "
+    "(ECB/SUP/Q.B01.W0._Z.I4008._T.SII._Z._Z._Z.PCT.C), moyenne 2015T3-2024T4 : 14,75 % des "
+    "actifs pondérés des risques, arrondi ; DBnomics, consulté le 16/11/2026 ; dénominateur : ϑ "
+    "rapporte les fonds propres aux crédits, et non aux actifs pondérés des risques ; les deux "
+    "ratios coïncident, pour la banque du modèle, sous les pondérations de l'accord de Bâle de 1988 "
+    "(crédits aux entreprises pondérés à 100 %, titres publics et réserves à 0 % ; Comité de Bâle "
+    "sur le contrôle bancaire, International Convergence of Capital Measurement and Capital "
+    "Standards, juillet 1988, § 44 et annexe 2, lus le 16/11/2026) ; sous Bâle III, les crédits aux "
+    "entreprises y sont pondérés en moyenne à moins de 100 % (approches internes) : rapporté aux "
+    "crédits, le ratio observé serait inférieur à 14,75 % ; écart non mesuré : le niveau est "
+    "contesté ; tab:calibration ; décision M34 ; M31 ; P96",
     ("eq:banque-dividendes",),
     domaine("ϑ > 0 (sec:banque-conditions)", lambda x: x > 0.0))
 

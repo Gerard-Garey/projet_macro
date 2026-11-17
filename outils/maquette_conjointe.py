@@ -237,6 +237,22 @@ def frontiere(rayon_de, bas: float, haut: float) -> float:
     return 0.5 * (bas + haut)
 
 
+def frontiere_ou_aucune(rayon_de, bas: float, haut: float) -> float | None:
+    """Frontière de `frontiere`, ou sans objet (None) si le rayon, fini, est sous 1 aux deux bornes : régime stable
+    sur tout l'intervalle, aucune frontière à publier (#45 : à λ_w = 0,18, les frontières en ν_H et h de
+    l'instabilité 17 disparaissent de [0,3 ; 1] ; « sans objet », M34). Un rayon fini au-dessus de 1 aux deux bornes
+    (instable sur tout l'intervalle) est refusé par une erreur explicite, jamais publié « sans objet » ; un rayon
+    non fini ou égal à 1 aux bornes reste refusé par `frontiere`."""
+    r_bas, r_haut = rayon_de(bas), rayon_de(haut)
+    if math.isfinite(r_bas) and math.isfinite(r_haut):
+        if r_bas < 1 and r_haut < 1:
+            return None
+        if r_bas > 1 and r_haut > 1:
+            raise ValueError(f"instable sur tout l'intervalle : rayon {r_bas!r} et {r_haut!r} aux bornes {bas} et "
+                             f"{haut}")
+    return frontiere(rayon_de, bas, haut)
+
+
 def _carte(variables: list[tuple[str, float, float, bool, float]], pas, racine_nominale: bool) -> Carte:
     """Assemble une carte depuis (nom, valeur, échelle plancher, en logarithme, facteur de tendance)."""
     noms = tuple(v[0] for v in variables)
@@ -926,7 +942,13 @@ ABSENTS_GRILLE = ("a_U",)
 AJOUTS_GRILLE = ("zeta",)
 # Marge conjointe (mesure publiée, relevée depuis sa citation) : gains de la boucle salaire -- taux réel multipliés ensemble.
 GAINS_ENSEMBLE = ("beta", "a_pi", "eta_r")
-BORNES_MARGE = (1.0, 2.0)  # intervalle encadrant du facteur commun (contrôlé par `frontiere`)
+# Intervalle encadrant du facteur commun (contrôlé par `frontiere`), élargi à [1 ; 3] par décision du mainteneur du
+# 17/11/2026 (#45, M34) : à λ_w = 0,18, la lecture (c) passe 1 à 2,7826, au-delà de 2 ; à λ_w = 1, la frontière sur
+# [1 ; 3] égale celle sur [1 ; 2] à 4,5e−13 près (1,70128).
+BORNES_MARGE = (1.0, 3.0)
+# Intervalle de la frontière du seul régime de hausse (`frontiere_marge`), élargi à [1 ; 3] par décision du
+# mainteneur du 17/11/2026 (#130, M34) : à ϑ = 0,15, la lecture (c) de ce régime passe 1 au-delà de 2.
+BORNES_MARGE_HAUSSE = (1.0, 3.0)
 
 
 def branches_grille() -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]:
@@ -1004,8 +1026,8 @@ def marge_conjointe() -> dict[str, object]:
 @lru_cache(maxsize=None)
 def frontiere_marge(regime: str) -> float:
     """Facteur commun de β, a_π et η_r où la lecture (c) d'un seul régime de l'emploi passe 1 (π̄ = 2 %),
-    bissection sur `BORNES_MARGE`."""
-    return frontiere(lambda x: lectures(_ensemble(x), regime).rayon_c, *BORNES_MARGE)
+    bissection sur `BORNES_MARGE_HAUSSE`."""
+    return frontiere(lambda x: lectures(_ensemble(x), regime).rayon_c, *BORNES_MARGE_HAUSSE)
 
 
 def _ensemble_sans_aI(f_aI: float = 1e-3):
@@ -1255,21 +1277,26 @@ def releve() -> list[Chiffre]:
             _r(lambda: carte_offre(0.8, "regle", psi_xi=10.0)))
 
     # sec:prix-conditions : boucle salaires -- prix.
-    for m, r in zip(M4, ("0,8969", "0,9068", "0,9225", "0,9385")):
+    for m, r in zip(M4, ("0,9357", "0,9471", "0,9596", "0,9724")):
         ajouter(f"salaires_prix.rayon.m{m}", r, "rayon", "offre", f"P1 à P3, T2, T3, π^e = π̄, m = {m}",
                 _r(lambda m=m: carte_offre(m, "regle", True)))
+    # λ_w relative à la table (× 0,5 et × 2 de `BASE.lambda_w`, décision du mainteneur du 17/11/2026, #45) : les valeurs
+    # absolues 0,5 et 2,0 étaient la moitié et le double de λ_w = 1. λ_v, λ_IN et λ_μ restent des littéraux, égaux à la
+    # moitié et au double de leur valeur dans la table (3 ; 1,5 ; 1,2).
     variantes_sp = (
-        ("toutes÷2", {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6, "lambda_w": 0.5}, ("0,9479", "0,9714")),
-        ("toutes×2", {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4, "lambda_w": 2.0}, ("0,8070", "0,8583")),
-        ("lambda_w×2", {"lambda_w": 2.0}, ("0,9322", "0,9351")),
-        ("psi×2", {"psi_xi": 1.0}, ("0,9163", "0,9346")),
+        ("toutes÷2", {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6, "lambda_w": BASE.lambda_w * 0.5},
+         ("0,9650", "0,9841")),
+        ("toutes×2", {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4, "lambda_w": BASE.lambda_w * 2},
+         ("0,8900", "0,9555")),
+        ("lambda_w×2", {"lambda_w": BASE.lambda_w * 2}, ("0,9289", "0,9660")),
+        ("psi×2", {"psi_xi": 1.0}, ("0,9473", "0,9747")),
     )
     for nom, kw, rayons in variantes_sp:
         for quel, pub in zip(("min", "max"), rayons):
             ajouter(f"salaires_prix.rayon.{nom}.{quel}", pub, "rayon", "offre",
                     f"P1 à P3, T2, T3, {nom}, m = 0,5 à 0,8",
                     _extremes(lambda m, kw=kw: spectre(carte_offre(m, "regle", True, **kw)).rayon, M4, quel))
-    ajouter("salaires_prix.rayon.marge_constante.m0.6", "0,9172", "rayon", "offre",
+    ajouter("salaires_prix.rayon.marge_constante.m0.6", "0,9404", "rayon", "offre",
             "marge constante μ̄, T2, T3, m = 0,6", _r(lambda: carte_offre(0.6, "marge", True)))
     ajouter("salaires_prix.racine_nominale", "10^{-9}", "racine nominale", "offre",
             "plus grand |λ − 1| de la racine nominale, m = 0,5 à 0,8",
@@ -1278,38 +1305,38 @@ def releve() -> list[Chiffre]:
 
     # sec:menages-conditions : boucle conjointe (lecture de la cible).
     courant[0] = ("sec:menages-conditions",)
-    for th, pubs in ((0.8, ("0,9640", "0,9617")), (1.0, ("0,9564", "0,9537"))):
+    for th, pubs in ((0.8, ("0,9776", "0,9779")), (1.0, ("0,9733", "0,9736"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages.rayon.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture de la cible, θ_H = {th}, régime de {regime}",
                     _r(lambda th=th, regime=regime: carte_menages(th, regime)))
-    for regime, pub in (("hausse", "0,9563"), ("baisse", "0,9535")):
+    for regime, pub in (("hausse", "0,9740"), ("baisse", "0,9743")):
         ajouter(f"menages.rayon.theta1.0.cout_moyen.{regime}", pub, "rayon", "menages",
                 f"lecture de la cible, θ_H = 1, stocks au coût moyen pondéré de N8, régime de {regime}",
                 _r(lambda regime=regime: carte_menages(1.0, regime, resultat="cout_moyen")))
 
     # sec:menages-inflation et instabilité 17 : lectures sur le glissement.
     courant[0] = ("sec:menages-inflation",)
-    for th, pubs in ((0.8, ("1,030357", "1,005801")), (1.0, ("1,059130", "1,060998"))):
+    for th, pubs in ((0.8, ("0,983269", "0,983633")), (1.0, ("1,004371", "0,998967"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages_inflation.a_entretien.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture (a), glissement dans le seul terme d'entretien de H4, θ_H = {th}, régime de {regime}",
                     _r(lambda th=th, regime=regime: carte_menages(th, regime, "a_entretien")))
     ins = ("sec:menages-inflation", "tab:instabilites")
-    for lecture, th, pubs in (("hs_glissement", 0.8, ("0,9967", "0,9742")), ("hs_glissement", 1.0, ("1,0231", "1,0271")),
-                              ("hs_glissement_pas", 0.8, ("0,9823", "0,9748")),
-                              ("hs_glissement_pas", 1.0, ("1,0223", "1,0218"))):
+    for lecture, th, pubs in (("hs_glissement", 0.8, ("0,9810", "0,9814")), ("hs_glissement", 1.0, ("0,9797", "0,9790")),
+                              ("hs_glissement_pas", 0.8, ("0,9701", "0,9705")),
+                              ("hs_glissement_pas", 1.0, ("0,9898", "0,9871"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages_inflation.{lecture}.theta{th}.{regime}", pub, "rayon", "menages",
                     f"{lecture}, θ_H = {th}, régime de {regime}",
                     _r(lambda lecture=lecture, th=th, regime=regime: carte_menages(th, regime, lecture)),
                     ou=ins if (lecture, th) == ("hs_glissement_pas", 1.0) else None)
     hs_pas = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
-    for quel, pub in (("min", "49"), ("max", "60")):
+    for quel, pub in (("min", "51"), ("max", "1291")):
         ajouter(f"menages_inflation.hs_glissement_pas.periode.{quel}", pub, "période", "menages",
                 "hs_glissement_pas, deux θ_H, deux régimes",
                 _extremes(lambda a: spectre(carte_menages(a[0], a[1], "hs_glissement_pas")).periode, hs_pas, quel),
-                motif="49 à 60", ou=ins)
+                motif="51 à 1\\,291", ou=ins)
     lect_a = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
     for quel, pub in (("min", "17"), ("max", "19")):
         ajouter(f"menages_inflation.a.periode.{quel}", pub, "période", "menages",
@@ -1317,24 +1344,25 @@ def releve() -> list[Chiffre]:
                 _extremes(lambda a: spectre(carte_menages(a[0], a[1], "a")).periode, lect_a, quel),
                 motif="17 à 19 tours", ou=ins)
     courant[0] = ("tab:instabilites",)
-    for th, pubs in ((0.8, ("1,0275", "1,0029")), (1.0, ("1,0561", "1,0580"))):
+    for th, pubs in ((0.8, ("0,9831", "0,9835")), (1.0, ("1,0019", "0,9965"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"instabilite17.a.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture (a), θ_H = {th}, régime de {regime}",
                     _r(lambda th=th, regime=regime: carte_menages(th, regime, "a")))
     ajouter("instabilite17.frontiere_nu_H", "0{,}586", "frontière", "menages",
             "ν_H où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
-            lambda: frontiere(lambda nu: spectre(carte_menages(0.8, "hausse", "a", nu_H=nu)).rayon, 0.3, 1.0))
+            lambda: frontiere_ou_aucune(lambda nu: spectre(carte_menages(0.8, "hausse", "a", nu_H=nu)).rayon, 0.3,
+                                        1.0))
     ajouter("instabilite17.frontiere_h", "0{,}604", "frontière", "menages",
             "poids h où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
-            lambda: frontiere(lambda h: spectre(carte_menages(0.8, "hausse", "a", h=h)).rayon, 0.3, 1.0))
+            lambda: frontiere_ou_aucune(lambda h: spectre(carte_menages(0.8, "hausse", "a", h=h)).rayon, 0.3, 1.0))
     ajouter("instabilite17.a.n_a4.hausse", "1,0415", "rayon", "menages",
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (valeur de la fiche ; la spécification cite aussi "
             "la contre-épreuve, ligne suivante ; la valeur à retenir revient à macro)",
             _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), ou=("sec:changements-v3x",))
-    ajouter("instabilite17.a.n_a4.hausse.contre_epreuve", "1,09", "rayon", "menages",
+    ajouter("instabilite17.a.n_a4.hausse.contre_epreuve", "0,95", "rayon", "menages",
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (contre-épreuve citée par la spécification)",
-            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="1,09 contre", ou=("sec:changements-v3x",))
+            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="vaut 0,95", ou=("sec:changements-v3x",))
 
     # sec:investissement-conditions : boucle investissement -- demande (boucle réduite).
     courant[0] = ("sec:investissement-conditions",)
@@ -1360,50 +1388,51 @@ def releve() -> list[Chiffre]:
     # Les valeurs barrées (\barre, anciennes E12) ne sont pas recensées ; la fiche 9 garde les siennes (φ = 1).
     socle_bc, socle_fp = ("sec:banque_centrale-conditions",), ("sec:finances_publiques-conditions",)
     courant[0] = socle_bc + socle_fp
-    for pi, pub in ((0.0, "0,997390"), (0.02, "0,997118"), (0.10, "0,997045")):
-        for regime in ("hausse", "baisse"):
+    for pi, pubs in ((0.0, ("0,997701", "0,997695")), (0.02, ("0,997460", "0,997452")),
+                     (0.10, ("0,997414", "0,997407"))):
+        for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"socle.rayon.pi{pi:g}.{regime}", pub, "rayon", "socle",
                     f"blocs 2 à 9, π̄ = π* = {pi:.0%}, ν_G = {NU_G:g}, régime de {regime}, lecture (c) : variété des "
                     f"identités, hors des racines en 1/Γ̄ des stocks tenus en niveau ({', '.join(TENUS_ATTENDUS)}, "
                     "déclarées à part)",
                     lambda pi=pi, regime=regime: lectures_socle(pi, regime).rayon_c)
     # Racine dominante à 10 % : paire complexe, relevée en régime de hausse (période de la spécification).
-    ajouter("socle.racine.pi0.1.hausse.reelle", "0,997043", "racine", "socle",
+    ajouter("socle.racine.pi0.1.hausse.reelle", "0,997407", "racine", "socle",
             "partie réelle de la racine dominante (c), π̄ = 10 %, régime de hausse",
             lambda: lectures_socle(0.10, "hausse").suivante.real, ou=socle_bc)
-    ajouter("socle.racine.pi0.1.hausse.imaginaire", "0,001732", "racine", "socle",
+    ajouter("socle.racine.pi0.1.hausse.imaginaire", "0,003489", "racine", "socle",
             "|partie imaginaire| de la racine dominante (c), π̄ = 10 %, régime de hausse",
             lambda: abs(lectures_socle(0.10, "hausse").suivante.imag), ou=socle_bc)
-    ajouter("socle.racine.pi0.1.baisse.imaginaire", "0,001731", "racine", "socle",
+    ajouter("socle.racine.pi0.1.baisse.imaginaire", "0,003488", "racine", "socle",
             "|partie imaginaire| de la racine dominante (c), π̄ = 10 %, régime de baisse",
             lambda: abs(lectures_socle(0.10, "baisse").suivante.imag), ou=socle_bc)
-    ajouter("socle.periode.pi0.1.hausse", "3617", "période", "socle",
+    ajouter("socle.periode.pi0.1.hausse", "1796", "période", "socle",
             "2π/|arg λ| de la racine dominante (c), π̄ = 10 %, régime de hausse",
-            lambda: nature_racine(lectures_socle(0.10, "hausse").suivante)[1], motif="3\\,617", ou=socle_bc)
-    ajouter("socle.demi_vie.pi0.02", "240", "demi-vie", "socle",
+            lambda: nature_racine(lectures_socle(0.10, "hausse").suivante)[1], motif="1\\,796", ou=socle_bc)
+    ajouter("socle.demi_vie.pi0.02", "272", "demi-vie", "socle",
             "ln 0,5/ln du rayon à 2 % (lecture (c), régime de hausse)",
-            lambda: math.log(0.5) / math.log(lectures_socle(0.02, "hausse").rayon_c), motif="240")
-    ajouter("socle.demi_vie.pi0", "265", "demi-vie", "socle",
+            lambda: math.log(0.5) / math.log(lectures_socle(0.02, "hausse").rayon_c), motif="272")
+    ajouter("socle.demi_vie.pi0", "301", "demi-vie", "socle",
             "ln 0,5/ln du rayon à 0 % (lecture (c), régime de hausse)",
-            lambda: math.log(0.5) / math.log(lectures_socle(0.0, "hausse").rayon_c), motif="265", ou=socle_bc)
+            lambda: math.log(0.5) / math.log(lectures_socle(0.0, "hausse").rayon_c), motif="301", ou=socle_bc)
     for pi, pub in ((0.0, "0,998351"), (0.02, "0,996705"), (0.10, "0,990453")):
         ajouter(f"socle.inv_gamma.pi{pi:g}", pub, "racine", "socle",
                 f"1/Γ̄ à π̄ = {pi:.0%}, racine double des stocks tenus en niveau ({', '.join(TENUS_ATTENDUS)})",
                 lambda pi=pi: lectures_socle(pi, "hausse").inv_gamma, ou=socle_bc)
-    ajouter("socle.grille.pire", "0,998732", "rayon", "socle",
+    ajouter("socle.grille.pire", "0,998759", "rayon", "socle",
             f"pire branche de la grille G (banque_centrale.md, l. 340-345 : {len(VITESSES_GRILLE)} vitesses et "
             f"{len(GAINS_GRILLE)} gains ×0,5 et ×2, toutes les vitesses ×0,5 et ×2 ; {len(branches_grille())} "
             f"branches, sans {', '.join(ABSENTS_GRILLE)} ; deux régimes ; lecture (c))",
             lambda: verdicts_grille()["G"]["pire"])
-    ajouter("socle.grille.vitesses÷2", "0,998437", "rayon", "socle",
+    ajouter("socle.grille.vitesses÷2", "0,998759", "rayon", "socle",
             "toutes les vitesses de la grille G ×0,5, pire des deux régimes, lecture (c)",
             lambda: dict(grille_socle())["vitesses ×0.5"], ou=socle_bc)
-    ajouter("socle.grille_zeta.pire", "0,998802", "rayon", "socle",
+    ajouter("socle.grille_zeta.pire", "0,998759", "rayon", "socle",
             f"pire branche de la grille G augmentée de {', '.join(AJOUTS_GRILLE)} ×0,5 et ×2 "
             f"({len(grille_socle())} branches, deux régimes, lecture (c))",
             lambda: verdicts_grille()["G + zeta"]["pire"])
     # Les deux grilles jugées aux trois π̄ (décision du mainteneur du 15/10/2026) : π̄ = 2 % ci-dessus.
-    for pi, pub_g, pub_z in ((0.0, "0,998702", "0,998742"), (0.10, "0,998772", "0,998885")):
+    for pi, pub_g, pub_z in ((0.0, "0,998825", "0,998825"), (0.10, "0,998692", "0,998692")):
         grille_pi = lambda pi=pi: tuple((nom, rayon_c(parametres_socle(pi, facteurs=dict(fac))))
                                         for nom, fac in branches_grille() + branches_ajoutees())
         ajouter(f"socle.grille.pire.pi{pi:g}", pub_g, "rayon", "socle",
@@ -1413,39 +1442,39 @@ def releve() -> list[Chiffre]:
                 f"pire branche de la grille G augmentée de {', '.join(AJOUTS_GRILLE)} ×0,5 et ×2, "
                 f"π̄ = π* = {pi:.0%}, deux régimes, lecture (c)",
                 lambda g=grille_pi: verdicts_grille(g())["G + zeta"]["pire"], ou=socle_bc)
-    ajouter("socle.marge_conjointe.facteur", "1,7135", "frontière", "socle",
+    ajouter("socle.marge_conjointe.facteur", "2,7826", "frontière", "socle",
             f"facteur commun de {', '.join(GAINS_ENSEMBLE)} où la lecture (c) passe 1, pire des deux régimes, "
             "π̄ = 2 %", lambda: marge_conjointe()["facteur"])
-    ajouter("socle.marge_conjointe.facteur.hausse", "1,9921", "frontière", "socle",
+    ajouter("socle.marge_conjointe.facteur.hausse", "2,7826", "frontière", "socle",
             f"facteur commun de {', '.join(GAINS_ENSEMBLE)} où la lecture (c) du régime de hausse passe 1, "
             "π̄ = 2 %", lambda: frontiere_marge("hausse"))
-    for regime, pub, per in (("baisse", "1,027785", "19,3"), ("hausse", "1,000644", "17,0")):
+    for regime, pub, per in (("baisse", "0,997189", "19,3"), ("hausse", "0,997189", "17,0")):
         ajouter(f"socle.marge_conjointe.x2.{regime}", pub, "rayon", "socle",
                 f"{', '.join(GAINS_ENSEMBLE)} ×2, régime de {regime}, lecture (c), π̄ = 2 %",
                 lambda regime=regime: marge_conjointe()["x2"][regime]["rayon"], ou=socle_bc)
         ajouter(f"socle.marge_conjointe.x2.{regime}.periode", per, "période", "socle",
                 f"{', '.join(GAINS_ENSEMBLE)} ×2, régime de {regime}, période de la paire complexe (c)",
                 lambda regime=regime: marge_conjointe()["x2"][regime]["periode"], ou=socle_bc)
-    ajouter("socle.marge_conjointe.x0.5", "0,998047", "rayon", "socle",
+    ajouter("socle.marge_conjointe.x0.5", "0,999166", "rayon", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×0,5, pire des deux régimes, lecture (c), π̄ = 2 %",
             lambda: rayon_c(_ensemble(0.5)), ou=socle_bc)
-    ajouter("socle.marge_conjointe.x2.a_I÷1000", "1,0265", "rayon", "socle",
+    ajouter("socle.marge_conjointe.x2.a_I÷1000", "1,0000", "rayon", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, pire des deux régimes, lecture (c), π̄ = 2 %",
             lambda: rayon_c(_ensemble_sans_aI()), ou=socle_bc)
-    ajouter("socle.marge_conjointe.x2.a_I÷1000.hausse", "0,999994", "rayon", "socle",
+    ajouter("socle.marge_conjointe.x2.a_I÷1000.hausse", "0,999991", "rayon", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, régime de hausse, π̄ = 2 %, lecture (c), racine "
             "réelle",
             lambda: lectures(_ensemble_sans_aI(), "hausse").rayon_c, ou=socle_bc)
     # Écart à 1 de cette racine réelle, publié en 10⁻⁶ (a_I ÷ 1000) et en 10⁻⁵ (a_I ÷ 100) : remesure mise
     # à l'échelle de la puissance de dix publiée.
-    for nom, f_aI, exposant in (("a_I÷1000", 1e-3, 6), ("a_I÷100", 1e-2, 5)):
-        ajouter(f"socle.marge_conjointe.x2.{nom}.hausse.ecart", "6,2", "écart à 1", "socle",
+    for nom, f_aI, exposant, pub in (("a_I÷1000", 1e-3, 6, "8,6"), ("a_I÷100", 1e-2, 5, "8,7")):
+        ajouter(f"socle.marge_conjointe.x2.{nom}.hausse.ecart", pub, "écart à 1", "socle",
                 f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×{f_aI:g}, régime de hausse, π̄ = 2 % : "
                 f"1 − racine réelle de la lecture (c), en 10^-{exposant}",
                 lambda f_aI=f_aI, exposant=exposant: _mise_a_echelle(ecart_racine_reelle(f_aI), exposant),
-                motif=f"6{{,}}2 \\cdot 10^{{-{exposant}}}", ou=socle_bc)
+                motif=pub.replace(",", "{,}") + f" \\cdot 10^{{-{exposant}}}", ou=socle_bc)
     # Module de la paire complexe, non le rayon (c) : celui-ci est porté par une racine réelle (0,999994).
-    ajouter("socle.marge_conjointe.x2.a_I÷1000.hausse.paire", "0,9993", "racine", "socle",
+    ajouter("socle.marge_conjointe.x2.a_I÷1000.hausse.paire", "0,9772", "racine", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×2 et a_I ×0,001, régime de hausse, π̄ = 2 % : module de la plus grande "
             "paire complexe du spectre restreint à la variété des identités",
             lambda: module_paire(np.linalg.eigvals(
@@ -1453,32 +1482,32 @@ def releve() -> list[Chiffre]:
             ou=socle_bc)
 
     # sec:finances_publiques-impots, sec:ecartees et fiche 9 (finances_publiques.md, § 7) : couverture φ (E4).
-    # La table de la fiche 9 est antérieure à l'amendement de E12 du 04/10/2026 : ses valeurs non nulles en φ
-    # sont des écarts déclarés par la spécification (valeurs barrées) ; la fiche ne les barre pas.
+    # La table de la fiche 9 (§ 7) est republiée à la table T1 (annotation du 17/11/2026) ; ses valeurs d'origine,
+    # antérieures à l'amendement de E12 du 04/10/2026, y sont barrées dans l'annotation, hors des lignes relevées.
     impots, ecartees = ("sec:finances_publiques-impots",), ("sec:ecartees",)
     fiche9 = ("docs/blocs/finances_publiques.md",)
-    for pi, pub in ((0.02, "0,174"), (0.10, "0,650")):
+    for pi, pub in ((0.02, "0,286"), (0.10, "0,632")):
         ajouter(f"finances.phi_star.pi{pi:g}", pub, "frontière", "socle",
                 f"couverture φ de E4 où la lecture (c) passe 1, pire des deux régimes, π̄ = {pi:.0%}",
                 lambda pi=pi: phi_star(pi), ou=impots + ecartees)
-    table_phi = {0.02: ("1,001818", "1,000575", "0,999076", "0,997792", "0,997486"),
-                 0.10: ("1,011036", "1,008794", "1,005564", "0,999488", "0,997558")}
+    table_phi = {0.02: ("1,000891", "1,000585", "1,000115", "0,999293", "0,997460"),
+                 0.10: ("1,008216", "1,007014", "1,005077", "1,000784", "0,997414")}
     for pi, pubs in table_phi.items():
         for phi, pub in zip(PHI_TABLE + (1.0,), pubs):
             ajouter(f"finances.rayon.phi{phi:g}.pi{pi:g}", pub, "rayon", "socle",
                     f"couverture φ = {phi:g} (E4), π̄ = {pi:.0%}, pire des deux régimes, lecture (c)"
-                    + ("" if phi == 0.0 else " ; valeur de la fiche 9, mesurée avant l'amendement de E12"),
+                    + ("" if phi == 0.0 else " ; valeur de la fiche 9, republiée à la table T1 le 17/11/2026"),
                     lambda pi=pi, phi=phi: rayon_phi(pi, phi), ou=fiche9 + (impots if phi == 0.0 else ()))
-    for pi, pub in ((0.02, "0,998471"), (0.10, "1,002898")):
+    for pi, pub in ((0.02, "0,999293"), (0.10, "1,000784")):
         ajouter(f"finances.rayon.phi0.5.pi{pi:g}.specification", pub, "rayon", "socle",
                 f"couverture φ = 0,5 (E4), π̄ = {pi:.0%}, pire des deux régimes, lecture (c)",
                 lambda pi=pi: rayon_phi(pi, 0.5), ou=impots)
-    ajouter("finances.rayon.phi0.5.pi0.1.ecartees", "1,0029", "rayon", "socle",
+    ajouter("finances.rayon.phi0.5.pi0.1.ecartees", "1,0008", "rayon", "socle",
             "couverture φ = 0,5 (E4), π̄ = 10 %, pire des deux régimes, lecture (c)",
-            lambda: rayon_phi(0.10, 0.5), motif="rayon 1,0029", ou=ecartees)
+            lambda: rayon_phi(0.10, 0.5), motif="rayon 1,0008", ou=ecartees)
     # À 2 %, la spécification publie le temps de la maquette avec une décimale (381,6) ; « 382 », arrondi
     # d'avant le 15/11/2026, y est barré, et « 381 », mesure du moteur, est exclu (`EXCLUS`).
-    for pi, pub, motif in ((0.02, "381,6", "381,6"), (0.10, "63", "63 tours")):
+    for pi, pub, motif in ((0.02, "778,4", "778,4"), (0.10, "85", "double en 85")):
         ajouter(f"finances.doublement.phi0.pi{pi:g}", pub, "doublement", "socle",
                 f"ln 2/ln du rayon à φ = 0, π̄ = {pi:.0%} (pays joué, lecture (c))",
                 lambda pi=pi: doublement(rayon_phi(pi, 0.0)), motif=motif, ou=impots)

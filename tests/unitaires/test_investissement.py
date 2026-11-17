@@ -289,7 +289,8 @@ def test_plan_et_part_visee_positifs_sur_un_lot():
     (graine déclarée) dans les domaines de l'état (ti > 0, y_{t−1} > 0) et de la table (0 ≤ η_r,
     ζ ≤ 20 ; λ_ti/n_a ≤ 1), écart de taux Δϱ = ϱ_L − ϱ̄_L ∈ [−0,1 ; 0,1] par an, tu ∈ [0 ; 5] :
     exact. Le verdict ne vaut pas pour tout le domaine déclaré : S6 rend ti_{t+1} = 0,0 au-delà
-    d'une frontière en Δϱ (≈ 3,31 par an à ζ = 4, ≈ 0,66 à ζ = 20), publiée avec la frontière
+    d'une frontière en Δϱ (≈ 3,31 par an à ζ = 4, ≈ 1,65 à ζ = 8, valeur de la table, ≈ 0,66 à
+    ζ = 20), publiée avec la frontière
     de la double précision, et le pas est alors refusé par le moteur
     (`tests/invariants/test_investissement.py`)."""
     rng = np.random.default_rng(GRAINE)
@@ -582,7 +583,7 @@ def test_table_du_bloc_6_complete_et_egale_au_script(stationnaire):
 
 
 def test_distribution_positive_sous_un_ecart_de_taux_de_moins_deux_points(stationnaire):
-    """Fiche 6, § 9.6, « Bornes » (d) (classe (a), forme fermée) : à ζ calibré (ζ = 4, table),
+    """Fiche 6, § 9.6, « Bornes » (d) (classe (a), forme fermée) : à ζ calibré (ζ = 8, table, M34),
     Δϱ = −2 points permanent, la baisse portant sur le taux directeur, écarts du bloc banque
     constants (lecture retenue par M33 ; `sec:investissement-financement`) : état stationnaire du
     script à r = r̄ − 0,02 et ϱ̄_L de l'état résolu (Δϱ = Δr) ; distribution Div_F/(Div_F + FU) > 0,

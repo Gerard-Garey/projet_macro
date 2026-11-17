@@ -26,6 +26,7 @@ boucle conjointe T3 ↔ BC3 (réserve de `monnaie`, synthèse du rang 1a, § 8).
 """
 
 import dataclasses
+from types import SimpleNamespace
 
 import pytest
 
@@ -51,6 +52,9 @@ SEUIL_NUL = 1e-12
 SEUIL_T2 = 1e-10
 SEUIL_CONVERSIONS = 1e-10
 SEUIL_VITESSES = 1e-6
+# Horizon du critère 4 (« Vitesses ») : 720 pas, corrigé de façon prospective à 2 880 pas par décision du mainteneur
+# du 17/11/2026 (rang 7, #45 : à λ_w = 0,18, la branche lente λ_w × 0,5 a pour valeur propre 0,9925).
+NB_PAS_DES_VITESSES = 2880
 SEUIL_RETENTION = 1e-12
 VARIABLES_DU_BLOC = ("W", "U", "N", "N_pa")
 G_N_D_ESSAI = 0.005
@@ -266,27 +270,33 @@ def grandeurs_finales(releve):
 
 def test_vitesses_ne_determinent_pas_l_etat_d_arrivee(socle, publier):
     """Fiche 3, § 9.6, « Vitesses » (critère 4) : G + 1 % aux tours 1 à 12 ; branches λ_w et
-    λ_N × 0,5 et × 2 (constructeur validé) ; après 720 pas, l'écart relatif de U, N/N*, ω et
-    ΣWB/ΣVA entre les deux branches est d'au plus 1e−6."""
+    λ_N × 0,5 et × 2 (constructeur validé) ; après 2 880 pas, l'écart relatif de U, N/N*, ω et
+    ΣWB/ΣVA entre les deux branches est d'au plus 1e−6. Horizon corrigé de façon prospective par
+    décision du mainteneur du 17/11/2026 (rang 7, λ_w = 0,18 : branche lente λ_w × 0,5) ; ancien
+    verdict publié : échec à 720 pas (2,98e−6 sur ω). L'écart à 720 pas reste publié, sans verdict."""
     sentier = socle.sentier(0.02)
     p = socle.PARAMETRES_DE_REFERENCE
-    finales = {}
+    finales, a_720_pas = {}, {}
     for facteur in (0.5, 2.0):
         table = varier(p.travail, lambda_w=facteur * p.travail.lambda_w.valeur,
                        lambda_N=facteur * p.travail.lambda_N.valeur)
-        _, releve = derouler(socle, sentier, NB_PAS, parametres=dataclasses.replace(
+        _, releve = derouler(socle, sentier, NB_PAS_DES_VITESSES, parametres=dataclasses.replace(
             p, travail=table), chocs_des_plans=chocs_g(1.01, 1, 12))
         finales[facteur] = grandeurs_finales(releve)
+        a_720_pas[facteur] = grandeurs_finales(SimpleNamespace(pas=releve.pas[:NB_PAS]))
         # Le choc a bien écarté l'emploi et le salaire du sentier pendant son cours.
         assert ecart(releve.pas[12]["etat"].N, socle.valeur_d_ouverture(sentier, "N", 13)) > 1e-4
         assert ecart(releve.pas[14]["etat"].W, socle.valeur_d_ouverture(sentier, "W", 15)) > 1e-5
     ecarts = {n: ecart(finales[0.5][n], finales[2.0][n]) for n in finales[0.5]}
+    ecarts_720 = {n: ecart(a_720_pas[0.5][n], a_720_pas[2.0][n]) for n in a_720_pas[0.5]}
+    publier(f"Bloc 3, vitesses λ_w et λ_N × 0,5 et × 2 après un choc G + 1 % sur 12 tours "
+            f"({etiquettes(socle)})", [
+                f"écart relatif après {NB_PAS} pas : "
+                + " ; ".join(f"{n} {x:.1e}" for n, x in ecarts_720.items()) + " (sans verdict)",
+                f"écart relatif après {NB_PAS_DES_VITESSES} pas : "
+                + " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items()) + " (verdict, seuil 1e−6)"])
     for nom, x in ecarts.items():
         assert x <= SEUIL_VITESSES, (nom, x)
-    publier(f"Bloc 3, vitesses λ_w et λ_N × 0,5 et × 2 après un choc G + 1 % sur 12 tours "
-            f"({etiquettes(socle)})", ["écart relatif après 720 pas : "
-                                + " ; ".join(f"{n} {x:.1e}" for n, x in ecarts.items())
-                                + " (seuil 1e−6)"])
 
 
 def test_retention_resultat_par_la_valeur_nette(socle, publier):

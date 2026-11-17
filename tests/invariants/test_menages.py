@@ -525,13 +525,15 @@ def _boucle_propre(i_D, pi, lam):
 def test_boucle_propre_module_inferieur_a_un(publier):
     """Fiche 5, § 9.6, « Boucle propre » (critère 5 (b)) : revenus hors intérêts exogènes,
     module de la valeur propre dominante < 1 aux trois calibrations (i_D = 0 et 3 % à π* = 2 %,
-    11 % à 10 %) ; λ_H × 0,5 et × 2 (i_D = 3 %) publiés ; demi-vies publiées. Repères de la
-    fiche : 0,96612, 0,96706, 0,96727 ; 0,98352 et 0,93419 (cinq décimales)."""
-    cas = {"i_D = 0, π* = 2 %": (0.0, 0.02, 0.4, 0.96612),
-           "i_D = 3 %, π* = 2 %": (0.03, 0.02, 0.4, 0.96706),
-           "i_D = 11 %, π* = 10 %": (0.11, 0.10, 0.4, 0.96727),
-           "λ_H × 0,5, i_D = 3 %": (0.03, 0.02, 0.2, 0.98352),
-           "λ_H × 2, i_D = 3 %": (0.03, 0.02, 0.8, 0.93419)}
+    11 % à 10 %) ; λ_H × 0,5 et × 2 (i_D = 3 %) publiés ; demi-vies publiées. Repères à ν_H = 1,1
+    (M34, #62 ; § 5.5 de `docs/blocs/calibration.md`) : 0,96605, 0,96710, 0,96733 ; 0,98354 et
+    0,93428 (cinq décimales) ; la fiche 5 publie ceux de ν_H = 1 (0,96612, 0,96706, 0,96727 ;
+    0,98352 et 0,93419) jusqu'au passage de `docwriter`."""
+    cas = {"i_D = 0, π* = 2 %": (0.0, 0.02, 0.4, 0.96605),
+           "i_D = 3 %, π* = 2 %": (0.03, 0.02, 0.4, 0.96710),
+           "i_D = 11 %, π* = 10 %": (0.11, 0.10, 0.4, 0.96733),
+           "λ_H × 0,5, i_D = 3 %": (0.03, 0.02, 0.2, 0.98354),
+           "λ_H × 2, i_D = 3 %": (0.03, 0.02, 0.8, 0.93428)}
     lignes = []
     for nom, (i_D, pi, lam, repere) in cas.items():
         module = _boucle_propre(i_D, pi, lam)
@@ -559,18 +561,20 @@ def test_continuum_hors_c2_sur_la_forme_fermee(publier):
     """Fiche 5, § 9.6, « Continuum hors C2 » (réserve 2 ; déclaré) : bloc 5 seul, revenus hors
     intérêts croissant au facteur [(1 + g)(1 + π̄)]^{1/n_a}, π̄ = 3 % et 10 %, π* = 2 % ; après
     convergence, V/(n_a YD) égal à [1 − α_Y Γ^e/Γ]/[n_a(Γ − Γ^e) + λ_H(1 + n_a ν_H π^{∗,pas})] à
-    1e−8 relatif ; écarts à la lecture exacte 1/(1 + n_a[(1 + π̄)^{1/n_a} − 1]) publiés pour
-    λ_H = 0,2 / 0,4 / 0,8 (fiche : −3,35 / −1,29 / −0,22 % à 3 % ; −19,76 / −8,58 / −1,56 % à
-    10 %, deux décimales)."""
-    reperes = {(0.03, 0.2): -3.35, (0.03, 0.4): -1.29, (0.03, 0.8): -0.22,
-               (0.10, 0.2): -19.76, (0.10, 0.4): -8.58, (0.10, 0.8): -1.56}
+    1e−8 relatif ; écarts à la lecture exacte ν_H/(1 + ν_H n_a π^pas), π^pas = (1 + π̄)^{1/n_a} − 1
+    (fiche 5, § 9.6, définie à ν_H près ; P233), publiés pour λ_H = 0,2 / 0,4 / 0,8 à ν_H = 1,1
+    (M34, #62 ; § 5.5 de `docs/blocs/calibration.md` : −3,29 / −1,21 / −0,13 % à 3 % ; −19,40 /
+    −8,06 / −0,95 % à 10 %, deux décimales). La fiche 5 les publie à ν_H = 1 (−3,35 / −1,29 /
+    −0,22 % ; −19,76 / −8,58 / −1,56 %), où les deux lectures exactes coïncident."""
+    reperes = {(0.03, 0.2): -3.29, (0.03, 0.4): -1.21, (0.03, 0.8): -0.13,
+               (0.10, 0.2): -19.40, (0.10, 0.4): -8.06, (0.10, 0.8): -0.95}
     nu = TABLE.nu_H
     lignes = []
     for (pi_bar, lam), repere in reperes.items():
         ratio, G, G_e, pis = _ratio_converge(pi_bar, 0.02, lam, i_D=0.0)
         forme = (1 - (1 - nu * lam) * G_e / G) / (N_A * (G - G_e) + lam * (1 + N_A * nu * pis))
         assert ecart(ratio, forme) <= SEUIL_CONTINUUM, (pi_bar, lam)
-        exacte = 1.0 / (1 + N_A * ((1 + pi_bar) ** (1 / N_A) - 1))
+        exacte = nu / (1 + nu * N_A * ((1 + pi_bar) ** (1 / N_A) - 1))
         ecart_publie = 100 * (forme / exacte - 1)
         assert round(ecart_publie, 2) == repere, (pi_bar, lam)
         lignes.append(f"π̄ = {pi_bar:.0%}, λ_H = {lam} : V/(n_a YD) = {ratio:.6f}, forme fermée "
@@ -605,9 +609,10 @@ def test_part_d_un_transfert_depensee_en_12_tours(publier):
     """Fiche 5, § 9.6, « Part d'un transfert » (critère 12 (d)) : appel direct, équilibre
     partiel du bloc, transfert de 1 % du YD stationnaire aux tours 1 à 12 (i_D = 3 %) : part
     dans [0,50 ; 0,85] à la calibration (π* = 2 %) ; publiée à 10 % et aux variantes λ_H × 0,5 et
-    × 2 (fiche : 0,628 ; 0,618 ; 0,760 ; 0,423)."""
-    cas = {"π* = 2 % (calibration)": (0.02, 0.4, 0.628), "π* = 10 %": (0.10, 0.4, 0.618),
-           "λ_H × 0,5": (0.02, 0.2, 0.760), "λ_H × 2": (0.02, 0.8, 0.423)}
+    × 2, à ν_H = 1,1 (M34, #62 ; § 5.5 de `docs/blocs/calibration.md` : 0,597 ; 0,586 ; 0,743 ;
+    0,370 ; la fiche 5 publie ceux de ν_H = 1 : 0,628 ; 0,618 ; 0,760 ; 0,423)."""
+    cas = {"π* = 2 % (calibration)": (0.02, 0.4, 0.597), "π* = 10 %": (0.10, 0.4, 0.586),
+           "λ_H × 0,5": (0.02, 0.2, 0.743), "λ_H × 2": (0.02, 0.8, 0.370)}
     parts = {nom: _part_d_un_transfert(pi, 0.03, lam) for nom, (pi, lam, _) in cas.items()}
     publier("Bloc 5, part d'un transfert dépensée en 12 tours (appel direct, i_D = 3 %)", [
         f"{nom} : {part:.4f}" for nom, part in parts.items()])
@@ -615,3 +620,22 @@ def test_part_d_un_transfert_depensee_en_12_tours(publier):
     assert bas <= parts["π* = 2 % (calibration)"] <= haut
     for nom, (_, _, repere) in cas.items():
         assert round(parts[nom], 3) == repere, nom
+
+
+def test_frontieres_de_lambda_H_du_critere_12_d_au_nu_H_retenu(publier):
+    """Critère propre de #62 (plan de la branche « calibration ») : le seuil [0,50 ; 0,85] du
+    critère 12 (d), qui tient pour 0,080 ≤ λ_H ≤ 0,634 à ν_H = 1, est remesuré au ν_H de la
+    table (1,1) : frontière basse (part = 0,85) dans ]0,0721 ; 0,0722[, frontière haute
+    (part = 0,50) dans ]0,5536 ; 0,5537[ (bissection : 0,072137 et 0,553602 ; § 5.5 de
+    `docs/blocs/calibration.md`), part décroissante en λ_H ; λ_H de la table entre les deux, et
+    ν_H λ_H = 0,44 < 1. Même protocole que le test précédent (π* = 2 %, i_D = 3 %)."""
+    assert TABLE.nu_H == 1.1
+    bas, haut = BORNES_DE_LA_PART
+    part = lambda lam: _part_d_un_transfert(0.02, 0.03, lam)
+    assert part(0.0721) > haut > part(0.0722)
+    assert part(0.5536) > bas > part(0.5537)
+    lam = TABLE.lambda_H.valeur
+    assert 0.0722 < lam < 0.5536 and round(TABLE.nu_H * lam, 12) == 0.44
+    publier("Bloc 5, frontières de λ_H du critère 12 (d) à ν_H = 1,1 (appel direct, i_D = 3 %)", [
+        f"part à λ_H = 0,0721 / 0,0722 : {part(0.0721):.5f} / {part(0.0722):.5f} (seuil {haut})",
+        f"part à λ_H = 0,5536 / 0,5537 : {part(0.5536):.5f} / {part(0.5537):.5f} (seuil {bas})"])
