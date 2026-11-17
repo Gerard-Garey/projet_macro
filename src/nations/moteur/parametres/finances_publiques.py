@@ -50,7 +50,7 @@ NU_G = Parametre(
             "M33)", lambda x: x > 1.0))
 
 THETA_G = Parametre(
-    "theta_G", "θ_G", 0.21979137844642255, "fraction",
+    "theta_G", "θ_G", 0.22058388898746367, "fraction",
     "levier fermé (M33) ; θ_G résolu par outils/etat_stationnaire.py à π* = 2 % (#44)",
     ("eq:finances_publiques-plan-depense",),
     domaine("θ_G ≥ 0 (sec:finances_publiques-conditions)", lambda x: x >= 0.0))

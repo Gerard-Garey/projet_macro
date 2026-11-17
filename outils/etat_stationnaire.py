@@ -125,7 +125,7 @@ class Parametres:
     varpi_L: float = 0.02
     varpi_D: float = 0.01
     vartheta: float = 0.15
-    nu_H: float = 1.0
+    nu_H: float = 1.1
     tau_H: float = 0.25
     tau_F: float = 0.0
     theta_Tr: float = 0.0
@@ -209,7 +209,15 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
                   "dénominateur de Bâle III plus petit, écart non mesuré, contesté ; arrondi ; tab:calibration ; "
                   "décision M34"),
                  "B6"),
-    "nu_H": ("années de revenu de Haig-Simons", "tab:calibration (indicative)", "H3"),
+    "nu_H": ("années de revenu de Haig-Simons",
+             ("Eurostat, comptes annuels des secteurs (SEC 2010 ; nasa_10_f_bs, nasa_10_nf_tr), ménages et ISBLSM "
+              "(S14_S15), numéraire et dépôts (F.2, actif, non consolidé) sur revenu disponible brut (B.6g, prix "
+              "courants), EA21, moyenne 2001-2023 : 1,076 an ; consulté le 16/11/2026 ; définition déclarée : V_H "
+              "(dépôts seuls, sans passif) sur le revenu disponible annuel, rapport comparé à B10, d'où "
+              "ν_H = R/(1 − R n_a π^{∗,pas}) à π* = 2 % : 1,0995, arrondi à 1,1 ; contrôle stock-flux : acquisition "
+              "nette de F.2 sur B.6g, 4,32 % (2002-2023), contre 4,27 % d'épargne nominale dans le modèle ; écart "
+              "déclaré : B.6g contient l'excédent des logements et le revenu mixte ; tab:calibration ; décision M34"),
+             "H3"),
     "tau_H": ("fraction de l'assiette", "tab:calibration (indicative)", "E3"),
     "tau_F": ("fraction de l'assiette", "sec:finances_publiques-stationnaire (nul au socle)", "E5"),
     "theta_Tr": ("fraction de la production potentielle", "sec:finances_publiques-stationnaire (nul au socle)", "E6"),
@@ -235,7 +243,15 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "lambda_N": ("par an, vitesse", "tab:calibration", "T4"),
     "lambda_mu": ("par an, vitesse", "tab:calibration (indicative)", "P2"),
     "psi_xi": ("sans dimension", "tab:calibration (indicative)", "P2"),
-    "lambda_H": ("par an, vitesse", "tab:calibration (indicative)", "H4"),
+    "lambda_H": ("par an, vitesse",
+                 ("choix de conception dans la fourchette lue : dépense totale, durables compris, de 50 à 90 % d'un "
+                  "versement sur le trimestre de réception (J. A. Parker, N. S. Souleles, D. S. Johnson et R. "
+                  "McClelland, « Consumer Spending and the Economic Stimulus Payments of 2008 », NBER Working Paper "
+                  "16684, janvier 2011, résumé lu le 16/11/2026 ; États-Unis, 2008 ; période du chiffre à confirmer "
+                  "sur l'article) ; dépense cumulée d'une aubaine sur 3 tours de 0,605 à ν_H = 1,1 ; correspondance : "
+                  "hypothèse, contestée (versements annoncés, données américaines, ménage représentatif) ; "
+                  "tab:calibration ; décision M34"),
+                 "H4"),
     "a_pi": ("points de taux par point d'écart", "tab:calibration (indicative)", "BC1"),
     "a_I": ("par an, gain", "tab:calibration (indicative)", "BC2"),
     "lambda_e": ("par an, vitesse", "tab:calibration (indicative)", "BC3"),
@@ -2202,6 +2218,7 @@ VALEURS_PUBLIEES += (
 ENTREES_D_ORIGINE: dict[str, float] = {
     "mu_bar": 0.25,  # μ̄ avant la décision M34 (#92) : valeur des publications barrées
     "vartheta": 0.10,  # ϑ avant la décision M34 (#130) : valeur des publications barrées
+    "nu_H": 1.0,  # ν_H avant la décision M34 (#62) : valeur des publications barrées
 }
 VALEURS_CONTRE_EPREUVE: tuple[tuple[str, str, str, object, str], ...] = tuple(
     ("sec:banque-stationnaire", f"illustration : {nom} à {int(round(100 * pi))} %", pub,
