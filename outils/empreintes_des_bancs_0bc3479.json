@@ -1,0 +1,214 @@
+{
+ "version_encodage": 2,
+ "variables_exclues": [],
+ "nb_pas": 720,
+ "points_pi": [
+  0.0,
+  0.02,
+  0.1
+ ],
+ "bancs": {
+  "socle complet": {
+   "0.0": {
+    "empreinte": "57795e525c7f87510eb931d6abb1ec0fb491b4e268159e8797cc5f43ef1636cd",
+    "etats": "f36d736824904b9e9a66521539e81460008d46d106bfc117d080703c62e7ee53",
+    "montants": "67daf7c7100277dfe992a3131639526b00b63db863a080cf70394f51ae337042",
+    "variables": "fba981a23a6ce0f962cadf9cc7c87696c62bd635f99b8f10691eec2c57c24769",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "38509767cb2ab74cbe494b694cd0ce8c82bdf1b5820baf8ce8ef145b8a9c646f",
+    "etats": "05fc2b0dbf10b4e90ee118a6604a2dcd6c6a221bf3937a8b0c9fde0a640d7f12",
+    "montants": "0f17fd15fd3f26ae7ec2b41ccafa9e7f5510f34fad152b161ee14e3cff0710db",
+    "variables": "4fe120fa01009e7f3493b8edc27061d5bbb043835d611ac25239932370a7867f",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "ea6045fc5c24a2a8fcfd23f9018b56c134bac7ac3d953815ed5f2db1644d6f72",
+    "etats": "75a725ce983dba967ed271881b8619895a1061d2fead48ffbb475a27be32da2c",
+    "montants": "6113fd83a94da582d015aaae4f15fa14bd0f72210ba6a5585f91c9db2cb98124",
+    "variables": "afa4ea1f765c8d9d950431559fa495e29df6a30ed06abf89bd1e229b150b6cc0",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  },
+  "socle complet D": {
+   "0.0": {
+    "empreinte": "cea4ded579c5f0a480e25d70435780bcac9deb9efc6ce00382b9ee5881af8683",
+    "etats": "be47d1015d89cdd0957020da5865ab31ea92c81b0ba2cd9dfdb6d66632b2ed05",
+    "montants": "29202a0a840803ad22538fdb1c4a4224658b4acf41fe29c7cf44ebd96f61706c",
+    "variables": "04be98beca2e16d2955b508816a7d18931a998e4e43101eb7509caef7177a7e2",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "abac744fa9452ef221ab4387cb116a80ba026e3b5b61c51f10009c9dd24e9918",
+    "etats": "65755c7aa8509fe5bd01bf539cb1d18a863aa2278b00ed825d726be13edbb7d6",
+    "montants": "0c6bb805033bae791eba0a3601fd07055b032214703fbbe77b410c3ef46b6f46",
+    "variables": "eeae3de25f6de50d7f99daef9874868149cf46ce2c38d9045104f8f188847267",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "a75a2f8d12ca83e8ae561c4cc4c0e7543cd41282aac65997f1ddcb470e0ee35d",
+    "etats": "ee28bccb25b131135ab638a2e9ea95ae12fb32e883696277d5b33e50059942d7",
+    "montants": "248ece273d9b172f082791d5b46573eca2827518c31928d2ea5a71f7fd1eea18",
+    "variables": "193aaabff94aa2f8eb13f030d937660046919378156cd6a12c47a3921092e94d",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  },
+  "socle complet BF": {
+   "0.0": {
+    "empreinte": "80159f6439b64cc435df55af662ea57d78acc246c4091ded4f0f3fabb3765d70",
+    "etats": "1182f3da11820e64c152440113adf74c6d8faa117cb35f471ca99ab10ded4e79",
+    "montants": "469a08f3dfc21a5895e40ee4ffac1b0bf5612c1a5eac98e50dd920d3c0f868cb",
+    "variables": "52fbc0a6416c23f69c22d53640ce344dc46001be0b8b3123e1d43dea9b842134",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "ffcfcd65a90613b50cb784c9a3f9bc67d57da0f959dcd51f3cee323b2c8ae612",
+    "etats": "b838bb304ee6648af133037da01468545857b6a2f8817d5aaca8d871fb8826c3",
+    "montants": "26a1a23c2558a72ee729294b5e3833ee5d985b2ca46ddb6765c0856f3e2c79f8",
+    "variables": "c56a48a2e2cb98303ffae1f8a067339c80330267762862c374e4cafa2382057f",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "50a7d3a1b1a439139d62fdcc3094478f39e99557fe471891dc725dd4a7da3eea",
+    "etats": "b0f574097d82b5fd8d677d9c4fefba3462dfb6cd2e8c66c27e151761296d99af",
+    "montants": "44282ab27b2a65d952d13ecbb4ba6c9f74c8fc902baccc91da331944ea4b642c",
+    "variables": "4fe39abd6b6c49daaeb8e5a699536b687802cadcd7753dd9b6beee0e71469fdb",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  },
+  "P87": {
+   "0.0": {
+    "empreinte": "89457a894ea0dca7a24aeabcbb559141d726ded34671951872751e1ea346c0eb",
+    "etats": "24ae8a94c7275aa1de0c0280648dbb94959409d4a7c1a1c7288b9dd234f6a273",
+    "montants": "a6668ef93e53b930c9da73ef48b386c7409d1cdf7309f80ca27341c1eccf1eef",
+    "variables": "0aa433c644e9e920b06e326d94dea45b0fe4974e3ee222375f217b65de277769",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "4ae1c589953df1ffc5937ac879213108447b1bbc9dab5cc89a81ebe6a494094f",
+    "etats": "dc15da89853ae9317990fea9143bf1bd96648186cc76b082a7b797f4589ef0ff",
+    "montants": "6f03730fb0ad832591e4d0d9a3a0ec60565be60329c400a38ba88974bf55d23e",
+    "variables": "ce9d672ae38dc0d4ace82092332dfd658e6ad2ebe443d0f8f87f20707c99365f",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "b163ae0138aaad02ceffa37e6a4628ad852939a3c372ea72d1d26b09a98c06a1",
+    "etats": "c5193915e4924062a74b4afccace9b2d672c520dadd5116622969fbb2c461cf1",
+    "montants": "2b3e7dbf815c461a9c4cc405be80263a1e6f3ca782faf0f6005e08eabcc9e2e0",
+    "variables": "ac9d1072f8bbafba9e9271e9dda04250f6945f9b7bfb062117e0bf71ab05c3d0",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  },
+  "J3-d1 X4 seule": {
+   "0.0": {
+    "empreinte": "185758df9d87a5463aaf27aebbafd3599aaeb6fa8cf81c7e34919fc5f4d92931",
+    "etats": "1e3db5d4062408dc2cf9aca4f70557c003b82e8547dfb1dbdea7a2340eda5798",
+    "montants": "9a242f93e3544f60d60198fab59880ad6cbe9a48f744f6edbca5f45a6127e755",
+    "variables": "e5b77122bb69c6be21a240e5485d3100e55c437d78228a9d65f2dd20b7cecec7",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "49876692cf747f6a98e4d46eeddd698332e29a4fa5e72038bce7e222b98d0139",
+    "etats": "6f79386e50f4abf0ddb27f501e60c246466901f763692b4c4eb547bdfbe10d36",
+    "montants": "cc40c234d2f40cb514e84e6ed2cab00cefccef9067169b89b2f66651ace17c53",
+    "variables": "03059513e01fe0d3fa857e145a0f3938b02166f8c42fc2b7535a7a02b364c420",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "7138466ff9cc8864b03fa48806f1b804504fb9f13c1c8697199b11b8b0d27c9f",
+    "etats": "f9a088751a1ba0e21948ba2b37a33a270762ca152fb66d740b92e774f7ad4b92",
+    "montants": "2fed64ba02bc4700f1863558e46ef3120e57ad1a3ec06f463b1655bdf644b778",
+    "variables": "e6ad0e315a4a3d8e939f1cb55adad8680673441bc16169051be7d189154d258f",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  },
+  "J3-d1 X4 + X3": {
+   "0.0": {
+    "empreinte": "8dab9618eaae2037c8fe8c83c0d6b1921792b51caf0e75a5ec931c29d7e15457",
+    "etats": "2955cd4b81157dd467f943920889735bdbca810462724d17f7beadbe0e9a110e",
+    "montants": "34b4c110c72c06d681d2669c6ba7f52b7764ca1fe1dd0b703eff150cce20b422",
+    "variables": "8b9a1cf2b6b4d66a10fe05aed325637226b7092dc69fb48052a7a454c3d77ee4",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "477451d33984f6ea5510f98a7ccef25b96e3ea1fc156cab344d4cec4e3de52cb",
+    "etats": "c3c87858621a9d97715e8d71e7ad3b7b846beed521a957ec6e48281523891bcb",
+    "montants": "4fbb26e5111182ad4e5dc76f3f9cf722bdd463cd6062740bcee01621f733f9fb",
+    "variables": "56402dbaf70a3bacbd4bb66bfbee7d7427a547a21158add7bccbb66e2ab002ad",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "e514cb022c4aebc933005f772fe8ae865177293bacda3cd749249a03a143657e",
+    "etats": "1ee026751ecf5a73cd47619d53d03390ca5fa0f33868fc63f75f32646f83aee1",
+    "montants": "4d2a0ad117ff60a19b2200b00792a46ccf30c8aed4f4c26ff393caac8f85d075",
+    "variables": "ae6cf190b6effb285e57df5950df1c79d6f047e3aa7fb4d12a97e5803d0df0a2",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  },
+  "J3-d1 sans X4": {
+   "0.0": {
+    "empreinte": "1166bf05367fd27d65fd4ac284f23d8dc84134b1d7e0e8a519d03d6af9a49059",
+    "etats": "5fca22d906b169d05dd295e6e5770e42f2f37489c5194cc52e91218a758451a8",
+    "montants": "adb7da3475f4399833b55201c81a55f0c44997e6b2f5ae4ff39390fd86c4bdce",
+    "variables": "25191c1cdf59801e5dc2a29389be25c3911c58c9f3489096fcb62c614584c146",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "32f4dadfb342f4fad9aaca56cc294d8d8f7fece2b2c12b33c587a9048c976d1e",
+    "etats": "2b5510e5b2decc340f3a2d3cff8ab1719214d72e5770cc4f010b091a98ef496a",
+    "montants": "730f70364bb7b6f7a2454928200507d59bd1c15a45da9f0b114a8388b0357231",
+    "variables": "11a43c746ab6b60a2b792e85e1072f34a603f8c90ed65c93f4e3fd50f1271521",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "b1737490c11d707b19cfc314289fdcdba91890826b74763224ef73451ca894a9",
+    "etats": "e2faca4767b08756828d88b7283642ad5dea817e102bbfdb43b6996bd146fa43",
+    "montants": "ca8b79cf373d695580421134d6374d35b11c3f871cc87bf5c27bd35ca21f9e80",
+    "variables": "63ee72ea5203a32601ecde2ecf369c9be2b1ab684887cab7907f2062b3e56f2a",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  },
+  "essai pur": {
+   "0.0": {
+    "empreinte": "747720be81e702db914939139ed22a90ebfce609f723b1392016e2794f8941ab",
+    "etats": "46955176a7b1f4b36cbc6703d0e1aaa363b972d59ee7111019d4b3aa7966a2fa",
+    "montants": "716729849f72144f03d38546d4e6691227439036f6c527531cafa7eff1b4580a",
+    "variables": "e2db19beb1a1c4187cf43f9190c337981c4d00a192408b2eb83b11e0582f7014",
+    "grandeurs": "b0c57f6b004416e3f5cc0c7bc8985e7c6e3b6f047307d5623a068f3585d9e4fc"
+   },
+   "0.02": {
+    "empreinte": "bec07ca67de1f7d7dab24a4ae0883a652034e5169b3b160817e67c73ede02dba",
+    "etats": "c8bf2890a2f35380e2073ea7bf198a3ddfce1ef92f35e31c45101050e982f519",
+    "montants": "edbe07173c241b4ef179dc3ec71ae586d747547d162ae9b96967ae30856202be",
+    "variables": "50c5212780ca4a3e1bd16de609a8423b1e64d6f9191fde0669dfb3cb76d82963",
+    "grandeurs": "4095432dee3167cc8e2f76110d01daadfe2f2c5952f1d48550374cc8e3599656"
+   },
+   "0.1": {
+    "empreinte": "4e38634dc364de2ebc4b6aa30fcedd105b24bdf87c3c8dc95915b565738cf17a",
+    "etats": "9ec54567c2290e8d1043bcf2967d768f8e388561a5e9114478c6b57762e1eec7",
+    "montants": "1b4bf1d3c280cae1b5568701abb46ec0bc62c55e56a11155bf8775e52215c209",
+    "variables": "7a4c6c62e3a7a36423027d9fa0efec891151f0fc7222c4d725a23bdbeb69c938",
+    "grandeurs": "7951b8478e680349f92e5b759d14e15593852de62a075653efff1870583f4b47"
+   }
+  }
+ },
+ "par_banc": {
+  "socle complet": "0ec3a7b39d48aa0c27c01843248346e9eaab552d38d46635e0e9927e0be7a032",
+  "socle complet D": "a689a54528ef66d6270c78802299eef739f96ebd409190a72162e591ea4d7d30",
+  "socle complet BF": "59357a4d133284dc70189eb6f48183f8dd90fcdb6a4ada257c78261b63f61069",
+  "P87": "dc2ebbd4d3fa68ca64e6ee59eb3e15f2e7d4b4f136eedfa0ef8fde4f366c0c9c",
+  "J3-d1 X4 seule": "20d8ea5f723731033b3c0f57dd9347da0f048abeca54e990c2895788474da868",
+  "J3-d1 X4 + X3": "949ef301bbf661d358a5b463fdb0d4ee7641019739b68b2f46165d5618a8e201",
+  "J3-d1 sans X4": "1e0983d900328ebefe0d47534d5a4b8915b004fe676db56a7c573ad5d94d2af4",
+  "essai pur": "147ce8201b7adb59ea9155f55deff8ad99984a1c42765c77379aff2a81b46210"
+ },
+ "globale": "350e98370f3d51cb2ad765db5394aaa677c2224ebb9afeb646b8ab552075a584",
+ "arrets": [],
+ "exclues_non_etablies": [],
+ "plateforme": {
+  "python": "3.12.3",
+  "systeme": "Linux",
+  "machine": "x86_64"
+ }
+}
