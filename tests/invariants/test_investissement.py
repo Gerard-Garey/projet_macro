@@ -965,9 +965,11 @@ def test_part_visee_nulle_refusee_par_le_moteur(socle):
     rend pas de valeur silencieuse : ti_{t+1} = 0,0 est refusé par `RefusDuMoteur` (domaine
     ti > 0 de l'état), qui nomme le pas 0, la phase 5, le bloc investissement et « ti » (Δϱ à
     la frontière + 0,01 par an). En deçà, le côté positif de la frontière est jugé par appel
-    direct (test précédent) : sur ce socle, le pas échoue déjà en phase 6 par `DefautComptable`
-    (caisse des entreprises, ligne 9) pour i_{L,0} ≳ 3,25 par an. i_{L,0} par S1 inversée sur
-    ϱ̄_L et π* du sentier à 2 %."""
+    direct (test précédent). Sur ce socle (μ̄ = 0,60, ζ = 4), S6 lie avant la caisse à π̄ = 2 % :
+    le premier i_{L,0} arrêté est la frontière de S6 elle-même (≈ 3,424 par an) ; à π̄ = 0, le
+    pas échoue d'abord en phase 6 par `DefautComptable` (caisse des entreprises, ligne 9) pour
+    i_{L,0} ≳ 2,74 par an, sous la frontière de S6 (≈ 3,338 par an). i_{L,0} par S1 inversée
+    sur ϱ̄_L et π* du sentier à 2 %."""
     import dataclasses
     from nations.moteur import ordonnanceur as ordo
     from nations.moteur.diagnostics import RefusDuMoteur

@@ -183,10 +183,25 @@ def test_points_fixes_et_racine_nominale(maquette):
 
 # Chiffres du relevé en écart, liste exacte (#65) : la valeur de la fiche 5 à n_a = 4 (cause non établie) et les
 # 8 rayons de la table φ de la fiche 9, mesurés avant l'amendement de E12 (historique de la spécification,
-# ligne 30). Aucun chiffre en vigueur de la spécification n'y figure : un chiffre en vigueur qui passe en écart,
+# ligne 30). Hors des chiffres en attente de republication ci-dessous, aucun chiffre en vigueur de la
+# spécification n'y figure : un chiffre en vigueur qui passe en écart,
 # ou en « sans objet », fait échouer la batterie ; un écart qui se résorbe aussi, la liste est alors à revoir.
+#
+# Calibration du socle (M34) : les 26 chiffres ci-dessous dépendent de μ̄ (#92, 0,25 → 0,60) ; ils restent publiés
+# à μ̄ = 0,25 jusqu'au passage unique de `docwriter` en fin de branche (règle 9). Le commit `tests:` qui les retire
+# de la liste suit le commit `docs:` de #92 : un écart qui se résorbe fait échouer la batterie.
+EN_ATTENTE_DE_REPUBLICATION_92 = frozenset(
+    {f"instabilite17.a.theta{theta}.{regime}" for theta in ("0.8", "1.0") for regime in ("hausse", "baisse")}
+    | {"instabilite17.a.n_a4.hausse.contre_epreuve", "instabilite17.frontiere_h", "instabilite17.frontiere_nu_H"}
+    | {"menages.rayon.theta0.8.baisse", "menages.rayon.theta0.8.hausse", "menages.rayon.theta1.0.hausse",
+       "menages.rayon.theta1.0.cout_moyen.baisse", "menages.rayon.theta1.0.cout_moyen.hausse"}
+    | {f"menages_inflation.{lecture}.theta{theta}.{regime}"
+       for lecture in ("a_entretien", "hs_glissement", "hs_glissement_pas")
+       for theta in ("0.8", "1.0") for regime in ("hausse", "baisse")}
+    | {"menages_inflation.a.periode.max", "menages_inflation.hs_glissement_pas.periode.max"})
 ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"} | {
-    f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)})
+    f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)}
+) | EN_ATTENTE_DE_REPUBLICATION_92
 
 
 def test_ensemble_des_ecarts_fige(maquette):
