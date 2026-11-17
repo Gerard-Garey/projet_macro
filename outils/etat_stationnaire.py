@@ -163,8 +163,9 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
              ("choix de conception, niveau contesté (critère 23 de la fiche 8 ; P208) ; fourchette lue de −0,5 % à "
               "+1,0 % (BCE, Economic Bulletin 1/2025, encadré « Natural rate estimates for the euro area: insights, "
               "uncertainties and shortcomings », fin 2024, lu le 16/11/2026) et de 0,9 % à 1,9 % (Réserve fédérale, "
-              "Summary of Economic Projections du 16/09/2026, tableau 1, long terme, taux nominal moins 2 %, lu le "
-              "16/11/2026) ; fourchette d'ensemble de −0,5 % à +1,9 % ; tab:calibration ; décision M34"),
+              "Summary of Economic Projections du 16/09/2026, tableau 1, lu le 16/11/2026 : étendue des projections "
+              "de long terme du taux des fonds fédéraux, 2,9 à 3,9 %, moins l'inflation PCE de long terme projetée, "
+              "2,0 %) ; fourchette d'ensemble de −0,5 % à +1,9 % ; tab:calibration ; décision M34"),
              "BC1, E4"),
     "sigma": ("années de ventes", "tab:calibration (indicative)", "N2"),
     "kappa": ("années", "tab:calibration (indicative)", "N11"),
@@ -184,7 +185,9 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "varpi_L": ("par an, taux de flux",
                 ("BCE, statistiques de taux d'intérêt des IFM (MIR), indicateur composite du coût de l'emprunt des "
                  "sociétés non financières, affaires nouvelles (ECB/MIR/M.U2.B.A2I.AM.R.A.2240.EUR.N), moins le taux "
-                 "du jour le jour (EONIA jusqu'en 2019-09, puis €STR), zone euro, moyenne mensuelle 2003-2024 : "
+                 "du jour le jour de la zone euro (EONIA, moyenne mensuelle, ECB/FM/M.U2.EUR.4F.MM.EONIA.HSTA, "
+                 "jusqu'en septembre 2019, puis €STR, moyenne mensuelle des observations quotidiennes, "
+                 "ECB/EST/B.EU000A2X2A25.WT), zone euro, moyenne mensuelle 2003-2024 : "
                  "2,09 points (encours : 2,30) ; DBnomics, consulté le 16/11/2026 ; arrondi au point ; "
                  "tab:calibration ; décision M34 ; M31"),
                 "B1"),
@@ -203,11 +206,14 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "vartheta": ("fraction des crédits de clôture",
                  ("BCE, statistiques de supervision bancaire (MSU), ratio CET1 des établissements importants "
                   "(ECB/SUP/Q.B01.W0._Z.I4008._T.SII._Z._Z._Z.PCT.C), moyenne 2015T3-2024T4 : 14,75 % des actifs "
-                  "pondérés des risques ; DBnomics, consulté le 16/11/2026 ; définition déclarée : ϑ rapporte les "
-                  "fonds propres aux crédits, distinct d'un ratio sur actifs pondérés, auquel il est égal sous les "
-                  "pondérations de Bâle 1988 (Comité de Bâle, juillet 1988, § 44 et annexe 2, lus le 16/11/2026) ; "
-                  "dénominateur de Bâle III plus petit, écart non mesuré, contesté ; arrondi ; tab:calibration ; "
-                  "décision M34"),
+                  "pondérés des risques, arrondi ; DBnomics, consulté le 16/11/2026 ; dénominateur : ϑ rapporte les "
+                  "fonds propres aux crédits, et non aux actifs pondérés des risques ; les deux ratios coïncident, "
+                  "pour la banque du modèle, sous les pondérations de l'accord de Bâle de 1988 (crédits aux "
+                  "entreprises pondérés à 100 %, titres publics et réserves à 0 % ; Comité de Bâle sur le contrôle "
+                  "bancaire, International Convergence of Capital Measurement and Capital Standards, juillet 1988, "
+                  "§ 44 et annexe 2, lus le 16/11/2026) ; sous Bâle III, les crédits aux entreprises y sont pondérés "
+                  "en moyenne à moins de 100 % (approches internes) : rapporté aux crédits, le ratio observé serait "
+                  "inférieur à 14,75 % ; écart non mesuré : le niveau est contesté ; tab:calibration ; décision M34"),
                  "B6"),
     "nu_H": ("années de revenu de Haig-Simons",
              ("Eurostat, comptes annuels des secteurs (SEC 2010 ; nasa_10_f_bs, nasa_10_nf_tr), ménages et ISBLSM "
