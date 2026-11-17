@@ -1305,38 +1305,38 @@ def releve() -> list[Chiffre]:
 
     # sec:menages-conditions : boucle conjointe (lecture de la cible).
     courant[0] = ("sec:menages-conditions",)
-    for th, pubs in ((0.8, ("0,9640", "0,9617")), (1.0, ("0,9564", "0,9537"))):
+    for th, pubs in ((0.8, ("0,9776", "0,9779")), (1.0, ("0,9733", "0,9736"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages.rayon.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture de la cible, θ_H = {th}, régime de {regime}",
                     _r(lambda th=th, regime=regime: carte_menages(th, regime)))
-    for regime, pub in (("hausse", "0,9563"), ("baisse", "0,9535")):
+    for regime, pub in (("hausse", "0,9740"), ("baisse", "0,9743")):
         ajouter(f"menages.rayon.theta1.0.cout_moyen.{regime}", pub, "rayon", "menages",
                 f"lecture de la cible, θ_H = 1, stocks au coût moyen pondéré de N8, régime de {regime}",
                 _r(lambda regime=regime: carte_menages(1.0, regime, resultat="cout_moyen")))
 
     # sec:menages-inflation et instabilité 17 : lectures sur le glissement.
     courant[0] = ("sec:menages-inflation",)
-    for th, pubs in ((0.8, ("1,030357", "1,005801")), (1.0, ("1,059130", "1,060998"))):
+    for th, pubs in ((0.8, ("0,983269", "0,983633")), (1.0, ("1,004371", "0,998967"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages_inflation.a_entretien.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture (a), glissement dans le seul terme d'entretien de H4, θ_H = {th}, régime de {regime}",
                     _r(lambda th=th, regime=regime: carte_menages(th, regime, "a_entretien")))
     ins = ("sec:menages-inflation", "tab:instabilites")
-    for lecture, th, pubs in (("hs_glissement", 0.8, ("0,9967", "0,9742")), ("hs_glissement", 1.0, ("1,0231", "1,0271")),
-                              ("hs_glissement_pas", 0.8, ("0,9823", "0,9748")),
-                              ("hs_glissement_pas", 1.0, ("1,0223", "1,0218"))):
+    for lecture, th, pubs in (("hs_glissement", 0.8, ("0,9810", "0,9814")), ("hs_glissement", 1.0, ("0,9797", "0,9790")),
+                              ("hs_glissement_pas", 0.8, ("0,9701", "0,9705")),
+                              ("hs_glissement_pas", 1.0, ("0,9898", "0,9871"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"menages_inflation.{lecture}.theta{th}.{regime}", pub, "rayon", "menages",
                     f"{lecture}, θ_H = {th}, régime de {regime}",
                     _r(lambda lecture=lecture, th=th, regime=regime: carte_menages(th, regime, lecture)),
                     ou=ins if (lecture, th) == ("hs_glissement_pas", 1.0) else None)
     hs_pas = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
-    for quel, pub in (("min", "49"), ("max", "60")):
+    for quel, pub in (("min", "51"), ("max", "1291")):
         ajouter(f"menages_inflation.hs_glissement_pas.periode.{quel}", pub, "période", "menages",
                 "hs_glissement_pas, deux θ_H, deux régimes",
                 _extremes(lambda a: spectre(carte_menages(a[0], a[1], "hs_glissement_pas")).periode, hs_pas, quel),
-                motif="49 à 60", ou=ins)
+                motif="51 à 1\\,291", ou=ins)
     lect_a = [(th, regime) for th in (0.8, 1.0) for regime in ("hausse", "baisse")]
     for quel, pub in (("min", "17"), ("max", "19")):
         ajouter(f"menages_inflation.a.periode.{quel}", pub, "période", "menages",
@@ -1344,7 +1344,7 @@ def releve() -> list[Chiffre]:
                 _extremes(lambda a: spectre(carte_menages(a[0], a[1], "a")).periode, lect_a, quel),
                 motif="17 à 19 tours", ou=ins)
     courant[0] = ("tab:instabilites",)
-    for th, pubs in ((0.8, ("1,0275", "1,0029")), (1.0, ("1,0561", "1,0580"))):
+    for th, pubs in ((0.8, ("0,9831", "0,9835")), (1.0, ("1,0019", "0,9965"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"instabilite17.a.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture (a), θ_H = {th}, régime de {regime}",
@@ -1360,9 +1360,9 @@ def releve() -> list[Chiffre]:
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (valeur de la fiche ; la spécification cite aussi "
             "la contre-épreuve, ligne suivante ; la valeur à retenir revient à macro)",
             _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), ou=("sec:changements-v3x",))
-    ajouter("instabilite17.a.n_a4.hausse.contre_epreuve", "1,09", "rayon", "menages",
+    ajouter("instabilite17.a.n_a4.hausse.contre_epreuve", "0,95", "rayon", "menages",
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (contre-épreuve citée par la spécification)",
-            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="1,09 contre", ou=("sec:changements-v3x",))
+            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="vaut 0,95", ou=("sec:changements-v3x",))
 
     # sec:investissement-conditions : boucle investissement -- demande (boucle réduite).
     courant[0] = ("sec:investissement-conditions",)
