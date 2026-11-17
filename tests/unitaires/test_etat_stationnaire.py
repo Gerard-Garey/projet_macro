@@ -83,6 +83,13 @@ def resultat(stationnaire, base):
     return stationnaire.calculer(base)
 
 
+def a_vartheta_d_origine(stationnaire, base):
+    """Cas adverses du domaine (lv* = 0,6 et 0,45) construits à ϑ = 0,10, avant M34 (#130) : refus et constats
+    décidés par `macro` sous cette valeur. À ϑ = 0,15, la dette consolidée plus haute (C42 : +ΔE^Bk) relève B et la
+    marge de E1, et ces cas sortent de leur région ; ϑ est donc rétabli seul (μ̄ = 0,60 et ζ = 8 gardés)."""
+    return replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"])
+
+
 def points(stationnaire, base, nu=1.0):
     """Paramètres des neuf points π̄ × n_a de la grille, à ν_G donné."""
     return [
@@ -485,7 +492,9 @@ def test_refus_de_la_condition_d_existence_a_ecarts_nuls(stationnaire, base):
 
 def test_refus_a_lv_0_6(stationnaire, base):
     """lv* = 0,6, ν_G = 1 : dette brute négative sur une partie de la grille, refusée ; le plafond de E1 seul n'est
-    pas un refus au point de référence (décision de `macro`, option (b)), mais il l'est à ν_G > 1."""
+    pas un refus au point de référence (décision de `macro`, option (b)), mais il l'est à ν_G > 1. Cas construit à
+    ϑ = 0,10 (`a_vartheta_d_origine`)."""
+    base = a_vartheta_d_origine(stationnaire, base)
     refus = e1_seul = 0
     for p in points(stationnaire, replace(base, lv=0.6)):
         e = stationnaire.etat_stationnaire(p, controler=False)
@@ -624,8 +633,9 @@ def test_q1_publie_comme_constat_sous_mu_bar_d_origine_seulement(stationnaire, b
 ])
 def test_lv_0_6_a_nu_G_1_15_refus_sur_la_dette_brute(stationnaire, base, pi, n_a, admis):
     """`macro` : lv* = 0,6, ν_G = 1,15 : refus sur B < 0 là où la marge de E1 est positive (le refus ne vient pas
-    de E1) ; témoin admis à π̄ = 2 %, n_a = 4 (B/(n_a PIB) ≈ +0,042)."""
-    p = replace(base, lv=0.6, nu_G=1.15, pi_cible=pi, n_a=n_a)
+    de E1) ; témoin admis à π̄ = 2 %, n_a = 4 (B/(n_a PIB) ≈ +0,042). Cas construit à ϑ = 0,10
+    (`a_vartheta_d_origine`)."""
+    p = replace(a_vartheta_d_origine(stationnaire, base), lv=0.6, nu_G=1.15, pi_cible=pi, n_a=n_a)
     e = stationnaire.etat_stationnaire(p, controler=False)
     assert 1 - e["Gam"] * (e["G"] / e["PB"]) / p.nu_G > 0 and e["marge_E1_montant"] > 0
     if admis:
@@ -644,8 +654,9 @@ def test_lv_0_6_calculer_refuse_sur_une_colonne_nu_G_1_15(stationnaire, base):
 
 
 def test_plafond_de_E1_refuse_a_nu_G_superieur_a_un(stationnaire, base):
-    """Le plafond de E1 reste un refus sur les colonnes ν_G > 1 (lv* = 0,45, π̄ = 0, n_a = 4, ν_G = 1,001)."""
-    p = replace(base, lv=0.45, pi_cible=0.0, n_a=4, nu_G=1.001)
+    """Le plafond de E1 reste un refus sur les colonnes ν_G > 1 (lv* = 0,45, π̄ = 0, n_a = 4, ν_G = 1,001) ; cas
+    construit à ϑ = 0,10 (`a_vartheta_d_origine`)."""
+    p = replace(a_vartheta_d_origine(stationnaire, base), lv=0.45, pi_cible=0.0, n_a=4, nu_G=1.001)
     assert stationnaire.etat_stationnaire(p, controler=False)["marge_E1_montant"] <= 0
     with pytest.raises(stationnaire.HorsDomaine, match="plafond de E1"):
         stationnaire.etat_stationnaire(p)
@@ -653,8 +664,9 @@ def test_plafond_de_E1_refuse_a_nu_G_superieur_a_un(stationnaire, base):
 
 def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkeypatch, capsys):
     """`macro` : lv* = 0,45 : plafond de E1 actif à ν_G = 1 en (0, 4) et (0, 12), toutes les colonnes ν_G > 1
-    admissibles ; code 0, constat publié, aucune valeur d'état ni résidu pour ces points de référence."""
-    variante = replace(base, lv=0.45)
+    admissibles ; code 0, constat publié, aucune valeur d'état ni résidu pour ces points de référence. Cas construit
+    à ϑ = 0,10 (`a_vartheta_d_origine`)."""
+    variante = replace(a_vartheta_d_origine(stationnaire, base), lv=0.45)
     hors = {(0.0, 4), (0.0, 12)}
     for p in points(stationnaire, variante):
         e = stationnaire.etat_stationnaire(p)  # aucun refus au point de référence
@@ -681,6 +693,41 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
     monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
     assert stationnaire.main([]) == 0
     assert "état non publié" in capsys.readouterr().out
+
+
+# Équivalent du cas adverse lv* = 0,6 à la table calibrée (ϑ = 0,15, M34), ajouté de façon prospective après l'audit
+# léger de #130 (17/11/2026) : lv* = 0,65 en reproduit le motif (mesuré avant l'écriture). Le cas lv* = 0,45 n'a pas
+# d'équivalent mesuré sur [0,450 ; 0,500] (pas de 0,005) : à lv* = 0,475, le plafond de E1 n'agit qu'en (0, 4) et
+# (0, 12) à ν_G = 1, mais `calculer` refuse une valeur publiée (B < 0) dès lv* = 0,47.
+
+
+def test_refus_a_lv_0_65_a_la_table_calibree(stationnaire, base):
+    """lv* = 0,65 à ϑ = 0,15, ν_G = 1 : cinq points refusés sur B < 0 et un plafond de E1 seul en (2 %, 4), comme
+    lv* = 0,6 à ϑ = 0,10 ; à ν_G = 1,15, refus sur B < 0 là où la marge de E1 est positive, témoin admis en (2 %, 4)
+    (B/(n_a PIB) ≈ +0,022) ; la grille complète est refusée."""
+    variante = replace(base, lv=0.65)
+    refus, e1_seul = [], []
+    for p in points(stationnaire, variante):
+        e = stationnaire.etat_stationnaire(p, controler=False)
+        if e["B"] < 0 or e["B_Bk"] < 0:
+            refus.append((p.pi_cible, p.n_a))
+            with pytest.raises(stationnaire.HorsDomaine, match="B ="):
+                stationnaire.etat_stationnaire(p)
+        elif e["marge_E1_montant"] <= 0:
+            e1_seul.append((p.pi_cible, p.n_a))
+    assert len(refus) == 5 and e1_seul == [(0.02, 4)]
+    for pi, n_a in ((0.0, 4), (0.0, 12), (0.0, 52), (0.02, 4), (0.02, 12), (0.02, 52)):
+        p = replace(variante, nu_G=1.15, pi_cible=pi, n_a=n_a)
+        e = stationnaire.etat_stationnaire(p, controler=False)
+        assert e["marge_E1_montant"] > 0
+        if (pi, n_a) == (0.02, 4):
+            assert 0.02 < stationnaire.etat_stationnaire(p)["B"] / (n_a * e["PIB"]) < 0.025
+        else:
+            assert e["B"] < 0
+            with pytest.raises(stationnaire.HorsDomaine, match="B = .*dette brute"):
+                stationnaire.etat_stationnaire(p)
+    with pytest.raises(stationnaire.HorsDomaine):
+        stationnaire.calculer(variante)
 
 
 def test_etat_initial_publie_a_nu_G_retenu_puis_a_la_reference(stationnaire, resultat):
@@ -814,8 +861,9 @@ def test_explication_Y_HS_par_T_H_arrondi(stationnaire, base):
 
 
 def test_explication_marge_J_nu_sur_G_PB_a_nu_G_un(stationnaire, base):
-    """« 0,37 % » à ν_G = 1,1, π̄ = 0 : marge J-ν calculée sur G/PB à ν_G = 1, non à ν_G = 1,1."""
-    p1 = replace(base, pi_cible=0.0)
+    """« 0,37 % » à ν_G = 1,1, π̄ = 0 : marge J-ν calculée sur G/PB à ν_G = 1, non à ν_G = 1,1, sous les entrées
+    d'origine (μ̄ = 0,25, ϑ = 0,10)."""
+    p1 = replace(base, pi_cible=0.0, **stationnaire.ENTREES_D_ORIGINE)
     v1 = stationnaire.valeurs(stationnaire.etat_stationnaire(p1), p1)
     marge = 1 - stationnaire.HAUSSE_J_NU * v1["Gamma"] * v1["G_sur_PB"] / 1.1
     assert stationnaire.comparer("0,37", 100 * marge)[2]
@@ -882,7 +930,7 @@ def test_seuil_derniere_decimale(stationnaire):
 # spécification et les fiches les publient à μ̄ = 0,25 (#92) jusqu'au passage unique de `docwriter` en fin de
 # branche (rang 9, règle 9) ; le commit `tests:` qui les retire de la liste suit le commit `docs:`. Toute autre
 # valeur reste égale à la dernière décimale publiée ; un écart qui se résorbe fait aussi échouer la batterie.
-# Les rangs suivants de la branche (#130, #62) étendent la liste.
+# Les rangs suivants de la branche (#62) étendent la liste ; un écart résorbé en sort par une liste exacte.
 #
 # #55 (ζ = 4 → 8, M34) : les 12 valeurs de la mesure (α) de #80 (lecture (α), Δϱ ≠ 0 entre deux cibles), publiées à
 # ζ = 4 ; l'état stationnaire de référence ne lit pas ζ (Δϱ = 0) et ne change pas.
@@ -900,7 +948,8 @@ EN_ATTENTE_DE_REPUBLICATION_55 = frozenset({
     ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"),
     ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 10 %, %"),
 })
-EN_ATTENTE_DE_REPUBLICATION = EN_ATTENTE_DE_REPUBLICATION_55 | frozenset({
+# #92 (μ̄ = 0,25 → 0,60, M34) : 173 valeurs.
+EN_ATTENTE_DE_REPUBLICATION_92 = frozenset({
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"),
     ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"),
     ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"),
@@ -1076,18 +1125,138 @@ EN_ATTENTE_DE_REPUBLICATION = EN_ATTENTE_DE_REPUBLICATION_55 | frozenset({
     ("tab:etat-stationnaire", "taux d'investissement, % à 2 %"),
 })
 
+# #130 (ϑ = 0,10 → 0,15, M34) : 102 valeurs nouvellement en écart, toutes de l'effet (ϑ) (E^Bk = ϑL, dette consolidée
+# par C42, θ_G résolu, résultat et rendement de la banque ; Δr̄_α par θ_G) ; ϖ_L, ϖ_D et r̄ sont inchangés. Trois
+# valeurs de #92 (T_H, YD^HS et Y^HS sur le PIB à π̄ = 0) reviennent dans l'arrondi publié : leur valeur change encore,
+# mais retombe sur la décimale publiée à μ̄ = 0,25 ; elles sortent de la liste (résorbées, liste exacte) et restent
+# dans la surface de republication.
+EN_ATTENTE_DE_REPUBLICATION_130 = frozenset({
+    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %"),
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point"),
+    ("sec:banque-conditions", "(d2), 2 %, point"),
+    ("sec:banque-conditions", "couplage −ϑ lv*"),
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 0 %, % du PIB"),
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 2 %, % du PIB"),
+    ("sec:banque-resultat", "saut C29 au tour n, 2 %, %"),
+    ("sec:banque-resultat", "saut C29 ensuite, 2 %, %"),
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 0 %"),
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 10 %"),
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 2 %"),
+    ("sec:banque-stationnaire", "condition d'existence à écarts nuls, 2 %"),
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1"),
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1,15"),
+    ("sec:banque-stationnaire", "marge d'existence, par an à 0 %"),
+    ("sec:banque-stationnaire", "marge d'existence, par an à 10 %"),
+    ("sec:banque-stationnaire", "marge d'existence, par an à 2 %"),
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1"),
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1,15"),
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1"),
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1,15"),
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1"),
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1,15"),
+    ("sec:banque-stationnaire", "part des dividendes des entreprises, 2 %, %"),
+    ("sec:banque-stationnaire", "part des intérêts des dépôts, 2 %, %"),
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1"),
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1,15"),
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1"),
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1,15"),
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1"),
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1,15"),
+    ("sec:banque-stationnaire", "part distribuée à 0 %"),
+    ("sec:banque-stationnaire", "part distribuée à 10 %"),
+    ("sec:banque-stationnaire", "part distribuée à 2 %"),
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 12"),
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 4"),
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 52"),
+    ("sec:banque-stationnaire", "part du dividende de la banque, 2 %, %"),
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 0 %"),
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 10 %"),
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 2 %"),
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 0 %, %"),
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 10 %, %"),
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 2 %, %"),
+    ("sec:banque_centrale-conditions", "(α) : écart de tu, point"),
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point"),
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point"),
+    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point"),
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point"),
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point"),
+    ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %"),
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 0 %, ν_G = 1,15, % du PIB"),
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1, % du PIB"),
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1,15, % du PIB"),
+    ("sec:banque_centrale-stationnaire", "L^CB_0 à 2 %, ν_G = 1,15, u.m."),
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 4, point par point"),
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 8, point par point"),
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 1, ζ = 8, point par point"),
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 0 %, point par point"),
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 10 %, point par point"),
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄, % de la production par point de r̄"),
+    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense"),
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 4, point"),
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 8, point"),
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 4, point"),
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 8, point"),
+    ("sec:finances_publiques-depense", "G/PB à 0 %"),
+    ("sec:finances_publiques-depense", "G/PB à 10 %"),
+    ("sec:finances_publiques-depense", "G/PB à 2 %"),
+    ("sec:finances_publiques-depense", "hausse admissible à 0 %, ν_G = 1, %"),
+    ("sec:finances_publiques-depense", "marge de E1 à 0 %"),
+    ("sec:finances_publiques-depense", "marge de E1 à 10 %"),
+    ("sec:finances_publiques-depense", "marge de E1 à 2 %"),
+    ("sec:finances_publiques-emission", "borne de ν_G à 0 %"),
+    ("sec:finances_publiques-emission", "borne de ν_G à 10 %"),
+    ("sec:finances_publiques-emission", "borne de ν_G à 2 %"),
+    ("sec:finances_publiques-emission", "hausse admissible à 0 %, ν_G = 1,15, %"),
+    ("sec:finances_publiques-emission", "hausse admissible à 10 %, ν_G = 1,15, %"),
+    ("sec:finances_publiques-emission", "hausse admissible à 2 %, ν_G = 1,15, %"),
+    ("sec:finances_publiques-emission", "marge J-ν au pire point à ν_G = 1,1, %"),
+    ("sec:finances_publiques-emission", "retour après −5 % (approché), 0 %"),
+    ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)"),
+    ("sec:finances_publiques-emission", "ν_G,min exact à 0 %"),
+    ("sec:finances_publiques-emission", "ν_G,min exact à 10 %"),
+    ("sec:finances_publiques-emission", "ν_G,min exact à 2 %"),
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν au pire point à ν_G = 1,15"),
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν à ν_G = 1,1, 0 %, %"),
+    ("sec:finances_publiques-emission ; tab:calibration", "ν_G minimal pour la marge J-ν (n_a = 4, 0 %)"),
+    ("sec:finances_publiques-restitution", "dette brute affichée à 2 %, ν_G = 1,15, % du PIB"),
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, arrondie"),
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, ν_G = 1,15, % du PIB"),
+    ("sec:finances_publiques-stationnaire", "solde primaire à 0 %, % du PIB"),
+    ("sec:finances_publiques-stationnaire", "θ_G à 0 %"),
+    ("sec:finances_publiques-stationnaire", "θ_G à 10 %"),
+    ("sec:finances_publiques-stationnaire", "θ_G à 2 %"),
+    ("sec:finances_publiques-transferts", "charge brute à 2 %, ν_G = 1,15, % du PIB"),
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 0 %"),
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 2 %"),
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 0 %"),
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 10 %"),
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 2 %"),
+    ("tab:etat-stationnaire", "solde primaire, % du PIB à 0 %"),
+})
+RESORBEES_130 = frozenset({
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 0 %, %"),
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 0 %"),
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 0 %"),
+})
+EN_ATTENTE_DE_REPUBLICATION = (
+    (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55) - RESORBEES_130
+) | EN_ATTENTE_DE_REPUBLICATION_130
+
 
 def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
     """Valeurs en vigueur (spécification et fiches 8 et 9 republiées) : toutes égales à la dernière décimale
-    publiée, hors des 185 valeurs en attente de republication (#92 et #55, liste exacte) ; aucune valeur barrée n'y
-    figure
-    (catégories B-1 et N en contre-épreuve)."""
+    publiée, hors des 284 valeurs en attente de republication (#92, #55 et #130, liste exacte) ; aucune valeur
+    barrée n'y figure (catégories B-1 et N en contre-épreuve)."""
     lignes = resultat["publiees"]
     assert len(lignes) == 449
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
     assert sum(1 for l in lignes if l["categorie"] == "S") == 20
     assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
-    assert len(EN_ATTENTE_DE_REPUBLICATION_55) == 12 and len(EN_ATTENTE_DE_REPUBLICATION) == 185
+    assert len(EN_ATTENTE_DE_REPUBLICATION_92) == 173 and len(EN_ATTENTE_DE_REPUBLICATION_55) == 12
+    assert len(EN_ATTENTE_DE_REPUBLICATION_130) == 102 and RESORBEES_130 <= EN_ATTENTE_DE_REPUBLICATION_92
+    assert not EN_ATTENTE_DE_REPUBLICATION_130 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55)
+    assert len(EN_ATTENTE_DE_REPUBLICATION) == 284
     assert {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"} == EN_ATTENTE_DE_REPUBLICATION
     for l in lignes:
         if (l["section"], l["grandeur"]) in EN_ATTENTE_DE_REPUBLICATION:
@@ -1098,9 +1267,22 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
             assert abs(l["ecart"]) <= l["seuil"], l
 
 
+def test_aucun_ecart_sous_les_entrees_d_origine(stationnaire, base):
+    """R3 de l'audit de #130 : sous `ENTREES_D_ORIGINE` complètes (μ̄ = 0,25, ϑ = 0,10 : état E0) et ζ = 4, valeur
+    des publications de la mesure (α) de #80 (ζ n'entre pas dans l'état stationnaire), les 449 valeurs en vigueur
+    sont toutes égales à la dernière décimale publiée : chaque ligne en attente de republication s'explique par un
+    paramètre déclaré. Sans ζ = 4, seules les 12 valeurs de #55 restent en écart."""
+    def ecarts(**entrees):
+        lignes = stationnaire.table_publiees(stationnaire.Calculs(replace(base, **entrees), stationnaire.NU_G_RETENU))
+        assert len(lignes) == 449
+        return {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"}
+    assert ecarts(**stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set()
+    assert ecarts(**stationnaire.ENTREES_D_ORIGINE) == EN_ATTENTE_DE_REPUBLICATION_55
+
+
 def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     """C4 de `macro` (rang 7) : les 29 valeurs visées et republiées (spécification, commit 8b9fa94 ; fiches 8 et 9)
-    sont égales au script, hors de celles en attente de republication (#92, #55) ; aucune n'est republiée à son
+    sont égales au script, hors de celles en attente de republication (#92, #55, #130) ; aucune n'est republiée à son
     ancienne valeur ; l'historique (commit 9c8bdbd) garde les 29 anciennes valeurs, toutes en écart, chacune égale
     à sa valeur figée en littéral (`ANCIENNES_PUBLIEES`)."""
     historique = resultat["historique"]
@@ -1116,8 +1298,8 @@ def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 449 valeurs comparées, 244 égales sur l'état résolu, 20 égales en arithmétique de la "
-            "spécification (catégorie S, sans état résolu), 185 écarts (publiés avec leur explication ; aucun "
+    assert ("Bilan : 449 valeurs comparées, 145 égales sur l'état résolu, 20 égales en arithmétique de la "
+            "spécification (catégorie S, sans état résolu), 284 écarts (publiés avec leur explication ; aucun "
             "n'est masqué).") in texte
     assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
@@ -1441,8 +1623,9 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
 
 def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
     """« Δr̄_α ne descend pas sous 0,1428 point, minimum vers ζ ≈ 68 » : sur ζ ∈ {4 ; 30 ; 50 ; 67 ; 69 ; 100 ;
-    1 000}, Δr̄_α reste au-dessus de sa valeur à ζ = 68, publiée."""
-    calc = stationnaire.Calculs(base)
+    1 000}, Δr̄_α reste au-dessus de sa valeur à ζ = 68, publiée, à ϑ = 0,10 (publication d'avant M34, en attente de
+    republication, #130 ; à ϑ = 0,15, le minimum se déplace : `EN_ATTENTE_DE_REPUBLICATION_130`)."""
+    calc = stationnaire.Calculs(replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"]))
     minimum = stationnaire._delta_r_alpha(calc, 68.0)
     assert stationnaire.comparer("0,1428", minimum)[2]
     for zeta in (4.0, 30.0, 50.0, 67.0, 69.0, 100.0, 1000.0):

@@ -31,6 +31,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -243,13 +244,23 @@ EN_ATTENTE_DE_REPUBLICATION_55 = frozenset({
     "socle.rayon.pi0.baisse",
     "socle.rayon.pi0.hausse",
 })
+#
+# #130 (ϑ = 0,10 → 0,15, M34) : la lecture (c) de la branche ×2 sans a_I (ϑ déplace l'état stationnaire autour
+# duquel la carte est linéarisée), et la frontière de la marge conjointe en régime de hausse, publiée 1,9921, déjà en
+# écart sous #55 (1,99112), que ϑ = 0,15 porte à 2,00615, au-delà de 2 : sa recherche se fait sur
+# `BORNES_MARGE_HAUSSE` = [1 ; 3] (décision du mainteneur du 17/11/2026). Publiés à ϑ = 0,10 jusqu'au passage unique
+# de `docwriter` (règle 9).
+EN_ATTENTE_DE_REPUBLICATION_130 = frozenset({"socle.marge_conjointe.x2.a_I÷1000",
+                                             "socle.marge_conjointe.facteur.hausse"})
 ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"} | {
     f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)}
-) | EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
+) | EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55 | EN_ATTENTE_DE_REPUBLICATION_130
 
 
 def test_ensemble_des_ecarts_fige(maquette):
+    """Liste exacte : 73 chiffres en écart sur 148 (#92, #55, #130), aucun sans objet."""
     r = maquette.calculer()
+    assert len(ECARTS_ATTENDUS) == 73
     assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == ECARTS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
 
@@ -609,10 +620,12 @@ def test_marge_conjointe_est_une_frontiere(maquette):
 
 def test_frontiere_de_la_marge_en_regime_de_hausse(maquette):
     """La frontière du régime de hausse sépare la lecture (c) de ce régime de part et d'autre de 1, et n'est pas
-    en deçà de la frontière du pire des deux régimes ; à a_I ×0,001, la lecture (c) en hausse est une racine
-    réelle, sous laquelle se trouve la paire complexe relevée à côté."""
+    en deçà de la frontière du pire des deux régimes ; recherchée sur `BORNES_MARGE_HAUSSE` = [1 ; 3] (décision du
+    mainteneur du 17/11/2026, #130 : à ϑ = 0,15 elle dépasse 2). À a_I ×0,001, la lecture (c) en hausse est une
+    racine réelle, sous laquelle se trouve la paire complexe relevée à côté."""
     f_h = maquette.frontiere_marge("hausse")
-    assert maquette.BORNES_MARGE[0] < f_h < maquette.BORNES_MARGE[1]
+    assert maquette.BORNES_MARGE_HAUSSE == (1.0, 3.0) and maquette.BORNES_MARGE == (1.0, 2.0)
+    assert maquette.BORNES_MARGE_HAUSSE[0] < f_h < maquette.BORNES_MARGE_HAUSSE[1]
     rayon = lambda f: maquette.lectures(maquette._ensemble(f), "hausse").rayon_c  # noqa: E731
     assert rayon(f_h - 1e-6) < 1 < rayon(f_h + 1e-6)
     assert f_h >= maquette.marge_conjointe()["facteur"]
@@ -622,6 +635,20 @@ def test_frontiere_de_la_marge_en_regime_de_hausse(maquette):
     assert maquette.nature_racine(z)[0] == "réelle positive"
     J_var = maquette.jacobiennes_carte(maquette.carte_socle(par, "hausse"), par)[1]
     assert maquette.module_paire(np.linalg.eigvals(J_var)) < abs(z)
+
+
+@pytest.mark.parametrize("rayon", [math.nan, math.inf, 1.0])
+def test_frontiere_marge_refuse_un_rayon_non_fini_ou_egal_a_un(maquette, monkeypatch, rayon):
+    """Un rayon non fini ou égal à 1 aux bornes est refusé par `frontiere` (intervalle non encadrant), jamais
+    converti en frontière."""
+    monkeypatch.setattr(maquette, "lectures", lambda *a: SimpleNamespace(rayon_c=rayon))
+    maquette.frontiere_marge.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="non encadrant"):
+            maquette.frontiere_marge("hausse")
+    finally:
+        monkeypatch.undo()
+        maquette.frontiere_marge.cache_clear()
 
 
 def test_module_paire_sans_paire_est_sans_objet(maquette):

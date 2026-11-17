@@ -33,10 +33,10 @@ TABLES = (
 )
 DECLARATIONS = tuple(p for _, declarations in TABLES for p in declarations)
 
-# Annotation du 14/11/2026, point 6 : nom → (valeur, unité).
+# Annotation du 14/11/2026, point 6 : nom → (valeur, unité) ; ϑ = 0,15 depuis la décision M34 (#130).
 ATTENDUS = {
     "varpi_L": (0.02, "par an, taux de flux"), "varpi_D": (0.01, "par an, taux de flux"),
-    "vartheta": (0.10, "fraction"),
+    "vartheta": (0.15, "fraction"),
     "a_pi": (0.5, "sans dimension"), "a_I": (0.25, "par an, taux de flux"),
     "lambda_e": (0.2, "par an, taux de flux"), "theta_CB": (0.0, "fraction"),
     "pi_etoile": (0.02, "par an, taux de croissance"),
