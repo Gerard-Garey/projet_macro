@@ -277,17 +277,21 @@ SANS_OBJET_62 = frozenset({
 })
 #
 # #45 (λ_w = 1 → 0,18, M34) : λ_w n'entre pas dans l'état stationnaire, mais dans chaque carte qui porte la règle de
-# salaire T3. Huit chiffres passent en écart ou en « sans objet » : la boucle salaires -- prix (sept rayons, publiés
-# à λ_w = 1 ; ceux de « toutes÷2 », « toutes×2 » et « lambda_w×2 » fixent λ_w en valeur absolue et ne changent
-# pas) et la période de la branche ×2 en baisse, dont la racine (c) devient réelle. Les trois chiffres résorbés sous
+# salaire T3. Quatorze chiffres passent en écart ou en « sans objet » : la boucle salaires -- prix (treize rayons,
+# publiés à λ_w = 1 ; les six de « toutes÷2 », « toutes×2 » et « lambda_w×2 » prennent λ_w relative à la table,
+# × 0,5 et × 2, comme les autres vitesses, décision du mainteneur du 17/11/2026 : ils fixaient λ_w en valeur absolue,
+# 0,5 et 2,0, et « toutes÷2 » accélérait λ_w à 0,18) et la période de la branche ×2 en baisse, dont la racine (c)
+# devient réelle. Les trois chiffres résorbés sous
 # #62 reviennent en écart (`REVENUES_45`). Six chiffres sont sans objet (`SANS_OBJET_45`) : les frontières en ν_H
 # et h de l'instabilité 17 (rayon de la lecture (a) sous 1 sur [0,3 ; 1] ; « sans objet », M34), les périodes de la
 # branche ×2 (racines réelles) et les périodes de la lecture (a) (racine réelle à θ_H = 0,8). La frontière de la
 # marge conjointe, 2,7826, est cherchée sur `BORNES_MARGE` = [1 ; 3] (décision du mainteneur du 17/11/2026) et reste
 # en écart chiffré (déjà en écart sous #55). Les deux « écarts à 1 de la racine réelle » de `SANS_OBJET_62`
 # redeviennent mesurables (racine réelle sous 1) et restent en écart.
+VARIANTES_RELATIVES_45 = ("toutes÷2", "toutes×2", "lambda_w×2")
 EN_ATTENTE_DE_REPUBLICATION_45 = frozenset(
     {f"salaires_prix.rayon.m{m}" for m in ("0.5", "0.6", "0.7", "0.8")}
+    | {f"salaires_prix.rayon.{nom}.{quel}" for nom in VARIANTES_RELATIVES_45 for quel in ("min", "max")}
     | {"salaires_prix.rayon.psi×2.min", "salaires_prix.rayon.psi×2.max", "salaires_prix.rayon.marge_constante.m0.6",
        "socle.marge_conjointe.x2.baisse.periode"})
 REVENUES_45 = RESORBEES_62
@@ -307,7 +311,7 @@ ECARTS_ATTENDUS = NON_REPRODUITS_ATTENDUS - SANS_OBJET_45
 
 
 def test_ensemble_des_ecarts_fige(maquette):
-    """Liste exacte : 85 chiffres non reproduits sur 148 (#92, #55, #130, #62, #45), dont 79 en écart et 6 sans
+    """Liste exacte : 91 chiffres non reproduits sur 148 (#92, #55, #130, #62, #45), dont 85 en écart et 6 sans
     objet (`SANS_OBJET_45`)."""
     r = maquette.calculer()
     assert not EN_ATTENTE_DE_REPUBLICATION_62 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
@@ -316,7 +320,8 @@ def test_ensemble_des_ecarts_fige(maquette):
     assert not EN_ATTENTE_DE_REPUBLICATION_45 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
                                                   | EN_ATTENTE_DE_REPUBLICATION_130 | EN_ATTENTE_DE_REPUBLICATION_62)
     assert SANS_OBJET_45 <= NON_REPRODUITS_ATTENDUS and not SANS_OBJET_45 & SANS_OBJET_62
-    assert len(NON_REPRODUITS_ATTENDUS) == 85 and len(ECARTS_ATTENDUS) == 79
+    assert len(EN_ATTENTE_DE_REPUBLICATION_45) == 14
+    assert len(NON_REPRODUITS_ATTENDUS) == 91 and len(ECARTS_ATTENDUS) == 85
     assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == NON_REPRODUITS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_45
@@ -339,7 +344,8 @@ def test_caches_lisant_la_table_recenses(maquette):
 def _base_remplacee(maquette, monkeypatch, **champs):
     """Remplace `BASE` de la maquette et vide, avant et après le test, chaque mesure mise en cache qui lit `BASE` à
     l'appel (`CACHES_LISANT_BASE`). Réserve : les défauts `lambda_w=BASE.lambda_w` de `carte_offre` et
-    `nu_H=BASE.nu_H` de `carte_menages` sont figés à l'import ; aucun test sous ces fixtures n'appelle ces cartes."""
+    `nu_H=BASE.nu_H` de `carte_menages` sont figés à l'import ; aucun test sous ces fixtures n'appelle ces cartes sans
+    passer `lambda_w` (ou `nu_H`) explicitement."""
     caches = [getattr(maquette, nom) for nom in CACHES_LISANT_BASE]
     for c in caches:
         c.cache_clear()
@@ -376,6 +382,29 @@ def test_branche_x2_sans_a_I_explosive_en_hausse_avant_lambda_w(a_lambda_w_un):
         l = maquette.lectures(maquette._ensemble_sans_aI(f_aI), "hausse")
         assert maquette.nature_racine(l.suivante)[0] == "complexe" and l.rayon_c > 1.0
         assert maquette.ecart_racine_reelle(f_aI) is None
+
+
+def test_variantes_de_vitesse_salaires_prix_relatives_a_la_table(maquette):
+    """Les variantes « toutes÷2 », « toutes×2 » et « lambda_w×2 » de la boucle salaires -- prix prennent λ_w relative
+    à la table (décision du mainteneur du 17/11/2026, #45). À la table calibrée (λ_w = 0,18 ≠ 1, où relatif et absolu
+    se distinguent), chacun des six rayons de `releve()` égale l'extrême sur m = 0,5 à 0,8 calculé avec
+    λ_w = `BASE.lambda_w` × k (k = 0,5 ou 2) et diffère de celui calculé avec l'ancienne valeur absolue (0,5 ou 2,0)."""
+    base = maquette.BASE
+    assert base.lambda_w == 0.18
+    autres = {"toutes÷2": {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6},
+              "toutes×2": {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4}, "lambda_w×2": {}}
+    k = {"toutes÷2": 0.5, "toutes×2": 2.0, "lambda_w×2": 2.0}
+    assert tuple(autres) == VARIANTES_RELATIVES_45
+    releve = {c.ident: c for c in maquette.releve()}
+    for nom in VARIANTES_RELATIVES_45:
+        def rayons(lambda_w, nom=nom):
+            return [maquette.spectre(maquette.carte_offre(m, "regle", True, lambda_w=lambda_w, **autres[nom])).rayon
+                    for m in maquette.M4]
+        relatifs, absolus = rayons(base.lambda_w * k[nom]), rayons(k[nom])
+        for quel, extreme in (("min", min), ("max", max)):
+            publie = releve[f"salaires_prix.rayon.{nom}.{quel}"].calcul()
+            assert publie == extreme(relatifs), (nom, quel)
+            assert abs(publie - extreme(absolus)) > 1e-3, (nom, quel)
 
 
 def test_branche_x2_sans_a_I_racine_reelle_a_la_table_calibree(maquette):
