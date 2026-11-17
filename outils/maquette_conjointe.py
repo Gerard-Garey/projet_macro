@@ -237,6 +237,22 @@ def frontiere(rayon_de, bas: float, haut: float) -> float:
     return 0.5 * (bas + haut)
 
 
+def frontiere_ou_aucune(rayon_de, bas: float, haut: float) -> float | None:
+    """Frontière de `frontiere`, ou sans objet (None) si le rayon, fini, est sous 1 aux deux bornes : régime stable
+    sur tout l'intervalle, aucune frontière à publier (#45 : à λ_w = 0,18, les frontières en ν_H et h de
+    l'instabilité 17 disparaissent de [0,3 ; 1] ; « sans objet », M34). Un rayon fini au-dessus de 1 aux deux bornes
+    (instable sur tout l'intervalle) est refusé par une erreur explicite, jamais publié « sans objet » ; un rayon
+    non fini ou égal à 1 aux bornes reste refusé par `frontiere`."""
+    r_bas, r_haut = rayon_de(bas), rayon_de(haut)
+    if math.isfinite(r_bas) and math.isfinite(r_haut):
+        if r_bas < 1 and r_haut < 1:
+            return None
+        if r_bas > 1 and r_haut > 1:
+            raise ValueError(f"instable sur tout l'intervalle : rayon {r_bas!r} et {r_haut!r} aux bornes {bas} et "
+                             f"{haut}")
+    return frontiere(rayon_de, bas, haut)
+
+
 def _carte(variables: list[tuple[str, float, float, bool, float]], pas, racine_nominale: bool) -> Carte:
     """Assemble une carte depuis (nom, valeur, échelle plancher, en logarithme, facteur de tendance)."""
     noms = tuple(v[0] for v in variables)
@@ -926,7 +942,10 @@ ABSENTS_GRILLE = ("a_U",)
 AJOUTS_GRILLE = ("zeta",)
 # Marge conjointe (mesure publiée, relevée depuis sa citation) : gains de la boucle salaire -- taux réel multipliés ensemble.
 GAINS_ENSEMBLE = ("beta", "a_pi", "eta_r")
-BORNES_MARGE = (1.0, 2.0)  # intervalle encadrant du facteur commun (contrôlé par `frontiere`)
+# Intervalle encadrant du facteur commun (contrôlé par `frontiere`), élargi à [1 ; 3] par décision du mainteneur du
+# 17/11/2026 (#45, M34) : à λ_w = 0,18, la lecture (c) passe 1 à 2,7826, au-delà de 2 ; à λ_w = 1, la frontière sur
+# [1 ; 3] égale celle sur [1 ; 2] à 4,5e−13 près (1,70128).
+BORNES_MARGE = (1.0, 3.0)
 # Intervalle de la frontière du seul régime de hausse (`frontiere_marge`), élargi à [1 ; 3] par décision du
 # mainteneur du 17/11/2026 (#130, M34) : à ϑ = 0,15, la lecture (c) de ce régime passe 1 au-delà de 2.
 BORNES_MARGE_HAUSSE = (1.0, 3.0)
@@ -1327,10 +1346,11 @@ def releve() -> list[Chiffre]:
                     _r(lambda th=th, regime=regime: carte_menages(th, regime, "a")))
     ajouter("instabilite17.frontiere_nu_H", "0{,}586", "frontière", "menages",
             "ν_H où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
-            lambda: frontiere(lambda nu: spectre(carte_menages(0.8, "hausse", "a", nu_H=nu)).rayon, 0.3, 1.0))
+            lambda: frontiere_ou_aucune(lambda nu: spectre(carte_menages(0.8, "hausse", "a", nu_H=nu)).rayon, 0.3,
+                                        1.0))
     ajouter("instabilite17.frontiere_h", "0{,}604", "frontière", "menages",
             "poids h où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
-            lambda: frontiere(lambda h: spectre(carte_menages(0.8, "hausse", "a", h=h)).rayon, 0.3, 1.0))
+            lambda: frontiere_ou_aucune(lambda h: spectre(carte_menages(0.8, "hausse", "a", h=h)).rayon, 0.3, 1.0))
     ajouter("instabilite17.a.n_a4.hausse", "1,0415", "rayon", "menages",
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (valeur de la fiche ; la spécification cite aussi "
             "la contre-épreuve, ligne suivante ; la valeur à retenir revient à macro)",
