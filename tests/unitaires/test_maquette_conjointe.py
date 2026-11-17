@@ -275,49 +275,127 @@ SANS_OBJET_62 = frozenset({
     "socle.marge_conjointe.x2.a_I÷100.hausse.ecart",
     "socle.marge_conjointe.x2.a_I÷1000.hausse.ecart",
 })
-NON_REPRODUITS_ATTENDUS = (frozenset({"instabilite17.a.n_a4.hausse"} | {
+#
+# #45 (λ_w = 1 → 0,18, M34) : λ_w n'entre pas dans l'état stationnaire, mais dans chaque carte qui porte la règle de
+# salaire T3. Huit chiffres passent en écart ou en « sans objet » : la boucle salaires -- prix (sept rayons, publiés
+# à λ_w = 1 ; ceux de « toutes÷2 », « toutes×2 » et « lambda_w×2 » fixent λ_w en valeur absolue et ne changent
+# pas) et la période de la branche ×2 en baisse, dont la racine (c) devient réelle. Les trois chiffres résorbés sous
+# #62 reviennent en écart (`REVENUES_45`). Six chiffres sont sans objet (`SANS_OBJET_45`) : les frontières en ν_H
+# et h de l'instabilité 17 (rayon de la lecture (a) sous 1 sur [0,3 ; 1] ; « sans objet », M34), les périodes de la
+# branche ×2 (racines réelles) et les périodes de la lecture (a) (racine réelle à θ_H = 0,8). La frontière de la
+# marge conjointe, 2,7826, est cherchée sur `BORNES_MARGE` = [1 ; 3] (décision du mainteneur du 17/11/2026) et reste
+# en écart chiffré (déjà en écart sous #55). Les deux « écarts à 1 de la racine réelle » de `SANS_OBJET_62`
+# redeviennent mesurables (racine réelle sous 1) et restent en écart.
+EN_ATTENTE_DE_REPUBLICATION_45 = frozenset(
+    {f"salaires_prix.rayon.m{m}" for m in ("0.5", "0.6", "0.7", "0.8")}
+    | {"salaires_prix.rayon.psi×2.min", "salaires_prix.rayon.psi×2.max", "salaires_prix.rayon.marge_constante.m0.6",
+       "socle.marge_conjointe.x2.baisse.periode"})
+REVENUES_45 = RESORBEES_62
+SANS_OBJET_45 = frozenset({
+    "instabilite17.frontiere_h",
+    "instabilite17.frontiere_nu_H",
+    "menages_inflation.a.periode.max",
+    "menages_inflation.a.periode.min",
+    "socle.marge_conjointe.x2.baisse.periode",
+    "socle.marge_conjointe.x2.hausse.periode",
+})
+NON_REPRODUITS_ATTENDUS = ((frozenset({"instabilite17.a.n_a4.hausse"} | {
     f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)}
 ) | EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55 | EN_ATTENTE_DE_REPUBLICATION_130
-    | EN_ATTENTE_DE_REPUBLICATION_62) - RESORBEES_62
-ECARTS_ATTENDUS = NON_REPRODUITS_ATTENDUS - SANS_OBJET_62
+    | EN_ATTENTE_DE_REPUBLICATION_62) - RESORBEES_62) | REVENUES_45 | EN_ATTENTE_DE_REPUBLICATION_45
+ECARTS_ATTENDUS = NON_REPRODUITS_ATTENDUS - SANS_OBJET_45
 
 
 def test_ensemble_des_ecarts_fige(maquette):
-    """Liste exacte : 74 chiffres non reproduits sur 148 (#92, #55, #130, #62), dont 72 en écart et 2 sans objet
-    (`SANS_OBJET_62`)."""
+    """Liste exacte : 85 chiffres non reproduits sur 148 (#92, #55, #130, #62, #45), dont 79 en écart et 6 sans
+    objet (`SANS_OBJET_45`)."""
     r = maquette.calculer()
     assert not EN_ATTENTE_DE_REPUBLICATION_62 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
                                                   | EN_ATTENTE_DE_REPUBLICATION_130)
     assert RESORBEES_62 <= EN_ATTENTE_DE_REPUBLICATION_92 and SANS_OBJET_62 <= EN_ATTENTE_DE_REPUBLICATION_55
-    assert len(NON_REPRODUITS_ATTENDUS) == 74 and len(ECARTS_ATTENDUS) == 72
+    assert not EN_ATTENTE_DE_REPUBLICATION_45 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
+                                                  | EN_ATTENTE_DE_REPUBLICATION_130 | EN_ATTENTE_DE_REPUBLICATION_62)
+    assert SANS_OBJET_45 <= NON_REPRODUITS_ATTENDUS and not SANS_OBJET_45 & SANS_OBJET_62
+    assert len(NON_REPRODUITS_ATTENDUS) == 85 and len(ECARTS_ATTENDUS) == 79
     assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == NON_REPRODUITS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
-    assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_62
+    assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_45
+
+
+# Mesures mises en cache qui lisent `BASE` à l'appel (lecture du module, 17/11/2026) : à vider quand `BASE` est
+# remplacée. Les autres caches du module sont indexés par des paramètres complets (`etat_socle`, `carte_socle`,
+# `lectures`) ou ne lisent pas la table (`_paragraphes`) ; `test_caches_lisant_la_table_recenses` tient la liste.
+CACHES_LISANT_BASE = ("carte_offre", "carte_investissement", "carte_menages", "grille_socle", "complements_socle",
+                      "marge_conjointe", "frontiere_marge", "phi_star", "variantes_F")
+CACHES_INDEXES_PAR_LES_PARAMETRES = ("etat_socle", "carte_socle", "lectures", "_paragraphes")
+
+
+def test_caches_lisant_la_table_recenses(maquette):
+    """Chaque fonction mise en cache du module est classée : lit `BASE` à l'appel, ou indexée par ses paramètres."""
+    caches = {nom for nom, f in vars(maquette).items() if callable(f) and hasattr(f, "cache_clear")}
+    assert caches == set(CACHES_LISANT_BASE) | set(CACHES_INDEXES_PAR_LES_PARAMETRES)
+
+
+def _base_remplacee(maquette, monkeypatch, **champs):
+    """Remplace `BASE` de la maquette et vide, avant et après le test, chaque mesure mise en cache qui lit `BASE` à
+    l'appel (`CACHES_LISANT_BASE`). Réserve : les défauts `lambda_w=BASE.lambda_w` de `carte_offre` et
+    `nu_H=BASE.nu_H` de `carte_menages` sont figés à l'import ; aucun test sous ces fixtures n'appelle ces cartes."""
+    caches = [getattr(maquette, nom) for nom in CACHES_LISANT_BASE]
+    for c in caches:
+        c.cache_clear()
+    monkeypatch.setattr(maquette, "BASE", dataclasses.replace(maquette.BASE, **champs))
+    yield maquette
+    monkeypatch.undo()
+    for c in caches:
+        c.cache_clear()
 
 
 @pytest.fixture
 def a_nu_H_un(maquette, monkeypatch):
-    """Maquette sur la table d'avant #62 (ν_H = 1 ; état E2, ϑ = 0,15) : les propriétés de la branche ×2 sans a_I y
-    sont construites (à ν_H = 1,1, cette branche sort de la région stable du régime de hausse)."""
-    monkeypatch.setattr(maquette, "BASE", dataclasses.replace(maquette.BASE, nu_H=1.0))
-    return maquette
+    """Maquette sur la table d'avant #62 et #45 (ν_H = 1, λ_w = 1 ; état E2, ϑ = 0,15) : les propriétés de la branche
+    ×2 sans a_I y sont construites (à ν_H = 1,1 et λ_w = 1, cette branche sort de la région stable du régime de
+    hausse ; à λ_w = 0,18, ses racines (c) sont réelles dans les deux régimes)."""
+    yield from _base_remplacee(maquette, monkeypatch, nu_H=1.0, lambda_w=1.0)
 
 
-def test_branche_x2_sans_a_I_explosive_en_hausse_a_la_table_calibree(maquette):
-    """À la table calibrée (ν_H = 1,1, #62), la frontière du régime de hausse est sous 2 : la lecture (c) de la
+@pytest.fixture
+def a_lambda_w_un(maquette, monkeypatch):
+    """Maquette sur la table d'avant #45 (λ_w = 1, ν_H = 1,1 ; état E3) : les propriétés de la frontière de la marge
+    conjointe et de la branche ×2 sans a_I construites au rang 6 (#62) y sont gardées."""
+    yield from _base_remplacee(maquette, monkeypatch, lambda_w=1.0)
+
+
+def test_branche_x2_sans_a_I_explosive_en_hausse_avant_lambda_w(a_lambda_w_un):
+    """À ν_H = 1,1 et λ_w = 1 (#62, avant #45), la frontière du régime de hausse est sous 2 : la lecture (c) de la
     branche ×2 en hausse, à a_I ×0,001 et ×0,01, est une paire complexe de module > 1 ; l'écart à 1 de la racine
     réelle est sans objet (None), jamais une valeur silencieuse."""
-    assert maquette.BASE.nu_H == 1.1 and maquette.frontiere_marge("hausse") < 2.0
+    maquette = a_lambda_w_un
+    assert maquette.BASE.nu_H == 1.1 and maquette.BASE.lambda_w == 1.0
+    assert maquette.frontiere_marge("hausse") < 2.0
     for f_aI in (1e-3, 1e-2):
         l = maquette.lectures(maquette._ensemble_sans_aI(f_aI), "hausse")
         assert maquette.nature_racine(l.suivante)[0] == "complexe" and l.rayon_c > 1.0
         assert maquette.ecart_racine_reelle(f_aI) is None
 
 
+def test_branche_x2_sans_a_I_racine_reelle_a_la_table_calibree(maquette):
+    """À la table calibrée (λ_w = 0,18, #45), la frontière du régime de hausse revient au-delà de 2 (2,7826) : la
+    lecture (c) de la branche ×2 sans a_I est une racine réelle positive sous 1 dans les deux régimes, à a_I ×0,001
+    et ×0,01, et son écart à 1 est mesurable (8,61e−6 et 8,69e−5, à peu près proportionnel à a_I)."""
+    assert maquette.BASE.lambda_w == 0.18 and maquette.BASE.nu_H == 1.1
+    assert round(maquette.frontiere_marge("hausse"), 4) == 2.7826
+    for f_aI in (1e-3, 1e-2):
+        for regime in ("hausse", "baisse"):
+            l = maquette.lectures(maquette._ensemble_sans_aI(f_aI), regime)
+            assert maquette.nature_racine(l.suivante)[0] == "réelle positive" and l.rayon_c < 1.0
+    e3, e2 = maquette.ecart_racine_reelle(1e-3), maquette.ecart_racine_reelle(1e-2)
+    assert 0 < e3 < e2 < 1e-3 and 9 < e2 / e3 < 11
+
+
 def test_ecart_a_1_de_la_racine_reelle_proportionnel_a_a_I(a_nu_H_un):
-    """Branche ×2 sans a_I, régime de hausse, à ν_H = 1 (`a_nu_H_un`) : la lecture (c) est une racine réelle sous 1
-    dont l'écart à 1 est à peu près proportionnel à a_I (a_I ÷ 1000 et ÷ 100) ; en régime de baisse, la lecture (c)
-    est une paire."""
+    """Branche ×2 sans a_I, régime de hausse, à ν_H = 1 et λ_w = 1 (`a_nu_H_un`) : la lecture (c) est une racine
+    réelle sous 1 dont l'écart à 1 est à peu près proportionnel à a_I (a_I ÷ 1000 et ÷ 100) ; en régime de baisse,
+    la lecture (c) est une paire."""
     maquette = a_nu_H_un
     e3, e2 = maquette.ecart_racine_reelle(1e-3), maquette.ecart_racine_reelle(1e-2)
     assert 0 < e3 < e2 < 1e-3
@@ -676,9 +754,44 @@ def test_couverture_phi(maquette):
     assert maquette.doublement(0.999) is None
 
 
-def test_marge_conjointe_est_une_frontiere(maquette):
+def test_marge_conjointe_au_dela_de_2_a_la_table_calibree(maquette):
+    """À la table calibrée (λ_w = 0,18, #45), la lecture (c) de l'ensemble (β, a_π, η_r) reste sous 1 sur [1 ; 2]
+    (0,99746 à ×1, 0,99719 à ×2) et passe 1 à 2,7826, égale à la frontière du régime de hausse : recherchée sur
+    `BORNES_MARGE` = [1 ; 3] (décision du mainteneur du 17/11/2026), elle est publiée chiffrée, en écart. Les
+    racines (c) à ×2 sont réelles positives sous 1, sans période."""
+    m = maquette.marge_conjointe()
+    assert maquette.BORNES_MARGE == (1.0, 3.0)
+    assert maquette.rayon_c(maquette._ensemble(1.0)) < 1 and maquette.rayon_c(maquette._ensemble(2.0)) < 1
+    assert round(m["facteur"], 4) == round(maquette.frontiere_marge("hausse"), 4) == 2.7826
+    for x in m["x2"].values():
+        assert x["nature"] == "réelle positive" and x["periode"] is None and x["rayon"] < 1
+    assert max(x["rayon"] for x in m["x2"].values()) == maquette.rayon_c(maquette._ensemble(2.0))
+    c = {c.ident: c for c in maquette.releve()}["socle.marge_conjointe.facteur"]
+    assert maquette.evaluer(c, maquette.lire_spec())["verdict"] == "écart"
+
+
+def test_frontiere_ou_aucune(maquette):
+    """`frontiere_ou_aucune` : la frontière de `frontiere` si le rayon passe 1 sur l'intervalle ; sans objet (None)
+    si le rayon, fini, est sous 1 aux deux bornes (stable sur l'intervalle) ; erreur explicite s'il est au-dessus de
+    1 aux deux bornes (instable sur tout l'intervalle) ; un rayon non fini ou égal à 1 aux bornes reste refusé
+    (intervalle non encadrant), jamais converti en « sans objet »."""
+    assert maquette.frontiere_ou_aucune(lambda x: 0.5 + x, 0.0, 1.0) == pytest.approx(0.5, abs=1e-12)
+    assert maquette.frontiere_ou_aucune(lambda x: 0.5, 0.0, 1.0) is None
+    with pytest.raises(ValueError, match="instable sur tout l'intervalle"):
+        maquette.frontiere_ou_aucune(lambda x: 1.5, 0.0, 1.0)
+    for rayon in (math.nan, math.inf, 1.0):
+        with pytest.raises(ValueError, match="non encadrant"):
+            maquette.frontiere_ou_aucune(lambda x, rayon=rayon: rayon, 0.0, 1.0)
+
+
+def test_marge_conjointe_est_une_frontiere(a_lambda_w_un):
+    """À λ_w = 1 (`a_lambda_w_un`, avant #45), la frontière de la marge conjointe est dans `BORNES_MARGE` ; la
+    bissection sur [1 ; 3] la rend égale, à 1e−12 près, à celle sur [1 ; 2], intervalle d'avant le 17/11/2026."""
+    maquette = a_lambda_w_un
     m = maquette.marge_conjointe()
     f = m["facteur"]
+    sur_1_2 = maquette.frontiere(lambda x: maquette.rayon_c(maquette._ensemble(x)), 1.0, 2.0)
+    assert abs(f - sur_1_2) <= 1e-12 and round(f, 4) == 1.7013
     base, ens = maquette.parametres_socle(0.02), maquette._ensemble(1.5)
     modifies = {c.name for c in dataclasses.fields(base) if getattr(base, c.name) != getattr(ens, c.name)}
     assert modifies == set(maquette.GAINS_ENSEMBLE) == {"beta", "a_pi", "eta_r"}
@@ -692,11 +805,11 @@ def test_frontiere_de_la_marge_en_regime_de_hausse(maquette):
     """La frontière du régime de hausse sépare la lecture (c) de ce régime de part et d'autre de 1, et n'est pas
     en deçà de la frontière du pire des deux régimes ; recherchée sur `BORNES_MARGE_HAUSSE` = [1 ; 3] (décision du
     mainteneur du 17/11/2026, #130 : à ϑ = 0,15 et ν_H = 1 elle dépasse 2 ; à ν_H = 1,1, #62, elle revient
-    à 1,9693)."""
+    à 1,9693 ; à λ_w = 0,18, #45, elle vaut 2,7826)."""
     f_h = maquette.frontiere_marge("hausse")
-    assert maquette.BORNES_MARGE_HAUSSE == (1.0, 3.0) and maquette.BORNES_MARGE == (1.0, 2.0)
+    assert maquette.BORNES_MARGE_HAUSSE == (1.0, 3.0) and maquette.BORNES_MARGE == (1.0, 3.0)
     assert maquette.BORNES_MARGE_HAUSSE[0] < f_h < maquette.BORNES_MARGE_HAUSSE[1]
-    assert round(f_h, 4) == 1.9693
+    assert round(f_h, 4) == 2.7826
     rayon = lambda f: maquette.lectures(maquette._ensemble(f), "hausse").rayon_c  # noqa: E731
     assert rayon(f_h - 1e-6) < 1 < rayon(f_h + 1e-6)
     assert f_h >= maquette.marge_conjointe()["facteur"]

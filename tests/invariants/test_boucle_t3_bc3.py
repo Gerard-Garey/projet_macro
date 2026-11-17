@@ -513,6 +513,12 @@ def cout_en_chomage(essai, controle, delta, nb_pas):
     return s_u / delta, s_y / delta
 
 
+# Mention du coût publié (décision M34, 17/11/2026) : λ_w est calibrée (0,18, #45), λ_e, a_π et a_I
+# ne le sont pas (#163, avant la démonstration J4) ; le coût, × 5,6 à λ_e = 0,2 (2,45 → 13,6
+# années-point par point), n'est pas un résultat calibré.
+NON_CALIBRE = "non calibré, #163"
+
+
 def cout_analytique(pi, lambda_e):
     """D3 : valeur analytique 1/(λ_e λ_w β (1 + π*)), λ_w et β lus dans la table du bloc 3."""
     travail = PARAMETRES_DE_REFERENCE.travail
@@ -524,7 +530,8 @@ def test_publie_cout_en_chomage_d_un_choc_d_anticipations(bancs, socle, publier)
     d'un choc d'anticipations de ± 1 point (ex-« ratio de sacrifice » de P87), années-point de
     chômage par point de π^e_0, écart au contrôle apparié, aux trois λ_e et aux trois π*, sur
     720 pas, et sur 2 160 pas à λ_e = 0,1 (troncature) ; valeur analytique
-    1/(λ_e λ_w β (1 + π*)) à côté ; variante en production réalisée N5."""
+    1/(λ_e λ_w β (1 + π*)) à côté ; variante en production réalisée N5. Publié « non calibré,
+    #163 » (M34 : λ_e, a_π et a_I non calibrés)."""
     for pi in socle.POINTS_PI:
         lignes = []
         for lam in LAMBDAS:
@@ -548,7 +555,7 @@ def test_publie_cout_en_chomage_d_un_choc_d_anticipations(bancs, socle, publier)
                     f"{production['π^e_0 − 1 point']:.4f}")
         publier(f"Coût en chômage d'un choc d'anticipations de ± 1 point (D3), années-point de "
                 f"chômage par point de π^e_0, écart au contrôle apparié, π* = {100 * pi:g} % "
-                f"({ETIQUETTE_SANS_TAUX} ; {ETIQUETTE})",
+                f"({NON_CALIBRE} ; {ETIQUETTE_SANS_TAUX} ; {ETIQUETTE})",
                 lignes + ["sans seuil ; 720 pas tronquent la queue à λ_e = 0,1"])
 
 
