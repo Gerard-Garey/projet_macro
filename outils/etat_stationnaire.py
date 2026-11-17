@@ -2310,13 +2310,13 @@ VALEURS_PUBLIEES += tuple(
     ("sec:finances_publiques-impots", "racine parasite à 0 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.0), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 2 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.02), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 10 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.10), "D"),
-    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,110",
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,101",
      lambda c: 100 * c.alpha()["beta_theta_G"], "D"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "0,487",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "0,433",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.0], "D"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "-0,434",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "-0,191",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.10], "D"),
-    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "0,921", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "0,624", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
      "D"),
 )
 
@@ -2530,7 +2530,7 @@ VALEURS_PUBLIEES += tuple(
      lambda c: _canal_ecarts_nominaux(c, 4.0), "D"),
     ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %", "0,8451",
      lambda c: 100 * c.r_alpha(0.03, 4.0), "D"),
-    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %", "0,9188", lambda c: 100 * c.r_alpha(0.03, 8.0), "D"),
+    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %", "0,9320", lambda c: 100 * c.r_alpha(0.03, 8.0), "D"),
 ) + tuple(
     ("sec:finances_publiques-stationnaire", f"{nom} à {round(100 * pi)} %, ν_G = 1,15{unite}", pub,
      (lambda c, pi=pi, cle=cle: c.v(pi=pi, nu=_NU)[cle]), "A")
@@ -2571,8 +2571,8 @@ VALEURS_PUBLIEES += tuple(
 ) + tuple(
     ("fiche 9 § 3.C ; § 9.6", f"dette consolidée à {round(100 * pi)} %, n_a = {na}", pub,
      (lambda c, pi=pi, na=na: c.v(pi=pi, na=na, nu=_NU)["dette_consolidee"]), "A")
-    for (pi, na), pub in (((0.0, 4), "0,09880"), ((0.10, 4), "0,51172"), ((0.0, 52), "0,09886"),
-                          ((0.10, 52), "0,50952"))
+    for (pi, na), pub in (((0.0, 4), "0,20440"), ((0.10, 4), "0,59499"), ((0.0, 52), "0,20446"),
+                          ((0.10, 52), "0,59305"))
 ) + tuple(
     ("tab:etat-stationnaire", f"{nom} à {round(100 * pi)} %", pub,
      (lambda c, pi=pi, cle=cle, nu=nu: c.v(pi=pi, nu=nu)[cle]), "A")
