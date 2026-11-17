@@ -81,15 +81,21 @@ def ecart(x, reference):
 
 
 def test_table_egale_aux_defauts_du_script(stationnaire):
-    """H3.3 : valeurs indicatives de la table égales aux défauts de `Parametres` du script ;
-    unités, sources et étiquettes de l'annotation du 14/11/2026 (rang 1b de J3-d1), point 2."""
+    """H3.3 : valeurs de la table égales aux défauts de `Parametres` du script ; unités et
+    étiquettes de l'annotation du 14/11/2026 (rang 1b de J3-d1), point 2 ; sources de la décision
+    M34 (#62 ; ν_H = 1,1 sur F.2/B.6g d'Eurostat, λ_H = 0,4 choix déclaré dans la fourchette de
+    Parker et al.) : source du script, suivie des renvois propres à la table."""
     defauts = stationnaire.Parametres()
     assert TABLE.nu_H == defauts.nu_H and TABLE.lambda_H == TauxDeFlux(defauts.lambda_H)
     nu, lam = table_menages.NU_H, table_menages.LAMBDA_H
     assert (nu.unite, nu.etiquettes) == ("années", ("eq:menages-richesse-visee",))
     assert (lam.unite, lam.etiquettes) == ("par an, taux de flux",
                                           ("eq:menages-plan-consommation",))
-    assert "M27" in nu.source and "#62" in nu.source and "M27" in lam.source
+    assert TABLE.nu_H == 1.1 and TABLE.lambda_H.valeur == 0.4
+    assert nu.source == stationnaire.DECLARATIONS["nu_H"][1] + " ; M27"
+    assert lam.source == stationnaire.DECLARATIONS["lambda_H"][1] + " ; M27 ; unité P65"
+    assert "F.2" in nu.source and "B.6g" in nu.source and "décision M34" in nu.source
+    assert "16684" in lam.source and "décision M34" in lam.source
 
 
 @pytest.mark.parametrize("variation, motif", [
@@ -117,11 +123,12 @@ def test_bornes_de_la_table_admises():
 
 def test_coefficient_de_richesse_refuse_au_chargement_de_l_ensemble():
     """`sec:menages-conditions` : coefficient de richesse λ_H/n_a + ν_H λ_H π^{∗,pas} − γ^e ≤ 0
-    refusé à la construction de l'ensemble ; 0,368 par an à la calibration (n_a fois le
-    coefficient) ; frontière en π* entre 85,11 % (admis) et 85,12 % (refusé) à λ_H = 0,4, ν_H = 1
-    an (`sec:menages-conditions` : π* < 85,12 % par an, frontière mesurée à 85,1175 %), et entre
-    24,94 % et 24,95 % à λ_H = 0,2 (frontière mesurée à 24,9425 %)."""
-    assert round(N_A * coefficient_de_richesse(PARAMETRES_DE_REFERENCE), 3) == 0.368
+    refusé à la construction de l'ensemble ; 0,369 par an à la calibration (n_a fois le
+    coefficient) ; frontière en π* entre 93,18 % (admis) et 93,19 % (refusé) à λ_H = 0,4,
+    ν_H = 1,1 an (frontière mesurée à 93,1884 %), et entre 25,64 % et 25,65 % à λ_H = 0,2
+    (frontière mesurée à 25,6496 %). Avant M34 (#62), à ν_H = 1 : 0,368, 85,1175 % et 24,9425 %,
+    publiés par `sec:menages-conditions` jusqu'au passage de `docwriter` (règle 9)."""
+    assert round(N_A * coefficient_de_richesse(PARAMETRES_DE_REFERENCE), 3) == 0.369
     p = PARAMETRES_DE_REFERENCE
 
     def avec(pi=None, lambda_H=None, g_pr=None):
@@ -133,13 +140,13 @@ def test_coefficient_de_richesse_refuse_au_chargement_de_l_ensemble():
         if g_pr is not None:
             champs["production"] = varier(p.production, g_pr=g_pr)
         return dataclasses.replace(p, **champs)
-    assert coefficient_de_richesse(avec(pi=0.8511)) > 0.0
+    assert coefficient_de_richesse(avec(pi=0.9318)) > 0.0
     with pytest.raises(DefautDeDeclaration, match="coefficient de richesse"):
-        avec(pi=0.8512)
-    # λ_H = 0,2 : frontière à 24,94 % ; une croissance réelle forte rend le coefficient négatif.
-    assert coefficient_de_richesse(avec(pi=0.2494, lambda_H=0.2)) > 0.0
+        avec(pi=0.9319)
+    # λ_H = 0,2 : frontière à 25,65 % ; une croissance réelle forte rend le coefficient négatif.
+    assert coefficient_de_richesse(avec(pi=0.2564, lambda_H=0.2)) > 0.0
     with pytest.raises(DefautDeDeclaration, match="coefficient de richesse"):
-        avec(pi=0.2495, lambda_H=0.2)
+        avec(pi=0.2565, lambda_H=0.2)
     with pytest.raises(DefautDeDeclaration, match="coefficient de richesse"):
         avec(g_pr=0.5)
 
@@ -155,7 +162,8 @@ def test_etat_stationnaire_par_appel_direct(stationnaire, pi, n_a):
     """Fiche 5, § 9.6, « État stationnaire » (classe (a) pour H2 à H5) : sur l'ouverture du
     script (π̄ = π*, ν_G = 1,15), YD^e = YD, V* = V_H, C^règle = C^plan = C et
     V_H/(n_a YD^HS) = ν_H, à 1e−10 relatif ; valeurs de contrôle de V/(n_a YD) lues sur le
-    script, égales à celles de la fiche à la sixième décimale."""
+    script à ν_H = 1,1 (M34, #62 ; égales au § 5.5 de `docs/blocs/calibration.md` à la sixième
+    décimale ; la fiche 5 les publie à ν_H = 1 jusqu'au passage de `docwriter`)."""
     par = dataclasses.replace(stationnaire.Parametres(), pi_cible=pi, n_a=n_a, nu_G=1.15)
     stationnaire.controler_domaine(par)
     e = stationnaire.etat_stationnaire(par)
@@ -167,9 +175,9 @@ def test_etat_stationnaire_par_appel_direct(stationnaire, pi, n_a):
     assert r["C_plan"] == r["C_regle"]  # bornes inactives : plafond et plancher sans effet
     hs = r["V_H"] / (n_a * (r["YD_e"] - r["pis"] * r["V_H"]))
     assert ecart(hs, par.nu_H) <= SEUIL_ETAT_STATIONNAIRE
-    controle = {(0.02, 4): 0.980535, (0.02, 12): 0.980566, (0.02, 52): 0.980578,
-                (0.10, 4): 0.912030, (0.10, 12): 0.912667, (0.10, 52): 0.912911,
-                (0.0, 4): 1.0, (0.0, 12): 1.0, (0.0, 52): 1.0}[(pi, n_a)]
+    controle = {(0.02, 4): 1.076493, (0.02, 12): 1.076531, (0.02, 52): 1.076545,
+                (0.10, 4): 0.994485, (0.10, 12): 0.995242, (0.10, 52): 0.995532,
+                (0.0, 4): 1.1, (0.0, 12): 1.1, (0.0, 52): 1.1}[(pi, n_a)]
     assert round(r["V_H"] / (n_a * r["YD_e"]), 6) == controle
 
 
@@ -244,8 +252,9 @@ def test_impots_doubles_sur_le_grand_livre_et_budget_du_tour_suivant():
     """Fiche 5, § 9.6, « Bornes » (c) (§ 3.N-6) : impôts des ménages doublés pendant un tour (16
     → 32), D_H = 1 200, WB = 80, budget de 96, intérêts de 3 : D_H vaut 1 280, 1 184 puis 1 155
     après les phases 4, 5 et 6 (à 1e−12 × S^H) ; le budget du tour suivant baisse de
-    ΔT_H (α_Y Γ^e + λ_H/n_a − γ^e + ν_H λ_H π^{∗,pas}) = 10,12 pour ΔT_H = 16, à 1e−12 relatif
-    (appel direct de H2 à H5, YD_{t−1} et D_H d'ouverture abaissés de ΔT_H)."""
+    ΔT_H (α_Y Γ^e + λ_H/n_a − γ^e + ν_H λ_H π^{∗,pas}) = 9,48 pour ΔT_H = 16 à ν_H = 1,1 (10,12
+    à ν_H = 1, avant M34), à 1e−12 relatif (appel direct de H2 à H5, YD_{t−1} et D_H d'ouverture
+    abaissés de ΔT_H)."""
     interets = par_pas(TauxDeFlux(0.03)) * 1200.0
     gl, d_h = _derouler_le_cas({"5": {"WB": 80.0}, "1": {"C": 96.0},
                                 "10": {"iD_DH": interets}, "7": {"T_H": 32.0}})
@@ -261,7 +270,7 @@ def test_impots_doubles_sur_le_grand_livre_et_budget_du_tour_suivant():
                       + nu * lam * pis)
     baisse = sans_choc["C_plan"] - avec_choc["C_plan"]
     assert ecart(baisse, attendu) <= SEUIL_IMPOTS_DOUBLES
-    assert round(baisse, 2) == 10.12
+    assert round(baisse, 2) == 9.48
 
 
 # --------------------------------------------------------------------------
@@ -311,25 +320,26 @@ def test_plan_insensible_au_registre_de_l_indice():
 def test_changement_de_cible_releve_le_budget(stationnaire):
     """Fiche 5, § 9.6, « Effet d'un changement de cible » (réserve 9) : appel direct, états
     d'ouverture fixés à l'état résolu à 2 %, π* passant de 2 % à 1 % : le plan monte, d'une
-    ampleur dans [0,3 % ; 0,8 %] (mesure de la fiche : +0,5543 %)."""
+    ampleur dans [0,3 % ; 0,8 %] (+0,5750 % à ν_H = 1,1 ; +0,5543 % à ν_H = 1, mesure de la
+    fiche 5, avant M34)."""
     par = dataclasses.replace(stationnaire.Parametres(), pi_cible=0.02, nu_G=1.15)
     o = stationnaire.ouverture(stationnaire.etat_stationnaire(par), par)
     a_2 = plan(o["D_H"], o["B_H"], o["YD_m1"], 0.02)["C_plan"]
     a_1 = plan(o["D_H"], o["B_H"], o["YD_m1"], 0.01)["C_plan"]
     hausse = a_1 / a_2 - 1.0
     assert 0.003 <= hausse <= 0.008
-    assert round(100 * hausse, 4) == 0.5543
+    assert round(100 * hausse, 4) == 0.5750
 
 
 def test_bornes_plafond_et_plancher_par_appel_direct(stationnaire):
     """Fiche 5, § 9.6, « Bornes » (a) et (b), exacts : (a) plafond inactif à l'état résolu,
-    marge de 12,24 mois de consommation à 2 % ; D_H = 0,5 C^règle donne C^plan = D_H ;
+    marge de 13,49 mois de consommation à 2 % à ν_H = 1,1 (12,24 à ν_H = 1, avant M34) ; D_H = 0,5 C^règle donne C^plan = D_H ;
     (b) YD_{t−1} = −YD̄ donne C^plan = 0."""
     par = dataclasses.replace(stationnaire.Parametres(), pi_cible=0.02, nu_G=1.15)
     o = stationnaire.ouverture(stationnaire.etat_stationnaire(par), par)
     r = plan(o["D_H"], o["B_H"], o["YD_m1"], 0.02)
     assert r["C_plan"] == r["C_regle"] < o["D_H"]
-    assert round(o["D_H"] / r["C_plan"], 2) == 12.24  # mois de consommation (n_a = 12)
+    assert round(o["D_H"] / r["C_plan"], 2) == 13.49  # mois de consommation (n_a = 12)
     demi = 0.5 * r["C_regle"]
     assert bloc.budget_de_consommation(demi, r["C_regle"]) == demi
     plancher = plan(o["D_H"], o["B_H"], -o["YD_m1"], 0.02)

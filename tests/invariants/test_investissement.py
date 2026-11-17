@@ -808,15 +808,16 @@ def test_endettement_sous_un_taux_releve_de_deux_points(endettement, publier):
     assert servis > 0 and pire_levier <= SEUIL_LEVIER
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "#139 : critère « Endettement » de la fiche 6 (dépôts au PIB à 1e−6 après 2 160 pas) non "
-    "tenu sur le banc (b-x) sous i_L + 2 points permanent, convergence oscillante lente vers la "
-    "forme fermée (P140) ; critère non déplacé, correction prospective réservée au mainteneur"))
 def test_endettement_depots_sur_leur_forme_fermee_apres_2160_pas(endettement):
     """Fiche 6, § 9.6, « Endettement » (7 (d)), partie dépôts : D_F d'ouverture/(n_a PIB du pas)
     (convention de B12) sur sa forme fermée, ν_F p v^e/(p v + ΔIN) du script, qui ne lit pas le
-    taux, à 1e−6 relatif après 2 160 pas. Non tenu (P140, issue #139) : échec attendu strict ; la
-    correction prospective proposée par `macro` est réservée au mainteneur."""
+    taux, à 1e−6 relatif après 2 160 pas. Non tenu jusqu'à ν_H = 1 (P140, issue #139 ; écart
+    −6,2e−6 à ϑ = 0,15) ; tenu à ν_H = 1,1 (M34, #62 : −9,0e−7 au pas 2 159), succès inattendu
+    dont la marque d'échec attendu est retirée selon la règle des tests ; le critère n'est pas
+    déplacé (#139). Le passage tient à la phase de l'oscillation, non à une convergence : sur une
+    sonde de 2 400 pas (17/11/2026), |écart| ≤ 1e−6 aux seuls pas 0, 510, 1 553 à 1 562 et 2 103 à
+    2 162 ; −8,96e−7 au pas 2 159 (marge de 10 %) ; |écart| de 9,3e−7 à 4,4e−6 sur les pas 2 160 à
+    2 399. À remesurer au commit de λ_w (#45), qui change la trajectoire."""
     assert ecart(endettement["depots"], endettement["forme"]) <= SEUIL_DEPOTS
 
 

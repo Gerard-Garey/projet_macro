@@ -252,22 +252,73 @@ EN_ATTENTE_DE_REPUBLICATION_55 = frozenset({
 # de `docwriter` (règle 9).
 EN_ATTENTE_DE_REPUBLICATION_130 = frozenset({"socle.marge_conjointe.x2.a_I÷1000",
                                              "socle.marge_conjointe.facteur.hausse"})
-ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"} | {
+#
+# #62 (ν_H = 1 → 1,1, M34) : ν_H déplace l'état stationnaire autour duquel les cartes sont linéarisées. Quatre chiffres
+# passent en écart (rayon des ménages θ_H = 1 en baisse ; périodes minimales des lectures (a) et hs_glissement_pas ;
+# période de la paire de la branche ×2 en hausse), trois reviennent dans l'arrondi publié (rayons au coût moyen
+# pondéré, θ_H = 1 ; période maximale de hs_glissement_pas : liste exacte `RESORBEES_62`). La frontière du régime de
+# hausse revient sous 2 (2,00615 → 1,96934) : la branche ×2 sort de la région stable de ce régime, et la lecture (c)
+# en hausse à a_I ×0,001 et ×0,01 est une paire complexe de module > 1, non plus une racine réelle sous 1 ; ses deux
+# « écarts à 1 de la racine réelle », déjà en écart sous #55, deviennent sans objet (`SANS_OBJET_62`).
+EN_ATTENTE_DE_REPUBLICATION_62 = frozenset({
+    "menages.rayon.theta1.0.baisse",
+    "menages_inflation.a.periode.min",
+    "menages_inflation.hs_glissement_pas.periode.min",
+    "socle.marge_conjointe.x2.hausse.periode",
+})
+RESORBEES_62 = frozenset({
+    "menages.rayon.theta1.0.cout_moyen.baisse",
+    "menages.rayon.theta1.0.cout_moyen.hausse",
+    "menages_inflation.hs_glissement_pas.periode.max",
+})
+SANS_OBJET_62 = frozenset({
+    "socle.marge_conjointe.x2.a_I÷100.hausse.ecart",
+    "socle.marge_conjointe.x2.a_I÷1000.hausse.ecart",
+})
+NON_REPRODUITS_ATTENDUS = (frozenset({"instabilite17.a.n_a4.hausse"} | {
     f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)}
 ) | EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55 | EN_ATTENTE_DE_REPUBLICATION_130
+    | EN_ATTENTE_DE_REPUBLICATION_62) - RESORBEES_62
+ECARTS_ATTENDUS = NON_REPRODUITS_ATTENDUS - SANS_OBJET_62
 
 
 def test_ensemble_des_ecarts_fige(maquette):
-    """Liste exacte : 73 chiffres en écart sur 148 (#92, #55, #130), aucun sans objet."""
+    """Liste exacte : 74 chiffres non reproduits sur 148 (#92, #55, #130, #62), dont 72 en écart et 2 sans objet
+    (`SANS_OBJET_62`)."""
     r = maquette.calculer()
-    assert len(ECARTS_ATTENDUS) == 73
-    assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == ECARTS_ATTENDUS
+    assert not EN_ATTENTE_DE_REPUBLICATION_62 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
+                                                  | EN_ATTENTE_DE_REPUBLICATION_130)
+    assert RESORBEES_62 <= EN_ATTENTE_DE_REPUBLICATION_92 and SANS_OBJET_62 <= EN_ATTENTE_DE_REPUBLICATION_55
+    assert len(NON_REPRODUITS_ATTENDUS) == 74 and len(ECARTS_ATTENDUS) == 72
+    assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == NON_REPRODUITS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
+    assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_62
 
 
-def test_ecart_a_1_de_la_racine_reelle_proportionnel_a_a_I(maquette):
-    """Branche ×2 sans a_I, régime de hausse : la lecture (c) est une racine réelle sous 1 dont l'écart à 1 est
-    à peu près proportionnel à a_I (a_I ÷ 1000 et ÷ 100) ; en régime de baisse, la lecture (c) est une paire."""
+@pytest.fixture
+def a_nu_H_un(maquette, monkeypatch):
+    """Maquette sur la table d'avant #62 (ν_H = 1 ; état E2, ϑ = 0,15) : les propriétés de la branche ×2 sans a_I y
+    sont construites (à ν_H = 1,1, cette branche sort de la région stable du régime de hausse)."""
+    monkeypatch.setattr(maquette, "BASE", dataclasses.replace(maquette.BASE, nu_H=1.0))
+    return maquette
+
+
+def test_branche_x2_sans_a_I_explosive_en_hausse_a_la_table_calibree(maquette):
+    """À la table calibrée (ν_H = 1,1, #62), la frontière du régime de hausse est sous 2 : la lecture (c) de la
+    branche ×2 en hausse, à a_I ×0,001 et ×0,01, est une paire complexe de module > 1 ; l'écart à 1 de la racine
+    réelle est sans objet (None), jamais une valeur silencieuse."""
+    assert maquette.BASE.nu_H == 1.1 and maquette.frontiere_marge("hausse") < 2.0
+    for f_aI in (1e-3, 1e-2):
+        l = maquette.lectures(maquette._ensemble_sans_aI(f_aI), "hausse")
+        assert maquette.nature_racine(l.suivante)[0] == "complexe" and l.rayon_c > 1.0
+        assert maquette.ecart_racine_reelle(f_aI) is None
+
+
+def test_ecart_a_1_de_la_racine_reelle_proportionnel_a_a_I(a_nu_H_un):
+    """Branche ×2 sans a_I, régime de hausse, à ν_H = 1 (`a_nu_H_un`) : la lecture (c) est une racine réelle sous 1
+    dont l'écart à 1 est à peu près proportionnel à a_I (a_I ÷ 1000 et ÷ 100) ; en régime de baisse, la lecture (c)
+    est une paire."""
+    maquette = a_nu_H_un
     e3, e2 = maquette.ecart_racine_reelle(1e-3), maquette.ecart_racine_reelle(1e-2)
     assert 0 < e3 < e2 < 1e-3
     assert 9 < e2 / e3 < 11
@@ -427,10 +478,29 @@ def test_verdicts_des_deux_grilles(maquette):
     assert dict(grille)[nom] == maquette.rayon_c(maquette.parametres_socle(0.02, facteurs=dict(fac)))
 
 
+# Amas des racines nulles (décision du mainteneur du 17/11/2026, rang 6 de la calibration, #62) : les racines
+# exactement nulles de J et de J_var (8 dans chacune, aux six cas) ne sont connues qu'au bruit des différences
+# finies de la jacobienne (h = 1e−6) : |z| ≤ 1,10e−7 à ν_H = 1,1 (E3), où l'appariement glouton atteint 1,10e−7
+# > `TOL_RACINE_MULTIPLE`, et ≤ 1,11e−7 à ν_H = 1 (E2, appariement 1,35e−8). Elles sont appariées par
+# multiplicité : même nombre de racines de module ≤ `SEUIL_AMAS_NUL` dans J et J_var. Seuil 1e−5 : marge de 90
+# sur le plus grand module mesuré de l'amas (1,10e−7), de 96 sous la plus petite racine non nulle (9,57e−4 à
+# π̄ = 0, 2,89e−3 à 2 %, 1,05e−2 à 10 %). L'amas compte 8 racines dans J et J_var aux six cas, à E2 comme à E3.
+# Toutes les autres racines restent appariées à `TOL_RACINE_MULTIPLE` (1e−7), avec une marge mince à π̄ = 0 : pire
+# écart 9,36e−8 (hausse) et 9,78e−8 (baisse), sur la paire 0,190 ± 0,242i et 0,188 ± 0,250i (module ≈ 0,31) ;
+# 2,0e−8 à 2 %, 5,5e−9 à 10 %. C'est du bruit des différences finies, sensible au pas : à π̄ = 0, 2,0e−8 à
+# `PAS_RELATIF` = 1e−5 et 2,6e−6 à 1e−7 (mesures du 17/11/2026, pas de la maquette inchangé, 1e−6).
+SEUIL_AMAS_NUL = 1e-5
+RACINES_DE_L_AMAS_NUL = 8
+
+
 def _retirer(brutes, variete, tol):
-    """Valeurs propres brutes qui ne s'apparient à aucune valeur propre de la variété (appariement glouton)."""
-    restantes = list(brutes)
-    for z in variete:
+    """Valeurs propres brutes qui ne s'apparient à aucune valeur propre de la variété : amas des racines nulles
+    apparié par multiplicité (`SEUIL_AMAS_NUL`), autres racines par appariement glouton à `tol`."""
+    amas_brut = sum(abs(z) <= SEUIL_AMAS_NUL for z in brutes)
+    amas_variete = sum(abs(z) <= SEUIL_AMAS_NUL for z in variete)
+    assert amas_brut == amas_variete == RACINES_DE_L_AMAS_NUL, (amas_brut, amas_variete)
+    restantes = [z for z in brutes if abs(z) > SEUIL_AMAS_NUL]
+    for z in (z for z in variete if abs(z) > SEUIL_AMAS_NUL):
         i = min(range(len(restantes)), key=lambda q: abs(restantes[q] - z))
         assert abs(restantes[i] - z) <= tol, z
         restantes.pop(i)
@@ -621,14 +691,21 @@ def test_marge_conjointe_est_une_frontiere(maquette):
 def test_frontiere_de_la_marge_en_regime_de_hausse(maquette):
     """La frontière du régime de hausse sépare la lecture (c) de ce régime de part et d'autre de 1, et n'est pas
     en deçà de la frontière du pire des deux régimes ; recherchée sur `BORNES_MARGE_HAUSSE` = [1 ; 3] (décision du
-    mainteneur du 17/11/2026, #130 : à ϑ = 0,15 elle dépasse 2). À a_I ×0,001, la lecture (c) en hausse est une
-    racine réelle, sous laquelle se trouve la paire complexe relevée à côté."""
+    mainteneur du 17/11/2026, #130 : à ϑ = 0,15 et ν_H = 1 elle dépasse 2 ; à ν_H = 1,1, #62, elle revient
+    à 1,9693)."""
     f_h = maquette.frontiere_marge("hausse")
     assert maquette.BORNES_MARGE_HAUSSE == (1.0, 3.0) and maquette.BORNES_MARGE == (1.0, 2.0)
     assert maquette.BORNES_MARGE_HAUSSE[0] < f_h < maquette.BORNES_MARGE_HAUSSE[1]
+    assert round(f_h, 4) == 1.9693
     rayon = lambda f: maquette.lectures(maquette._ensemble(f), "hausse").rayon_c  # noqa: E731
     assert rayon(f_h - 1e-6) < 1 < rayon(f_h + 1e-6)
     assert f_h >= maquette.marge_conjointe()["facteur"]
+
+
+def test_paire_sous_la_racine_reelle_a_a_I_reduit(a_nu_H_un):
+    """À ν_H = 1 (`a_nu_H_un` ; la frontière du régime de hausse y est au-delà de 2), à a_I ×0,001, la lecture (c)
+    en hausse est une racine réelle, sous laquelle se trouve la paire complexe relevée à côté."""
+    maquette = a_nu_H_un
     par = maquette._ensemble_sans_aI()
     assert par == maquette.parametres_socle(0.02, facteurs={"beta": 2.0, "a_pi": 2.0, "eta_r": 2.0, "a_I": 1e-3})
     z = maquette.lectures(par, "hausse").suivante
