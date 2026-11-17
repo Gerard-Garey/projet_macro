@@ -968,421 +968,402 @@ def test_seuil_derniere_decimale(stationnaire):
     assert not stationnaire.comparer("1,536", math.nan)[2]
 
 
-# Calibration du socle (M34) : valeurs en vigueur en écart, liste exacte des clés (section, grandeur). La
-# spécification et les fiches les publient à μ̄ = 0,25 (#92) jusqu'au passage unique de `docwriter` en fin de
-# branche (rang 9, règle 9) ; le commit `tests:` qui les retire de la liste suit le commit `docs:`. Toute autre
-# valeur reste égale à la dernière décimale publiée ; un écart qui se résorbe fait aussi échouer la batterie.
-# Chaque rang (#55, #130, #62) étend la liste ; un écart résorbé en sort par une liste exacte.
+# Calibration du socle (M34) : valeurs republiées au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a), liste exacte
+# des clés (section, grandeur), chacune avec son ancienne valeur, figée en littéral et barrée dans sa source. Ces 309
+# valeurs étaient publiées à l'état E0 (μ̄ = 0,25, ϑ = 0,10, ν_H = 1 : `ENTREES_D_ORIGINE`), et à ζ = 4 ; la table T1
+# les a déplacées au-delà de leur dernière décimale publiée. Toute autre valeur en vigueur est inchangée. Une
+# ancienne valeur ne se modifie pas sans échec (`test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine`,
+# `test_anciennes_valeurs_de_M34_barrees_dans_leur_source`).
 #
-# #55 (ζ = 4 → 8, M34) : les 12 valeurs de la mesure (α) de #80 (lecture (α), Δϱ ≠ 0 entre deux cibles), publiées à
-# ζ = 4 ; l'état stationnaire de référence ne lit pas ζ (Δϱ = 0) et ne change pas.
-EN_ATTENTE_DE_REPUBLICATION_55 = frozenset({
-    ("sec:banque_centrale-conditions", "(α) : écart de C/Y_o, point"),
-    ("sec:banque_centrale-conditions", "(α) : écart de ti, point"),
-    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point"),
-    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point"),
-    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point"),
-    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 8), point"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 0 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 1 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 3 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 4 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"),
-    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 10 %, %"),
-})
-# #92 (μ̄ = 0,25 → 0,60, M34) : 173 valeurs.
-EN_ATTENTE_DE_REPUBLICATION_92 = frozenset({
-    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"),
-    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"),
-    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 52"),
-    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 4"),
-    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 52"),
-    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point"),
-    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 10 %, % du PIB"),
-    ("sec:banque-restitution", "masse monétaire restitué(e) à 10 %"),
-    ("sec:banque-restitution", "masse monétaire restitué(e) à 2 %"),
-    ("sec:banque-restitution", "refinancement restitué(e) à 10 %"),
-    ("sec:banque-restitution", "refinancement restitué(e) à 2 %"),
-    ("sec:banque-restitution", "titres de la banque restitué(e) à 10 %"),
-    ("sec:banque-restitution", "titres de la banque restitué(e) à 2 %"),
-    ("sec:banque-stationnaire", "crédits à 0 %"),
-    ("sec:banque-stationnaire", "crédits à 10 %"),
-    ("sec:banque-stationnaire", "crédits à 2 %"),
-    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 12"),
-    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 4"),
-    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 52"),
-    ("sec:banque-stationnaire", "dette consolidée c à 0 %"),
-    ("sec:banque-stationnaire", "dette consolidée c à 10 %"),
-    ("sec:banque-stationnaire", "dette consolidée c à 2 %"),
-    ("sec:banque-stationnaire", "dette consolidée de 2 à 10 %"),
-    ("sec:banque-stationnaire", "dont fonds propres (ϑ Δl), 2 à 10 %"),
-    ("sec:banque-stationnaire", "dont richesse des ménages, 2 à 10 %"),
-    ("sec:banque-stationnaire", "dépôts des entreprises à 0 %"),
-    ("sec:banque-stationnaire", "e_Bk à 0 %"),
-    ("sec:banque-stationnaire", "e_Bk à 10 %"),
-    ("sec:banque-stationnaire", "e_Bk à 2 %"),
-    ("sec:banque-stationnaire", "masse monétaire M à 0 %"),
-    ("sec:banque-stationnaire", "masse monétaire M à 10 %"),
-    ("sec:banque-stationnaire", "masse monétaire M à 2 %"),
-    ("sec:banque-stationnaire", "refinancement à 0 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "refinancement à 0 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "refinancement à 10 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "refinancement à 10 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "refinancement à 2 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "refinancement à 2 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "richesse des ménages à 2 %"),
-    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 0 %"),
-    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 10 %"),
-    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 2 %"),
-    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "titres de la banque à 0 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "titres de la banque à 0 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "titres de la banque à 10 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "titres de la banque à 10 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "titres de la banque à 2 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "titres de la banque à 2 %, ν_G = 1,15"),
-    ("sec:banque_centrale-restitution", "refinancement restitué à 0 %"),
-    ("sec:banque_centrale-restitution", "refinancement restitué à 10 %"),
-    ("sec:banque_centrale-restitution", "refinancement restitué à 2 %"),
-    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1, % du PIB"),
-    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-impots", "dette consolidée, 10 % moins 2 %"),
-    ("sec:finances_publiques-restitution", "charge brute à 10 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-restitution", "charge brute à 2 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-restitution", "dette brute affichée à 10 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "G/PIB à 0 %, %"),
-    ("sec:finances_publiques-stationnaire", "G/PIB à 10 %, %"),
-    ("sec:finances_publiques-stationnaire", "G/PIB à 2 %, %"),
-    ("sec:finances_publiques-stationnaire", "T_H/PIB à 0 %, %"),
-    ("sec:finances_publiques-stationnaire", "T_H/PIB à 10 %, %"),
-    ("sec:finances_publiques-stationnaire", "T_H/PIB à 2 %, %"),
-    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 0 %"),
-    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 10 %"),
-    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 2 %"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 0 %"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 10 %"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 0 %"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 0 %, ν_G = 1,15"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 10 %"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 10 %, ν_G = 1,15"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 2 %"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 2 %, ν_G = 1,15"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 0 %"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 10 %"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : fonds propres de la banque"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : richesse des ménages"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : somme"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : −crédits nets"),
-    ("sec:finances_publiques-stationnaire", "déficit de Domar à 0 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "déficit de Domar à 10 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "déficit de Domar à 2 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 0 %"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 0 %, ν_G = 1,15"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 10 %"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 10 %, ν_G = 1,15"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 2 %"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 2 %, ν_G = 1,15"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "intérêts nets à 0 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "intérêts nets à 10 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "intérêts nets à 2 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "solde primaire à 10 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "solde primaire à 2 %, % du PIB"),
-    ("sec:finances_publiques-transferts", "impôt des ménages à 2 %, % du PIB"),
-    ("sec:investissement-stationnaire", "I/PIB à 10 % (C-F), %"),
-    ("sec:investissement-stationnaire", "I/PIB à 2 % (C-F), %"),
-    ("sec:investissement-stationnaire", "I/PIB, n_a = 4 (C-F), %"),
-    ("sec:investissement-stationnaire", "I/PIB, n_a = 52 (C-F), %"),
-    ("sec:investissement-stationnaire", "capital au prix courant à 10 % (C-F)"),
-    ("sec:investissement-stationnaire", "capital au prix courant à 2 % (C-F)"),
-    ("sec:investissement-stationnaire", "capital comptable à 10 % (C-F)"),
-    ("sec:investissement-stationnaire", "capital comptable à 2 % (C-F)"),
-    ("sec:investissement-stationnaire", "capital comptable, n_a = 4 (C-F)"),
-    ("sec:investissement-stationnaire", "capital comptable, n_a = 52 (C-F)"),
-    ("sec:investissement-stationnaire", "crédits nets à 10 % (C-F)"),
-    ("sec:investissement-stationnaire", "crédits nets à 2 % (C-F)"),
-    ("sec:investissement-stationnaire", "crédits à 10 % (C-F)"),
-    ("sec:investissement-stationnaire", "crédits à 2 % (C-F)"),
-    ("sec:investissement-stationnaire", "distribution à 10 % (C-F)"),
-    ("sec:investissement-stationnaire", "distribution à 10 % (R)"),
-    ("sec:investissement-stationnaire", "distribution à 2 % (C-F)"),
-    ("sec:investissement-stationnaire", "distribution à 2 % (R)"),
-    ("sec:investissement-stationnaire", "distribution, n_a = 4 (C-F)"),
-    ("sec:investissement-stationnaire", "distribution, n_a = 52 (C-F)"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (C-F), %"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (R), %"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (C-F), %"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (R), %"),
-    ("sec:investissement-stationnaire", "dépôts à 10 % (C-F)"),
-    ("sec:investissement-stationnaire", "dépôts à 2 % (C-F)"),
-    ("sec:investissement-stationnaire", "valeur nette des entreprises à 10 % (C-F)"),
-    ("sec:investissement-stationnaire", "valeur nette des entreprises à 2 % (C-F)"),
-    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 12"),
-    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 4"),
-    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 52"),
-    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 12"),
-    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 4"),
-    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 52"),
-    ("sec:travail-stationnaire", "écart à ω̄ à 10 %, point"),
-    ("sec:travail-stationnaire", "écart à ω̄ à 2 %, point"),
-    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 0 %"),
-    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 10 %"),
-    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 2 %"),
-    ("tab:etat-stationnaire", "capital sur production (c), comptable à 0 %"),
-    ("tab:etat-stationnaire", "capital sur production (c), comptable à 10 %"),
-    ("tab:etat-stationnaire", "capital sur production (c), comptable à 2 %"),
-    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 10 %"),
-    ("tab:etat-stationnaire", "dette brute à 0 %"),
-    ("tab:etat-stationnaire", "dette brute à 10 %"),
-    ("tab:etat-stationnaire", "dette brute à 2 %"),
-    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 0 %"),
-    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 10 %"),
-    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 2 %"),
-    ("tab:etat-stationnaire", "dette consolidée à 0 %"),
-    ("tab:etat-stationnaire", "dette consolidée à 10 %"),
-    ("tab:etat-stationnaire", "dette consolidée à 2 %"),
-    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 0 %"),
-    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 10 %"),
-    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 2 %"),
-    ("tab:etat-stationnaire", "masse monétaire à 0 %"),
-    ("tab:etat-stationnaire", "masse monétaire à 10 %"),
-    ("tab:etat-stationnaire", "masse monétaire à 2 %"),
-    ("tab:etat-stationnaire", "part salariale à 0 %"),
-    ("tab:etat-stationnaire", "part salariale à 10 %"),
-    ("tab:etat-stationnaire", "part salariale à 2 %"),
-    ("tab:etat-stationnaire", "solde primaire, % du PIB à 10 %"),
-    ("tab:etat-stationnaire", "solde primaire, % du PIB à 2 %"),
-    ("tab:etat-stationnaire", "taux d'investissement, % à 0 %"),
-    ("tab:etat-stationnaire", "taux d'investissement, % à 10 %"),
-    ("tab:etat-stationnaire", "taux d'investissement, % à 2 %"),
-})
-
-# #130 (ϑ = 0,10 → 0,15, M34) : 102 valeurs nouvellement en écart, toutes de l'effet (ϑ) (E^Bk = ϑL, dette consolidée
-# par C42, θ_G résolu, résultat et rendement de la banque ; Δr̄_α par θ_G) ; ϖ_L, ϖ_D et r̄ sont inchangés. Trois
-# valeurs de #92 (T_H, YD^HS et Y^HS sur le PIB à π̄ = 0) reviennent dans l'arrondi publié : leur valeur change encore,
-# mais retombe sur la décimale publiée à μ̄ = 0,25 ; elles sortent de la liste (résorbées, liste exacte) et restent
-# dans la surface de republication.
-EN_ATTENTE_DE_REPUBLICATION_130 = frozenset({
-    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %"),
-    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point"),
-    ("sec:banque-conditions", "(d2), 2 %, point"),
-    ("sec:banque-conditions", "couplage −ϑ lv*"),
-    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 0 %, % du PIB"),
-    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 2 %, % du PIB"),
-    ("sec:banque-resultat", "saut C29 au tour n, 2 %, %"),
-    ("sec:banque-resultat", "saut C29 ensuite, 2 %, %"),
-    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 0 %"),
-    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 10 %"),
-    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 2 %"),
-    ("sec:banque-stationnaire", "condition d'existence à écarts nuls, 2 %"),
-    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "marge d'existence, par an à 0 %"),
-    ("sec:banque-stationnaire", "marge d'existence, par an à 10 %"),
-    ("sec:banque-stationnaire", "marge d'existence, par an à 2 %"),
-    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "part des dividendes des entreprises, 2 %, %"),
-    ("sec:banque-stationnaire", "part des intérêts des dépôts, 2 %, %"),
-    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1"),
-    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1,15"),
-    ("sec:banque-stationnaire", "part distribuée à 0 %"),
-    ("sec:banque-stationnaire", "part distribuée à 10 %"),
-    ("sec:banque-stationnaire", "part distribuée à 2 %"),
-    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 12"),
-    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 4"),
-    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 52"),
-    ("sec:banque-stationnaire", "part du dividende de la banque, 2 %, %"),
-    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 0 %"),
-    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 10 %"),
-    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 2 %"),
-    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 0 %, %"),
-    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 10 %, %"),
-    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 2 %, %"),
-    ("sec:banque_centrale-conditions", "(α) : écart de tu, point"),
-    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point"),
-    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point"),
-    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point"),
-    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point"),
-    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point"),
-    ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %"),
-    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 0 %, ν_G = 1,15, % du PIB"),
-    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1, % du PIB"),
-    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1,15, % du PIB"),
-    ("sec:banque_centrale-stationnaire", "L^CB_0 à 2 %, ν_G = 1,15, u.m."),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 4, point par point"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 8, point par point"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 1, ζ = 8, point par point"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 0 %, point par point"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 10 %, point par point"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄, % de la production par point de r̄"),
-    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense"),
-    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 4, point"),
-    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 8, point"),
-    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 4, point"),
-    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 8, point"),
-    ("sec:finances_publiques-depense", "G/PB à 0 %"),
-    ("sec:finances_publiques-depense", "G/PB à 10 %"),
-    ("sec:finances_publiques-depense", "G/PB à 2 %"),
-    ("sec:finances_publiques-depense", "hausse admissible à 0 %, ν_G = 1, %"),
-    ("sec:finances_publiques-depense", "marge de E1 à 0 %"),
-    ("sec:finances_publiques-depense", "marge de E1 à 10 %"),
-    ("sec:finances_publiques-depense", "marge de E1 à 2 %"),
-    ("sec:finances_publiques-emission", "borne de ν_G à 0 %"),
-    ("sec:finances_publiques-emission", "borne de ν_G à 10 %"),
-    ("sec:finances_publiques-emission", "borne de ν_G à 2 %"),
-    ("sec:finances_publiques-emission", "hausse admissible à 0 %, ν_G = 1,15, %"),
-    ("sec:finances_publiques-emission", "hausse admissible à 10 %, ν_G = 1,15, %"),
-    ("sec:finances_publiques-emission", "hausse admissible à 2 %, ν_G = 1,15, %"),
-    ("sec:finances_publiques-emission", "marge J-ν au pire point à ν_G = 1,1, %"),
-    ("sec:finances_publiques-emission", "retour après −5 % (approché), 0 %"),
-    ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)"),
-    ("sec:finances_publiques-emission", "ν_G,min exact à 0 %"),
-    ("sec:finances_publiques-emission", "ν_G,min exact à 10 %"),
-    ("sec:finances_publiques-emission", "ν_G,min exact à 2 %"),
-    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν au pire point à ν_G = 1,15"),
-    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν à ν_G = 1,1, 0 %, %"),
-    ("sec:finances_publiques-emission ; tab:calibration", "ν_G minimal pour la marge J-ν (n_a = 4, 0 %)"),
-    ("sec:finances_publiques-restitution", "dette brute affichée à 2 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, arrondie"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, ν_G = 1,15, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "solde primaire à 0 %, % du PIB"),
-    ("sec:finances_publiques-stationnaire", "θ_G à 0 %"),
-    ("sec:finances_publiques-stationnaire", "θ_G à 10 %"),
-    ("sec:finances_publiques-stationnaire", "θ_G à 2 %"),
-    ("sec:finances_publiques-transferts", "charge brute à 2 %, ν_G = 1,15, % du PIB"),
-    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 0 %"),
-    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 2 %"),
-    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 0 %"),
-    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 10 %"),
-    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 2 %"),
-    ("tab:etat-stationnaire", "solde primaire, % du PIB à 0 %"),
-})
-RESORBEES_130 = frozenset({
-    ("sec:finances_publiques-stationnaire", "T_H/PIB à 0 %, %"),
-    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 0 %"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 0 %"),
-})
-# #62 (ν_H = 1 → 1,1, M34 ; λ_H inchangé) : 24 valeurs nouvellement en écart, toutes de l'effet (ν) (D_H monte de
-# 10,09 % à 2 % ; C42 : ΔD_c = ΔD_H ; θ_G résolu monte) ou des ménages (V_H/(n_a YD) = ν_H/(1 + ν_H n_a π^{∗,pas}),
-# épargne et C/YD) ; les trois valeurs résorbées sous #130 (T_H, YD^HS et Y^HS sur le PIB à π̄ = 0) y reviennent
-# (`REVENUES_62`). Deux valeurs de #130 (θ_G(r̄ + 1 point) − θ_G(r̄), φ = 1, à ζ = 4 et 8) changent encore et
-# retombent sur la décimale publiée à ϑ = 0,10, ν_H = 1 : elles sortent de la liste (résorbées, liste exacte) et
-# restent dans la surface de republication.
-EN_ATTENTE_DE_REPUBLICATION_62 = frozenset({
-    ("sec:banque-stationnaire", "impôt d'inflation net à 10 %, %"),
-    ("sec:banque-stationnaire", "impôt d'inflation net à 2 %, %"),
-    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 0 %, ν_G = 1, % du PIB"),
-    ("sec:finances_publiques-caisse", "dépôts des ménages / impôt du mois, environ"),
-    ("sec:menages-stationnaire", "C/YD à 10 %"),
-    ("sec:menages-stationnaire", "C/YD à 2 %"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 4"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 52"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 4"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 52"),
-    ("sec:menages-stationnaire", "V_H_0/YD_0 à 2 %"),
-    ("sec:menages-stationnaire", "dont maintien à 10 %, point"),
-    ("sec:menages-stationnaire", "dont maintien à 2 %, point"),
-    ("sec:menages-stationnaire", "dont épargne réelle à 10 %, point"),
-    ("sec:menages-stationnaire", "dont épargne réelle à 2 %, point"),
-    ("sec:menages-stationnaire", "marge du plafond à 2 %, mois"),
-    ("sec:menages-stationnaire", "taux d'épargne à 10 %, %"),
-    ("sec:menages-stationnaire", "taux d'épargne à 2 %, %"),
-    ("sec:menages-stationnaire", "épargne visée à 10 %, %"),
-    ("sec:menages-stationnaire", "épargne visée à 2 %, %"),
-    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 4, %"),
-    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 52, %"),
-})
-REVENUES_62 = RESORBEES_130
-RESORBEES_62 = frozenset({
-    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 4, point"),
-    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 8, point"),
-})
-EN_ATTENTE_DE_REPUBLICATION = ((
-    (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55) - RESORBEES_130
-) | EN_ATTENTE_DE_REPUBLICATION_130 | REVENUES_62 | EN_ATTENTE_DE_REPUBLICATION_62) - RESORBEES_62
+# #55 (ζ = 4 → 8) : les 12 valeurs de la mesure (α) de #80 (lecture (α), Δϱ ≠ 0 entre deux cibles) ; l'état
+# stationnaire de référence ne lit pas ζ (Δϱ = 0).
+ANCIENNES_M34_55 = {
+    ("sec:banque_centrale-conditions", "(α) : écart de C/Y_o, point"): "0,633",
+    ("sec:banque_centrale-conditions", "(α) : écart de ti, point"): "0,186",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point"): "-0,18",
+    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point"): "0,486",
+    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point"): "0,976",
+    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 8), point"): "0,632",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 0 %, %"): "1,632",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 1 %, %"): "1,264",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 10 %, %"): "1,146",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 3 %, %"): "0,818",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 4 %, %"): "0,706",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"): "0,656",
+}
+# #92 (μ̄ = 0,25 → 0,60) : 173 valeurs, dont T_H, YD^HS et Y^HS sur le PIB à π̄ = 0, qui retombaient sur la décimale
+# publiée sous ϑ = 0,15 (#130) et en sortent sous ν_H = 1,1 (#62).
+ANCIENNES_M34_92 = {
+    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"): "0,487",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"): "-0,434",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"): "0,09880",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 52"): "0,09886",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 4"): "0,51172",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 52"): "0,50952",
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point"): "0,921",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 10 %, % du PIB"): "0,387",
+    ("sec:banque-restitution", "masse monétaire restitué(e) à 10 %"): "0,86279",
+    ("sec:banque-restitution", "masse monétaire restitué(e) à 2 %"): "0,83423",
+    ("sec:banque-restitution", "refinancement restitué(e) à 10 %"): "0,02800",
+    ("sec:banque-restitution", "refinancement restitué(e) à 2 %"): "0,02222",
+    ("sec:banque-restitution", "titres de la banque restitué(e) à 10 %"): "0,57066",
+    ("sec:banque-restitution", "titres de la banque restitué(e) à 2 %"): "0,28451",
+    ("sec:banque-stationnaire", "crédits à 0 %"): "0,80037",
+    ("sec:banque-stationnaire", "crédits à 10 %"): "0,33439",
+    ("sec:banque-stationnaire", "crédits à 2 %"): "0,62204",
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 12"): "0,622039",
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 4"): "0,621423",
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 52"): "0,622275",
+    ("sec:banque-stationnaire", "dette consolidée c à 0 %"): "0,09884",
+    ("sec:banque-stationnaire", "dette consolidée c à 10 %"): "0,51013",
+    ("sec:banque-stationnaire", "dette consolidée c à 2 %"): "0,25674",
+    ("sec:banque-stationnaire", "dette consolidée de 2 à 10 %"): "0,25339",
+    ("sec:banque-stationnaire", "dont fonds propres (ϑ Δl), 2 à 10 %"): "-0,0288",
+    ("sec:banque-stationnaire", "dont richesse des ménages, 2 à 10 %"): "-0,0044",
+    ("sec:banque-stationnaire", "dépôts des entreprises à 0 %"): "0,16636",
+    ("sec:banque-stationnaire", "e_Bk à 0 %"): "0,08004",
+    ("sec:banque-stationnaire", "e_Bk à 10 %"): "0,03344",
+    ("sec:banque-stationnaire", "e_Bk à 2 %"): "0,06220",
+    ("sec:banque-stationnaire", "masse monétaire M à 0 %"): "0,81917",
+    ("sec:banque-stationnaire", "masse monétaire M à 10 %"): "0,81108",
+    ("sec:banque-stationnaire", "masse monétaire M à 2 %"): "0,81658",
+    ("sec:banque-stationnaire", "refinancement à 0 %, ν_G = 1"): "0,018282",
+    ("sec:banque-stationnaire", "refinancement à 0 %, ν_G = 1,15"): "0,021027",
+    ("sec:banque-stationnaire", "refinancement à 10 %, ν_G = 1"): "0,022857",
+    ("sec:banque-stationnaire", "refinancement à 10 %, ν_G = 1,15"): "0,026322",
+    ("sec:banque-stationnaire", "refinancement à 2 %, ν_G = 1"): "0,018904",
+    ("sec:banque-stationnaire", "refinancement à 2 %, ν_G = 1,15"): "0,021748",
+    ("sec:banque-stationnaire", "richesse des ménages à 2 %"): "0,6505",
+    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 0 %"): "0,02500",
+    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 10 %"): "0,01851",
+    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 2 %"): "0,02249",
+    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1"): "0,25734",
+    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1,15"): "0,25797",
+    ("sec:banque-stationnaire", "titres de la banque à 0 %, ν_G = 1"): "0,11712",
+    ("sec:banque-stationnaire", "titres de la banque à 0 %, ν_G = 1,15"): "0,11987",
+    ("sec:banque-stationnaire", "titres de la banque à 10 %, ν_G = 1"): "0,53299",
+    ("sec:banque-stationnaire", "titres de la banque à 10 %, ν_G = 1,15"): "0,53645",
+    ("sec:banque-stationnaire", "titres de la banque à 2 %, ν_G = 1"): "0,27564",
+    ("sec:banque-stationnaire", "titres de la banque à 2 %, ν_G = 1,15"): "0,27849",
+    ("sec:banque_centrale-restitution", "refinancement restitué à 0 %"): "0,02125",
+    ("sec:banque_centrale-restitution", "refinancement restitué à 10 %"): "0,02800",
+    ("sec:banque_centrale-restitution", "refinancement restitué à 2 %"): "0,02222",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1, % du PIB"): "0,2537",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1,15, % du PIB"): "0,2922",
+    ("sec:finances_publiques-impots", "dette consolidée, 10 % moins 2 %"): "0,253",
+    ("sec:finances_publiques-restitution", "charge brute à 10 %, ν_G = 1,15, % du PIB"): "5,9546",
+    ("sec:finances_publiques-restitution", "charge brute à 2 %, ν_G = 1,15, % du PIB"): "0,8410",
+    ("sec:finances_publiques-restitution", "dette brute affichée à 10 %, ν_G = 1,15, % du PIB"): "57,1",
+    ("sec:finances_publiques-stationnaire", "G/PIB à 0 %, %"): "21,86",
+    ("sec:finances_publiques-stationnaire", "G/PIB à 10 %, %"): "21,78",
+    ("sec:finances_publiques-stationnaire", "G/PIB à 2 %, %"): "21,93",
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 0 %, %"): "21,76",
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 10 %, %"): "21,54",
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 2 %, %"): "21,68",
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 0 %"): "0,6528",
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 10 %"): "0,6462",
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 2 %"): "0,6505",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 0 %"): "0,8704",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 10 %"): "0,8616",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %"): "0,8674",
+    ("sec:finances_publiques-stationnaire", "dette brute à 0 %"): "0,11712",
+    ("sec:finances_publiques-stationnaire", "dette brute à 0 %, ν_G = 1,15"): "0,11987",
+    ("sec:finances_publiques-stationnaire", "dette brute à 10 %"): "0,53299",
+    ("sec:finances_publiques-stationnaire", "dette brute à 10 %, ν_G = 1,15"): "0,53645",
+    ("sec:finances_publiques-stationnaire", "dette brute à 2 %"): "0,27564",
+    ("sec:finances_publiques-stationnaire", "dette brute à 2 %, ν_G = 1,15"): "0,27849",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 0 %"): "0,09884",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 10 %"): "0,51013",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %"): "0,25674",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4"): "0,25726",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52"): "0,25654",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : fonds propres de la banque"): "0,0622",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : richesse des ménages"): "0,6505",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : somme"): "0,2567",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : −crédits nets"): "-0,4560",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 0 %, % du PIB"): "0,1959",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 10 %, % du PIB"): "5,9005",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 2 %, % du PIB"): "1,0185",
+    ("sec:finances_publiques-stationnaire", "encaisse à 0 %"): "0,018282",
+    ("sec:finances_publiques-stationnaire", "encaisse à 0 %, ν_G = 1,15"): "0,021027",
+    ("sec:finances_publiques-stationnaire", "encaisse à 10 %"): "0,022857",
+    ("sec:finances_publiques-stationnaire", "encaisse à 10 %, ν_G = 1,15"): "0,026322",
+    ("sec:finances_publiques-stationnaire", "encaisse à 2 %"): "0,018904",
+    ("sec:finances_publiques-stationnaire", "encaisse à 2 %, ν_G = 1,15"): "0,021748",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, % du PIB"): "0,1171",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, % du PIB"): "5,9162",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, ν_G = 1,15, % du PIB"): "5,9546",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, % du PIB"): "0,8324",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, ν_G = 1,15, % du PIB"): "0,8410",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 0 %, % du PIB"): "0,0988",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 10 %, % du PIB"): "5,6625",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 2 %, % du PIB"): "0,7754",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 10 %, % du PIB"): "-0,2381",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 2 %, % du PIB"): "-0,2432",
+    ("sec:finances_publiques-transferts", "impôt des ménages à 2 %, % du PIB"): "21,68",
+    ("sec:investissement-stationnaire", "I/PIB à 10 % (C-F), %"): "13,849",
+    ("sec:investissement-stationnaire", "I/PIB à 2 % (C-F), %"): "13,945",
+    ("sec:investissement-stationnaire", "I/PIB, n_a = 4 (C-F), %"): "13,951",
+    ("sec:investissement-stationnaire", "I/PIB, n_a = 52 (C-F), %"): "13,942",
+    ("sec:investissement-stationnaire", "capital au prix courant à 10 % (C-F)"): "1,98361",
+    ("sec:investissement-stationnaire", "capital au prix courant à 2 % (C-F)"): "1,99726",
+    ("sec:investissement-stationnaire", "capital comptable à 10 % (C-F)"): "0,83598",
+    ("sec:investissement-stationnaire", "capital comptable à 2 % (C-F)"): "1,55510",
+    ("sec:investissement-stationnaire", "capital comptable, n_a = 4 (C-F)"): "1,55356",
+    ("sec:investissement-stationnaire", "capital comptable, n_a = 52 (C-F)"): "1,55569",
+    ("sec:investissement-stationnaire", "crédits nets à 10 % (C-F)"): "0,16947",
+    ("sec:investissement-stationnaire", "crédits nets à 2 % (C-F)"): "0,45598",
+    ("sec:investissement-stationnaire", "crédits à 10 % (C-F)"): "0,33439",
+    ("sec:investissement-stationnaire", "crédits à 2 % (C-F)"): "0,62204",
+    ("sec:investissement-stationnaire", "distribution à 10 % (C-F)"): "0,39995",
+    ("sec:investissement-stationnaire", "distribution à 10 % (R)"): "0,36359",
+    ("sec:investissement-stationnaire", "distribution à 2 % (C-F)"): "0,56853",
+    ("sec:investissement-stationnaire", "distribution à 2 % (R)"): "0,50480",
+    ("sec:investissement-stationnaire", "distribution, n_a = 4 (C-F)"): "0,56791",
+    ("sec:investissement-stationnaire", "distribution, n_a = 52 (C-F)"): "0,56876",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (C-F), %"): "5,90",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (R), %"): "5,06",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (C-F), %"): "6,25",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (R), %"): "4,84",
+    ("sec:investissement-stationnaire", "dépôts à 10 % (C-F)"): "0,16492",
+    ("sec:investissement-stationnaire", "dépôts à 2 % (C-F)"): "0,16605",
+    ("sec:investissement-stationnaire", "valeur nette des entreprises à 10 % (C-F)"): "0,75713",
+    ("sec:investissement-stationnaire", "valeur nette des entreprises à 2 % (C-F)"): "1,19174",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 12"): "0,793445",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 4"): "0,793499",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 52"): "0,793424",
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 12"): "0,798903",
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 4"): "0,798906",
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 52"): "0,798902",
+    ("sec:travail-stationnaire", "écart à ω̄ à 10 %, point"): "0,656",
+    ("sec:travail-stationnaire", "écart à ω̄ à 2 %, point"): "0,110",
+    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 0 %"): "2,0009",
+    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 10 %"): "1,9836",
+    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 2 %"): "1,9973",
+    ("tab:etat-stationnaire", "capital sur production (c), comptable à 0 %"): "2,0009",
+    ("tab:etat-stationnaire", "capital sur production (c), comptable à 10 %"): "0,8360",
+    ("tab:etat-stationnaire", "capital sur production (c), comptable à 2 %"): "1,5551",
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 10 %"): "57,1",
+    ("tab:etat-stationnaire", "dette brute à 0 %"): "0,11987",
+    ("tab:etat-stationnaire", "dette brute à 10 %"): "0,53645",
+    ("tab:etat-stationnaire", "dette brute à 2 %"): "0,27849",
+    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 0 %"): "0,11712",
+    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 10 %"): "0,53299",
+    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 2 %"): "0,27564",
+    ("tab:etat-stationnaire", "dette consolidée à 0 %"): "0,09884",
+    ("tab:etat-stationnaire", "dette consolidée à 10 %"): "0,51013",
+    ("tab:etat-stationnaire", "dette consolidée à 2 %"): "0,25674",
+    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 0 %"): "0,1959",
+    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 10 %"): "5,9005",
+    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 2 %"): "1,0185",
+    ("tab:etat-stationnaire", "masse monétaire à 0 %"): "0,81917",
+    ("tab:etat-stationnaire", "masse monétaire à 10 %"): "0,81108",
+    ("tab:etat-stationnaire", "masse monétaire à 2 %"): "0,81658",
+    ("tab:etat-stationnaire", "part salariale à 0 %"): "0,80037",
+    ("tab:etat-stationnaire", "part salariale à 10 %"): "0,79344",
+    ("tab:etat-stationnaire", "part salariale à 2 %"): "0,79890",
+    ("tab:etat-stationnaire", "solde primaire, % du PIB à 10 %"): "-0,2381",
+    ("tab:etat-stationnaire", "solde primaire, % du PIB à 2 %"): "-0,2432",
+    ("tab:etat-stationnaire", "taux d'investissement, % à 0 %"): "13,970",
+    ("tab:etat-stationnaire", "taux d'investissement, % à 10 %"): "13,849",
+    ("tab:etat-stationnaire", "taux d'investissement, % à 2 %"): "13,945",
+}
+# #130 (ϑ = 0,10 → 0,15) : 100 valeurs de l'effet (ϑ) (E^Bk = ϑL, dette consolidée par C42, θ_G résolu, résultat et
+# rendement de la banque ; Δr̄_α par θ_G) ; ϖ_L, ϖ_D et r̄ sont inchangés. Deux autres (θ_G(r̄ + 1 point) − θ_G(r̄),
+# φ = 1, à ζ = 4 et 8 : « +0,308 » et « +0,157 ») s'écartaient sous ϑ = 0,15 et retombent sur leur décimale publiée
+# sous ν_H = 1,1 : en vigueur inchangées, elles ne figurent pas ici.
+ANCIENNES_M34_130 = {
+    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %"): "0,9188",
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point"): "0,110",
+    ("sec:banque-conditions", "(d2), 2 %, point"): "1,26",
+    ("sec:banque-conditions", "couplage −ϑ lv*"): "-0,04",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 0 %, % du PIB"): "0,159",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 2 %, % du PIB"): "0,247",
+    ("sec:banque-resultat", "saut C29 au tour n, 2 %, %"): "11,42",
+    ("sec:banque-resultat", "saut C29 ensuite, 2 %, %"): "2,77",
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 0 %"): "0,151",
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 10 %"): "0,721",
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 2 %"): "0,387",
+    ("sec:banque-stationnaire", "condition d'existence à écarts nuls, 2 %"): "-0,000947",
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1"): "0,0040",
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1,15"): "0,0046",
+    ("sec:banque-stationnaire", "marge d'existence, par an à 0 %"): "0,0293",
+    ("sec:banque-stationnaire", "marge d'existence, par an à 10 %"): "0,0438",
+    ("sec:banque-stationnaire", "marge d'existence, par an à 2 %"): "0,0322",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1"): "2,725",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1,15"): "2,717",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1"): "2,134",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1,15"): "2,126",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1"): "2,505",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1,15"): "2,497",
+    ("sec:banque-stationnaire", "part des dividendes des entreprises, 2 %, %"): "-177,6",
+    ("sec:banque-stationnaire", "part des intérêts des dépôts, 2 %, %"): "253,4",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1"): "0,1277",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1,15"): "0,1303",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1"): "0,6145",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1,15"): "0,6160",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1"): "0,3071",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1,15"): "0,3093",
+    ("sec:banque-stationnaire", "part distribuée à 0 %"): "0,93655",
+    ("sec:banque-stationnaire", "part distribuée à 10 %"): "0,79105",
+    ("sec:banque-stationnaire", "part distribuée à 2 %"): "0,89025",
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 12"): "0,890253",
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 4"): "0,889928",
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 52"): "0,890378",
+    ("sec:banque-stationnaire", "part du dividende de la banque, 2 %, %"): "24,2",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 0 %"): "31,23",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 10 %"): "55,36",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 2 %"): "36,15",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 0 %, %"): "7,19",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 10 %, %"): "20,29",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 2 %, %"): "9,83",
+    ("sec:banque_centrale-conditions", "(α) : écart de tu, point"): "2,178",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point"): "-0,38",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point"): "-0,08",
+    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point"): "0,1428",
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point"): "1,304",
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point"): "0,297",
+    ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %"): "0,8185",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 0 %, ν_G = 1,15, % du PIB"): "0,0210",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1, % du PIB"): "0,0571",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1,15, % du PIB"): "0,0657",
+    ("sec:banque_centrale-stationnaire", "L^CB_0 à 2 %, ν_G = 1,15, u.m."): "0,248264",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 4, point par point"): "-0,034",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 8, point par point"): "0,127",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 1, ζ = 8, point par point"): "0,321",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 0 %, point par point"): "-0,073",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 10 %, point par point"): "-0,421",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄, % de la production par point de r̄"): "-0,194",
+    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense"): "-5,15",
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 4, point"): "-0,058",
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 8, point"): "+0,074",
+    ("sec:finances_publiques-depense", "G/PB à 0 %"): "0,99467",
+    ("sec:finances_publiques-depense", "G/PB à 10 %"): "0,78637",
+    ("sec:finances_publiques-depense", "G/PB à 2 %"): "0,96342",
+    ("sec:finances_publiques-depense", "hausse admissible à 0 %, ν_G = 1, %"): "0,37",
+    ("sec:finances_publiques-depense", "marge de E1 à 0 %"): "0,0037",
+    ("sec:finances_publiques-depense", "marge de E1 à 10 %"): "0,2061",
+    ("sec:finances_publiques-depense", "marge de E1 à 2 %"): "0,0334",
+    ("sec:finances_publiques-emission", "borne de ν_G à 0 %"): "1,0959",
+    ("sec:finances_publiques-emission", "borne de ν_G à 10 %"): "0,8733",
+    ("sec:finances_publiques-emission", "borne de ν_G à 2 %"): "1,0633",
+    ("sec:finances_publiques-emission", "hausse admissible à 0 %, ν_G = 1,15, %"): "15,44",
+    ("sec:finances_publiques-emission", "hausse admissible à 10 %, ν_G = 1,15, %"): "45,05",
+    ("sec:finances_publiques-emission", "hausse admissible à 2 %, ν_G = 1,15, %"): "19,02",
+    ("sec:finances_publiques-emission", "marge J-ν au pire point à ν_G = 1,1, %"): "0,23",
+    ("sec:finances_publiques-emission", "retour après −5 % (approché), 0 %"): "1,0485",
+    ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)"): "1,0975",
+    ("sec:finances_publiques-emission", "ν_G,min exact à 0 %"): "1,0959",
+    ("sec:finances_publiques-emission", "ν_G,min exact à 10 %"): "0,8744",
+    ("sec:finances_publiques-emission", "ν_G,min exact à 2 %"): "1,0631",
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν au pire point à ν_G = 1,15"): "0,0458",
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν à ν_G = 1,1, 0 %, %"): "0,38",
+    ("sec:finances_publiques-emission ; tab:calibration", "ν_G minimal pour la marge J-ν (n_a = 4, 0 %)"): "1,1313",
+    ("sec:finances_publiques-restitution", "dette brute affichée à 2 %, ν_G = 1,15, % du PIB"): "28,5",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, arrondie"): "0,257",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, ν_G = 1,15, % du PIB"): "0,1199",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 0 %, % du PIB"): "-0,0971",
+    ("sec:finances_publiques-stationnaire", "θ_G à 0 %"): "0,218474",
+    ("sec:finances_publiques-stationnaire", "θ_G à 10 %"): "0,219568",
+    ("sec:finances_publiques-stationnaire", "θ_G à 2 %"): "0,219573",
+    ("sec:finances_publiques-transferts", "charge brute à 2 %, ν_G = 1,15, % du PIB"): "0,84",
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 0 %"): "12,1",
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 2 %"): "28,5",
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 0 %"): "0,218474",
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 10 %"): "0,219568",
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 2 %"): "0,219573",
+    ("tab:etat-stationnaire", "solde primaire, % du PIB à 0 %"): "-0,0971",
+}
+# #62 (ν_H = 1 → 1,1, λ_H inchangé) : 24 valeurs de l'effet (ν) (D_H monte de 10,09 % à 2 % ; C42 : ΔD_c = ΔD_H ;
+# θ_G résolu monte) ou des ménages (V_H/(n_a YD) = ν_H/(1 + ν_H n_a π^{∗,pas}), épargne et C/YD).
+ANCIENNES_M34_62 = {
+    ("sec:banque-stationnaire", "impôt d'inflation net à 10 %, %"): "-0,485",
+    ("sec:banque-stationnaire", "impôt d'inflation net à 2 %, %"): "-0,037",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 0 %, ν_G = 1, % du PIB"): "0,0183",
+    ("sec:finances_publiques-caisse", "dépôts des ménages / impôt du mois, environ"): "36",
+    ("sec:menages-stationnaire", "C/YD à 10 %"): "0,8944",
+    ("sec:menages-stationnaire", "C/YD à 2 %"): "0,96110",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %"): "0,912667",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 4"): "0,912030",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 52"): "0,912911",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %"): "0,980566",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 4"): "0,980535",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 52"): "0,980578",
+    ("sec:menages-stationnaire", "V_H_0/YD_0 à 2 %"): "11,7668",
+    ("sec:menages-stationnaire", "dont maintien à 10 %, point"): "8,7333",
+    ("sec:menages-stationnaire", "dont maintien à 2 %, point"): "1,9434",
+    ("sec:menages-stationnaire", "dont épargne réelle à 10 %, point"): "1,8232",
+    ("sec:menages-stationnaire", "dont épargne réelle à 2 %, point"): "1,9466",
+    ("sec:menages-stationnaire", "marge du plafond à 2 %, mois"): "12,24",
+    ("sec:menages-stationnaire", "taux d'épargne à 10 %, %"): "10,5565",
+    ("sec:menages-stationnaire", "taux d'épargne à 2 %, %"): "3,8900",
+    ("sec:menages-stationnaire", "épargne visée à 10 %, %"): "1,9977",
+    ("sec:menages-stationnaire", "épargne visée à 2 %, %"): "1,9852",
+    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 4, %"): "1,9950",
+    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 52, %"): "1,9814",
+}
+ANCIENNES_M34 = ANCIENNES_M34_55 | ANCIENNES_M34_92 | ANCIENNES_M34_130 | ANCIENNES_M34_62
 
 
 def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
-    """Valeurs en vigueur (spécification et fiches 8 et 9 republiées) : toutes égales à la dernière décimale
-    publiée, hors des 309 valeurs en attente de republication (#92, #55, #130 et #62, liste exacte) ; aucune valeur
-    barrée n'y figure (catégories B-1 et N en contre-épreuve)."""
+    """Valeurs en vigueur (spécification et fiches 8 et 9, republiées à la table T1 de M34 au rang 9) : toutes égales
+    à la dernière décimale publiée, sans exception ; aucune valeur barrée n'y figure (catégories B-1 et N en
+    contre-épreuve)."""
     lignes = resultat["publiees"]
     assert len(lignes) == 449
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
     assert sum(1 for l in lignes if l["categorie"] == "S") == 20
-    assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
-    assert len(EN_ATTENTE_DE_REPUBLICATION_92) == 173 and len(EN_ATTENTE_DE_REPUBLICATION_55) == 12
-    assert len(EN_ATTENTE_DE_REPUBLICATION_130) == 102 and RESORBEES_130 <= EN_ATTENTE_DE_REPUBLICATION_92
-    assert not EN_ATTENTE_DE_REPUBLICATION_130 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55)
-    assert len(EN_ATTENTE_DE_REPUBLICATION_62) == 24 and RESORBEES_62 <= EN_ATTENTE_DE_REPUBLICATION_130
-    assert not EN_ATTENTE_DE_REPUBLICATION_62 & (
-        EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55 | EN_ATTENTE_DE_REPUBLICATION_130)
-    assert len(EN_ATTENTE_DE_REPUBLICATION) == 309
-    assert {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"} == EN_ATTENTE_DE_REPUBLICATION
+    assert [l for l in lignes if l["verdict"] != "égal"] == []
     for l in lignes:
-        if (l["section"], l["grandeur"]) in EN_ATTENTE_DE_REPUBLICATION:
-            continue
         if l["publie"] == stationnaire.AUCUNE:
             assert math.isnan(l["script"]), l
         else:
             assert abs(l["ecart"]) <= l["seuil"], l
 
 
-def test_aucun_ecart_sous_les_entrees_d_origine(stationnaire, base):
-    """R3 de l'audit de #130 : sous `ENTREES_D_ORIGINE` complètes (μ̄ = 0,25, ϑ = 0,10, ν_H = 1 : état E0) et
-    ζ = 4, valeur des publications de la mesure (α) de #80 (ζ n'entre pas dans l'état stationnaire), les 449 valeurs
-    en vigueur sont toutes égales à la dernière décimale publiée : chaque ligne en attente de republication
-    s'explique par un paramètre déclaré. Sans ζ = 4, seules les 12 valeurs de #55 restent en écart."""
-    def ecarts(**entrees):
-        lignes = stationnaire.table_publiees(stationnaire.Calculs(replace(base, **entrees), stationnaire.NU_G_RETENU))
+def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(stationnaire, base):
+    """R3 de l'audit de #130, après la republication du rang 9 : les 309 anciennes valeurs (`ANCIENNES_M34`), mises à
+    la place des valeurs en vigueur, sont égales à la dernière décimale publiée sous `ENTREES_D_ORIGINE` complètes
+    (état E0) et ζ = 4, valeur des publications de la mesure (α) de #80 (ζ n'entre pas dans l'état stationnaire) :
+    chaque republication s'explique par un paramètre déclaré de M34. Sans ζ = 4, seules les 12 de #55 restent en
+    écart. Sous les mêmes entrées, les valeurs en vigueur sont en écart exactement sur les 309 clés : une valeur
+    republiée ne retombe pas sur sa décimale à l'état E0, une valeur non republiée ne dépend pas de M34."""
+    en_vigueur = {(section, grandeur): publie for section, grandeur, publie, _, _ in stationnaire.VALEURS_PUBLIEES}
+    assert (len(ANCIENNES_M34_55), len(ANCIENNES_M34_92), len(ANCIENNES_M34_130), len(ANCIENNES_M34_62)) \
+        == (12, 173, 100, 24)
+    assert len(ANCIENNES_M34) == 309 and set(ANCIENNES_M34) <= set(en_vigueur)
+    assert [k for k, ancienne in ANCIENNES_M34.items() if ancienne == en_vigueur[k]] == []
+    anciennes = tuple((section, grandeur, ANCIENNES_M34.get((section, grandeur), publie), fonction, categorie)
+                      for section, grandeur, publie, fonction, categorie in stationnaire.VALEURS_PUBLIEES)
+
+    def ecarts(liste, **entrees):
+        calc = stationnaire.Calculs(replace(base, **entrees), stationnaire.NU_G_RETENU)
+        lignes = stationnaire.table_publiees(calc, liste)
         assert len(lignes) == 449
         return {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"}
-    assert ecarts(**stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set()
-    assert ecarts(**stationnaire.ENTREES_D_ORIGINE) == EN_ATTENTE_DE_REPUBLICATION_55
+    assert ecarts(anciennes, **stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set()
+    assert ecarts(anciennes, **stationnaire.ENTREES_D_ORIGINE) == set(ANCIENNES_M34_55)
+    assert ecarts(stationnaire.VALEURS_PUBLIEES, **stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set(ANCIENNES_M34)
 
 
 def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     """C4 de `macro` (rang 7) : les 29 valeurs visées et republiées (spécification, commit 8b9fa94 ; fiches 8 et 9)
-    sont égales au script, hors de celles en attente de republication (#92, #55, #130, #62) ; aucune n'est
-    republiée à son ancienne valeur ; l'historique (commit 9c8bdbd) garde les 29 anciennes valeurs, toutes en
-    écart, chacune égale à sa valeur figée en littéral (`ANCIENNES_PUBLIEES`)."""
+    sont égales au script ; aucune n'est republiée à son ancienne valeur ; l'historique (commit 9c8bdbd) garde les 29
+    anciennes valeurs, toutes en écart, chacune égale à sa valeur figée en littéral (`ANCIENNES_PUBLIEES`)."""
     historique = resultat["historique"]
     assert len(historique) == len(ECARTS_PUBLIES) == 29
     assert {(l["section"], l["grandeur"]) for l in historique if l["verdict"] == "écart"} == ECARTS_PUBLIES
     assert {(l["section"], l["grandeur"]): l["publie"] for l in historique} == ANCIENNES_PUBLIEES
     en_vigueur = {(l["section"], l["grandeur"]): l for l in resultat["publiees"]}
     for k in stationnaire._AVANT_VISA:
-        if k not in EN_ATTENTE_DE_REPUBLICATION:
-            assert en_vigueur[k]["verdict"] == "égal", en_vigueur[k]
+        assert en_vigueur[k]["verdict"] == "égal", en_vigueur[k]
         ancienne = stationnaire._AVANT_VISA[k]
         assert en_vigueur[k]["publie"] != (ancienne if isinstance(ancienne, str) else ancienne[2]), k
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 449 valeurs comparées, 120 égales sur l'état résolu, 20 égales en arithmétique de la "
-            "spécification (catégorie S, sans état résolu), 309 écarts (publiés avec leur explication ; aucun "
-            "n'est masqué).") in texte
+    assert ("Bilan : 449 valeurs comparées, 429 égales sur l'état résolu, 20 égales en arithmétique de la "
+            "spécification (catégorie S, sans état résolu), aucun écart.") in texte
     assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
 
@@ -1704,15 +1685,20 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
 
 
 def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
-    """« Δr̄_α ne descend pas sous 0,1428 point, minimum vers ζ ≈ 68 » : sur ζ ∈ {4 ; 30 ; 50 ; 67 ; 69 ; 100 ;
-    1 000}, Δr̄_α reste au-dessus de sa valeur à ζ = 68, publiée, à ϑ = 0,10 et ν_H = 1 (publication d'avant M34, en
-    attente de republication, #130 et #62 ; à ϑ = 0,15, le minimum se déplace : `EN_ATTENTE_DE_REPUBLICATION_130`)."""
-    calc = stationnaire.Calculs(replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"],
-                                        nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"]))
-    minimum = stationnaire._delta_r_alpha(calc, 68.0)
-    assert stationnaire.comparer("0,1428", minimum)[2]
-    for zeta in (4.0, 30.0, 50.0, 67.0, 69.0, 100.0, 1000.0):
-        assert stationnaire._delta_r_alpha(calc, zeta) > minimum, zeta
+    """« Δr̄_α […] ne descend pas sous 0,160 point sur la grille de ζ mesurée, de 2 à 200 (minimum vers ζ ≈ 63 ; 0,1614
+    à ζ = 68, où était le minimum, 0,1428 barré, à la calibration indicative) » : à la table T1, Δr̄_α a un minimum
+    local entier à ζ = 63, égal à 0,160 à la dernière décimale publiée, sous lequel il ne descend pas sur une grille
+    de pas 10 de 2 à 200, ni à ζ = 1 000 ; en contre-épreuve, à ϑ = 0,10 et ν_H = 1 (valeur barrée, #130 et #62), de
+    même à ζ = 68, égal à 0,1428. Grille complète des ζ entiers de 2 à 200 mesurée hors batterie (30 s) : même
+    minimum, 63 et 68."""
+    for calc, zeta_min, publie in (
+            (stationnaire.Calculs(base), 63, "0,160"),
+            (stationnaire.Calculs(replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"],
+                                          nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"])), 68, "0,1428")):
+        minimum = stationnaire._delta_r_alpha(calc, float(zeta_min))
+        assert stationnaire.comparer(publie, minimum)[2]
+        for zeta in (zeta_min - 1, zeta_min + 1, *range(2, 201, 10), 200, 1000):
+            assert stationnaire._delta_r_alpha(calc, float(zeta)) > minimum, zeta
 
 
 def test_canal_ecarts_nominaux_egale_l_identite(stationnaire, base):
@@ -2051,4 +2037,12 @@ def test_valeurs_de_contre_epreuve_et_d_historique_barrees_dans_leur_source(stat
     assert len(listes) == 47 + 29
     manquantes = [(section, grandeur, publie) for section, grandeur, publie, _, _ in listes
                   if not any(_figure(publie, dedans) for _, dedans, _ in _sources(section))]
+    assert manquantes == []
+
+
+def test_anciennes_valeurs_de_M34_barrees_dans_leur_source(stationnaire):
+    """Chaque ancienne valeur republiée au rang 9 (`ANCIENNES_M34`) figure barrée dans au moins une des sources que
+    cite sa section, signe compris : la republication garde la trace de la valeur qu'elle remplace."""
+    manquantes = [(section, grandeur, ancienne) for (section, grandeur), ancienne in ANCIENNES_M34.items()
+                  if not any(_figure(ancienne, dedans) for _, dedans, _ in _sources(section))]
     assert manquantes == []

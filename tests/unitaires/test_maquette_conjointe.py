@@ -125,18 +125,39 @@ def test_releve_couvre_chaque_chiffre_recense(maquette):
     assert not set(maquette.EXCLUS) & couverts
 
 
+def _lever_barres(ligne):
+    """Ligne dont chaque valeur barrée, `\\barre{…}`, est remplacée par son contenu (deux niveaux d'accolades)."""
+    levee = re.sub(r"\\barre\{((?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*)\}", r"\1", ligne)
+    assert "\\barre{" not in levee, ligne
+    return levee
+
+
 def test_chaque_chiffre_releve_a_sa_ligne(maquette):
-    """Chaque chiffre est écrit, hors valeur barrée, dans chacun des paragraphes et fiches qu'il déclare."""
+    """Chaque chiffre est écrit, hors valeur barrée, dans chacun des paragraphes et fiches qu'il déclare, sauf les six
+    chiffres sans objet à la table T1 (`SANS_OBJET_M34`), écrits barrés dans chacun des paragraphes qu'ils déclarent :
+    un chiffre sans objet encore écrit en vigueur, ou un chiffre en vigueur barré ou effacé, fait échouer la
+    batterie."""
     lignes, fiches = maquette.lire_spec(), maquette.lire_fiches()
     paragraphes = {label for label, _ in maquette.PARAGRAPHES} | {f for f, _ in maquette.LIGNES_FICHES}
+    releve = maquette.releve()
     absents = []
-    for c in maquette.releve():
+    for c in releve:
         assert c.ou and set(c.ou) <= paragraphes, c.ident
         trouves = {label for label, _ in maquette.lignes_du_motif(lignes, c.motif, c.ou)}
         trouves |= {f for f in c.ou if maquette.lignes_du_motif_fiches(fiches, c.motif, (f,))}
         absents += [(c.ident, label) for label in c.ou if label not in trouves]
-    assert absents == []
-    idents = [c.ident for c in maquette.releve()]
+    attendus = [(c.ident, label) for c in releve if c.ident in SANS_OBJET_M34 for label in c.ou]
+    assert len(attendus) == 8 and sorted(absents) == sorted(attendus)
+    # Les six chiffres sans objet se lisent dans chacun de leurs paragraphes une fois les valeurs barrées levées,
+    # par la règle de `lignes_du_motif` (aucun n'est déclaré dans une fiche).
+    for c in releve:
+        if c.ident in SANS_OBJET_M34:
+            assert not set(c.ou) & {f for f, _ in maquette.LIGNES_FICHES}, c.ident
+            expression = re.compile(r"(?<![\d,])" + re.escape(c.motif.replace("{,}", ",")) + r"(?!\d)")
+            barres = {label for label, num in maquette.lignes_paragraphes(lignes)
+                      if label in c.ou and expression.search(_lever_barres(lignes[num - 1]).replace("{,}", ","))}
+            assert barres == set(c.ou), c.ident
+    idents = [c.ident for c in releve]
     assert len(idents) == len(set(idents))
 
 
@@ -184,118 +205,18 @@ def test_points_fixes_et_racine_nominale(maquette):
 
 # Chiffres du relevé en écart, liste exacte (#65) : la valeur de la fiche 5 à n_a = 4 (cause non établie) et les
 # 8 rayons de la table φ de la fiche 9, mesurés avant l'amendement de E12 (historique de la spécification,
-# ligne 30). Hors des chiffres en attente de republication ci-dessous, aucun chiffre en vigueur de la
-# spécification n'y figure : un chiffre en vigueur qui passe en écart,
+# ligne 30). Aucun chiffre en vigueur de la spécification n'y figure : un chiffre en vigueur qui passe en écart,
 # ou en « sans objet », fait échouer la batterie ; un écart qui se résorbe aussi, la liste est alors à revoir.
+ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"} | {
+    f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)})
 #
-# Calibration du socle (M34) : les 26 chiffres ci-dessous dépendent de μ̄ (#92, 0,25 → 0,60) ; ils restent publiés
-# à μ̄ = 0,25 jusqu'au passage unique de `docwriter` en fin de branche (règle 9). Le commit `tests:` qui les retire
-# de la liste suit le commit `docs:` de #92 : un écart qui se résorbe fait échouer la batterie.
-EN_ATTENTE_DE_REPUBLICATION_92 = frozenset(
-    {f"instabilite17.a.theta{theta}.{regime}" for theta in ("0.8", "1.0") for regime in ("hausse", "baisse")}
-    | {"instabilite17.a.n_a4.hausse.contre_epreuve", "instabilite17.frontiere_h", "instabilite17.frontiere_nu_H"}
-    | {"menages.rayon.theta0.8.baisse", "menages.rayon.theta0.8.hausse", "menages.rayon.theta1.0.hausse",
-       "menages.rayon.theta1.0.cout_moyen.baisse", "menages.rayon.theta1.0.cout_moyen.hausse"}
-    | {f"menages_inflation.{lecture}.theta{theta}.{regime}"
-       for lecture in ("a_entretien", "hs_glissement", "hs_glissement_pas")
-       for theta in ("0.8", "1.0") for regime in ("hausse", "baisse")}
-    | {"menages_inflation.a.periode.max", "menages_inflation.hs_glissement_pas.periode.max"})
-#
-# #55 (ζ = 4 → 8, M34) : les 37 chiffres ci-dessous lisent ζ dans la carte du socle (S2 hors de l'état stationnaire) :
-# rayons, racines, périodes et demi-vies du socle, grilles, marge conjointe, φ*, rayons et doublements sous φ = 0
-# et φ = 0,5 de la fiche 9. Publiés à ζ = 4 jusqu'au passage unique de `docwriter` (règle 9), retirés par le commit
-# `tests:` qui suit le commit `docs:` de #55.
-EN_ATTENTE_DE_REPUBLICATION_55 = frozenset({
-    "finances.doublement.phi0.pi0.02",
-    "finances.doublement.phi0.pi0.1",
-    "finances.phi_star.pi0.02",
-    "finances.phi_star.pi0.1",
-    "finances.rayon.phi0.5.pi0.02.specification",
-    "finances.rayon.phi0.5.pi0.1.ecartees",
-    "finances.rayon.phi0.5.pi0.1.specification",
-    "finances.rayon.phi0.pi0.02",
-    "finances.rayon.phi0.pi0.1",
-    "socle.demi_vie.pi0",
-    "socle.demi_vie.pi0.02",
-    "socle.grille.pire",
-    "socle.grille.pire.pi0",
-    "socle.grille.pire.pi0.1",
-    "socle.grille.vitesses÷2",
-    "socle.grille_zeta.pire",
-    "socle.grille_zeta.pire.pi0",
-    "socle.grille_zeta.pire.pi0.1",
-    "socle.marge_conjointe.facteur",
-    "socle.marge_conjointe.facteur.hausse",
-    "socle.marge_conjointe.x0.5",
-    "socle.marge_conjointe.x2.a_I÷100.hausse.ecart",
-    "socle.marge_conjointe.x2.a_I÷1000.hausse",
-    "socle.marge_conjointe.x2.a_I÷1000.hausse.ecart",
-    "socle.marge_conjointe.x2.a_I÷1000.hausse.paire",
-    "socle.marge_conjointe.x2.baisse",
-    "socle.marge_conjointe.x2.hausse",
-    "socle.periode.pi0.1.hausse",
-    "socle.racine.pi0.1.baisse.imaginaire",
-    "socle.racine.pi0.1.hausse.imaginaire",
-    "socle.racine.pi0.1.hausse.reelle",
-    "socle.rayon.pi0.02.baisse",
-    "socle.rayon.pi0.02.hausse",
-    "socle.rayon.pi0.1.baisse",
-    "socle.rayon.pi0.1.hausse",
-    "socle.rayon.pi0.baisse",
-    "socle.rayon.pi0.hausse",
-})
-#
-# #130 (ϑ = 0,10 → 0,15, M34) : la lecture (c) de la branche ×2 sans a_I (ϑ déplace l'état stationnaire autour
-# duquel la carte est linéarisée), et la frontière de la marge conjointe en régime de hausse, publiée 1,9921, déjà en
-# écart sous #55 (1,99112), que ϑ = 0,15 porte à 2,00615, au-delà de 2 : sa recherche se fait sur
-# `BORNES_MARGE_HAUSSE` = [1 ; 3] (décision du mainteneur du 17/11/2026). Publiés à ϑ = 0,10 jusqu'au passage unique
-# de `docwriter` (règle 9).
-EN_ATTENTE_DE_REPUBLICATION_130 = frozenset({"socle.marge_conjointe.x2.a_I÷1000",
-                                             "socle.marge_conjointe.facteur.hausse"})
-#
-# #62 (ν_H = 1 → 1,1, M34) : ν_H déplace l'état stationnaire autour duquel les cartes sont linéarisées. Quatre chiffres
-# passent en écart (rayon des ménages θ_H = 1 en baisse ; périodes minimales des lectures (a) et hs_glissement_pas ;
-# période de la paire de la branche ×2 en hausse), trois reviennent dans l'arrondi publié (rayons au coût moyen
-# pondéré, θ_H = 1 ; période maximale de hs_glissement_pas : liste exacte `RESORBEES_62`). La frontière du régime de
-# hausse revient sous 2 (2,00615 → 1,96934) : la branche ×2 sort de la région stable de ce régime, et la lecture (c)
-# en hausse à a_I ×0,001 et ×0,01 est une paire complexe de module > 1, non plus une racine réelle sous 1 ; ses deux
-# « écarts à 1 de la racine réelle », déjà en écart sous #55, deviennent sans objet (`SANS_OBJET_62`).
-EN_ATTENTE_DE_REPUBLICATION_62 = frozenset({
-    "menages.rayon.theta1.0.baisse",
-    "menages_inflation.a.periode.min",
-    "menages_inflation.hs_glissement_pas.periode.min",
-    "socle.marge_conjointe.x2.hausse.periode",
-})
-RESORBEES_62 = frozenset({
-    "menages.rayon.theta1.0.cout_moyen.baisse",
-    "menages.rayon.theta1.0.cout_moyen.hausse",
-    "menages_inflation.hs_glissement_pas.periode.max",
-})
-SANS_OBJET_62 = frozenset({
-    "socle.marge_conjointe.x2.a_I÷100.hausse.ecart",
-    "socle.marge_conjointe.x2.a_I÷1000.hausse.ecart",
-})
-#
-# #45 (λ_w = 1 → 0,18, M34) : λ_w n'entre pas dans l'état stationnaire, mais dans chaque carte qui porte la règle de
-# salaire T3. Quatorze chiffres passent en écart ou en « sans objet » : la boucle salaires -- prix (treize rayons,
-# publiés à λ_w = 1 ; les six de « toutes÷2 », « toutes×2 » et « lambda_w×2 » prennent λ_w relative à la table,
-# × 0,5 et × 2, comme les autres vitesses, décision du mainteneur du 17/11/2026 : ils fixaient λ_w en valeur absolue,
-# 0,5 et 2,0, et « toutes÷2 » accélérait λ_w à 0,18) et la période de la branche ×2 en baisse, dont la racine (c)
-# devient réelle. Les trois chiffres résorbés sous
-# #62 reviennent en écart (`REVENUES_45`). Six chiffres sont sans objet (`SANS_OBJET_45`) : les frontières en ν_H
-# et h de l'instabilité 17 (rayon de la lecture (a) sous 1 sur [0,3 ; 1] ; « sans objet », M34), les périodes de la
-# branche ×2 (racines réelles) et les périodes de la lecture (a) (racine réelle à θ_H = 0,8). La frontière de la
-# marge conjointe, 2,7826, est cherchée sur `BORNES_MARGE` = [1 ; 3] (décision du mainteneur du 17/11/2026) et reste
-# en écart chiffré (déjà en écart sous #55). Les deux « écarts à 1 de la racine réelle » de `SANS_OBJET_62`
-# redeviennent mesurables (racine réelle sous 1) et restent en écart.
-VARIANTES_RELATIVES_45 = ("toutes÷2", "toutes×2", "lambda_w×2")
-EN_ATTENTE_DE_REPUBLICATION_45 = frozenset(
-    {f"salaires_prix.rayon.m{m}" for m in ("0.5", "0.6", "0.7", "0.8")}
-    | {f"salaires_prix.rayon.{nom}.{quel}" for nom in VARIANTES_RELATIVES_45 for quel in ("min", "max")}
-    | {"salaires_prix.rayon.psi×2.min", "salaires_prix.rayon.psi×2.max", "salaires_prix.rayon.marge_constante.m0.6",
-       "socle.marge_conjointe.x2.baisse.periode"})
-REVENUES_45 = RESORBEES_62
-SANS_OBJET_45 = frozenset({
+# Calibration du socle (M34) : la spécification republiée au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a) écrit
+# en vigueur les chiffres de la table T1 (#92, #55, #130, #62, #45), tous reproduits. Six chiffres sont sans objet à
+# la table T1 (λ_w = 0,18, #45) et barrés dans chacun de leurs paragraphes : les frontières en ν_H et h de
+# l'instabilité 17 (rayon de la lecture (a) sous 1 sur [0,3 ; 1] ; « sans objet », M34), les périodes de la lecture
+# (a) (racine réelle à θ_H = 0,8) et les périodes de la branche ×2 (racines réelles). Ils restent au relevé, publiés
+# « sans objet » ; `test_chaque_chiffre_releve_a_sa_ligne` les lit barrés.
+SANS_OBJET_M34 = frozenset({
     "instabilite17.frontiere_h",
     "instabilite17.frontiere_nu_H",
     "menages_inflation.a.periode.max",
@@ -303,28 +224,23 @@ SANS_OBJET_45 = frozenset({
     "socle.marge_conjointe.x2.baisse.periode",
     "socle.marge_conjointe.x2.hausse.periode",
 })
-NON_REPRODUITS_ATTENDUS = ((frozenset({"instabilite17.a.n_a4.hausse"} | {
-    f"finances.rayon.phi{phi:g}.pi{pi:g}" for phi in (0.1, 0.25, 0.5, 1) for pi in (0.02, 0.1)}
-) | EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55 | EN_ATTENTE_DE_REPUBLICATION_130
-    | EN_ATTENTE_DE_REPUBLICATION_62) - RESORBEES_62) | REVENUES_45 | EN_ATTENTE_DE_REPUBLICATION_45
-ECARTS_ATTENDUS = NON_REPRODUITS_ATTENDUS - SANS_OBJET_45
+NON_REPRODUITS_ATTENDUS = ECARTS_ATTENDUS | SANS_OBJET_M34
+#
+# #45 (λ_w = 1 → 0,18, M34) : les variantes « toutes÷2 », « toutes×2 » et « lambda_w×2 » de la boucle salaires --
+# prix prennent λ_w relative à la table, × 0,5 et × 2, comme les autres vitesses (décision du mainteneur du
+# 17/11/2026) : elles fixaient λ_w en valeur absolue, 0,5 et 2,0, et « toutes÷2 » accélérait λ_w à 0,18.
+VARIANTES_RELATIVES_45 = ("toutes÷2", "toutes×2", "lambda_w×2")
 
 
 def test_ensemble_des_ecarts_fige(maquette):
-    """Liste exacte : 91 chiffres non reproduits sur 148 (#92, #55, #130, #62, #45), dont 85 en écart et 6 sans
-    objet (`SANS_OBJET_45`)."""
+    """Liste exacte : 15 chiffres non reproduits sur 148, 9 en écart, antérieurs à M34 (`ECARTS_ATTENDUS`), et 6 sans
+    objet à la table T1 (`SANS_OBJET_M34`) ; tous les autres, dont ceux republiés à la table T1, sont reproduits."""
     r = maquette.calculer()
-    assert not EN_ATTENTE_DE_REPUBLICATION_62 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
-                                                  | EN_ATTENTE_DE_REPUBLICATION_130)
-    assert RESORBEES_62 <= EN_ATTENTE_DE_REPUBLICATION_92 and SANS_OBJET_62 <= EN_ATTENTE_DE_REPUBLICATION_55
-    assert not EN_ATTENTE_DE_REPUBLICATION_45 & (EN_ATTENTE_DE_REPUBLICATION_92 | EN_ATTENTE_DE_REPUBLICATION_55
-                                                  | EN_ATTENTE_DE_REPUBLICATION_130 | EN_ATTENTE_DE_REPUBLICATION_62)
-    assert SANS_OBJET_45 <= NON_REPRODUITS_ATTENDUS and not SANS_OBJET_45 & SANS_OBJET_62
-    assert len(EN_ATTENTE_DE_REPUBLICATION_45) == 14
-    assert len(NON_REPRODUITS_ATTENDUS) == 91 and len(ECARTS_ATTENDUS) == 85
+    assert len(r["releve"]) == 148
+    assert len(ECARTS_ATTENDUS) == 9 and len(SANS_OBJET_M34) == 6 and not ECARTS_ATTENDUS & SANS_OBJET_M34
     assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == NON_REPRODUITS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
-    assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_45
+    assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_M34
 
 
 # Mesures mises en cache qui lisent `BASE` à l'appel (lecture du module, 17/11/2026) : à vider quand `BASE` est
@@ -786,8 +702,8 @@ def test_couverture_phi(maquette):
 def test_marge_conjointe_au_dela_de_2_a_la_table_calibree(maquette):
     """À la table calibrée (λ_w = 0,18, #45), la lecture (c) de l'ensemble (β, a_π, η_r) reste sous 1 sur [1 ; 2]
     (0,99746 à ×1, 0,99719 à ×2) et passe 1 à 2,7826, égale à la frontière du régime de hausse : recherchée sur
-    `BORNES_MARGE` = [1 ; 3] (décision du mainteneur du 17/11/2026), elle est publiée chiffrée, en écart. Les
-    racines (c) à ×2 sont réelles positives sous 1, sans période."""
+    `BORNES_MARGE` = [1 ; 3] (décision du mainteneur du 17/11/2026), elle est publiée chiffrée, reproduite depuis
+    la republication du rang 9. Les racines (c) à ×2 sont réelles positives sous 1, sans période."""
     m = maquette.marge_conjointe()
     assert maquette.BORNES_MARGE == (1.0, 3.0)
     assert maquette.rayon_c(maquette._ensemble(1.0)) < 1 and maquette.rayon_c(maquette._ensemble(2.0)) < 1
@@ -796,7 +712,7 @@ def test_marge_conjointe_au_dela_de_2_a_la_table_calibree(maquette):
         assert x["nature"] == "réelle positive" and x["periode"] is None and x["rayon"] < 1
     assert max(x["rayon"] for x in m["x2"].values()) == maquette.rayon_c(maquette._ensemble(2.0))
     c = {c.ident: c for c in maquette.releve()}["socle.marge_conjointe.facteur"]
-    assert maquette.evaluer(c, maquette.lire_spec())["verdict"] == "écart"
+    assert maquette.evaluer(c, maquette.lire_spec())["verdict"] == "reproduit"
 
 
 def test_frontiere_ou_aucune(maquette):
