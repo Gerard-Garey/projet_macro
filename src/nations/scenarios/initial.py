@@ -39,8 +39,11 @@ des blocs → champ de l'ouverture du résolveur, en bijection avec
 sous leur nom ; V^flux = V^stock (`identites.valeur_nette_stock`). La graine
 traverse la fonction comme champ d'identité : la résolution ne tire aucun aléa.
 
-n_a ≠ 12 n'est pas servi (registre de 13 niveaux, `Cadre` ; #120) : le cadre
-des tables le refuse à sa construction. Aucune division par n_a ici (règle
+n_a ≠ 12 n'est pas servi (registre de 13 niveaux ; #120) : ni `Cadre` ni
+`EnsembleDesParametres` ne le refusent ; la résolution a lieu, puis la
+construction de l'`EtatPays` le refuse (`TypeError` de
+`schema._verifier_types` : `registre_prix` de n_a + 1 niveaux au lieu de 13).
+Aucune division par n_a ici (règle
 commune du test « conversion unique ») : les formes à n_a quelconque sont dans
 le module feuille. La résolution a lieu une fois par scénario, hors
 d'`executer_pas`, sans boucle sur un résidu.
