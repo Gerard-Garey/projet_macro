@@ -57,6 +57,10 @@ liste des champs, d'un type, d'une unité ou d'une sémantique) :
 - **5** (15/11/2026, #132 ; ADR 0013, annotation du 15/11/2026 (J3-d2)) : Y^HS_{t−1}.
   Version fixée dès le premier commit de #132 qui modifie le schéma et jusqu'à la fusion de
   J3-d2, sans incrément pendant la branche ; une sauvegarde v4 est refusée (D4).
+  Ajout sans incrément (26/11/2026, #122 ; ADR 0015, point 12.4, décision S5) : la
+  liste fermée des **conditions jointes** (`CONDITIONS_JOINTES`), évaluée à toute
+  construction après les domaines par champ ; ni champ, ni type, ni unité, ni sens
+  d'un champ ne change.
 """
 
 from __future__ import annotations
@@ -65,6 +69,8 @@ import dataclasses
 import itertools
 import math
 import unicodedata
+from collections.abc import Callable, Mapping
+from typing import NamedTuple
 
 from nations.etat import (
     banque,
@@ -318,6 +324,54 @@ def defaut_de_domaine(nom: str, valeur: object) -> str | None:
     return None
 
 
+class ConditionJointe(NamedTuple):
+    """Condition entre plusieurs champs de `EtatPays` (ADR 0015, point 12.1) : `predicat`
+    reçoit les valeurs des `champs` lus, dans leur ordre, et rend vrai si la condition tient ;
+    `texte` l'énonce en clair, avec sa source."""
+
+    nom: str
+    champs: tuple[str, ...]
+    predicat: Callable[..., bool]
+    texte: str
+
+
+# Conditions jointes de l'état (ADR 0015, point 12 ; #122, avis de `macro` du 26/11/2026) :
+# liste fermée, évaluée par `defaut_des_conditions_jointes` seule, après les domaines par
+# champ. `stock_vide_sans_valeur` : sous la forme B de N8 (P72), tout état produit par le
+# moteur a IN = 0 dès que IN^vol = 0 ; égalités au sens `==` (−0,0 admis des deux côtés).
+# Exclusions (avis de `macro`) : la réciproque IN = 0 ⇒ IN^vol = 0, que le moteur ne tient
+# pas (il produit IN = 0 avec IN^vol > 0) ; toute borne du rapport IN/(UC·IN^vol) (points 2
+# et 3 du commentaire de #122 : limites déclarées, aucun contrôle).
+CONDITIONS_JOINTES = (
+    ConditionJointe("stock_vide_sans_valeur", ("IN_vol", "IN"),
+                    lambda IN_vol, IN: not (IN_vol == 0.0 and IN != 0.0),
+                    "IN^vol = 0 ⇒ IN = 0 (N7, N8 : IN_{t+1} = cm·IN^vol_{t+1})"),
+)
+if not all(set(c.champs) <= set(VARIABLE) for c in CONDITIONS_JOINTES):
+    raise ValueError("schéma d'état : condition jointe sur une variable non déclarée")
+
+
+def defaut_des_conditions_jointes(valeurs: Mapping[str, object]) -> str | None:
+    """Motif de refus de la première condition jointe violée, sinon `None`.
+
+    `valeurs` : nom de variable d'état → valeur, de types et domaines déjà contrôlés (les
+    champs d'un `EtatPays`, ou ceux d'un pays relu par `charger`). Seule fonction
+    d'évaluation de `CONDITIONS_JOINTES`, appelée par `_verifier_types` après les domaines
+    par champ (état initial, `dataclasses.replace`, reprise) et par `charger` avant la
+    construction, comme `defaut_de_domaine`, sans réparation ; **pas** par
+    `etat_de_cloture` (ADR 0015, point 12.3, décision S6) : à la clôture, la condition
+    tient par la forme de N8, ce que les tests établissent. Le motif nomme la condition,
+    les champs lus et leurs valeurs.
+    """
+    for condition in CONDITIONS_JOINTES:
+        valeurs_lues = tuple(valeurs[nom] for nom in condition.champs)
+        if not condition.predicat(*valeurs_lues):
+            lus = ", ".join(f"{nom} = {_valeur_en_clair(x)}"
+                            for nom, x in zip(condition.champs, valeurs_lues, strict=True))
+            return f"condition jointe {condition.nom} violée ({lus}) : {condition.texte}"
+    return None
+
+
 def _controler_identite(nom: str, type_: type, valeur: object) -> None:
     """Refuse un champ d'identité de type faux (`TypeError`) ou hors de son domaine
     (`ValueError`)."""
@@ -347,14 +401,21 @@ def _verifier_types(etat: object) -> None:
     """Refuse un `EtatPays` dont un champ n'a pas exactement son type déclaré, ou hors domaine.
 
     Contrôle complet de toute construction par `EtatPays(...)` : état initial,
-    `dataclasses.replace`, reprise (D4) ; aucun argument ni champ ne le module.
+    `dataclasses.replace`, reprise (D4) ; aucun argument ni champ ne le module. Après les
+    types et les domaines par champ, les conditions jointes (`defaut_des_conditions_jointes`,
+    `ValueError` ; ADR 0015, point 12.2).
     """
     for nom, type_ in CHAMPS_D_IDENTITE:
         _controler_identite(nom, type_, getattr(etat, nom))
+    valeurs = {}
     for variable in VARIABLES:
         valeur = getattr(etat, variable.nom)
         _controler_type(variable, valeur)
         _controler_domaine(variable.nom, valeur)
+        valeurs[variable.nom] = valeur
+    motif = defaut_des_conditions_jointes(valeurs)
+    if motif is not None:
+        raise ValueError(f"EtatPays : {motif}")
 
 
 EtatPays = dataclasses.make_dataclass(
@@ -372,8 +433,10 @@ Champs engendrés depuis `CHAMPS_D_IDENTITE` et `VARIABLES`, tous obligatoires,
 sans valeur par défaut ; un champ de type faux est refusé à la construction
 (`TypeError`), un champ hors de son domaine aussi (`ValueError`, par
 `defaut_de_domaine` : identifiant, graine, t, niveaux du registre, variables
-des blocs). L'état de clôture d'un pas est construit par `etat_de_cloture`, qui ne
-recontrôle pas le domaine des variables des blocs, contrôlé à leur écriture.
+des blocs), puis une condition jointe violée (`ValueError`, par
+`defaut_des_conditions_jointes`). L'état de clôture d'un pas est construit par
+`etat_de_cloture`, qui ne recontrôle ni le domaine des variables des blocs, contrôlé à
+leur écriture, ni les conditions jointes, tenues par la forme des règles (ADR 0015, S6).
 L'état d'un monde est une séquence d'`EtatPays` triée par identifiant, par
 point de code Unicode.
 """

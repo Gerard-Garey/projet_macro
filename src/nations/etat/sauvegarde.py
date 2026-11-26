@@ -22,7 +22,9 @@ un caractère de catégorie Unicode `Cc`, `Cf`, `Zl` ou `Zp`, avec un espace de
 bord ou hors de la forme normale NFC ; graine hors de [0 ; 2^64[ ; t hors de
 [0 ; 2^63[ ; niveau du registre qui n'est pas un float fini > 0 ; variable
 d'un bloc hors de son domaine, par exemple 1 + π^e ≤ 0 ou U hors de [0 ; 1]),
-les mêmes refus de domaine qu'à la construction ; un pays en double ou hors de l'ordre
+les mêmes refus de domaine qu'à la construction ; une condition jointe violée
+(`schema.CONDITIONS_JOINTES`, par exemple IN^vol = 0 avec IN ≠ 0 ; ADR 0015, point 12),
+comme à la construction ; un pays en double ou hors de l'ordre
 canonique (identifiants comparés par point de code Unicode). Les domaines des
 positions (Res ≥ 0 ; D_H, D_F, M^G ≥ −ε × S) ne sont contrôlés ni à la
 construction ni à la reprise : ε et S relèvent du noyau, qui les contrôle à
@@ -45,6 +47,7 @@ from nations.etat.schema import (
     VERSION_SCHEMA,
     EtatPays,
     defaut_de_domaine,
+    defaut_des_conditions_jointes,
 )
 
 _CLES_DU_DOCUMENT = ("version", "pays")
@@ -205,6 +208,11 @@ def charger(document: bytes) -> tuple[EtatPays, ...]:
             if motif is not None:
                 raise SauvegardeRefusee(f"hors domaine : {motif}", pays=pays, champ=nom)
             valeurs[nom] = valeur
+        # Conditions jointes, après les domaines par champ, comme à la construction (ADR 0015,
+        # point 12.2).
+        motif = defaut_des_conditions_jointes(valeurs)
+        if motif is not None:
+            raise SauvegardeRefusee(motif, pays=pays)
         etats.append(EtatPays(**valeurs))
     _verifier_ordre([e.identifiant for e in etats])
     return tuple(etats)
