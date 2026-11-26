@@ -94,6 +94,21 @@ class HorsDomaine(ValueError):
     """Refus explicite d'un paramètre ou d'un état hors de son domaine (jamais d'écrêtage)."""
 
 
+class MinimumNonEncadre(HorsDomaine):
+    """Refus de `minimum_delta_r_alpha_en_zeta` (#173, P273) : r̄_α(0) − r̄_α(2 %) ne change pas de signe sur
+    l'intervalle de ζ ou n'y est pas fini (point anguleux non encadré ; minimum non localisé par cette méthode), ou
+    le croisement trouvé n'est pas minimal. `motif` décrit le refus.
+
+    `table_publiees` publie la ligne « refusée », motif à l'appui, au lieu d'interrompre la table : une variante de
+    paramètres (bords du domaine, rachat net) se calcule en entier, sans valeur NaN silencieuse. Comme « état non
+    publié », c'est un constat publié et non un refus de domaine des paramètres : le code de sortie n'en dépend pas.
+    """
+
+    def __init__(self, motif: str) -> None:
+        super().__init__(f"minimum de Δr̄_α en ζ : {motif}")
+        self.motif = motif
+
+
 class ReferenceNonPubliee(Exception):
     """Point de référence ν_G = 1 dont le plafond de E1 est actif : constat déclaré, état non publié.
 
@@ -309,6 +324,8 @@ TOL_IDENTITE = 1e-12  # ε de `sec:cadre-identites`, relatif à l'échelle S
 TOL_F = 1e-12  # résidu de F en lecture (α), fraction de la production
 LARGEUR_BISSECTION = 1e-14  # fraction par an
 ITERATIONS_MAX = 200
+ZETA_MINIMUM_BORNES = (2.0, 200.0)  # intervalle de recherche du minimum de Δr̄_α en ζ (#173, P273)
+TOL_ZETA_MINIMUM = 1e-3  # largeur finale de la bissection en ζ (#173, P273)
 SEUIL_SUPERNEUTRALITE = 0.001  # 0,1 point (critère 13 de la fiche 8) ; allocations : liste L2, après `mesure_alpha`
 
 POINTS_PI = (0.0, 0.02, 0.10)
@@ -2300,6 +2317,59 @@ def _delta_r_alpha(calc: Calculs, zeta: float) -> float:
     return 100 * (max(r) - min(r))
 
 
+def minimum_delta_r_alpha_en_zeta(calc: Calculs, bornes: tuple[float, float] = ZETA_MINIMUM_BORNES,
+                                  tol: float = TOL_ZETA_MINIMUM) -> tuple[float, float]:
+    """(ζ*, Δr̄_α(ζ*)) : minimum de Δr̄_α en ζ sur `bornes`, Δ en point (#173, forme P273, lecture de `monnaie`).
+
+    Δr̄_α = max − min de r̄_α sur {0 ; 2 % ; 10 %}, r̄_α(2 %) étant r̄ (à quelques 1e−18 près). À la table T1, le
+    point le plus haut est r̄_α(0) de ζ = 2 à 7, puis r̄_α(10 %) ; le plus bas est r̄_α(2 %) = r̄ jusqu'au point
+    anguleux où r̄_α(0) le rejoint (ζ ≈ 63), puis r̄_α(0). Le minimum est ce point anguleux, artefact de la
+    statistique max − min et non optimum économique. ζ* est localisé par bissection de r̄_α(0 ; ζ) − r̄_α(2 % ; ζ)
+    jusqu'à une largeur `tol` (milieu de l'intervalle final ; ⌈log₂(largeur/tol)⌉ itérations, 18 sur [2 ; 200] à
+    1e−3), puis contrôlé comme minimum local : avec [a ; b] l'intervalle final et w = b − a, Δr̄_α décroît de a − w à
+    a et croît de b à b + w. Ces deux paires restent chacune d'un côté du point anguleux ; comparer Δr̄_α(ζ*) aux seules
+    extrémités a et b refuserait un vrai minimum quand ζ* tombe au-delà du point anguleux plus loin que l'extrémité
+    restée en deçà (mesuré : ν_H = 1 seul, ζ* = 64,384, écart de 1e−7 point).
+
+    Refus : bornes non finies ou non croissantes, ou `tol` non finie ou ≤ 0, par `HorsDomaine` ; différence de même
+    signe (ou nulle) aux deux bornes, ou non finie, par `MinimumNonEncadre` (point anguleux non encadré ; minimum non
+    localisé par cette méthode) ; croisement trouvé mais Δr̄_α non décroissante à gauche ou non croissante à droite,
+    par `MinimumNonEncadre` (croisement non minimal). Chaque refus porte son motif."""
+    a, b = bornes
+    if not (math.isfinite(a) and math.isfinite(b) and a < b and math.isfinite(tol) and tol > 0):
+        raise HorsDomaine(f"minimum de Δr̄_α en ζ : bornes [{a!r} ; {b!r}] finies et croissantes, tolérance {tol!r} "
+                          "finie et > 0 attendues")
+
+    def ecart(zeta: float) -> float:
+        return calc.r_alpha(0.0, zeta) - calc.r_alpha(0.02, zeta)
+
+    fa, fb = ecart(a), ecart(b)
+    if not (math.isfinite(fa) and math.isfinite(fb) and fa * fb < 0):
+        raise MinimumNonEncadre(f"r̄_α(0) − r̄_α(2 %) vaut {fa!r} à ζ = {a!r} et {fb!r} à ζ = {b!r}, aucun "
+                                f"changement de signe sur [{a!r} ; {b!r}] : point anguleux non encadré ; minimum "
+                                "non localisé par cette méthode")
+    iterations = 0
+    while b - a > tol:
+        if iterations >= ITERATIONS_MAX:
+            raise HorsDomaine(f"bissection en ζ non convergée en {ITERATIONS_MAX} itérations sur [{a!r} ; {b!r}]")
+        m = (a + b) / 2
+        fm = ecart(m)
+        iterations += 1
+        if not math.isfinite(fm):
+            raise MinimumNonEncadre(f"r̄_α(0) − r̄_α(2 %) non fini ({fm!r}) à ζ = {m!r} : minimum non localisé par "
+                                    "cette méthode")
+        if (fa < 0) == (fm < 0):
+            a, fa = m, fm
+        else:
+            b = m
+    zeta, w = (a + b) / 2, b - a
+    gauche, delta_a, delta_b, droite = (_delta_r_alpha(calc, z) for z in (a - w, a, b, b + w))
+    if not (gauche > delta_a and droite > delta_b):
+        raise MinimumNonEncadre(f"croisement trouvé mais non minimal : Δr̄_α vaut {gauche!r}, {delta_a!r}, "
+                                f"{delta_b!r} et {droite!r} à ζ = {a - w!r}, {a!r}, {b!r} et {b + w!r}")
+    return zeta, _delta_r_alpha(calc, zeta)
+
+
 def _canal_ecarts_nominaux(calc: Calculs, zeta: float) -> float:
     """Part de ϖ_L dans r̄_α(10 %) − r̄_α(0), en point, mesurée sur l'état résolu (#80 ; avis de `monnaie` du
     06/10/2026) : la différence en lecture (α) à ϖ_L de la configuration, moins la même différence à ϖ_L = 0, ϖ_D
@@ -2479,8 +2549,9 @@ VALEURS_PUBLIEES += tuple(
      lambda c: 100 * c.alpha()["allocations"]["tu"], "D"),
     ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point", "1,197", lambda c: _delta_r_alpha(c, 2.0), "D"),
     ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point", "0,278", lambda c: _delta_r_alpha(c, 8.0), "D"),
-    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point", "0,1614",
-     lambda c: _delta_r_alpha(c, 68.0), "D"),
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 68, point", "0,1614", lambda c: _delta_r_alpha(c, 68.0), "D"),
+    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ sur [2 ; 200], point", "0,1598",
+     lambda c: minimum_delta_r_alpha_en_zeta(c)[1], "D"),
     ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point", "-0,33",
      lambda c: 100 * (c.r_alpha(0.03, 2.0) - c.r_alpha(0.02, 2.0)), "D"),
     ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point", "-0,07",
@@ -2659,6 +2730,12 @@ def table_publiees(calc: Calculs, liste: tuple = VALEURS_PUBLIEES,
             lignes.append({"section": section, "grandeur": description, "publie": publie, "script": math.nan,
                            "ecart": math.nan, "seuil": 0.0 if publie == AUCUNE else comparer(publie, 0.0)[1],
                            "verdict": "non publiée", "categorie": categorie, "libelle": str(constat),
+                           "explication": ""})
+            continue
+        except MinimumNonEncadre as refus:  # minimum de Δr̄_α en ζ non encadré (#173) : refus publié, motif à l'appui
+            lignes.append({"section": section, "grandeur": description, "publie": publie, "script": math.nan,
+                           "ecart": math.nan, "seuil": 0.0 if publie == AUCUNE else comparer(publie, 0.0)[1],
+                           "verdict": "refusée", "categorie": categorie, "libelle": f"refus ({refus.motif})",
                            "explication": ""})
             continue
         if publie == AUCUNE:
@@ -2992,7 +3069,7 @@ def afficher(r: dict[str, object], sortie=None) -> None:
           f"dividendes/ventes {_f(v['Div_F_sur_ventes'], 6)} %")
     p()
     def ligne(l: dict[str, object]) -> None:
-        comparaison = ("" if l["publie"] == AUCUNE
+        comparaison = ("" if l["publie"] == AUCUNE or l["verdict"] == "refusée"
                        else f"écart {l['ecart']:+.3g} (seuil {l['seuil']:.1g}) : ")
         p(f"- [{l['categorie']}] {l['section']} — {l['grandeur']} : publié {l['publie']} ; "
           f"script {l['libelle'] or _f(l['script'], 9)} ; {comparaison}{l['verdict']}"
@@ -3002,16 +3079,19 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     p("## Valeurs publiées en vigueur : comparaison à la dernière décimale (arrondi au plus proche)")
     ecarts = [l for l in r["publiees"] if l["verdict"] == "écart"]
     non_publiees = [l for l in r["publiees"] if l["verdict"] == "non publiée"]
+    refusees = [l for l in r["publiees"] if l["verdict"] == "refusée"]
     for l in r["publiees"]:
         ligne(l)
     p()
     egales_S = sum(1 for l in r["publiees"] if l["verdict"] == "égal" and l["categorie"] == "S")
     p(f"Bilan : {len(r['publiees'])} valeurs comparées, "
-      f"{len(r['publiees']) - len(ecarts) - len(non_publiees) - egales_S} égales sur "
+      f"{len(r['publiees']) - len(ecarts) - len(non_publiees) - len(refusees) - egales_S} égales sur "
       f"l'état résolu, {egales_S} égales en arithmétique de la spécification (catégorie S, sans état résolu), "
       + (f"{len(ecarts)} écarts (publiés avec leur explication ; aucun n'est masqué)" if ecarts else "aucun écart")
-      + (f", {len(non_publiees)} non publiées (point de référence hors domaine, plafond de E1 actif)."
-         if non_publiees else "."))
+      + (f", {len(non_publiees)} non publiées (point de référence hors domaine, plafond de E1 actif)"
+         if non_publiees else "")
+      + (f", {len(refusees)} {'refusée' if len(refusees) == 1 else 'refusées'} (minimum de Δr̄_α en ζ non "
+         "localisé, motif à la ligne)." if refusees else "."))
     p()
     p("## Contre-épreuve : valeurs barrées reproduites sous leurs entrées d'origine (illustration du bloc 7, "
       "publication au commit 54edad8 ; ν_G non retenu), hors du bilan des valeurs en vigueur")
