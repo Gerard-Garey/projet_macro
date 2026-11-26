@@ -392,6 +392,12 @@ def controler_domaine(par: Parametres) -> list[str]:
     for nom in ("nu_F", "tu_bar", "kappa", "sigma"):
         if not getattr(par, nom) > 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : > 0 attendu")
+    # 1/κ fini : un κ > 0 sous-normal (1e−320) donne 1/κ infini ; refusé ici comme dans la table du bloc 2
+    # (`nations.moteur.parametres.production`), de sorte que script et table refusent le même ensemble (#125,
+    # point 5). Le domaine lui-même (borne inférieure de κ et de σ) reste une question de `macro` (point 6).
+    if not math.isfinite(1.0 / par.kappa):
+        raise HorsDomaine(f"kappa = {par.kappa!r} : κ > 0 et 1/κ fini attendus (domaine de définition : "
+                          "y^cap = K^vol/(n_a κ), N11)")
     # Borne haute 20 de η_r et ζ (P139) : refusée ici comme dans la table du bloc 6
     # (`nations.moteur.parametres.investissement`), de sorte que script et table refusent le même ensemble.
     for nom in ("eta_r", "zeta"):
@@ -603,7 +609,7 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     # Phase 1 : salaires (T2, T3), banque centrale (BC1 à BC6).
     pi_prec = P[0] / P[n] - 1  # π_{t−1} = P_{t−1}/P_{t−1−n_a} − 1
     pr_m1 = o["pr"] * (1 + par.g_pr) ** (-1 / n)
-    omega_m1 = o["W_m1"] / (P[0] * pr_m1)  # T2
+    omega_m1 = o["W_m1"] / (P[0] * pr_m1)  # T2, forme (i) déclarée (voir P2, phase 5)
     omega_c = 1 / (1 + par.mu_bar)
     lnW = (math.log(o["W_m1"]) + (math.log(1 + par.g_pr) + math.log(1 + o["pi_e"])) / n
            + par.lambda_w / n * (math.log(omega_c / omega_m1) - par.beta * (o["U_m1"] - par.U_eq)))  # T3
@@ -660,12 +666,20 @@ def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
     s.update(N=N, U=U, WB=WB, y=y, y_cap=y_cap, tu=tu)
     # Phase 5 : prix (P1 à P4), puis production (N1, N6 à N10), puis acheteurs (H6, S5, E2), S6.
     xi = 1 - o["IN_vol"] / IN_star  # P1
+    # P2 et T2 sous la forme (i) : marge d'ouverture ln(P_{t−1}/UC_{t−1}) tirée du registre et de W_{t−1},
+    # forme indépendante déclarée (#125, point 3) ; le moteur lit l'état μ̃_{t−1} (P54, option (ii)). Égales
+    # à l'arrondi près sur l'état résolu, les deux formes divergent sur un état où μ̃ ≠ ln(P/UC).
     UC_m1 = o["W_m1"] / pr_m1
     mu_t = ((1 - par.lambda_mu / n) * math.log(P[0] / UC_m1)
             + par.lambda_mu / n * (math.log(1 + par.mu_bar) + par.psi_xi * xi))  # P2
     p = UC * math.exp(mu_t)  # P3 ; P4 : P_t ≡ p
     d_H, d_F, d_G = C_plan / p, I_plan / p, G_plan / p  # N6
     d = d_H + d_F + d_G
+    if d == 0.0:
+        # Le moteur rend des ventes et des volumes servis nuls à d = 0 (`nations.blocs.production.ventes`) ;
+        # le script, qui sert chaque acheteur au taux v/d, refuse ce point au lieu de le couvrir (#125, point 4).
+        raise HorsDomaine("N6 : demande adressée d = 0, taux de service v/d non défini (le moteur rend des "
+                          "volumes servis nuls ; état hors du domaine du script)")
     disponible = o["IN_vol"] + y  # calculé une fois : v et IN^vol_{t+1} sur la même valeur
     v = min(d, disponible)
     v_H, v_F, v_G = v / d * d_H, v / d * d_F, v / d * d_G
