@@ -3,8 +3,9 @@
 **Banc** (critère « Branche » de la feuille de route, § 1 ; ADR 0013, annotation du 15/11/2026
 (J3-d2), point 6) : `socle.blocs_du_socle_complet()`, tables alignées sur le sentier du script
 (`socle.parametres_du_sentier`, θ_G résolu compris), n_a = 12, **ν_G = 1,15 passé explicitement**
-au script (défaut ν_G = 1, hors domaine), π* ∈ {0 ; 2 % ; 10 %}, état initial du script
-(`socle.etat_initial`, la résolution par `scenarios/` relevant de J3-e). Étiquette : `ETIQUETTE`.
+au script (défaut ν_G = 1, hors domaine), π* ∈ {0 ; 2 % ; 10 %}, état initial résolu par
+`nations.scenarios.initial.etat_initial` aux tables du sentier (`socle.etat_initial`, #175).
+Étiquette : `ETIQUETTE`.
 Les chocs sont injectés **par composition dans `tests/`** (F1) : une sous-classe du bloc 9 réel
 dont les méthodes d'étape lisent une table modifiée (`bloc_9_compose`), des entrées de scénario
 (ς_B), un état initial modifié (r̂*, D_H) ; jamais par un drapeau dans `src/`.

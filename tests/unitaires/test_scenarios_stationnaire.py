@@ -29,6 +29,31 @@ POINTS_PI = (0.0, 0.02, 0.10)
 # Liste fermée des conditions d'existence, dans l'ordre du script (ADR 0015, point 8.1).
 CONDITIONS_ATTENDUES = ("D1", "D2", "existence_dividende_banque", "Div_F", "theta_G", "marge_plafond_E1",
                         "B", "B_Bk", "B_CB", "B_H")
+# Notation de chaque condition d'existence dans le paragraphe « État initial du moteur » de
+# `sec:calibration` : fragment TeX qui l'identifie dans la liste du résolveur (#175).
+NOTATION_DES_CONDITIONS = {
+    "D1": r"\mathcal{D}_1 > 0", "D2": r"\mathcal{D}_2 > 0",
+    "existence_dividende_banque": "existence du dividende de la banque",
+    "Div_F": r"\mathit{Div}_F \ge 0", "theta_G": r"\theta_G > 0",
+    "marge_plafond_E1": "marge du plafond de E1", "B": r"$B \ge 0$",
+    "B_Bk": r"B_{\mathit{Bk}} \ge 0", "B_CB": r"B_{\mathit{CB}} \ge 0", "B_H": "B_H = 0",
+}
+# Identifiants dont le message `HorsDomaine` du script cite une section (#175).
+MESSAGES_AVEC_SECTION = ("existence_dividende_banque", "theta_G", "marge_plafond_E1", "B", "B_Bk", "B_CB")
+
+
+def groupes_de_conditions_du_paragraphe():
+    """Liste du paragraphe « État initial du moteur », coupée en groupes (séparateur « ; ») :
+    pour chaque groupe, les identifiants qu'il nomme et les sections qu'il cite par `\\S\\ref`."""
+    texte = SPECIFICATION.read_text(encoding="utf-8")
+    debut = texte.index(r"\textbf{État initial du moteur}")
+    marque = r"\code{nations.scenarios.stationnaire.CONDITIONS_D_EXISTENCE}) :"
+    debut = texte.index(marque, debut) + len(marque)
+    liste = texte[debut:texte.index(". Un pôle exact", debut)]
+    return [(tuple(sorted((i for i, n in NOTATION_DES_CONDITIONS.items() if n in groupe),
+                          key=lambda i: groupe.index(NOTATION_DES_CONDITIONS[i]))),
+             tuple(re.findall(r"\\S\\ref\{(sec:[^}]+)\}", groupe)))
+            for groupe in liste.split(" ; ")]
 
 
 def entrees(stationnaire, **variations):
@@ -172,6 +197,23 @@ def test_liste_fermee_des_conditions_et_sections_de_la_specification():
     assert {c[2] for c in resolveur.CONDITIONS_D_EXISTENCE} <= labels
 
 
+def test_sections_des_conditions_citees_par_la_specification():
+    """Lien code ↔ spécification (#175) : le paragraphe « État initial du moteur » nomme chaque
+    condition une fois, dans l'ordre de `CONDITIONS_D_EXISTENCE` ; un groupe qui cite une section
+    la cite seule, et c'est celle de chacune de ses conditions dans le code. Un groupe sans renvoi
+    (aujourd'hui B_Bk, B_CB, B_H) n'est pas comparé."""
+    groupes = groupes_de_conditions_du_paragraphe()
+    assert tuple(i for ids, _ in groupes for i in ids) == CONDITIONS_ATTENDUES
+    sections = {identifiant: section for identifiant, _, section in resolveur.CONDITIONS_D_EXISTENCE}
+    comparees = 0
+    for identifiants, renvois in groupes:
+        assert len(renvois) <= 1, (identifiants, renvois)
+        for identifiant in identifiants if renvois else ():
+            assert sections[identifiant] == renvois[0], identifiant
+            comparees += 1
+    assert comparees >= 7
+
+
 @pytest.mark.parametrize("pi", POINTS_PI)
 def test_aucune_condition_violee_a_l_etat_de_reference(stationnaire, pi):
     assert resolveur.relever_conditions(etat_initial(entrees(stationnaire, pi_cible=pi))) == ()
@@ -236,3 +278,13 @@ def test_le_script_refuse_le_pole_en_hors_domaine_meme_sans_controle(stationnair
 def test_le_script_a_un_message_par_condition_de_la_liste(stationnaire):
     """Chaque condition de la liste fermée a son message `HorsDomaine` dans le script, et seulement elles."""
     assert tuple(stationnaire.MESSAGES_DES_CONDITIONS) == CONDITIONS_ATTENDUES
+
+
+def test_le_message_du_script_cite_la_section_de_la_condition(stationnaire):
+    """Le message `HorsDomaine` du script cite exactement la section de la condition dans
+    `CONDITIONS_D_EXISTENCE` pour les identifiants de `MESSAGES_AVEC_SECTION` ; les autres (D1,
+    D2, B_H) ne citent aucune section `sec:` (#175)."""
+    sections = {identifiant: section for identifiant, _, section in resolveur.CONDITIONS_D_EXISTENCE}
+    for identifiant, message in stationnaire.MESSAGES_DES_CONDITIONS.items():
+        attendu = {sections[identifiant]} if identifiant in MESSAGES_AVEC_SECTION else set()
+        assert set(re.findall(r"sec:[\w-]+", message(-1.0))) == attendu, identifiant
