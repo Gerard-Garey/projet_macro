@@ -372,6 +372,22 @@ def test_etat_stationnaire_egal_au_script_sur_le_moteur(banc, socle, pi):
     assert v["Tr"] == 0.0
 
 
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_conditions_jointes_tenues_a_chaque_cloture(banc, pi):
+    """#122 ; ADR 0015, point 12.3 (S6) : `etat_de_cloture` n'évalue pas les conditions jointes,
+    qui doivent tenir par la forme de N8. Sur 720 pas sans choc, `defaut_des_conditions_jointes`
+    est sans défaut sur l'état initial et sur chaque état de clôture ; l'état du pas 720 est
+    sauvegardé puis rechargé (contrôle complet de la reprise), égal à lui-même."""
+    _, initial, releve = banc[pi]
+    assert len(releve.pas) == NB_PAS
+    for etat in (initial, *(p["etat"] for p in releve.pas)):
+        champs = {nom: getattr(etat, nom) for nom in schema.CHAMPS}
+        assert schema.defaut_des_conditions_jointes(champs) is None, etat.t
+    final = releve.pas[-1]["etat"]
+    assert final.t == NB_PAS
+    assert charger(sauvegarder([final])) == (final,)
+
+
 def _contre_exemples(socle, tables, initial):
     """Clé de `GRANDEURS_NULLES_DU_SOCLE_COMPLET` → [(tables, ouverture)] où une seule des
     conditions de son libellé tombe : tables du bloc 9 ou du bloc 8 variées, ou ouverture

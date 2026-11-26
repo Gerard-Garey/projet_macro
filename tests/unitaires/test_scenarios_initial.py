@@ -182,6 +182,16 @@ def test_pi_etoile_lu_sur_la_table_et_conventions_de_l_etat_initial(pi):
     assert etat.varrho_bar_L == (1 + etat.i_L) / (1 + pi) - 1
 
 
+@pytest.mark.parametrize("pi", POINTS_PI)
+def test_etat_resolu_sans_defaut_de_condition_jointe(pi):
+    """#122 (critère 4) : l'état résolu aux trois π* passe les conditions jointes du schéma,
+    IN^vol et IN strictement positifs (la condition IN^vol = 0 ⇒ IN = 0 tient sans cas limite)."""
+    etat = resoudre(tables_a(pi)).etat
+    assert schema.defaut_des_conditions_jointes(
+        {nom: getattr(etat, nom) for nom in schema.CHAMPS}) is None
+    assert etat.IN_vol > 0.0 and etat.IN > 0.0
+
+
 def test_identite_traversee_sans_effet_sur_les_valeurs():
     a = resoudre(REFERENCE).etat
     b = initial.etat_initial(REFERENCE, initial.NORMALISATION_DE_REFERENCE, identifiant="B",
