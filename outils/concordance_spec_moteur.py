@@ -11,7 +11,7 @@ analyse `tokenize` et `ast` du Python) et relève les écarts :
    ligne qui précède l'instruction, `CONVENTIONS.md` § 2.2) : une balise en
    fin de ligne de code est un écart ;
 2. format des labels (expression régulière de `CONVENTIONS.md` § 2.1) et
-   radical de bloc existant (`noyau`, `moteur` ou module de
+   radical de bloc existant (`noyau`, `moteur`, `observation` ou module de
    `src/nations/blocs/`) ;
 3. chaque équation numérotée porte un label : `equation` et `multline`
    portent un seul numéro, donc exactement un label, sauf `\\nonumber` ou
@@ -97,7 +97,7 @@ TEX_DEFAUT = RACINE / "docs" / "specification" / "nations_et_marches.tex"
 # Expression régulière des labels d'équation (CONVENTIONS.md, § 2.1).
 MOTIF_LABEL = re.compile(r"eq:[a-z][a-z0-9_]*-[a-z0-9]+(-[a-z0-9]+)*")
 # Radicaux admis hors des modules de blocs (CONVENTIONS.md, § 2.1).
-RADICAUX_TRANSVERSES = ("noyau", "moteur")
+RADICAUX_TRANSVERSES = ("noyau", "moteur", "observation")
 STATUTS = ("dérivée", "approchée", "choix de conception")
 # Décision du mainteneur citée dans une provenance : « décision Mn » ou
 # « (Mn) », tiret admis (« M-n », CONVENTIONS.md ; « Mn », feuille de route).
@@ -755,7 +755,7 @@ def _relatif(chemin: Path, racine: Path) -> str:
 
 
 def radicaux_admis(src: Path) -> set[str]:
-    """Radicaux de labels admis : `noyau`, `moteur` et modules de blocs."""
+    """Radicaux de labels admis : `noyau`, `moteur`, `observation` et modules de blocs."""
     admis = set(RADICAUX_TRANSVERSES)
     blocs = src / "nations" / "blocs"
     if blocs.is_dir():
@@ -963,7 +963,7 @@ def _verifier_format(label: str, emplacement: str, admis: set[str], ecarts: list
     if radical not in admis:
         ecarts.append(Ecart(
             2, emplacement,
-            f"{label} : radical « {radical} » ni noyau, ni moteur, ni module de src/nations/blocs/",
+            f"{label} : radical « {radical} » ni noyau, ni moteur, ni observation, ni module de src/nations/blocs/",
         ))
 
 
