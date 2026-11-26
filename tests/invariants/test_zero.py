@@ -57,6 +57,7 @@ from nations.observation.serie_test_zero import (
     GRANDEURS,
     LONGUEUR_DU_BLOC,
     SUR_12_TOURS,
+    MoyenneDeBloc,
     SerieDuTestZero,
     ratio_au_pib_annuel,
     richesse_sur_revenu_annuel,
@@ -174,7 +175,9 @@ def centres(parametres):
         "B9": e.i_CB - x.pi_etoile, "B10": richesse_sur_revenu_annuel(e.V_H, e.YD, n),
         "B11": 1.0 - e.C / e.YD, "B12": ratio_au_pib_annuel(e.p * e.K_vol, e.PIB, n),
         "B13": e.I / e.PIB, "B14": e.L / e.K, "B15": ratio_au_pib_annuel(e.D_F, e.PIB, n),
-        "B16": ratio_au_pib_annuel(e.D_H + e.D_F, e.PIB, n), "B17": e.E_Bk / e.L,
+        "B16": ratio_au_pib_annuel(e.D_H + e.D_F, e.PIB, n),
+        # Sans objet si L = 0 (lv* = 0, dans le domaine), comme dans la série : `None`, jamais NaN.
+        "B17": e.E_Bk / e.L if e.L != 0.0 else None,
         "B18 (i) ϖ_L": x.varpi_L, "B18 (i) ϖ_D": x.varpi_D,
         "B18 (ii) ϖ_L": x.varpi_L, "B18 (ii) ϖ_D": x.varpi_D,
         "B19 M^G": ratio_au_pib_annuel(e.M_G, e.PIB, n), "B19 Res (H)": ou.Res / s_cb,
@@ -229,13 +232,19 @@ def test_bandes_couvrent_b1_a_b26():
     assert numeros == set(range(1, 27)) - {23}
 
 
+def cle_du_pire(ecart):
+    """Clé d'ordre des écarts où NaN est le pire, au-dessus de inf (jamais ignoré par `max`)."""
+    return (True, 0.0) if math.isnan(ecart) else (False, ecart)
+
+
 def juger_bande(serie, cle, c, nature, demi, nb_blocs):
     """(pire, détail, tenu) : pour une bande, le plus grand écart des moyennes des `nb_blocs`
     premiers blocs de 60 pas au centre (relatif pour « rel. ») ; pour une égalité, le plus grand
-    écart absolu à chaque pas des `nb_blocs` × 60 premiers pas."""
+    écart absolu à chaque pas des `nb_blocs` × 60 premiers pas. Un écart NaN est le pire, et non
+    tenu."""
     if nature == EGALITE:
         valeurs = [(t, x) for t, x in serie.serie(cle) if t < nb_blocs * LONGUEUR_DU_BLOC]
-        pire, t = max(((abs(x - c), t) for t, x in valeurs), key=lambda p: p[0])
+        pire, t = max(((abs(x - c), t) for t, x in valeurs), key=lambda p: cle_du_pire(p[0]))
         return pire, f"max_t |x − c| = {pire:.2e} (pas {t})", pire <= demi
     moyennes = serie.moyennes_par_bloc(cle)[:nb_blocs]
     assert len(moyennes) == nb_blocs, cle
@@ -243,7 +252,7 @@ def juger_bande(serie, cle, c, nature, demi, nb_blocs):
         ecarts = [abs(m.moyenne / c - 1.0) for m in moyennes]
     else:
         ecarts = [abs(m.moyenne - c) for m in moyennes]
-    b = max(range(nb_blocs), key=lambda i: ecarts[i])
+    b = max(range(nb_blocs), key=lambda i: cle_du_pire(ecarts[i]))
     detail = (f"pire bloc {b + 1} (pas {moyennes[b].premier}–{moyennes[b].dernier}, "
               f"{moyennes[b].nombre} valeurs) : moyenne {moyennes[b].moyenne!r}, écart "
               f"{ecarts[b]:.2e}")
@@ -449,7 +458,7 @@ def test_a2_stationnarite_exacte(trajectoires, socle, pi, publier):
                 pire, t = serie.ecart_relatif_maximal(cle, c[cle], avant=nb)
                 seuil = SEUIL_A2
             mesures.append(f"{fenetre} : {pire:.1e} (pas {t})")
-            if pire > seuil:
+            if not pire <= seuil:  # un écart NaN est hors
                 hors.append((cle, fenetre, pire))
         lignes.append(f"{cle} : " + ("nulle, max |x|" if cle in nulles else "max |x/x̄ − 1|")
                       + f", x̄ = {c[cle]!r} — " + " | ".join(mesures))
@@ -781,6 +790,60 @@ def test_serie_refuse_un_evenement_inconnu_et_une_ligne_non_executee():
         serie.relever(FinDePas(0, ei.etat, (), ()))
     with pytest.raises(TypeError):
         SerieDuTestZero(object(), pas_par_an=12, r_bar=0.01)
+
+
+def tables_sans_credit():
+    """Tables de référence à lv* = 0 (dans le domaine) : crédit L nul à l'état initial résolu."""
+    return dataclasses.replace(PARAMETRES_DE_REFERENCE, investissement=varier(
+        PARAMETRES_DE_REFERENCE.investissement, lv_etoile=0.0))
+
+
+def test_observation_sans_effet_a_credit_nul(socle):
+    """lv* = 0 : L = 0 à l'ouverture, B17 sans objet. La série ne lève pas (ni
+    `ZeroDivisionError`, ni NaN refusé) et reste sans effet : sauvegardes identiques à l'octet sous
+    la série et sous `ObservateurNul`, 24 pas ; B17 non relevée tant que L = 0 ; centre de B17
+    `None` (sans objet), jamais une division par zéro."""
+    ei = initial.etat_initial(tables_sans_credit(), initial.NORMALISATION_DE_REFERENCE,
+                              identifiant="A", graine=GRAINE)
+    assert ei.etat.L == 0.0
+    serie = SerieDuTestZero(ei.etat, pas_par_an=ei.parametres.cadre.pas_par_an,
+                            r_bar=ei.parametres.banque_centrale.r_bar.valeur)
+    sous_serie, arret = derouler(socle, ei, 24, serie)
+    assert arret is None, arret
+    sous_nul, arret = derouler(socle, ei, 24, ObservateurNul())
+    assert arret is None, arret
+    assert [sauvegarder([e]) for e in sous_serie] == [sauvegarder([e]) for e in sous_nul]
+    assert serie.pas() == tuple(range(24))
+    pas_a_credit_nul = {0} | {t + 1 for t, e in enumerate(sous_serie[:-1]) if e.L == 0.0}
+    assert {t for t, _ in serie.serie("B17")} == set(range(24)) - pas_a_credit_nul
+    assert centres(ei.parametres)["B17"] is None
+
+
+class _SerieConstruite:
+    """Série d'essai construite à la main : valeurs par pas et moyennes par bloc données."""
+
+    def __init__(self, valeurs, moyennes):
+        self._valeurs, self._moyennes = valeurs, moyennes
+
+    def serie(self, cle):
+        return tuple(self._valeurs)
+
+    def moyennes_par_bloc(self, cle):
+        return tuple(self._moyennes)
+
+
+def test_juger_bande_nan_au_pire():
+    """Un écart NaN est le pire et non tenu, par pas (égalité) comme par bloc : `max` ne l'ignore
+    pas (mesure de l'audit : NaN au pas 1 entre deux valeurs finies jugé « tenu » avant
+    correction)."""
+    serie = _SerieConstruite([(0, 0.0), (1, math.nan), (2, 1e-15)], [
+        MoyenneDeBloc(0, 59, 60, 0.0), MoyenneDeBloc(60, 119, 60, math.nan),
+        MoyenneDeBloc(120, 179, 60, 1e-4)])
+    pire, detail, tenu = juger_bande(serie, "B17", 0.0, EGALITE, SEUIL_EGALITE, 1)
+    assert math.isnan(pire) and "pas 1" in detail and not tenu
+    for nature in (RELATIVE, ABSOLUE):
+        pire, detail, tenu = juger_bande(serie, "B9", 1.0, nature, 0.001, 3)
+        assert math.isnan(pire) and "pire bloc 2" in detail and not tenu, nature
 
 
 def test_ratio_au_pib_annuel():

@@ -323,8 +323,9 @@ def test_conversion_unique_dans_src():
 
 def test_exemptions_fermees_et_nommees():
     """Les exemptions sont les deux conversions, les deux fonctions du calendrier, les cinq
-    fonctions du résolveur de l'état stationnaire (ADR 0015, point 13) et le ratio au PIB annuel
-    du test zéro (#176), sans recouvrement."""
+    fonctions du résolveur de l'état stationnaire (ADR 0015, point 13), le ratio au PIB annuel
+    du test zéro et la richesse des ménages de B10 (`richesse_sur_revenu_annuel`) (#176), sans
+    recouvrement."""
     assert set(EXEMPTIONS_CONVERSIONS) == {("nations.moteur.conversions", "par_pas"),
                                            ("nations.moteur.conversions", "facteur_par_pas")}
     assert set(EXEMPTIONS_CALENDRIER) == {("nations.moteur.calendrier", "date"),

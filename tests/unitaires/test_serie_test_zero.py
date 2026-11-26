@@ -160,3 +160,140 @@ def test_ecarts_maximaux_sur_les_pas_anterieurs(releve):
     pire, t = serie.ecart_absolu_maximal("B1", ref, avant=NB_PAS)
     assert (pire, t) == max(((abs(xs[k] - ref), k) for k in range(NB_PAS)), key=lambda p: p[0])
     assert serie.ecart_absolu_maximal("B4", 0.0, avant=N_A - 1) == (0.0, None)
+
+
+def relever_un_pas(serie, k, o, **modifs):
+    """Relève le pas synthétique k (clôture puis fin de pas), variables modifiées par `modifs`."""
+    serie.relever(ClotureDePhase(k, "6", (), tuple(
+        (ligne, ((ligne, x),)) for ligne, x in montants(k).items())))
+    serie.relever(FinDePas(k, o[k + 1], tuple({**variables(k), **modifs}.items()), ()))
+
+
+@pytest.mark.parametrize("valeur", [math.nan, math.inf, -math.inf])
+def test_valeur_non_finie_refusee_a_l_enregistrement(releve, valeur):
+    """Une valeur non finie est refusée à l'enregistrement (`ValueError` nommant la grandeur et le
+    pas), jamais tenue dans la série ; le pas refusé n'enregistre aucune valeur et abandonne ses
+    montants : il se rejoue depuis ses clôtures de phase, aux valeurs du calcul à la main."""
+    o, _ = releve
+    serie = SerieDuTestZero(o[0], pas_par_an=N_A, r_bar=R_BAR)
+    with pytest.raises(ValueError, match=r"pas 0 : B3 = .*non finie"):
+        relever_un_pas(serie, 0, o, U_suivant=valeur)
+    assert serie.pas() == () and all(serie.serie(cle) == () for cle in GRANDEURS)
+    with pytest.raises(ValueError, match="lignes non exécutées"):
+        serie.relever(FinDePas(0, o[1], tuple(variables(0).items()), ()))
+    relever_un_pas(serie, 0, o)
+    assert serie.serie("B12") == ((0, a_la_main(o, 0)["B12"]),)
+
+
+def test_valeur_non_finie_d_une_grandeur_sur_12_tours_refusee(releve):
+    """P non fini n'entre que dans B7 (puis B9) : les pas 0 à 10 sont relevés, le pas 11, premier
+    pas de B7, est refusé en nommant B7, et la série garde ses 11 pas."""
+    o, _ = releve
+    serie = SerieDuTestZero(o[0], pas_par_an=N_A, r_bar=R_BAR)
+    for k in range(N_A - 1):
+        relever_un_pas(serie, k, o, P=math.nan)
+    with pytest.raises(ValueError, match=r"pas 11 : B7 = nan"):
+        relever_un_pas(serie, N_A - 1, o, P=math.nan)
+    assert serie.pas() == tuple(range(N_A - 1))
+    assert serie.serie("B9") == () and len(serie.serie("B1")) == N_A - 1
+
+
+def test_ecarts_maximaux_nan_au_pire(releve):
+    """Un écart NaN est le pire, jamais ignoré par la comparaison (mesure de l'audit : série
+    [(0, 1), (1, NaN), (2, 1 + 1e−15)] → (1,11e−15 ; 2) avant correction). La garde
+    d'enregistrement est contournée à dessein (défense en profondeur des jugements)."""
+    o, _ = releve
+    serie = SerieDuTestZero(o[0], pas_par_an=N_A, r_bar=R_BAR)
+    serie._series["B1"].extend([(0, 1.0), (1, math.nan), (2, 1.0 + 1e-15), (3, math.inf)])
+    # NaN au-dessus de inf : un inf qui précède le NaN ne l'emporte pas.
+    serie._series["B2"].extend([(0, math.inf), (1, math.nan)])
+    for methode in (serie.ecart_relatif_maximal, serie.ecart_absolu_maximal):
+        pire, t = methode("B1", 1.0, avant=3)
+        assert math.isnan(pire) and t == 1, methode
+        pire, t = methode("B1", 1.0, avant=4)
+        assert math.isnan(pire) and t == 1, methode
+        pire, t = methode("B2", 1.0, avant=2)
+        assert math.isnan(pire) and t == 1, methode
+
+
+def test_b17_sans_objet_a_credit_nul(releve):
+    """L d'ouverture nul (lv* = 0, dans le domaine) : B17 n'est pas relevée (rapport sans objet,
+    ni NaN ni `ZeroDivisionError`) ; les autres grandeurs le sont, B14 à 0."""
+    o, _ = releve
+    o_nul = [dataclasses.replace(x, L=0.0) for x in o]
+    serie = SerieDuTestZero(o_nul[0], pas_par_an=N_A, r_bar=R_BAR)
+    for k in range(2):
+        relever_un_pas(serie, k, o_nul)
+    assert serie.serie("B17") == ()
+    assert serie.serie("B14") == ((0, 0.0), (1, 0.0))
+    assert all(len(serie.serie(cle)) == 2 for cle in GRANDEURS
+               if cle != "B17" and cle not in SUR_12_TOURS)
+
+
+@pytest.mark.parametrize("pas_par_an, erreur", [
+    (0, ValueError), (-1, ValueError), (4, ValueError), (13, ValueError),
+    (12.0, TypeError), (True, TypeError)])
+def test_pas_par_an_controle(releve, pas_par_an, erreur):
+    """n_a : `int` égal à la longueur du registre de prix moins un (n_a + 1 prix)."""
+    o, _ = releve
+    assert len(o[0].registre_prix) == N_A + 1
+    with pytest.raises(erreur):
+        SerieDuTestZero(o[0], pas_par_an=pas_par_an, r_bar=R_BAR)
+
+
+@pytest.mark.parametrize("r_bar, erreur", [
+    (math.nan, ValueError), (math.inf, ValueError), (-math.inf, ValueError), (0, TypeError)])
+def test_r_bar_controle(releve, r_bar, erreur):
+    """r̄ : flottant fini."""
+    o, _ = releve
+    with pytest.raises(erreur):
+        SerieDuTestZero(o[0], pas_par_an=N_A, r_bar=r_bar)
+
+
+def cloture(k, t=None):
+    """Clôture de phase portant les montants du pas k, datée du pas `t` (k par défaut)."""
+    return ClotureDePhase(k if t is None else t, "6", (), tuple(
+        (ligne, ((ligne, x),)) for ligne, x in montants(k).items()))
+
+
+def test_fin_de_pas_hors_de_l_ouverture_stockee_refusee(releve):
+    """La fin du pas t suit l'état d'ouverture du pas t stocké (fin.t = ouverture.t) : une fin de
+    pas d'un autre pas est refusée, sans valeur enregistrée, et les montants du pas en cours sont
+    abandonnés (une fin du pas 0 ne les lit pas ensuite)."""
+    o, _ = releve
+    serie = SerieDuTestZero(o[0], pas_par_an=N_A, r_bar=R_BAR)
+    serie.relever(cloture(0))
+    with pytest.raises(ValueError, match="fin du pas 1 reçue sur l'état d'ouverture du pas 0"):
+        serie.relever(FinDePas(1, o[2], tuple(variables(1).items()), ()))
+    assert serie.pas() == ()
+    with pytest.raises(ValueError, match="lignes non exécutées"):
+        serie.relever(FinDePas(0, o[1], tuple(variables(0).items()), ()))
+    relever_un_pas(serie, 0, o)  # rejoué depuis ses clôtures : accepté
+    assert serie.serie("B12") == ((0, a_la_main(o, 0)["B12"]),)
+
+
+def test_cloture_de_phase_d_un_autre_pas_refusee(releve):
+    """Mesure de l'audit : une clôture du pas 1 sur l'ouverture du pas 0 était acceptée, et la fin
+    du pas 0 lisait ses montants (B12 faux). Elle est refusée ; la fin du pas 0 qui suit, sans
+    clôture du pas 0, l'est aussi (lignes non exécutées) ; rejoué, le pas 0 est juste."""
+    o, _ = releve
+    serie = SerieDuTestZero(o[0], pas_par_an=N_A, r_bar=R_BAR)
+    with pytest.raises(ValueError, match="clôture de phase du pas 1 reçue sur l'état "
+                                         "d'ouverture du pas 0"):
+        serie.relever(cloture(1))
+    with pytest.raises(ValueError, match="lignes non exécutées"):
+        serie.relever(FinDePas(0, o[1], tuple(variables(0).items()), ()))
+    relever_un_pas(serie, 0, o)
+    assert serie.serie("B12") == ((0, a_la_main(o, 0)["B12"]),)
+
+
+def test_ligne_relevee_deux_fois_abandonne_les_montants(releve):
+    """Refus d'une ligne relevée deux fois : les montants du pas en cours sont abandonnés, le pas
+    se rejoue depuis ses clôtures (sans nouveau refus « relevée deux fois »)."""
+    o, _ = releve
+    serie = SerieDuTestZero(o[0], pas_par_an=N_A, r_bar=R_BAR)
+    serie.relever(cloture(0))
+    with pytest.raises(ValueError, match="relevée deux fois"):
+        serie.relever(cloture(0))
+    relever_un_pas(serie, 0, o)
+    assert serie.serie("B12") == ((0, a_la_main(o, 0)["B12"]),)
