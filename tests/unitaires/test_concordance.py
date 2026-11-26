@@ -186,6 +186,62 @@ def test_radical_sans_module(concordance, tmp_path):
     assert all("radical" in e.message for e in rapport.ecarts)
 
 
+# Couche d'observation (#115 ; CONVENTIONS.md § 2.1, décision P44 (b)) : le
+# radical `observation` est transverse, sa balise est dans
+# `src/nations/observation/`, hors des modules de blocs.
+OBSERVATION = '''\
+"""Grandeurs observées (fabriqué pour les tests)."""
+
+
+def ratio_pib_annuel(stock, pib):
+    """Ratio d'un stock au PIB annuel."""
+    # eq:observation-ratio-pib-annuel
+    return stock / pib
+'''
+
+
+def _equation_observation(label):
+    """EQUATION reportée sur la couche d'observation, sous le label `label`."""
+    return EQUATION.replace("eq:prix-cout-unitaire", label).replace(
+        "nations.blocs.prix.cout_unitaire", "nations.observation.ratios.ratio_pib_annuel",
+    )
+
+
+def _fichiers_observation(label):
+    """Prix sans balise ; balise `label` dans `src/nations/observation/`."""
+    return {
+        "src/nations/blocs/prix.py": PRIX.replace("    # eq:prix-cout-unitaire\n", ""),
+        "src/nations/observation/__init__.py": '"""Observation."""\n',
+        "src/nations/observation/ratios.py": OBSERVATION.replace(
+            "eq:observation-ratio-pib-annuel", label,
+        ),
+    }
+
+
+def test_radical_observation_admis(concordance, tmp_path):
+    label = "eq:observation-ratio-pib-annuel"
+    tex = fabriquer(tmp_path, corps_tex=_equation_observation(label),
+                    fichiers=_fichiers_observation(label))
+    rapport = verifier(concordance, tmp_path, tex)
+    assert rapport.ecarts == []
+    assert (rapport.nb_labels, rapport.nb_balises) == (1, 1)
+    assert "observation" in concordance.radicaux_admis(tmp_path / "src")
+
+
+@pytest.mark.parametrize("label", [
+    "eq:observations-ratio-pib-annuel",  # pluriel : pas le radical admis
+    "eq:restitution-ratio-pib-annuel",   # couche inconnue
+])
+def test_radical_voisin_d_observation_refuse(concordance, tmp_path, label):
+    tex = fabriquer(tmp_path, corps_tex=_equation_observation(label),
+                    fichiers=_fichiers_observation(label))
+    rapport = verifier(concordance, tmp_path, tex)
+    assert regles(rapport) == [2]
+    # Un écart pour le label, un pour la balise.
+    assert len(rapport.ecarts) == 2
+    assert all("radical" in e.message for e in rapport.ecarts)
+
+
 def test_equation_numerotee_sans_label(concordance, tmp_path):
     corps = EQUATION + "\n\\begin{equation}\n  x = 1\n\\end{equation}\n\\begin{equation*}\n  y\n\\end{equation*}\n"
     tex = fabriquer(tmp_path, corps_tex=corps)
