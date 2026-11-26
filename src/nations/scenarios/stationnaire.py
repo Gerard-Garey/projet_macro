@@ -308,12 +308,12 @@ class EtatStationnaireInexistant(Exception):
 # Liste fermée des conditions d'existence, dans l'ordre du script (identifiant, condition,
 # section de la spécification). L'ordre est celui du relevé et du premier refus.
 CONDITIONS_D_EXISTENCE: tuple[tuple[str, str, str], ...] = (
-    ("D1", "D1 > 0", "sec:menages-stationnaire"),
-    ("D2", "D2 > 0", "sec:finances_publiques-stationnaire"),
+    ("D1", "D1 > 0", "sec:menages-conditions"),
+    ("D2", "D2 > 0", "sec:finances_publiques-conditions"),
     ("existence_dividende_banque", "n_a Π^Bk − n_a γ̄ E^Bk ≥ 0", "sec:banque-stationnaire"),
     ("Div_F", "Div_F ≥ 0", "sec:investissement-conditions"),
     ("theta_G", "θ_G > 0", "sec:finances_publiques-conditions"),
-    ("marge_plafond_E1", "ν_G PB − Γ̄ G > 0", "sec:finances_publiques-depense"),
+    ("marge_plafond_E1", "ν_G PB − Γ̄ G > 0", "sec:finances_publiques-conditions"),
     ("B", "B ≥ 0", "sec:finances_publiques-conditions"),
     ("B_Bk", "B_Bk ≥ 0", "sec:banque-conditions"),
     ("B_CB", "B_CB ≥ 0", "sec:banque_centrale-conditions"),

@@ -467,7 +467,7 @@ MESSAGES_DES_CONDITIONS = {
     "theta_G": lambda v: (f"θ_G = {v!r} : θ_G > 0 attendu (demande autonome A = θ_G > 0, part de `macro`, § 6 ; "
                           "sec:finances_publiques-conditions)"),
     "marge_plafond_E1": lambda v: (f"plafond de E1 : ν_G PB − Γ̄ G = {v!r} ≤ 0 attendu > 0 (marge 1 − Γ̄ (G/PB)/ν_G "
-                                   "≤ 0, sec:finances_publiques-depense)"),
+                                   "≤ 0, sec:finances_publiques-conditions)"),
     "B": lambda v: f"B = {v!r} : dette brute ≥ 0 attendue (sec:finances_publiques-conditions)",
     "B_Bk": lambda v: f"B_Bk = {v!r} : titres de la banque ≥ 0 attendus (sec:banque-conditions)",
     "B_CB": lambda v: f"B_CB = {v!r} : titres de la banque centrale ≥ 0 attendus (sec:banque_centrale-conditions)",

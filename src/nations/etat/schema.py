@@ -340,8 +340,12 @@ class ConditionJointe(NamedTuple):
 # champ. `stock_vide_sans_valeur` : sous la forme B de N8 (P72), tout état produit par le
 # moteur a IN = 0 dès que IN^vol = 0 ; égalités au sens `==` (−0,0 admis des deux côtés).
 # Exclusions (avis de `macro`) : la réciproque IN = 0 ⇒ IN^vol = 0, que le moteur ne tient
-# pas (il produit IN = 0 avec IN^vol > 0) ; toute borne du rapport IN/(UC·IN^vol) (points 2
-# et 3 du commentaire de #122 : limites déclarées, aucun contrôle).
+# pas (il produit IN = 0 avec IN^vol > 0) ; toute borne du rapport IN/(UC·IN^vol) (limite
+# déclarée, aucun contrôle). Les points 2 (N > N^pa avec U chargé indépendamment) et 3 (IN ≥ 0
+# contrôlé à l'ouverture seulement) du commentaire de #122 relèvent de l'ADR 0015, point 12.5 :
+# limites déclarées sur avis de `macro`, sans entrée dans cette liste (spécification,
+# `eq:travail-chomage`, « État chargé », et `eq:production-variation-stocks`, « Contrôle du
+# signe »).
 CONDITIONS_JOINTES = (
     ConditionJointe("stock_vide_sans_valeur", ("IN_vol", "IN"),
                     lambda IN_vol, IN: not (IN_vol == 0.0 and IN != 0.0),
