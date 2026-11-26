@@ -739,8 +739,10 @@ def test_plafond_de_E1_refuse_a_nu_G_superieur_a_un_a_la_table_calibree(stationn
 
 def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkeypatch, capsys):
     """`macro` : lv* = 0,45 : plafond de E1 actif à ν_G = 1 en (0, 4) et (0, 12), toutes les colonnes ν_G > 1
-    admissibles ; code 0, constat publié, aucune valeur d'état ni résidu pour ces points de référence. Cas construit
-    à ϑ = 0,10 et ν_H = 1 (`aux_entrees_des_cas_adverses`)."""
+    admissibles ; constat publié, aucune valeur d'état ni résidu pour ces points de référence ; le constat seul ne
+    change pas le code de sortie. Cas construit à ϑ = 0,10 et ν_H = 1 (`aux_entrees_des_cas_adverses`). Sous ce cas,
+    r̄_α(10 %) croît avec ζ et le croisement de r̄_α(0) et r̄ (ζ ≈ 77,57) n'est pas un minimum de Δr̄_α : la ligne du
+    minimum (#173) est refusée, seule, constat publié comme « état non publié » : code 0."""
     variante = replace(aux_entrees_des_cas_adverses(stationnaire, base), lv=0.45)
     hors = {(0.0, 4), (0.0, 12)}
     for p in points(stationnaire, variante):
@@ -765,9 +767,14 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
     texte = tampon.getvalue()
     assert "point de référence hors domaine : plafond de E1 actif (marge = -0.00202929), état non publié" in texte
     assert f"{len(non_publiees)} non publiées (point de référence hors domaine" in texte
+    refusees = [l for l in r["publiees"] if l["verdict"] == "refusée"]
+    assert [l["grandeur"] for l in refusees] == ["Δr̄_α au minimum en ζ sur [2 ; 200], point"]
+    assert "croisement trouvé mais non minimal" in refusees[0]["libelle"]
     monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
     assert stationnaire.main([]) == 0
-    assert "état non publié" in capsys.readouterr().out
+    sortie = capsys.readouterr()
+    assert "état non publié" in sortie.out
+    assert "1 refusée (minimum de Δr̄_α en ζ non localisé, motif à la ligne)." in sortie.out
 
 
 # Équivalent du cas adverse lv* = 0,6 à la table calibrée, ajouté de façon prospective après l'audit léger de #130
@@ -1010,7 +1017,7 @@ def test_seuil_derniere_decimale(stationnaire):
 
 
 # Calibration du socle (M34) : valeurs republiées au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a), liste exacte
-# des clés (section, grandeur), chacune avec son ancienne valeur, figée en littéral et barrée dans sa source. Ces 309
+# des clés (section, grandeur), chacune avec son ancienne valeur, figée en littéral et barrée dans sa source. Ces 310
 # valeurs étaient publiées à l'état E0 (μ̄ = 0,25, ϑ = 0,10, ν_H = 1), et à ζ = 4 (`ENTREES_D_ORIGINE`) ; la table T1
 # les a déplacées au-delà de leur dernière décimale publiée. Toute autre valeur en vigueur est inchangée. Une
 # ancienne valeur ne se modifie pas sans échec (`test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine`,
@@ -1209,8 +1216,9 @@ ANCIENNES_M34_92 = {
     ("tab:etat-stationnaire", "taux d'investissement, % à 10 %"): "13,849",
     ("tab:etat-stationnaire", "taux d'investissement, % à 2 %"): "13,945",
 }
-# #130 (ϑ = 0,10 → 0,15) : 100 valeurs de l'effet (ϑ) (E^Bk = ϑL, dette consolidée par C42, θ_G résolu, résultat et
-# rendement de la banque ; Δr̄_α par θ_G) ; ϖ_L, ϖ_D et r̄ sont inchangés. Deux autres (θ_G(r̄ + 1 point) − θ_G(r̄),
+# #130 (ϑ = 0,10 → 0,15) : 101 valeurs de l'effet (ϑ) (E^Bk = ϑL, dette consolidée par C42, θ_G résolu, résultat et
+# rendement de la banque ; Δr̄_α par θ_G, dont son minimum en ζ, ligne de #173 contrôlée contre son ancienne valeur
+# barrée) ; ϖ_L, ϖ_D et r̄ sont inchangés. Deux autres (θ_G(r̄ + 1 point) − θ_G(r̄),
 # φ = 1, à ζ = 4 et 8 : « +0,308 » et « +0,157 ») s'écartaient sous ϑ = 0,15 et retombent sur leur décimale publiée
 # sous ν_H = 1,1 : en vigueur inchangées, elles ne figurent pas ici.
 ANCIENNES_M34_130 = {
@@ -1261,7 +1269,12 @@ ANCIENNES_M34_130 = {
     ("sec:banque_centrale-conditions", "(α) : écart de tu, point"): "2,178",
     ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point"): "-0,38",
     ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point"): "-0,08",
-    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point"): "0,1428",
+    # Les deux clés Δr̄_α suivantes dépendent à la fois de #130 (ϑ) et de #62 (ν_H) : 0,1428 n'est retrouvé qu'avec
+    # les deux ensemble (mesuré à la reprise de #173 : à ζ = 68, 0,152557 sous ϑ = 0,10 seul, 0,151300 sous ν_H = 1
+    # seul, 0,142804 sous les deux ; au point anguleux, 0,152196, 0,149586 et 0,142803). Rangées avec #130 (accord de
+    # `monnaie`).
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 68, point"): "0,1428",
+    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ sur [2 ; 200], point"): "0,1428",
     ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point"): "1,304",
     ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point"): "0,297",
     ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %"): "0,8185",
@@ -1351,7 +1364,7 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
     à la dernière décimale publiée, sans exception ; aucune valeur barrée n'y figure (catégories B-1 et N en
     contre-épreuve)."""
     lignes = resultat["publiees"]
-    assert len(lignes) == 449
+    assert len(lignes) == 450
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
     assert sum(1 for l in lignes if l["categorie"] == "S") == 20
     assert [l for l in lignes if l["verdict"] != "égal"] == []
@@ -1363,17 +1376,17 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
 
 
 def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(stationnaire, base):
-    """R3 de l'audit de #130, après la republication du rang 9 : les 309 anciennes valeurs (`ANCIENNES_M34`), mises à
+    """R3 de l'audit de #130, après la republication du rang 9 : les 310 anciennes valeurs (`ANCIENNES_M34`), mises à
     la place des valeurs en vigueur, sont égales à la dernière décimale publiée sous `ENTREES_D_ORIGINE` complètes
     (état E0, ζ = 4, valeur des publications de la mesure (α) de #80, et λ_w = 1 ; ni ζ ni λ_w n'entrent dans l'état
     stationnaire) : chaque republication s'explique par un paramètre déclaré de M34. À ζ = 8 (T1), seules les 12 de
-    #55 restent en écart ; λ_w seul ne déplace aucune des 449 valeurs. Sous `ENTREES_D_ORIGINE`, les valeurs en
-    vigueur sont en écart exactement sur les 309 clés : une valeur republiée ne retombe pas sur sa décimale à l'état
+    #55 restent en écart ; λ_w seul ne déplace aucune des 450 valeurs. Sous `ENTREES_D_ORIGINE`, les valeurs en
+    vigueur sont en écart exactement sur les 310 clés : une valeur republiée ne retombe pas sur sa décimale à l'état
     E0, une valeur non republiée ne dépend pas de M34."""
     en_vigueur = {(section, grandeur): publie for section, grandeur, publie, _, _ in stationnaire.VALEURS_PUBLIEES}
     assert (len(ANCIENNES_M34_55), len(ANCIENNES_M34_92), len(ANCIENNES_M34_130), len(ANCIENNES_M34_62)) \
-        == (12, 173, 100, 24)
-    assert len(ANCIENNES_M34) == 309 and set(ANCIENNES_M34) <= set(en_vigueur)
+        == (12, 173, 101, 24)
+    assert len(ANCIENNES_M34) == 310 and set(ANCIENNES_M34) <= set(en_vigueur)
     assert [k for k, ancienne in ANCIENNES_M34.items() if ancienne == en_vigueur[k]] == []
     anciennes = tuple((section, grandeur, ANCIENNES_M34.get((section, grandeur), publie), fonction, categorie)
                       for section, grandeur, publie, fonction, categorie in stationnaire.VALEURS_PUBLIEES)
@@ -1381,7 +1394,7 @@ def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(statio
     def ecarts(liste, **entrees):
         calc = stationnaire.Calculs(replace(base, **entrees), stationnaire.NU_G_RETENU)
         lignes = stationnaire.table_publiees(calc, liste)
-        assert len(lignes) == 449
+        assert len(lignes) == 450
         return {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"}
     origine = stationnaire.ENTREES_D_ORIGINE
     assert (origine["zeta"], origine["lambda_w"]) == (4.0, 1.0) and (base.zeta, base.lambda_w) == (8.0, 0.18)
@@ -1407,7 +1420,7 @@ def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 449 valeurs comparées, 429 égales sur l'état résolu, 20 égales en arithmétique de la "
+    assert ("Bilan : 450 valeurs comparées, 430 égales sur l'état résolu, 20 égales en arithmétique de la "
             "spécification (catégorie S, sans état résolu), aucun écart.") in texte
     assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
@@ -1730,31 +1743,112 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
         in tampon.getvalue()
 
 
-# Grille du minimum de Δr̄_α en ζ (#172, point 4) : ζ entiers autour du minimum, puis pas de 5 jusqu'à 200.
+# Grille du minimum de Δr̄_α en ζ (#172, point 4 ; #173) : ζ entiers autour de ζ*, puis pas de 5 jusqu'à 200.
 DEMI_LARGEUR_ZETA_ENTIERE = 5
 PAS_GRILLE_ZETA = 5
 
 
 def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
     """« Δr̄_α […] atteint sur la grille de ζ mesurée, de 2 à 200, un minimum de 0,160 point (0,1598) vers
-    ζ ≈ 63 (0,1614 à ζ = 68, où était le minimum, 0,1428 barré, à la calibration indicative) » : à la table T1,
-    Δr̄_α atteint son minimum à ζ = 63, égal à 0,160 à la dernière décimale publiée ; en contre-épreuve, à ϑ = 0,10
-    et ν_H = 1 (valeur barrée, #130 et #62), à ζ = 68, égal à 0,1428. Le minimum est situé par l'unimodalité sur la
-    grille (#172, point 4) : sur les ζ entiers à moins de `DEMI_LARGEUR_ZETA_ENTIERE` du minimum, les multiples de
-    `PAS_GRILLE_ZETA` de 5 à 200, 2, 200 et 1 000, Δr̄_α décroît strictement jusqu'au minimum, puis croît
-    strictement. Grille complète des ζ entiers de 2 à 200 mesurée hors batterie (19 s par table, 26/11/2026) :
-    même minimum, 63 et 68, unimodale."""
-    for calc, zeta_min, publie in (
-            (stationnaire.Calculs(base), 63, "0,160"),
-            (stationnaire.Calculs(replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"],
-                                          nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"])), 68, "0,1428")):
-        assert stationnaire.comparer(publie, stationnaire._delta_r_alpha(calc, float(zeta_min)))[2]
-        grille = sorted({*range(zeta_min - DEMI_LARGEUR_ZETA_ENTIERE, zeta_min + DEMI_LARGEUR_ZETA_ENTIERE + 1),
-                         *range(PAS_GRILLE_ZETA, 201, PAS_GRILLE_ZETA), 2, 200, 1000})
-        valeurs = [stationnaire._delta_r_alpha(calc, float(zeta)) for zeta in grille]
+    ζ ≈ 63 (0,1614 à ζ = 68, où était le minimum, 0,1428 barré, à la calibration indicative) » : le minimum, point
+    anguleux où r̄_α(0) rejoint r̄_α(2 %) (P273), est localisé par `minimum_delta_r_alpha_en_zeta` (bissection sur
+    [2 ; 200]) ; sa valeur est égale à 0,1598 à la table T1 et, en contre-épreuve sous `ENTREES_D_ORIGINE`, à
+    0,1428 (valeur barrée). Test de position, sans littéral de ζ (#173) : l'argmin sur les ζ entiers mesurés est
+    ⌊ζ*⌋ ou ⌈ζ*⌉ ; Δr̄_α(ζ*) est strictement sous Δr̄_α en chaque ζ entier de ⌊ζ*⌋ − `DEMI_LARGEUR_ZETA_ENTIERE` à
+    ⌈ζ*⌉ + `DEMI_LARGEUR_ZETA_ENTIERE`, aux multiples de `PAS_GRILLE_ZETA` de 5 à 200, à 2, 200 et 1 000 ; sur ces
+    points et ζ*, Δr̄_α décroît strictement jusqu'à ζ*, puis croît strictement (unimodalité, #172, point 4)."""
+    for calc, publie in ((stationnaire.Calculs(base), "0,1598"),
+                         (stationnaire.Calculs(replace(base, **stationnaire.ENTREES_D_ORIGINE)), "0,1428")):
+        zeta_min, delta_min = stationnaire.minimum_delta_r_alpha_en_zeta(calc)
+        assert 2.0 < zeta_min < 200.0
+        assert stationnaire.comparer(publie, delta_min)[2], (zeta_min, delta_min)
+        bas, haut = math.floor(zeta_min), math.ceil(zeta_min)
+        entiers = sorted({*range(bas - DEMI_LARGEUR_ZETA_ENTIERE, haut + DEMI_LARGEUR_ZETA_ENTIERE + 1),
+                          *range(PAS_GRILLE_ZETA, 201, PAS_GRILLE_ZETA), 2, 200, 1000})
+        valeurs = {zeta: stationnaire._delta_r_alpha(calc, float(zeta)) for zeta in entiers}
+        assert min(entiers, key=valeurs.__getitem__) in (bas, haut), zeta_min
+        assert delta_min <= valeurs[bas] and delta_min <= valeurs[haut], zeta_min
+        assert all(delta_min < v for v in valeurs.values()), zeta_min
+        grille = sorted({*entiers, zeta_min})
+        suite = [delta_min if zeta == zeta_min else valeurs[zeta] for zeta in grille]
         rang = grille.index(zeta_min)
-        assert all(a > b for a, b in zip(valeurs[:rang], valeurs[1:rang + 1])), zeta_min
-        assert all(a < b for a, b in zip(valeurs[rang:], valeurs[rang + 1:])), zeta_min
+        assert all(a > b for a, b in zip(suite[:rang], suite[1:rang + 1])), zeta_min
+        assert all(a < b for a, b in zip(suite[rang:], suite[rang + 1:])), zeta_min
+
+
+def test_minimum_de_delta_r_alpha_en_zeta_refuse_sans_croisement(stationnaire, base):
+    """#173 : si r̄_α(0) − r̄_α(2 %) ne change pas de signe aux bornes, le minimum n'est pas localisé, refus explicite
+    (`MinimumNonEncadre`, sous-classe de `HorsDomaine`, motif à l'appui), jamais une valeur NaN ni une borne rendue
+    comme minimum."""
+    calc = stationnaire.Calculs(base)
+    zeta_min, _ = stationnaire.minimum_delta_r_alpha_en_zeta(calc)
+    for bornes in ((2.0, math.floor(zeta_min)), (math.ceil(zeta_min), 200.0)):
+        with pytest.raises(stationnaire.MinimumNonEncadre, match="aucun changement de signe") as refus:
+            stationnaire.minimum_delta_r_alpha_en_zeta(calc, bornes)
+        assert isinstance(refus.value, stationnaire.HorsDomaine) and "point anguleux non encadré" in refus.value.motif
+
+
+class _RAlphaSynthetique:
+    """`calc` synthétique de `minimum_delta_r_alpha_en_zeta` : r̄_α(2 %) = 0, r̄_α(0) = (50 − ζ)/100 (croisement à
+    ζ = 50, jamais un milieu dyadique de [2 ; 200]) ; r̄_α(10 %) donné par `haut`."""
+
+    def __init__(self, haut) -> None:
+        self.haut = haut
+
+    def r_alpha(self, pi: float, zeta: float) -> float:
+        return {0.0: (50.0 - zeta) / 100, 0.02: 0.0, 0.10: self.haut(zeta)}[pi]
+
+
+@pytest.mark.parametrize("bornes, tol", [
+    ((200.0, 2.0), 1e-3), ((50.0, 50.0), 1e-3), ((math.nan, 200.0), 1e-3), ((2.0, math.inf), 1e-3),
+    ((2.0, 200.0), math.nan), ((2.0, 200.0), 0.0), ((2.0, 200.0), -1e-3), ((2.0, 200.0), math.inf)])
+def test_minimum_de_delta_r_alpha_refuse_bornes_et_tolerance_invalides(stationnaire, bornes, tol):
+    """C1 de l'audit de #173 : bornes non finies ou non croissantes, tolérance non finie ou ≤ 0 : refus par
+    `HorsDomaine` (pas `MinimumNonEncadre`, que la table publierait « refusée »), motif à l'appui, sans bissection."""
+    calc = _RAlphaSynthetique(lambda zeta: 1.0)
+    with pytest.raises(stationnaire.HorsDomaine, match="finies et croissantes") as refus:
+        stationnaire.minimum_delta_r_alpha_en_zeta(calc, bornes, tol)
+    assert not isinstance(refus.value, stationnaire.MinimumNonEncadre)
+
+
+def test_minimum_de_delta_r_alpha_refuse_un_croisement_non_minimal(stationnaire):
+    """C2 de l'audit de #173 : un croisement encadré où Δr̄_α culmine (r̄_α(10 %) en pic à ζ = 50, pente 1 000 contre
+    1 pour r̄_α(0)) est refusé, motif « croisement trouvé mais non minimal ». Le même croisement sous un point
+    anguleux de Δr̄_α en creux à ζ = 50 est rendu, à la tolérance près : creux symétrique (pentes ∓1 000, que la seule
+    comparaison aux extrémités de l'intervalle final refuserait : ζ* = 50,00033 tombe au-delà du point anguleux, plus
+    loin que l'extrémité 49,99995) et creux à descente raide (pentes −1 000 et +1,01, la forme mesurée à T1)."""
+    with pytest.raises(stationnaire.MinimumNonEncadre, match="croisement trouvé mais non minimal"):
+        stationnaire.minimum_delta_r_alpha_en_zeta(_RAlphaSynthetique(lambda zeta: 10.0 - 1000 * abs(zeta - 50.0)))
+    for haut in (lambda zeta: 10.0 + 1000 * abs(zeta - 50.0),
+                 lambda zeta: 10.0 + 1000 * max(50.0 - zeta, 0.0) + max(zeta - 50.0, 0.0)):
+        zeta_min, delta_min = stationnaire.minimum_delta_r_alpha_en_zeta(_RAlphaSynthetique(haut))
+        assert abs(zeta_min - 50.0) <= stationnaire.TOL_ZETA_MINIMUM / 2
+        assert 100 * 10.0 <= delta_min <= 100 * (10.0 + 1000 * stationnaire.TOL_ZETA_MINIMUM)
+
+
+def test_ligne_refusee_constat_publie_code_0(stationnaire, monkeypatch, capsys):
+    """C3 de l'audit de #173 : une ligne « refusée » est un constat publié, comme « état non publié », et non un refus
+    de domaine des paramètres : `main` sort en code 0, la table imprimée en entier, bilan accordé au singulier."""
+    def refus(calc, *args):
+        raise stationnaire.MinimumNonEncadre("refus simulé")
+    monkeypatch.setattr(stationnaire, "minimum_delta_r_alpha_en_zeta", refus)
+    assert stationnaire.main([]) == 0
+    sortie = capsys.readouterr()
+    assert "Bilan : 450 valeurs comparées, 429 égales" in sortie.out
+    assert "aucun écart, 1 refusée (minimum de Δr̄_α en ζ non localisé, motif à la ligne)." in sortie.out
+    assert "script refus (refus simulé) ; refusée" in sortie.out
+    assert "Refus de domaine" not in sortie.err
+
+
+def test_minimum_non_encadre_publie_refuse_dans_la_table(stationnaire, base):
+    """#173 : sous une variante où le croisement sort de [2 ; 200] (lv* = 0, bord fermé du domaine), la ligne du
+    minimum est publiée « refusée », motif à l'appui, sans interrompre la table ni rendre une valeur comme mesure."""
+    cle = ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ sur [2 ; 200], point")
+    liste = tuple(l for l in stationnaire.VALEURS_PUBLIEES if (l[0], l[1]) == cle)
+    assert len(liste) == 1
+    [ligne] = stationnaire.table_publiees(stationnaire.Calculs(replace(base, lv=0.0)), liste)
+    assert ligne["verdict"] == "refusée" and math.isnan(ligne["script"])
+    assert ligne["libelle"].startswith("refus (") and "aucun changement de signe" in ligne["libelle"]
 
 
 def test_canal_ecarts_nominaux_egale_l_identite(stationnaire, base):
