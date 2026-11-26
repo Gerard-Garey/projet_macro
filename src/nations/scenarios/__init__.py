@@ -8,4 +8,7 @@ nom de pays réel n'est associé à une configuration.
 Le résolveur en formes fermées de l'état stationnaire est le module feuille
 `stationnaire` (ADR 0015) ; ce paquet n'importe rien, de sorte qu'importer le
 résolveur ne charge de `nations` que `nations`, `nations.scenarios` et lui.
+L'adaptateur du moteur `initial.etat_initial` lit les tables de paramètres et
+une normalisation, et rend l'`EtatPays` d'ouverture du pas 0 et les tables
+alignées (θ_G résolu ; ADR 0015, point 9).
 """
