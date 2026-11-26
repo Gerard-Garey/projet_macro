@@ -51,7 +51,7 @@ uv run python outils/verifier_matrices.py [--strict] [fichier.tex]
 
 Sans `--strict`, elle rend compte sans échouer, sauf si le fichier est absent, illisible ou non UTF-8 (code 1 dans les deux modes). En `--strict` sur la spécification, c'est une batterie à part entière (ci-dessus) et une étape de la CI (« Matrices strictes », travail « Concordance spécification-moteur ») ; la batterie `tests/unitaires` la lance aussi.
 
-État stationnaire du socle sous forme fermée (blocs 1 à 9, sans simulation ; grille π̄ × n_a × ν_G, ratios publiés avec définition, unité, dénominateur et fenêtre, comparaison aux valeurs publiées de la spécification ; contre-épreuve indépendante du moteur, qui n'importe ni `src/` ni `archive/` ; issue #84) :
+État stationnaire du socle sous forme fermée (blocs 1 à 9, sans simulation ; grille π̄ × n_a × ν_G, ratios publiés avec définition, unité, dénominateur et fenêtre, comparaison aux valeurs publiées de la spécification ; formes fermées importées du seul module feuille `nations.scenarios.stationnaire`, que charge aussi l'état initial du moteur (ADR 0015) ; pas de contrôle `un_pas`, résidus des règles et table des valeurs publiées indépendants du résolveur ; n'importe ni `archive/` ni aucun autre module de `nations` ; issues #84 et #175) :
 
 ```bash
 uv run python outils/etat_stationnaire.py [--nu-g-retenu X] [--json fichier]
