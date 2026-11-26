@@ -245,19 +245,17 @@ def frontiere_ou_aucune(rayon_de, bas: float, haut: float) -> float | None:
     """Frontière de `frontiere`, ou sans objet (None) si le rayon, fini, est sous 1 aux deux bornes et aux
     `ECHANTILLONS_INTERIEURS` points intérieurs équidistants : régime stable sur tout l'intervalle, aucune frontière à
     publier (#45 : à λ_w = 0,18, les frontières en ν_H et h de l'instabilité 17 disparaissent de [0,3 ; 1] ; « sans
-    objet », M34). Un rayon fini au-dessus de 1 aux deux bornes (instable sur tout l'intervalle) est refusé par une
-    erreur explicite, jamais publié « sans objet » ; un rayon non fini ou égal à 1 aux bornes reste refusé par
-    `frontiere`. Bornes finies, un échantillon intérieur non fini, ou plus d'un passage de 1 sur l'échantillon
-    (frontière double sous deux bornes stables, ou frontières multiples entre deux bornes de côtés opposés), est
-    refusé par une erreur explicite (#172) : il passerait inaperçu aux seules bornes. Un échantillon intérieur égal à
-    1 compte du côté stable (`frontiere` y trouve la frontière). Un passage double entre deux échantillons voisins,
-    ou une tangence à 1, reste hors de portée ; le pas est déclaré."""
+    objet », M34). Un rayon non fini ou égal à 1 aux bornes reste refusé par `frontiere`. Bornes finies, un
+    échantillon intérieur non fini, ou plus d'un passage de 1 sur l'échantillon (frontière double sous deux bornes
+    stables, creux stable sous deux bornes instables, ou frontières multiples entre deux bornes de côtés opposés), est
+    refusé par une erreur explicite (#172) : il passerait inaperçu aux seules bornes. Un rayon fini au-dessus de 1
+    aux deux bornes et à chaque échantillon intérieur (instable aux deux bornes, sans passage échantillonné) est
+    refusé par une erreur explicite, jamais publié « sans objet ». Un échantillon intérieur égal à 1 compte du côté
+    stable (entre deux bornes de côtés opposés, `frontiere` y trouve la frontière). Un passage double entre deux
+    échantillons voisins, ou une tangence à 1, reste hors de portée ; le pas est déclaré."""
     r_bas, r_haut = rayon_de(bas), rayon_de(haut)
     if not all(math.isfinite(r) and r != 1 for r in (r_bas, r_haut)):
         return frontiere(rayon_de, bas, haut)  # refus : intervalle non encadrant
-    if r_bas > 1 and r_haut > 1:
-        raise ValueError(f"instable sur tout l'intervalle : rayon {r_bas!r} et {r_haut!r} aux bornes {bas} et "
-                         f"{haut}")
     pas = (haut - bas) / (ECHANTILLONS_INTERIEURS + 1)
     echantillon = [(bas, r_bas)] + [(bas + k * pas, rayon_de(bas + k * pas))
                                     for k in range(1, ECHANTILLONS_INTERIEURS + 1)] + [(haut, r_haut)]
@@ -268,6 +266,9 @@ def frontiere_ou_aucune(rayon_de, bas: float, haut: float) -> float | None:
     if len(passages) > 1:
         raise ValueError(f"{len(passages)} passages de 1 sur [{bas} ; {haut}] (échantillon de pas {pas!r}, après "
                          f"{passages}) : frontière double ou multiple, aucune frontière unique à publier")
+    if r_bas > 1 and r_haut > 1:  # aucun passage échantillonné (un nombre pair en aurait levé au moins deux)
+        raise ValueError(f"instable aux deux bornes et aux {ECHANTILLONS_INTERIEURS} points intérieurs : rayon "
+                         f"{r_bas!r} et {r_haut!r} aux bornes {bas} et {haut}, aucun passage de 1 échantillonné")
     if not passages:
         return None
     return frontiere(rayon_de, bas, haut)

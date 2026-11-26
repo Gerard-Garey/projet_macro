@@ -744,12 +744,13 @@ def test_marge_conjointe_au_dela_de_2_a_la_table_calibree(maquette):
 
 def test_frontiere_ou_aucune(maquette):
     """`frontiere_ou_aucune` : la frontière de `frontiere` si le rayon passe 1 sur l'intervalle ; sans objet (None)
-    si le rayon, fini, est sous 1 aux deux bornes (stable sur l'intervalle) ; erreur explicite s'il est au-dessus de
-    1 aux deux bornes (instable sur tout l'intervalle) ; un rayon non fini ou égal à 1 aux bornes reste refusé
-    (intervalle non encadrant), jamais converti en « sans objet »."""
+    si le rayon, fini, est sous 1 aux deux bornes et aux points intérieurs (stable sur l'intervalle) ; erreur
+    explicite s'il est au-dessus de 1 aux deux bornes et à chaque échantillon intérieur (instable aux deux bornes) ;
+    un rayon non fini ou égal à 1 aux bornes reste refusé (intervalle non encadrant), jamais converti en « sans
+    objet »."""
     assert maquette.frontiere_ou_aucune(lambda x: 0.5 + x, 0.0, 1.0) == pytest.approx(0.5, abs=1e-12)
     assert maquette.frontiere_ou_aucune(lambda x: 0.5, 0.0, 1.0) is None
-    with pytest.raises(ValueError, match="instable sur tout l'intervalle"):
+    with pytest.raises(ValueError, match="instable aux deux bornes et aux 9 points intérieurs"):
         maquette.frontiere_ou_aucune(lambda x: 1.5, 0.0, 1.0)
     for rayon in (math.nan, math.inf, 1.0):
         with pytest.raises(ValueError, match="non encadrant"):
@@ -759,13 +760,17 @@ def test_frontiere_ou_aucune(maquette):
 def test_frontiere_ou_aucune_echantillonne_l_interieur(maquette):
     """#172, point 5 : sous deux bornes stables, une frontière double intérieure (rayon 0,9 + 0,3 sin πx, au-dessus de
     1 de x ≈ 0,36 à 0,64) est refusée, jamais publiée « sans objet » ; entre deux bornes de côtés opposés, trois
-    passages (1 − 0,3 cos(3πx + 0,1)) sont refusés ; un rayon intérieur non fini est refusé ; le pas d'échantillonnage
+    passages (1 − 0,3 cos(3πx + 0,1)) sont refusés ; sous deux bornes instables, un creux stable intérieur
+    (1,1 − 0,3 sin πx, sous 1 de x ≈ 0,11 à 0,89) est refusé pour ses deux passages, et non comme « instable aux deux
+    bornes » ; un rayon intérieur non fini est refusé ; le pas d'échantillonnage
     est le dixième de l'intervalle (`ECHANTILLONS_INTERIEURS` = 9) et chaque rayon est évalué une fois par point."""
     assert maquette.ECHANTILLONS_INTERIEURS == 9
     with pytest.raises(ValueError, match="2 passages de 1"):
         maquette.frontiere_ou_aucune(lambda x: 0.9 + 0.3 * math.sin(math.pi * x), 0.0, 1.0)
     with pytest.raises(ValueError, match="3 passages de 1"):
         maquette.frontiere_ou_aucune(lambda x: 1 - 0.3 * math.cos(3 * math.pi * x + 0.1), 0.0, 1.0)
+    with pytest.raises(ValueError, match="2 passages de 1"):
+        maquette.frontiere_ou_aucune(lambda x: 1.1 - 0.3 * math.sin(math.pi * x), 0.0, 1.0)
     with pytest.raises(ValueError, match="non fini au point intérieur"):
         maquette.frontiere_ou_aucune(lambda x: math.nan if 0.4 < x < 0.6 else 0.5, 0.0, 1.0)
     appels = []
