@@ -205,6 +205,26 @@ def test_marge_en_logarithme_publiee_a_l_ouverture(stationnaire, base):
         assert abs(stationnaire.un_pas(o, p)["mu_tilde"] - o["mu_tilde_m1"]) <= 1e-15
 
 
+def test_marge_de_p2_et_t2_sous_la_forme_i_declaree(stationnaire, base):
+    """#125, point 3 : `un_pas` évalue P2 et T2 sous la forme (i), ln(P_{t−1}/UC_{t−1}) tirée du
+    registre et de W_{t−1}, forme indépendante déclarée (le moteur lit μ̃_{t−1}, P54, option (ii)) :
+    une ouverture où μ̃_{−1} ≠ ln(P_{−1}/UC_{−1}) donne le même pas, au bit."""
+    for p in points(stationnaire, base):
+        o = stationnaire.ouverture(stationnaire.etat_stationnaire(p), p)
+        s = stationnaire.un_pas(o, p)
+        assert stationnaire.un_pas({**o, "mu_tilde_m1": o["mu_tilde_m1"] + 0.1}, p) == s
+
+
+def test_n6_refuse_une_demande_adressee_nulle(stationnaire, base):
+    """#125, point 4 : à l'état résolu, à d = 0 (C^plan = I^plan = G^plan = 0 : D_H = 0, ti = 0, M_G = 0), N6 du
+    script donne un refus explicite au lieu d'une division par zéro ; le moteur, lui, rend des
+    volumes servis nuls (`nations.blocs.production.ventes`)."""
+    for p in points(stationnaire, base):
+        o = stationnaire.ouverture(stationnaire.etat_stationnaire(p), p)
+        with pytest.raises(stationnaire.HorsDomaine, match="N6 : demande adressée d = 0"):
+            stationnaire.un_pas({**o, "D_H": 0.0, "ti": 0.0, "M_G": 0.0}, p)
+
+
 def test_taux_directeur_fisher_sur_la_cible(stationnaire, base):
     for p in points(stationnaire, base):
         e = stationnaire.etat_stationnaire(p)

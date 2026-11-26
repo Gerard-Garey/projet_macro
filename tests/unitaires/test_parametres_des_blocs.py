@@ -273,6 +273,21 @@ def test_domaines_des_tables_et_du_script_refusent_le_meme_ensemble(stationnaire
                 stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
 
 
+def test_kappa_sous_normal_refuse_par_le_script_comme_par_la_table(stationnaire):
+    """#125, point 5 : κ > 0 et 1/κ fini, refusé par le script comme par la table du bloc 2 ;
+    κ = 1e−320 (1/κ infini) refusé par les deux ; κ = 5,6e−309 (1/κ fini) et la calibration
+    admis par les deux (la borne inférieure de κ relève du point 6, J3-e2)."""
+    base = dataclasses.replace(stationnaire.Parametres(), nu_G=1.15)
+    for valeur in (1e-320, 0.0, -1.6):
+        with pytest.raises(DefautDeDeclaration, match="« kappa »"):
+            varier(production.PRODUCTION, kappa=valeur)
+        with pytest.raises(stationnaire.HorsDomaine, match="kappa"):
+            stationnaire.controler_domaine(dataclasses.replace(base, kappa=valeur))
+    for valeur in (5.6e-309, 1.6):
+        varier(production.PRODUCTION, kappa=valeur)
+        stationnaire.controler_domaine(dataclasses.replace(base, kappa=valeur))
+
+
 def test_taux_de_croissance_refuses_un_a_un_par_le_script_comme_par_les_tables(stationnaire):
     """1 + g_pr > 0 et 1 + g_N > 0, chacun (`TAUX_DE_CROISSANCE_ANNUEL`) : g_pr = g_N = −1,5,
     de produit (1 + g_pr)(1 + g_N) > 0, est refusé par le script comme par les tables ; un
