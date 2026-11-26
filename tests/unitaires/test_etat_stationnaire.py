@@ -1619,7 +1619,8 @@ def test_sensibilite_a_zeta_publiee(stationnaire, base, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert "ζ = 2 (illustration, sans verdict)" in texte and "ζ = 8 (plage de la table)" in texte
+    assert "ζ = 2 (illustration, sans verdict)" in texte and "ζ = 8 (table T1)" in texte
+    assert "ζ = 4 (calibration indicative)" in texte
     assert "allocations dépendantes de ζ" in texte and ": C/Y_o, ti, T^cou/PIB" in texte
 
 

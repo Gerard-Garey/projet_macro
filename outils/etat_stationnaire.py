@@ -1529,7 +1529,7 @@ TOL_INVARIANCE = 1e-12  # invariance exacte, relative
 # des allocations de la liste L2 est publiée en mesure sur ζ ∈ {4 ; 8}, et à ζ = 2 en illustration, sans verdict. Les
 # allocations qui en dépendent (par r̄_α) sont mesurées, non supposées. `ZETA_PLAGE` n'est pas une plage de la table :
 # la table T1 retient le seul ζ = 8 (M34, #55) ; (4 ; 8) réunit la valeur de la calibration indicative et celle de T1.
-# La sortie garde le libellé « plage de la table » (sortie identique à l'octet, #172 ; libellé soumis à `macro`).
+# La sortie le dit : « calibration indicative ; table T1 » (libellé visé par `macro`, #172).
 ZETA_PLAGE = (4.0, 8.0)
 ZETA_ILLUSTRATION = 2.0
 
@@ -2973,10 +2973,12 @@ def afficher(r: dict[str, object], sortie=None) -> None:
       f"écart de θ_G {100 * sn['beta_theta_G']:.6f} point ; "
       + " ; ".join(f"{q} {100 * v:.6f}" for q, v in sn["beta_allocations"].items()))
     p(f"- sensibilité à ζ (mesure, décision de `macro`) : verdict jugé à ζ = {_f(base.zeta)} ; étendue max − min sur "
-      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = " + _f(nu_g_mesure(r)) + ", en point, sur la plage de la table ζ ∈ {"
-      + " ; ".join(_f(z) for z in ZETA_PLAGE) + f"}} et à ζ = {_f(ZETA_ILLUSTRATION)} en illustration, sans verdict")
+      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = " + _f(nu_g_mesure(r)) + ", en point, sur ζ ∈ {"
+      + " ; ".join(_f(z) for z in ZETA_PLAGE) + "} (calibration indicative ; table T1) et à ζ = "
+      + f"{_f(ZETA_ILLUSTRATION)} en illustration, sans verdict")
     for z, d in sn["zeta"].items():
-        statut = "plage de la table" if z in ZETA_PLAGE else "illustration, sans verdict"
+        statut = ("table T1" if z == base.zeta else "calibration indicative" if z in ZETA_PLAGE
+                  else "illustration, sans verdict")
         p(f"  - ζ = {_f(z)} ({statut}) : Δr̄_α {100 * d['delta_r_alpha']:.6f} ; " + " ; ".join(
             f"{q} {100 * v:.6f}" for q, v in d["allocations"].items()))
     p("  - allocations dépendantes de ζ (par r̄_α ; écart relatif > " + f"{TOL_INVARIANCE:g} entre ζ ∈ "
