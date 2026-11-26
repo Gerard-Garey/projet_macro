@@ -783,7 +783,8 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
 # aucun plafond de E1 seul), et lv* = 0,70 en reproduit le motif (mesuré sur lv* ∈ {0,65 ; 0,70 ; 0,72 ; 0,74 ; 0,75}
 # avant l'écriture ; 0,72 et au-delà : six refus). Le cas lv* = 0,45 n'a pas d'équivalent mesuré à E2 sur
 # [0,450 ; 0,500] (pas de 0,005) : à lv* = 0,475, le plafond de E1 n'agit qu'en (0, 4) et (0, 12) à ν_G = 1, mais
-# `calculer` refuse une valeur publiée (B < 0) dès lv* = 0,47 ; il n'a pas été recherché à E3.
+# `calculer` refuse une valeur publiée (B < 0) dès lv* = 0,47 ; à E3 (table T1), sa recherche selon le critère de
+# `macro` est `test_cas_lv_0_45_a_la_table_t1_critere_de_macro` (#170).
 
 
 @pytest.mark.parametrize("nu_H, lv, temoin", [(1.0, 0.65, 0.0224), (1.1, 0.70, 0.0228)],
@@ -818,6 +819,179 @@ def test_refus_a_lv_equivalent_a_la_table_calibree(stationnaire, base, nu_H, lv,
                 stationnaire.etat_stationnaire(p)
     with pytest.raises(stationnaire.HorsDomaine):
         stationnaire.calculer(variante)
+
+
+# Recherche de l'équivalent du cas lv* = 0,45 à la table T1 (#170), critère écrit par `macro` avant l'essai (feuille de
+# route, § 1, rang 4) : lv* ∈ [0,30 ; 0,47] balayé au pas 0,005, puis bissection à 1e−4 sur chaque changement de
+# l'indicateur « E1 refusé à ν_G = 1 » ; T1, n_a = 12, π̄ ∈ {0 ; 2 ; 10 %}. Formulation d'origine : cas trouvé si,
+# « aux trois π̄ », E1 est refusé à ν_G = 1, admis à ν_G = 1,001 et 1,15, et B ≥ 0. Elle était mal posée : le cas
+# d'origine lui-même (lv* = 0,45, entrées d'origine) n'est refusé qu'à π̄ = 0. Correction prospective du mainteneur
+# (P277, 26/11/2026) : « à au moins un π̄ » ; le verdict publié sous l'ancienne formulation, aucun cas sur
+# [0,30 ; 0,47], est inchangé, et la nouvelle lecture le reproduit (mesuré par ce test). « Admis » à ν_G > 1 se lit
+# comme l'admission complète (`etat_stationnaire(..., controler=True)` sans `HorsDomaine`). Sinon, les deux
+# frontières mesurées (E1 à ν_G = 1, B < 0) et l'absence sont publiées. La frontière de E1, hors de l'intervalle, est
+# cherchée au-delà au même pas, jusqu'à `LV_170_EXTENSION` (borne déclarée de cette seule mesure, sans effet sur le
+# verdict) ; aucune recherche de cas au-delà de 0,47 (P278) : la frontière de E1 à ν_G = 1,001 (π̄ = 0) n'y est
+# imprimée qu'en constat. La contre-épreuve reste aux entrées d'origine (`test_reference_hors_domaine_publiee_comme_
+# constat`) ; son application aux variantes de lv* par `calculer` est #185 (P279).
+LV_170_INTERVALLE = (0.30, 0.47)
+LV_170_PAS = 0.005
+LV_170_TOL = 1e-4
+LV_170_NU = (1.0, 1.001, 1.15)
+LV_170_EXTENSION = 0.70
+# Constat de #185 : la ligne de #173 (« Δr̄_α au minimum en ζ sur [2 ; 200] ») refusée hors d'un intervalle de lv*.
+# Balayage grossier mesuré avant l'écriture (`minimum_delta_r_alpha_en_zeta`, T1) : refus « croisement non minimal »
+# en lv* ∈ {0,30 ; 0,31 ; … ; 0,34 ; 0,345} et {0,46 ; 0,47}, admission en {0,35 ; 0,36 ; … ; 0,45 ; 0,455}. Les
+# deux couples encadrants ci-dessous partent de ce balayage ; une évaluation coûte environ 1,5 s, d'où deux seules
+# bissections à 1e−4.
+LV_173_ENCADRANTS = ((0.345, 0.35), (0.455, 0.46))
+
+
+def _bissection_lv(predicat, a, b, tol=LV_170_TOL):
+    """[a ; b] de largeur ≤ `tol` encadrant le changement de `predicat` (valeurs différentes aux deux bornes)."""
+    pa = predicat(a)
+    assert pa != predicat(b)
+    while b - a > tol:
+        m = (a + b) / 2
+        if predicat(m) == pa:
+            a = m
+        else:
+            b = m
+    return a, b
+
+
+def _balayage_lv(debut, fin, pas=LV_170_PAS):
+    """Points du balayage de `debut` à `fin` inclus (arrondis au pas : aucun cumul d'erreur)."""
+    return [round(debut + k * pas, 6) for k in range(round((fin - debut) / pas) + 1)]
+
+
+def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
+    """#170 : verdict du critère de `macro` (ci-dessus, lecture corrigée P277) à la table T1, et frontières mesurées.
+
+    Propriétés : (i) sur [0,30 ; 0,47], l'indicateur « E1 refusé à ν_G = 1 » ne change à aucun π̄ (aucune bissection
+    à faire) et ne vaut jamais vrai : aucun cas « à au moins un π̄ » (P277), donc aucun sous l'ancienne lecture
+    « aux trois π̄ » ; (ii) la frontière de E1 à ν_G = 1 (π̄ = 0) est au-delà de 0,47, et elle recule quand π̄ monte
+    (celle de π̄ = 0 est sous celle de 2 %, aucune à 10 % jusqu'à `LV_170_EXTENSION`) : sens de variation mesuré,
+    qui contrôle l'indicateur aux trois π̄ ; (iii) la frontière B < 0 de `calculer` est dans l'intervalle, encadrée à
+    1e−4 : `calculer` admet la borne gauche et refuse la borne droite (« dette brute ») ; le point refusé est dans la
+    contre-épreuve (`ENTREES_D_ORIGINE` sur le lv* de la variante, n_a = 12, ν_G = 1), les points T1 de la grille
+    gardant B ≥ 0 (#185). L'indicateur est validé sur le cas d'origine (lv* = 0,45, ϑ = 0,10, ν_H = 1 : E1 refusé à
+    ν_G = 1 en π̄ = 0, n_a = 12). Constats imprimés sans verdict : frontière de E1 à ν_G = 1,001 (π̄ = 0, P278) et
+    intervalle de lv* hors duquel la ligne de #173 est refusée (#185). Verdict et frontières imprimés (`pytest -s`)."""
+    assert base.nu_H == 1.1 and base.vartheta == 0.15  # table T1
+
+    def etat(b, lv, pi, nu, n_a=12):
+        return stationnaire.etat_stationnaire(replace(b, lv=lv, pi_cible=pi, n_a=n_a, nu_G=nu), controler=False)
+
+    def e1_refuse(b, lv, pi, nu=1.0):
+        return not etat(b, lv, pi, nu)["marge_E1_montant"] > 0  # test de `Calculs.etat`
+
+    def admis(lv, pi, nu):
+        """Admission complète à ν_G > 1 : toutes les conditions de `etat_stationnaire`, plafond de E1 compris."""
+        try:
+            stationnaire.etat_stationnaire(replace(base, lv=lv, pi_cible=pi, n_a=12, nu_G=nu), controler=True)
+        except stationnaire.HorsDomaine:
+            return False
+        return True
+
+    def cas_en(lv, pi):
+        return (e1_refuse(base, lv, pi) and etat(base, lv, pi, 1.0)["B"] >= 0
+                and all(admis(lv, pi, nu) for nu in LV_170_NU[1:]))
+
+    def cas(lv):  # « à au moins un π̄ » (P277)
+        return any(cas_en(lv, pi) for pi in stationnaire.POINTS_PI)
+
+    def cas_ancienne_lecture(lv):  # « aux trois π̄ » (formulation d'origine, verdict publié)
+        return all(cas_en(lv, pi) for pi in stationnaire.POINTS_PI)
+
+    # L'indicateur reconnaît le cas d'origine (garde contre une recherche vide).
+    assert e1_refuse(aux_entrees_des_cas_adverses(stationnaire, base), 0.45, 0.0)
+
+    # (i) Balayage et bissections du critère.
+    grille = _balayage_lv(*LV_170_INTERVALLE)
+    assert grille[0] == LV_170_INTERVALLE[0] and grille[-1] == LV_170_INTERVALLE[1] and len(grille) == 35
+    indicateur = {pi: [e1_refuse(base, lv, pi) for lv in grille] for pi in stationnaire.POINTS_PI}
+    changements = {pi: [_bissection_lv(lambda x, pi=pi: e1_refuse(base, x, pi), a, b)
+                        for a, b, ia, ib in zip(grille, grille[1:], ind, ind[1:]) if ia != ib]
+                   for pi, ind in indicateur.items()}
+    candidats = grille + [x for encadrements in changements.values() for ab in encadrements for x in ab]
+    trouves = sorted(lv for lv in candidats if cas(lv))
+    trouves_ancienne = sorted(lv for lv in candidats if cas_ancienne_lecture(lv))
+    marge_min = min((etat(base, lv, pi, 1.0)["marge_E1_montant"], lv, pi)
+                    for lv in grille for pi in stationnaire.POINTS_PI)
+    print(f"\n#170, T1, n_a = 12, lv* ∈ [{LV_170_INTERVALLE[0]} ; {LV_170_INTERVALLE[1]}], pas {LV_170_PAS} : "
+          f"changements de « E1 refusé à ν_G = 1 » : {changements} ; marge minimale de E1 à ν_G = 1 : "
+          f"{marge_min[0]:.6g} (lv* = {marge_min[1]}, π̄ = {marge_min[2]}) ; verdict « à au moins un π̄ » (P277) : "
+          f"{'cas trouvé ' + str(trouves) if trouves else 'aucun cas'} ; ancienne lecture « aux trois π̄ » : "
+          f"{'cas trouvé ' + str(trouves_ancienne) if trouves_ancienne else 'aucun cas'}")
+    assert all(not any(ind) for ind in indicateur.values())
+    assert all(not c for c in changements.values()) and not trouves and not trouves_ancienne
+
+    # (ii) Frontières de E1 au-delà de l'intervalle (même pas, même précision) : à ν_G = 1 aux trois π̄, et, en constat
+    # sans verdict (P278), à ν_G = 1,001 en π̄ = 0.
+    extension = _balayage_lv(LV_170_INTERVALLE[1], LV_170_EXTENSION)
+
+    def frontiere(pi, nu):
+        ind = [e1_refuse(base, lv, pi, nu) for lv in extension]
+        premier = next((k for k in range(1, len(ind)) if ind[k] != ind[0]), None)
+        return (None if premier is None else
+                _bissection_lv(lambda x: e1_refuse(base, x, pi, nu), extension[premier - 1], extension[premier]))
+
+    def encadrement(f):
+        return "aucune" if f is None else f"[{f[0]:.6f} ; {f[1]:.6f}]"
+
+    frontieres_e1 = {pi: frontiere(pi, 1.0) for pi in stationnaire.POINTS_PI}
+    frontiere_e1_1001 = frontiere(0.0, LV_170_NU[1])
+    print(f"#170, frontière de E1 à ν_G = 1 (n_a = 12) sur [{LV_170_INTERVALLE[1]} ; {LV_170_EXTENSION}] : "
+          + " ; ".join(f"π̄ = {pi} : {encadrement(f)}" for pi, f in frontieres_e1.items()))
+    print(f"#170, constat sans verdict (P278) : frontière de E1 à ν_G = {LV_170_NU[1]} (π̄ = 0, n_a = 12) sur "
+          f"[{LV_170_INTERVALLE[1]} ; {LV_170_EXTENSION}] : {encadrement(frontiere_e1_1001)}")
+    assert frontieres_e1[0.0] is not None and frontieres_e1[0.0][0] > LV_170_INTERVALLE[1]
+    assert frontieres_e1[0.02] is not None and frontieres_e1[0.0][1] < frontieres_e1[0.02][0]
+    assert frontieres_e1[0.10] is None
+
+    # (iii) Frontière B < 0 de `calculer` : B minimal sur les points que `calculer` résout (grille T1 aux colonnes
+    # ν_G, contre-épreuve aux entrées d'origine, n_a = 12, ν_G = 1), encadrée à 1e−4, puis confirmée par `calculer`.
+    origine = replace(base, **stationnaire.ENTREES_D_ORIGINE)
+    colonnes = (1.0, *stationnaire.NU_G_PROPOSES)
+
+    def b_t1(lv):
+        return min(etat(base, lv, pi, nu, na)["B"] for pi in stationnaire.POINTS_PI
+                   for na in stationnaire.POINTS_NA for nu in colonnes)
+
+    def b_origine(lv):
+        return min(etat(origine, lv, pi, 1.0)["B"] for pi in stationnaire.POINTS_PI)
+
+    signe_b = [min(b_t1(lv), b_origine(lv)) < 0 for lv in grille]
+    assert not signe_b[0] and signe_b[-1]
+    k = signe_b.index(True)
+    a, b = _bissection_lv(lambda x: min(b_t1(x), b_origine(x)) < 0, grille[k - 1], grille[k])
+    assert b_t1(b) >= 0 and b_origine(b) < 0  # refus de la contre-épreuve, points T1 admis
+    stationnaire.calculer(replace(base, lv=a))  # admis
+    with pytest.raises(stationnaire.HorsDomaine, match="dette brute"):
+        stationnaire.calculer(replace(base, lv=b))
+    signe_t1 = [b_t1(lv) < 0 for lv in extension]
+    assert not signe_t1[0] and signe_t1[-1]
+    j = signe_t1.index(True)
+    a1, b1 = _bissection_lv(lambda x: b_t1(x) < 0, extension[j - 1], extension[j])
+    print(f"#170, frontière B < 0 de `calculer` (contre-épreuve, ENTREES_D_ORIGINE, n_a = 12, ν_G = 1 ; points T1 : "
+          f"B ≥ 0 ; #185) : [{a:.6f} ; {b:.6f}]")
+    print(f"#170, frontière B < 0 des seuls points T1 (grille, colonnes {colonnes}) : [{a1:.6f} ; {b1:.6f}] ; "
+          "absence publiée")
+    assert LV_170_INTERVALLE[0] < a < b <= LV_170_INTERVALLE[1] < a1
+
+    # Constat sans verdict (#185) : intervalle de lv* hors duquel la ligne de #173 est refusée.
+    def ligne_173_refusee(lv):
+        try:
+            stationnaire.minimum_delta_r_alpha_en_zeta(stationnaire.Calculs(replace(base, lv=lv)))
+        except stationnaire.MinimumNonEncadre:
+            return True
+        return False
+
+    gauche, droite = (_bissection_lv(ligne_173_refusee, *ab) for ab in LV_173_ENCADRANTS)
+    print(f"#170, constat sans verdict (#185) : ligne de #173 « Δr̄_α au minimum en ζ sur [2 ; 200] » refusée hors "
+          f"de lv* ∈ [{gauche[1]:.6f} ; {droite[0]:.6f}] (frontières encadrées à 1e−4 : [{gauche[0]:.6f} ; "
+          f"{gauche[1]:.6f}] et [{droite[0]:.6f} ; {droite[1]:.6f}])")
 
 
 def test_etat_initial_publie_a_nu_G_retenu_puis_a_la_reference(stationnaire, resultat):
