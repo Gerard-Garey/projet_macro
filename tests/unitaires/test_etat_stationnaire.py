@@ -1011,7 +1011,7 @@ def test_seuil_derniere_decimale(stationnaire):
 
 # Calibration du socle (M34) : valeurs republiées au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a), liste exacte
 # des clés (section, grandeur), chacune avec son ancienne valeur, figée en littéral et barrée dans sa source. Ces 309
-# valeurs étaient publiées à l'état E0 (μ̄ = 0,25, ϑ = 0,10, ν_H = 1 : `ENTREES_D_ORIGINE`), et à ζ = 4 ; la table T1
+# valeurs étaient publiées à l'état E0 (μ̄ = 0,25, ϑ = 0,10, ν_H = 1), et à ζ = 4 (`ENTREES_D_ORIGINE`) ; la table T1
 # les a déplacées au-delà de leur dernière décimale publiée. Toute autre valeur en vigueur est inchangée. Une
 # ancienne valeur ne se modifie pas sans échec (`test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine`,
 # `test_anciennes_valeurs_de_M34_barrees_dans_leur_source`).
@@ -1365,10 +1365,11 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
 def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(stationnaire, base):
     """R3 de l'audit de #130, après la republication du rang 9 : les 309 anciennes valeurs (`ANCIENNES_M34`), mises à
     la place des valeurs en vigueur, sont égales à la dernière décimale publiée sous `ENTREES_D_ORIGINE` complètes
-    (état E0) et ζ = 4, valeur des publications de la mesure (α) de #80 (ζ n'entre pas dans l'état stationnaire) :
-    chaque republication s'explique par un paramètre déclaré de M34. Sans ζ = 4, seules les 12 de #55 restent en
-    écart. Sous les mêmes entrées, les valeurs en vigueur sont en écart exactement sur les 309 clés : une valeur
-    republiée ne retombe pas sur sa décimale à l'état E0, une valeur non republiée ne dépend pas de M34."""
+    (état E0, ζ = 4, valeur des publications de la mesure (α) de #80, et λ_w = 1 ; ni ζ ni λ_w n'entrent dans l'état
+    stationnaire) : chaque republication s'explique par un paramètre déclaré de M34. À ζ = 8 (T1), seules les 12 de
+    #55 restent en écart ; λ_w seul ne déplace aucune des 449 valeurs. Sous `ENTREES_D_ORIGINE`, les valeurs en
+    vigueur sont en écart exactement sur les 309 clés : une valeur republiée ne retombe pas sur sa décimale à l'état
+    E0, une valeur non republiée ne dépend pas de M34."""
     en_vigueur = {(section, grandeur): publie for section, grandeur, publie, _, _ in stationnaire.VALEURS_PUBLIEES}
     assert (len(ANCIENNES_M34_55), len(ANCIENNES_M34_92), len(ANCIENNES_M34_130), len(ANCIENNES_M34_62)) \
         == (12, 173, 100, 24)
@@ -1382,9 +1383,12 @@ def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(statio
         lignes = stationnaire.table_publiees(calc, liste)
         assert len(lignes) == 449
         return {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"}
-    assert ecarts(anciennes, **stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set()
-    assert ecarts(anciennes, **stationnaire.ENTREES_D_ORIGINE) == set(ANCIENNES_M34_55)
-    assert ecarts(stationnaire.VALEURS_PUBLIEES, **stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set(ANCIENNES_M34)
+    origine = stationnaire.ENTREES_D_ORIGINE
+    assert (origine["zeta"], origine["lambda_w"]) == (4.0, 1.0) and (base.zeta, base.lambda_w) == (8.0, 0.18)
+    assert ecarts(anciennes, **origine) == set()
+    assert ecarts(anciennes, **{**origine, "zeta": base.zeta}) == set(ANCIENNES_M34_55)
+    assert ecarts(anciennes, **{**origine, "lambda_w": base.lambda_w}) == set()
+    assert ecarts(stationnaire.VALEURS_PUBLIEES, **origine) == set(ANCIENNES_M34)
 
 
 def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
@@ -1725,21 +1729,31 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
         in tampon.getvalue()
 
 
+# Grille du minimum de Δr̄_α en ζ (#172, point 4) : ζ entiers autour du minimum, puis pas de 5 jusqu'à 200.
+DEMI_LARGEUR_ZETA_ENTIERE = 5
+PAS_GRILLE_ZETA = 5
+
+
 def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
     """« Δr̄_α […] atteint sur la grille de ζ mesurée, de 2 à 200, un minimum de 0,160 point (0,1598) vers
     ζ ≈ 63 (0,1614 à ζ = 68, où était le minimum, 0,1428 barré, à la calibration indicative) » : à la table T1,
-    Δr̄_α a un minimum local entier à ζ = 63, égal à 0,160 à la dernière décimale publiée, sous lequel il ne descend
-    pas sur une grille de pas 10 de 2 à 200, ni à ζ = 1 000 ; en contre-épreuve, à ϑ = 0,10 et ν_H = 1 (valeur
-    barrée, #130 et #62), de même à ζ = 68, égal à 0,1428. Grille complète des ζ entiers de 2 à 200 mesurée hors
-    batterie (30 s) : même minimum, 63 et 68."""
+    Δr̄_α atteint son minimum à ζ = 63, égal à 0,160 à la dernière décimale publiée ; en contre-épreuve, à ϑ = 0,10
+    et ν_H = 1 (valeur barrée, #130 et #62), à ζ = 68, égal à 0,1428. Le minimum est situé par l'unimodalité sur la
+    grille (#172, point 4) : sur les ζ entiers à moins de `DEMI_LARGEUR_ZETA_ENTIERE` du minimum, les multiples de
+    `PAS_GRILLE_ZETA` de 5 à 200, 2, 200 et 1 000, Δr̄_α décroît strictement jusqu'au minimum, puis croît
+    strictement. Grille complète des ζ entiers de 2 à 200 mesurée hors batterie (19 s par table, 26/11/2026) :
+    même minimum, 63 et 68, unimodale."""
     for calc, zeta_min, publie in (
             (stationnaire.Calculs(base), 63, "0,160"),
             (stationnaire.Calculs(replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"],
                                           nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"])), 68, "0,1428")):
-        minimum = stationnaire._delta_r_alpha(calc, float(zeta_min))
-        assert stationnaire.comparer(publie, minimum)[2]
-        for zeta in (zeta_min - 1, zeta_min + 1, *range(2, 201, 10), 200, 1000):
-            assert stationnaire._delta_r_alpha(calc, float(zeta)) > minimum, zeta
+        assert stationnaire.comparer(publie, stationnaire._delta_r_alpha(calc, float(zeta_min)))[2]
+        grille = sorted({*range(zeta_min - DEMI_LARGEUR_ZETA_ENTIERE, zeta_min + DEMI_LARGEUR_ZETA_ENTIERE + 1),
+                         *range(PAS_GRILLE_ZETA, 201, PAS_GRILLE_ZETA), 2, 200, 1000})
+        valeurs = [stationnaire._delta_r_alpha(calc, float(zeta)) for zeta in grille]
+        rang = grille.index(zeta_min)
+        assert all(a > b for a, b in zip(valeurs[:rang], valeurs[1:rang + 1])), zeta_min
+        assert all(a < b for a, b in zip(valeurs[rang:], valeurs[rang + 1:])), zeta_min
 
 
 def test_canal_ecarts_nominaux_egale_l_identite(stationnaire, base):

@@ -1365,7 +1365,9 @@ def racine_dominante(ecarts):
     """Racine dominante de la série signée `ecarts` (Prony, ordre 2, fenêtre ci-dessus), de plus
     grand module et d'argument ≥ 0. Aucune racine, avec son motif, si la série compte moins de
     `PAS_D_AMPLITUDE` pas, si l'amplitude de référence est nulle ou non finie, si la fenêtre
-    compte moins de `PAS_MINIMAL_DE_LA_FENETRE` pas, ou si son maximum est nul ou non fini."""
+    compte moins de `PAS_MINIMAL_DE_LA_FENETRE` pas, si son maximum est nul ou non fini, ou si
+    la cible de l'ajustement (fenêtre privée de ses `ORDRE_PRONY` premiers pas) est de norme
+    nulle : le résidu relatif n'y est pas défini (#172)."""
     x = np.asarray(ecarts, dtype=float)
     if len(x) < PAS_D_AMPLITUDE:
         return _sans_racine(f"série de {len(x)} pas, moins de {PAS_D_AMPLITUDE}")
@@ -1386,8 +1388,12 @@ def racine_dominante(ecarts):
     regresseurs = np.column_stack([serie[ORDRE_PRONY - j - 1:len(serie) - j - 1]
                                    for j in range(ORDRE_PRONY)])
     cible = serie[ORDRE_PRONY:]
+    norme_cible = float(np.linalg.norm(cible))
+    if not norme_cible > 0.0:
+        return _sans_racine(f"cible de l'ajustement de norme nulle (pas {debut + ORDRE_PRONY} à "
+                            f"{fin - 1})")
     a, *_ = np.linalg.lstsq(regresseurs, cible, rcond=None)
-    residu = float(np.linalg.norm(cible - regresseurs @ a) / np.linalg.norm(cible))
+    residu = float(np.linalg.norm(cible - regresseurs @ a) / norme_cible)
     racine = complex(max(np.roots(np.concatenate([[1.0], -a])), key=abs))
     return Identification(complex(racine.real, abs(racine.imag)), debut, fin, residu, None)
 
@@ -1403,7 +1409,8 @@ def test_racine_dominante_sur_des_series_synthetiques():
       λ² (mesuré : 1,0178), limite de la méthode hors du régime linéaire ;
     - aucune racine, motif à l'appui, pour une série vide ou trop courte, une amplitude de
       référence nulle ou non finie, une fenêtre trop courte (croissance rapide, ou pas non fini
-      qui l'arrête), un maximum de fenêtre nul."""
+      qui l'arrête), un maximum de fenêtre nul, une cible de l'ajustement de norme nulle (fenêtre
+      non nulle sur ses seuls `ORDRE_PRONY` premiers pas : résidu 0/0, NaN avant #172)."""
     t = np.arange(NB_PAS_LINEAIRE)
     paire = 1.0001 * np.exp(1j * math.radians(0.2))
     for serie, attendue in (((paire ** t).real + 0.5 * 0.99 ** t, paire),
@@ -1429,6 +1436,11 @@ def test_racine_dominante_sur_des_series_synthetiques():
         assert r.racine is None and r.motif.startswith(motif), (motif, r)
     r = racine_dominante(np.r_[np.ones(PAS_D_AMPLITUDE), np.zeros(400)])
     assert r.racine is None and r.motif.startswith("maximum de la fenêtre"), r
+    # 200 pas : fenêtre [100 ; 200[, non nulle aux seuls pas 100 et 101.
+    cible_nulle = np.r_[np.ones(PAS_D_AMPLITUDE), np.zeros(100 - PAS_D_AMPLITUDE),
+                        np.ones(ORDRE_PRONY), np.zeros(100 - ORDRE_PRONY)]
+    r = racine_dominante(cible_nulle)
+    assert r.racine is None and r.motif.startswith("cible de l'ajustement de norme nulle"), r
 
 
 def _racine_publiee(z):

@@ -259,9 +259,8 @@ def test_caches_lisant_la_table_recenses(maquette):
 
 def _base_remplacee(maquette, monkeypatch, **champs):
     """Remplace `BASE` de la maquette et vide, avant et après le test, chaque mesure mise en cache qui lit `BASE` à
-    l'appel (`CACHES_LISANT_BASE`). Réserve : les défauts `lambda_w=BASE.lambda_w` de `carte_offre` et
-    `nu_H=BASE.nu_H` de `carte_menages` sont figés à l'import ; aucun test sous ces fixtures n'appelle ces cartes sans
-    passer `lambda_w` (ou `nu_H`) explicitement."""
+    l'appel (`CACHES_LISANT_BASE`). Les paramètres omis des cartes (vitesses, ψ_ξ, ν_H) sont lus dans `BASE` à
+    l'appel, non figés à l'import (#172) : `test_cartes_lisent_la_table_a_l_appel`."""
     caches = [getattr(maquette, nom) for nom in CACHES_LISANT_BASE]
     for c in caches:
         c.cache_clear()
@@ -307,8 +306,10 @@ def test_variantes_de_vitesse_salaires_prix_relatives_a_la_table(maquette):
     λ_w = `BASE.lambda_w` × k (k = 0,5 ou 2) et diffère de celui calculé avec l'ancienne valeur absolue (0,5 ou 2,0)."""
     base = maquette.BASE
     assert base.lambda_w == 0.18
-    autres = {"toutes÷2": {"lambda_v": 1.5, "lambda_IN": 0.75, "lambda_mu": 0.6},
-              "toutes×2": {"lambda_v": 6.0, "lambda_IN": 3.0, "lambda_mu": 2.4}, "lambda_w×2": {}}
+    autres = {"toutes÷2": {"lambda_v": base.lambda_v * 0.5, "lambda_IN": base.lambda_IN * 0.5,
+                           "lambda_mu": base.lambda_mu * 0.5},
+              "toutes×2": {"lambda_v": base.lambda_v * 2, "lambda_IN": base.lambda_IN * 2,
+                           "lambda_mu": base.lambda_mu * 2}, "lambda_w×2": {}}
     k = {"toutes÷2": 0.5, "toutes×2": 2.0, "lambda_w×2": 2.0}
     assert tuple(autres) == VARIANTES_RELATIVES_45
     releve = {c.ident: c for c in maquette.releve()}
@@ -321,6 +322,32 @@ def test_variantes_de_vitesse_salaires_prix_relatives_a_la_table(maquette):
             publie = releve[f"salaires_prix.rayon.{nom}.{quel}"].calcul()
             assert publie == extreme(relatifs), (nom, quel)
             assert abs(publie - extreme(absolus)) > 1e-3, (nom, quel)
+
+
+def test_cartes_lisent_la_table_a_l_appel(a_nu_H_un):
+    """#172, point 2 : un paramètre omis d'une carte est lu dans `BASE` à l'appel, non figé à l'import. Sous `BASE`
+    remplacée (ν_H = 1, λ_w = 1, `a_nu_H_un`), `carte_offre` sans `lambda_w` égale la carte à λ_w = 1 et diffère de
+    celle à λ_w = 0,18 (table T1) ; `carte_menages` sans `nu_H`, de même à ν_H = 1 contre 1,1."""
+    maquette = a_nu_H_un
+    rayon = lambda carte: maquette.spectre(carte).rayon  # noqa: E731
+    omis = rayon(maquette.carte_offre(0.8, "regle", True))
+    assert omis == rayon(maquette.carte_offre(0.8, "regle", True, lambda_w=1.0))
+    assert abs(omis - rayon(maquette.carte_offre(0.8, "regle", True, lambda_w=0.18))) > 1e-4
+    omis = rayon(maquette.carte_menages(0.8, "hausse", "a"))
+    assert omis == rayon(maquette.carte_menages(0.8, "hausse", "a", nu_H=1.0))
+    assert abs(omis - rayon(maquette.carte_menages(0.8, "hausse", "a", nu_H=1.1))) > 1e-4
+
+
+def test_variantes_de_vitesse_de_l_offre_relatives_a_la_table(maquette, monkeypatch):
+    """#172, point 3 : les variantes de λ_v, λ_IN, λ_μ et ψ_ξ des boucles de l'offre sont × 0,5 et × 2 de la table
+    lue à l'appel. À la table T1, elles égalent les anciens littéraux (1,5 et 6 ; 0,75 et 3 ; 0,6 et 2,4 ; 1), au bit ;
+    sous `BASE` remplacée (λ_v = 4, λ_IN = 2), « vitesses÷2 » suit la table."""
+    base = maquette.BASE
+    assert maquette._vitesses_offre(0.5) == {"lambda_v": 1.5, "lambda_IN": 0.75}
+    assert maquette._vitesses_offre(2.0) == {"lambda_v": 6.0, "lambda_IN": 3.0}
+    assert (base.lambda_mu * 0.5, base.lambda_mu * 2, base.psi_xi * 2) == (0.6, 2.4, 1.0)
+    monkeypatch.setattr(maquette, "BASE", dataclasses.replace(base, lambda_v=4.0, lambda_IN=2.0))
+    assert maquette._vitesses_offre(0.5) == {"lambda_v": 2.0, "lambda_IN": 1.0}
 
 
 def test_branche_x2_sans_a_I_racine_reelle_a_la_table_calibree(maquette):
@@ -729,6 +756,24 @@ def test_frontiere_ou_aucune(maquette):
             maquette.frontiere_ou_aucune(lambda x, rayon=rayon: rayon, 0.0, 1.0)
 
 
+def test_frontiere_ou_aucune_echantillonne_l_interieur(maquette):
+    """#172, point 5 : sous deux bornes stables, une frontière double intérieure (rayon 0,9 + 0,3 sin πx, au-dessus de
+    1 de x ≈ 0,36 à 0,64) est refusée, jamais publiée « sans objet » ; entre deux bornes de côtés opposés, trois
+    passages (1 − 0,3 cos(3πx + 0,1)) sont refusés ; un rayon intérieur non fini est refusé ; le pas d'échantillonnage
+    est le dixième de l'intervalle (`ECHANTILLONS_INTERIEURS` = 9) et chaque rayon est évalué une fois par point."""
+    assert maquette.ECHANTILLONS_INTERIEURS == 9
+    with pytest.raises(ValueError, match="2 passages de 1"):
+        maquette.frontiere_ou_aucune(lambda x: 0.9 + 0.3 * math.sin(math.pi * x), 0.0, 1.0)
+    with pytest.raises(ValueError, match="3 passages de 1"):
+        maquette.frontiere_ou_aucune(lambda x: 1 - 0.3 * math.cos(3 * math.pi * x + 0.1), 0.0, 1.0)
+    with pytest.raises(ValueError, match="non fini au point intérieur"):
+        maquette.frontiere_ou_aucune(lambda x: math.nan if 0.4 < x < 0.6 else 0.5, 0.0, 1.0)
+    appels = []
+    assert maquette.frontiere_ou_aucune(lambda x: appels.append(x) or 0.5, 0.3, 1.0) is None
+    assert len(appels) == 11 and appels[:2] == [0.3, 1.0]
+    assert all(b - a == pytest.approx(0.07, abs=1e-15) for a, b in zip(sorted(appels), sorted(appels)[1:]))
+
+
 def test_marge_conjointe_est_une_frontiere(a_lambda_w_un):
     """À λ_w = 1 (`a_lambda_w_un`, avant #45), la frontière de la marge conjointe est dans `BORNES_MARGE` ; la
     bissection sur [1 ; 3] la rend égale, à 1e−12 près, à celle sur [1 ; 2], intervalle d'avant le 17/11/2026."""
@@ -748,12 +793,12 @@ def test_marge_conjointe_est_une_frontiere(a_lambda_w_un):
 
 def test_frontiere_de_la_marge_en_regime_de_hausse(maquette):
     """La frontière du régime de hausse sépare la lecture (c) de ce régime de part et d'autre de 1, et n'est pas
-    en deçà de la frontière du pire des deux régimes ; recherchée sur `BORNES_MARGE_HAUSSE` = [1 ; 3] (décision du
+    en deçà de la frontière du pire des deux régimes ; recherchée sur `BORNES_MARGE` = [1 ; 3] (décision du
     mainteneur du 17/11/2026, #130 : à ϑ = 0,15 et ν_H = 1 elle dépasse 2 ; à ν_H = 1,1, #62, elle revient
     à 1,9693 ; à λ_w = 0,18, #45, elle vaut 2,7826)."""
     f_h = maquette.frontiere_marge("hausse")
-    assert maquette.BORNES_MARGE_HAUSSE == (1.0, 3.0) and maquette.BORNES_MARGE == (1.0, 3.0)
-    assert maquette.BORNES_MARGE_HAUSSE[0] < f_h < maquette.BORNES_MARGE_HAUSSE[1]
+    assert maquette.BORNES_MARGE == (1.0, 3.0) and not hasattr(maquette, "BORNES_MARGE_HAUSSE")  # une seule (#172)
+    assert maquette.BORNES_MARGE[0] < f_h < maquette.BORNES_MARGE[1]
     assert round(f_h, 4) == 2.7826
     rayon = lambda f: maquette.lectures(maquette._ensemble(f), "hausse").rayon_c  # noqa: E731
     assert rayon(f_h - 1e-6) < 1 < rayon(f_h + 1e-6)
