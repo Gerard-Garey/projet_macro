@@ -6,7 +6,9 @@ les tables du moteur (`ENTREES_DES_TABLES`), y applique en clair les
 conventions de sélection de l'état initial (point 10), refuse un état dont une
 condition d'existence est violée (`EtatStationnaireInexistant`, point 8.2) et
 rend l'`EtatPays` d'ouverture du pas 0 avec l'ensemble des tables **aligné**,
-dont la table `finances_publiques` porte θ_G résolu.
+dont la table `finances_publiques` porte θ_G résolu. `resolution` rend la résolution
+elle-même (entrées, état stationnaire, ouverture) sous les mêmes conventions et les mêmes
+refus : `etat_initial` l'appelle, et le centre des bandes du test zéro s'y lit (#176).
 
 **Conventions de sélection** (continuum d'équilibres ; ADR 0015, point 10),
 appliquées ici et nulle part ailleurs :
@@ -196,15 +198,24 @@ def entrees_des_tables(parametres: EnsembleDesParametres,
         p_0=normalisation.p_0, pr_0=normalisation.pr_0, N_pa_0=normalisation.N_pa_0)
 
 
-def etat_initial(parametres: EnsembleDesParametres, normalisation: Normalisation, *,
-                 identifiant: str, graine: int) -> EtatInitial:
-    """État initial résolu du pas 0 et tables alignées (ADR 0015, point 9).
+@dataclass(frozen=True, slots=True)
+class Resolution:
+    """Résolution de l'état stationnaire aux tables reçues, sous les conventions de sélection
+    (point 10) : entrées lues sur les tables, état stationnaire résolu et ouverture du pas 0, en
+    formes fermées. Le centre des bandes du test zéro s'y lit (#176), sans recopie ni seconde
+    application des conventions."""
 
-    Refus : `EtatStationnaireInexistant` si une condition d'existence est violée (liste de
-    `stationnaire.CONDITIONS_D_EXISTENCE`, toutes relevées), jamais un état ni un écrêtage ;
-    `EchelleNonRepresentable` si une grandeur de l'état n'est ni 0,0 ni un flottant normal
-    fini aux tables et à la normalisation reçues. θ_G de `parametres` n'est pas lu : le résultat ne dépend pas de sa valeur.
-    """
+    entrees: resolveur.EntreesStationnaires
+    etat: resolveur.EtatStationnaire
+    ouverture: resolveur.Ouverture
+
+
+def resolution(parametres: EnsembleDesParametres, normalisation: Normalisation) -> Resolution:
+    """Résolution aux tables et à la normalisation reçues, conventions de sélection appliquées
+    (point 10), seule maison de ces conventions. Refus relevés ici : `EtatStationnaireInexistant`
+    (conditions d'existence) et `EchelleNonRepresentable` sur l'état stationnaire résolu ou sur
+    les formes ; le contrôle de représentabilité des positions, de V^flux, des variables, du
+    registre et de θ_G reste dans `etat_initial`. θ_G de `parametres` n'est pas lu."""
     entrees = entrees_des_tables(parametres, normalisation)
     # Conventions de sélection (point 10) : r̂*_0 = r̄ ; ϱ̄_L = ϱ_{L,0} (Δϱ = 0).
     r_neutre = entrees.r_bar
@@ -223,6 +234,19 @@ def etat_initial(parametres: EnsembleDesParametres, normalisation: Normalisation
     except (ZeroDivisionError, OverflowError) as erreur:
         # Une grandeur tombée à zéro ou sortie de la plage des flottants à une échelle extrême.
         raise EchelleNonRepresentable(normalisation, type(erreur).__name__, str(erreur)) from erreur
+    return Resolution(entrees, etat, o)
+
+
+def etat_initial(parametres: EnsembleDesParametres, normalisation: Normalisation, *,
+                 identifiant: str, graine: int) -> EtatInitial:
+    """État initial résolu du pas 0 et tables alignées (ADR 0015, point 9).
+
+    Refus : `EtatStationnaireInexistant` si une condition d'existence est violée (liste de
+    `stationnaire.CONDITIONS_D_EXISTENCE`, toutes relevées), jamais un état ni un écrêtage ;
+    `EchelleNonRepresentable` si une grandeur de l'état n'est ni 0,0 ni un flottant normal
+    fini aux tables et à la normalisation reçues. θ_G de `parametres` n'est pas lu : le résultat ne dépend pas de sa valeur.
+    """
+    o = resolution(parametres, normalisation).ouverture
     ouverture = o._asdict()
     positions = {nom: ouverture[nom] for nom in cat.NOMS_POSTES}
     variables = {v.nom: ouverture[OUVERTURE_DES_VARIABLES[v.nom]]
