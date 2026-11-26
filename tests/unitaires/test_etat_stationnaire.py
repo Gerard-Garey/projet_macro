@@ -106,16 +106,36 @@ def relatif(a, b):
 # --- Indépendance et déterminisme (P9 ; propriété 11) -----------------------------
 
 
-def test_n_importe_que_la_bibliotheque_standard():
+def test_n_importe_que_la_bibliotheque_standard_et_le_module_feuille():
+    """Bibliothèque standard, plus le seul module feuille `nations.scenarios.stationnaire` ; jamais
+    `archive` (ADR 0015, point 14.1 ; décision S2)."""
     arbre = ast.parse(SCRIPT.read_text(encoding="utf-8"))
-    modules = set()
+    modules, de_nations = set(), set()
     for noeud in ast.walk(arbre):
         if isinstance(noeud, ast.Import):
             modules.update(a.name.split(".")[0] for a in noeud.names)
+            de_nations.update(a.name for a in noeud.names if a.name.split(".")[0] == "nations")
         elif isinstance(noeud, ast.ImportFrom):
+            assert noeud.level == 0
             modules.add((noeud.module or "").split(".")[0])
-    assert modules <= {"__future__", "argparse", "dataclasses", "json", "math", "sys"}
-    assert not modules & {"nations", "archive", "src"}
+            if (noeud.module or "").split(".")[0] == "nations":
+                de_nations.update(f"{noeud.module}.{a.name}" for a in noeud.names)
+    assert modules <= {"__future__", "argparse", "dataclasses", "json", "math", "sys", "nations"}
+    assert de_nations == {"nations.scenarios.stationnaire"}
+    assert not modules & {"archive", "src"}
+
+
+def test_le_script_ne_charge_de_nations_que_le_module_feuille():
+    """À l'exécution, importer le script ne charge de `nations` que le paquet, `scenarios` et le module
+    feuille (les `__init__` de `nations` et de `scenarios` n'importent rien)."""
+    code = ("import importlib.util, sys\n"
+            f"spec = importlib.util.spec_from_file_location('etat_stationnaire', {str(SCRIPT)!r})\n"
+            "module = importlib.util.module_from_spec(spec)\n"
+            "sys.modules['etat_stationnaire'] = module\n"
+            "spec.loader.exec_module(module)\n"
+            "print(sorted(m for m in sys.modules if m == 'nations' or m.startswith('nations.')))\n")
+    sortie = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout
+    assert sortie.strip() == "['nations', 'nations.scenarios', 'nations.scenarios.stationnaire']"
 
 
 def test_deux_executions_identiques_a_l_octet(tmp_path):
