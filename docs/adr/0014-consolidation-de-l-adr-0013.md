@@ -176,3 +176,22 @@ Rédigée par `architect-approfondi` avec l'ADR 0015. Le point 1 consigne une d�
 3. **F2, test « conversion unique »** (ADR 0015, pt 13). « Seule exemption, fermée : le calendrier » se lit : deux listes fermées hors des deux conversions, le calendrier et les fonctions du module feuille `nations.scenarios.stationnaire`, nommées une à une. Aucune autre fonction de `src/` ne divise par n_a ni n'élève à la puissance 1/n_a.
 4. **F1, H3, H6.1** (ADR 0015, pt 6 à 9 et 14). « Valeurs par archétype dans `scenarios/` » : `scenarios/` rend l'état initial résolu et l'`EnsembleDesParametres` aligné (θ_G résolu). H3.3 : les valeurs indicatives restent égales aux défauts du script ; l'exception θ_G se compare au résolveur de `scenarios/`. H6.1 est inchangé pour `src/` ; `outils/etat_stationnaire.py` importe de `nations` le seul module feuille du résolveur.
 5. **Graphe d'imports** (ADR 0015, pt 9.7). `scenarios/` importe `etat`, `moteur.parametres` et `noyau` ; aucune de ces couches, ni `blocs`, ni `observation`, n'importe `scenarios/`.
+
+### Annotation du 26/11/2026 (rang 10 de J3-e1, PR #174 ; P258, P260)
+
+Rédigée par `architect` à la consignation de J3-e1. Elle consigne deux décisions du mainteneur du 26/11/2026 (P258, point S1 de l'ADR 0015 ; P260) et ne change aucune autre règle.
+
+1. **F2, test « conversion unique » : liste fermée des exemptions nommées** (complète le point 3 de l'annotation précédente). « Seule exemption, fermée : le calendrier » se lit, à la tête `285e6aa` : hors des deux conversions de `nations.moteur.conversions` (`par_pas`, `facteur_par_pas`), trois listes fermées, chaque fonction nommée une à une :
+   - le calendrier (n7.2) : `nations.moteur.calendrier.date` et `est_date_de_decision` ;
+   - le résolveur de l'état stationnaire (ADR 0015, pt 13 ; S1, P258) : `facteurs`, `rho_IN`, `rho_K`, `etat_stationnaire` et `ouverture` de `nations.scenarios.stationnaire`. Motif : formes fermées écrites à n_a quelconque, évaluées par le script à n_a ∈ {4 ; 12 ; 52}, et identité au bit avec le script ;
+   - la série du test zéro (#176 ; P260) : `ratio_au_pib_annuel` (`eq:observation-ratio-pib-annuel`, M22, lecture (e)) et `richesse_sur_revenu_annuel` (B10, M27, hors du label) de `nations.observation.serie_test_zero`. Motif : la division par n_a fois un flux du pas y définit un ratio, ce n'est pas une conversion de taux ; la couche est sans effet sur la trajectoire (E1).
+
+   Le reste de `nations.scenarios` et d'`observation/`, comme tout `src/`, reste sous la règle commune. Une exemption nouvelle demande une décision du mainteneur et une annotation. Test : `test_exemptions_fermees_et_nommees` (`tests/invariants/test_conversion_unique.py`), qui fixe les quatre listes sans recouvrement ; texte de la spécification : `sec:cadre-calendrier` (`1904caf`, `b0e1d87`).
+
+### Annotation du 26/11/2026 (décision du mainteneur P265, Q13 du rang 10 de J3-e1, PR #174)
+
+**F3, exception déclarée.** `nations.observation.serie_test_zero.SerieDuTestZero` lit directement `registre_prix[0]` (P_{t−1}) et `registre_prix[n_a − 1]` (glissement de B7). En effet, `observation/` n'importe pas `moteur/` (ADR 0012, graphe d'imports), et `FinDePas` ne publie pas ce glissement.
+
+L'exception est bornée : lecture seule de ces deux positions, dans ce seul module, sans effet sur la trajectoire (E1, test de suppression). Aucune autre couche n'est concernée, et la règle reste entière pour `blocs/`.
+
+Le calcul de B7 est une seconde écriture, non balisée, de `eq:moteur-glissement`. Une seconde lectrice du registre dans `observation/` rouvrirait la forme : glissement publié par le moteur, ou fonctions d'indexation dans une couche importable (options écartées le 26/11/2026, P265). Commentaire du code : `2c31301`.
