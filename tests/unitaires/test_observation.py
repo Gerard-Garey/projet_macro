@@ -282,6 +282,9 @@ IMPORTS_ADMIS = {
     "noyau": set(),
     "etat": {"noyau"},
     "observation": {"etat", "noyau"},
+    # ADR 0015, point 9.7 : l'adaptateur `scenarios.initial` lit l'état, les tables du moteur et
+    # le noyau ; ni `blocs` ni `observation` (l'ordonnanceur est exclu par le test de l'adaptateur).
+    "scenarios": {"etat", "moteur", "noyau"},
 }
 
 
@@ -292,7 +295,8 @@ def modules_de_nations():
 
 
 def test_graphe_d_imports_des_couches():
-    """noyau n'importe rien de nations ; etat, noyau seul ; observation, etat et noyau seuls."""
+    """noyau n'importe rien de nations ; etat, noyau seul ; observation, etat et noyau seuls ;
+    scenarios, etat, moteur et noyau seuls (ADR 0015, point 9.7)."""
     ecarts = []
     for module, chemin in modules_de_nations():
         source = couche(module)

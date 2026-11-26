@@ -495,7 +495,10 @@ def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, 
     monkeypatch.setattr(ordo, "FinDePas", FinDePas)
     sentier = socle.sentier(0.02)
     initial = socle.etat_initial(sentier)
-    temoin, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    # Tables alignées hors du compte : `parametres_du_sentier` résout θ_G par
+    # `scenarios.etat_initial`, qui construit un `EtatPays` (contrôle de construction, hors pas).
+    tables = socle.parametres_du_sentier(sentier)
+    temoin, _ = derouler(socle, sentier, nb_pas, initial=initial, parametres=tables)
     appels = []
     original = schema.defaut_de_domaine
 
@@ -503,7 +506,7 @@ def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, 
         appels.append(nom)
         return original(nom, valeur)
     monkeypatch.setattr(schema, "defaut_de_domaine", compter)
-    final, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    final, _ = derouler(socle, sentier, nb_pas, initial=initial, parametres=tables)
     assert final == temoin
     blocs = {v.nom for v in schema.VARIABLES_DES_BLOCS}
     assert len(blocs) == 20
