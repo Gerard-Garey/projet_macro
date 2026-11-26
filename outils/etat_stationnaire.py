@@ -1526,8 +1526,10 @@ ALLOCATIONS_MESUREES = (
 )
 TOL_INVARIANCE = 1e-12  # invariance exacte, relative
 # Sensibilité à ζ (décision de `macro`, complément de #84) : le verdict reste jugé à ζ du paramètre (8, M34) ; l'étendue
-# des allocations de la liste L2 est publiée en mesure sur la plage de la table, ζ ∈ {4 ; 8}, et à ζ = 2 en
-# illustration, sans verdict. Les allocations qui en dépendent (par r̄_α) sont mesurées, non supposées.
+# des allocations de la liste L2 est publiée en mesure sur ζ ∈ {4 ; 8}, et à ζ = 2 en illustration, sans verdict. Les
+# allocations qui en dépendent (par r̄_α) sont mesurées, non supposées. `ZETA_PLAGE` n'est pas une plage de la table :
+# la table T1 retient le seul ζ = 8 (M34, #55) ; (4 ; 8) réunit la valeur de la calibration indicative et celle de T1.
+# La sortie garde le libellé « plage de la table » (sortie identique à l'octet, #172 ; libellé soumis à `macro`).
 ZETA_PLAGE = (4.0, 8.0)
 ZETA_ILLUSTRATION = 2.0
 
@@ -2190,6 +2192,8 @@ ENTREES_D_ORIGINE: dict[str, float] = {
     "mu_bar": 0.25,  # μ̄ avant la décision M34 (#92) : valeur des publications barrées
     "vartheta": 0.10,  # ϑ avant la décision M34 (#130) : valeur des publications barrées
     "nu_H": 1.0,  # ν_H avant la décision M34 (#62) : valeur des publications barrées
+    "zeta": 4.0,  # ζ avant la décision M34 (#55) : valeur des publications barrées
+    "lambda_w": 1.0,  # λ_w avant la décision M34 (#45) : valeur des publications barrées
 }
 VALEURS_CONTRE_EPREUVE: tuple[tuple[str, str, str, object, str], ...] = tuple(
     ("sec:banque-stationnaire", f"illustration : {nom} à {int(round(100 * pi))} %", pub,
