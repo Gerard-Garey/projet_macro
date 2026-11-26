@@ -54,7 +54,8 @@ NU_G = Parametre(
 
 THETA_G = Parametre(
     "theta_G", "θ_G", 0.22058388898746367, "fraction",
-    "levier fermé (M33) ; θ_G résolu par outils/etat_stationnaire.py à π* = 2 % (#44)",
+    "levier fermé (M33) ; θ_G résolu par nations.scenarios.stationnaire, importé par "
+    "outils/etat_stationnaire.py, à π* = 2 % (#44)",
     ("eq:finances_publiques-plan-depense",),
     domaine("θ_G ≥ 0 (sec:finances_publiques-conditions)", lambda x: x >= 0.0))
 

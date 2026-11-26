@@ -242,7 +242,10 @@ def etat_initial(parametres: EnsembleDesParametres, normalisation: Normalisation
     """État initial résolu du pas 0 et tables alignées (ADR 0015, point 9).
 
     Refus : `EtatStationnaireInexistant` si une condition d'existence est violée (liste de
-    `stationnaire.CONDITIONS_D_EXISTENCE`, toutes relevées), jamais un état ni un écrêtage ;
+    `stationnaire.CONDITIONS_D_EXISTENCE`, toutes relevées), jamais un état ni un écrêtage ; à
+    un pôle exact des formes fermées (D1 = 0 ou D2 = 0), `stationnaire.etat_stationnaire` lève
+    avant le relevé : le refus ne nomme que D1, ou D2 (précédée de D1 si D1 < 0), les autres
+    conditions n'étant pas évaluables ;
     `EchelleNonRepresentable` si une grandeur de l'état n'est ni 0,0 ni un flottant normal
     fini aux tables et à la normalisation reçues. θ_G de `parametres` n'est pas lu : le résultat ne dépend pas de sa valeur.
     """
