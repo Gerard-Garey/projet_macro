@@ -22,6 +22,15 @@ Définitions, unités, dénominateurs et fenêtres : `GRANDEURS` (une `Grandeur`
 
 Grandeurs nulles de B19 (Res, H = Res sans billets, E^CB par les flux, B_CB, résidu de
 l'identité) : rapportées à S^CB de l'état t + 1 (`identites.echelle_bilan`).
+
+Valeurs relevées : toutes finies. Une valeur non finie (`inf`, `NaN`) est refusée à
+l'enregistrement (`ValueError` nommant la grandeur et le pas), jamais tenue dans la série ; un
+rapport **sans objet** n'est pas relevé (aucun `NaN`) : B17 à un pas dont le crédit d'ouverture L
+est nul (lv* = 0, dans le domaine), comme la marge d'existence rapportée à L de
+`scenarios.initial` (`_RAPPORTS_SANS_OBJET`). Un pas clos est enregistré entier ou pas du tout :
+un refus (clôture de phase ou fin de pas d'un autre pas que l'ouverture stockée, ligne relevée deux
+fois ou absente, valeur non finie) n'enregistre aucune valeur et abandonne les montants du pas en
+cours ; le pas se rejoue depuis ses clôtures de phase.
 """
 
 from __future__ import annotations
@@ -141,6 +150,12 @@ GRANDEURS: types.MappingProxyType[str, Grandeur] = types.MappingProxyType({g.nom
 SUR_12_TOURS = frozenset({"B4", "B5", "B6", "B7", "B9", "B11", "B13", "B22", "B24"})
 
 
+def _cle_du_pire(ecart: float) -> tuple[bool, float]:
+    """Clé d'ordre des écarts où `NaN` est le pire, au-dessus de `inf` : un écart non défini n'est
+    jamais ignoré par une comparaison (`x < NaN` est faux)."""
+    return (True, 0.0) if math.isnan(ecart) else (False, ecart)
+
+
 @dataclass(frozen=True, slots=True)
 class MoyenneDeBloc:
     """Moyenne d'une grandeur sur un bloc de pas : premier et dernier pas du bloc, nombre de
@@ -162,6 +177,15 @@ class SerieDuTestZero:
     def __init__(self, ouverture: EtatPays, *, pas_par_an: int, r_bar: float) -> None:
         if type(ouverture) is not EtatPays:
             raise TypeError(f"EtatPays d'ouverture attendu, {type(ouverture).__name__} reçu")
+        if type(pas_par_an) is not int:
+            raise TypeError(f"pas_par_an : int attendu, {type(pas_par_an).__name__} reçu")
+        if pas_par_an != len(ouverture.registre_prix) - 1:
+            raise ValueError(f"pas_par_an = {pas_par_an!r} : n_a du registre de prix attendu "
+                             f"({len(ouverture.registre_prix)} prix, soit n_a + 1)")
+        if type(r_bar) is not float:
+            raise TypeError(f"r_bar : float attendu, {type(r_bar).__name__} reçu")
+        if not math.isfinite(r_bar):
+            raise ValueError(f"r_bar = {r_bar!r} : flottant fini attendu")
         self._ouverture = ouverture
         self._pas_par_an = pas_par_an
         self._r_bar = r_bar
@@ -171,28 +195,42 @@ class SerieDuTestZero:
         # Par pas relevé : (PIB, WB, I, C, YD, numérateur du déficit, p/UC − 1).
         self._fenetre: list[tuple[float, float, float, float, float, float, float]] = []
         # Salaire, prix et production, en tête la valeur du pas −1 lue à l'ouverture du premier pas.
+        # Exception déclarée à ADR 0012, F3 (`moteur.registre`, seul à indexer le registre) :
+        # `observation/` n'importe pas `moteur/` ; la série lit en lecture seule P_{t−1}
+        # (`registre_prix[0]`) et P_{t−n_a} (`registre_prix[n_a − 1]`, B7).
         self._W = [ouverture.W]
         self._p = [ouverture.registre_prix[0]]
         self._y = [ouverture.y_m1]
 
     def relever(self, evenement: Evenement) -> None:
         if type(evenement) is ClotureDePhase:
-            for ligne, termes in evenement.montants:
-                if ligne in LIGNES_LUES:
-                    if ligne in self._montants:
-                        raise ValueError(f"pas {evenement.t} : ligne {ligne} relevée deux fois "
-                                         "dans le pas (une seule exécution attendue)")
-                    self._montants[ligne] = sum(x for _, x in termes)
+            try:
+                if evenement.t != self._ouverture.t:
+                    raise ValueError(f"clôture de phase du pas {evenement.t} reçue sur l'état "
+                                     f"d'ouverture du pas {self._ouverture.t}")
+                for ligne, termes in evenement.montants:
+                    if ligne in LIGNES_LUES:
+                        if ligne in self._montants:
+                            raise ValueError(f"pas {evenement.t} : ligne {ligne} relevée deux "
+                                             "fois dans le pas (une seule exécution attendue)")
+                        self._montants[ligne] = sum(x for _, x in termes)
+            except BaseException:
+                self._montants = {}  # refus : montants du pas en cours abandonnés
+                raise
             return
         if type(evenement) is not FinDePas:
             raise TypeError(f"événement d'observation inconnu : {type(evenement).__name__}")
-        self._clore(evenement)
-
-    def _ajouter(self, nom: str, t: int, valeur: float) -> None:
-        self._series[nom].append((t, valeur))
+        try:
+            self._clore(evenement)
+        finally:
+            # Clos ou refusé, le pas ne laisse aucun montant au pas suivant.
+            self._montants = {}
 
     def _clore(self, fin: FinDePas) -> None:
         t, e, o, n = fin.t, fin.etat, self._ouverture, self._pas_par_an
+        if t != o.t:
+            raise ValueError(f"fin du pas {t} reçue sur l'état d'ouverture du pas {o.t} : la fin "
+                             "du pas suivant l'ouverture stockée est attendue")
         manquantes = [ligne for ligne in LIGNES_LUES if ligne not in self._montants]
         if manquantes:
             raise ValueError(f"pas {t} : lignes non exécutées, lues par la série du test zéro : "
@@ -201,65 +239,79 @@ class SerieDuTestZero:
         pib = m["1"] + m["2"] + m["3"] + m["4"]
         positions = _positions(o)
         deficit = m["2"] + m["6"] + (m["11a"] + m["11b"] + m["11c"]) - m["7"] - m["16"]
-        self._fenetre.append((pib, m["5"], m["3"], m["1"], v["YD_m1_suivant"], deficit,
-                              v["p"] / v["UC"] - 1.0))
+        courant = (pib, m["5"], m["3"], m["1"], v["YD_m1_suivant"], deficit,
+                   v["p"] / v["UC"] - 1.0)
+        releves: list[tuple[str, float]] = []
+
+        def ajouter(nom: str, valeur: float) -> None:
+            releves.append((nom, valeur))
+
+        ajouter("B1", o.IN_vol / v["v"])
+        ajouter("B2", v["y"] / v["y_cap"])
+        ajouter("B3", v["U_suivant"])
+        ajouter("B8", e.pi_e - e.pi_etoile)
+        ajouter("B10", richesse_sur_revenu_annuel(
+            idt.valeur_nette_stock(positions, "menages"), v["YD_m1_suivant"], n))
+        ajouter("B12", ratio_au_pib_annuel(v["p"] * o.K_vol, pib, n))
+        ajouter("B14", o.L / o.K)
+        ajouter("B15", ratio_au_pib_annuel(o.D_F, pib, n))
+        ajouter("B16", ratio_au_pib_annuel(o.D_H + o.D_F, pib, n))
+        # Rapport à L sans objet si L = 0 (lv* = 0, dans le domaine) : non relevé, jamais NaN.
+        if o.L != 0.0:
+            ajouter("B17", idt.valeur_nette_stock(positions, "banque") / o.L)
+        ajouter("B18 (i) ϖ_L", e.i_L - v["i_CB"])
+        ajouter("B18 (i) ϖ_D", v["i_CB"] - e.i_D)
+        ajouter("B18 (ii) ϖ_L", o.i_L - v["i_CB"])
+        ajouter("B18 (ii) ϖ_D", v["i_CB"] - o.i_D)
+        ajouter("B19 M^G", ratio_au_pib_annuel(o.M_G, pib, n))
+        s_cb = idt.echelle_bilan(_positions(e), "banque_centrale")
+        # E^CB par les flux (V^flux), non par le bilan : l'identité n'est pas une tautologie.
+        e_cb_flux = e.V_flux_banque_centrale
+        ajouter("B19 Res (H)", e.Res / s_cb)
+        ajouter("B19 E^CB", e_cb_flux / s_cb)
+        ajouter("B19 B_CB", e.B_CB / s_cb)
+        ajouter("B19 identité", (e.L_CB + e.B_CB - e.Res - e.M_G - e_cb_flux) / s_cb)
+        ajouter("B20", ratio_au_pib_annuel(o.B_Bk, pib, n))
+        dette = (o.B_H + o.B_Bk + o.B_CB) - o.M_G - idt.valeur_nette_stock(positions,
+                                                                         "banque_centrale")
+        ajouter("B21", ratio_au_pib_annuel(dette, pib, n))
+        ajouter("B25", e.r_hat_etoile - self._r_bar)
+        ajouter("B26", v["i_CB"] - v["i_regle"])
+        ajouter("r̂*", e.r_hat_etoile)
+
+        k = len(self._fenetre) + 1  # pas relevés, pas courant compris
+        if k >= n:
+            fenetre = [*self._fenetre[k - n:], courant]
+            somme_pib = math.fsum(f[0] for f in fenetre)
+            ajouter("B4", math.fsum(f[1] for f in fenetre) / somme_pib)
+            ajouter("B13", math.fsum(f[2] for f in fenetre) / somme_pib)
+            ajouter("B11", 1.0 - math.fsum(f[3] for f in fenetre)
+                    / math.fsum(f[4] for f in fenetre))
+            ajouter("B22", math.fsum(f[5] for f in fenetre) / somme_pib)
+            # Moyenne des n_a valeurs de la fenêtre (len(fenetre) = n_a).
+            ajouter("B6", math.fsum(f[6] for f in fenetre) / len(fenetre))
+            # Pas courant : valeurs du pas ; indice k − n_a dans _W, _p, _y : pas t − n_a (−1 au
+            # pas 11).
+            ajouter("B5", (v["W_suivant"] / v["p"]) / (self._W[k - n] / self._p[k - n]) - 1.0)
+            ajouter("B24", v["y"] / self._y[k - n] - 1.0)
+            glissement = v["P"] / o.registre_prix[n - 1] - 1.0
+            ajouter("B7", glissement)
+            ajouter("B9", v["i_CB"] - glissement)
+
+        # Contrôle avant tout enregistrement : un pas refusé n'enregistre aucune valeur (ses
+        # montants sont abandonnés par `relever`).
+        for nom, valeur in releves:
+            if not math.isfinite(valeur):
+                raise ValueError(f"pas {t} : {nom} = {valeur!r}, valeur non finie refusée par la "
+                                 "série du test zéro")
+        for nom, valeur in releves:
+            self._series[nom].append((t, valeur))
+        self._fenetre.append(courant)
         self._W.append(v["W_suivant"])
         self._p.append(v["p"])
         self._y.append(v["y"])
         self._pas.append(t)
-        ajouter = self._ajouter
-
-        ajouter("B1", t, o.IN_vol / v["v"])
-        ajouter("B2", t, v["y"] / v["y_cap"])
-        ajouter("B3", t, v["U_suivant"])
-        ajouter("B8", t, e.pi_e - e.pi_etoile)
-        ajouter("B10", t, richesse_sur_revenu_annuel(
-            idt.valeur_nette_stock(positions, "menages"), v["YD_m1_suivant"], n))
-        ajouter("B12", t, ratio_au_pib_annuel(v["p"] * o.K_vol, pib, n))
-        ajouter("B14", t, o.L / o.K)
-        ajouter("B15", t, ratio_au_pib_annuel(o.D_F, pib, n))
-        ajouter("B16", t, ratio_au_pib_annuel(o.D_H + o.D_F, pib, n))
-        ajouter("B17", t, idt.valeur_nette_stock(positions, "banque") / o.L)
-        ajouter("B18 (i) ϖ_L", t, e.i_L - v["i_CB"])
-        ajouter("B18 (i) ϖ_D", t, v["i_CB"] - e.i_D)
-        ajouter("B18 (ii) ϖ_L", t, o.i_L - v["i_CB"])
-        ajouter("B18 (ii) ϖ_D", t, v["i_CB"] - o.i_D)
-        ajouter("B19 M^G", t, ratio_au_pib_annuel(o.M_G, pib, n))
-        s_cb = idt.echelle_bilan(_positions(e), "banque_centrale")
-        # E^CB par les flux (V^flux), non par le bilan : l'identité n'est pas une tautologie.
-        e_cb_flux = e.V_flux_banque_centrale
-        ajouter("B19 Res (H)", t, e.Res / s_cb)
-        ajouter("B19 E^CB", t, e_cb_flux / s_cb)
-        ajouter("B19 B_CB", t, e.B_CB / s_cb)
-        ajouter("B19 identité", t, (e.L_CB + e.B_CB - e.Res - e.M_G - e_cb_flux) / s_cb)
-        ajouter("B20", t, ratio_au_pib_annuel(o.B_Bk, pib, n))
-        dette = (o.B_H + o.B_Bk + o.B_CB) - o.M_G - idt.valeur_nette_stock(positions,
-                                                                         "banque_centrale")
-        ajouter("B21", t, ratio_au_pib_annuel(dette, pib, n))
-        ajouter("B25", t, e.r_hat_etoile - self._r_bar)
-        ajouter("B26", t, v["i_CB"] - v["i_regle"])
-        ajouter("r̂*", t, e.r_hat_etoile)
-
-        k = len(self._fenetre)  # pas relevés, pas courant compris
-        if k >= n:
-            fenetre = self._fenetre[k - n:]
-            somme_pib = math.fsum(f[0] for f in fenetre)
-            ajouter("B4", t, math.fsum(f[1] for f in fenetre) / somme_pib)
-            ajouter("B13", t, math.fsum(f[2] for f in fenetre) / somme_pib)
-            ajouter("B11", t, 1.0 - math.fsum(f[3] for f in fenetre)
-                    / math.fsum(f[4] for f in fenetre))
-            ajouter("B22", t, math.fsum(f[5] for f in fenetre) / somme_pib)
-            # Moyenne des n_a valeurs de la fenêtre (len(fenetre) = n_a).
-            ajouter("B6", t, math.fsum(f[6] for f in fenetre) / len(fenetre))
-            # Indice k dans _W, _p, _y : pas courant ; k − n_a : pas t − n_a (−1 au pas 11).
-            ajouter("B5", t, (self._W[k] / self._p[k]) / (self._W[k - n] / self._p[k - n]) - 1.0)
-            ajouter("B24", t, self._y[k] / self._y[k - n] - 1.0)
-            glissement = v["P"] / o.registre_prix[n - 1] - 1.0
-            ajouter("B7", t, glissement)
-            ajouter("B9", t, v["i_CB"] - glissement)
-
         self._ouverture = e
-        self._montants = {}
 
     def pas(self) -> tuple[int, ...]:
         """Pas clos relevés."""
@@ -289,25 +341,26 @@ class SerieDuTestZero:
     def ecart_relatif_maximal(self, nom: str, reference: float,
                               avant: int) -> tuple[float, int | None]:
         """A2 : max |x_t/x̄ − 1| sur les pas t < `avant`, et le premier pas qui l'atteint (0 et
-        `None` sans valeur)."""
+        `None` sans valeur) ; un écart non défini (`NaN`, référence non finie) est le pire."""
         pire: tuple[float, int | None] = (0.0, None)
         for t, x in self._series[nom]:
             if t >= avant:
                 break
             ecart = abs(x / reference - 1.0)
-            if pire[1] is None or pire[0] < ecart:
+            if pire[1] is None or _cle_du_pire(pire[0]) < _cle_du_pire(ecart):
                 pire = (ecart, t)
         return pire
 
     def ecart_absolu_maximal(self, nom: str, reference: float,
                              avant: int) -> tuple[float, int | None]:
         """A2 (grandeur nulle) et égalités par pas : max |x_t − x̄| sur les pas t < `avant`, et le
-        premier pas qui l'atteint (0 et `None` sans valeur)."""
+        premier pas qui l'atteint (0 et `None` sans valeur) ; un écart non défini (`NaN`) est le
+        pire."""
         pire: tuple[float, int | None] = (0.0, None)
         for t, x in self._series[nom]:
             if t >= avant:
                 break
             ecart = abs(x - reference)
-            if pire[1] is None or pire[0] < ecart:
+            if pire[1] is None or _cle_du_pire(pire[0]) < _cle_du_pire(ecart):
                 pire = (ecart, t)
         return pire
