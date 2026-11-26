@@ -1,11 +1,11 @@
 ---
-status: proposed
+status: accepted
 date: 2026-11-26
 ---
 
 # `scenarios/` résout l'état initial : un résolveur en formes fermées, module feuille de `src/`, appelé par deux adaptateurs (tables du moteur, script), sans drapeau de mode ; A1 contrôle la transcription, A2 l'équilibre des règles
 
-> **Statut « proposé »**, à accepter par le mainteneur. Rédigé par `architect-approfondi` (Fable, consultation 1 sur 3 de la branche, autorisée par P253 ; `docs/agents/routage.md` § 4.1.3) au rang 1 de J3-e1 (`claude/j3-e1-etat-initial`, PR #174, tête `eed2d31`). Les points 1 à 5 de la Décision consignent des décisions **arrêtées** par le mainteneur le 26/11/2026 (P247 à P252) ; leur rédaction détaillée (au point 2 : côté du moteur mesuré par A1, limite d'A2 le long d'un continuum) est celle d'`architect` et s'accepte avec l'ADR. Les points 6 à 14 en sont la mise en forme, **proposée** ; les points que le mainteneur doit accepter ou trancher sont repris sous « Points soumis ».
+> **Statut « accepté » le 26/11/2026, par décision du mainteneur** (P258 : S1 à S10 acceptés selon les avis de l'ADR, S8 avec la référence remesurée par la session, sha256 `fb187be1…`). Texte d'origine du statut : « proposé », à accepter par le mainteneur. Rédigé par `architect-approfondi` (Fable, consultation 1 sur 3 de la branche, autorisée par P253 ; `docs/agents/routage.md` § 4.1.3) au rang 1 de J3-e1 (`claude/j3-e1-etat-initial`, PR #174, tête `eed2d31`). Les points 1 à 5 de la Décision consignent des décisions **arrêtées** par le mainteneur le 26/11/2026 (P247 à P252) ; leur rédaction détaillée (au point 2 : côté du moteur mesuré par A1, limite d'A2 le long d'un continuum) est celle d'`architect` et s'accepte avec l'ADR. Les points 6 à 14 en sont la mise en forme, **proposée** ; les points que le mainteneur doit accepter ou trancher sont repris sous « Points soumis ».
 
 ## Contexte
 

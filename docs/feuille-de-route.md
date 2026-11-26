@@ -10,7 +10,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 ### Plan de J3-e1 (`claude/j3-e1-etat-initial`) — état initial résolu par `scenarios/` (#175), test zéro et `observation/` (#176), radical `observation` (#115), cohérence de l'état chargé (#122), formes du script (#125, points 3 à 5)
 
-*Proposé par `architect-approfondi` au rang 0, décidé par le mainteneur le 26/11/2026. La forme est fixée par l'**ADR 0015, proposé au rang 1** : aucun commit `code:` de #175, #122 ou #176 avant son acceptation ; #115 n'en dépend pas.*
+*Proposé par `architect-approfondi` au rang 0, décidé par le mainteneur le 26/11/2026. La forme est fixée par l'**ADR 0015**, proposé au rang 1 et **accepté le 26/11/2026 (P258)**.*
 
 - **Issues** (P246) : avec `Closes`, #175, #176, #115, #122 ; sans `Closes`, #125 points 3 à 5. Le point 6 de #125 (bornes inférieures de κ et σ, question de domaine relevant de `macro`) va en J3-e2, avec #158 (écart à P212 assumé) ; le point 2 reste en J3-f1 (`Closes`).
 - **Motif** : le test zéro part de l'état initial résolu (`docs/exigences.md` § 2.6 ; ADR 0002, pt 13). À `831547c`, `src/nations/scenarios/` ne contient que son `__init__.py` ; l'état d'ouverture est construit dans `tests/` (`socle_partiel.etat_initial`, depuis `outils/etat_stationnaire.py` chargé par son chemin), et les grandeurs B y sont calculées (`socle_partiel.grandeurs_b`), hors d'`observation/`. #115 précède le premier label `eq:observation-…`. #122 porte sur l'état que `scenarios/` construira. #125 (points 3 à 5) porte sur des écarts de forme et de domaine entre le script et le moteur.
@@ -38,7 +38,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 | Rang | Étape | Agent | Circuit |
 |---|---|---|---|
 | 0 | **Fait (`c93150a`)** : point d'étape, plan proposé, partie H de l'historique ; PR brouillon #174 ; règle P242 dans `CLAUDE.md` (`eed2d31`) | `architect-approfondi`, session | `docs:`, `claude:` |
-| 1 | **Fait (présente mise à jour)** : décisions P246 à P257 ; #175 et #176 créées par la session ; ADR 0015 proposé ; annotations des ADR 0014 et 0005 ; termes de `CONTEXT.md`. **Reste : acceptation de l'ADR 0015 (S1 à S10) par le mainteneur** | mainteneur ; `architect-approfondi` (Fable, P253) | § 4.2 |
+| 1 | **Fait (présente mise à jour)** : décisions P246 à P257 ; #175 et #176 créées par la session ; ADR 0015 proposé ; annotations des ADR 0014 et 0005 ; termes de `CONTEXT.md`. ADR 0015 accepté par le mainteneur (P258) | mainteneur ; `architect-approfondi` (Fable, P253) | § 4.2 |
 | 2 | #115 : `observation` dans `RADICAUX_TRANSVERSES`, tests d'admission et de refus | `coder` → `audit` léger | 3 |
 | 3 | #175, après l'acceptation de l'ADR 0015. Commit 1 : extraction du résolveur dans le module feuille, que le script importe, avec les exemptions et les tests d'imports. Commit 2 : `scenarios.etat_initial`, `socle_partiel.etat_initial` et `parametres_du_sentier` réduits à des adaptateurs | `coder` → `audit` léger ; contrôle de `macro` (`monnaie` consulté) | 3 + contrôle |
 | 4 | #122 : condition jointe dans le schéma d'état (P251 ; ADR 0015, pt 12), avec les points 2 et 3 du commentaire du 13/11/2026 ; le point 1 (μ̃) est renvoyé à #158 | `macro` (avis), `coder` → `audit` léger | 2 |
@@ -248,10 +248,9 @@ Questions Q1 à Q12 du plan de J3-e1 (compte rendu du rang 0, PR #174), tranché
 - **P255** (Q10) : ligne 12 bis « suites de M34 » (#168, #170 à #173), après J3-e1.
 - **P256** (Q11) : règle de P242 écrite dans `CLAUDE.md` (`eed2d31`) ; `4eb70a5` et `82481d7` en simple mention, sans autre suite.
 - **P257** (Q12) : N1 et N2 créées par la session le 26/11/2026 : **#175** et **#176**.
+- **P258** (26/11/2026) : **ADR 0015 accepté**, points S1 à S10 selon les avis de l'ADR. S1 : exemption fermée du test « conversion unique » pour le module feuille (modifie l'ADR 0014, F2). S8 : référence de la sortie du script = sha256 `fb187be113c513ea17c74ded4339d206ae6a38faa40b7b3c3c2478c2a983e088` (205 933 octets), remesurée par la session à `f97cc6f`, script inchangé depuis `831547c` ; #175 corrigée le même jour.
 
 **Points ouverts au 26/11/2026** :
-- **acceptation de l'ADR 0015** par le mainteneur, avec ses points S1 à S10 (exemption du test « conversion unique », imports du script, littéral θ_G, lecture de π\* et de θ_G, version du schéma, clôture, normalisation, référence de la sortie du script, annotation de l'ADR 0005, type du refus) ;
-- référence de la sortie du script à remesurer par la session et à corriger dans #175 (S8) ;
 - condition de M34 : **#163 traitée avant la démonstration J4** ;
 - marge du noyau seul sur l'exécuteur lent (#110, J3-g1) ;
 - déjà ouverts : plancher du taux directeur (P181), durée d'une partie (#155), #11, #14.
