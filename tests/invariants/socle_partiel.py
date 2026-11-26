@@ -12,8 +12,10 @@ reels=...)`).
 **Sentier.** Chaque bloc d'essai propose ses lignes et écrit ses variables aux
 valeurs du sentier stationnaire, tirées de `outils/etat_stationnaire.py` : les
 valeurs du pas 0 viennent de `un_pas(ouverture(e))` (flux, variables du pas,
-valeurs du pas suivant des variables d'état) et l'état initial de
-`ouverture(e)` ; la valeur du pas t est la valeur du pas 0 multipliée par
+valeurs du pas suivant des variables d'état) ; l'état initial et θ_G résolu
+viennent de `scenarios.etat_initial` aux tables et normalisations du sentier
+(`resolu` ; ADR 0015, point 9), égaux au bit à `ouverture(e)` du script, qui
+importe le même résolveur ; la valeur du pas t est la valeur du pas 0 multipliée par
 facteur^t, le facteur par pas étant celui de la grandeur sur le sentier :
 
 - volume (u.v.) : (1 + g)^{1/n_a} ; productivité : (1 + g_pr)^{1/n_a} ;
@@ -115,6 +117,7 @@ from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.moteur.phases import PHASES
 from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
+from nations.scenarios import initial
 
 RACINE = Path(__file__).resolve().parents[2]
 ETIQUETTE = "π^e exogène (bloc d'essai 8) ; émission aux montants du sentier (X3 inactive)"
@@ -244,14 +247,9 @@ VARIABLES_D_ETAT = {
 if set(VARIABLES_D_ETAT) != {v.nom for v in schema.VARIABLES_DES_BLOCS}:
     raise AssertionError("socle partiel : une variable d'état du schéma sans valeur du sentier")
 
-# Valeur à l'ouverture du pas 0 de chaque variable d'état (clé de `ouverture`).
-OUVERTURE_DES_VARIABLES = {
-    "v_e": "ve", "IN_vol": "IN_vol", "pr": "pr", "K_vol": "K_vol", "W": "W_m1", "U": "U_m1",
-    "N": "N_m1", "N_pa": "N_pa", "mu_tilde": "mu_tilde_m1", "i_L": "i_L", "i_D": "i_D",
-    "pi_e": "pi_e", "r_hat_etoile": "r_hat", "pi_etoile": "pi_cible", "YD_m1": "YD_m1",
-    "ti": "ti", "y_m1": "y_m1", "T_F_m1": "T_F_m1", "varrho_bar_L": "rho_bar_L",
-    "Y_HS_m1": "Y_HS_m1",
-}
+# Valeur à l'ouverture du pas 0 de chaque variable d'état (clé de `ouverture`) : la table fermée
+# de `scenarios.initial` (ADR 0015, point 9.5), seule maison de la correspondance.
+OUVERTURE_DES_VARIABLES = initial.OUVERTURE_DES_VARIABLES
 
 # Lignes proposées aux montants du sentier : ligne → {terme: clé du pas 0}, classe nominale.
 # Les lignes 1 à 3 (acheteurs, p × volume servi), 11a à 11c (E7, bloc d'essai 9, X2) et 21 (B7,
@@ -593,13 +591,13 @@ PARAMETRES_DES_TABLES_DU_SENTIER = types.MappingProxyType({
     "banque_centrale": types.MappingProxyType({"a_pi": "a_pi", "a_I": "a_I",
                                                "lambda_e": "lambda_e", "theta_CB": "theta_CB",
                                                "pi_etoile": "pi_cible", "r_bar": "rbar"}),
-    # Bloc 9 (P165) : θ_G n'est pas un paramètre du script, qui le résout ; il est lu sur l'état
-    # d'ouverture du sentier (`THETA_G_DU_SENTIER`).
+    # Bloc 9 (P165) : θ_G n'est pas un paramètre du script ; il est résolu par `scenarios`
+    # (`THETA_G_DU_SENTIER`, `tables_du_sentier`).
     "finances_publiques": types.MappingProxyType({"nu_G": "nu_G", "theta_G": "theta_G",
                                                   "theta_Tr": "theta_Tr", "tau_H": "tau_H",
                                                   "tau_F": "tau_F", "phi": "phi"}),
 })
-# Paramètre lu sur l'ouverture du sentier, non sur `sentier.par` (résolu par le script).
+# Paramètre résolu par `scenarios.etat_initial`, non lu sur `sentier.par`.
 THETA_G_DU_SENTIER = "theta_G"
 if any(set(noms) != {f.name for f in fields(getattr(PARAMETRES_DE_REFERENCE, radical))}
        for radical, noms in PARAMETRES_DES_TABLES_DU_SENTIER.items()):
@@ -618,19 +616,53 @@ def _valeur_de_champ(valeur) -> float:
     return valeur.valeur if isinstance(valeur, (TauxDeFlux, TauxDeCroissance)) else valeur
 
 
+def tables_du_sentier(sentier: Sentier):
+    """Tables de référence portant les entrées du résolveur avec lesquelles le script a construit
+    le sentier (`sentier.par`, par la correspondance du script `CORRESPONDANCE_DES_ENTREES` et
+    `scenarios.initial.ENTREES_DES_TABLES`, constructeur validé `varier`) ; les autres paramètres
+    (vitesses, gains, θ_G, que le résolveur ne lit pas) restent ceux de référence. n_a du sentier
+    doit égaler celui du cadre (n_a ≠ 12 n'est pas servi, #120)."""
+    noms = script().CORRESPONDANCE_DES_ENTREES
+    par_table = {}
+    for entree, (radical, champ) in initial.ENTREES_DES_TABLES.items():
+        valeur = getattr(sentier.par, noms[entree])
+        if radical == "cadre":
+            if valeur != getattr(PARAMETRES_DE_REFERENCE.cadre, champ):
+                raise AssertionError(f"socle partiel : {champ} = {valeur!r} du sentier hors du cadre")
+            continue
+        par_table.setdefault(radical, {})[champ] = valeur
+    return replace(PARAMETRES_DE_REFERENCE,
+                   **{radical: varier(getattr(PARAMETRES_DE_REFERENCE, radical), **valeurs)
+                      for radical, valeurs in par_table.items()})
+
+
+def normalisation_du_sentier(sentier: Sentier) -> initial.Normalisation:
+    """Normalisations p_0, pr_0, N^pa_0 avec lesquelles le script a construit le sentier."""
+    par = sentier.par
+    return initial.Normalisation(par.p_0, par.pr_0, par.N_pa_0)
+
+
+def resolu(sentier: Sentier, *, identifiant: str = "A", graine: int = GRAINE) -> initial.EtatInitial:
+    """État initial résolu par `scenarios.etat_initial` (ADR 0015, point 9) aux tables et aux
+    normalisations du sentier : `EtatPays` d'ouverture du pas 0 et tables alignées (θ_G résolu)."""
+    return initial.etat_initial(tables_du_sentier(sentier), normalisation_du_sentier(sentier),
+                                identifiant=identifiant, graine=graine)
+
+
 def parametres_du_sentier(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE):
     """Réserve R1 de `monnaie`, étendue aux tables des blocs 7 et 8, puis du bloc 9 (#132) : les
     tables `parametres`, dont celles des blocs 7 à 9 portent les valeurs avec lesquelles le script
-    a construit le sentier (`sentier.par`, `PARAMETRES_DES_TABLES_DU_SENTIER` ; θ_G résolu, lu sur
-    l'ouverture du sentier) ; π* du sentier est la valeur initiale de l'état π*_0. Table par
-    table : une table de référence (inchangée) est alignée sur le sentier (`varier`, paramètres
-    du script) ; une table de l'appelant est gardée telle quelle, et refusée
-    (`TableHorsDuSentier`) si un de ses paramètres diffère de celui du sentier : jamais écrasée
-    en silence. Sans écart, `parametres` est rendu tel quel."""
+    a construit le sentier (`sentier.par`, `PARAMETRES_DES_TABLES_DU_SENTIER` ; θ_G résolu par
+    `scenarios.etat_initial` aux tables du sentier, `resolu`) ; π* du sentier est la valeur
+    initiale de l'état π*_0. Table par table : une table de référence (inchangée) est alignée sur
+    le sentier (`varier`, paramètres du script) ; une table de l'appelant est gardée telle quelle,
+    et refusée (`TableHorsDuSentier`) si un de ses paramètres diffère de celui du sentier : jamais
+    écrasée en silence. Sans écart, `parametres` est rendu tel quel."""
+    theta_G = resolu(sentier).parametres.finances_publiques.theta_G
     alignees = {}
     for radical, noms in PARAMETRES_DES_TABLES_DU_SENTIER.items():
         table = getattr(parametres, radical)
-        du_sentier = {champ: (float(sentier.o[nom]) if nom == THETA_G_DU_SENTIER
+        du_sentier = {champ: (theta_G if nom == THETA_G_DU_SENTIER
                               else getattr(sentier.par, nom)) for champ, nom in noms.items()}
         if table == getattr(PARAMETRES_DE_REFERENCE, radical):
             alignee = varier(table, **du_sentier)
@@ -662,20 +694,22 @@ def ordonnanceur(sentier: Sentier, parametres=PARAMETRES_DE_REFERENCE, **options
 
 def etat_initial(sentier: Sentier, *, echelle: float = 1.0, graine: int = GRAINE,
                  choc_pi_e0: float = 0.0, identifiant: str = "A") -> EtatPays:
-    """État d'ouverture du pas 0 tiré de `ouverture` du script : positions, V^flux = V^stock,
-    registre P_{−u} = P_0 (1 + π̄)^{−u/n_a}, variables d'état des blocs ; nominaux × `echelle`."""
-    o = sentier.o
-    positions = {nom: float(o[nom]) * echelle for nom in cat.NOMS_POSTES}
+    """État d'ouverture du pas 0 résolu par `scenarios.etat_initial` aux tables du sentier
+    (`resolu` ; ADR 0015, point 9), puis transformations d'essai (point 9.8) : nominaux
+    (positions, registre, variables nominales) × `echelle`, V^flux = V^stock recalculé sur les
+    positions mises à l'échelle, π^e_0 + `choc_pi_e0`."""
+    pays = resolu(sentier, identifiant=identifiant, graine=graine).etat
+    positions = {nom: getattr(pays, nom) * echelle for nom in cat.NOMS_POSTES}
     v_flux = {cat.VALEUR_NETTE_FLUX[s]: idt.valeur_nette_stock(positions, s)
               for s in cat.SECTEURS}
     variables = {}
     for v in schema.VARIABLES_DES_BLOCS:
-        valeur = float(o[OUVERTURE_DES_VARIABLES[v.nom]])
+        valeur = getattr(pays, v.nom)
         if v.invariance is schema.Invariance.NOMINAL:
             valeur *= echelle
         variables[v.nom] = valeur
     variables["pi_e"] += choc_pi_e0
-    registre = tuple(float(x) * echelle for x in o["registre"])
+    registre = tuple(x * echelle for x in pays.registre_prix)
     return EtatPays(identifiant=identifiant, graine=graine, t=0, registre_prix=registre,
                     **positions, **v_flux, **variables)
 

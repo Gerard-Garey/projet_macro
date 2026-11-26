@@ -16,9 +16,11 @@ deux, déclarées :
 - **ν_G = 1,15**, valeur retenue (décision du mainteneur du 05/10/2026, #84) : le défaut du
   script, ν_G = 1, est le point de référence de la forme fermée, hors du domaine ν_G > 1 ;
 - **θ_G** n'a pas de défaut au script, qui le résout (fermeture, #44) : la valeur de la table est
-  θ_G résolu par le script à π* = 2 % (θ_G ne dépend pas de ν_G, C59), égalité tenue par un test
-  (`tests/unitaires/test_parametres_du_bloc_9.py`) ; à un autre π*, un scénario passe le θ_G
-  résolu de son état initial.
+  θ_G résolu à π* = 2 % par le résolveur `nations.scenarios.stationnaire`, que le script importe
+  (θ_G ne dépend pas de ν_G, C59), seule valeur résolue écrite dans `src/` (ADR 0015, S3),
+  égalité au bit tenue par des tests (`tests/unitaires/test_parametres_du_bloc_9.py`,
+  `tests/unitaires/test_scenarios_initial.py`) ; `nations.scenarios.initial.etat_initial` ne lit
+  pas ce θ_G et rend les tables alignées, θ_G résolu à leur π* (S4).
 
 U^eq (E1, E6) et r̄ (E4) ne sont pas dans cette table : U^eq a sa seule maison dans la table du
 travail et r̄ dans celle de la banque centrale (H3.3, une maison par paramètre ;
@@ -29,7 +31,8 @@ construction de la table, jamais écrêtés : 0 ≤ τ_H < 1 ; 0 ≤ τ_F < 1 ; 
 φ ∈ {0 ; 1} (deux valeurs d'un levier, jamais un curseur continu) ; ν_G > 1. La section ne
 déclare **aucune condition jointe** entre les champs de la table : `__post_init__` n'appelle que
 `valider_table`. Les conditions de l'état stationnaire (θ_G > 0 résolu, marge du plafond de E1,
-B ≥ 0, D2) portent sur l'état résolu et sont refusées par le script d'état stationnaire.
+B ≥ 0, D2) portent sur l'état résolu et sont refusées par `scenarios.initial.etat_initial`
+(`EtatStationnaireInexistant`) et par le script d'état stationnaire.
 
 Les labels `eq:finances_publiques-…` sont ceux de `tab:finances_publiques-equations` ; ils sont
 dans la spécification depuis `a059d10` (P62).
@@ -51,7 +54,8 @@ NU_G = Parametre(
 
 THETA_G = Parametre(
     "theta_G", "θ_G", 0.22058388898746367, "fraction",
-    "levier fermé (M33) ; θ_G résolu par outils/etat_stationnaire.py à π* = 2 % (#44)",
+    "levier fermé (M33) ; θ_G résolu par nations.scenarios.stationnaire, importé par "
+    "outils/etat_stationnaire.py, à π* = 2 % (#44)",
     ("eq:finances_publiques-plan-depense",),
     domaine("θ_G ≥ 0 (sec:finances_publiques-conditions)", lambda x: x >= 0.0))
 

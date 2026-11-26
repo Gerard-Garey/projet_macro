@@ -3,8 +3,9 @@
 **Banc** (critère « Branche » de la feuille de route, § 1 ; ADR 0013, annotation du 15/11/2026
 (J3-d2), point 6) : `socle.blocs_du_socle_complet()`, tables alignées sur le sentier du script
 (`socle.parametres_du_sentier`, θ_G résolu compris), n_a = 12, **ν_G = 1,15 passé explicitement**
-au script (défaut ν_G = 1, hors domaine), π* ∈ {0 ; 2 % ; 10 %}, état initial du script
-(`socle.etat_initial`, la résolution par `scenarios/` relevant de J3-e). Étiquette : `ETIQUETTE`.
+au script (défaut ν_G = 1, hors domaine), π* ∈ {0 ; 2 % ; 10 %}, état initial résolu par
+`nations.scenarios.initial.etat_initial` aux tables du sentier (`socle.etat_initial`, #175).
+Étiquette : `ETIQUETTE`.
 Les chocs sont injectés **par composition dans `tests/`** (F1) : une sous-classe du bloc 9 réel
 dont les méthodes d'étape lisent une table modifiée (`bloc_9_compose`), des entrées de scénario
 (ς_B), un état initial modifié (r̂*, D_H) ; jamais par un drapeau dans `src/`.
@@ -372,6 +373,22 @@ def test_etat_stationnaire_egal_au_script_sur_le_moteur(banc, socle, pi):
     assert v["Tr"] == 0.0
 
 
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_conditions_jointes_tenues_a_chaque_cloture(banc, pi):
+    """#122 ; ADR 0015, point 12.3 (S6) : `etat_de_cloture` n'évalue pas les conditions jointes,
+    qui doivent tenir par la forme de N8. Sur 720 pas sans choc, `defaut_des_conditions_jointes`
+    est sans défaut sur l'état initial et sur chaque état de clôture ; l'état du pas 720 est
+    sauvegardé puis rechargé (contrôle complet de la reprise), égal à lui-même."""
+    _, initial, releve = banc[pi]
+    assert len(releve.pas) == NB_PAS
+    for etat in (initial, *(p["etat"] for p in releve.pas)):
+        champs = {nom: getattr(etat, nom) for nom in schema.CHAMPS}
+        assert schema.defaut_des_conditions_jointes(champs) is None, etat.t
+    final = releve.pas[-1]["etat"]
+    assert final.t == NB_PAS
+    assert charger(sauvegarder([final])) == (final,)
+
+
 def _contre_exemples(socle, tables, initial):
     """Clé de `GRANDEURS_NULLES_DU_SOCLE_COMPLET` → [(tables, ouverture)] où une seule des
     conditions de son libellé tombe : tables du bloc 9 ou du bloc 8 variées, ou ouverture
@@ -495,7 +512,10 @@ def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, 
     monkeypatch.setattr(ordo, "FinDePas", FinDePas)
     sentier = socle.sentier(0.02)
     initial = socle.etat_initial(sentier)
-    temoin, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    # Tables alignées hors du compte : `parametres_du_sentier` résout θ_G par
+    # `scenarios.etat_initial`, qui construit un `EtatPays` (contrôle de construction, hors pas).
+    tables = socle.parametres_du_sentier(sentier)
+    temoin, _ = derouler(socle, sentier, nb_pas, initial=initial, parametres=tables)
     appels = []
     original = schema.defaut_de_domaine
 
@@ -503,7 +523,7 @@ def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, 
         appels.append(nom)
         return original(nom, valeur)
     monkeypatch.setattr(schema, "defaut_de_domaine", compter)
-    final, _ = derouler(socle, sentier, nb_pas, initial=initial)
+    final, _ = derouler(socle, sentier, nb_pas, initial=initial, parametres=tables)
     assert final == temoin
     blocs = {v.nom for v in schema.VARIABLES_DES_BLOCS}
     assert len(blocs) == 20

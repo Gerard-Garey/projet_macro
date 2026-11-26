@@ -106,16 +106,36 @@ def relatif(a, b):
 # --- Indépendance et déterminisme (P9 ; propriété 11) -----------------------------
 
 
-def test_n_importe_que_la_bibliotheque_standard():
+def test_n_importe_que_la_bibliotheque_standard_et_le_module_feuille():
+    """Bibliothèque standard, plus le seul module feuille `nations.scenarios.stationnaire` ; jamais
+    `archive` (ADR 0015, point 14.1 ; décision S2)."""
     arbre = ast.parse(SCRIPT.read_text(encoding="utf-8"))
-    modules = set()
+    modules, de_nations = set(), set()
     for noeud in ast.walk(arbre):
         if isinstance(noeud, ast.Import):
             modules.update(a.name.split(".")[0] for a in noeud.names)
+            de_nations.update(a.name for a in noeud.names if a.name.split(".")[0] == "nations")
         elif isinstance(noeud, ast.ImportFrom):
+            assert noeud.level == 0
             modules.add((noeud.module or "").split(".")[0])
-    assert modules <= {"__future__", "argparse", "dataclasses", "json", "math", "sys"}
-    assert not modules & {"nations", "archive", "src"}
+            if (noeud.module or "").split(".")[0] == "nations":
+                de_nations.update(f"{noeud.module}.{a.name}" for a in noeud.names)
+    assert modules <= {"__future__", "argparse", "dataclasses", "json", "math", "sys", "nations"}
+    assert de_nations == {"nations.scenarios.stationnaire"}
+    assert not modules & {"archive", "src"}
+
+
+def test_le_script_ne_charge_de_nations_que_le_module_feuille():
+    """À l'exécution, importer le script ne charge de `nations` que le paquet, `scenarios` et le module
+    feuille (les `__init__` de `nations` et de `scenarios` n'importent rien)."""
+    code = ("import importlib.util, sys\n"
+            f"spec = importlib.util.spec_from_file_location('etat_stationnaire', {str(SCRIPT)!r})\n"
+            "module = importlib.util.module_from_spec(spec)\n"
+            "sys.modules['etat_stationnaire'] = module\n"
+            "spec.loader.exec_module(module)\n"
+            "print(sorted(m for m in sys.modules if m == 'nations' or m.startswith('nations.')))\n")
+    sortie = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout
+    assert sortie.strip() == "['nations', 'nations.scenarios', 'nations.scenarios.stationnaire']"
 
 
 def test_deux_executions_identiques_a_l_octet(tmp_path):
@@ -183,6 +203,26 @@ def test_marge_en_logarithme_publiee_a_l_ouverture(stationnaire, base):
         pr_m1 = o["pr"] * (1 + p.g_pr) ** (-1 / p.n_a)
         assert abs(o["mu_tilde_m1"] - math.log(o["registre"][0] / (o["W_m1"] / pr_m1))) <= 1e-15
         assert abs(stationnaire.un_pas(o, p)["mu_tilde"] - o["mu_tilde_m1"]) <= 1e-15
+
+
+def test_marge_de_p2_et_t2_sous_la_forme_i_declaree(stationnaire, base):
+    """#125, point 3 : `un_pas` évalue P2 et T2 sous la forme (i), ln(P_{t−1}/UC_{t−1}) tirée du
+    registre et de W_{t−1}, forme indépendante déclarée (le moteur lit μ̃_{t−1}, P54, option (ii)) :
+    une ouverture où μ̃_{−1} ≠ ln(P_{−1}/UC_{−1}) donne le même pas, au bit."""
+    for p in points(stationnaire, base):
+        o = stationnaire.ouverture(stationnaire.etat_stationnaire(p), p)
+        s = stationnaire.un_pas(o, p)
+        assert stationnaire.un_pas({**o, "mu_tilde_m1": o["mu_tilde_m1"] + 0.1}, p) == s
+
+
+def test_n6_refuse_une_demande_adressee_nulle(stationnaire, base):
+    """#125, point 4 : à l'état résolu, à d = 0 (C^plan = I^plan = G^plan = 0 : D_H = 0, ti = 0, M_G = 0), N6 du
+    script donne un refus explicite au lieu d'une division par zéro ; le moteur, lui, rend des
+    volumes servis nuls (`nations.blocs.production.ventes`)."""
+    for p in points(stationnaire, base):
+        o = stationnaire.ouverture(stationnaire.etat_stationnaire(p), p)
+        with pytest.raises(stationnaire.HorsDomaine, match="N6 : demande adressée d = 0"):
+            stationnaire.un_pas({**o, "D_H": 0.0, "ti": 0.0, "M_G": 0.0}, p)
 
 
 def test_taux_directeur_fisher_sur_la_cible(stationnaire, base):

@@ -116,6 +116,10 @@ def etats_tires(rng, n=3):
                           else int(rng.integers(0, 10**6)) if v.type is int
                           else tirage_du_domaine(v.nom))
                   for v in VARIABLES}
+        # Condition jointe `stock_vide_sans_valeur` (#122) : IN tiré dans {0,0 ; −0,0} quand
+        # IN^vol est nul.
+        if champs["IN_vol"] == 0.0:
+            champs["IN"] = (0.0, -0.0)[int(rng.integers(0, 2))]
         etats.append(EtatPays(identifiant=f"pays-{k:02d}", graine=int(rng.integers(0, 2**63)),
                               **champs))
     return tuple(etats)
@@ -474,7 +478,8 @@ def test_registre_hors_domaine_refuse_a_la_construction(u, niveau):
     {"t": 0}, {"t": 10**6}, {"t": schema.T_EXCLU - 1},
     {"identifiant": "x"}, {"identifiant": "État-α"}, {"identifiant": "A B"},
     {"identifiant": "\U0001F30D"}, {"identifiant": "\u00e9"},
-    {"U": 0.0}, {"U": 1.0}, {"U": -0.0}, {"IN_vol": 0.0}, {"N": 0.0}, {"pi_e": -0.999},
+    {"U": 0.0}, {"U": 1.0}, {"U": -0.0}, {"IN_vol": 0.0, "IN": 0.0}, {"N": 0.0},
+    {"pi_e": -0.999},
     {"mu_tilde": -3.0}, {"mu_tilde": 0.0}, {"W": 5e-324}, {"v_e": 1e300},
     {"pi_etoile": -0.999}, {"pi_etoile": 0.0}, {"pi_etoile": -0.05},
     # r̂* : finitude seule, sans condition de signe (ADR 0013, annotation du 14/11/2026,
@@ -1364,3 +1369,96 @@ def test_vue_ecrire_etat_seul_site_qui_remplit_etat_suivant():
     controle = min(n.lineno for n in ast.walk(ecrire_etat) if _nomme(n, "defaut_de_domaine"))
     enregistrement = max(n.lineno for n in ast.walk(ecrire_etat) if rempli(n))
     assert controle < enregistrement
+
+
+# --------------------------------------------------------------------------
+# Conditions jointes de l'état (#122 ; ADR 0015, point 12, S5 et S6 ; avis de `macro`)
+# --------------------------------------------------------------------------
+
+# IN^vol = 0 avec IN ≠ 0 : refusé (critère 2 de #122, écrit avant l'essai), (IN^vol, IN) ;
+# IN^vol = −0,0 compris (M1 de l'audit léger : égalité au sens `==`, non par le texte).
+STOCK_VIDE_AVEC_VALEUR = [(0.0, 100.0), (0.0, 5e-324), (0.0, -1.0), (-0.0, 100.0),
+                          (-0.0, -1.0)]
+# Bornes admises (critère 3) : (IN^vol, IN), −0,0 admis des deux côtés.
+STOCK_AUX_BORNES = [(0.0, 0.0), (0.0, -0.0), (-0.0, 0.0), (1e-12, 0.0), (5e-324, 1.0)]
+_MOTIF_C1 = "EtatPays : condition jointe stock_vide_sans_valeur violée \\(IN_vol = .*, IN = .*\\)"
+
+
+def test_liste_fermee_des_conditions_jointes():
+    """Une seule entrée (avis de `macro`) : nom, champs lus, texte ; champs déclarés ; prédicat
+    au sens `==` (vrai hors du cas IN^vol = 0, IN ≠ 0)."""
+    assert [(c.nom, c.champs, c.texte) for c in schema.CONDITIONS_JOINTES] == [
+        ("stock_vide_sans_valeur", ("IN_vol", "IN"),
+         "IN^vol = 0 ⇒ IN = 0 (N7, N8 : IN_{t+1} = cm·IN^vol_{t+1})")]
+    assert all(set(c.champs) <= set(schema.VARIABLE) for c in schema.CONDITIONS_JOINTES)
+    (c1,) = schema.CONDITIONS_JOINTES
+    assert [c1.predicat(x, y) for x, y in STOCK_AUX_BORNES] == [True] * 5
+    assert [c1.predicat(x, y) for x, y in STOCK_VIDE_AVEC_VALEUR] == [False] * 5
+    assert not c1.predicat(-0.0, 100.0) and not c1.predicat(-0.0, 5e-324)
+    # Réciproque exclue (IN = 0 avec IN^vol > 0, produit par le moteur) : admise.
+    assert c1.predicat(1.4, 0.0)
+
+
+def test_conditions_jointes_evaluees_par_la_construction_et_la_reprise_seules():
+    """Test textuel : dans `src/`, `defaut_des_conditions_jointes` n'est nommée que par
+    `_verifier_types` (`__post_init__` de `EtatPays`) et par `charger` ; ni par
+    `etat_de_cloture` ni par l'ordonnanceur (S6)."""
+    assert EtatPays.__post_init__ is schema._verifier_types
+    assert _sites(lambda n: _nomme(n, "defaut_des_conditions_jointes")) == {
+        ("nations/etat/schema.py", "_verifier_types"),
+        ("nations/etat/sauvegarde.py", "charger"),
+    }
+
+
+@pytest.mark.parametrize("stock_vol, valeur", STOCK_VIDE_AVEC_VALEUR)
+def test_stock_vide_avec_valeur_refuse_a_la_construction(stock_vol, valeur):
+    """IN^vol = 0 (ou −0) avec IN ≠ 0 : `ValueError` nommant la condition, IN_vol et IN, par
+    le constructeur comme par `dataclasses.replace`, sans réparation."""
+    champs = _champs(etat_pays())
+    champs.update(IN_vol=stock_vol, IN=valeur)
+    with pytest.raises(ValueError, match=_MOTIF_C1):
+        EtatPays(**champs)
+    with pytest.raises(ValueError, match=_MOTIF_C1):
+        dataclasses.replace(etat_pays(), IN_vol=stock_vol, IN=valeur)
+    # Depuis un état au stock vide admis, `replace` du seul IN.
+    with pytest.raises(ValueError, match=_MOTIF_C1):
+        dataclasses.replace(dataclasses.replace(etat_pays(), IN_vol=stock_vol, IN=0.0),
+                            IN=valeur)
+
+
+@pytest.mark.parametrize("stock_vol, valeur", STOCK_VIDE_AVEC_VALEUR)
+def test_stock_vide_avec_valeur_refuse_a_la_reprise(stock_vol, valeur):
+    """Un document qui porte IN^vol = 0 (ou −0) avec IN ≠ 0 est refusé à `charger`
+    (`SauvegardeRefusee`, pays nommé), donc avant tout pas."""
+    def modifier(racine):
+        racine["pays"][1]["IN_vol"] = stock_vol
+        racine["pays"][1]["IN"] = valeur
+    with pytest.raises(SauvegardeRefusee,
+                       match="condition jointe stock_vide_sans_valeur violée") as refus:
+        charger(document_modifie(modifier))
+    assert refus.value.pays == "B"
+    assert (f"IN_vol = {stock_vol!r}," in refus.value.message
+            and f"IN = {valeur!r}" in refus.value.message)
+
+
+@pytest.mark.parametrize("stock_vol, stock", STOCK_AUX_BORNES)
+def test_stock_aux_bornes_admis_aller_retour(stock_vol, stock):
+    """(0, 0), (0, −0), (−0, 0), (1e−12, 0), (5e−324, 1) : admis, et l'aller-retour rend
+    l'état bit à bit."""
+    e = dataclasses.replace(etat_pays(), IN_vol=stock_vol, IN=stock)
+    assert schema.defaut_des_conditions_jointes(_champs(e)) is None
+    repris = charger(sauvegarder([e]))
+    assert [bits(x) for x in repris] == [bits(e)]
+
+
+def test_etat_de_cloture_n_evalue_pas_les_conditions_jointes():
+    """S6 (ADR 0015, point 12.3) : appelée directement, `etat_de_cloture` construit un état
+    IN^vol = 0, IN ≠ 0 que le constructeur, `replace` et la reprise refusent ; à la clôture,
+    la condition tient par la forme de N8 (tests du socle)."""
+    champs = _champs(etat_pays())
+    champs.update(IN_vol=0.0, IN=100.0)
+    cloture = schema.etat_de_cloture(champs)
+    assert (cloture.IN_vol, cloture.IN) == (0.0, 100.0)
+    assert schema.defaut_des_conditions_jointes(champs) is not None
+    with pytest.raises(ValueError, match=_MOTIF_C1):
+        dataclasses.replace(cloture, t=1)

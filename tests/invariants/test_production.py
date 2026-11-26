@@ -26,6 +26,7 @@ import math
 import pytest
 
 from nations.blocs.production import Production
+from nations.etat import schema
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.contrat_bloc import Lecture
 from nations.moteur.diagnostics import DefautDeDeclaration
@@ -238,7 +239,9 @@ def test_disponibilite_epuisement_zero_exact(socle, publier):
     acheteurs supérieure de 10 % au disponible au pas 0 : même taux de service pour chaque
     acheteur (à 2 ulp près), IN^vol = 0 et IN = 0 **exactement** à la clôture, lignes 1 à 3 au
     prix du pas sur les volumes servis (la demande non servie n'est pas un flux) ; puis 24 pas
-    sans arrêt, IN^vol ≥ 0 et IN ≥ 0 à chaque clôture."""
+    sans arrêt, IN^vol ≥ 0 et IN ≥ 0 à chaque clôture ; condition jointe
+    `stock_vide_sans_valeur` (IN^vol = 0 ⇒ IN = 0) sans défaut à chaque clôture, que
+    `etat_de_cloture` ne contrôle pas (#122 ; ADR 0015, point 12.3, S6)."""
     sentier = socle.sentier(0.02)
     base = socle.etat_initial(sentier)
     positions = {p: getattr(base, p) for p in cat.NOMS_POSTES}
@@ -271,6 +274,8 @@ def test_disponibilite_epuisement_zero_exact(socle, publier):
     assert initial.IN > 0.0 and p0["4"] == -initial.IN
     for p in releve.pas:
         assert p["etat"].IN_vol >= 0.0 and p["etat"].IN >= 0.0
+        champs = {nom: getattr(p["etat"], nom) for nom in schema.CHAMPS}
+        assert schema.defaut_des_conditions_jointes(champs) is None, p["t"]
     publier(f"Bloc 2, épuisement du stock (P72) ({etiquettes(socle)})", [
         f"d / disponible = {sum(d.values()) / disponible:.15f} ; IN^vol_1 = "
         f"{p0['etat'].IN_vol!r}, IN_1 = {p0['etat'].IN!r} ; ligne 4 = −IN_0 au bit ; 25 pas "

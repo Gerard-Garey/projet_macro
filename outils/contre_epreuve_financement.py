@@ -9,7 +9,10 @@ de `monnaie` (crédit).
 la seule spécification (`docs/specification/nations_et_marches.tex`, règles
 N1 à N11, T1 à T6, P1 à P4, H2 à H7, S1 à S7, F1 à F4, B1 à B6, BC1 à BC3,
 E1, E3 à E5, E12) et l'état stationnaire résolu de `outils/etat_stationnaire.py`
-(fonction `etat_stationnaire` et classe `Parametres`, seules importées). Ni la
+(fonction `etat_stationnaire` et classe `Parametres`, seules importées ; le
+script, chargé par son chemin, charge par lui le module feuille
+`nations.scenarios.stationnaire`, maison des formes fermées, ADR 0015,
+point 14.3, sans que la maquette n'importe `src/`). Ni la
 maquette conjointe de #65, ni les maquettes de la fiche 6 (`conj6_*.py`,
 `stat.py`), ni `src/`, ni `archive/` n'ont été lues ni importées. La fiche
 `docs/blocs/investissement.md` n'a été lue qu'au § 3.N, pour la définition

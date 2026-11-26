@@ -8,7 +8,10 @@ et frontière de stabilité que la spécification
 le script rend la valeur publiée, la valeur remesurée, l'écart et les lignes
 de la spécification où le chiffre est écrit.
 
-**Indépendance.** Le script n'importe ni `src/` ni `archive/`. Les cartes
+**Indépendance.** Le script n'importe ni `src/` ni `archive/` ; il charge
+`outils/etat_stationnaire.py` par son chemin, et par lui le module feuille
+`nations.scenarios.stationnaire`, maison des formes fermées de l'état
+stationnaire (ADR 0015, point 14.3). Les cartes
 d'un pas sont écrites depuis les règles des encadrés de la spécification,
 repérées par leur identifiant (N1 à N11, T1 à T6, P1 à P4, H2 à H7, S1 à S7,
 F1 à F4, B1 à B7, BC1 à BC9, E1 à E13) ; seuls l'état stationnaire du socle
