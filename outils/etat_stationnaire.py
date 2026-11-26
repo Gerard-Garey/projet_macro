@@ -10,10 +10,18 @@ citées par leur label ; les règles (N1 à N11, T1 à T6, P1 à P4, H2 à H7, S
 S7, F1 à F4, B1 à B7, BC1 à BC9, E1 à E13) sont celles des encadrés des
 sections des blocs, repérées par leur identifiant.
 
-**Indépendance.** Le script n'importe ni `src/` ni `archive/` : il est la
-contre-épreuve du moteur (au jalon J3, le moteur à t = 0 l'égalera à 1e−9
-près, ADR 0005, point 20). Bibliothèque standard seulement. Il est
-déterministe : deux exécutions donnent une sortie identique à l'octet.
+**Imports.** Le script importe la bibliothèque standard et, de `nations`, le
+seul module feuille `nations.scenarios.stationnaire`, maison unique des formes
+fermées (ADR 0015, points 1 et 14 ; décisions P247 et S2) : `facteurs`,
+`rho_IN`, `rho_K`, `etat_stationnaire`, `controler_etat` et `ouverture` en
+sont les adaptateurs, à signatures inchangées. Il n'importe ni `archive/` ni
+aucun autre module de `nations`. Ce qui reste indépendant du résolveur et
+hors de `src/` : `un_pas`, `residus_des_regles`, `matrices` et la table des
+valeurs publiées ; la stationnarité exacte du moteur depuis l'état résolu
+(critère A2) contrôle l'équilibre des règles, et la comparaison du moteur à
+t = 0 au script (critère A1) la transcription (ADR 0015, point 2 ; ADR 0005,
+point 20, annoté). Il est déterministe : deux exécutions donnent une sortie
+identique à l'octet.
 
 **Aucune simulation.** L'état stationnaire est calculé en formes fermées,
 dans un ordre triangulaire (part de `macro`, § 3) : cadre et taux, offre,
@@ -76,6 +84,8 @@ import json
 import math
 import sys
 from dataclasses import dataclass, fields, replace
+
+from nations.scenarios import stationnaire as resolveur
 
 # --- Paramètres ---------------------------------------------------------------
 
@@ -425,30 +435,86 @@ def controler_domaine(par: Parametres) -> list[str]:
     return declares
 
 
-# --- Formes fermées ------------------------------------------------------------
+# --- Formes fermées : adaptateurs du résolveur ----------------------------------
+#
+# Les formes fermées ont une seule maison, le module feuille `nations.scenarios.stationnaire` (ADR 0015, points 1
+# et 14 ; P247). Les fonctions ci-dessous gardent les signatures du script et ses refus (`HorsDomaine`, mêmes
+# messages) : `Parametres` → `EntreesStationnaires` par `CORRESPONDANCE_DES_ENTREES`, appel du module, résultat
+# remis en dictionnaire dans l'ordre des champs, qui est l'ordre d'origine des clés.
+
+# Champ d'`EntreesStationnaires` (nom des tables du moteur) → champ de `Parametres` (nom du script).
+CORRESPONDANCE_DES_ENTREES: dict[str, str] = {
+    "pas_par_an": "n_a", "g_pr": "g_pr", "sigma": "sigma", "kappa": "kappa", "g_N": "g_N", "U_eq": "U_eq",
+    "mu_bar": "mu_bar", "nu_H": "nu_H", "delta": "delta", "tu_bar": "tu_bar", "lv_etoile": "lv", "nu_F": "nu_F",
+    "zeta": "zeta", "eta_r": "eta_r", "varpi_L": "varpi_L", "varpi_D": "varpi_D", "vartheta": "vartheta",
+    "pi_etoile": "pi_cible", "r_bar": "rbar", "theta_CB": "theta_CB", "tau_H": "tau_H", "tau_F": "tau_F",
+    "theta_Tr": "theta_Tr", "phi": "phi", "nu_G": "nu_G", "p_0": "p_0", "pr_0": "pr_0", "N_pa_0": "N_pa_0",
+}
+
+# Message du refus `HorsDomaine` de chaque condition d'existence (`resolveur.CONDITIONS_D_EXISTENCE`).
+MESSAGES_DES_CONDITIONS = {
+    "D1": lambda v: f"D1 = {v!r} : 1 − ν_H n_a (1 − τ_H) c > 0 attendu (pôle de la richesse)",
+    "D2": lambda v: f"D2 = {v!r} : 1 − ν_G i_CB/(n_a Γ̄) > 0 attendu (existence de l'encaisse)",
+    "existence_dividende_banque": lambda v: (f"condition d'existence du dividende de la banque : n_a Π^Bk − n_a γ̄ "
+                                             f"E^Bk = {v!r} < 0 (sec:banque-stationnaire)"),
+    "Div_F": lambda v: f"Div_F = {v!r} < 0 : dividende stationnaire ≥ 0 attendu (plancher de F3 non contraignant)",
+    "theta_G": lambda v: (f"θ_G = {v!r} : θ_G > 0 attendu (demande autonome A = θ_G > 0, part de `macro`, § 6 ; "
+                          "sec:finances_publiques-conditions)"),
+    "marge_plafond_E1": lambda v: (f"plafond de E1 : ν_G PB − Γ̄ G = {v!r} ≤ 0 attendu > 0 (marge 1 − Γ̄ (G/PB)/ν_G "
+                                   "≤ 0, sec:finances_publiques-depense)"),
+    "B": lambda v: f"B = {v!r} : dette brute ≥ 0 attendue (sec:finances_publiques-conditions)",
+    "B_Bk": lambda v: f"B_Bk = {v!r} : titres de la banque ≥ 0 attendus (sec:banque-conditions)",
+    "B_CB": lambda v: f"B_CB = {v!r} : titres de la banque centrale ≥ 0 attendus (sec:banque_centrale-conditions)",
+    "B_H": lambda v: f"B_H = {v!r} : titres des ménages nuls attendus au socle (C42)",
+}
+
+
+def entrees_stationnaires(par: Parametres) -> resolveur.EntreesStationnaires:
+    """Entrées du résolveur lues sur les paramètres du script (`CORRESPONDANCE_DES_ENTREES`)."""
+    return resolveur.EntreesStationnaires(**{champ: getattr(par, nom)
+                                             for champ, nom in CORRESPONDANCE_DES_ENTREES.items()})
+
+
+def _en_dictionnaire(valeur: resolveur.Facteurs | resolveur.EtatStationnaire | resolveur.Ouverture
+                     ) -> dict[str, object]:
+    """Valeur immuable du résolveur (n-uplet nommé) remise en dictionnaire, dans l'ordre de ses champs."""
+    return valeur._asdict()
+
+
+def _etat_du_dictionnaire(e: dict[str, float]) -> resolveur.EtatStationnaire:
+    """État du résolveur reconstruit d'un dictionnaire d'état (clés en surnombre ignorées)."""
+    return resolveur.EtatStationnaire(**{nom: e[nom] for nom in resolveur.EtatStationnaire._fields})
+
+
+def _refuser(conditions: tuple[resolveur.ConditionViolee, ...], par: Parametres,
+             ecartees: frozenset[str] = frozenset()) -> None:
+    """Lève `HorsDomaine` sur la première condition violée, hors des conditions écartées.
+
+    Au point de référence ν_G = 1, hors du domaine ν_G > 1 de la table, le plafond de E1 n'est pas un refus :
+    sa marge est rendue (`marge_E1_montant`) et `calculer` publie le point comme constat déclaré, sans valeur
+    d'état (décision de `macro`, option (b)). Ce cas reste dans le script (ADR 0015, point 6.3).
+    """
+    for condition in conditions:
+        if condition.identifiant in ecartees:
+            continue
+        if condition.identifiant == "marge_plafond_E1" and par.nu_G == 1.0:
+            continue
+        raise HorsDomaine(MESSAGES_DES_CONDITIONS[condition.identifiant](condition.valeur))
 
 
 def facteurs(par: Parametres, pi: float | None = None) -> dict[str, float]:
-    """Facteurs du cadre (`sec:cadre-calendrier`) : G_r, Π_p, Γ̄, γ̄, π^pas, g."""
-    n = par.n_a
-    pi = par.pi_cible if pi is None else pi
-    g = (1 + par.g_pr) * (1 + par.g_N) - 1
-    Gr = (1 + g) ** (1 / n)
-    Pp = (1 + pi) ** (1 / n)
-    Gam = ((1 + g) * (1 + pi)) ** (1 / n)
-    return {"g": g, "Gr": Gr, "Pp": Pp, "Gam": Gam, "gam": Gam - 1, "pis": Pp - 1}
+    """Facteurs du cadre (`sec:cadre-calendrier`) : G_r, Π_p, Γ̄, γ̄, π^pas, g (`resolveur.facteurs`)."""
+    return _en_dictionnaire(resolveur.facteurs(par.n_a, par.g_pr, par.g_N, par.pi_cible if pi is None else pi))
 
 
 def rho_IN(n: int, sigma: float, g: float, pi: float) -> float:
-    """ρ̄_IN, valeur comptable des stocks rapportée au coût du pas (`sec:production-stationnaire`)."""
-    Gr = (1 + g) ** (1 / n)
-    Pp = (1 + pi) ** (1 / n)
-    return 1 / (1 + (Pp - 1) * (1 + n * sigma / (1 + n * sigma * (Gr - 1))))
+    """ρ̄_IN, valeur comptable des stocks rapportée au coût du pas (`resolveur.rho_IN`)."""
+    return resolveur.rho_IN(n, sigma, g, pi)
 
 
 def rho_K(n: int, delta: float, g: float, pi: float) -> float:
-    """ρ̄_K, valeur comptable du capital rapportée au prix courant (`sec:production-capital`)."""
-    return (n * ((1 + g) ** (1 / n) - 1) + delta) / (n * (((1 + g) * (1 + pi)) ** (1 / n) - 1) + delta)
+    """ρ̄_K, valeur comptable du capital rapportée au prix courant (`resolveur.rho_K`)."""
+    return resolveur.rho_K(n, delta, g, pi)
 
 
 def facteur_restitue(n: int, x: float) -> float:
@@ -458,195 +524,64 @@ def facteur_restitue(n: int, x: float) -> float:
 
 def etat_stationnaire(par: Parametres, r_neutre: float | None = None, rho_bar_L: float | None = None,
                       controler: bool = True) -> dict[str, float]:
-    """État stationnaire en formes fermées, ordre triangulaire de la part de `macro` (§ 3).
+    """État stationnaire en formes fermées (`resolveur.etat_stationnaire`), ordre triangulaire de `macro` (§ 3).
 
     `r_neutre` : taux réel neutre de l'état (r̂* = r̄ de BC1) ; par défaut le
     paramètre r̄ (lecture (e)). Le taux de référence de E4 lit toujours le
     paramètre `par.rbar` (lecture A). `rho_bar_L` : norme ϱ̄_L de S2 ; par
-    défaut ϱ_L de l'état (Δϱ = 0, état initial résolu). Rend les niveaux
-    d'ouverture du pas 0 et les flux du pas 0, en u.m., u.v. et personnes.
-    `controler` : lever `HorsDomaine` sur les conditions des formes fermées
-    (D1, D2, existence du dividende de la banque, Div_F ≥ 0, θ_G > 0, marge
-    du plafond de E1 > 0 pour ν_G > 1, B ≥ 0, B_Bk ≥ 0, B_CB ≥ 0, B_H = 0).
-    Au point de référence ν_G = 1, hors du domaine ν_G > 1 de la table, le
-    plafond de E1 n'est pas un refus : sa marge est rendue
-    (`marge_E1_montant`) et `calculer` publie le point comme constat déclaré,
-    sans valeur d'état (décision de `macro`, option (b)) ; les autres
-    conditions y restent des refus. Em ≤ 0 n'est pas un refus : Em = γ̄ B a
-    le signe de γ̄ (rachat net si γ̄ < 0).
+    défaut ϱ_L de l'état (`resolveur.taux`, Δϱ = 0, état initial résolu). Rend
+    les niveaux d'ouverture du pas 0 et les flux du pas 0, en u.m., u.v. et
+    personnes. `controler` : lever `HorsDomaine` sur les conditions des formes
+    fermées (`resolveur.relever_conditions` : D1, D2, existence du dividende de
+    la banque, Div_F ≥ 0, θ_G > 0, marge du plafond de E1 > 0 pour ν_G > 1,
+    B ≥ 0, B_Bk ≥ 0, B_CB ≥ 0, B_H = 0). Au point de référence ν_G = 1, le
+    plafond de E1 n'est pas un refus (`_refuser`) ; les autres conditions y
+    restent des refus. Un pôle exact (D1 = 0 ou D2 = 0) est refusé quel que soit
+    `controler`. Deux changements de type hors domaine depuis l'extraction (#175,
+    commit 1), déclarés : (i) au pôle exact sous `controler=False`, `HorsDomaine`
+    au lieu de `ZeroDivisionError` ; (ii) sous `controler=True`, si D1 ≤ 0 (ou
+    NaN) et p·y_pot = 0, `ZeroDivisionError` au lieu de `HorsDomaine` sur D1 : le
+    résolveur calcule θ_G = G/(p·y_pot) avant le relevé des conditions, alors que
+    l'ancien code refusait D1 avant ce calcul. Les deux cas sont hors du domaine
+    de `controler_domaine` (p_0, pr_0 > 0, U^eq < 1 ; aucun pôle sur la grille).
+    Em ≤ 0 n'est pas un refus : Em = γ̄ B a le signe de γ̄ (rachat
+    net si γ̄ < 0).
     """
-    n = par.n_a
-    f = facteurs(par)
-    g, Gr, Gam, gam, pis = f["g"], f["Gr"], f["Gam"], f["gam"], f["pis"]
-    pi = par.pi_cible
+    entrees = entrees_stationnaires(par)
     r = par.rbar if r_neutre is None else r_neutre
-    e: dict[str, float] = dict(f)
-    # 1. Cadre et taux (BC1 au point fixe, B1, B2, E4, S1).
-    i_CB = (1 + r) * (1 + pi) - 1
-    i_ref = (1 + par.rbar) * (1 + pi) - 1
-    i_L = i_CB + par.varpi_L
-    i_D = i_CB - par.varpi_D
-    rho_L = (1 + i_L) / (1 + pi) - 1
-    rho_bar = rho_L if rho_bar_L is None else rho_bar_L
-    d_rho = rho_L - rho_bar
-    e.update(r_neutre=r, i_CB=i_CB, i_ref=i_ref, i_L=i_L, i_D=i_D, rho_L=rho_L, rho_bar_L=rho_bar, d_rho=d_rho)
-    # 2. Offre (blocs 2, 3, 4).
-    p = par.p_0
-    N_pa = par.N_pa_0
-    N = (1 - par.U_eq) * N_pa
-    pr = par.pr_0
-    y = pr * N
-    y_pot = pr * (1 - par.U_eq) * N_pa
-    y_sur_v = 1 + n * par.sigma * (Gr - 1)
-    v = y / y_sur_v
-    UC = p / (1 + par.mu_bar)
-    W = UC * pr
-    WB = W * N
-    IN_vol = n * par.sigma * v
-    rIN = rho_IN(n, par.sigma, g, pi)
-    IN = rIN * UC * IN_vol
-    dIN = gam * IN
-    tu = par.tu_bar * math.exp(par.zeta * d_rho)
-    K_vol = n * par.kappa * y / tu
-    rK = rho_K(n, par.delta, g, pi)
-    K = rK * p * K_vol
-    I_vol = (Gr - 1 + par.delta / n) * K_vol
-    I = p * I_vol
-    ti = (I_vol / y) * math.exp(par.eta_r * d_rho)
-    PIB = p * v + dIN
-    e.update(p=p, N_pa=N_pa, N=N, pr=pr, y=y, y_pot=y_pot, y_sur_v=y_sur_v, v=v, ve=v, UC=UC, W=W, WB=WB,
-             IN_vol=IN_vol, rho_IN=rIN, IN=IN, dIN=dIN, tu=tu, K_vol=K_vol, rho_K=rK, K=K, I_vol=I_vol, I=I,
-             ti=ti, PIB=PIB, U=par.U_eq, y_cap=K_vol / (n * par.kappa))
-    # 3. Financement des entreprises (bloc 6) : indépendant de G et de θ_G.
-    L = par.lv * K
-    D_F = par.nu_F * n * p * v
-    V_F = K + IN + D_F - L
-    Pi_av = p * v + dIN - WB - par.delta * K / n - i_L * L / n + i_D * D_F / n
-    T_F = par.tau_F * Pi_av
-    FU = gam * V_F
-    Div_F = Pi_av - T_F - FU
-    e.update(L=L, D_F=D_F, V_F=V_F, Pi_av=Pi_av, T_F=T_F, FU=FU, Div_F=Div_F, dL=gam * L)
-    # 4. Banque (bloc 7) ; 5. ménages et impôt (blocs 5 et 9) : forme fermée linéaire de D_H.
-    E_Bk = par.vartheta * L
-    Tr = p * par.theta_Tr * y_pot
-    t_cou = par.phi * (i_CB - i_ref)
-    X0 = -L + D_F + E_Bk  # D_c = D_H + X0 (C42, E^CB = 0, B_H = 0)
-    A0 = WB + Div_F + (i_CB * E_Bk + par.varpi_L * L + par.varpi_D * D_F) / n - gam * E_Bk
-    c = i_CB / n - pis  # rendement marginal de la richesse (C43), net de l'érosion visée
-    A0p = A0 - t_cou * X0 / n
-    cp = c - t_cou / n
-    k = par.nu_H * n * (1 - par.tau_H)
-    D1 = 1 - k * cp
-    e["D1"] = D1
-    if controler and not D1 > 0:
-        raise HorsDomaine(f"D1 = {D1!r} : 1 − ν_H n_a (1 − τ_H) c > 0 attendu (pôle de la richesse)")
-    D_H = par.nu_H * n * ((1 - par.tau_H) * A0p + Tr) / D1
-    Y_HS = A0p + cp * D_H
-    D_c = D_H + X0
-    T_cou = t_cou * D_c / n
-    T_H = par.tau_H * Y_HS + T_cou
-    Pi_Bk = (i_CB * E_Bk + par.varpi_L * L + par.varpi_D * (D_H + D_F)) / n
-    Div_Bk = Pi_Bk - gam * E_Bk
-    YD = WB + Tr - T_H + i_D * D_H / n + Div_F + Div_Bk
-    C = YD - gam * D_H
-    e.update(E_Bk=E_Bk, Tr=Tr, t_cou=t_cou, A0=A0, c=c, k=k, D_H=D_H, V_H=D_H, B_H=0.0, Y_HS=Y_HS, D_c=D_c,
-             T_cou=T_cou, T_H=T_H, Pi_Bk=Pi_Bk, Div_Bk=Div_Bk, YD=YD, YD_HS=YD - pis * D_H, C=C)
-    # 6. Fermeture (#44, lecture (e)) : équilibre du marché des biens, puis E1.
-    G = p * v - C - I
-    theta_G = G / (p * y_pot)
-    e.update(G=G, theta_G=theta_G)
-    # 7. Dette (bloc 9, C42) : forme fermée linéaire de l'encaisse.
-    a = i_CB / (n * Gam)
-    X = G + Tr + i_CB * D_c / n
-    D2 = 1 - par.nu_G * a
-    e.update(a=a, X=X, D2=D2)
-    if controler and not D2 > 0:
-        raise HorsDomaine(f"D2 = {D2!r} : 1 − ν_G i_CB/(n_a Γ̄) > 0 attendu (existence de l'encaisse)")
-    M_G = par.nu_G * X / (Gam * D2)
-    B = D_c + M_G  # E^CB = 0
-    PB = G + Tr + i_CB * B / n
-    B_CB = par.theta_CB * B
-    L_CB = max(M_G - B_CB, 0.0)
-    Res = max(B_CB - M_G, 0.0)
-    B_Bk = B - B_CB
-    Pi_CB = i_CB * M_G / n
-    interets = i_CB * B / n
-    Em = G + Tr + interets - T_H - T_F - Pi_CB + par.nu_G * PB - M_G
-    e.update(M_G=M_G, M_G_star=par.nu_G * PB, B=B, PB=PB, B_CB=B_CB, B_Bk=B_Bk, L_CB=L_CB, Res=Res, E_CB=0.0,
-             Pi_CB=Pi_CB, interets=interets, Em=Em, r_hat=r, pi_e=pi)
-    # Conditions des formes fermées, écrites en montants (aucune division par un encours qui peut être nul).
-    # Existence du dividende de la banque : n_a Π^Bk − n_a γ̄ E^Bk ≥ 0 ; la marge publiée la rapporte à L
-    # (« par an », sec:banque-stationnaire), sans objet si L = 0 (lv* = 0, domaine fermé).
-    existence_montant = n * Pi_Bk - n * gam * E_Bk
-    e["existence_Bk_montant"] = existence_montant
-    e["existence_Bk"] = existence_montant / L if L != 0 else math.nan
-    # Plafond de E1 : ν_G PB − Γ̄ G > 0, soit une marge 1 − Γ̄ (G/PB)/ν_G > 0 quand PB > 0.
-    marge_E1_montant = par.nu_G * PB - Gam * G
-    e["marge_E1_montant"] = marge_E1_montant
+    rho_bar = resolveur.taux(entrees, r).rho_L if rho_bar_L is None else rho_bar_L
+    try:
+        etat = resolveur.etat_stationnaire(entrees, r, rho_bar)
+    except resolveur.EtatStationnaireInexistant as refus:
+        _refuser(refus.conditions, par)
+        raise
     if controler:
-        controler_etat(e, par)
-    return e
+        _refuser(resolveur.relever_conditions(etat), par)
+    return _en_dictionnaire(etat)
 
 
 def controler_etat(e: dict[str, float], par: Parametres) -> None:
     """Conditions de l'état résolu `e` (formes fermées, en montants) ; lève `HorsDomaine`.
 
-    Appelée par `etat_stationnaire` (contrôle activé) ; appelable seule sur un état donné.
+    Appelée seule sur un état donné ; `etat_stationnaire` (contrôle activé) juge les mêmes conditions. D1 et D2
+    n'y sont pas jugées (elles le sont par `etat_stationnaire`, à la résolution).
     """
-    if not e["existence_Bk_montant"] >= 0:
-        raise HorsDomaine(f"condition d'existence du dividende de la banque : n_a Π^Bk − n_a γ̄ E^Bk = "
-                          f"{e['existence_Bk_montant']!r} < 0 (sec:banque-stationnaire)")
-    # Inégalité large, comme l'existence du dividende de la banque : Div_F = 0 est encore un état stationnaire,
-    # le plancher max(0, ·) de F3 y est atteint sans être contraignant (réponse (b) de `macro`, rang 7).
-    if not e["Div_F"] >= 0:
-        raise HorsDomaine(f"Div_F = {e['Div_F']!r} < 0 : dividende stationnaire ≥ 0 attendu (plancher de F3 "
-                          "non contraignant)")
-    if not e["theta_G"] > 0:
-        raise HorsDomaine(f"θ_G = {e['theta_G']!r} : θ_G > 0 attendu (demande autonome A = θ_G > 0, part de "
-                          "`macro`, § 6 ; sec:finances_publiques-conditions)")
-    if par.nu_G != 1.0 and not e["marge_E1_montant"] > 0:
-        raise HorsDomaine(f"plafond de E1 : ν_G PB − Γ̄ G = {e['marge_E1_montant']!r} ≤ 0 attendu > 0 "
-                          "(marge 1 − Γ̄ (G/PB)/ν_G ≤ 0, sec:finances_publiques-depense)")
-    if not e["B"] >= 0:
-        raise HorsDomaine(f"B = {e['B']!r} : dette brute ≥ 0 attendue (sec:finances_publiques-conditions)")
-    # Contrôles de cohérence, inatteignables sous θ_CB ∈ [0 ; 1] (contrôlé au chargement) et B ≥ 0 : B_Bk =
-    # (1 − θ_CB) B ≥ 0, B_CB = θ_CB B ≥ 0 et B_H = 0 par construction (C42). Ils gardent les formes contre
-    # une modification ultérieure de l'ordre triangulaire.
-    if not e["B_Bk"] >= 0:
-        raise HorsDomaine(f"B_Bk = {e['B_Bk']!r} : titres de la banque ≥ 0 attendus (sec:banque-conditions)")
-    if not e["B_CB"] >= 0:
-        raise HorsDomaine(f"B_CB = {e['B_CB']!r} : titres de la banque centrale ≥ 0 attendus "
-                          "(sec:banque_centrale-conditions)")
-    if e["B_H"] != 0.0:
-        raise HorsDomaine(f"B_H = {e['B_H']!r} : titres des ménages nuls attendus au socle (C42)")
+    _refuser(resolveur.relever_conditions(_etat_du_dictionnaire(e)), par, ecartees=frozenset({"D1", "D2"}))
 
 
 # --- Une évaluation des règles sur l'état d'ouverture --------------------------
 
 
 def ouverture(e: dict[str, float], par: Parametres) -> dict[str, object]:
-    """État d'ouverture du pas 0, tel que les sections le résolvent (« État initial résolu »).
+    """État d'ouverture du pas 0, tel que les sections le résolvent (« État initial résolu » ; `resolveur.ouverture`).
 
     `mu_tilde_m1` est la marge en logarithme d'ouverture μ̃_{−1} = ln(1 + μ̄), variable d'état du bloc 4 du
     schéma v2 (ADR 0012, annotation du 13/11/2026, point 1.4 ; P54, #112) ; `un_pas` ne la lit pas (P2 y garde
-    ln(P_{t−1}/UC_{t−1}), égal à 1e−15 près).
+    ln(P_{t−1}/UC_{t−1}), égal à 1e−15 près). Le registre est rendu en liste.
     """
-    n = par.n_a
-    Gr, Gam = e["Gr"], e["Gam"]
-    pr_m1 = e["pr"] * (1 + par.g_pr) ** (-1 / n)
-    P = [e["p"] * (1 + par.pi_cible) ** (-u / n) for u in range(1, n + 2)]  # P_{t−u} = P_t (1 + π̄)^{−u/n_a}
-    return {
-        "registre": P,
-        "pr": e["pr"], "N_pa": e["N_pa"], "N_m1": e["N"] * (1 + par.g_N) ** (-1 / n), "U_m1": par.U_eq,
-        "W_m1": P[0] * pr_m1 / (1 + par.mu_bar), "mu_tilde_m1": math.log(1 + par.mu_bar),
-        "ve": e["ve"], "IN_vol": e["IN_vol"], "IN": e["IN"], "K_vol": e["K_vol"], "K": e["K"],
-        "ti": e["ti"], "y_m1": e["y"] / Gr, "T_F_m1": e["T_F"] / Gam, "rho_bar_L": e["rho_bar_L"],
-        "L": e["L"], "D_F": e["D_F"], "YD_m1": e["YD"] / Gam, "D_H": e["D_H"], "B_H": 0.0,
-        "i_L": e["i_L"], "i_D": e["i_D"], "E_Bk": e["E_Bk"], "L_CB": e["L_CB"], "Res": e["Res"],
-        "B_Bk": e["B_Bk"], "B_CB": e["B_CB"], "M_G": e["M_G"], "E_CB": 0.0,
-        "r_hat": e["r_hat"], "pi_e": par.pi_cible, "pi_cible": par.pi_cible, "Y_HS_m1": e["Y_HS"] / Gam,
-        "theta_G": e["theta_G"],
-    }
+    o = _en_dictionnaire(resolveur.ouverture(_etat_du_dictionnaire(e), entrees_stationnaires(par)))
+    o["registre"] = list(o["registre"])
+    return o
 
 
 def un_pas(o: dict[str, object], par: Parametres) -> dict[str, float]:
