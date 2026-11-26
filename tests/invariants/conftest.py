@@ -101,6 +101,13 @@ def linearisation():
 
 
 @pytest.fixture(scope="session")
+def maquette():
+    """Module `outils/maquette_conjointe.py`, maquette conjointe du socle (C62 : racine en regard
+    de celle identifiée sur le moteur, #166)."""
+    return _charger("maquette_conjointe", RACINE / "outils" / "maquette_conjointe.py")
+
+
+@pytest.fixture(scope="session")
 def matrices():
     """Module `outils/verifier_matrices.py`, lecteur des tables de la spécification."""
     return _charger("verifier_matrices", RACINE / "outils" / "verifier_matrices.py")

@@ -43,14 +43,27 @@ from nations.moteur.parametres.cadre import PAS_PAR_AN
 _N_A = PAS_PAR_AN.valeur
 
 NU_H = Parametre(
-    "nu_H", "ν_H", 1.0, "années",
-    "tab:calibration (indicative) ; M27 ; calibration #62",
+    "nu_H", "ν_H", 1.1, "années",
+    "Eurostat, comptes annuels des secteurs (SEC 2010 ; nasa_10_f_bs, nasa_10_nf_tr), ménages et "
+    "ISBLSM (S14_S15), numéraire et dépôts (F.2, actif, non consolidé) sur revenu disponible brut "
+    "(B.6g, prix courants), EA21, moyenne 2001-2023 : 1,076 an ; consulté le 16/11/2026 ; "
+    "définition déclarée : V_H (dépôts seuls, sans passif) sur le revenu disponible annuel, "
+    "rapport comparé à B10, d'où ν_H = R/(1 − R n_a π^{∗,pas}) à π* = 2 % : 1,0995, arrondi à "
+    "1,1 ; contrôle stock-flux : acquisition nette de F.2 sur B.6g, 4,32 % (2002-2023), contre "
+    "4,27 % d'épargne nominale dans le modèle ; écart déclaré : B.6g contient l'excédent des "
+    "logements et le revenu mixte ; tab:calibration ; décision M34 ; M27",
     ("eq:menages-richesse-visee",),
     domaine("ν_H > 0 (sec:menages-conditions)", lambda x: x > 0.0))
 
 LAMBDA_H = Parametre(
     "lambda_H", "λ_H", 0.4, "par an, taux de flux",
-    "tab:calibration (indicative) ; M27 ; calibration #62 ; unité P65",
+    "choix de conception dans la fourchette lue : dépense totale, durables compris, de 50 à 90 % "
+    "d'un versement sur le trimestre de réception (J. A. Parker, N. S. Souleles, D. S. Johnson et "
+    "R. McClelland, « Consumer Spending and the Economic Stimulus Payments of 2008 », NBER "
+    "Working Paper 16684, janvier 2011, résumé lu le 16/11/2026 ; États-Unis, 2008 ; période du "
+    "chiffre à confirmer sur l'article) ; dépense cumulée d'une aubaine sur 3 tours de 0,605 à "
+    "ν_H = 1,1 ; correspondance : hypothèse, contestée (versements annoncés, données américaines, "
+    "ménage représentatif) ; tab:calibration ; décision M34 ; M27 ; unité P65",
     ("eq:menages-plan-consommation",), vitesse(_N_A))
 
 PARAMETRES_DES_MENAGES = (NU_H, LAMBDA_H)

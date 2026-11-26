@@ -118,26 +118,26 @@ class Parametres:
     kappa: float = 1.6
     tu_bar: float = 0.8
     delta: float = 0.05
-    mu_bar: float = 0.25
+    mu_bar: float = 0.60
     U_eq: float = 0.05
     lv: float = 0.4
     nu_F: float = 1 / 6
     varpi_L: float = 0.02
     varpi_D: float = 0.01
-    vartheta: float = 0.10
-    nu_H: float = 1.0
+    vartheta: float = 0.15
+    nu_H: float = 1.1
     tau_H: float = 0.25
     tau_F: float = 0.0
     theta_Tr: float = 0.0
     theta_CB: float = 0.0
     phi: float = 1.0
     nu_G: float = 1.0
-    zeta: float = 4.0
+    zeta: float = 8.0
     eta_r: float = 2.0
     lambda_ti: float = 0.02
     lambda_v: float = 3.0
     lambda_IN: float = 1.5
-    lambda_w: float = 1.0
+    lambda_w: float = 0.18
     beta: float = 2.0
     lambda_N: float = 3.5
     lambda_mu: float = 1.2
@@ -159,19 +159,71 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "g_pr": ("par an, taux de croissance", "décision du mainteneur du 05/10/2026 (#84, point 1, lecture I1)", "N9"),
     "g_N": ("par an, taux de croissance", "décision du mainteneur du 05/10/2026 (#84, point 1, lecture I1)", "T1"),
     "pi_cible": ("par an, taux de croissance (inflation)", "tab:calibration ; π̄ = π* (C2)", "BC4"),
-    "rbar": ("par an, taux réel de Fisher sur la cible", "tab:calibration (indicative)", "BC1, E4"),
+    "rbar": ("par an, taux réel de Fisher sur la cible",
+             ("choix de conception, niveau contesté (critère 23 de la fiche 8 ; P208) ; fourchette lue de −0,5 % à "
+              "+1,0 % (BCE, Economic Bulletin 1/2025, encadré « Natural rate estimates for the euro area: insights, "
+              "uncertainties and shortcomings », fin 2024, lu le 16/11/2026) et de 0,9 % à 1,9 % (Réserve fédérale, "
+              "Summary of Economic Projections du 16/09/2026, tableau 1, lu le 16/11/2026 : étendue des projections "
+              "de long terme du taux des fonds fédéraux, 2,9 à 3,9 %, moins l'inflation PCE de long terme projetée, "
+              "2,0 %) ; fourchette d'ensemble de −0,5 % à +1,9 % ; tab:calibration ; décision M34"),
+             "BC1, E4"),
     "sigma": ("années de ventes", "tab:calibration (indicative)", "N2"),
     "kappa": ("années", "tab:calibration (indicative)", "N11"),
     "tu_bar": ("fraction de la capacité normale", "tab:calibration (indicative)", "S2"),
     "delta": ("par an, taux de flux", "tab:calibration (hypothèse)", "N10, S7"),
-    "mu_bar": ("fraction du coût unitaire", "tab:calibration (hypothèse)", "P2, T3"),
+    "mu_bar": ("fraction du coût unitaire",
+               ("K. Bodnár et M. Mohr, « The development of the wage share in the euro area since the start of "
+                "the pandemic », BCE, Economic Bulletin 4/2023, encadré, note du graphique A, consulté le "
+                "16/11/2026 : part salariale de la zone euro, rémunération des salariés corrigée des indépendants "
+                "sur la valeur ajoutée brute au prix de base, moyenne 1998-2023, 62,4 % ; écart au coût des "
+                "facteurs contesté (AMECO ALCD2, EA20, 1998-2023 : 63,11 %, consulté le 16/11/2026) ; "
+                "μ̄ = 0,60 ⇒ ω̄ = 1/(1 + μ̄) = 0,625 ; tab:calibration ; décision M34"),
+               "P2, T3"),
     "U_eq": ("fraction de la population active", "tab:calibration (hypothèse)", "T3, E1"),
     "lv": ("fraction du capital comptable", "tab:calibration (hypothèse)", "F1"),
     "nu_F": ("années de ventes", "tab:calibration (hypothèse)", "F2"),
-    "varpi_L": ("par an, taux de flux", "tab:calibration (indicative), décision M31", "B1"),
-    "varpi_D": ("par an, taux de flux", "tab:calibration (indicative), décision M31", "B2"),
-    "vartheta": ("fraction des crédits de clôture", "tab:calibration (hypothèse)", "B6"),
-    "nu_H": ("années de revenu de Haig-Simons", "tab:calibration (indicative)", "H3"),
+    "varpi_L": ("par an, taux de flux",
+                ("BCE, statistiques de taux d'intérêt des IFM (MIR), indicateur composite du coût de l'emprunt des "
+                 "sociétés non financières, affaires nouvelles (ECB/MIR/M.U2.B.A2I.AM.R.A.2240.EUR.N), moins le taux "
+                 "du jour le jour de la zone euro (EONIA, moyenne mensuelle, ECB/FM/M.U2.EUR.4F.MM.EONIA.HSTA, "
+                 "jusqu'en septembre 2019, puis €STR, moyenne mensuelle des observations quotidiennes, "
+                 "ECB/EST/B.EU000A2X2A25.WT), zone euro, moyenne mensuelle 2003-2024 : "
+                 "2,09 points (encours : 2,30) ; DBnomics, consulté le 16/11/2026 ; arrondi au point ; "
+                 "tab:calibration ; décision M34 ; M31"),
+                "B1"),
+    "varpi_D": ("par an, taux de flux",
+                ("BCE, MIR et BSI : taux des dépôts des ménages et des sociétés non financières (à vue, à terme, à "
+                 "préavis), pondéré par les encours de la BSI, moins le taux du jour le jour (EONIA puis €STR) ; taux "
+                 "des MIR : dépôts à vue des ménages et des SNF (L21…2250.EUR.N, L21…2240.EUR.N), dépôts à terme, "
+                 "encours (L22.A…2250.EUR.O, L22.A…2240.EUR.O), dépôts à préavis de 3 mois au plus des ménages "
+                 "(L23.D…2250.EUR.N, employé aussi pour les SNF) ; poids de la BSI : "
+                 "ECB/BSI/M.U2.N.A.{L21,L22,L23}.A.1.U2.{2250,2240}.Z01.E ; zone "
+                 "euro : 0,85 point (2003-01 à 2008-08) et 1,93 point (2022-07 à 2024-12), fenêtres de taux "
+                 "positifs ; moyenne 2003-2024 de −0,05 point, dominée par les taux négatifs, écartée ; fenêtre "
+                 "contestée ; écart dépendant du régime (limite de B2, #167) ; DBnomics, consulté le 16/11/2026 ; "
+                 "tab:calibration ; décision M34 ; M31"),
+                "B2"),
+    "vartheta": ("fraction des crédits de clôture",
+                 ("BCE, statistiques de supervision bancaire (MSU), ratio CET1 des établissements importants "
+                  "(ECB/SUP/Q.B01.W0._Z.I4008._T.SII._Z._Z._Z.PCT.C), moyenne 2015T3-2024T4 : 14,75 % des actifs "
+                  "pondérés des risques, arrondi ; DBnomics, consulté le 16/11/2026 ; dénominateur : ϑ rapporte les "
+                  "fonds propres aux crédits, et non aux actifs pondérés des risques ; les deux ratios coïncident, "
+                  "pour la banque du modèle, sous les pondérations de l'accord de Bâle de 1988 (crédits aux "
+                  "entreprises pondérés à 100 %, titres publics et réserves à 0 % ; Comité de Bâle sur le contrôle "
+                  "bancaire, International Convergence of Capital Measurement and Capital Standards, juillet 1988, "
+                  "§ 44 et annexe 2, lus le 16/11/2026) ; sous Bâle III, les crédits aux entreprises y sont pondérés "
+                  "en moyenne à moins de 100 % (approches internes) : rapporté aux crédits, le ratio observé serait "
+                  "inférieur à 14,75 % ; écart non mesuré : le niveau est contesté ; tab:calibration ; décision M34"),
+                 "B6"),
+    "nu_H": ("années de revenu de Haig-Simons",
+             ("Eurostat, comptes annuels des secteurs (SEC 2010 ; nasa_10_f_bs, nasa_10_nf_tr), ménages et ISBLSM "
+              "(S14_S15), numéraire et dépôts (F.2, actif, non consolidé) sur revenu disponible brut (B.6g, prix "
+              "courants), EA21, moyenne 2001-2023 : 1,076 an ; consulté le 16/11/2026 ; définition déclarée : V_H "
+              "(dépôts seuls, sans passif) sur le revenu disponible annuel, rapport comparé à B10, d'où "
+              "ν_H = R/(1 − R n_a π^{∗,pas}) à π* = 2 % : 1,0995, arrondi à 1,1 ; contrôle stock-flux : acquisition "
+              "nette de F.2 sur B.6g, 4,32 % (2002-2023), contre 4,27 % d'épargne nominale dans le modèle ; écart "
+              "déclaré : B.6g contient l'excédent des logements et le revenu mixte ; tab:calibration ; décision M34"),
+             "H3"),
     "tau_H": ("fraction de l'assiette", "tab:calibration (indicative)", "E3"),
     "tau_F": ("fraction de l'assiette", "sec:finances_publiques-stationnaire (nul au socle)", "E5"),
     "theta_Tr": ("fraction de la production potentielle", "sec:finances_publiques-stationnaire (nul au socle)", "E6"),
@@ -179,17 +231,49 @@ DECLARATIONS: dict[str, tuple[str, str, str]] = {
     "phi": ("sans dimension, {0 ; 1}", "sec:finances_publiques-stationnaire (φ = 1)", "E4"),
     "nu_G": ("multiple des paiements bruts d'un pas", "grille de #84 (ν_G = 1 : point de référence)", "E8"),
     "zeta": ("par unité de taux réel annuel",
-             "valeur de la maquette (sec:finances_publiques-stationnaire) ; n'entre que si Δϱ ≠ 0", "S2"),
+             ("R. Klump, P. McAdam et A. Willman, « The normalized CES production function: theory and empirics », "
+              "BCE, Working Paper Series n° 1294, février 2011, tableau 2, p. 30, lu le 16/11/2026 : élasticité de "
+              "substitution de la zone euro 0,7 (1970-2003) et 0,95-1,05 (1970-1997), « generally below unity » ; "
+              "S. Gilchrist et E. Zakrajšek, « Investment and the Cost of Capital: New Evidence from the Corporate Bond "
+              "Market », NBER Working Paper 13174, juin 2007, p. 21, lu le 16/11/2026 : firmes américaines émettrices "
+              "d'obligations (zone : États-Unis ; fenêtre : non relevée par la fiche), élasticité de long terme du "
+              "capital au coût d'usage égale à 1 ; fourchette lue de σ de 0,5 à 1,0, niveau contesté ; ζ = 8 ⇒ σ ≈ 0,64 "
+              "sous ζ = σ/(ϱ̄_L + δ) (hypothèse) ; tab:calibration ; décision M34"),
+             "S2"),
     "eta_r": ("par unité de taux réel annuel", "tab:calibration (indicative)", "S3"),
     "lambda_ti": ("par an, vitesse", "tab:calibration (indicative)", "S6"),
     "lambda_v": ("par an, vitesse", "tab:calibration (indicative)", "N1"),
     "lambda_IN": ("par an, vitesse", "tab:calibration (indicative)", "N3"),
-    "lambda_w": ("par an, vitesse", "tab:calibration (indicative)", "T3"),
+    "lambda_w": ("par an, vitesse",
+                 ("choix déclaré, sources lues : pente λ_w β = 0,36 point de hausse annuelle du salaire par point "
+                  "d'écart de chômage (β = 2), égale à la pente de l'écart de chômage dans un panel de 19 pays de la "
+                  "zone euro (−0,364, glissement annuel de la rémunération par salarié, 2000T1-2018T4 ; F. Tagliati, «"
+                  " Wage growth in the euro area: a Phillips curve analysis using panel data », encadré 2, tableau A, "
+                  "dans C. Nickel, E. Bobeica, G. Koester, E. Lis et M. Porqueddu (dir.), « Understanding low wage "
+                  "growth in the euro area and European countries », BCE, Occasional Paper 232, septembre 2019, révisé"
+                  " en décembre 2020) et dans la fourchette de 0,29 à 0,40 des États-Unis (J. Galí, « The Return of "
+                  "the Wage Phillips Curve », NBER Working Paper 15758, février 2010, tableau 1, colonnes 6 et 8, ×4 ;"
+                  " gains des salariés de production et hors encadrement, données trimestrielles, 1964T1-2009T3, "
+                  "2007T4 pour la colonne 8) ; correction annuelle 0,166, sous la correction européenne de 0,25 (O. J."
+                  " Blanchard et L. F. Katz, « Wage Dynamics: Reconciling Theory and Evidence », NBER Working Paper "
+                  "6924, février 1999, p. 5, fréquence présumée annuelle) ; vitesse contestée : la persistance "
+                  "régionale américaine (0,60 à 0,81, D. G. Blanchflower et A. J. Oswald, « The Wage Curve Reloaded »,"
+                  " NBER Working Paper 11338, 2005, p. 11 et 15) est tenue pour une borne haute ; consulté le "
+                  "16/11/2026 ; tab:calibration ; décision M34"),
+                 "T3"),
     "beta": ("par unité de taux de chômage", "tab:calibration (indicative)", "T3"),
     "lambda_N": ("par an, vitesse", "tab:calibration", "T4"),
     "lambda_mu": ("par an, vitesse", "tab:calibration (indicative)", "P2"),
     "psi_xi": ("sans dimension", "tab:calibration (indicative)", "P2"),
-    "lambda_H": ("par an, vitesse", "tab:calibration (indicative)", "H4"),
+    "lambda_H": ("par an, vitesse",
+                 ("choix de conception dans la fourchette lue : dépense totale, durables compris, de 50 à 90 % d'un "
+                  "versement sur le trimestre de réception (J. A. Parker, N. S. Souleles, D. S. Johnson et R. "
+                  "McClelland, « Consumer Spending and the Economic Stimulus Payments of 2008 », NBER Working Paper "
+                  "16684, janvier 2011, résumé lu le 16/11/2026 ; États-Unis, 2008 ; période du chiffre à confirmer "
+                  "sur l'article) ; dépense cumulée d'une aubaine sur 3 tours de 0,605 à ν_H = 1,1 ; correspondance : "
+                  "hypothèse, contestée (versements annoncés, données américaines, ménage représentatif) ; "
+                  "tab:calibration ; décision M34"),
+                 "H4"),
     "a_pi": ("points de taux par point d'écart", "tab:calibration (indicative)", "BC1"),
     "a_I": ("par an, gain", "tab:calibration (indicative)", "BC2"),
     "lambda_e": ("par an, vitesse", "tab:calibration (indicative)", "BC3"),
@@ -1211,7 +1295,8 @@ GRANDEURS: tuple[Grandeur, ...] = (
     Grandeur("titres_Bk", "titres de la banque b_Bk = B_Bk/(n_a PIB)", "années de PIB", "n_a PIB", OUV,
              "sec:banque-stationnaire (#83)"),
     Grandeur("Pi_Bk", "résultat de la banque Π^Bk/PIB", "% du PIB", "PIB du pas", PAS, "sec:banque-stationnaire"),
-    Grandeur("roe", "rendement des fonds propres n_a Π^Bk/E^Bk", "% par an", "E^Bk d'ouverture", PAS,
+    Grandeur("roe", "rendement des fonds propres n_a Π^Bk/E^Bk, brut, nominal, sans charges d'exploitation, pertes "
+             "ni impôt (Π^Bk ne contient que les marges d'intérêt ; décision M34)", "% par an", "E^Bk d'ouverture", PAS,
              "sec:banque-stationnaire"),
     Grandeur("part_distribuee_Bk", "part distribuée Div_Bk/Π^Bk (marge de Div_Bk ≥ 0)", "sans dimension", "Π^Bk", PAS,
              "sec:banque-stationnaire"),
@@ -1219,7 +1304,8 @@ GRANDEURS: tuple[Grandeur, ...] = (
              "état stationnaire", "sec:banque-stationnaire"),
     Grandeur("part_titres", "part des titres dans l'actif b_Bk/(l + b_Bk + res)", "fraction", "actif d'ouverture", OUV,
              "sec:banque-stationnaire (#83)"),
-    Grandeur("marge_nette", "marge nette d'intérêt n_a Π^Bk/(L + B_Bk + Res)", "% par an", "actif d'ouverture", PAS,
+    Grandeur("marge_nette", "marge nette d'intérêt : ratio Π^Bk/actif, n_a Π^Bk/(L + B_Bk + Res) (décision M34)",
+             "% par an", "actif d'ouverture", PAS,
              "sec:banque-stationnaire (#83)"),
     Grandeur("domar_E_Bk", "déficit de Domar dû aux fonds propres n_a(Γ̄ − 1) e_Bk", "% du PIB", "PIB annuel",
              "état stationnaire", "sec:banque-conditions"),
@@ -1490,7 +1576,7 @@ ALLOCATIONS_MESUREES = (
     "C/(p v)", "G/(p v)", "I/(p v)", "ΔIN/(p v)", "T^cou/PIB",
 )
 TOL_INVARIANCE = 1e-12  # invariance exacte, relative
-# Sensibilité à ζ (décision de `macro`, complément de #84) : le verdict reste jugé à ζ du paramètre (4) ; l'étendue
+# Sensibilité à ζ (décision de `macro`, complément de #84) : le verdict reste jugé à ζ du paramètre (8, M34) ; l'étendue
 # des allocations de la liste L2 est publiée en mesure sur la plage de la table, ζ ∈ {4 ; 8}, et à ζ = 2 en
 # illustration, sans verdict. Les allocations qui en dépendent (par r̄_α) sont mesurées, non supposées.
 ZETA_PLAGE = (4.0, 8.0)
@@ -1823,49 +1909,49 @@ VALEURS_PUBLIEES: tuple[tuple[str, str, str, object, str], ...] = (
      lambda c: c.v()["hausse_salaire_an"], "A"),
     ("sec:travail-stationnaire", "glissement du salaire à 10 %, % par an", "12,2000",
      lambda c: c.v(pi=0.10)["hausse_salaire_an"], "A"),
-    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 12", "0,798903", lambda c: c.v()["part_salariale"], "A"),
-    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 4", "0,798906", lambda c: c.v(na=4)["part_salariale"],
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 12", "0,624645", lambda c: c.v()["part_salariale"], "A"),
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 4", "0,624648", lambda c: c.v(na=4)["part_salariale"],
      "A"),
-    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 52", "0,798902", lambda c: c.v(na=52)["part_salariale"],
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 52", "0,624644", lambda c: c.v(na=52)["part_salariale"],
      "A"),
-    ("sec:travail-stationnaire", "écart à ω̄ à 2 %, point", "0,110", lambda c: c.v()["ecart_part_salariale"], "A"),
-    ("sec:travail-stationnaire", "écart à ω̄ à 10 %, point", "0,656", lambda c: c.v(pi=0.10)["ecart_part_salariale"],
+    ("sec:travail-stationnaire", "écart à ω̄ à 2 %, point", "0,035", lambda c: c.v()["ecart_part_salariale"], "A"),
+    ("sec:travail-stationnaire", "écart à ω̄ à 10 %, point", "0,370", lambda c: c.v(pi=0.10)["ecart_part_salariale"],
      "A"),
     ("sec:prix-stationnaire", "hausse du prix à 2 %, % par pas", "0,16516", lambda c: c.v()["hausse_prix_pas"], "A"),
     ("sec:prix-stationnaire", "hausse du prix à 10 %, % par pas", "0,79741", lambda c: c.v(pi=0.10)["hausse_prix_pas"],
      "A"),
-    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 12", "0,793445", lambda c: c.v(pi=0.10)["part_salariale"],
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 12", "0,621303", lambda c: c.v(pi=0.10)["part_salariale"],
      "A"),
-    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 4", "0,793499",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 4", "0,621337",
      lambda c: c.v(pi=0.10, na=4)["part_salariale"], "A"),
-    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 52", "0,793424",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 52", "0,621290",
      lambda c: c.v(pi=0.10, na=52)["part_salariale"], "A"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %", "0,980566", lambda c: c.v()["richesse_YD"], "A"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %", "0,912667", lambda c: c.v(pi=0.10)["richesse_YD"], "A"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 4", "0,980535", lambda c: c.v(na=4)["richesse_YD"], "A"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 52", "0,980578", lambda c: c.v(na=52)["richesse_YD"], "A"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 4", "0,912030",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %", "1,076531", lambda c: c.v()["richesse_YD"], "A"),
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %", "0,995242", lambda c: c.v(pi=0.10)["richesse_YD"], "A"),
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 4", "1,076493", lambda c: c.v(na=4)["richesse_YD"], "A"),
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 52", "1,076545", lambda c: c.v(na=52)["richesse_YD"], "A"),
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 4", "0,994485",
      lambda c: c.v(pi=0.10, na=4)["richesse_YD"], "A"),
-    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 52", "0,912911",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 52", "0,995532",
      lambda c: c.v(pi=0.10, na=52)["richesse_YD"], "A"),
-    ("sec:menages-stationnaire", "taux d'épargne à 2 %, %", "3,8900", lambda c: c.v()["epargne"], "A"),
-    ("sec:menages-stationnaire", "dont maintien à 2 %, point", "1,9434", lambda c: c.v()["epargne_maintien"], "A"),
-    ("sec:menages-stationnaire", "dont épargne réelle à 2 %, point", "1,9466", lambda c: c.v()["epargne_reelle"], "A"),
-    ("sec:menages-stationnaire", "taux d'épargne à 10 %, %", "10,5565", lambda c: c.v(pi=0.10)["epargne"], "A"),
-    ("sec:menages-stationnaire", "dont maintien à 10 %, point", "8,7333", lambda c: c.v(pi=0.10)["epargne_maintien"],
+    ("sec:menages-stationnaire", "taux d'épargne à 2 %, %", "4,2707", lambda c: c.v()["epargne"], "A"),
+    ("sec:menages-stationnaire", "dont maintien à 2 %, point", "2,1336", lambda c: c.v()["epargne_maintien"], "A"),
+    ("sec:menages-stationnaire", "dont épargne réelle à 2 %, point", "2,1371", lambda c: c.v()["epargne_reelle"], "A"),
+    ("sec:menages-stationnaire", "taux d'épargne à 10 %, %", "11,5116", lambda c: c.v(pi=0.10)["epargne"], "A"),
+    ("sec:menages-stationnaire", "dont maintien à 10 %, point", "9,5234", lambda c: c.v(pi=0.10)["epargne_maintien"],
      "A"),
-    ("sec:menages-stationnaire", "dont épargne réelle à 10 %, point", "1,8232",
+    ("sec:menages-stationnaire", "dont épargne réelle à 10 %, point", "1,9882",
      lambda c: c.v(pi=0.10)["epargne_reelle"], "A"),
-    ("sec:menages-stationnaire", "C/YD à 2 %", "0,96110", lambda c: c.v()["C_sur_YD"], "A"),
-    ("sec:menages-stationnaire", "C/YD à 10 %", "0,8944", lambda c: c.v(pi=0.10)["C_sur_YD"], "A"),
-    ("sec:menages-stationnaire", "épargne visée à 2 %, %", "1,9852", lambda c: c.v()["epargne_visee"], "A"),
-    ("sec:menages-stationnaire", "épargne visée à 10 %, %", "1,9977", lambda c: c.v(pi=0.10)["epargne_visee"], "A"),
-    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 4, %", "1,9950", lambda c: c.v(na=4)["epargne_visee"],
+    ("sec:menages-stationnaire", "C/YD à 2 %", "0,95729", lambda c: c.v()["C_sur_YD"], "A"),
+    ("sec:menages-stationnaire", "C/YD à 10 %", "0,8849", lambda c: c.v(pi=0.10)["C_sur_YD"], "A"),
+    ("sec:menages-stationnaire", "épargne visée à 2 %, %", "2,1837", lambda c: c.v()["epargne_visee"], "A"),
+    ("sec:menages-stationnaire", "épargne visée à 10 %, %", "2,1975", lambda c: c.v(pi=0.10)["epargne_visee"], "A"),
+    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 4, %", "2,1945", lambda c: c.v(na=4)["epargne_visee"],
      "A"),
-    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 52, %", "1,9814", lambda c: c.v(na=52)["epargne_visee"],
+    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 52, %", "2,1795", lambda c: c.v(na=52)["epargne_visee"],
      "A"),
-    ("sec:menages-stationnaire", "marge du plafond à 2 %, mois", "12,24", lambda c: c.v()["marge_plafond_mois"], "A"),
-    ("sec:menages-stationnaire", "V_H_0/YD_0 à 2 %", "11,7668", lambda c: c.v()["V_H_sur_YD"], "A"),
+    ("sec:menages-stationnaire", "marge du plafond à 2 %, mois", "13,49", lambda c: c.v()["marge_plafond_mois"], "A"),
+    ("sec:menages-stationnaire", "V_H_0/YD_0 à 2 %", "12,9184", lambda c: c.v()["V_H_sur_YD"], "A"),
     ("sec:menages-stationnaire", "superneutralité, i_D = 1 % + π̄, 2 %", "1,010286",
      lambda c: 1 / (1 + (12 * c.v()["pi_pas"] / 100 - (0.01 + 0.02))), "A"),
     ("sec:menages-stationnaire", "superneutralité, i_D = 1 % + π̄, 10 %", "1,014518",
@@ -1883,66 +1969,66 @@ VALEURS_PUBLIEES: tuple[tuple[str, str, str, object, str], ...] = (
     ("sec:investissement-stationnaire", "ti (C-F)", "0,13964", lambda c: c.v(cfg="C-F")["ti"], "A"),
     ("sec:investissement-stationnaire", "ti, n_a = 4 (C-F)", "0,13970", lambda c: c.v(na=4, cfg="C-F")["ti"], "A"),
     ("sec:investissement-stationnaire", "ti, n_a = 52 (C-F)", "0,13961", lambda c: c.v(na=52, cfg="C-F")["ti"], "A"),
-    ("sec:investissement-stationnaire", "I/PIB à 2 % (C-F), %", "13,945", lambda c: c.v(cfg="C-F")["I_sur_PIB"], "A"),
-    ("sec:investissement-stationnaire", "I/PIB à 10 % (C-F), %", "13,849",
+    ("sec:investissement-stationnaire", "I/PIB à 2 % (C-F), %", "13,956", lambda c: c.v(cfg="C-F")["I_sur_PIB"], "A"),
+    ("sec:investissement-stationnaire", "I/PIB à 10 % (C-F), %", "13,881",
      lambda c: c.v(pi=0.10, cfg="C-F")["I_sur_PIB"], "A"),
-    ("sec:investissement-stationnaire", "I/PIB, n_a = 4 (C-F), %", "13,951",
+    ("sec:investissement-stationnaire", "I/PIB, n_a = 4 (C-F), %", "13,962",
      lambda c: c.v(na=4, cfg="C-F")["I_sur_PIB"], "A"),
-    ("sec:investissement-stationnaire", "I/PIB, n_a = 52 (C-F), %", "13,942",
+    ("sec:investissement-stationnaire", "I/PIB, n_a = 52 (C-F), %", "13,953",
      lambda c: c.v(na=52, cfg="C-F")["I_sur_PIB"], "A"),
-    ("sec:investissement-stationnaire", "capital au prix courant à 2 % (C-F)", "1,99726",
+    ("sec:investissement-stationnaire", "capital au prix courant à 2 % (C-F)", "1,99887",
      lambda c: c.v(cfg="C-F")["K_courant"], "A"),
-    ("sec:investissement-stationnaire", "capital au prix courant à 10 % (C-F)", "1,98361",
+    ("sec:investissement-stationnaire", "capital au prix courant à 10 % (C-F)", "1,98817",
      lambda c: c.v(pi=0.10, cfg="C-F")["K_courant"], "A"),
-    ("sec:investissement-stationnaire", "capital comptable à 2 % (C-F)", "1,55510",
+    ("sec:investissement-stationnaire", "capital comptable à 2 % (C-F)", "1,55635",
      lambda c: c.v(cfg="C-F")["K_comptable"], "A"),
-    ("sec:investissement-stationnaire", "capital comptable à 10 % (C-F)", "0,83598",
+    ("sec:investissement-stationnaire", "capital comptable à 10 % (C-F)", "0,83790",
      lambda c: c.v(pi=0.10, cfg="C-F")["K_comptable"], "A"),
-    ("sec:investissement-stationnaire", "capital comptable, n_a = 4 (C-F)", "1,55356",
+    ("sec:investissement-stationnaire", "capital comptable, n_a = 4 (C-F)", "1,55481",
      lambda c: c.v(na=4, cfg="C-F")["K_comptable"], "A"),
-    ("sec:investissement-stationnaire", "capital comptable, n_a = 52 (C-F)", "1,55569",
+    ("sec:investissement-stationnaire", "capital comptable, n_a = 52 (C-F)", "1,55694",
      lambda c: c.v(na=52, cfg="C-F")["K_comptable"], "A"),
-    ("sec:investissement-stationnaire", "crédits à 2 % (C-F)", "0,62204", lambda c: c.v(cfg="C-F")["credits"], "A"),
-    ("sec:investissement-stationnaire", "crédits à 10 % (C-F)", "0,33439",
+    ("sec:investissement-stationnaire", "crédits à 2 % (C-F)", "0,62254", lambda c: c.v(cfg="C-F")["credits"], "A"),
+    ("sec:investissement-stationnaire", "crédits à 10 % (C-F)", "0,33516",
      lambda c: c.v(pi=0.10, cfg="C-F")["credits"], "A"),
-    ("sec:investissement-stationnaire", "crédits nets à 2 % (C-F)", "0,45598",
+    ("sec:investissement-stationnaire", "crédits nets à 2 % (C-F)", "0,45635",
      lambda c: c.v(cfg="C-F")["credits_nets"], "A"),
-    ("sec:investissement-stationnaire", "crédits nets à 10 % (C-F)", "0,16947",
+    ("sec:investissement-stationnaire", "crédits nets à 10 % (C-F)", "0,16986",
      lambda c: c.v(pi=0.10, cfg="C-F")["credits_nets"], "A"),
-    ("sec:investissement-stationnaire", "dépôts à 2 % (C-F)", "0,16605", lambda c: c.v(cfg="C-F")["depots_F"], "A"),
-    ("sec:investissement-stationnaire", "dépôts à 10 % (C-F)", "0,16492",
+    ("sec:investissement-stationnaire", "dépôts à 2 % (C-F)", "0,16619", lambda c: c.v(cfg="C-F")["depots_F"], "A"),
+    ("sec:investissement-stationnaire", "dépôts à 10 % (C-F)", "0,16530",
      lambda c: c.v(pi=0.10, cfg="C-F")["depots_F"], "A"),
-    ("sec:investissement-stationnaire", "valeur nette des entreprises à 2 % (C-F)", "1,19174",
+    ("sec:investissement-stationnaire", "valeur nette des entreprises à 2 % (C-F)", "1,17242",
      lambda c: c.v(cfg="C-F")["V_F"], "A"),
-    ("sec:investissement-stationnaire", "valeur nette des entreprises à 10 % (C-F)", "0,75713",
+    ("sec:investissement-stationnaire", "valeur nette des entreprises à 10 % (C-F)", "0,73900",
      lambda c: c.v(pi=0.10, cfg="C-F")["V_F"], "A"),
     ("sec:investissement-stationnaire", "FU/V_F à 2 % (C-F), % par pas", "0,33059",
      lambda c: c.v(cfg="C-F")["FU_sur_V_F"], "A"),
     ("sec:investissement-stationnaire", "FU/V_F à 10 % (C-F), % par pas", "0,96389",
      lambda c: c.v(pi=0.10, cfg="C-F")["FU_sur_V_F"], "A"),
-    ("sec:investissement-stationnaire", "distribution à 2 % (C-F)", "0,56853",
+    ("sec:investissement-stationnaire", "distribution à 2 % (C-F)", "0,83609",
      lambda c: c.v(cfg="C-F")["distribution"], "A"),
-    ("sec:investissement-stationnaire", "distribution à 10 % (C-F)", "0,39995",
+    ("sec:investissement-stationnaire", "distribution à 10 % (C-F)", "0,73116",
      lambda c: c.v(pi=0.10, cfg="C-F")["distribution"], "A"),
-    ("sec:investissement-stationnaire", "distribution, n_a = 4 (C-F)", "0,56791",
+    ("sec:investissement-stationnaire", "distribution, n_a = 4 (C-F)", "0,83576",
      lambda c: c.v(na=4, cfg="C-F")["distribution"], "A"),
-    ("sec:investissement-stationnaire", "distribution, n_a = 52 (C-F)", "0,56876",
+    ("sec:investissement-stationnaire", "distribution, n_a = 52 (C-F)", "0,83621",
      lambda c: c.v(na=52, cfg="C-F")["distribution"], "A"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (C-F), %", "6,25",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (C-F), %", "23,79",
      lambda c: c.v(cfg="C-F")["Div_F_sur_ventes"], "A"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (C-F), %", "5,90",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (C-F), %", "23,44",
      lambda c: c.v(pi=0.10, cfg="C-F")["Div_F_sur_ventes"], "A"),
     ("sec:investissement-stationnaire", "lv* ρ̄_K à 0 %", "0,4", lambda c: c.v(pi=0.0, cfg="C-F")["levier_courant"],
      "A"),
     ("sec:investissement-stationnaire", "lv* ρ̄_K à 2 %", "0,3114", lambda c: c.v(cfg="C-F")["levier_courant"], "A"),
     ("sec:investissement-stationnaire", "lv* ρ̄_K à 10 %", "0,1686",
      lambda c: c.v(pi=0.10, cfg="C-F")["levier_courant"], "A"),
-    ("sec:investissement-stationnaire", "distribution à 2 % (R)", "0,50480", lambda c: c.v()["distribution"], "A"),
-    ("sec:investissement-stationnaire", "distribution à 10 % (R)", "0,36359", lambda c: c.v(pi=0.10)["distribution"],
+    ("sec:investissement-stationnaire", "distribution à 2 % (R)", "0,82751", lambda c: c.v()["distribution"], "A"),
+    ("sec:investissement-stationnaire", "distribution à 10 % (R)", "0,72390", lambda c: c.v(pi=0.10)["distribution"],
      "A"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (R), %", "4,84", lambda c: c.v()["Div_F_sur_ventes"],
+    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (R), %", "22,38", lambda c: c.v()["Div_F_sur_ventes"],
      "A"),
-    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (R), %", "5,06",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (R), %", "22,60",
      lambda c: c.v(pi=0.10)["Div_F_sur_ventes"], "A"),
     ("sec:investissement-taux", "ϱ̄_L sans écart (Fisher), 2 %, %", "1,000", lambda c: c.v(cfg="C-F")["rho_L"], "A"),
     # Valeurs de `sec:investissement-taux` vérifiées à la main par `monnaie` (#93, point 3), désormais comparées.
@@ -1985,38 +2071,38 @@ VALEURS_PUBLIEES: tuple[tuple[str, str, str, object, str], ...] = (
 )
 
 VALEURS_PUBLIEES += (
-    ("sec:finances_publiques-stationnaire", "θ_G à 0 %", "0,218474", lambda c: c.v(pi=0.0)["theta_G"], "A"),
-    ("sec:finances_publiques-stationnaire", "θ_G à 2 %", "0,219573", lambda c: c.v()["theta_G"], "A"),
-    ("sec:finances_publiques-stationnaire", "θ_G à 10 %", "0,219568", lambda c: c.v(pi=0.10)["theta_G"], "A"),
-    ("sec:finances_publiques-stationnaire", "G/PIB à 0 %, %", "21,86", lambda c: c.v(pi=0.0)["G_sur_PIB"], "A"),
-    ("sec:finances_publiques-stationnaire", "T_H/PIB à 0 %, %", "21,76", lambda c: c.v(pi=0.0)["T_H_sur_PIB"], "A"),
-    ("sec:finances_publiques-stationnaire", "G/PIB à 2 %, %", "21,93", lambda c: c.v()["G_sur_PIB"], "A"),
-    ("sec:finances_publiques-stationnaire", "T_H/PIB à 2 %, %", "21,68", lambda c: c.v()["T_H_sur_PIB"], "A"),
-    ("sec:finances_publiques-stationnaire", "G/PIB à 10 %, %", "21,78", lambda c: c.v(pi=0.10)["G_sur_PIB"], "A"),
-    ("sec:finances_publiques-stationnaire", "T_H/PIB à 10 %, %", "21,54", lambda c: c.v(pi=0.10)["T_H_sur_PIB"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 0 %", "0,09884",
+    ("sec:finances_publiques-stationnaire", "θ_G à 0 %", "0,219575", lambda c: c.v(pi=0.0)["theta_G"], "A"),
+    ("sec:finances_publiques-stationnaire", "θ_G à 2 %", "0,220584", lambda c: c.v()["theta_G"], "A"),
+    ("sec:finances_publiques-stationnaire", "θ_G à 10 %", "0,220187", lambda c: c.v(pi=0.10)["theta_G"], "A"),
+    ("sec:finances_publiques-stationnaire", "G/PIB à 0 %, %", "21,98", lambda c: c.v(pi=0.0)["G_sur_PIB"], "A"),
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 0 %, %", "21,78", lambda c: c.v(pi=0.0)["T_H_sur_PIB"], "A"),
+    ("sec:finances_publiques-stationnaire", "G/PIB à 2 %, %", "22,05", lambda c: c.v()["G_sur_PIB"], "A"),
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 2 %, %", "21,71", lambda c: c.v()["T_H_sur_PIB"], "A"),
+    ("sec:finances_publiques-stationnaire", "G/PIB à 10 %, %", "21,89", lambda c: c.v(pi=0.10)["G_sur_PIB"], "A"),
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 10 %, %", "21,61", lambda c: c.v(pi=0.10)["T_H_sur_PIB"], "A"),
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 0 %", "0,20444",
      lambda c: c.v(pi=0.0)["dette_consolidee"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %", "0,25674", lambda c: c.v()["dette_consolidee"],
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %", "0,35350", lambda c: c.v()["dette_consolidee"],
      "A"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 10 %", "0,51013",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 10 %", "0,59359",
      lambda c: c.v(pi=0.10)["dette_consolidee"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4", "0,25726",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4", "0,35398",
      lambda c: c.v(na=4)["dette_consolidee"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52", "0,25654",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52", "0,35331",
      lambda c: c.v(na=52)["dette_consolidee"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, arrondie", "0,257",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, arrondie", "0,353",
      lambda c: c.v()["dette_consolidee"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 0 %", "0,11712", lambda c: c.v(pi=0.0)["dette_brute"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 2 %", "0,27564", lambda c: c.v()["dette_brute"], "A"),
-    ("sec:finances_publiques-stationnaire", "dette brute à 10 %", "0,53299", lambda c: c.v(pi=0.10)["dette_brute"],
+    ("sec:finances_publiques-stationnaire", "dette brute à 0 %", "0,22291", lambda c: c.v(pi=0.0)["dette_brute"], "A"),
+    ("sec:finances_publiques-stationnaire", "dette brute à 2 %", "0,37274", lambda c: c.v()["dette_brute"], "A"),
+    ("sec:finances_publiques-stationnaire", "dette brute à 10 %", "0,61731", lambda c: c.v(pi=0.10)["dette_brute"],
      "A"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : richesse des ménages", "0,6505",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : richesse des ménages", "0,7165",
      lambda c: c.v()["decomp_v_H"], "A"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : −crédits nets", "-0,4560",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : −crédits nets", "-0,4564",
      lambda c: c.v()["decomp_entreprises"], "A"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : fonds propres de la banque", "0,0622",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : fonds propres de la banque", "0,0934",
      lambda c: c.v()["decomp_E_Bk"], "A"),
-    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : somme", "0,2567",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : somme", "0,3535",
      lambda c: c.v()["decomp_v_H"] + c.v()["decomp_entreprises"] + c.v()["decomp_E_Bk"], "A"),
     ("sec:finances_publiques-stationnaire", "n_a(Γ̄ − 1) à 0 %, % par an", "1,9819",
      lambda c: c.v(pi=0.0)["domar_facteur"], "A"),
@@ -2024,59 +2110,59 @@ VALEURS_PUBLIEES += (
      "A"),
     ("sec:finances_publiques-stationnaire", "n_a(Γ̄ − 1) à 10 %, % par an", "11,5667",
      lambda c: c.v(pi=0.10)["domar_facteur"], "A"),
-    ("sec:finances_publiques-stationnaire", "déficit de Domar à 0 %, % du PIB", "0,1959",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 0 %, % du PIB", "0,4052",
      lambda c: c.v(pi=0.0)["deficit_i"], "A"),
-    ("sec:finances_publiques-stationnaire", "déficit de Domar à 2 %, % du PIB", "1,0185", lambda c: c.v()["deficit_i"],
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 2 %, % du PIB", "1,4023", lambda c: c.v()["deficit_i"],
      "A"),
-    ("sec:finances_publiques-stationnaire", "déficit de Domar à 10 %, % du PIB", "5,9005",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 10 %, % du PIB", "6,8659",
      lambda c: c.v(pi=0.10)["deficit_i"], "A"),
-    ("sec:finances_publiques-stationnaire", "solde primaire à 0 %, % du PIB", "-0,0971",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 0 %, % du PIB", "-0,2007",
      lambda c: c.v(pi=0.0)["primaire"], "A"),
-    ("sec:finances_publiques-stationnaire", "solde primaire à 2 %, % du PIB", "-0,2432", lambda c: c.v()["primaire"],
+    ("sec:finances_publiques-stationnaire", "solde primaire à 2 %, % du PIB", "-0,3348", lambda c: c.v()["primaire"],
      "A"),
-    ("sec:finances_publiques-stationnaire", "solde primaire à 10 %, % du PIB", "-0,2381",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 10 %, % du PIB", "-0,2770",
      lambda c: c.v(pi=0.10)["primaire"], "A"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, % du PIB", "0,1171",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, % du PIB", "0,2229",
      lambda c: c.v(pi=0.0)["interets_bruts"], "A"),
-    ("sec:finances_publiques-stationnaire", "intérêts nets à 0 %, % du PIB", "0,0988",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 0 %, % du PIB", "0,2044",
      lambda c: c.v(pi=0.0)["interets_nets"], "A"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, % du PIB", "0,8324",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, % du PIB", "1,1257",
      lambda c: c.v()["interets_bruts"], "A"),
-    ("sec:finances_publiques-stationnaire", "intérêts nets à 2 %, % du PIB", "0,7754",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 2 %, % du PIB", "1,0676",
      lambda c: c.v()["interets_nets"], "A"),
-    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, % du PIB", "5,9162",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, % du PIB", "6,8522",
      lambda c: c.v(pi=0.10)["interets_bruts"], "A"),
-    ("sec:finances_publiques-stationnaire", "intérêts nets à 10 %, % du PIB", "5,6625",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 10 %, % du PIB", "6,5888",
      lambda c: c.v(pi=0.10)["interets_nets"], "A"),
-    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 0 %", "0,6528", lambda c: c.v(pi=0.0)["YD_HS"], "A"),
-    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 2 %", "0,6505", lambda c: c.v()["YD_HS"], "A"),
-    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 10 %", "0,6462", lambda c: c.v(pi=0.10)["YD_HS"], "A"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 0 %", "0,8704", lambda c: c.v(pi=0.0)["Y_HS"], "A"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %", "0,8674", lambda c: c.v()["Y_HS"], "A"),
-    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 10 %", "0,8616", lambda c: c.v(pi=0.10)["Y_HS"], "A"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 0 %", "0,018282", lambda c: c.v(pi=0.0)["encaisse"], "A"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 2 %", "0,018904", lambda c: c.v()["encaisse"], "A"),
-    ("sec:finances_publiques-stationnaire", "encaisse à 10 %", "0,022857", lambda c: c.v(pi=0.10)["encaisse"], "A"),
-    ("sec:finances_publiques-depense", "G/PB à 0 %", "0,99467", lambda c: c.v(pi=0.0)["G_sur_PB"], "A"),
-    ("sec:finances_publiques-depense", "G/PB à 2 %", "0,96342", lambda c: c.v()["G_sur_PB"], "A"),
-    ("sec:finances_publiques-depense", "G/PB à 10 %", "0,78637", lambda c: c.v(pi=0.10)["G_sur_PB"], "A"),
-    ("sec:finances_publiques-depense", "marge de E1 à 0 %", "0,0037", lambda c: c.v(pi=0.0)["marge_E1"], "A"),
-    ("sec:finances_publiques-depense", "marge de E1 à 2 %", "0,0334", lambda c: c.v()["marge_E1"], "A"),
-    ("sec:finances_publiques-depense", "marge de E1 à 10 %", "0,2061", lambda c: c.v(pi=0.10)["marge_E1"], "A"),
-    ("sec:finances_publiques-depense", "hausse admissible à 0 %, ν_G = 1, %", "0,37",
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 0 %", "0,6533", lambda c: c.v(pi=0.0)["YD_HS"], "A"),
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 2 %", "0,6513", lambda c: c.v()["YD_HS"], "A"),
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 10 %", "0,6483", lambda c: c.v(pi=0.10)["YD_HS"], "A"),
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 0 %", "0,8710", lambda c: c.v(pi=0.0)["Y_HS"], "A"),
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %", "0,8684", lambda c: c.v()["Y_HS"], "A"),
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 10 %", "0,8645", lambda c: c.v(pi=0.10)["Y_HS"], "A"),
+    ("sec:finances_publiques-stationnaire", "encaisse à 0 %", "0,018469", lambda c: c.v(pi=0.0)["encaisse"], "A"),
+    ("sec:finances_publiques-stationnaire", "encaisse à 2 %", "0,019246", lambda c: c.v()["encaisse"], "A"),
+    ("sec:finances_publiques-stationnaire", "encaisse à 10 %", "0,023722", lambda c: c.v(pi=0.10)["encaisse"], "A"),
+    ("sec:finances_publiques-depense", "G/PB à 0 %", "0,98996", lambda c: c.v(pi=0.0)["G_sur_PB"], "A"),
+    ("sec:finances_publiques-depense", "G/PB à 2 %", "0,95142", lambda c: c.v()["G_sur_PB"], "A"),
+    ("sec:finances_publiques-depense", "G/PB à 10 %", "0,76159", lambda c: c.v(pi=0.10)["G_sur_PB"], "A"),
+    ("sec:finances_publiques-depense", "marge de E1 à 0 %", "0,0084", lambda c: c.v(pi=0.0)["marge_E1"], "A"),
+    ("sec:finances_publiques-depense", "marge de E1 à 2 %", "0,0454", lambda c: c.v()["marge_E1"], "A"),
+    ("sec:finances_publiques-depense", "marge de E1 à 10 %", "0,2311", lambda c: c.v(pi=0.10)["marge_E1"], "A"),
+    ("sec:finances_publiques-depense", "hausse admissible à 0 %, ν_G = 1, %", "0,85",
      lambda c: c.v(pi=0.0)["hausse_admissible"], "A"),
-    ("sec:finances_publiques-emission", "borne de ν_G à 0 %", "1,0959", lambda c: c.v(pi=0.0)["borne_nu_G"], "A"),
-    ("sec:finances_publiques-emission", "borne de ν_G à 2 %", "1,0633", lambda c: c.v()["borne_nu_G"], "A"),
-    ("sec:finances_publiques-emission", "borne de ν_G à 10 %", "0,8733", lambda c: c.v(pi=0.10)["borne_nu_G"], "A"),
-    ("sec:finances_publiques-emission", "retour après −5 % (approché), 0 %", "1,0485",
+    ("sec:finances_publiques-emission", "borne de ν_G à 0 %", "1,0908", lambda c: c.v(pi=0.0)["borne_nu_G"], "A"),
+    ("sec:finances_publiques-emission", "borne de ν_G à 2 %", "1,0500", lambda c: c.v()["borne_nu_G"], "A"),
+    ("sec:finances_publiques-emission", "borne de ν_G à 10 %", "0,8458", lambda c: c.v(pi=0.10)["borne_nu_G"], "A"),
+    ("sec:finances_publiques-emission", "retour après −5 % (approché), 0 %", "1,0432",
      lambda c: c.v(pi=0.0)["retour_approche"], "A"),
-    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν à ν_G = 1,1, 0 %, %", "0,38",
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν à ν_G = 1,1, 0 %, %", "0,85",
      lambda c: 100 * c.v(pi=0.0, nu=1.1)["marge_J_nu"], "A"),
-    ("sec:finances_publiques-impots", "dette consolidée, 10 % moins 2 %", "0,253",
+    ("sec:finances_publiques-impots", "dette consolidée, 10 % moins 2 %", "0,240",
      lambda c: c.v(pi=0.10)["dette_consolidee"] - c.v()["dette_consolidee"], "A"),
-    ("sec:finances_publiques-transferts", "impôt des ménages à 2 %, % du PIB", "21,68", lambda c: c.v()["T_H_sur_PIB"],
+    ("sec:finances_publiques-transferts", "impôt des ménages à 2 %, % du PIB", "21,71", lambda c: c.v()["T_H_sur_PIB"],
      "A"),
-    ("sec:finances_publiques-caisse", "dépôts des ménages / impôt du mois, environ", "36",
+    ("sec:finances_publiques-caisse", "dépôts des ménages / impôt du mois, environ", "39,6",
      lambda c: c.v()["D_H_sur_T_H"], "A"),
     ("sec:finances_publiques-restitution", "facteur d'un stock en u.m. à 10 %", "1,0638",
      lambda c: c.v(pi=0.10)["facteur_stock"], "A"),
@@ -2092,9 +2178,9 @@ VALEURS_PUBLIEES += (
     ("sec:banque_centrale-stationnaire", "r restitué à 0 %, %", "1,00", lambda c: c.v(pi=0.0)["r_restitue"], "A"),
     ("sec:banque_centrale-stationnaire", "r restitué à 2 %, %", "1,02", lambda c: c.v()["r_restitue"], "A"),
     ("sec:banque_centrale-stationnaire", "r restitué à 10 %, %", "1,10", lambda c: c.v(pi=0.10)["r_restitue"], "A"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄, % de la production par point de r̄", "-0,194",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄, % de la production par point de r̄", "-0,267",
      lambda c: c.fermeture()["dtheta_G_dr"], "A"),
-    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense", "-5,15",
+    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense", "-3,75",
      lambda c: c.fermeture()["points_r_par_point_PIB"], "A"),
     ("docs/blocs/banque_centrale.md § 2, critère 13 (b)", "taux réel exact à 0 %, %", "0,9996",
      lambda c: c.v(pi=0.0)["r_exact"], "A"),
@@ -2120,36 +2206,42 @@ VALEURS_PUBLIEES += (
      lambda c: c.v()["rendement_reel_depots"], "A"),
     ("sec:banque-stationnaire", "rendement réel des dépôts à 10 %, point", "0,10",
      lambda c: c.v(pi=0.10)["rendement_reel_depots"], "A"),
-    ("sec:banque-stationnaire", "e_Bk à 0 %", "0,08004", lambda c: c.v(pi=0.0)["e_Bk"], "A"),
-    ("sec:banque-stationnaire", "e_Bk à 2 %", "0,06220", lambda c: c.v()["e_Bk"], "A"),
-    ("sec:banque-stationnaire", "e_Bk à 10 %", "0,03344", lambda c: c.v(pi=0.10)["e_Bk"], "A"),
-    ("sec:banque-stationnaire", "crédits à 0 %", "0,80037", lambda c: c.v(pi=0.0)["credits"], "A"),
-    ("sec:banque-stationnaire", "crédits à 2 %", "0,62204", lambda c: c.v()["credits"], "A"),
-    ("sec:banque-stationnaire", "crédits à 10 %", "0,33439", lambda c: c.v(pi=0.10)["credits"], "A"),
-    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 4", "0,621423", lambda c: c.v(na=4)["credits"], "A"),
-    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 12", "0,622039", lambda c: c.v()["credits"], "A"),
-    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 52", "0,622275", lambda c: c.v(na=52)["credits"], "A"),
-    ("sec:banque-stationnaire", "dépôts des entreprises à 0 %", "0,16636", lambda c: c.v(pi=0.0)["depots_F"], "A"),
-    ("sec:banque-stationnaire", "condition d'existence à écarts nuls, 2 %", "-0,000947",
+    ("sec:banque-stationnaire", "e_Bk à 0 %", "0,12010", lambda c: c.v(pi=0.0)["e_Bk"], "A"),
+    ("sec:banque-stationnaire", "e_Bk à 2 %", "0,09338", lambda c: c.v()["e_Bk"], "A"),
+    ("sec:banque-stationnaire", "e_Bk à 10 %", "0,05027", lambda c: c.v(pi=0.10)["e_Bk"], "A"),
+    ("sec:banque-stationnaire", "crédits à 0 %", "0,80069", lambda c: c.v(pi=0.0)["credits"], "A"),
+    ("sec:banque-stationnaire", "crédits à 2 %", "0,62254", lambda c: c.v()["credits"], "A"),
+    ("sec:banque-stationnaire", "crédits à 10 %", "0,33516", lambda c: c.v(pi=0.10)["credits"], "A"),
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 4", "0,621923", lambda c: c.v(na=4)["credits"], "A"),
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 12", "0,622539", lambda c: c.v()["credits"], "A"),
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 52", "0,622775", lambda c: c.v(na=52)["credits"], "A"),
+    ("sec:banque-stationnaire", "dépôts des entreprises à 0 %", "0,16643", lambda c: c.v(pi=0.0)["depots_F"], "A"),
+    ("sec:banque-stationnaire", "condition d'existence à écarts nuls, 2 %", "-0,001421",
      lambda c: c.v(cfg="C-F")["existence_Bk"], "A"),
     ("sec:banque-stationnaire", "impôt d'inflation net à 0 %, %", "0", lambda c: c.v(pi=0.0)["impot_inflation"], "A"),
-    ("sec:banque-stationnaire", "impôt d'inflation net à 2 %, %", "-0,037", lambda c: c.v()["impot_inflation"], "A"),
-    ("sec:banque-stationnaire", "impôt d'inflation net à 10 %, %", "-0,485", lambda c: c.v(pi=0.10)["impot_inflation"],
+    ("sec:banque-stationnaire", "impôt d'inflation net à 2 %, %", "-0,041", lambda c: c.v()["impot_inflation"], "A"),
+    ("sec:banque-stationnaire", "impôt d'inflation net à 10 %, %", "-0,529", lambda c: c.v(pi=0.10)["impot_inflation"],
      "A"),
-    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 0 %, % du PIB", "0,159",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 0 %, % du PIB", "0,238",
      lambda c: c.v(pi=0.0)["domar_E_Bk"], "A"),
-    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 2 %, % du PIB", "0,247", lambda c: c.v()["domar_E_Bk"],
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 2 %, % du PIB", "0,370", lambda c: c.v()["domar_E_Bk"],
      "A"),
-    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 10 %, % du PIB", "0,387",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 10 %, % du PIB", "0,582",
      lambda c: c.v(pi=0.10)["domar_E_Bk"], "A"),
-    ("sec:banque-conditions", "couplage −ϑ lv*", "-0,04", lambda c: c.v()["couplage"], "A"),
+    ("sec:banque-conditions", "couplage −ϑ lv*", "-0,06", lambda c: c.v()["couplage"], "A"),
 )
 
 # --- Contre-épreuve : valeurs barrées reproduites sous leurs entrées d'origine ---------
 # Hors du bilan des valeurs en vigueur (revue finale, rang 8 ; décision du mainteneur du 05/10/2026, point A).
 # Catégorie B-1 : formes du bloc 7 appelées avec v_H = 0,7 et m = 0,25/12, entrées d'illustration de la
 # publication au commit 54edad8 (valeurs barrées) ; elles attribuent l'écart de la republication (B-2) à ces
-# deux entrées seules. Catégorie N : valeurs barrées calculées à un ν_G non retenu (1 ou 1,1).
+# deux entrées seules. Catégorie N : valeurs barrées calculées à un ν_G non retenu (1 ou 1,1). Les paramètres de
+# ces publications qui diffèrent des défauts actuels de `Parametres` sont rétablis par `ENTREES_D_ORIGINE`.
+ENTREES_D_ORIGINE: dict[str, float] = {
+    "mu_bar": 0.25,  # μ̄ avant la décision M34 (#92) : valeur des publications barrées
+    "vartheta": 0.10,  # ϑ avant la décision M34 (#130) : valeur des publications barrées
+    "nu_H": 1.0,  # ν_H avant la décision M34 (#62) : valeur des publications barrées
+}
 VALEURS_CONTRE_EPREUVE: tuple[tuple[str, str, str, object, str], ...] = tuple(
     ("sec:banque-stationnaire", f"illustration : {nom} à {int(round(100 * pi))} %", pub,
      (lambda c, pi=pi, cle=cle, f=f: f * c.banque(pi=pi, **ILL)[cle]), "B-1")
@@ -2213,24 +2305,24 @@ VALEURS_PUBLIEES += tuple(
     ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", f"r̄_α à π* = {pub_pi} %, %", pub,
      (lambda c, pi=pi: 100 * c.alpha()["alpha"][pi]["r_alpha"]), "D")
     for pi, pub_pi, pub in zip(PROFIL_PI, ("0", "1", "2", "3", "4", "6", "10"),
-                               ("1,632", "1,264", "1,000", "0,818", "0,706", "0,656", "1,146"), strict=True)
+                               ("1,270", "1,109", "1,000", "0,932", "0,899", "0,922", "1,278"), strict=True)
 ) + (
-    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point", "0,486",
+    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point", "-0,008",
      lambda c: -100 * c.alpha()["ecart_bornes"], "D"),
-    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point", "0,976",
+    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point", "0,379",
      lambda c: 100 * c.alpha()["ecart_profil"], "D"),
-    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point", "-0,18",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point", "-0,07",
      lambda c: 100 * c.alpha()["marche_2_3"], "D"),
     ("sec:finances_publiques-impots", "racine parasite à 0 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.0), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 2 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.02), "D"),
     ("sec:finances_publiques-impots", "racine parasite à 10 %, %", AUCUNE, lambda c: _racine_parasite(c, 0.10), "D"),
-    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,110",
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point", "0,101",
      lambda c: 100 * c.alpha()["beta_theta_G"], "D"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "0,487",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point", "0,433",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.0], "D"),
-    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "-0,434",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point", "-0,191",
      lambda c: 100 * c.alpha()["C_PIB_relatif_2"][0.10], "D"),
-    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "0,921", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point", "0,624", lambda c: 100 * c.alpha()["allocations"]["C/PIB"],
      "D"),
 )
 
@@ -2294,10 +2386,10 @@ _TAB_ETAT: tuple[tuple[str, str, float, str, tuple[str, str, str]], ...] = (
     ("capital sur production (a), en volume", "K_vol_sur_y", _NU, "Capital sur production (a), en volume",
      ("2,000", "2,000", "2,000")),
     ("capital sur production (b), au prix courant", "K_courant", _NU, "Capital sur production (b), au prix courant",
-     ("2,0009", "1,9973", "1,9836")),
+     ("2,0017", "1,9989", "1,9882")),
     ("capital sur production (c), comptable", "K_comptable", _NU, "Capital sur production (c), comptable",
-     ("2,0009", "1,5551", "0,8360")),
-    ("part salariale", "part_salariale", _NU, "Part salariale", ("0,80037", "0,79890", "0,79344")),
+     ("2,0017", "1,5563", "0,8379")),
+    ("part salariale", "part_salariale", _NU, "Part salariale", ("0,62554", "0,62465", "0,62130")),
     ("taux réel neutre, %", "rbar", _NU, "Taux réel neutre, paramètre", ("1,00", "1,00", "1,00")),
     ("taux directeur, %", "i_CB", _NU, "Taux directeur", ("1,00", "3,02", "11,10")),
     ("taux réel restitué, %", "r_restitue", _NU, "Taux réel restitué", ("1,00", "1,02", "1,10")),
@@ -2305,16 +2397,16 @@ _TAB_ETAT: tuple[tuple[str, str, float, str, tuple[str, str, str]], ...] = (
     ("inflation (glissement), %", "glissement", _NU, "Inflation", ("0", "2", "10")),
     ("hausse du prix par pas, %", "hausse_prix_pas", _NU, "dont hausse par pas", ("0", "0,16516", "0,79741")),
     ("part de la dépense publique θ_G", "theta_G", _NU, "Part de la dépense publique, résolue",
-     ("0,218474", "0,219573", "0,219568")),
-    ("taux d'investissement, %", "I_sur_PIB", _NU, "Taux d'investissement", ("13,970", "13,945", "13,849")),
-    ("masse monétaire", "masse_monetaire", _NU, "Masse monétaire", ("0,81917", "0,81658", "0,81108")),
-    ("dette consolidée", "dette_consolidee", _NU, "Dette consolidée", ("0,09884", "0,25674", "0,51013")),
-    ("dette brute", "dette_brute", _NU, "Dette brute", ("0,11987", "0,27849", "0,53645")),
+     ("0,219575", "0,220584", "0,220187")),
+    ("taux d'investissement, %", "I_sur_PIB", _NU, "Taux d'investissement", ("13,976", "13,956", "13,881")),
+    ("masse monétaire", "masse_monetaire", _NU, "Masse monétaire", ("0,88503", "0,88265", "0,87848")),
+    ("dette consolidée", "dette_consolidee", _NU, "Dette consolidée", ("0,20444", "0,35350", "0,59359")),
+    ("dette brute", "dette_brute", _NU, "Dette brute", ("0,22568", "0,37564", "0,62091")),
     ("dette brute, ν_G = 1", "dette_brute", 1.0, "Dette brute, $\\nu_G = 1$ (référence hors domaine)",
-     ("0,11712", "0,27564", "0,53299")),
-    ("dette brute affichée, % du PIB", "dette_brute_affichee", _NU, "Dette brute affichée", ("12,1", "28,5", "57,1")),
-    ("déficit public (Domar), % du PIB", "deficit_i", _NU, "Déficit public (Domar)", ("0,1959", "1,0185", "5,9005")),
-    ("solde primaire, % du PIB", "primaire", _NU, "Solde primaire", ("-0,0971", "-0,2432", "-0,2381")),
+     ("0,22291", "0,37274", "0,61731")),
+    ("dette brute affichée, % du PIB", "dette_brute_affichee", _NU, "Dette brute affichée", ("22,8", "38,4", "66,0")),
+    ("déficit public (Domar), % du PIB", "deficit_i", _NU, "Déficit public (Domar)", ("0,4052", "1,4023", "6,8659")),
+    ("solde primaire, % du PIB", "primaire", _NU, "Solde primaire", ("-0,2007", "-0,3348", "-0,2770")),
 )
 
 
@@ -2322,168 +2414,171 @@ VALEURS_PUBLIEES += tuple(
     ("sec:banque-stationnaire", f"{nom} à {round(100 * pi)} %{suffixe}", pub,
      (lambda c, pi=pi, cle=cle, f=f, nu=nu: f * c.banque(pi=pi, nu=nu)[cle]), "B-2")
     for (nom, cle, f, nu, suffixe), pubs in (
-        (("masse monétaire M", "M", 1, _NU, ""), ("0,81917", "0,81658", "0,81108")),
-        (("titres de la banque", "b_Bk", 1, _NU, ", ν_G = 1,15"), ("0,11987", "0,27849", "0,53645")),
-        (("titres de la banque", "b_Bk", 1, 1.0, ", ν_G = 1"), ("0,11712", "0,27564", "0,53299")),
-        (("refinancement", "refinancement", 1, _NU, ", ν_G = 1,15"), ("0,021027", "0,021748", "0,026322")),
-        (("refinancement", "refinancement", 1, 1.0, ", ν_G = 1"), ("0,018282", "0,018904", "0,022857")),
-        (("dette consolidée c", "c", 1, _NU, ""), ("0,09884", "0,25674", "0,51013")),
-        (("résultat Π^Bk/PIB", "Pi_Bk", 0.01, _NU, ""), ("0,02500", "0,02249", "0,01851")),
-        (("rendement des fonds propres, %", "roe", 1, _NU, ""), ("31,23", "36,15", "55,36")),
-        (("part distribuée", "part_distribuee", 1, _NU, ""), ("0,93655", "0,89025", "0,79105")),
-        (("part des titres dans l'actif", "part_titres", 1, _NU, ", ν_G = 1,15"), ("0,1303", "0,3093", "0,6160")),
-        (("part des titres dans l'actif", "part_titres", 1, 1.0, ", ν_G = 1"), ("0,1277", "0,3071", "0,6145")),
-        (("marge nette d'intérêt, %", "marge_nette", 1, _NU, ", ν_G = 1,15"), ("2,717", "2,497", "2,126")),
-        (("marge nette d'intérêt, %", "marge_nette", 1, 1.0, ", ν_G = 1"), ("2,725", "2,505", "2,134")),
-        (("marge d'existence, par an", "existence", 1, _NU, ""), ("0,0293", "0,0322", "0,0438")),
-        (("canal rentier, % de YD par point", "canal_rentier", 1, _NU, ""), ("0,151", "0,387", "0,721")),
+        (("masse monétaire M", "M", 1, _NU, ""), ("0,88503", "0,88265", "0,87848")),
+        (("titres de la banque", "b_Bk", 1, _NU, ", ν_G = 1,15"), ("0,22568", "0,37564", "0,62091")),
+        (("titres de la banque", "b_Bk", 1, 1.0, ", ν_G = 1"), ("0,22291", "0,37274", "0,61731")),
+        (("refinancement", "refinancement", 1, _NU, ", ν_G = 1,15"), ("0,021242", "0,022141", "0,027318")),
+        (("refinancement", "refinancement", 1, 1.0, ", ν_G = 1"), ("0,018469", "0,019246", "0,023722")),
+        (("dette consolidée c", "c", 1, _NU, ""), ("0,20444", "0,35350", "0,59359")),
+        (("résultat Π^Bk/PIB", "Pi_Bk", 0.01, _NU, ""), ("0,02607", "0,02410", "0,02107")),
+        (("rendement des fonds propres (brut, nominal, sans charges), %", "roe", 1, _NU, ""),
+         ("21,70", "25,81", "41,91")),
+        (("part distribuée", "part_distribuee", 1, _NU, ""), ("0,90868", "0,84627", "0,72399")),
+        (("part des titres dans l'actif", "part_titres", 1, _NU, ", ν_G = 1,15"), ("0,2199", "0,3763", "0,6494")),
+        (("part des titres dans l'actif", "part_titres", 1, 1.0, ", ν_G = 1"), ("0,2178", "0,3745", "0,6481")),
+        (("marge nette d'intérêt (Π^Bk/actif), %", "marge_nette", 1, _NU, ", ν_G = 1,15"),
+         ("2,540", "2,414", "2,204")),
+        (("marge nette d'intérêt (Π^Bk/actif), %", "marge_nette", 1, 1.0, ", ν_G = 1"), ("2,546", "2,421", "2,212")),
+        (("marge d'existence, par an", "existence", 1, _NU, ""), ("0,0296", "0,0328", "0,0455")),
+        (("canal rentier, % de YD par point", "canal_rentier", 1, _NU, ""), ("0,313", "0,531", "0,828")),
     )
     for pi, pub in zip(POINTS_PI, pubs, strict=True)
 ) + tuple(
-    ("sec:banque-stationnaire", f"rendement des fonds propres, variante basse, {round(100 * pi)} %, %", pub,
+    ("sec:banque-stationnaire",
+     f"rendement des fonds propres (brut, nominal, sans charges), variante basse, {round(100 * pi)} %, %", pub,
      (lambda c, pi=pi: c.banque(pi=pi, nu=_NU, varpi_L=0.004, varpi_D=0.00214)["roe"]), "B-2")
-    for pi, pub in zip(POINTS_PI, ("7,19", "9,83", "20,29"), strict=True)
+    for pi, pub in zip(POINTS_PI, ("5,24", "7,71", "17,51"), strict=True)
 ) + tuple(
     ("sec:banque-stationnaire", f"part distribuée à 2 %, n_a = {na}", pub,
      (lambda c, na=na: c.banque(na=na, nu=_NU)["part_distribuee"]), "B-2")
-    for na, pub in zip(POINTS_NA, ("0,889928", "0,890253", "0,890378"), strict=True)
+    for na, pub in zip(POINTS_NA, ("0,845815", "0,846271", "0,846445"), strict=True)
 ) + (
     ("sec:banque-stationnaire", "multiplicateur du refinancement à ν_G = 1,15, 2 %", "1,1504",
      lambda c: c.v(nu=_NU)["multiplicateur_nu"], "A"),
     ("sec:banque-stationnaire", "a = i_CB/(Γ̄ n_a) à 2 %", "0,0025084", lambda c: c.v(nu=_NU)["a"], "A"),
-    ("sec:banque-stationnaire", "richesse des ménages à 2 %", "0,6505", lambda c: c.v(nu=_NU)["decomp_v_H"], "A"),
-    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1,15", "0,25797",
+    ("sec:banque-stationnaire", "richesse des ménages à 2 %", "0,7165", lambda c: c.v(nu=_NU)["decomp_v_H"], "A"),
+    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1,15", "0,24527",
      lambda c: c.banque(pi=0.10, nu=_NU)["b_Bk"] - c.banque(nu=_NU)["b_Bk"], "B-2"),
-    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1", "0,25734",
+    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1", "0,24457",
      lambda c: c.banque(pi=0.10, nu=1.0)["b_Bk"] - c.banque(nu=1.0)["b_Bk"], "B-2"),
-    ("sec:banque-stationnaire", "dette consolidée de 2 à 10 %", "0,25339",
+    ("sec:banque-stationnaire", "dette consolidée de 2 à 10 %", "0,24009",
      lambda c: c.banque(pi=0.10, nu=_NU)["c"] - c.banque(nu=_NU)["c"], "B-2"),
     ("sec:banque-stationnaire", "dont entreprises (d_F − l), 2 à 10 %", "0,2865",
      lambda c: ((c.banque(pi=0.10, nu=_NU)["d_F"] - c.banque(pi=0.10, nu=_NU)["l"])
                 - (c.banque(nu=_NU)["d_F"] - c.banque(nu=_NU)["l"])), "B-2"),
-    ("sec:banque-stationnaire", "dont fonds propres (ϑ Δl), 2 à 10 %", "-0,0288",
+    ("sec:banque-stationnaire", "dont fonds propres (ϑ Δl), 2 à 10 %", "-0,0431",
      lambda c: c.banque(pi=0.10, nu=_NU)["e_Bk"] - c.banque(nu=_NU)["e_Bk"], "B-2"),
-    ("sec:banque-stationnaire", "dont richesse des ménages, 2 à 10 %", "-0,0044",
+    ("sec:banque-stationnaire", "dont richesse des ménages, 2 à 10 %", "-0,0033",
      lambda c: c.v(pi=0.10, nu=_NU)["decomp_v_H"] - c.v(nu=_NU)["decomp_v_H"], "A"),
-    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1,15", "0,0046",
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1,15", "0,0052",
      lambda c: c.v(pi=0.10, nu=_NU)["encaisse"] - c.v(nu=_NU)["encaisse"], "A"),
-    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1", "0,0040",
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1", "0,0045",
      lambda c: c.v(pi=0.10)["encaisse"] - c.v()["encaisse"], "A"),
-    ("sec:banque-stationnaire", "part des intérêts des dépôts, 2 %, %", "253,4",
+    ("sec:banque-stationnaire", "part des intérêts des dépôts, 2 %, %", "202,7",
      lambda c: c.banque(nu=_NU)["part_v_H"], "B-2"),
-    ("sec:banque-stationnaire", "part des dividendes des entreprises, 2 %, %", "-177,6",
+    ("sec:banque-stationnaire", "part des dividendes des entreprises, 2 %, %", "-129,1",
      lambda c: c.banque(nu=_NU)["part_entreprises"], "B-2"),
-    ("sec:banque-stationnaire", "part du dividende de la banque, 2 %, %", "24,2",
+    ("sec:banque-stationnaire", "part du dividende de la banque, 2 %, %", "26,4",
      lambda c: c.banque(nu=_NU)["part_E_Bk"], "B-2"),
-    ("sec:banque-resultat", "saut C29 au tour n, 2 %, %", "11,42", lambda c: c.banque(nu=_NU)["saut_C29"], "B-2"),
-    ("sec:banque-resultat", "saut C29 ensuite, 2 %, %", "2,77", lambda c: c.banque(nu=_NU)["saut_C29_suite"],
+    ("sec:banque-resultat", "saut C29 au tour n, 2 %, %", "14,67", lambda c: c.banque(nu=_NU)["saut_C29"], "B-2"),
+    ("sec:banque-resultat", "saut C29 ensuite, 2 %, %", "3,88", lambda c: c.banque(nu=_NU)["saut_C29_suite"],
      "B-2"),
-    ("sec:banque-conditions", "(d2), 2 %, point", "1,26", lambda c: c.banque(nu=_NU)["d2"], "B-2"),
+    ("sec:banque-conditions", "(d2), 2 %, point", "1,23", lambda c: c.banque(nu=_NU)["d2"], "B-2"),
 ) + tuple(
     ("sec:banque-restitution", f"{nom} restitué(e) à {round(100 * pi)} %", pub,
      (lambda c, pi=pi, cle=cle: _restitue(c, pi, c.banque(pi=pi, nu=_NU)[cle])), "B-2")
     for (nom, cle), pubs in (
-        (("masse monétaire", "M"), ("0,83423", "0,86279")),
-        (("refinancement", "refinancement"), ("0,02222", "0,02800")),
-        (("titres de la banque", "b_Bk"), ("0,28451", "0,57066")),
+        (("masse monétaire", "M"), ("0,90174", "0,93448")),
+        (("refinancement", "refinancement"), ("0,02262", "0,02906")),
+        (("titres de la banque", "b_Bk"), ("0,38376", "0,66049")),
     )
     for pi, pub in zip((0.02, 0.10), pubs, strict=True)
 ) + tuple(
     ("sec:banque_centrale-restitution", f"résultat de la banque centrale à {round(100 * pi)} %{suffixe}, % du PIB",
      pub, (lambda c, pi=pi, nu=nu: c.v(pi=pi, nu=nu)["Pi_CB"]), "A")
-    for nu, suffixe, pubs in ((_NU, ", ν_G = 1,15", ("0,0210", "0,0657", "0,2922")),
-                              (1.0, ", ν_G = 1", ("0,0183", "0,0571", "0,2537")))
+    for nu, suffixe, pubs in ((_NU, ", ν_G = 1,15", ("0,0212", "0,0669", "0,3032")),
+                              (1.0, ", ν_G = 1", ("0,0185", "0,0581", "0,2633")))
     for pi, pub in zip(POINTS_PI, pubs, strict=True)
 ) + tuple(
     ("sec:banque_centrale-restitution", f"refinancement restitué à {round(100 * pi)} %", pub,
      (lambda c, pi=pi: _restitue(c, pi, c.v(pi=pi, nu=_NU)["refinancement"])), "A")
-    for pi, pub in zip(POINTS_PI, ("0,02125", "0,02222", "0,02800"), strict=True)
+    for pi, pub in zip(POINTS_PI, ("0,02147", "0,02262", "0,02906"), strict=True)
 ) + (
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 0 %, point par point", "-0,073",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 0 %, point par point", "-0,151",
      lambda c: sensibilite_fermeture(c.par(pi=0.0, nu=c.nu_g_retenu))["dtheta_G_dr"], "A"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 10 %, point par point", "-0,421",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 10 %, point par point", "-0,488",
      lambda c: sensibilite_fermeture(c.par(pi=0.10, nu=c.nu_g_retenu))["dtheta_G_dr"], "A"),
     ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 1, ζ = 4, point par point", "0,160",
      lambda c: _derivee_norme_tenue(c, 1.0, 4.0), "A"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 1, ζ = 8, point par point", "0,321",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 1, ζ = 8, point par point", "0,320",
      lambda c: _derivee_norme_tenue(c, 1.0, 8.0), "A"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 4, point par point", "-0,034",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 4, point par point", "-0,107",
      lambda c: _derivee_norme_tenue(c, 0.0, 4.0), "A"),
-    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 8, point par point", "0,127",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 8, point par point", "0,053",
      lambda c: _derivee_norme_tenue(c, 0.0, 8.0), "A"),
     ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 4, point",
      "+0,157", lambda c: _hausse_d_un_point(c, 1.0, 4.0), "A"),
     ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 1, ζ = 8, point",
      "+0,308", lambda c: _hausse_d_un_point(c, 1.0, 8.0), "A"),
     ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 4, point",
-     "-0,058", lambda c: _hausse_d_un_point(c, 0.0, 4.0), "A"),
+     "-0,131", lambda c: _hausse_d_un_point(c, 0.0, 4.0), "A"),
     ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 8, point",
-     "+0,074", lambda c: _hausse_d_un_point(c, 0.0, 8.0), "A"),
-    ("sec:banque_centrale-stationnaire", "L^CB_0 à 2 %, ν_G = 1,15, u.m.", "0,248264",
+     "0,001", lambda c: _hausse_d_un_point(c, 0.0, 8.0), "A"),
+    ("sec:banque_centrale-stationnaire", "L^CB_0 à 2 %, ν_G = 1,15, u.m.", "0,252554",
      lambda c: ouverture(c.etat(nu=_NU), c.par(nu=_NU))["L_CB"], "A"),
-    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 4), point", "0,632",
+    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 8), point", "0,278",
      lambda c: 100 * c.alpha()["delta_r_alpha"], "D"),
-    ("sec:banque_centrale-conditions", "(α) : écart de C/Y_o, point", "0,633",
+    ("sec:banque_centrale-conditions", "(α) : écart de C/Y_o, point", "0,854",
      lambda c: 100 * c.alpha()["allocations"]["C/Y_o"], "D"),
-    ("sec:banque_centrale-conditions", "(α) : écart de ti, point", "0,186",
+    ("sec:banque_centrale-conditions", "(α) : écart de ti, point", "0,257",
      lambda c: 100 * c.alpha()["allocations"]["ti"], "D"),
-    ("sec:banque_centrale-conditions", "(α) : écart de tu, point", "2,178",
+    ("sec:banque_centrale-conditions", "(α) : écart de tu, point", "2,003",
      lambda c: 100 * c.alpha()["allocations"]["tu"], "D"),
-    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point", "1,304", lambda c: _delta_r_alpha(c, 2.0), "D"),
-    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point", "0,297", lambda c: _delta_r_alpha(c, 8.0), "D"),
-    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point", "0,1428",
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point", "1,197", lambda c: _delta_r_alpha(c, 2.0), "D"),
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point", "0,278", lambda c: _delta_r_alpha(c, 8.0), "D"),
+    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point", "0,1614",
      lambda c: _delta_r_alpha(c, 68.0), "D"),
-    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point", "-0,38",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point", "-0,33",
      lambda c: 100 * (c.r_alpha(0.03, 2.0) - c.r_alpha(0.02, 2.0)), "D"),
-    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point", "-0,08",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point", "-0,07",
      lambda c: 100 * (c.r_alpha(0.03, 8.0) - c.r_alpha(0.02, 8.0)), "D"),
     ("sec:banque_centrale-conditions", "canal des écarts nominaux sur r̄_α(10 %) − r̄_α(0), point", "0,182",
      lambda c: _canal_ecarts_nominaux(c, 4.0), "D"),
-    ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %", "0,8185",
+    ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %", "0,8451",
      lambda c: 100 * c.r_alpha(0.03, 4.0), "D"),
-    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %", "0,9188", lambda c: 100 * c.r_alpha(0.03, 8.0), "D"),
+    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %", "0,9320", lambda c: 100 * c.r_alpha(0.03, 8.0), "D"),
 ) + tuple(
     ("sec:finances_publiques-stationnaire", f"{nom} à {round(100 * pi)} %, ν_G = 1,15{unite}", pub,
      (lambda c, pi=pi, cle=cle: c.v(pi=pi, nu=_NU)[cle]), "A")
     for (nom, cle, unite), pubs in (
-        (("dette brute", "dette_brute", ""), ("0,11987", "0,27849", "0,53645")),
-        (("intérêts bruts", "interets_bruts", ", % du PIB"), ("0,1199", "0,8410", "5,9546")),
-        (("encaisse", "encaisse", ""), ("0,021027", "0,021748", "0,026322")),
+        (("dette brute", "dette_brute", ""), ("0,22568", "0,37564", "0,62091")),
+        (("intérêts bruts", "interets_bruts", ", % du PIB"), ("0,2257", "1,1344", "6,8921")),
+        (("encaisse", "encaisse", ""), ("0,021242", "0,022141", "0,027318")),
     )
     for pi, pub in zip(POINTS_PI, pubs, strict=True)
 ) + (
-    ("sec:finances_publiques-transferts", "charge brute à 2 %, ν_G = 1,15, % du PIB", "0,84",
+    ("sec:finances_publiques-transferts", "charge brute à 2 %, ν_G = 1,15, % du PIB", "1,13",
      lambda c: c.v(nu=_NU)["interets_bruts"], "A"),
-    ("sec:finances_publiques-restitution", "dette brute affichée à 2 %, ν_G = 1,15, % du PIB", "28,5",
+    ("sec:finances_publiques-restitution", "dette brute affichée à 2 %, ν_G = 1,15, % du PIB", "38,4",
      lambda c: c.v(nu=_NU)["dette_brute_affichee"], "A"),
-    ("sec:finances_publiques-restitution", "dette brute affichée à 10 %, ν_G = 1,15, % du PIB", "57,1",
+    ("sec:finances_publiques-restitution", "dette brute affichée à 10 %, ν_G = 1,15, % du PIB", "66,0",
      lambda c: c.v(pi=0.10, nu=_NU)["dette_brute_affichee"], "A"),
-    ("sec:finances_publiques-restitution", "charge brute à 2 %, ν_G = 1,15, % du PIB", "0,8410",
+    ("sec:finances_publiques-restitution", "charge brute à 2 %, ν_G = 1,15, % du PIB", "1,1344",
      lambda c: c.v(nu=_NU)["interets_bruts"], "A"),
-    ("sec:finances_publiques-restitution", "charge brute à 10 %, ν_G = 1,15, % du PIB", "5,9546",
+    ("sec:finances_publiques-restitution", "charge brute à 10 %, ν_G = 1,15, % du PIB", "6,8921",
      lambda c: c.v(pi=0.10, nu=_NU)["interets_bruts"], "A"),
 ) + tuple(
     ("sec:finances_publiques-emission", f"ν_G,min exact à {round(100 * pi)} %", pub,
      (lambda c, pi=pi: c.v(pi=pi, nu=_NU)["nu_G_min"]), "A")
-    for pi, pub in zip(POINTS_PI, ("1,0959", "1,0631", "0,8744"), strict=True)
+    for pi, pub in zip(POINTS_PI, ("1,0907", "1,0499", "0,8470"), strict=True)
 ) + tuple(
     ("sec:finances_publiques-emission", f"hausse admissible à {round(100 * pi)} %, ν_G = 1,15, %", pub,
      (lambda c, pi=pi: c.v(pi=pi, nu=_NU)["hausse_admissible"]), "A")
-    for pi, pub in zip(POINTS_PI, ("15,44", "19,02", "45,05"), strict=True)
+    for pi, pub in zip(POINTS_PI, ("15,99", "20,52", "49,77"), strict=True)
 ) + (
-    ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)", "1,0975",
+    ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)", "1,0923",
      lambda c: c.v(pi=0.0, na=4, nu=_NU)["nu_G_min"], "A"),
     ("sec:finances_publiques-emission ; tab:calibration", "ν_G minimal pour la marge J-ν (n_a = 4, 0 %)",
-     "1,1313", lambda c: c.v(pi=0.0, na=4, nu=_NU)["nu_G_J"], "A"),
-    ("sec:finances_publiques-emission", "marge J-ν au pire point à ν_G = 1,1, %", "0,23",
+     "1,1260", lambda c: c.v(pi=0.0, na=4, nu=_NU)["nu_G_J"], "A"),
+    ("sec:finances_publiques-emission", "marge J-ν au pire point à ν_G = 1,1, %", "0,70",
      lambda c: 100 * c.v(pi=0.0, na=4, nu=1.1)["marge_J_nu"], "A"),
-    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν au pire point à ν_G = 1,15", "0,0458",
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν au pire point à ν_G = 1,15", "0,0503",
      lambda c: c.v(pi=0.0, na=4, nu=_NU)["marge_J_nu"], "A"),
 ) + tuple(
     ("fiche 9 § 3.C ; § 9.6", f"dette consolidée à {round(100 * pi)} %, n_a = {na}", pub,
      (lambda c, pi=pi, na=na: c.v(pi=pi, na=na, nu=_NU)["dette_consolidee"]), "A")
-    for (pi, na), pub in (((0.0, 4), "0,09880"), ((0.10, 4), "0,51172"), ((0.0, 52), "0,09886"),
-                          ((0.10, 52), "0,50952"))
+    for (pi, na), pub in (((0.0, 4), "0,20440"), ((0.10, 4), "0,59499"), ((0.0, 52), "0,20446"),
+                          ((0.10, 52), "0,59305"))
 ) + tuple(
     ("tab:etat-stationnaire", f"{nom} à {round(100 * pi)} %", pub,
      (lambda c, pi=pi, cle=cle, nu=nu: c.v(pi=pi, nu=nu)[cle]), "A")
@@ -2750,7 +2845,9 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
         "reference_hors_domaine": hors_reference,
         "niveaux": niveaux, "propositions": propositions, "republication": republication,
         "fermeture": calc.fermeture(), "superneutralite": calc.alpha(), "publiees": table_publiees(calc),
-        "historique": table_historique(calc), "contre_epreuve": table_publiees(calc, VALEURS_CONTRE_EPREUVE),
+        "historique": table_historique(calc),
+        "contre_epreuve": table_publiees(Calculs(replace(base, **ENTREES_D_ORIGINE), calc.nu_g_retenu),
+                                         VALEURS_CONTRE_EPREUVE),
         "cf": {pi: calc.v(pi, 12, 1.0, "C-F") for pi in POINTS_PI},
     }
 

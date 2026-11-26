@@ -72,9 +72,17 @@ ETA_R = Parametre(
             lambda x: 0.0 <= x <= 20.0))
 
 ZETA = Parametre(
-    "zeta", "ζ", 4.0, "sans dimension",
-    "M28 ; à calibrer (4 à 8), valeur du script ; par unité de taux réel annuel, sans "
-    "conversion (élasticité de niveau, non une vitesse)",
+    "zeta", "ζ", 8.0, "sans dimension",
+    "R. Klump, P. McAdam et A. Willman, « The normalized CES production function: theory and "
+    "empirics », BCE, Working Paper Series n° 1294, février 2011, tableau 2, p. 30, lu le "
+    "16/11/2026 : élasticité de substitution de la zone euro 0,7 (1970-2003) et 0,95-1,05 "
+    "(1970-1997), « generally below unity » ; S. Gilchrist et E. Zakrajšek, « Investment and the "
+    "Cost of Capital: New Evidence from the Corporate Bond Market », NBER Working Paper 13174, "
+    "juin 2007, p. 21, lu le 16/11/2026 : firmes américaines émettrices d'obligations (zone : "
+    "États-Unis ; fenêtre : non relevée par la fiche), élasticité de long terme du capital au coût "
+    "d'usage égale à 1 ; fourchette lue de σ de 0,5 à 1,0, niveau contesté ; ζ = 8 ⇒ σ ≈ 0,64 sous "
+    "ζ = σ/(ϱ̄_L + δ) (hypothèse) ; tab:calibration ; décision M34 ; M28 ; par unité de taux "
+    "réel annuel, sans conversion (élasticité de niveau, non une vitesse)",
     ("eq:investissement-utilisation-visee",),
     domaine("0 ≤ ζ ≤ 20 (sec:investissement-conditions ; borne haute P139)",
             lambda x: 0.0 <= x <= 20.0))

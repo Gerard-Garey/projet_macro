@@ -28,14 +28,17 @@ Réaffirmés avec le bloc 9 réel (P162) : « Délais » des fiches 5 et 6, sign
 chaîne E3, E6, E5 → H6, F3.
 
 Publiés sans verdict (lignes (b)) : marge de caisse (h_max), retour après −5 % à n_a = 52 (appel
-direct, critère 11), θ_H aux deux sens (C52), temps de doublement sous φ = 0 (C62 : choc de 1 %,
-F11, et régime linéaire, décision du mainteneur du 15/11/2026), marge de
+direct, critère 11), θ_H aux deux sens (C52), racine dominante et temps de doublement sous φ = 0
+(C62 : choc de 1 %, F11, et régime linéaire, décision du mainteneur du 15/11/2026 ; racine
+identifiée sur le moteur, maquette en regard, #166), marge de
 `sec:finances_publiques-caisse`. Aucune mesure ici ne vaut résultat final (J3-e).
 """
 
 import dataclasses
 import math
+from typing import NamedTuple
 
+import numpy as np
 import pytest
 
 from nations.blocs import finances_publiques as bloc_9
@@ -1283,7 +1286,8 @@ def _sous_phi_nul(socle, sentier):
 
 def _ecarts_de_taux_sous_phi_nul(socle, sentier, facteur, nb_pas):
     """Choc θ_G × `facteur` aux tours 1 à 12 contre un contrôle apparié, tous deux sous φ = 0 :
-    (|Δi_CB| par pas sur les pas relevés de la trajectoire choquée, arrêt publié)."""
+    (Δi_CB signé par pas, choqué moins contrôle, sur les pas relevés de la trajectoire choquée,
+    arrêt publié)."""
     tables = _sous_phi_nul(socle, sentier)
     _, c = derouler(socle, sentier, nb_pas, parametres=tables)
     s = Releve()
@@ -1295,77 +1299,180 @@ def _ecarts_de_taux_sous_phi_nul(socle, sentier, facteur, nb_pas):
         # Divergence de la boucle sous φ = 0 (régime explosif déclaré, `sec:finances_publiques-
         # impots`) : la trajectoire choquée sort d'un domaine ; fait publié, sans verdict.
         arret = f"arrêt au pas {len(s.pas)} : {refus}"
-    return [abs(a["variables"]["i_CB"] - b["variables"]["i_CB"])
+    return [b["variables"]["i_CB"] - a["variables"]["i_CB"]
             for a, b in zip(c.pas, s.pas)], arret
 
 
+# Identification de la racine dominante sur la série Δi_CB du moteur (#166 ; critère des tests C62
+# précisé avant l'essai, décision M34, feuille de route § 1) : prédiction linéaire (méthode de
+# Prony), x_t = a_1 x_{t−1} + a_2 x_{t−2} ajusté par moindres carrés, racines de
+# z² − a_1 z − a_2. Elle remplace le rapport de maxima sur des fenêtres, qui suppose une racine
+# dominante réelle et mesure la phase d'une paire complexe lente, non son module
+# (`docs/blocs/calibration.md` § 3.13.2). Fenêtre : seconde moitié des pas où |Δi_CB| n'a pas
+# crû de plus de `CROISSANCE_LINEAIRE` fois son maximum des `PAS_D_AMPLITUDE` premiers pas (choc
+# et suites immédiates), pour rester dans le régime linéaire et laisser s'éteindre les racines
+# dominées. Ordre 2 et facteur 30, mesurés à ζ = 8 sur la série du choc de 1e−6, à l'état E1
+# (`8df010b` : ϑ = 0,10, ν_H = 1, λ_w = 1) : à π* = 10 %, la racine identifiée vaut 1,0096618 au
+# facteur 30 et reste à 3e−6 près jusqu'au facteur 200 (1,0096651, max |Δi_CB| de la fenêtre
+# 9,4e−5) ; au facteur 300, l'harmonique de la non-linéarité (≈ λ²) l'emporte (1,0155), et 1,0203
+# au facteur 1 000 : marge d'environ ×6,7 ; à π* = 2 %, la fenêtre n'atteint aucun de ces facteurs
+# sur 2 700 pas (1,0000351 partout). Remesuré à la table T1 (rang 8 de la calibration, #166) : à
+# π* = 10 %, 1,0082166 au facteur 30 (pas 270 à 540), 1,0082170 à 100, 1,0082175 à 200, 1,0082180
+# à 300 (max |Δi_CB| de la fenêtre 6,5e−5), puis 1,01858 au facteur 1 000 (pas 484 à 968) : marge
+# d'environ ×10 ; à π* = 2 %, aucun facteur atteint sur 2 700 pas (1,0008907 partout).
+ORDRE_PRONY = 2
+PAS_D_AMPLITUDE = 24
+CROISSANCE_LINEAIRE = 30.0
+PAS_MINIMAL_DE_LA_FENETRE = 60
+
+
+class Identification(NamedTuple):
+    """Résultat de `racine_dominante` : racine (None si aucune), fenêtre [debut ; fin[, résidu
+    relatif de l'ajustement, motif du refus (None si une racine est identifiée)."""
+
+    racine: complex | None
+    debut: int | None
+    fin: int | None
+    residu: float | None
+    motif: str | None
+
+
+def _sans_racine(motif):
+    return Identification(None, None, None, None, motif)
+
+
+def racine_dominante(ecarts):
+    """Racine dominante de la série signée `ecarts` (Prony, ordre 2, fenêtre ci-dessus), de plus
+    grand module et d'argument ≥ 0. Aucune racine, avec son motif, si la série compte moins de
+    `PAS_D_AMPLITUDE` pas, si l'amplitude de référence est nulle ou non finie, si la fenêtre
+    compte moins de `PAS_MINIMAL_DE_LA_FENETRE` pas, ou si son maximum est nul ou non fini."""
+    x = np.asarray(ecarts, dtype=float)
+    if len(x) < PAS_D_AMPLITUDE:
+        return _sans_racine(f"série de {len(x)} pas, moins de {PAS_D_AMPLITUDE}")
+    reference = float(np.max(np.abs(x[:PAS_D_AMPLITUDE])))
+    if not (math.isfinite(reference) and reference > 0.0):
+        return _sans_racine(f"amplitude de référence des {PAS_D_AMPLITUDE} premiers pas nulle ou "
+                            f"non finie ({reference!r})")
+    au_dela = np.flatnonzero(~(np.abs(x) <= CROISSANCE_LINEAIRE * reference))
+    fin = int(au_dela[0]) if au_dela.size else len(x)
+    debut = fin // 2
+    if fin - debut < PAS_MINIMAL_DE_LA_FENETRE:
+        return _sans_racine(f"fenêtre de {fin - debut} pas (pas {debut} à {fin - 1}), moins de "
+                            f"{PAS_MINIMAL_DE_LA_FENETRE}")
+    echelle = float(np.max(np.abs(x[debut:fin])))
+    if not (math.isfinite(echelle) and echelle > 0.0):
+        return _sans_racine(f"maximum de la fenêtre nul ou non fini ({echelle!r})")
+    serie = x[debut:fin] / echelle
+    regresseurs = np.column_stack([serie[ORDRE_PRONY - j - 1:len(serie) - j - 1]
+                                   for j in range(ORDRE_PRONY)])
+    cible = serie[ORDRE_PRONY:]
+    a, *_ = np.linalg.lstsq(regresseurs, cible, rcond=None)
+    residu = float(np.linalg.norm(cible - regresseurs @ a) / np.linalg.norm(cible))
+    racine = complex(max(np.roots(np.concatenate([[1.0], -a])), key=abs))
+    return Identification(complex(racine.real, abs(racine.imag)), debut, fin, residu, None)
+
+
+def test_racine_dominante_sur_des_series_synthetiques():
+    """`racine_dominante` (#166), sur des séries de racines connues :
+    - une paire complexe lente de période plus longue que la fenêtre (1,0001 ∠ ±0,2°, avec une
+      racine dominée de 0,99) et une racine réelle explosive (1,01, avec 0,998) sont retrouvées
+      à 1e−8 sur le module et la partie imaginaire ;
+    - λᵗ + ε λ²ᵗ + 0,998ᵗ (harmonique quadratique, λ = 1,01) : la fenêtre s'arrête quand |x| a
+      crû de 30 fois ; à ε = 1e−6, l'harmonique y reste petite et λ est retrouvée à 1e−5 près
+      (mesuré : 1,0100011) ; à ε = 1e−2, elle déplace la racine identifiée de plus de 5e−3 vers
+      λ² (mesuré : 1,0178), limite de la méthode hors du régime linéaire ;
+    - aucune racine, motif à l'appui, pour une série vide ou trop courte, une amplitude de
+      référence nulle ou non finie, une fenêtre trop courte (croissance rapide, ou pas non fini
+      qui l'arrête), un maximum de fenêtre nul."""
+    t = np.arange(NB_PAS_LINEAIRE)
+    paire = 1.0001 * np.exp(1j * math.radians(0.2))
+    for serie, attendue in (((paire ** t).real + 0.5 * 0.99 ** t, paire),
+                            (1e-6 * (1.01 ** t + 0.998 ** t), complex(1.01, 0.0))):
+        r = racine_dominante(serie)
+        assert r.motif is None
+        assert abs(abs(r.racine) - abs(attendue)) <= 1e-8
+        assert abs(r.racine.imag - attendue.imag) <= 1e-8
+        assert 0 < r.debut < r.fin <= len(serie) and r.residu <= 1e-6
+    lam = 1.01
+    r = racine_dominante(lam ** t + 1e-6 * lam ** (2 * t) + 0.998 ** t)
+    assert r.motif is None and abs(r.racine - lam) <= 1e-5, r
+    r = racine_dominante(lam ** t + 1e-2 * lam ** (2 * t) + 0.998 ** t)
+    assert r.motif is None and lam + 5e-3 < r.racine.real < lam ** 2, r
+    nan_dans_la_fenetre = 1.01 ** t[:600]
+    nan_dans_la_fenetre[100] = math.nan  # un pas non fini arrête la fenêtre
+    for serie, motif in (([], "série de 0 pas"), (np.ones(10), "série de 10 pas"),
+                         (np.zeros(600), "amplitude de référence"),
+                         (np.r_[math.inf, np.ones(599)], "amplitude de référence"),
+                         (1.1 ** t[:200], "fenêtre de"),
+                         (nan_dans_la_fenetre, "fenêtre de")):
+        r = racine_dominante(serie)
+        assert r.racine is None and r.motif.startswith(motif), (motif, r)
+    r = racine_dominante(np.r_[np.ones(PAS_D_AMPLITUDE), np.zeros(400)])
+    assert r.racine is None and r.motif.startswith("maximum de la fenêtre"), r
+
+
+def _racine_publiee(z):
+    """Module, argument (degrés, ±), période (tours) si complexe, temps de doublement si |z| > 1."""
+    argument = math.degrees(math.atan2(z.imag, z.real))
+    texte = f"|λ| = {abs(z):.7f}, arg = ±{argument:.4f}°"
+    if z.imag != 0.0:
+        texte += f" (période {360.0 / argument:.0f} tours)"
+    if abs(z) > 1.0:
+        return texte + f" ; temps de doublement = {math.log(2.0) / math.log(abs(z)):.0f} tours"
+    return texte + " ; aucun doublement (|λ| ≤ 1)"
+
+
+def _maquette_en_regard(maquette, pi):
+    """Racine de la maquette conjointe (lecture (c), pire des deux régimes de T4, φ = 0)."""
+    par = dataclasses.replace(maquette.parametres_socle(pi), phi=0.0)
+    lue = max((maquette.lectures(par, regime).suivante for regime in ("hausse", "baisse")), key=abs)
+    return ("maquette (lecture (c), pire des deux régimes de T4, φ = 0) : "
+            + _racine_publiee(complex(lue.real, abs(lue.imag))))
+
+
 @pytest.mark.parametrize("pi", [0.02, 0.10])
-def test_temps_de_doublement_sous_phi_nul(socle, pi, publier):
+def test_temps_de_doublement_sous_phi_nul(socle, maquette, pi, publier):
     """C62 (F11), ligne (b), publié sans verdict : sous φ = 0 (« intérêts financés par le
-    déficit »), choc G^plan +1 % aux tours 1 à 12 contre un contrôle apparié sous φ = 0 ; écart
-    de i_CB, ρ̂ = (max_{tours 600 à 720} |écart| / max_{tours 240 à 360} |écart|)^{1/360},
-    temps de doublement ln 2/ln ρ̂ (si ρ̂ > 1), les deux fenêtres de 120 pas. Valeurs de la
-    maquette : 381,6 et 63,2 tours. Une
-    sortie de domaine de la trajectoire choquée (régime explosif) est publiée avec son pas, la
-    seconde fenêtre étant alors les 120 derniers pas relevés ; si l'arrêt laisse moins de deux
-    fenêtres disjointes après le pas 240, la mesure est publiée sans ρ̂. Un choc de 1 % sort du
-    régime linéaire (à 10 %, arrêt de la trajectoire choquée) : la valeur publiée n'est pas une
-    racine ; la mesure en régime linéaire est `test_temps_de_doublement_en_regime_lineaire`
-    (décision du mainteneur du 15/11/2026 : les deux mesures sont publiées)."""
-    sentier = socle.sentier(pi)
-    ecarts, arret = _ecarts_de_taux_sous_phi_nul(socle, sentier, 1.01, NB_PAS)
+    déficit »), choc G^plan +1 % aux tours 1 à 12 contre un contrôle apparié sous φ = 0, 720 pas.
+    Le choc de 1 % sort du régime linéaire : aucune racine n'est identifiée sur le moteur
+    (décision de la session, reprise du rang 4 de la calibration) ; sont publiés le maximum de
+    |Δi_CB| sur les pas 240 à 359 et sur les 120 derniers pas relevés, la racine de la maquette
+    pour mémoire et l'arrêt de la trajectoire choquée avec son pas, sans valeur attendue (critère
+    précisé avant l'essai, M34, feuille de route § 1). La racine du moteur est publiée par
+    `test_temps_de_doublement_en_regime_lineaire` (décision du mainteneur du 15/11/2026 : les
+    deux mesures sont publiées)."""
+    ecarts, arret = _ecarts_de_taux_sous_phi_nul(socle, socle.sentier(pi), 1.01, NB_PAS)
     fin = len(ecarts)
-    titre = (f"C62, temps de doublement sous φ = 0, choc de 1 %, π* = {100 * pi:g} % "
-             f"({ETIQUETTE} ; sans verdict)")
-    if fin < 360 + 120:
-        publier(titre, [f"trajectoire choquée arrêtée avant deux fenêtres disjointes de 120 "
-                        f"pas après le pas 240 ({fin} pas relevés) : aucun ρ̂ publié ; {arret}"])
-        return
-    premier, dernier = max(ecarts[240:360]), max(ecarts[fin - 120:fin])
-    duree = (fin - 60) - 300  # entre les centres des deux fenêtres de 120 pas
-    rho = (dernier / premier) ** (1.0 / duree) if premier > 0.0 else math.nan
-    doublement = math.log(2.0) / math.log(rho) if rho > 1.0 else math.inf
-    publier(titre, [
-        f"ρ̂ = {rho:.6f} ; temps de doublement = {doublement:.0f} tours "
-        f"(maquette : {'381,6' if pi == 0.02 else '63,2'}) ; |Δi_CB| tours 240–360 : "
-        f"{premier:.2e}, {fin - 120}–{fin} : {dernier:.2e} ; {arret}",
-        "choc de 1 % hors du régime linéaire : "
-        + ("31 tours à 10 % n'est pas une racine : sortie du régime linéaire"
-           if pi == 0.10 else "valeur à lire contre la mesure en régime linéaire")])
+    maxima = (f"max |Δi_CB| pas 240 à 359 : {max(map(abs, ecarts[240:360])):.3e} ; "
+              f"pas {fin - 120} à {fin - 1} : {max(map(abs, ecarts[fin - 120:fin])):.3e}"
+              if fin >= 360 else f"{fin} pas relevés : aucun maximum publié")
+    publier(f"C62 sous φ = 0, choc de 1 %, π* = {100 * pi:g} % ({ETIQUETTE} ; sans verdict)", [
+        "choc de 1 % hors du régime linéaire : aucune racine identifiée sur le moteur ; la racine "
+        "du moteur est publiée par `test_temps_de_doublement_en_regime_lineaire`",
+        maxima, f"{_maquette_en_regard(maquette, pi)} (pour mémoire)", arret])
 
 
 # Mesure complémentaire de C62 en régime linéaire (décision du mainteneur du 15/11/2026).
 FACTEUR_LINEAIRE = 1.0 + 1e-6
 NB_PAS_LINEAIRE = 2700
-FENETRE_LINEAIRE = 120
-DEBUT_DES_FENETRES = NB_PAS_LINEAIRE % FENETRE_LINEAIRE  # 60 : la dernière finit au pas 2 700
 
 
 @pytest.mark.parametrize("pi", [0.02, 0.10])
-def test_temps_de_doublement_en_regime_lineaire(socle, pi, publier):
+def test_temps_de_doublement_en_regime_lineaire(socle, maquette, pi, publier):
     """C62 (F11), mesure complémentaire en régime linéaire, publiée sans verdict : sous φ = 0,
     choc θ_G × (1 + 1e−6) aux tours 1 à 12 contre un contrôle apparié sous φ = 0, 2 700 pas ;
-    |Δi_CB| maximal sur des fenêtres de 120 pas [60 + 120 k ; 180 + 120 k[ jusqu'au pas 2 700,
-    ρ̂ d'une fenêtre = (max de la fenêtre / max de la précédente)^{1/120}, temps de doublement
-    ln 2/ln ρ̂. Une fenêtre que l'arrêt de la trajectoire choquée laisse incomplète n'est pas
-    publiée ; l'arrêt l'est. Repères de `macro`, non à reproduire : environ 1,001819 (381 tours)
-    à 2 %, 1,011038 (63 tours) à 10 %."""
-    sentier = socle.sentier(pi)
-    ecarts, arret = _ecarts_de_taux_sous_phi_nul(socle, sentier, FACTEUR_LINEAIRE,
+    racine dominante identifiée sur la série Δi_CB du moteur (`racine_dominante`, #166 : module,
+    argument, temps de doublement si le module dépasse 1), ou motif de son absence ; racine de la
+    maquette conjointe en regard ; arrêt publié avec son pas, sans valeur attendue (critère
+    précisé avant l'essai, M34, feuille de route § 1)."""
+    ecarts, arret = _ecarts_de_taux_sous_phi_nul(socle, socle.sentier(pi), FACTEUR_LINEAIRE,
                                                  NB_PAS_LINEAIRE)
-    debuts = [d for d in range(DEBUT_DES_FENETRES, NB_PAS_LINEAIRE, FENETRE_LINEAIRE)
-              if d + FENETRE_LINEAIRE <= len(ecarts)]
-    maxima = [max(ecarts[d:d + FENETRE_LINEAIRE]) for d in debuts]
-    lignes = []
-    for d, avant, apres in zip(debuts[1:], maxima, maxima[1:]):
-        rho = (apres / avant) ** (1.0 / FENETRE_LINEAIRE) if avant > 0.0 else math.nan
-        doublement = math.log(2.0) / math.log(rho) if rho > 1.0 else math.inf
-        lignes.append(f"pas {d}–{d + FENETRE_LINEAIRE - 1} : max |Δi_CB| = {apres:.3e} ; "
-                      f"ρ̂ = {rho:.6f} ; temps de doublement = {doublement:.0f} tours")
+    r = racine_dominante(ecarts)
+    moteur = (f"moteur : aucune racine identifiée ({r.motif})" if r.racine is None else
+              f"moteur (Prony, ordre {ORDRE_PRONY}, pas {r.debut} à {r.fin - 1}, résidu relatif "
+              f"{r.residu:.1e}) : {_racine_publiee(r.racine)}")
     publier(f"C62 en régime linéaire, choc θ_G × (1 + 1e−6), φ = 0, π* = {100 * pi:g} % "
-            f"({ETIQUETTE} ; sans verdict ; repère de `macro` : "
-            f"{'1,001819 (381 tours)' if pi == 0.02 else '1,011038 (63 tours)'})",
-            [*lignes, arret])
+            f"({ETIQUETTE} ; sans verdict)", [moteur, _maquette_en_regard(maquette, pi), arret])
 
 
 @pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])

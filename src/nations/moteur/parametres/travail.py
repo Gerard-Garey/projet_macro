@@ -37,8 +37,23 @@ from nations.moteur.parametres.cadre import PAS_PAR_AN
 _N_A = PAS_PAR_AN.valeur
 
 LAMBDA_W = Parametre(
-    "lambda_w", "λ_w", 1.0, "par an, taux de flux",
-    "tab:calibration (indicative) ; unité P65",
+    "lambda_w", "λ_w", 0.18, "par an, taux de flux",
+    "choix déclaré, sources lues : pente λ_w β = 0,36 point de hausse annuelle du salaire par "
+    "point d'écart de chômage (β = 2), égale à la pente de l'écart de chômage dans un panel de 19 "
+    "pays de la zone euro (−0,364, glissement annuel de la rémunération par salarié, 2000T1-2018T4"
+    " ; F. Tagliati, « Wage growth in the euro area: a Phillips curve analysis using panel data »,"
+    " encadré 2, tableau A, dans C. Nickel, E. Bobeica, G. Koester, E. Lis et M. Porqueddu (dir.),"
+    " « Understanding low wage growth in the euro area and European countries », BCE, Occasional "
+    "Paper 232, septembre 2019, révisé en décembre 2020) et dans la fourchette de 0,29 à 0,40 des "
+    "États-Unis (J. Galí, « The Return of the Wage Phillips Curve », NBER Working Paper 15758, "
+    "février 2010, tableau 1, colonnes 6 et 8, ×4 ; gains des salariés de production et hors "
+    "encadrement, données trimestrielles, 1964T1-2009T3, 2007T4 pour la colonne 8) ; correction "
+    "annuelle 0,166, sous la correction européenne de 0,25 (O. J. Blanchard et L. F. Katz, « Wage "
+    "Dynamics: Reconciling Theory and Evidence », NBER Working Paper 6924, février 1999, p. 5, "
+    "fréquence présumée annuelle) ; vitesse contestée : la persistance régionale américaine (0,60 "
+    "à 0,81, D. G. Blanchflower et A. J. Oswald, « The Wage Curve Reloaded », NBER Working Paper "
+    "11338, 2005, p. 11 et 15) est tenue pour une borne haute ; consulté le 16/11/2026 ; "
+    "tab:calibration ; décision M34 ; unité P65",
     ("eq:travail-salaire",), vitesse(_N_A))
 
 BETA = Parametre(

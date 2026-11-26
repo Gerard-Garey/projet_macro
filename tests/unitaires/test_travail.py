@@ -31,6 +31,7 @@ from nations.etat import schema
 from nations.moteur.contrat_bloc import OUVERTURE, REGISTRE, Lecture
 from nations.moteur.conversions import facteur_par_pas, par_pas
 from nations.moteur.parametres import TauxDeCroissance, varier
+from nations.moteur.parametres import travail as table_travail
 from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 
 TABLE = PARAMETRES_DE_REFERENCE.travail
@@ -128,20 +129,44 @@ def jacobienne_de_la_boucle_propre(table):
     return jac
 
 
-# (facteur des vitesses, valeur propre de W publiée, de N publiée, demi-vie de N publiée)
+def test_lambda_w_calibree_dans_la_fourchette_des_sources_lues(stationnaire):
+    """Critère propre de #45 (décision M34, feuille de route § 1) : λ_w = 0,18 par an, égale au
+    défaut du script, source du script suivie de l'unité de la table ; pente λ_w β = 0,36 dans la
+    fourchette lue de 0,29 à 0,40 (Galí, colonnes en glissement ; Tagliati, 0,32 à 0,36) ;
+    correction annuelle 1 − (1 − λ_w/n_a)^{n_a} = 0,166 dans la fourchette agrégée de 0 à 0,25
+    (Blanchard et Katz), sous la borne régionale de 0,19 tenue pour contestée
+    (`docs/blocs/calibration.md` § 6.2 et 6.3)."""
+    lam = TABLE.lambda_w.valeur
+    assert lam == stationnaire.Parametres().lambda_w == 0.18 and TABLE.beta == 2.0
+    source = table_travail.LAMBDA_W.source
+    assert source == stationnaire.DECLARATIONS["lambda_w"][1] + " ; unité P65"
+    assert all(x in source for x in ("Occasional Paper 232", "15758", "6924", "11338",
+                                     "décision M34"))
+    pente = lam * TABLE.beta
+    correction = 1.0 - (1.0 - lam / N_A) ** N_A
+    assert 0.29 <= pente <= 0.40 and round(pente, 2) == 0.36
+    assert 0.0 < correction <= 0.25 and round(correction, 3) == 0.166
+
+
+# (facteur des vitesses, valeur propre de W, de N publiée, demi-vie de N publiée, demi-vie de W)
+# Valeur propre de W à λ_w = 0,18 (M34, #45) : 0,985 / 0,9925 / 0,97 ; la fiche 3 publie 0,91667 /
+# 0,95833 / 0,83333 à λ_w = 1 jusqu'au passage de `docwriter` (règle 9). Demi-vie de W, ln 2 /
+# −ln(1 − λ_w/n_a) : 45,86 / 92,07 / 22,76 tours (7,97 / 16,29 / 3,80 à λ_w = 1 ;
+# `docs/blocs/calibration.md` § 6.4.3).
 VARIANTES = [
-    (1.0, 0.91667, 0.70833, 2.01),
-    (0.5, 0.95833, 0.85417, 4.40),
-    (2.0, 0.83333, 0.41667, 0.79),
+    (1.0, 0.98500, 0.70833, 2.01, 45.86),
+    (0.5, 0.99250, 0.85417, 4.40, 92.07),
+    (2.0, 0.97000, 0.41667, 0.79, 22.76),
 ]
 
 
-@pytest.mark.parametrize("facteur, publiee_w, publiee_n, demi_vie", VARIANTES)
-def test_boucle_propre_valeurs_propres(facteur, publiee_w, publiee_n, demi_vie):
+@pytest.mark.parametrize("facteur, publiee_w, publiee_n, demi_vie, demi_vie_w", VARIANTES)
+def test_boucle_propre_valeurs_propres(facteur, publiee_w, publiee_n, demi_vie, demi_vie_w):
     """Fiche 3, § 9.6, « Boucle propre (5 (b)) » : valeurs propres réelles, égales aux formes
-    fermées 1 − λ_w/n_a et 1 − λ_N/n_a à 1e−8 et aux valeurs publiées à 5 décimales ; module
+    fermées 1 − λ_w/n_a et 1 − λ_N/n_a à 1e−8 et aux valeurs attendues à 5 décimales ; module
     < 1 aux trois calibrations ; demi-vie de l'emploi (2,01 / 4,40 / 0,79 tours) à 2
-    décimales, dans [2 ; 4] tours à la calibration seule."""
+    décimales, dans [2 ; 4] tours à la calibration seule ; demi-vie du salaire (règle SN à prix
+    exogènes, critère propre de #45) à 2 décimales."""
     table = varier(TABLE, lambda_w=facteur * TABLE.lambda_w.valeur,
                    lambda_N=facteur * TABLE.lambda_N.valeur)
     jac = jacobienne_de_la_boucle_propre(table)
@@ -154,6 +179,7 @@ def test_boucle_propre_valeurs_propres(facteur, publiee_w, publiee_n, demi_vie):
     assert round(vp_w, 5) == publiee_w and round(vp_n, 5) == publiee_n
     demi = math.log(2.0) / -math.log(vp_n)
     assert round(demi, 2) == demi_vie
+    assert round(math.log(2.0) / -math.log(vp_w), 2) == demi_vie_w
     if facteur == 1.0:
         assert 2.0 <= demi <= 4.0
 

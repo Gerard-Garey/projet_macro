@@ -83,6 +83,15 @@ def resultat(stationnaire, base):
     return stationnaire.calculer(base)
 
 
+def aux_entrees_des_cas_adverses(stationnaire, base):
+    """Cas adverses du domaine (lv* = 0,6 et 0,45) construits à ϑ = 0,10 et ν_H = 1, avant M34 (#130, #62) : refus
+    et constats décidés par `macro` sous ces valeurs. À ϑ = 0,15 puis ν_H = 1,1, la dette consolidée plus haute
+    (C42 : +ΔE^Bk, puis +ΔD_H) relève B et la marge de E1, et ces cas sortent de leur région ; ϑ et ν_H sont donc
+    rétablis seuls (μ̄ = 0,60 et ζ = 8 gardés)."""
+    return replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"],
+                   nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"])
+
+
 def points(stationnaire, base, nu=1.0):
     """Paramètres des neuf points π̄ × n_a de la grille, à ν_G donné."""
     return [
@@ -464,7 +473,7 @@ def test_refus_explicite_hors_domaine(stationnaire, base, champ, valeur):
 def test_conditions_d_existence_p71_nommees(stationnaire, base, champ, valeur, motif):
     """P71 : U^eq ≤ 0 et μ̄ ≤ 0 refusés dès le chargement des paramètres, le motif les nommant
     comme conditions de conception et d'existence de l'état stationnaire ; la calibration
-    (U^eq = 0,05, μ̄ = 0,25) n'est pas refusée."""
+    (U^eq = 0,05, μ̄ = 0,60) n'est pas refusée."""
     with pytest.raises(stationnaire.HorsDomaine, match=motif):
         stationnaire.controler_domaine(replace(base, **{champ: valeur}))
     stationnaire.controler_domaine(replace(base, nu_G=1.15))
@@ -485,7 +494,9 @@ def test_refus_de_la_condition_d_existence_a_ecarts_nuls(stationnaire, base):
 
 def test_refus_a_lv_0_6(stationnaire, base):
     """lv* = 0,6, ν_G = 1 : dette brute négative sur une partie de la grille, refusée ; le plafond de E1 seul n'est
-    pas un refus au point de référence (décision de `macro`, option (b)), mais il l'est à ν_G > 1."""
+    pas un refus au point de référence (décision de `macro`, option (b)), mais il l'est à ν_G > 1. Cas construit à
+    ϑ = 0,10 et ν_H = 1 (`aux_entrees_des_cas_adverses`)."""
+    base = aux_entrees_des_cas_adverses(stationnaire, base)
     refus = e1_seul = 0
     for p in points(stationnaire, replace(base, lv=0.6)):
         e = stationnaire.etat_stationnaire(p, controler=False)
@@ -556,7 +567,11 @@ def test_em_negatif_n_est_pas_un_refus(stationnaire, base):
 
 @pytest.mark.parametrize("champ, valeur", [("lv", 0.0), ("tau_H", 0.0)])
 def test_bords_fermes_du_domaine_sans_exception(stationnaire, base, champ, valeur):
-    """lv* = 0 et τ_H = 0 (domaine fermé) : calcul complet sans exception ; rapports sans objet publiés tels."""
+    """lv* = 0 et τ_H = 0 (domaine fermé) : calcul complet sans exception ; rapports sans objet publiés tels. Le bord
+    τ_H = 0 est construit à ν_H = 1 (avant M34, #62) : à ν_H = 1,1, la lecture (α) de #80 n'a plus de racine sur
+    [−60 % ; 100 %] à π* = 10 %, n_a = 52 (θ_G* ≈ 0,0056 ; `test_bord_tau_H_nul_refuse_par_la_lecture_alpha`)."""
+    if champ == "tau_H":
+        base = replace(base, nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"])
     variante = replace(base, **{champ: valeur})
     r = stationnaire.calculer(variante)
     assert stationnaire.plus_grand_residu(r) <= TOL
@@ -571,6 +586,21 @@ def test_bords_fermes_du_domaine_sans_exception(stationnaire, base, champ, valeu
     if champ == "lv":
         e = stationnaire.etat_stationnaire(variante)
         assert e["L"] == 0.0 and e["E_Bk"] == 0.0 and e["existence_Bk_montant"] > 0
+
+
+def test_bord_tau_H_nul_refuse_par_la_lecture_alpha(stationnaire, base):
+    """τ_H = 0 à la table calibrée (ν_H = 1,1, #62) : l'état stationnaire se résout aux neuf points de la grille, mais
+    la lecture (α) de #80 (C51) n'a aucune racine sur [−60 % ; 100 %] à π* = 10 %, n_a = 52 (F(r̄) < 0 sur tout le
+    balayage) : `calculer` refuse par `HorsDomaine`, motif nommé, sans valeur silencieuse. À ν_H = 1, la racine
+    existe (r̄_α ≈ 27,4 %)."""
+    variante = replace(base, tau_H=0.0)
+    assert variante.nu_H == 1.1
+    for p in points(stationnaire, variante, stationnaire.NU_G_RETENU):
+        stationnaire.etat_stationnaire(p)
+    with pytest.raises(stationnaire.HorsDomaine, match=r"lecture \(α\), π\* = 0\.1, n_a = 52 : 0 racine"):
+        stationnaire.calculer(variante)
+    origine = replace(variante, nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"], nu_G=stationnaire.NU_G_RETENU)
+    assert round(stationnaire.mesure_alpha(origine, 0.10, 52)["r_alpha"], 3) == 0.274
 
 
 def test_existence_en_montants_egale_la_marge_publiee(stationnaire, base):
@@ -589,17 +619,27 @@ def test_refus_des_poles_D1_et_D2(stationnaire, base):
         stationnaire.etat_stationnaire(replace(base, rbar=1.5))
 
 
-def test_q1_publie_comme_constat_a_n_a_4(stationnaire, resultat):
-    """D_F en fin de phase 4 : négatif à n_a = 4 (constat), positif à n_a = 12 et 52 (décision du 05/10/2026, pt 4).
+def test_q1_publie_comme_constat_sous_mu_bar_d_origine_seulement(stationnaire, base, resultat):
+    """D_F en fin de phase 4 : sous μ̄ = 0,25 (entrées d'origine), négatif à n_a = 4 (constat publié), positif à
+    n_a = 12 et 52 (décision du 05/10/2026, pt 4) ; sous μ̄ = 0,60 (M34, #92), positif aux trois n_a, ν_F,min < ν_F,
+    et aucun constat q1 n'est publié.
 
     q1 est un constat publié, pas un résidu : il ne change pas le code de sortie.
     """
+    assert base.mu_bar == 0.60
     for (_nu, pi, na), v in resultat["grille"].items():
-        assert (v["caisse_DF4"] < 0) == (na == 4), (pi, na)
-        assert (v["nu_F_min"] > resultat["parametres"].nu_F) == (na == 4)
+        assert v["caisse_DF4"] > 0, (pi, na)
+        assert v["nu_F_min"] < resultat["parametres"].nu_F, (pi, na)
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
-    colonnes_nu = len({k[0] for k in resultat["grille"]})
+    assert "q1 : D_F en fin de phase 4 négatif" not in tampon.getvalue()
+    origine = stationnaire.calculer(replace(base, **stationnaire.ENTREES_D_ORIGINE))
+    for (nu, pi, na), v in origine["grille"].items():
+        assert (v["caisse_DF4"] < 0) == (na == 4), (nu, pi, na)
+        assert (v["nu_F_min"] > origine["parametres"].nu_F) == (na == 4), (nu, pi, na)
+    tampon = io.StringIO()
+    stationnaire.afficher(origine, tampon)
+    colonnes_nu = len({k[0] for k in origine["grille"]})
     assert tampon.getvalue().count("q1 : D_F en fin de phase 4 négatif") == 3 * colonnes_nu
 
 
@@ -614,8 +654,9 @@ def test_q1_publie_comme_constat_a_n_a_4(stationnaire, resultat):
 ])
 def test_lv_0_6_a_nu_G_1_15_refus_sur_la_dette_brute(stationnaire, base, pi, n_a, admis):
     """`macro` : lv* = 0,6, ν_G = 1,15 : refus sur B < 0 là où la marge de E1 est positive (le refus ne vient pas
-    de E1) ; témoin admis à π̄ = 2 %, n_a = 4 (B/(n_a PIB) ≈ +0,042)."""
-    p = replace(base, lv=0.6, nu_G=1.15, pi_cible=pi, n_a=n_a)
+    de E1) ; témoin admis à π̄ = 2 %, n_a = 4 (B/(n_a PIB) ≈ +0,042). Cas construit à ϑ = 0,10 et ν_H = 1
+    (`aux_entrees_des_cas_adverses`)."""
+    p = replace(aux_entrees_des_cas_adverses(stationnaire, base), lv=0.6, nu_G=1.15, pi_cible=pi, n_a=n_a)
     e = stationnaire.etat_stationnaire(p, controler=False)
     assert 1 - e["Gam"] * (e["G"] / e["PB"]) / p.nu_G > 0 and e["marge_E1_montant"] > 0
     if admis:
@@ -634,17 +675,33 @@ def test_lv_0_6_calculer_refuse_sur_une_colonne_nu_G_1_15(stationnaire, base):
 
 
 def test_plafond_de_E1_refuse_a_nu_G_superieur_a_un(stationnaire, base):
-    """Le plafond de E1 reste un refus sur les colonnes ν_G > 1 (lv* = 0,45, π̄ = 0, n_a = 4, ν_G = 1,001)."""
-    p = replace(base, lv=0.45, pi_cible=0.0, n_a=4, nu_G=1.001)
+    """Le plafond de E1 reste un refus sur les colonnes ν_G > 1 (lv* = 0,45, π̄ = 0, n_a = 4, ν_G = 1,001) ; cas
+    construit à ϑ = 0,10 et ν_H = 1 (`aux_entrees_des_cas_adverses`)."""
+    p = replace(aux_entrees_des_cas_adverses(stationnaire, base), lv=0.45, pi_cible=0.0, n_a=4, nu_G=1.001)
     assert stationnaire.etat_stationnaire(p, controler=False)["marge_E1_montant"] <= 0
+    with pytest.raises(stationnaire.HorsDomaine, match="plafond de E1"):
+        stationnaire.etat_stationnaire(p)
+
+
+def test_plafond_de_E1_refuse_a_nu_G_superieur_a_un_a_la_table_calibree(stationnaire, base):
+    """Équivalent prospectif à la table calibrée (E3, ν_H = 1,1 ; audit léger de #62, 17/11/2026) : lv* = 0,52,
+    π̄ = 0, n_a = 4, ν_G = 1,001 : marge de E1 négative (−2,85e−4 en montant), B et B_Bk positifs
+    (B/(n_a PIB) ≈ 0,056), refus motivé par le seul plafond de E1. Marges mesurées : la marge de E1 change de
+    signe entre lv* = 0,500 (+3,6e−5) et 0,505 (−4,4e−5), B entre 0,55 (+0,0055) et 0,56 (−0,011)."""
+    assert base.nu_H == 1.1
+    p = replace(base, lv=0.52, pi_cible=0.0, n_a=4, nu_G=1.001)
+    e = stationnaire.etat_stationnaire(p, controler=False)
+    assert e["marge_E1_montant"] < 0 and e["B"] > 0 and e["B_Bk"] > 0
+    assert 0.05 < e["B"] / (p.n_a * e["PIB"]) < 0.06
     with pytest.raises(stationnaire.HorsDomaine, match="plafond de E1"):
         stationnaire.etat_stationnaire(p)
 
 
 def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkeypatch, capsys):
     """`macro` : lv* = 0,45 : plafond de E1 actif à ν_G = 1 en (0, 4) et (0, 12), toutes les colonnes ν_G > 1
-    admissibles ; code 0, constat publié, aucune valeur d'état ni résidu pour ces points de référence."""
-    variante = replace(base, lv=0.45)
+    admissibles ; code 0, constat publié, aucune valeur d'état ni résidu pour ces points de référence. Cas construit
+    à ϑ = 0,10 et ν_H = 1 (`aux_entrees_des_cas_adverses`)."""
+    variante = replace(aux_entrees_des_cas_adverses(stationnaire, base), lv=0.45)
     hors = {(0.0, 4), (0.0, 12)}
     for p in points(stationnaire, variante):
         e = stationnaire.etat_stationnaire(p)  # aucun refus au point de référence
@@ -671,6 +728,49 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
     monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
     assert stationnaire.main([]) == 0
     assert "état non publié" in capsys.readouterr().out
+
+
+# Équivalent du cas adverse lv* = 0,6 à la table calibrée, ajouté de façon prospective après l'audit léger de #130
+# (17/11/2026) : lv* = 0,65 en reproduit le motif à ϑ = 0,15, ν_H = 1 (état E2, mesuré avant l'écriture). À ν_H = 1,1
+# (#62, état E3), la dette consolidée plus haute (C42 : +ΔD_H) relève B : lv* = 0,65 sort de la région (trois refus,
+# aucun plafond de E1 seul), et lv* = 0,70 en reproduit le motif (mesuré sur lv* ∈ {0,65 ; 0,70 ; 0,72 ; 0,74 ; 0,75}
+# avant l'écriture ; 0,72 et au-delà : six refus). Le cas lv* = 0,45 n'a pas d'équivalent mesuré à E2 sur
+# [0,450 ; 0,500] (pas de 0,005) : à lv* = 0,475, le plafond de E1 n'agit qu'en (0, 4) et (0, 12) à ν_G = 1, mais
+# `calculer` refuse une valeur publiée (B < 0) dès lv* = 0,47 ; il n'a pas été recherché à E3.
+
+
+@pytest.mark.parametrize("nu_H, lv, temoin", [(1.0, 0.65, 0.0224), (1.1, 0.70, 0.0228)],
+                         ids=["E2, lv 0,65", "E3, lv 0,70"])
+def test_refus_a_lv_equivalent_a_la_table_calibree(stationnaire, base, nu_H, lv, temoin):
+    """lv* = 0,65 à ϑ = 0,15, ν_H = 1 (E2), et lv* = 0,70 à la table calibrée (E3, ν_H = 1,1), ν_G = 1 : cinq points
+    refusés sur B < 0 et un plafond de E1 seul en (2 %, 4), comme lv* = 0,6 à ϑ = 0,10 ; à ν_G = 1,15, refus sur
+    B < 0 là où la marge de E1 est positive, témoin admis en (2 %, 4) (B/(n_a PIB) ≈ +0,022 et +0,023) ; la grille
+    complète est refusée."""
+    assert base.nu_H == 1.1
+    variante = replace(base, lv=lv, nu_H=nu_H)
+    refus, e1_seul = [], []
+    for p in points(stationnaire, variante):
+        e = stationnaire.etat_stationnaire(p, controler=False)
+        if e["B"] < 0 or e["B_Bk"] < 0:
+            refus.append((p.pi_cible, p.n_a))
+            with pytest.raises(stationnaire.HorsDomaine, match="B ="):
+                stationnaire.etat_stationnaire(p)
+        elif e["marge_E1_montant"] <= 0:
+            e1_seul.append((p.pi_cible, p.n_a))
+    assert refus == [(0.0, 4), (0.0, 12), (0.0, 52), (0.02, 12), (0.02, 52)]
+    assert e1_seul == [(0.02, 4)]
+    for pi, n_a in ((0.0, 4), (0.0, 12), (0.0, 52), (0.02, 4), (0.02, 12), (0.02, 52)):
+        p = replace(variante, nu_G=1.15, pi_cible=pi, n_a=n_a)
+        e = stationnaire.etat_stationnaire(p, controler=False)
+        assert e["marge_E1_montant"] > 0
+        if (pi, n_a) == (0.02, 4):
+            assert round(stationnaire.etat_stationnaire(p)["B"] / (n_a * e["PIB"]), 4) == temoin
+        else:
+            assert e["B"] < 0
+            with pytest.raises(stationnaire.HorsDomaine, match="B = .*dette brute"):
+                stationnaire.etat_stationnaire(p)
+    with pytest.raises(stationnaire.HorsDomaine):
+        stationnaire.calculer(variante)
 
 
 def test_etat_initial_publie_a_nu_G_retenu_puis_a_la_reference(stationnaire, resultat):
@@ -785,7 +885,8 @@ def test_valeurs_speciales_aucune_exception_hors_refus(stationnaire, base):
 
 def test_explication_dette_consolidee_sigma_en_pas(stationnaire, base):
     """La maquette tenait σ = 1,4 pas de ventes (σ = 1,4/n_a an) : elle redonne 0,25237 et 0,25844 à 2 %, et les
-    quatre valeurs de la fiche 9 à 0 et 10 % (visées après la revue finale)."""
+    quatre valeurs de la fiche 9 à 0 et 10 % (visées après la revue finale), sous les entrées d'origine (μ̄ = 0,25)."""
+    base = replace(base, **stationnaire.ENTREES_D_ORIGINE)
     for pi, na, publie in ((0.02, 4, "0,25237"), (0.02, 52, "0,25844"), (0.0, 4, "0,09466"), (0.10, 4, "0,49978"),
                            (0.0, 52, "0,10045"), (0.10, 52, "0,51438")):
         p = replace(base, pi_cible=pi, n_a=na, sigma=1.4 / na)
@@ -794,15 +895,18 @@ def test_explication_dette_consolidee_sigma_en_pas(stationnaire, base):
 
 
 def test_explication_Y_HS_par_T_H_arrondi(stationnaire, base):
-    """Y^HS/PIB publié à 2 % = T_H/PIB arrondi au centième de point ÷ τ_H : 21,68 %/0,25 = 0,8672."""
+    """Y^HS/PIB publié à 2 % = T_H/PIB arrondi au centième de point ÷ τ_H : 21,68 %/0,25 = 0,8672, sous les entrées
+    d'origine (μ̄ = 0,25)."""
+    base = replace(base, **stationnaire.ENTREES_D_ORIGINE)
     v = stationnaire.valeurs(stationnaire.etat_stationnaire(base), base)
     assert stationnaire.comparer("0,8672", round(v["T_H_sur_PIB"], 2) / 100 / base.tau_H)[2]
     assert not stationnaire.comparer("0,8672", v["Y_HS"])[2]
 
 
 def test_explication_marge_J_nu_sur_G_PB_a_nu_G_un(stationnaire, base):
-    """« 0,37 % » à ν_G = 1,1, π̄ = 0 : marge J-ν calculée sur G/PB à ν_G = 1, non à ν_G = 1,1."""
-    p1 = replace(base, pi_cible=0.0)
+    """« 0,37 % » à ν_G = 1,1, π̄ = 0 : marge J-ν calculée sur G/PB à ν_G = 1, non à ν_G = 1,1, sous les entrées
+    d'origine (μ̄ = 0,25, ϑ = 0,10)."""
+    p1 = replace(base, pi_cible=0.0, **stationnaire.ENTREES_D_ORIGINE)
     v1 = stationnaire.valeurs(stationnaire.etat_stationnaire(p1), p1)
     marge = 1 - stationnaire.HAUSSE_J_NU * v1["Gamma"] * v1["G_sur_PB"] / 1.1
     assert stationnaire.comparer("0,37", 100 * marge)[2]
@@ -865,14 +969,351 @@ def test_seuil_derniere_decimale(stationnaire):
     assert not stationnaire.comparer("1,536", math.nan)[2]
 
 
+# Calibration du socle (M34) : valeurs republiées au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a), liste exacte
+# des clés (section, grandeur), chacune avec son ancienne valeur, figée en littéral et barrée dans sa source. Ces 309
+# valeurs étaient publiées à l'état E0 (μ̄ = 0,25, ϑ = 0,10, ν_H = 1 : `ENTREES_D_ORIGINE`), et à ζ = 4 ; la table T1
+# les a déplacées au-delà de leur dernière décimale publiée. Toute autre valeur en vigueur est inchangée. Une
+# ancienne valeur ne se modifie pas sans échec (`test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine`,
+# `test_anciennes_valeurs_de_M34_barrees_dans_leur_source`).
+#
+# #55 (ζ = 4 → 8) : les 12 valeurs de la mesure (α) de #80 (lecture (α), Δϱ ≠ 0 entre deux cibles) ; l'état
+# stationnaire de référence ne lit pas ζ (Δϱ = 0).
+ANCIENNES_M34_55 = {
+    ("sec:banque_centrale-conditions", "(α) : écart de C/Y_o, point"): "0,633",
+    ("sec:banque_centrale-conditions", "(α) : écart de ti, point"): "0,186",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 %, point"): "-0,18",
+    ("sec:banque_centrale-conditions", "r̄_α(0) − r̄_α(10 %), point"): "0,486",
+    ("sec:banque_centrale-conditions", "écart maximal de r̄_α sur le profil, point"): "0,976",
+    ("sec:banque_centrale-conditions", "Δr̄_α, verdict (ζ = 8), point"): "0,632",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 0 %, %"): "1,632",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 1 %, %"): "1,264",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 10 %, %"): "1,146",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 3 %, %"): "0,818",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 4 %, %"): "0,706",
+    ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"): "0,656",
+}
+# #92 (μ̄ = 0,25 → 0,60) : 173 valeurs, dont T_H, YD^HS et Y^HS sur le PIB à π̄ = 0, qui retombaient sur la décimale
+# publiée sous ϑ = 0,15 (#130) et en sortent sous ν_H = 1,1 (#62).
+ANCIENNES_M34_92 = {
+    ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"): "0,487",
+    ("fiche 9 § 3.C", "(α) : C/PIB à 10 % moins à 2 %, point"): "-0,434",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 4"): "0,09880",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 0 %, n_a = 52"): "0,09886",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 4"): "0,51172",
+    ("fiche 9 § 3.C ; § 9.6", "dette consolidée à 10 %, n_a = 52"): "0,50952",
+    ("fiche 9 § 6.3", "(α) : max − min de C/PIB, point"): "0,921",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 10 %, % du PIB"): "0,387",
+    ("sec:banque-restitution", "masse monétaire restitué(e) à 10 %"): "0,86279",
+    ("sec:banque-restitution", "masse monétaire restitué(e) à 2 %"): "0,83423",
+    ("sec:banque-restitution", "refinancement restitué(e) à 10 %"): "0,02800",
+    ("sec:banque-restitution", "refinancement restitué(e) à 2 %"): "0,02222",
+    ("sec:banque-restitution", "titres de la banque restitué(e) à 10 %"): "0,57066",
+    ("sec:banque-restitution", "titres de la banque restitué(e) à 2 %"): "0,28451",
+    ("sec:banque-stationnaire", "crédits à 0 %"): "0,80037",
+    ("sec:banque-stationnaire", "crédits à 10 %"): "0,33439",
+    ("sec:banque-stationnaire", "crédits à 2 %"): "0,62204",
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 12"): "0,622039",
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 4"): "0,621423",
+    ("sec:banque-stationnaire", "crédits à 2 %, n_a = 52"): "0,622275",
+    ("sec:banque-stationnaire", "dette consolidée c à 0 %"): "0,09884",
+    ("sec:banque-stationnaire", "dette consolidée c à 10 %"): "0,51013",
+    ("sec:banque-stationnaire", "dette consolidée c à 2 %"): "0,25674",
+    ("sec:banque-stationnaire", "dette consolidée de 2 à 10 %"): "0,25339",
+    ("sec:banque-stationnaire", "dont fonds propres (ϑ Δl), 2 à 10 %"): "-0,0288",
+    ("sec:banque-stationnaire", "dont richesse des ménages, 2 à 10 %"): "-0,0044",
+    ("sec:banque-stationnaire", "dépôts des entreprises à 0 %"): "0,16636",
+    ("sec:banque-stationnaire", "e_Bk à 0 %"): "0,08004",
+    ("sec:banque-stationnaire", "e_Bk à 10 %"): "0,03344",
+    ("sec:banque-stationnaire", "e_Bk à 2 %"): "0,06220",
+    ("sec:banque-stationnaire", "masse monétaire M à 0 %"): "0,81917",
+    ("sec:banque-stationnaire", "masse monétaire M à 10 %"): "0,81108",
+    ("sec:banque-stationnaire", "masse monétaire M à 2 %"): "0,81658",
+    ("sec:banque-stationnaire", "refinancement à 0 %, ν_G = 1"): "0,018282",
+    ("sec:banque-stationnaire", "refinancement à 0 %, ν_G = 1,15"): "0,021027",
+    ("sec:banque-stationnaire", "refinancement à 10 %, ν_G = 1"): "0,022857",
+    ("sec:banque-stationnaire", "refinancement à 10 %, ν_G = 1,15"): "0,026322",
+    ("sec:banque-stationnaire", "refinancement à 2 %, ν_G = 1"): "0,018904",
+    ("sec:banque-stationnaire", "refinancement à 2 %, ν_G = 1,15"): "0,021748",
+    ("sec:banque-stationnaire", "richesse des ménages à 2 %"): "0,6505",
+    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 0 %"): "0,02500",
+    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 10 %"): "0,01851",
+    ("sec:banque-stationnaire", "résultat Π^Bk/PIB à 2 %"): "0,02249",
+    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1"): "0,25734",
+    ("sec:banque-stationnaire", "titres de 2 à 10 %, ν_G = 1,15"): "0,25797",
+    ("sec:banque-stationnaire", "titres de la banque à 0 %, ν_G = 1"): "0,11712",
+    ("sec:banque-stationnaire", "titres de la banque à 0 %, ν_G = 1,15"): "0,11987",
+    ("sec:banque-stationnaire", "titres de la banque à 10 %, ν_G = 1"): "0,53299",
+    ("sec:banque-stationnaire", "titres de la banque à 10 %, ν_G = 1,15"): "0,53645",
+    ("sec:banque-stationnaire", "titres de la banque à 2 %, ν_G = 1"): "0,27564",
+    ("sec:banque-stationnaire", "titres de la banque à 2 %, ν_G = 1,15"): "0,27849",
+    ("sec:banque_centrale-restitution", "refinancement restitué à 0 %"): "0,02125",
+    ("sec:banque_centrale-restitution", "refinancement restitué à 10 %"): "0,02800",
+    ("sec:banque_centrale-restitution", "refinancement restitué à 2 %"): "0,02222",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1, % du PIB"): "0,2537",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1,15, % du PIB"): "0,2922",
+    ("sec:finances_publiques-impots", "dette consolidée, 10 % moins 2 %"): "0,253",
+    ("sec:finances_publiques-restitution", "charge brute à 10 %, ν_G = 1,15, % du PIB"): "5,9546",
+    ("sec:finances_publiques-restitution", "charge brute à 2 %, ν_G = 1,15, % du PIB"): "0,8410",
+    ("sec:finances_publiques-restitution", "dette brute affichée à 10 %, ν_G = 1,15, % du PIB"): "57,1",
+    ("sec:finances_publiques-stationnaire", "G/PIB à 0 %, %"): "21,86",
+    ("sec:finances_publiques-stationnaire", "G/PIB à 10 %, %"): "21,78",
+    ("sec:finances_publiques-stationnaire", "G/PIB à 2 %, %"): "21,93",
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 0 %, %"): "21,76",
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 10 %, %"): "21,54",
+    ("sec:finances_publiques-stationnaire", "T_H/PIB à 2 %, %"): "21,68",
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 0 %"): "0,6528",
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 10 %"): "0,6462",
+    ("sec:finances_publiques-stationnaire", "YD^HS/PIB à 2 %"): "0,6505",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 0 %"): "0,8704",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 10 %"): "0,8616",
+    ("sec:finances_publiques-stationnaire", "Y^HS/PIB à 2 %"): "0,8674",
+    ("sec:finances_publiques-stationnaire", "dette brute à 0 %"): "0,11712",
+    ("sec:finances_publiques-stationnaire", "dette brute à 0 %, ν_G = 1,15"): "0,11987",
+    ("sec:finances_publiques-stationnaire", "dette brute à 10 %"): "0,53299",
+    ("sec:finances_publiques-stationnaire", "dette brute à 10 %, ν_G = 1,15"): "0,53645",
+    ("sec:finances_publiques-stationnaire", "dette brute à 2 %"): "0,27564",
+    ("sec:finances_publiques-stationnaire", "dette brute à 2 %, ν_G = 1,15"): "0,27849",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 0 %"): "0,09884",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 10 %"): "0,51013",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %"): "0,25674",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 4"): "0,25726",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, n_a = 52"): "0,25654",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : fonds propres de la banque"): "0,0622",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : richesse des ménages"): "0,6505",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : somme"): "0,2567",
+    ("sec:finances_publiques-stationnaire", "décomposition à 2 % : −crédits nets"): "-0,4560",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 0 %, % du PIB"): "0,1959",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 10 %, % du PIB"): "5,9005",
+    ("sec:finances_publiques-stationnaire", "déficit de Domar à 2 %, % du PIB"): "1,0185",
+    ("sec:finances_publiques-stationnaire", "encaisse à 0 %"): "0,018282",
+    ("sec:finances_publiques-stationnaire", "encaisse à 0 %, ν_G = 1,15"): "0,021027",
+    ("sec:finances_publiques-stationnaire", "encaisse à 10 %"): "0,022857",
+    ("sec:finances_publiques-stationnaire", "encaisse à 10 %, ν_G = 1,15"): "0,026322",
+    ("sec:finances_publiques-stationnaire", "encaisse à 2 %"): "0,018904",
+    ("sec:finances_publiques-stationnaire", "encaisse à 2 %, ν_G = 1,15"): "0,021748",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, % du PIB"): "0,1171",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, % du PIB"): "5,9162",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 10 %, ν_G = 1,15, % du PIB"): "5,9546",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, % du PIB"): "0,8324",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 2 %, ν_G = 1,15, % du PIB"): "0,8410",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 0 %, % du PIB"): "0,0988",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 10 %, % du PIB"): "5,6625",
+    ("sec:finances_publiques-stationnaire", "intérêts nets à 2 %, % du PIB"): "0,7754",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 10 %, % du PIB"): "-0,2381",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 2 %, % du PIB"): "-0,2432",
+    ("sec:finances_publiques-transferts", "impôt des ménages à 2 %, % du PIB"): "21,68",
+    ("sec:investissement-stationnaire", "I/PIB à 10 % (C-F), %"): "13,849",
+    ("sec:investissement-stationnaire", "I/PIB à 2 % (C-F), %"): "13,945",
+    ("sec:investissement-stationnaire", "I/PIB, n_a = 4 (C-F), %"): "13,951",
+    ("sec:investissement-stationnaire", "I/PIB, n_a = 52 (C-F), %"): "13,942",
+    ("sec:investissement-stationnaire", "capital au prix courant à 10 % (C-F)"): "1,98361",
+    ("sec:investissement-stationnaire", "capital au prix courant à 2 % (C-F)"): "1,99726",
+    ("sec:investissement-stationnaire", "capital comptable à 10 % (C-F)"): "0,83598",
+    ("sec:investissement-stationnaire", "capital comptable à 2 % (C-F)"): "1,55510",
+    ("sec:investissement-stationnaire", "capital comptable, n_a = 4 (C-F)"): "1,55356",
+    ("sec:investissement-stationnaire", "capital comptable, n_a = 52 (C-F)"): "1,55569",
+    ("sec:investissement-stationnaire", "crédits nets à 10 % (C-F)"): "0,16947",
+    ("sec:investissement-stationnaire", "crédits nets à 2 % (C-F)"): "0,45598",
+    ("sec:investissement-stationnaire", "crédits à 10 % (C-F)"): "0,33439",
+    ("sec:investissement-stationnaire", "crédits à 2 % (C-F)"): "0,62204",
+    ("sec:investissement-stationnaire", "distribution à 10 % (C-F)"): "0,39995",
+    ("sec:investissement-stationnaire", "distribution à 10 % (R)"): "0,36359",
+    ("sec:investissement-stationnaire", "distribution à 2 % (C-F)"): "0,56853",
+    ("sec:investissement-stationnaire", "distribution à 2 % (R)"): "0,50480",
+    ("sec:investissement-stationnaire", "distribution, n_a = 4 (C-F)"): "0,56791",
+    ("sec:investissement-stationnaire", "distribution, n_a = 52 (C-F)"): "0,56876",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (C-F), %"): "5,90",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 10 % (R), %"): "5,06",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (C-F), %"): "6,25",
+    ("sec:investissement-stationnaire", "dividendes/ventes à 2 % (R), %"): "4,84",
+    ("sec:investissement-stationnaire", "dépôts à 10 % (C-F)"): "0,16492",
+    ("sec:investissement-stationnaire", "dépôts à 2 % (C-F)"): "0,16605",
+    ("sec:investissement-stationnaire", "valeur nette des entreprises à 10 % (C-F)"): "0,75713",
+    ("sec:investissement-stationnaire", "valeur nette des entreprises à 2 % (C-F)"): "1,19174",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 12"): "0,793445",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 4"): "0,793499",
+    ("sec:prix-stationnaire", "part salariale à 10 %, n_a = 52"): "0,793424",
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 12"): "0,798903",
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 4"): "0,798906",
+    ("sec:travail-stationnaire", "part salariale à 2 %, n_a = 52"): "0,798902",
+    ("sec:travail-stationnaire", "écart à ω̄ à 10 %, point"): "0,656",
+    ("sec:travail-stationnaire", "écart à ω̄ à 2 %, point"): "0,110",
+    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 0 %"): "2,0009",
+    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 10 %"): "1,9836",
+    ("tab:etat-stationnaire", "capital sur production (b), au prix courant à 2 %"): "1,9973",
+    ("tab:etat-stationnaire", "capital sur production (c), comptable à 0 %"): "2,0009",
+    ("tab:etat-stationnaire", "capital sur production (c), comptable à 10 %"): "0,8360",
+    ("tab:etat-stationnaire", "capital sur production (c), comptable à 2 %"): "1,5551",
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 10 %"): "57,1",
+    ("tab:etat-stationnaire", "dette brute à 0 %"): "0,11987",
+    ("tab:etat-stationnaire", "dette brute à 10 %"): "0,53645",
+    ("tab:etat-stationnaire", "dette brute à 2 %"): "0,27849",
+    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 0 %"): "0,11712",
+    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 10 %"): "0,53299",
+    ("tab:etat-stationnaire", "dette brute, ν_G = 1 à 2 %"): "0,27564",
+    ("tab:etat-stationnaire", "dette consolidée à 0 %"): "0,09884",
+    ("tab:etat-stationnaire", "dette consolidée à 10 %"): "0,51013",
+    ("tab:etat-stationnaire", "dette consolidée à 2 %"): "0,25674",
+    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 0 %"): "0,1959",
+    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 10 %"): "5,9005",
+    ("tab:etat-stationnaire", "déficit public (Domar), % du PIB à 2 %"): "1,0185",
+    ("tab:etat-stationnaire", "masse monétaire à 0 %"): "0,81917",
+    ("tab:etat-stationnaire", "masse monétaire à 10 %"): "0,81108",
+    ("tab:etat-stationnaire", "masse monétaire à 2 %"): "0,81658",
+    ("tab:etat-stationnaire", "part salariale à 0 %"): "0,80037",
+    ("tab:etat-stationnaire", "part salariale à 10 %"): "0,79344",
+    ("tab:etat-stationnaire", "part salariale à 2 %"): "0,79890",
+    ("tab:etat-stationnaire", "solde primaire, % du PIB à 10 %"): "-0,2381",
+    ("tab:etat-stationnaire", "solde primaire, % du PIB à 2 %"): "-0,2432",
+    ("tab:etat-stationnaire", "taux d'investissement, % à 0 %"): "13,970",
+    ("tab:etat-stationnaire", "taux d'investissement, % à 10 %"): "13,849",
+    ("tab:etat-stationnaire", "taux d'investissement, % à 2 %"): "13,945",
+}
+# #130 (ϑ = 0,10 → 0,15) : 100 valeurs de l'effet (ϑ) (E^Bk = ϑL, dette consolidée par C42, θ_G résolu, résultat et
+# rendement de la banque ; Δr̄_α par θ_G) ; ϖ_L, ϖ_D et r̄ sont inchangés. Deux autres (θ_G(r̄ + 1 point) − θ_G(r̄),
+# φ = 1, à ζ = 4 et 8 : « +0,308 » et « +0,157 ») s'écartaient sous ϑ = 0,15 et retombent sur leur décimale publiée
+# sous ν_H = 1,1 : en vigueur inchangées, elles ne figurent pas ici.
+ANCIENNES_M34_130 = {
+    ("fiche 8 § 9.6", "r̄_α(3 %) à ζ = 8, %"): "0,9188",
+    ("fiche 9 § 6.3", "(β) : écart de θ_G entre 0, 2 et 10 %, point"): "0,110",
+    ("sec:banque-conditions", "(d2), 2 %, point"): "1,26",
+    ("sec:banque-conditions", "couplage −ϑ lv*"): "-0,04",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 0 %, % du PIB"): "0,159",
+    ("sec:banque-conditions", "déficit de Domar dû à E^Bk à 2 %, % du PIB"): "0,247",
+    ("sec:banque-resultat", "saut C29 au tour n, 2 %, %"): "11,42",
+    ("sec:banque-resultat", "saut C29 ensuite, 2 %, %"): "2,77",
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 0 %"): "0,151",
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 10 %"): "0,721",
+    ("sec:banque-stationnaire", "canal rentier, % de YD par point à 2 %"): "0,387",
+    ("sec:banque-stationnaire", "condition d'existence à écarts nuls, 2 %"): "-0,000947",
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1"): "0,0040",
+    ("sec:banque-stationnaire", "encaisse de 2 à 10 %, ν_G = 1,15"): "0,0046",
+    ("sec:banque-stationnaire", "marge d'existence, par an à 0 %"): "0,0293",
+    ("sec:banque-stationnaire", "marge d'existence, par an à 10 %"): "0,0438",
+    ("sec:banque-stationnaire", "marge d'existence, par an à 2 %"): "0,0322",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1"): "2,725",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 0 %, ν_G = 1,15"): "2,717",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1"): "2,134",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 10 %, ν_G = 1,15"): "2,126",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1"): "2,505",
+    ("sec:banque-stationnaire", "marge nette d'intérêt (Π^Bk/actif), % à 2 %, ν_G = 1,15"): "2,497",
+    ("sec:banque-stationnaire", "part des dividendes des entreprises, 2 %, %"): "-177,6",
+    ("sec:banque-stationnaire", "part des intérêts des dépôts, 2 %, %"): "253,4",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1"): "0,1277",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 0 %, ν_G = 1,15"): "0,1303",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1"): "0,6145",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 10 %, ν_G = 1,15"): "0,6160",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1"): "0,3071",
+    ("sec:banque-stationnaire", "part des titres dans l'actif à 2 %, ν_G = 1,15"): "0,3093",
+    ("sec:banque-stationnaire", "part distribuée à 0 %"): "0,93655",
+    ("sec:banque-stationnaire", "part distribuée à 10 %"): "0,79105",
+    ("sec:banque-stationnaire", "part distribuée à 2 %"): "0,89025",
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 12"): "0,890253",
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 4"): "0,889928",
+    ("sec:banque-stationnaire", "part distribuée à 2 %, n_a = 52"): "0,890378",
+    ("sec:banque-stationnaire", "part du dividende de la banque, 2 %, %"): "24,2",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 0 %"): "31,23",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 10 %"): "55,36",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), % à 2 %"): "36,15",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 0 %, %"): "7,19",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 10 %, %"): "20,29",
+    ("sec:banque-stationnaire", "rendement des fonds propres (brut, nominal, sans charges), variante basse, 2 %, %"): "9,83",
+    ("sec:banque_centrale-conditions", "(α) : écart de tu, point"): "2,178",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 2, point"): "-0,38",
+    ("sec:banque_centrale-conditions", "marche de cible de 2 à 3 % à ζ = 8, point"): "-0,08",
+    ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ (ζ = 68), point"): "0,1428",
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 2, point"): "1,304",
+    ("sec:banque_centrale-conditions", "Δr̄_α à ζ = 8, point"): "0,297",
+    ("sec:banque_centrale-conditions ; fiche 8 § 9.6", "r̄_α(3 %) à ζ = 4, %"): "0,8185",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 0 %, ν_G = 1,15, % du PIB"): "0,0210",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1, % du PIB"): "0,0571",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 2 %, ν_G = 1,15, % du PIB"): "0,0657",
+    ("sec:banque_centrale-stationnaire", "L^CB_0 à 2 %, ν_G = 1,15, u.m."): "0,248264",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 4, point par point"): "-0,034",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 0, ζ = 8, point par point"): "0,127",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̂, norme et i^ref tenus, φ = 1, ζ = 8, point par point"): "0,321",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 0 %, point par point"): "-0,073",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄ à 10 %, point par point"): "-0,421",
+    ("sec:banque_centrale-stationnaire", "dθ_G/dr̄, % de la production par point de r̄"): "-0,194",
+    ("sec:banque_centrale-stationnaire", "points de r̄ par point de PIB de dépense"): "-5,15",
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 4, point"): "-0,058",
+    ("sec:banque_centrale-stationnaire", "θ_G(r̄ + 1 point) − θ_G(r̄), norme et i^ref tenus, φ = 0, ζ = 8, point"): "+0,074",
+    ("sec:finances_publiques-depense", "G/PB à 0 %"): "0,99467",
+    ("sec:finances_publiques-depense", "G/PB à 10 %"): "0,78637",
+    ("sec:finances_publiques-depense", "G/PB à 2 %"): "0,96342",
+    ("sec:finances_publiques-depense", "hausse admissible à 0 %, ν_G = 1, %"): "0,37",
+    ("sec:finances_publiques-depense", "marge de E1 à 0 %"): "0,0037",
+    ("sec:finances_publiques-depense", "marge de E1 à 10 %"): "0,2061",
+    ("sec:finances_publiques-depense", "marge de E1 à 2 %"): "0,0334",
+    ("sec:finances_publiques-emission", "borne de ν_G à 0 %"): "1,0959",
+    ("sec:finances_publiques-emission", "borne de ν_G à 10 %"): "0,8733",
+    ("sec:finances_publiques-emission", "borne de ν_G à 2 %"): "1,0633",
+    ("sec:finances_publiques-emission", "hausse admissible à 0 %, ν_G = 1,15, %"): "15,44",
+    ("sec:finances_publiques-emission", "hausse admissible à 10 %, ν_G = 1,15, %"): "45,05",
+    ("sec:finances_publiques-emission", "hausse admissible à 2 %, ν_G = 1,15, %"): "19,02",
+    ("sec:finances_publiques-emission", "marge J-ν au pire point à ν_G = 1,1, %"): "0,23",
+    ("sec:finances_publiques-emission", "retour après −5 % (approché), 0 %"): "1,0485",
+    ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)"): "1,0975",
+    ("sec:finances_publiques-emission", "ν_G,min exact à 0 %"): "1,0959",
+    ("sec:finances_publiques-emission", "ν_G,min exact à 10 %"): "0,8744",
+    ("sec:finances_publiques-emission", "ν_G,min exact à 2 %"): "1,0631",
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν au pire point à ν_G = 1,15"): "0,0458",
+    ("sec:finances_publiques-emission ; tab:calibration", "marge J-ν à ν_G = 1,1, 0 %, %"): "0,38",
+    ("sec:finances_publiques-emission ; tab:calibration", "ν_G minimal pour la marge J-ν (n_a = 4, 0 %)"): "1,1313",
+    ("sec:finances_publiques-restitution", "dette brute affichée à 2 %, ν_G = 1,15, % du PIB"): "28,5",
+    ("sec:finances_publiques-stationnaire", "dette consolidée à 2 %, arrondie"): "0,257",
+    ("sec:finances_publiques-stationnaire", "intérêts bruts à 0 %, ν_G = 1,15, % du PIB"): "0,1199",
+    ("sec:finances_publiques-stationnaire", "solde primaire à 0 %, % du PIB"): "-0,0971",
+    ("sec:finances_publiques-stationnaire", "θ_G à 0 %"): "0,218474",
+    ("sec:finances_publiques-stationnaire", "θ_G à 10 %"): "0,219568",
+    ("sec:finances_publiques-stationnaire", "θ_G à 2 %"): "0,219573",
+    ("sec:finances_publiques-transferts", "charge brute à 2 %, ν_G = 1,15, % du PIB"): "0,84",
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 0 %"): "12,1",
+    ("tab:etat-stationnaire", "dette brute affichée, % du PIB à 2 %"): "28,5",
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 0 %"): "0,218474",
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 10 %"): "0,219568",
+    ("tab:etat-stationnaire", "part de la dépense publique θ_G à 2 %"): "0,219573",
+    ("tab:etat-stationnaire", "solde primaire, % du PIB à 0 %"): "-0,0971",
+}
+# #62 (ν_H = 1 → 1,1, λ_H inchangé) : 24 valeurs de l'effet (ν) (D_H monte de 10,09 % à 2 % ; C42 : ΔD_c = ΔD_H ;
+# θ_G résolu monte) ou des ménages (V_H/(n_a YD) = ν_H/(1 + ν_H n_a π^{∗,pas}), épargne et C/YD).
+ANCIENNES_M34_62 = {
+    ("sec:banque-stationnaire", "impôt d'inflation net à 10 %, %"): "-0,485",
+    ("sec:banque-stationnaire", "impôt d'inflation net à 2 %, %"): "-0,037",
+    ("sec:banque_centrale-restitution", "résultat de la banque centrale à 0 %, ν_G = 1, % du PIB"): "0,0183",
+    ("sec:finances_publiques-caisse", "dépôts des ménages / impôt du mois, environ"): "36",
+    ("sec:menages-stationnaire", "C/YD à 10 %"): "0,8944",
+    ("sec:menages-stationnaire", "C/YD à 2 %"): "0,96110",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %"): "0,912667",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 4"): "0,912030",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 10 %, n_a = 52"): "0,912911",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %"): "0,980566",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 4"): "0,980535",
+    ("sec:menages-stationnaire", "V_H/(n_a YD) à 2 %, n_a = 52"): "0,980578",
+    ("sec:menages-stationnaire", "V_H_0/YD_0 à 2 %"): "11,7668",
+    ("sec:menages-stationnaire", "dont maintien à 10 %, point"): "8,7333",
+    ("sec:menages-stationnaire", "dont maintien à 2 %, point"): "1,9434",
+    ("sec:menages-stationnaire", "dont épargne réelle à 10 %, point"): "1,8232",
+    ("sec:menages-stationnaire", "dont épargne réelle à 2 %, point"): "1,9466",
+    ("sec:menages-stationnaire", "marge du plafond à 2 %, mois"): "12,24",
+    ("sec:menages-stationnaire", "taux d'épargne à 10 %, %"): "10,5565",
+    ("sec:menages-stationnaire", "taux d'épargne à 2 %, %"): "3,8900",
+    ("sec:menages-stationnaire", "épargne visée à 10 %, %"): "1,9977",
+    ("sec:menages-stationnaire", "épargne visée à 2 %, %"): "1,9852",
+    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 4, %"): "1,9950",
+    ("sec:menages-stationnaire", "épargne visée à 2 %, n_a = 52, %"): "1,9814",
+}
+ANCIENNES_M34 = ANCIENNES_M34_55 | ANCIENNES_M34_92 | ANCIENNES_M34_130 | ANCIENNES_M34_62
+
+
 def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
-    """Valeurs en vigueur (spécification et fiches 8 et 9 republiées) : toutes égales à la dernière décimale
-    publiée ; aucune valeur barrée n'y figure (catégories B-1 et N en contre-épreuve)."""
+    """Valeurs en vigueur (spécification et fiches 8 et 9, republiées à la table T1 de M34 au rang 9) : toutes égales
+    à la dernière décimale publiée, sans exception ; aucune valeur barrée n'y figure (catégories B-1 et N en
+    contre-épreuve)."""
     lignes = resultat["publiees"]
     assert len(lignes) == 449
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
     assert sum(1 for l in lignes if l["categorie"] == "S") == 20
-    assert all(l["verdict"] == "égal" for l in lignes if l["categorie"] == "S")
     assert [l for l in lignes if l["verdict"] != "égal"] == []
     for l in lignes:
         if l["publie"] == stationnaire.AUCUNE:
@@ -881,10 +1322,35 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
             assert abs(l["ecart"]) <= l["seuil"], l
 
 
+def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(stationnaire, base):
+    """R3 de l'audit de #130, après la republication du rang 9 : les 309 anciennes valeurs (`ANCIENNES_M34`), mises à
+    la place des valeurs en vigueur, sont égales à la dernière décimale publiée sous `ENTREES_D_ORIGINE` complètes
+    (état E0) et ζ = 4, valeur des publications de la mesure (α) de #80 (ζ n'entre pas dans l'état stationnaire) :
+    chaque republication s'explique par un paramètre déclaré de M34. Sans ζ = 4, seules les 12 de #55 restent en
+    écart. Sous les mêmes entrées, les valeurs en vigueur sont en écart exactement sur les 309 clés : une valeur
+    republiée ne retombe pas sur sa décimale à l'état E0, une valeur non republiée ne dépend pas de M34."""
+    en_vigueur = {(section, grandeur): publie for section, grandeur, publie, _, _ in stationnaire.VALEURS_PUBLIEES}
+    assert (len(ANCIENNES_M34_55), len(ANCIENNES_M34_92), len(ANCIENNES_M34_130), len(ANCIENNES_M34_62)) \
+        == (12, 173, 100, 24)
+    assert len(ANCIENNES_M34) == 309 and set(ANCIENNES_M34) <= set(en_vigueur)
+    assert [k for k, ancienne in ANCIENNES_M34.items() if ancienne == en_vigueur[k]] == []
+    anciennes = tuple((section, grandeur, ANCIENNES_M34.get((section, grandeur), publie), fonction, categorie)
+                      for section, grandeur, publie, fonction, categorie in stationnaire.VALEURS_PUBLIEES)
+
+    def ecarts(liste, **entrees):
+        calc = stationnaire.Calculs(replace(base, **entrees), stationnaire.NU_G_RETENU)
+        lignes = stationnaire.table_publiees(calc, liste)
+        assert len(lignes) == 449
+        return {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"}
+    assert ecarts(anciennes, **stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set()
+    assert ecarts(anciennes, **stationnaire.ENTREES_D_ORIGINE) == set(ANCIENNES_M34_55)
+    assert ecarts(stationnaire.VALEURS_PUBLIEES, **stationnaire.ENTREES_D_ORIGINE, zeta=4.0) == set(ANCIENNES_M34)
+
+
 def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     """C4 de `macro` (rang 7) : les 29 valeurs visées et republiées (spécification, commit 8b9fa94 ; fiches 8 et 9)
-    sont égales au script ; l'historique (commit 9c8bdbd) garde les 29 anciennes valeurs, toutes en écart, chacune
-    égale à sa valeur figée en littéral (`ANCIENNES_PUBLIEES`)."""
+    sont égales au script ; aucune n'est republiée à son ancienne valeur ; l'historique (commit 9c8bdbd) garde les 29
+    anciennes valeurs, toutes en écart, chacune égale à sa valeur figée en littéral (`ANCIENNES_PUBLIEES`)."""
     historique = resultat["historique"]
     assert len(historique) == len(ECARTS_PUBLIES) == 29
     assert {(l["section"], l["grandeur"]) for l in historique if l["verdict"] == "écart"} == ECARTS_PUBLIES
@@ -1095,13 +1561,14 @@ def test_alpha_allocations_independantes_de_zeta_seuil_monnaie(stationnaire, bas
 
 
 def test_sensibilite_a_zeta_publiee(stationnaire, base, resultat):
-    """`macro` : verdict jugé à ζ = 4 ; étendue des allocations L2 publiée à ζ ∈ {4 ; 8} et à ζ = 2 (illustration) ;
+    """`macro` : verdict jugé au ζ de la table (8, M34 ; #55) ; étendue des allocations L2 publiée à ζ ∈ {4 ; 8} et
+    à ζ = 2 (illustration) ;
     les allocations dépendantes de ζ (mesurées) sont C/Y_o, ti et T^cou/PIB, exclues des tests d'invariance."""
-    assert base.zeta == 4.0 and stationnaire.ZETA_PLAGE == (4.0, 8.0) and stationnaire.ZETA_ILLUSTRATION == 2.0
+    assert base.zeta == 8.0 and stationnaire.ZETA_PLAGE == (4.0, 8.0) and stationnaire.ZETA_ILLUSTRATION == 2.0
     sn = resultat["superneutralite"]
     assert set(sn["zeta"]) == {2.0, 4.0, 8.0}
     for q in stationnaire.ALLOCATIONS_VERDICT:  # à ζ du paramètre, l'étendue publiée est celle du verdict
-        assert sn["zeta"][4.0]["allocations"][q] == sn["allocations"][q]
+        assert sn["zeta"][8.0]["allocations"][q] == sn["allocations"][q]
     assert sn["dependantes_de_zeta"] == ["C/Y_o", "ti", "T^cou/PIB"]
     assert not set(sn["dependantes_de_zeta"]) & set(ALLOCATIONS_ZETA)
     assert not set(sn["dependantes_de_zeta"]) & {"C/PIB", "G/PIB", "I/PIB", "ΔIN/PIB"}
@@ -1219,13 +1686,20 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
 
 
 def test_minimum_de_delta_r_alpha_en_zeta(stationnaire, base):
-    """« Δr̄_α ne descend pas sous 0,1428 point, minimum vers ζ ≈ 68 » : sur ζ ∈ {4 ; 30 ; 50 ; 67 ; 69 ; 100 ;
-    1 000}, Δr̄_α reste au-dessus de sa valeur à ζ = 68, publiée."""
-    calc = stationnaire.Calculs(base)
-    minimum = stationnaire._delta_r_alpha(calc, 68.0)
-    assert stationnaire.comparer("0,1428", minimum)[2]
-    for zeta in (4.0, 30.0, 50.0, 67.0, 69.0, 100.0, 1000.0):
-        assert stationnaire._delta_r_alpha(calc, zeta) > minimum, zeta
+    """« Δr̄_α […] atteint sur la grille de ζ mesurée, de 2 à 200, un minimum de 0,160 point (0,1598) vers
+    ζ ≈ 63 (0,1614 à ζ = 68, où était le minimum, 0,1428 barré, à la calibration indicative) » : à la table T1,
+    Δr̄_α a un minimum local entier à ζ = 63, égal à 0,160 à la dernière décimale publiée, sous lequel il ne descend
+    pas sur une grille de pas 10 de 2 à 200, ni à ζ = 1 000 ; en contre-épreuve, à ϑ = 0,10 et ν_H = 1 (valeur
+    barrée, #130 et #62), de même à ζ = 68, égal à 0,1428. Grille complète des ζ entiers de 2 à 200 mesurée hors
+    batterie (30 s) : même minimum, 63 et 68."""
+    for calc, zeta_min, publie in (
+            (stationnaire.Calculs(base), 63, "0,160"),
+            (stationnaire.Calculs(replace(base, vartheta=stationnaire.ENTREES_D_ORIGINE["vartheta"],
+                                          nu_H=stationnaire.ENTREES_D_ORIGINE["nu_H"])), 68, "0,1428")):
+        minimum = stationnaire._delta_r_alpha(calc, float(zeta_min))
+        assert stationnaire.comparer(publie, minimum)[2]
+        for zeta in (zeta_min - 1, zeta_min + 1, *range(2, 201, 10), 200, 1000):
+            assert stationnaire._delta_r_alpha(calc, float(zeta)) > minimum, zeta
 
 
 def test_canal_ecarts_nominaux_egale_l_identite(stationnaire, base):
@@ -1564,4 +2038,12 @@ def test_valeurs_de_contre_epreuve_et_d_historique_barrees_dans_leur_source(stat
     assert len(listes) == 47 + 29
     manquantes = [(section, grandeur, publie) for section, grandeur, publie, _, _ in listes
                   if not any(_figure(publie, dedans) for _, dedans, _ in _sources(section))]
+    assert manquantes == []
+
+
+def test_anciennes_valeurs_de_M34_barrees_dans_leur_source(stationnaire):
+    """Chaque ancienne valeur republiée au rang 9 (`ANCIENNES_M34`) figure barrée dans au moins une des sources que
+    cite sa section, signe compris : la republication garde la trace de la valeur qu'elle remplace."""
+    manquantes = [(section, grandeur, ancienne) for (section, grandeur), ancienne in ANCIENNES_M34.items()
+                  if not any(_figure(ancienne, dedans) for _, dedans, _ in _sources(section))]
     assert manquantes == []

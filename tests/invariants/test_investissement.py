@@ -511,7 +511,8 @@ def test_seuils_d1_et_d2_en_equilibre_partiel(publier):
     lignes.append(f"(d2) e_I(1) = {maintenu[0] / ref[0] - 1.0:.4%} ; e_I(12) = {e12:.4%} ; "
                   f"e_I(120) = {e120:.4%} ; rapport = {e120 / e12:.4f}")
     assert e120 / e12 >= SEUIL_D2
-    publier("Bloc 6, (d1) et (d2) en équilibre partiel (ζ = 4, λ_ti = 0,02, π* = 2 %)", lignes)
+    publier(f"Bloc 6, (d1) et (d2) en équilibre partiel (ζ = {TABLE.zeta:g}, λ_ti = 0,02, π* = 2 %)",
+            lignes)
 
 
 def _evaluer(fonction, *arguments):
@@ -562,10 +563,10 @@ def test_frontiere_de_la_double_precision_des_bornes_b(socle, publier):
     d'environ −745 et déborde au-delà d'environ +709 (`math.exp` lève `OverflowError`, que le
     moteur traduit en `DepassementNumerique` : test de ce nom plus bas). Dans le domaine déclaré (ζ ≤ 20), S6 rend ti_{t+1} = 0,0 exactement dès que
     Δϱ = ϱ_L − ϱ̄_L dépasse la frontière publiée ici, mesurée par bisection sur
-    `utilisation_visee` puis `part_visee_suivante` à ζ = 4 (référence) et 20 (borne haute),
-    ti du sentier résolu à π* = 2 %, tu = t̄u, t̄u et λ_ti/n_a de la table ; i_L équivalent par
-    S1 inversée (ϱ̄_L du sentier) ; formes fermées en contrôle, écart publié. Le pas est alors
-    refusé par le moteur en phase 5 (`test_part_visee_nulle_refusee_par_le_moteur`). Le lot de
+    `utilisation_visee` puis `part_visee_suivante` au ζ de la table (8, M34 ; référence) et à
+    20 (borne haute), ti du sentier résolu à π* = 2 %, tu = t̄u, t̄u et λ_ti/n_a de la table ;
+    i_L équivalent par S1 inversée (ϱ̄_L du sentier) ; formes fermées en contrôle, écart publié.
+    Le pas est alors refusé par le moteur en phase 5 (`test_part_visee_nulle_refusee_par_le_moteur`). Le lot de
     10^5 tirages est jugé par `tests/unitaires/test_investissement.py`."""
     mesures = [
         ("plan, −η_r Δϱ = +746", _evaluer(bloc.plan_en_volume, 0.14, 1.0, 1.0, 746.0, -1.0, 0.0)),
@@ -669,7 +670,10 @@ def test_boucle_conjointe_b_x_de_la_fiche_5(socle, publier):
 # --------------------------------------------------------------------------
 
 HORIZONS_DES_VITESSES = (720, 2160, 6480)
-SEUIL_VITESSES = 1e-6  # relatif, après 2 160 pas (critère amendé)
+SEUIL_VITESSES = 1e-6  # relatif, après 6 480 pas (critère amendé, puis horizon corrigé le 17/11/2026)
+# Horizon du verdict : 2 160 pas, corrigé de façon prospective à 6 480 pas par décision du mainteneur du 17/11/2026
+# (rang 7, #45, λ_w = 0,18) ; 720 et 2 160 pas restent publiés sans verdict.
+HORIZON_DU_VERDICT_DES_VITESSES = 6480
 SEUIL_FORMES_FERMEES = 1e-6  # relatif, après 24 000 pas
 NB_PAS_DES_FORMES_FERMEES = 24_000
 NB_PAS_DE_L_ENDETTEMENT = 2160
@@ -701,11 +705,13 @@ def _hausse_de_g_pendant_12_tours(t):
 
 
 def test_vitesses_de_la_fiche_6(socle, publier):
-    """Fiche 6, § 9.6, « Vitesses » (critère 6, amendé : 2 160 pas), classe (b-x) : G + 1 % aux
+    """Fiche 6, § 9.6, « Vitesses » (critère 6, amendé : 6 480 pas, P236), classe (b-x) : G + 1 % aux
     tours 1 à 12 (plan du bloc d'essai 9), taux exogène (blocs 7 et 8 d'essai), prix endogènes
     (P123), π* = 2 % ; branches λ_ti × 0,5 et × 2 ; écart relatif entre branches de K/Y (ii), tu,
-    I/PIB, L/K, D_F/(12 PIB) et distribution au plus 1e−6 après 2 160 pas. Écarts à 720 et à
-    6 480 pas publiés sans verdict (critère d'origine ; P123)."""
+    I/PIB, L/K, D_F/(12 PIB) et distribution au plus 1e−6 après 6 480 pas. Horizon corrigé de
+    façon prospective par décision du mainteneur du 17/11/2026 (rang 7, λ_w = 0,18 : branche lente
+    λ_w × 0,5) ; ancien verdict publié : échec à 2 160 pas (4,1e−6 sur K/Y). Écarts à 720 et à
+    2 160 pas publiés sans verdict (critère d'origine ; P123)."""
     sentier = socle.sentier(0.02)
     reels = sans(socle, "banque", "banque_centrale")
     branches = []
@@ -723,8 +729,9 @@ def test_vitesses_de_la_fiche_6(socle, publier):
     for h in HORIZONS_DES_VITESSES:
         ecarts = {k: ecart(branches[0][h][k], branches[1][h][k]) for k in branches[0][h]}
         lignes.append(f"{h} pas : " + " ; ".join(f"{k} {x:.1e}" for k, x in ecarts.items())
-                      + (" (verdict, seuil 1e−6)" if h == 2160 else " (sans verdict)"))
-        if h == 2160:
+                      + (" (verdict, seuil 1e−6)" if h == HORIZON_DU_VERDICT_DES_VITESSES
+                         else " (sans verdict)"))
+        if h == HORIZON_DU_VERDICT_DES_VITESSES:
             pire = ecarts
     publier("Bloc 6, vitesses (λ_ti × 0,5 contre × 2), G + 1 % aux tours 1 à 12, π* = 2 % "
             "(blocs 2 à 6 réels, taux exogène, prix endogènes ; P123)", lignes)
@@ -810,12 +817,18 @@ def test_endettement_sous_un_taux_releve_de_deux_points(endettement, publier):
 @pytest.mark.xfail(strict=True, reason=(
     "#139 : critère « Endettement » de la fiche 6 (dépôts au PIB à 1e−6 après 2 160 pas) non "
     "tenu sur le banc (b-x) sous i_L + 2 points permanent, convergence oscillante lente vers la "
-    "forme fermée (P140) ; critère non déplacé, correction prospective réservée au mainteneur"))
+    "forme fermée (P140) ; tenu au rang 6 par la seule phase de l'oscillation, à nouveau non tenu "
+    "à λ_w = 0,18 (rang 7, #45) ; critère non déplacé"))
 def test_endettement_depots_sur_leur_forme_fermee_apres_2160_pas(endettement):
     """Fiche 6, § 9.6, « Endettement » (7 (d)), partie dépôts : D_F d'ouverture/(n_a PIB du pas)
     (convention de B12) sur sa forme fermée, ν_F p v^e/(p v + ΔIN) du script, qui ne lit pas le
-    taux, à 1e−6 relatif après 2 160 pas. Non tenu (P140, issue #139) : échec attendu strict ; la
-    correction prospective proposée par `macro` est réservée au mainteneur."""
+    taux, à 1e−6 relatif après 2 160 pas. Non tenu (P140, issue #139) : échec attendu strict.
+    Jusqu'à ν_H = 1 : écart −6,2e−6 à ϑ = 0,15. Rang 6 (ν_H = 1,1, #62) : −8,96e−7 au pas 2 159,
+    passage dû à la seule phase de l'oscillation (|écart| ≤ 1e−6 aux seuls pas 0, 510, 1 553 à
+    1 562 et 2 103 à 2 162 sur 2 400 pas), marque retirée. Rang 7 (λ_w = 0,18, #45 ; sonde de
+    2 400 pas, 17/11/2026) : −8,04e−6 au pas 2 159 ; |écart| ≤ 1e−6 aux seuls pas 0, 475, 1 522 à
+    1 539 et 1 812 à 1 857 ; de −8,05e−6 à −5,88e−6 sur les pas 2 160 à 2 399 ; marque remise
+    (décision du mainteneur du 17/11/2026). Le critère n'est pas déplacé."""
     assert ecart(endettement["depots"], endettement["forme"]) <= SEUIL_DEPOTS
 
 
@@ -961,13 +974,15 @@ def test_depassement_de_l_exponentielle_refuse_par_le_moteur(socle):
 
 def test_part_visee_nulle_refusee_par_le_moteur(socle):
     """Décision du mainteneur du 15/11/2026 (constat M1 d'`audit`, #143) : au-delà de la frontière
-    de S6 publiée (ζ = 4, test `test_frontiere_de_la_double_precision_des_bornes_b`), le pas ne
-    rend pas de valeur silencieuse : ti_{t+1} = 0,0 est refusé par `RefusDuMoteur` (domaine
+    de S6 publiée (ζ de la table, `test_frontiere_de_la_double_precision_des_bornes_b`), le pas
+    ne rend pas de valeur silencieuse : ti_{t+1} = 0,0 est refusé par `RefusDuMoteur` (domaine
     ti > 0 de l'état), qui nomme le pas 0, la phase 5, le bloc investissement et « ti » (Δϱ à
     la frontière + 0,01 par an). En deçà, le côté positif de la frontière est jugé par appel
-    direct (test précédent) : sur ce socle, le pas échoue déjà en phase 6 par `DefautComptable`
-    (caisse des entreprises, ligne 9) pour i_{L,0} ≳ 3,25 par an. i_{L,0} par S1 inversée sur
-    ϱ̄_L et π* du sentier à 2 %."""
+    direct (test précédent). Sur ce socle (μ̄ = 0,60, ζ = 8, M34), S6 lie avant la caisse des
+    entreprises aux trois π̄ : le premier i_{L,0} arrêté au pas 0, mesuré par bissection, est
+    la frontière de S6 elle-même (Δϱ ≈ 1,654 par an ; i_{L,0} ≈ 1,684 / 1,737 / 1,950 par an
+    à π̄ = 0 / 2 / 10 %), refusé en phase 5 (à ζ = 4, la caisse liait la première à π̄ = 0).
+    i_{L,0} par S1 inversée sur ϱ̄_L et π* du sentier à 2 %."""
     import dataclasses
     from nations.moteur import ordonnanceur as ordo
     from nations.moteur.diagnostics import RefusDuMoteur
