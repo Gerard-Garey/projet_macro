@@ -167,4 +167,12 @@ Issues : #144, #150 (P176) ; contrats consolidés : ceux de l'ADR 0013, et #60, 
 
 ## Annotations
 
-Aucune à ce jour.
+### Annotation du 26/11/2026 (rang 1 de J3-e1, PR #174 ; ADR 0015)
+
+Rédigée par `architect-approfondi` avec l'ADR 0015. Le point 1 consigne une décision du mainteneur du 26/11/2026 (P251) ; **les points 2 à 5 sont en vigueur à l'acceptation de l'ADR 0015**, qui en porte les motifs et les options écartées. Les divergences de texte de l'ADR 0013 relevées à la rédaction (Conséquences) ne sont pas traitées ici.
+
+1. **D1, conditions jointes de l'état** (#122 ; P251 ; ADR 0015, pt 12). Le contrôle « IN^vol = 0 ⇒ IN = 0 à l'état chargé » (H1.4) se place dans `nations.etat.schema`. `defaut_de_domaine` reste la seule fonction de domaine **par champ** ; s'y ajoute une liste fermée de conditions jointes entre champs, évaluée par une seule fonction à toute construction par `EtatPays(...)` (état initial, `dataclasses.replace`, reprise), avec refus et diagnostic, sans réparation. `etat_de_cloture` ne l'appelle pas : les trois conditions de D1 et le décompte « une fois par pas » sont inchangés. Première entrée : IN^vol = 0 ⇒ IN = 0.
+2. **D2** (ADR 0015, pt 12.4). Une condition jointe ne change ni champ, ni type, ni unité, ni sens d'un champ : `VERSION_SCHEMA` reste à 5, l'ajout étant noté à son journal.
+3. **F2, test « conversion unique »** (ADR 0015, pt 13). « Seule exemption, fermée : le calendrier » se lit : deux listes fermées hors des deux conversions, le calendrier et les fonctions du module feuille `nations.scenarios.stationnaire`, nommées une à une. Aucune autre fonction de `src/` ne divise par n_a ni n'élève à la puissance 1/n_a.
+4. **F1, H3, H6.1** (ADR 0015, pt 6 à 9 et 14). « Valeurs par archétype dans `scenarios/` » : `scenarios/` rend l'état initial résolu et l'`EnsembleDesParametres` aligné (θ_G résolu). H3.3 : les valeurs indicatives restent égales aux défauts du script ; l'exception θ_G se compare au résolveur de `scenarios/`. H6.1 est inchangé pour `src/` ; `outils/etat_stationnaire.py` importe de `nations` le seul module feuille du résolveur.
+5. **Graphe d'imports** (ADR 0015, pt 9.7). `scenarios/` importe `etat`, `moteur.parametres` et `noyau` ; aucune de ces couches, ni `blocs`, ni `observation`, n'importe `scenarios/`.
