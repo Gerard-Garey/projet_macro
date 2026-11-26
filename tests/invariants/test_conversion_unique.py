@@ -46,6 +46,11 @@ Les divisions par n_a et les puissances en 1/n_a des formes fermées du
 résolveur de l'état stationnaire (`nations.scenarios.stationnaire`) sont
 admises par une troisième liste **fermée et nommée**, `EXEMPTIONS_STATIONNAIRE`
 (ADR 0015, point 13 ; décision S1, qui modifie ADR 0014, F2).
+Le ratio au PIB annuel du test zéro (`eq:observation-ratio-pib-annuel`), stock d'ouverture
+rapporté à n_a fois le flux du pas, est une division par n_a × flux qui n'est pas une
+conversion de taux : il est admis dans sa seule fonction d'`observation/` par une quatrième
+liste **fermée et nommée**, `EXEMPTIONS_OBSERVATION` (#176 ; visée par le mainteneur le
+26/11/2026 ; modifie ADR 0014, F2, comme S1), avec la richesse des ménages de B10.
 Chaque exemption doit servir (une exemption sans objet est un écart de la
 liste elle-même).
 """
@@ -83,7 +88,16 @@ EXEMPTIONS_STATIONNAIRE = {
     ("nations.scenarios.stationnaire", "etat_stationnaire"): "division par n_a",
     ("nations.scenarios.stationnaire", "ouverture"): "puissance en n_a",
 }
-EXEMPTIONS = {**EXEMPTIONS_CONVERSIONS, **EXEMPTIONS_CALENDRIER, **EXEMPTIONS_STATIONNAIRE}
+# Série du test zéro (#176 ; exemption visée par le mainteneur le 26/11/2026) : le ratio au PIB annuel
+# (`eq:observation-ratio-pib-annuel`, M22, lecture (e)) et la richesse des ménages de B10 (stock sur
+# n_a fois YD, M27, sans balise), deux définitions de ratios, non des conversions de taux. Seules ces
+# deux fonctions ; le reste d'`observation/` (moyennes de 12 tours comprises) reste sous la règle commune.
+EXEMPTIONS_OBSERVATION = {
+    ("nations.observation.serie_test_zero", "ratio_au_pib_annuel"): "division par n_a",
+    ("nations.observation.serie_test_zero", "richesse_sur_revenu_annuel"): "division par n_a",
+}
+EXEMPTIONS = {**EXEMPTIONS_CONVERSIONS, **EXEMPTIONS_CALENDRIER, **EXEMPTIONS_STATIONNAIRE,
+              **EXEMPTIONS_OBSERVATION}
 
 # Fonctions appelées qui divisent ou élèvent à une puissance leur second argument.
 _APPELS_DIVISION = frozenset({"truediv", "divide", "true_divide"})
@@ -308,16 +322,33 @@ def test_conversion_unique_dans_src():
 
 
 def test_exemptions_fermees_et_nommees():
-    """Les exemptions sont les deux conversions, les deux fonctions du calendrier et les cinq
-    fonctions du résolveur de l'état stationnaire (ADR 0015, point 13), sans recouvrement."""
+    """Les exemptions sont les deux conversions, les deux fonctions du calendrier, les cinq
+    fonctions du résolveur de l'état stationnaire (ADR 0015, point 13) et le ratio au PIB annuel
+    du test zéro (#176), sans recouvrement."""
     assert set(EXEMPTIONS_CONVERSIONS) == {("nations.moteur.conversions", "par_pas"),
                                            ("nations.moteur.conversions", "facteur_par_pas")}
     assert set(EXEMPTIONS_CALENDRIER) == {("nations.moteur.calendrier", "date"),
                                           ("nations.moteur.calendrier", "est_date_de_decision")}
     assert set(EXEMPTIONS_STATIONNAIRE) == {("nations.scenarios.stationnaire", nom) for nom in (
         "facteurs", "rho_IN", "rho_K", "etat_stationnaire", "ouverture")}
+    assert set(EXEMPTIONS_OBSERVATION) == {("nations.observation.serie_test_zero", nom) for nom in (
+        "ratio_au_pib_annuel", "richesse_sur_revenu_annuel")}
     assert len(EXEMPTIONS) == len(EXEMPTIONS_CONVERSIONS) + len(EXEMPTIONS_CALENDRIER) + len(
-        EXEMPTIONS_STATIONNAIRE)
+        EXEMPTIONS_STATIONNAIRE) + len(EXEMPTIONS_OBSERVATION)
+
+
+def test_l_exemption_du_ratio_ne_couvre_que_sa_fonction():
+    """Une division par n_a ailleurs dans la série du test zéro, ou dans un autre module
+    d'`observation/`, est un écart ; une puissance en 1/n_a dans la fonction exemptée aussi."""
+    texte = "def _clore(x, pas_par_an):\n    return x / pas_par_an\n"
+    assert ecarts(releves_du_texte("nations.observation.serie_test_zero", texte)) == [
+        ("nations.observation.serie_test_zero", "_clore", "division par n_a", 2)]
+    texte = "def ratio_au_pib_annuel(x, y, pas_par_an):\n    return x / (pas_par_an * y)\n"
+    assert ecarts(releves_du_texte("nations.observation.residus", texte)) == [
+        ("nations.observation.residus", "ratio_au_pib_annuel", "division par n_a", 2)]
+    texte = "def ratio_au_pib_annuel(x, pas_par_an):\n    return x ** (1 / pas_par_an)\n"
+    assert ecarts(releves_du_texte("nations.observation.serie_test_zero", texte)) == [
+        ("nations.observation.serie_test_zero", "ratio_au_pib_annuel", "puissance en n_a", 2)]
 
 
 def test_l_exemption_du_resolveur_ne_couvre_que_ses_fonctions():
