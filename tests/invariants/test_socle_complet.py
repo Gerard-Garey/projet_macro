@@ -32,7 +32,10 @@ Publiés sans verdict (lignes (b)) : marge de caisse (h_max), retour après −5
 direct, critère 11), θ_H aux deux sens (C52), racine dominante et temps de doublement sous φ = 0
 (C62 : choc de 1 %, F11, et régime linéaire, décision du mainteneur du 15/11/2026 ; racine
 identifiée sur le moteur, maquette en regard, #166), marge de
-`sec:finances_publiques-caisse`. Aucune mesure ici ne vaut résultat final (J3-e).
+`sec:finances_publiques-caisse`, et, remesurés à la table T1 (#171) : nombre de tours de
+rationnement au retour d'une baisse de 5 % sous une encaisse visée à ν_G = 1 (n°1, P274, bloc 9
+dérivé dans `tests/`), premier pas d'un écart d'un point du taux directeur sous φ = 0 (n°4).
+Aucune mesure ici ne vaut résultat final (J3-e).
 """
 
 import dataclasses
@@ -48,6 +51,7 @@ from nations.blocs import menages as bloc_5
 from nations.blocs.finances_publiques import FinancesPubliques
 from nations.etat import schema
 from nations.etat.sauvegarde import charger, sauvegarder
+from nations.moteur import calendrier
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import TauxDeFlux, par_pas
 from nations.moteur.diagnostics import RefusDuMoteur
@@ -697,6 +701,108 @@ def test_caisse_retour_apres_moins_cinq_pour_cent_publie_a_52(socle, pi, publier
             f"appel direct ; {ETIQUETTE} pour n_a = 12 ; sans verdict)", lignes)
 
 
+# Cliquet de l'encaisse égale à un pas de paiements (#171, n°1 ; P274) : `sec:ecartees`,
+# « Encaisse égale à un pas de paiements (ν_G = 1) », « une baisse temporaire de 5 % reste
+# rationnée 79 tours après son retour », mesuré à la calibration indicative sur la maquette de la
+# fiche 9 (« G −5 % pendant 12 tours, puis retour », m = 1, π̄ = 0 : tours 13 à 90).
+NU_G_UNITAIRE = 1.0
+NB_PAS_DU_CLIQUET = 120
+
+
+class _TableAEncaisseVisee:
+    """Table du bloc 9 dont ν_G est remplacé, tout le reste étant lu sur la table réelle : la
+    table refuse ν_G ≤ 1 (domaine déclaré, une décision citant M33), d'où cette vue d'essai."""
+
+    __slots__ = ("_table", "nu_G")
+
+    def __init__(self, table, nu_G):
+        self._table = table
+        self.nu_G = nu_G
+
+    def __getattr__(self, nom):
+        return getattr(self._table, nom)
+
+
+class _ParametresAEncaisseVisee:
+    """Ensemble des paramètres dont la table du bloc 9 est `_TableAEncaisseVisee`."""
+
+    __slots__ = ("_parametres", "finances_publiques")
+
+    def __init__(self, parametres, table, nu_G):
+        self._parametres = parametres
+        self.finances_publiques = _TableAEncaisseVisee(table, nu_G)
+
+    def __getattr__(self, nom):
+        return getattr(self._parametres, nom)
+
+
+def bloc_9_a_encaisse_visee(nu_G, modifier):
+    """Bloc 9 dérivé dans `tests/` (P274) : `bloc_9_compose(modifier)`, dont la phase 7, seule
+    lectrice de ν_G au moteur (E8, `encaisse_visee`), lit ν_G = `nu_G` sur la table modifiée ;
+    sous-classe sans attribut d'instance, même déclaration, aucun drapeau dans `src/`."""
+    compose = type(bloc_9_compose(modifier))
+
+    def phase_7(self, vue):
+        p = vue.parametres
+        table = modifier(vue.ouverture.t, p.finances_publiques)
+        FinancesPubliques.phase_7(
+            self, _VueAvecParametres(vue, _ParametresAEncaisseVisee(p, table, nu_G)))
+    return type("FinancesPubliquesAEncaisseVisee", (compose,),
+                {"__slots__": (), "phase_7": phase_7})()
+
+
+def _nu_G_effectif(p):
+    """ν_G lu par E8 au pas relevé `p` : M^G* rapportée aux paiements bruts exécutés du pas
+    (lignes 2, 6, 11a à 11c)."""
+    paiements = sum(p[ligne] for ligne in ("2", "6", "11a", "11b", "11c"))
+    return p["variables"]["M_G_etoile"] / paiements
+
+
+def test_cliquet_de_l_encaisse_egale_a_un_pas_de_paiements(socle, publier):
+    """#171, n°1 (P274), banc écrit avant l'essai : socle complet, π̄ = 0, encaisse visée à
+    ν_G = 1 par le bloc 9 dérivé (`bloc_9_a_encaisse_visee`), état initial résolu à ν_G = 1,15
+    (la table refuse ν_G ≤ 1), G visée × 0,95 aux tours 1 à 12 (pas 0 à 11) puis retour,
+    120 pas ; pas où le plafond de E1 est actif (G^plan < G^visée). Propriétés : témoin sans
+    choc au même ν_G jamais plafonné ; sous le choc, plafond inactif pendant la baisse, actif
+    au retour (pas 12, tour 13), sur des pas contigus, jamais réactivé une fois levé. Publiés :
+    nombre de pas actifs, premier et dernier pas et tours, levée dans la fenêtre ou censure."""
+    sentier = socle.sentier(0.0)
+    _, temoin = derouler(socle, sentier, NB_PAS_DU_CLIQUET,
+                         bloc_9=bloc_9_a_encaisse_visee(NU_G_UNITAIRE, lambda t, table: table))
+    assert len(temoin.pas) == NB_PAS_DU_CLIQUET
+    assert not any(_actif(p) for p in temoin.pas)
+    assert all(abs(_nu_G_effectif(p) - NU_G_UNITAIRE) <= SEUIL_FLUX for p in temoin.pas)
+    _, r = derouler(socle, sentier, NB_PAS_DU_CLIQUET,
+                    bloc_9=bloc_9_a_encaisse_visee(NU_G_UNITAIRE, choc_de_theta_G(0.95)))
+    assert len(r.pas) == NB_PAS_DU_CLIQUET
+    assert all(abs(_nu_G_effectif(p) - NU_G_UNITAIRE) <= SEUIL_FLUX for p in r.pas)
+    actifs = [p["t"] for p in r.pas if _actif(p)]
+    assert actifs and actifs[0] == TOURS_DU_CHOC
+    assert actifs == list(range(actifs[0], actifs[-1] + 1))
+    leve = actifs[-1] + 1
+    servi = min(r.pas[t]["variables"]["G_plan"] / r.pas[t]["variables"]["G_vise"]
+                for t in actifs)
+    def marge_du_temoin(t):
+        """1 − G^visée/M^G d'ouverture du pas t (état de fin du pas t − 1)."""
+        return 1.0 - temoin.pas[t]["variables"]["G_vise"] / temoin.pas[t - 1]["etat"].M_G
+    marge = marge_du_temoin(NB_PAS_DU_CLIQUET - 1)
+    marge_avant_retour = marge_du_temoin(TOURS_DU_CHOC - 1)
+    # Réserve R1 du visa de `macro` : le régime ν_G = 1 du témoin est atteint avant le retour
+    # (marge stationnaire du pas 11 au pas 119, celle du script à ν_G = 1).
+    assert math.isclose(marge_avant_retour, marge, rel_tol=1e-9)
+    publier("Cliquet de l'encaisse égale à un pas de paiements (ν_G = 1, bloc 9 dérivé, P274), "
+            f"π̄ = 0, G visée × 0,95 aux tours 1 à 12, {NB_PAS_DU_CLIQUET} pas ({ETIQUETTE} pour "
+            "l'état initial résolu et les tables ; E8 à ν_G = 1)", [
+                (f"témoin sans choc : plafond de E1 jamais actif ; marge 1 − G^visée/M^G "
+                 f"d'ouverture au pas {TOURS_DU_CHOC - 1} = {marge_avant_retour:.6f}, au pas "
+                 f"{NB_PAS_DU_CLIQUET - 1} = {marge:.6f}"),
+                f"plafond de E1 actif aux pas {actifs[0]} à {actifs[-1]} (tours "
+                f"{calendrier.tour_du_pas(actifs[0])} à {calendrier.tour_du_pas(actifs[-1])}) : "
+                f"{len(actifs)} pas après le retour ; min G^plan/G^visée = {servi:.6f} ; "
+                + (f"levé au pas {leve}, jamais réactivé" if leve < NB_PAS_DU_CLIQUET
+                   else f"encore actif au pas {NB_PAS_DU_CLIQUET - 1} (fenêtre censurée)")])
+
+
 # --------------------------------------------------------------------------
 # Délais des fiches 5 et 6 sur la chaîne réelle (P162), θ_H (C52)
 # --------------------------------------------------------------------------
@@ -1319,6 +1425,10 @@ def _ecarts_de_taux_sous_phi_nul(socle, sentier, facteur, nb_pas):
         # Divergence de la boucle sous φ = 0 (régime explosif déclaré, `sec:finances_publiques-
         # impots`) : la trajectoire choquée sort d'un domaine ; fait publié, sans verdict.
         arret = f"arrêt au pas {len(s.pas)} : {refus}"
+    # Rang k de la série = pas t = k de la trajectoire choquée (tour k + 1, `sec:cadre-calendrier`)
+    # : les deux trajectoires partent de l'état initial, pas 0 (#171, n°4).
+    assert [p["t"] for p in s.pas] == list(range(len(s.pas)))
+    assert [p["t"] for p in c.pas] == list(range(len(c.pas)))
     return [b["variables"]["i_CB"] - a["variables"]["i_CB"]
             for a, b in zip(c.pas, s.pas)], arret
 
@@ -1481,7 +1591,29 @@ def test_temps_de_doublement_sous_phi_nul(socle, maquette, pi, publier):
     publier(f"C62 sous φ = 0, choc de 1 %, π* = {100 * pi:g} % ({ETIQUETTE} ; sans verdict)", [
         "choc de 1 % hors du régime linéaire : aucune racine identifiée sur le moteur ; la racine "
         "du moteur est publiée par `test_temps_de_doublement_en_regime_lineaire`",
-        maxima, f"{_maquette_en_regard(maquette, pi)} (pour mémoire)", arret])
+        maxima, _premier_ecart_d_un_point(ecarts),
+        f"{_maquette_en_regard(maquette, pi)} (pour mémoire)", arret])
+
+
+# Écart d'un point du taux directeur à la trajectoire de contrôle (#171, n°4 ; `sec:finances_
+# publiques-conditions`, C62, « s'écartant d'un point […] au pas 182 », publié à la calibration
+# indicative) : |Δi_CB| ≥ 0,01 en fraction par an.
+UN_POINT = 0.01
+
+
+def _premier_ecart_d_un_point(ecarts):
+    """Premier pas t où |Δi_CB| ≥ `UN_POINT`, avec son tour (t + 1) et sa date (année, mois),
+    `sec:cadre-calendrier` ; ou son absence sur les pas relevés. Mesure, sans verdict."""
+    assert ecarts and all(math.isfinite(x) for x in ecarts), "série Δi_CB vide ou non finie"
+    t = next((k for k, x in enumerate(ecarts) if abs(x) >= UN_POINT), None)
+    if t is None:
+        return (f"|Δi_CB| < {UN_POINT:g} (un point) aux {len(ecarts)} pas relevés (max "
+                f"{max(map(abs, ecarts)):.3e}) : aucun écart d'un point")
+    annee, mois = calendrier.date(t)
+    precedent = f"{abs(ecarts[t - 1]):.4e} au pas {t - 1}" if t else "aucun pas précédent"
+    return (f"premier écart d'un point (|Δi_CB| ≥ {UN_POINT:g}) : pas t = {t}, tour "
+            f"{calendrier.tour_du_pas(t)} (année {annee}, mois {mois}) ; |Δi_CB| = "
+            f"{abs(ecarts[t]):.4e} (contre {precedent})")
 
 
 # Mesure complémentaire de C62 en régime linéaire (décision du mainteneur du 15/11/2026).
