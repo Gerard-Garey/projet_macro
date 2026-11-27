@@ -32,7 +32,11 @@ Publiés sans verdict (lignes (b)) : marge de caisse (h_max), retour après −5
 direct, critère 11), θ_H aux deux sens (C52), racine dominante et temps de doublement sous φ = 0
 (C62 : choc de 1 %, F11, et régime linéaire, décision du mainteneur du 15/11/2026 ; racine
 identifiée sur le moteur, maquette en regard, #166), marge de
-`sec:finances_publiques-caisse`. Aucune mesure ici ne vaut résultat final (J3-e).
+`sec:finances_publiques-caisse`, et, remesurés à la table T1 (#171) : nombre de tours de
+rationnement au retour d'une baisse de 5 % sous une encaisse visée à ν_G = 1 (n°1, P274, bloc 9
+dérivé dans `tests/`), premier pas d'un écart d'un point du taux directeur sous φ = 0 (n°4),
+P_36 d'une hausse de taux d'un point aux tours 1 à 12 sous φ ∈ {0 ; 1} (n°6, P275).
+Aucune mesure ici ne vaut résultat final (J3-e).
 """
 
 import dataclasses
@@ -45,9 +49,11 @@ import pytest
 from nations.blocs import finances_publiques as bloc_9
 from nations.blocs import investissement as bloc_6
 from nations.blocs import menages as bloc_5
+from nations.blocs.banque_centrale import taux_indique_par_la_regle
 from nations.blocs.finances_publiques import FinancesPubliques
 from nations.etat import schema
 from nations.etat.sauvegarde import charger, sauvegarder
+from nations.moteur import calendrier, registre
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import TauxDeFlux, par_pas
 from nations.moteur.diagnostics import RefusDuMoteur
@@ -697,6 +703,108 @@ def test_caisse_retour_apres_moins_cinq_pour_cent_publie_a_52(socle, pi, publier
             f"appel direct ; {ETIQUETTE} pour n_a = 12 ; sans verdict)", lignes)
 
 
+# Cliquet de l'encaisse égale à un pas de paiements (#171, n°1 ; P274) : `sec:ecartees`,
+# « Encaisse égale à un pas de paiements (ν_G = 1) », « une baisse temporaire de 5 % reste
+# rationnée 79 tours après son retour », mesuré à la calibration indicative sur la maquette de la
+# fiche 9 (« G −5 % pendant 12 tours, puis retour », m = 1, π̄ = 0 : tours 13 à 90).
+NU_G_UNITAIRE = 1.0
+NB_PAS_DU_CLIQUET = 120
+
+
+class _TableAEncaisseVisee:
+    """Table du bloc 9 dont ν_G est remplacé, tout le reste étant lu sur la table réelle : la
+    table refuse ν_G ≤ 1 (domaine déclaré, une décision citant M33), d'où cette vue d'essai."""
+
+    __slots__ = ("_table", "nu_G")
+
+    def __init__(self, table, nu_G):
+        self._table = table
+        self.nu_G = nu_G
+
+    def __getattr__(self, nom):
+        return getattr(self._table, nom)
+
+
+class _ParametresAEncaisseVisee:
+    """Ensemble des paramètres dont la table du bloc 9 est `_TableAEncaisseVisee`."""
+
+    __slots__ = ("_parametres", "finances_publiques")
+
+    def __init__(self, parametres, table, nu_G):
+        self._parametres = parametres
+        self.finances_publiques = _TableAEncaisseVisee(table, nu_G)
+
+    def __getattr__(self, nom):
+        return getattr(self._parametres, nom)
+
+
+def bloc_9_a_encaisse_visee(nu_G, modifier):
+    """Bloc 9 dérivé dans `tests/` (P274) : `bloc_9_compose(modifier)`, dont la phase 7, seule
+    lectrice de ν_G au moteur (E8, `encaisse_visee`), lit ν_G = `nu_G` sur la table modifiée ;
+    sous-classe sans attribut d'instance, même déclaration, aucun drapeau dans `src/`."""
+    compose = type(bloc_9_compose(modifier))
+
+    def phase_7(self, vue):
+        p = vue.parametres
+        table = modifier(vue.ouverture.t, p.finances_publiques)
+        FinancesPubliques.phase_7(
+            self, _VueAvecParametres(vue, _ParametresAEncaisseVisee(p, table, nu_G)))
+    return type("FinancesPubliquesAEncaisseVisee", (compose,),
+                {"__slots__": (), "phase_7": phase_7})()
+
+
+def _nu_G_effectif(p):
+    """ν_G lu par E8 au pas relevé `p` : M^G* rapportée aux paiements bruts exécutés du pas
+    (lignes 2, 6, 11a à 11c)."""
+    paiements = sum(p[ligne] for ligne in ("2", "6", "11a", "11b", "11c"))
+    return p["variables"]["M_G_etoile"] / paiements
+
+
+def test_cliquet_de_l_encaisse_egale_a_un_pas_de_paiements(socle, publier):
+    """#171, n°1 (P274), banc écrit avant l'essai : socle complet, π̄ = 0, encaisse visée à
+    ν_G = 1 par le bloc 9 dérivé (`bloc_9_a_encaisse_visee`), état initial résolu à ν_G = 1,15
+    (la table refuse ν_G ≤ 1), G visée × 0,95 aux tours 1 à 12 (pas 0 à 11) puis retour,
+    120 pas ; pas où le plafond de E1 est actif (G^plan < G^visée). Propriétés : témoin sans
+    choc au même ν_G jamais plafonné ; sous le choc, plafond inactif pendant la baisse, actif
+    au retour (pas 12, tour 13), sur des pas contigus, jamais réactivé une fois levé. Publiés :
+    nombre de pas actifs, premier et dernier pas et tours, levée dans la fenêtre ou censure."""
+    sentier = socle.sentier(0.0)
+    _, temoin = derouler(socle, sentier, NB_PAS_DU_CLIQUET,
+                         bloc_9=bloc_9_a_encaisse_visee(NU_G_UNITAIRE, lambda t, table: table))
+    assert len(temoin.pas) == NB_PAS_DU_CLIQUET
+    assert not any(_actif(p) for p in temoin.pas)
+    assert all(abs(_nu_G_effectif(p) - NU_G_UNITAIRE) <= SEUIL_FLUX for p in temoin.pas)
+    _, r = derouler(socle, sentier, NB_PAS_DU_CLIQUET,
+                    bloc_9=bloc_9_a_encaisse_visee(NU_G_UNITAIRE, choc_de_theta_G(0.95)))
+    assert len(r.pas) == NB_PAS_DU_CLIQUET
+    assert all(abs(_nu_G_effectif(p) - NU_G_UNITAIRE) <= SEUIL_FLUX for p in r.pas)
+    actifs = [p["t"] for p in r.pas if _actif(p)]
+    assert actifs and actifs[0] == TOURS_DU_CHOC
+    assert actifs == list(range(actifs[0], actifs[-1] + 1))
+    leve = actifs[-1] + 1
+    servi = min(r.pas[t]["variables"]["G_plan"] / r.pas[t]["variables"]["G_vise"]
+                for t in actifs)
+    def marge_du_temoin(t):
+        """1 − G^visée/M^G d'ouverture du pas t (état de fin du pas t − 1)."""
+        return 1.0 - temoin.pas[t]["variables"]["G_vise"] / temoin.pas[t - 1]["etat"].M_G
+    marge = marge_du_temoin(NB_PAS_DU_CLIQUET - 1)
+    marge_avant_retour = marge_du_temoin(TOURS_DU_CHOC - 1)
+    # Réserve R1 du visa de `macro` : le régime ν_G = 1 du témoin est atteint avant le retour
+    # (marge stationnaire du pas 11 au pas 119, celle du script à ν_G = 1).
+    assert math.isclose(marge_avant_retour, marge, rel_tol=1e-9)
+    publier("Cliquet de l'encaisse égale à un pas de paiements (ν_G = 1, bloc 9 dérivé, P274), "
+            f"π̄ = 0, G visée × 0,95 aux tours 1 à 12, {NB_PAS_DU_CLIQUET} pas ({ETIQUETTE} pour "
+            "l'état initial résolu et les tables ; E8 à ν_G = 1)", [
+                (f"témoin sans choc : plafond de E1 jamais actif ; marge 1 − G^visée/M^G "
+                 f"d'ouverture au pas {TOURS_DU_CHOC - 1} = {marge_avant_retour:.6f}, au pas "
+                 f"{NB_PAS_DU_CLIQUET - 1} = {marge:.6f}"),
+                f"plafond de E1 actif aux pas {actifs[0]} à {actifs[-1]} (tours "
+                f"{calendrier.tour_du_pas(actifs[0])} à {calendrier.tour_du_pas(actifs[-1])}) : "
+                f"{len(actifs)} pas après le retour ; min G^plan/G^visée = {servi:.6f} ; "
+                + (f"levé au pas {leve}, jamais réactivé" if leve < NB_PAS_DU_CLIQUET
+                   else f"encore actif au pas {NB_PAS_DU_CLIQUET - 1} (fenêtre censurée)")])
+
+
 # --------------------------------------------------------------------------
 # Délais des fiches 5 et 6 sur la chaîne réelle (P162), θ_H (C52)
 # --------------------------------------------------------------------------
@@ -1142,6 +1250,96 @@ def test_couverture_d_un_choc_de_taux_au_tour_n(socle, pi):
         assert abs((v2["T_H"] - v2["T_cou"]) / bareme - 1.0) <= SEUIL_FLUX
 
 
+# Hausse de taux d'un point pendant 12 tours sous φ ∈ {0 ; 1} (#171, n°6 ; fiche 9, Q2, table φ ;
+# critère écrit avant l'essai par `monnaie`, décision P275). Configuration (A) du critère 15 de la
+# fiche 8 : règle de taux en vigueur, taux décidé = prescription + 1 point aux tours 1 à 12,
+# action intégrale jamais réinitialisée. Les colonnes φ ∈ {0,1 ; 0,25 ; 0,5} sont hors du domaine
+# du levier (M33) et renvoyées à #111 : non mesurées.
+HAUSSE_DE_TAUX = 0.01
+PAS_DE_P36 = 35  # tour 36 = pas 35 (tour k = pas k − 1, `sec:cadre-calendrier`)
+
+
+def _hausse_de_taux_d_un_point(socle, sentier, tables):
+    """Contrôle et trajectoire choquée, mêmes tables, depuis `socle.etat_initial`, sur
+    `PAS_DE_P36` + 1 pas ; injection par composition sur l'état d'ouverture : r̂* += Δ à
+    l'ouverture du pas 0, retiré à l'ouverture du pas 12, Δ = 0,01/(1 + π*), d'où +0,01 exact
+    sur (1 + r̂*)(1 + π*) dans BC1. BC2 étant additive en r̂*, la composante Δ se conserve sous
+    l'action intégrale, qui n'est pas réinitialisée. Rend (relevé du contrôle, relevé du choc,
+    Δ, arrêt du choc ou None)."""
+    initial = socle.etat_initial(sentier)
+    delta = HAUSSE_DE_TAUX / (1.0 + initial.pi_etoile)
+    _, c = derouler(socle, sentier, PAS_DE_P36 + 1, parametres=tables)
+    o = assembler(socle, sentier, parametres=tables)
+    s = Releve()
+    etat, arret = initial, None
+    try:
+        for t in range(PAS_DE_P36 + 1):
+            if t in (0, TOURS_DU_CHOC):
+                signe = 1.0 if t == 0 else -1.0
+                etat = dataclasses.replace(etat, r_hat_etoile=etat.r_hat_etoile + signe * delta)
+            etat = ordo.executer_pas(etat, socle.entrees_du_tour(), o, s)
+    except (RefusDuMoteur, DefautComptable) as refus:
+        arret = f"non mesurable (arrêt au pas {len(s.pas)} : {refus})"
+    assert [p["t"] for p in s.pas] == list(range(len(s.pas)))
+    return c, s, delta, arret
+
+
+def _verifier_l_injection(c, s, initial, delta, a_pi):
+    """Assertions du banc (critère de `monnaie`), à 1e−12 relatif : pas 0, i_CB choqué − contrôle
+    = 0,01 ; pas 1 à 11, i_CB = BC1 sur l'ouverture choquée avec r̂* − Δ, + 0,01 ; pas 12,
+    i_CB = BC1 sur l'ouverture (Δ retiré)."""
+    d0 = s.pas[0]["variables"]["i_CB"] - c.pas[0]["variables"]["i_CB"]
+    assert abs(d0 / HAUSSE_DE_TAUX - 1.0) <= SEUIL_NUL, d0
+    ouvertures = [initial] + [p["etat"] for p in s.pas[:-1]]
+    for t in range(1, TOURS_DU_CHOC + 1):
+        o, i_cb = ouvertures[t], s.pas[t]["variables"]["i_CB"]
+        # État de fin du pas t − 1 : il porte encore Δ aux pas 1 à 12 ; au pas 12, Δ est retiré
+        # à l'ouverture exécutée, et la prescription est lue sans hausse.
+        hausse = HAUSSE_DE_TAUX if t < TOURS_DU_CHOC else 0.0
+        attendu = taux_indique_par_la_regle(o.r_hat_etoile - delta, o.pi_etoile,
+                                            registre.glissement(o.registre_prix), a_pi) + hausse
+        assert abs(i_cb / attendu - 1.0) <= SEUIL_NUL, (t, i_cb, attendu)
+
+
+@pytest.mark.parametrize("pi", [0.02, 0.10])
+def test_p36_d_une_hausse_de_taux_aux_deux_valeurs_de_phi(socle, pi, publier):
+    """#171, n°6 (fiche 9, Q2, table φ, colonnes φ ∈ {0 ; 1} ; critère écrit avant l'essai par
+    `monnaie`, décision P275) : P_36 = 100 (p^choc_36/p^contrôle_36 − 1), en %, p = indice des
+    prix du tour (phase 5), au tour 36 (pas 35), contre le contrôle apparié (même état initial
+    résolu, mêmes tables T1, sans choc), choc (A) du critère 15 de la fiche 8 injecté par
+    `_hausse_de_taux_d_un_point`. Propriétés : (1) φ = 1 : P_36 < 0 ; (2) P_36(φ = 0) >
+    P_36(φ = 1) ; (3) publiés sans verdict : P_36 aux deux φ, écart de r̂* (choqué − contrôle) à
+    l'ouverture du pas 35. Un arrêt du moteur sous φ = 0 avant le pas 35 est publié « non
+    mesurable », sans verdict sur (2). L'écart 10 % − 2 % se lit sur les deux publications."""
+    sentier = socle.sentier(pi)
+    initial = socle.etat_initial(sentier)
+    a_pi = socle.parametres_du_sentier(sentier).banque_centrale.a_pi
+    mesures, lignes = {}, []
+    for phi, tables in ((1.0, socle.parametres_du_sentier(sentier)),
+                        (0.0, _sous_phi_nul(socle, sentier))):
+        assert tables.finances_publiques.phi == phi
+        c, s, delta, arret = _hausse_de_taux_d_un_point(socle, sentier, tables)
+        if arret is not None:
+            assert phi == 0.0, arret  # sous φ = 1, un arrêt n'est pas une mesure admise
+            mesures[phi] = None
+            lignes.append(f"φ = {phi:g} : P_36 {arret}")
+            continue
+        _verifier_l_injection(c, s, initial, delta, a_pi)
+        assert s.pas[PAS_DE_P36]["t"] == c.pas[PAS_DE_P36]["t"] == PAS_DE_P36
+        p36 = 100.0 * (s.pas[PAS_DE_P36]["variables"]["p"]
+                       / c.pas[PAS_DE_P36]["variables"]["p"] - 1.0)
+        d_r_hat = s.pas[PAS_DE_P36 - 1]["etat"].r_hat_etoile - c.pas[PAS_DE_P36 - 1][
+            "etat"].r_hat_etoile
+        mesures[phi] = p36
+        lignes.append(f"φ = {phi:g} : P_36 = {p36:+.3f} % ({p36:+.6e}) ; r̂* choqué − contrôle à "
+                      f"l'ouverture du pas {PAS_DE_P36} = {d_r_hat:+.4e} par an")
+    publier(f"P_36 d'une hausse de taux d'un point aux tours 1 à 12, π* = {100 * pi:g} % "
+            f"({ETIQUETTE} ; table T1 ; #171, n°6)", lignes)
+    assert mesures[1.0] < 0.0, mesures  # (1) : un échec est une condition d'arrêt, pas un xfail
+    if mesures[0.0] is not None:
+        assert mesures[0.0] > mesures[1.0], mesures  # (2)
+
+
 def test_ligne_11c_egale_au_premier_terme_de_pi_cb(socle):
     """F7 : sous θ_CB = 0,5 (B_CB > 0), la ligne 11c (E7) égale au bit le premier terme de Π^CB
     (BC6, i_B B_CB/n_a), à chaque pas."""
@@ -1319,6 +1517,10 @@ def _ecarts_de_taux_sous_phi_nul(socle, sentier, facteur, nb_pas):
         # Divergence de la boucle sous φ = 0 (régime explosif déclaré, `sec:finances_publiques-
         # impots`) : la trajectoire choquée sort d'un domaine ; fait publié, sans verdict.
         arret = f"arrêt au pas {len(s.pas)} : {refus}"
+    # Rang k de la série = pas t = k de la trajectoire choquée (tour k + 1, `sec:cadre-calendrier`)
+    # : les deux trajectoires partent de l'état initial, pas 0 (#171, n°4).
+    assert [p["t"] for p in s.pas] == list(range(len(s.pas)))
+    assert [p["t"] for p in c.pas] == list(range(len(c.pas)))
     return [b["variables"]["i_CB"] - a["variables"]["i_CB"]
             for a, b in zip(c.pas, s.pas)], arret
 
@@ -1365,7 +1567,9 @@ def racine_dominante(ecarts):
     """Racine dominante de la série signée `ecarts` (Prony, ordre 2, fenêtre ci-dessus), de plus
     grand module et d'argument ≥ 0. Aucune racine, avec son motif, si la série compte moins de
     `PAS_D_AMPLITUDE` pas, si l'amplitude de référence est nulle ou non finie, si la fenêtre
-    compte moins de `PAS_MINIMAL_DE_LA_FENETRE` pas, ou si son maximum est nul ou non fini."""
+    compte moins de `PAS_MINIMAL_DE_LA_FENETRE` pas, si son maximum est nul ou non fini, ou si
+    la cible de l'ajustement (fenêtre privée de ses `ORDRE_PRONY` premiers pas) est de norme
+    nulle : le résidu relatif n'y est pas défini (#172)."""
     x = np.asarray(ecarts, dtype=float)
     if len(x) < PAS_D_AMPLITUDE:
         return _sans_racine(f"série de {len(x)} pas, moins de {PAS_D_AMPLITUDE}")
@@ -1386,8 +1590,12 @@ def racine_dominante(ecarts):
     regresseurs = np.column_stack([serie[ORDRE_PRONY - j - 1:len(serie) - j - 1]
                                    for j in range(ORDRE_PRONY)])
     cible = serie[ORDRE_PRONY:]
+    norme_cible = float(np.linalg.norm(cible))
+    if not norme_cible > 0.0:
+        return _sans_racine(f"cible de l'ajustement de norme nulle (pas {debut + ORDRE_PRONY} à "
+                            f"{fin - 1})")
     a, *_ = np.linalg.lstsq(regresseurs, cible, rcond=None)
-    residu = float(np.linalg.norm(cible - regresseurs @ a) / np.linalg.norm(cible))
+    residu = float(np.linalg.norm(cible - regresseurs @ a) / norme_cible)
     racine = complex(max(np.roots(np.concatenate([[1.0], -a])), key=abs))
     return Identification(complex(racine.real, abs(racine.imag)), debut, fin, residu, None)
 
@@ -1403,7 +1611,8 @@ def test_racine_dominante_sur_des_series_synthetiques():
       λ² (mesuré : 1,0178), limite de la méthode hors du régime linéaire ;
     - aucune racine, motif à l'appui, pour une série vide ou trop courte, une amplitude de
       référence nulle ou non finie, une fenêtre trop courte (croissance rapide, ou pas non fini
-      qui l'arrête), un maximum de fenêtre nul."""
+      qui l'arrête), un maximum de fenêtre nul, une cible de l'ajustement de norme nulle (fenêtre
+      non nulle sur ses seuls `ORDRE_PRONY` premiers pas : résidu 0/0, NaN avant #172)."""
     t = np.arange(NB_PAS_LINEAIRE)
     paire = 1.0001 * np.exp(1j * math.radians(0.2))
     for serie, attendue in (((paire ** t).real + 0.5 * 0.99 ** t, paire),
@@ -1429,6 +1638,11 @@ def test_racine_dominante_sur_des_series_synthetiques():
         assert r.racine is None and r.motif.startswith(motif), (motif, r)
     r = racine_dominante(np.r_[np.ones(PAS_D_AMPLITUDE), np.zeros(400)])
     assert r.racine is None and r.motif.startswith("maximum de la fenêtre"), r
+    # 200 pas : fenêtre [100 ; 200[, non nulle aux seuls pas 100 et 101.
+    cible_nulle = np.r_[np.ones(PAS_D_AMPLITUDE), np.zeros(100 - PAS_D_AMPLITUDE),
+                        np.ones(ORDRE_PRONY), np.zeros(100 - ORDRE_PRONY)]
+    r = racine_dominante(cible_nulle)
+    assert r.racine is None and r.motif.startswith("cible de l'ajustement de norme nulle"), r
 
 
 def _racine_publiee(z):
@@ -1469,7 +1683,29 @@ def test_temps_de_doublement_sous_phi_nul(socle, maquette, pi, publier):
     publier(f"C62 sous φ = 0, choc de 1 %, π* = {100 * pi:g} % ({ETIQUETTE} ; sans verdict)", [
         "choc de 1 % hors du régime linéaire : aucune racine identifiée sur le moteur ; la racine "
         "du moteur est publiée par `test_temps_de_doublement_en_regime_lineaire`",
-        maxima, f"{_maquette_en_regard(maquette, pi)} (pour mémoire)", arret])
+        maxima, _premier_ecart_d_un_point(ecarts),
+        f"{_maquette_en_regard(maquette, pi)} (pour mémoire)", arret])
+
+
+# Écart d'un point du taux directeur à la trajectoire de contrôle (#171, n°4 ; `sec:finances_
+# publiques-conditions`, C62, « s'écartant d'un point […] au pas 182 », publié à la calibration
+# indicative) : |Δi_CB| ≥ 0,01 en fraction par an.
+UN_POINT = 0.01
+
+
+def _premier_ecart_d_un_point(ecarts):
+    """Premier pas t où |Δi_CB| ≥ `UN_POINT`, avec son tour (t + 1) et sa date (année, mois),
+    `sec:cadre-calendrier` ; ou son absence sur les pas relevés. Mesure, sans verdict."""
+    assert ecarts and all(math.isfinite(x) for x in ecarts), "série Δi_CB vide ou non finie"
+    t = next((k for k, x in enumerate(ecarts) if abs(x) >= UN_POINT), None)
+    if t is None:
+        return (f"|Δi_CB| < {UN_POINT:g} (un point) aux {len(ecarts)} pas relevés (max "
+                f"{max(map(abs, ecarts)):.3e}) : aucun écart d'un point")
+    annee, mois = calendrier.date(t)
+    precedent = f"{abs(ecarts[t - 1]):.4e} au pas {t - 1}" if t else "aucun pas précédent"
+    return (f"premier écart d'un point (|Δi_CB| ≥ {UN_POINT:g}) : pas t = {t}, tour "
+            f"{calendrier.tour_du_pas(t)} (année {annee}, mois {mois}) ; |Δi_CB| = "
+            f"{abs(ecarts[t]):.4e} (contre {precedent})")
 
 
 # Mesure complémentaire de C62 en régime linéaire (décision du mainteneur du 15/11/2026).
