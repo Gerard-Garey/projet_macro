@@ -253,6 +253,31 @@ def test_la_section_citee_ecrit_la_condition():
     assert absentes == []
 
 
+def sections_de_conditions_qui_ecrivent(identifiant):
+    """Sections `sec:*-conditions` de la spécification dont le texte écrit la forme TeX de la
+    condition (`FORME_DANS_LA_SECTION`), dans l'ordre du document."""
+    texte = re.sub(r"(?<!\\)%.*", "", SPECIFICATION.read_text(encoding="utf-8"))
+    labels = re.findall(r"\\label\{(sec:[^}]+-conditions)\}", texte)
+    return [label for label in labels
+            if re.search(FORME_DANS_LA_SECTION[identifiant], texte_de_section(label))]
+
+
+@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#181 : B_Bk ≥ 0 et B_CB ≥ 0 encore écrites dans sec:banque-conditions "
+                   "et sec:banque_centrale-conditions, qui doivent renvoyer à sec:finances_publiques-conditions "
+                   "(décision du mainteneur du 27/11/2026, passage de docwriter en fin de branche)")
+def test_la_condition_n_est_ecrite_que_dans_la_section_citee():
+    """Un seul lieu d'écriture (#181, décision du 27/11/2026) : la forme TeX d'une condition de
+    `FORME_DANS_LA_SECTION` ne figure, parmi les sections `sec:*-conditions`, que dans celle que
+    cite `CONDITIONS_D_EXISTENCE` (aucune quand la section citée n'en est pas une, comme pour B_H).
+    Un renvoi cohérent du code et du paragraphe vers une autre section qui écrit aussi la
+    condition est ainsi refusé."""
+    sections = {identifiant: section for identifiant, _, section in resolveur.CONDITIONS_D_EXISTENCE}
+    ailleurs = {identifiant: [s for s in sections_de_conditions_qui_ecrivent(identifiant)
+                              if s != sections[identifiant]]
+                for identifiant in FORME_DANS_LA_SECTION}
+    assert {i: s for i, s in ailleurs.items() if s} == {}
+
+
 @pytest.mark.parametrize("pi", POINTS_PI)
 def test_aucune_condition_violee_a_l_etat_de_reference(stationnaire, pi):
     assert resolveur.relever_conditions(etat_initial(entrees(stationnaire, pi_cible=pi))) == ()
