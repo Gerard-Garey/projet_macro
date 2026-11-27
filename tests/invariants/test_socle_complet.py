@@ -578,6 +578,7 @@ def test_sigma_infime_arret_par_le_domaine_de_mu_tilde_en_phase_5(socle):
         derouler(socle, sentier, 12, initial=resolu.etat, parametres=resolu.parametres)
     assert type(refus.value) is RefusDuMoteur
     assert (refus.value.etape, refus.value.bloc, refus.value.nom) == ("5", "prix", "mu_tilde")
+    assert isinstance(refus.value.t, int) and 0 <= refus.value.t < 12  # pas dans l'horizon déroulé
     assert "|μ̃| ≤ ln(DBL_MAX)" in str(refus.value)
 
 
