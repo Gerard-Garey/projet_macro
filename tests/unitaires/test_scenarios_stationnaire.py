@@ -262,9 +262,6 @@ def sections_de_conditions_qui_ecrivent(identifiant):
             if re.search(FORME_DANS_LA_SECTION[identifiant], texte_de_section(label))]
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#181 : B_Bk ≥ 0 et B_CB ≥ 0 encore écrites dans sec:banque-conditions "
-                   "et sec:banque_centrale-conditions, qui doivent renvoyer à sec:finances_publiques-conditions "
-                   "(décision du mainteneur du 27/11/2026, passage de docwriter en fin de branche)")
 def test_la_condition_n_est_ecrite_que_dans_la_section_citee():
     """Un seul lieu d'écriture (#181, décision du 27/11/2026) : la forme TeX d'une condition de
     `FORME_DANS_LA_SECTION` ne figure, parmi les sections `sec:*-conditions`, que dans celle que
