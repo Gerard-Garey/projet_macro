@@ -9,8 +9,12 @@ lit dans cette table, par la vue (point 3.3).
 
 Domaines (point 3.2), refusés à toute construction de la table, jamais écrêtés :
 0 < λ_v < n_a, strict (P70) ; 0 < λ_IN ≤ n_a (P65) ; 1 + g_pr > 0 (type) ;
-σ > 0 et κ > 0 avec 1/κ fini, domaines de définition (dénominateurs de N2 et
-N11).
+σ ≥ DBL_MIN et κ ≥ DBL_MIN, domaines de représentabilité (ADR 0016, points 16
+à 18.2 ; décision du mainteneur du 27/11/2026, point 3 ; #125, point 6) : borne
+calculée depuis `sys.float_info.min`, jamais écrite en littéral, sans contenu
+économique ; propriété garantie : **normalité** de σ et de κ, qui contient les
+domaines de définition σ > 0 et κ > 0 (dénominateurs de N2 et N11) et la
+finitude de 1/κ (1/DBL_MIN ≈ 4,49e307).
 
 Les labels `eq:production-…` sont ceux de la fiche 2 (§ 9.1) ; ils sont dans
 la spécification depuis le rang 8 de J3-b (P62).
@@ -18,7 +22,7 @@ la spécification depuis le rang 8 de J3-b (P62).
 
 from __future__ import annotations
 
-import math
+import sys
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -37,6 +41,11 @@ from nations.moteur.parametres.cadre import PAS_PAR_AN
 
 _N_A = PAS_PAR_AN.valeur
 
+# Borne des domaines de représentabilité de σ et κ : le plus petit flottant normal (ADR 0016,
+# point 17.1 : calculée, jamais un littéral ; écrite à l'identique dans `controler_domaine`
+# d'`outils/etat_stationnaire.py`, point 17.3).
+DBL_MIN = sys.float_info.min
+
 LAMBDA_V = Parametre(
     "lambda_v", "λ_v", 3.0, "par an, taux de flux",
     "tab:calibration (indicative) ; unité P65 ; domaine strict P70",
@@ -54,8 +63,11 @@ SIGMA = Parametre(
     "sigma", "σ", 0.11666666666666665, "années",
     "tab:calibration (indicative) : 1,4 pas de ventes à n_a = 12 ; unité P65",
     ("eq:production-stock-cible",),
-    domaine("σ > 0 (domaine de définition : IN^vol* = n_a σ v^e > 0, dénominateur de ξ)",
-            lambda x: x > 0.0))
+    # σ sous-normal (1e−320) : admis par la table jusqu'à #125, point 6 (ξ infini au premier pas,
+    # mesure de l'issue ; refusé depuis par `EchelleNonRepresentable` à la résolution de l'état).
+    domaine("σ ≥ DBL_MIN (domaine de représentabilité : σ normal ; contient le domaine de "
+            "définition σ > 0, IN^vol* = n_a σ v^e > 0, dénominateur de ξ)",
+            lambda x: x >= DBL_MIN))
 
 G_PR = Parametre(
     "g_pr", "g_pr", 0.02, "par an, taux de croissance",
@@ -68,10 +80,11 @@ KAPPA = Parametre(
     "kappa", "κ", 1.6, "années",
     "tab:calibration (indicative) ; unité P65",
     ("eq:production-capacite",),
-    # 1/κ fini : un κ > 0 sous-normal (1e−320) donnerait 1/κ infini, refusé au premier pas
-    # par `TauxDeFlux(1/κ)` (N11) plutôt qu'à la construction de la table (#113).
-    domaine("κ > 0 et 1/κ fini (domaine de définition : y^cap = K^vol/(n_a κ), N11)",
-            lambda x: x > 0.0 and math.isfinite(1.0 / x)))
+    # κ sous-normal : 1/κ infini (1e−320, #113) ou 1/κ fini mais état non représentable
+    # (5,6e−309, #125, point 6) ; κ ≥ DBL_MIN garde 1/κ fini (1/DBL_MIN ≈ 4,49e307).
+    domaine("κ ≥ DBL_MIN (domaine de représentabilité : κ normal, d'où 1/κ fini ; contient le "
+            "domaine de définition κ > 0, y^cap = K^vol/(n_a κ), N11)",
+            lambda x: x >= DBL_MIN))
 
 PARAMETRES_DE_LA_PRODUCTION = (LAMBDA_V, LAMBDA_IN, SIGMA, G_PR, KAPPA)
 

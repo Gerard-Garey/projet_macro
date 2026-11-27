@@ -407,15 +407,19 @@ def controler_domaine(par: Parametres) -> list[str]:
         raise HorsDomaine(f"δ/n_a = {par.delta / n!r} : 0 < δ/n_a < 1 attendu (sec:investissement-conditions)")
     if not 0 <= par.lv < 1:
         raise HorsDomaine(f"lv = {par.lv!r} : 0 ≤ lv* < 1 attendu (sec:investissement-conditions)")
-    for nom in ("nu_F", "tu_bar", "kappa", "sigma"):
+    for nom in ("nu_F", "tu_bar"):
         if not getattr(par, nom) > 0:
             raise HorsDomaine(f"{nom} = {getattr(par, nom)!r} : > 0 attendu")
-    # 1/κ fini : un κ > 0 sous-normal (1e−320) donne 1/κ infini ; refusé ici comme dans la table du bloc 2
-    # (`nations.moteur.parametres.production`), de sorte que script et table refusent le même ensemble (#125,
-    # point 5). Le domaine lui-même (borne inférieure de κ et de σ) reste une question de `macro` (point 6).
-    if not math.isfinite(1.0 / par.kappa):
-        raise HorsDomaine(f"kappa = {par.kappa!r} : κ > 0 et 1/κ fini attendus (domaine de définition : "
-                          "y^cap = K^vol/(n_a κ), N11)")
+    # κ ≥ DBL_MIN et σ ≥ DBL_MIN : domaines de représentabilité (flottants normaux, sans contenu économique),
+    # borne calculée depuis `sys.float_info.min`, à l'identique de la table du bloc 2
+    # (`nations.moteur.parametres.production`), de sorte que script et table refusent le même ensemble (ADR 0016,
+    # points 17.3 et 18.2 ; #125, points 5 et 6). Ils contiennent κ > 0, σ > 0 et 1/κ fini (1/DBL_MIN ≈ 4,49e307).
+    if not par.kappa >= sys.float_info.min:
+        raise HorsDomaine(f"kappa = {par.kappa!r} : κ ≥ DBL_MIN attendu (domaine de représentabilité : κ normal, "
+                          "d'où 1/κ fini ; y^cap = K^vol/(n_a κ), N11)")
+    if not par.sigma >= sys.float_info.min:
+        raise HorsDomaine(f"sigma = {par.sigma!r} : σ ≥ DBL_MIN attendu (domaine de représentabilité : σ normal ; "
+                          "IN^vol* = n_a σ v^e, dénominateur de ξ)")
     # Borne haute 20 de η_r et ζ (P139) : refusée ici comme dans la table du bloc 6
     # (`nations.moteur.parametres.investissement`), de sorte que script et table refusent le même ensemble.
     for nom in ("eta_r", "zeta"):
