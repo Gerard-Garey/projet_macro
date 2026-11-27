@@ -2000,6 +2000,93 @@ def test_minimum_de_delta_r_alpha_refuse_un_croisement_non_minimal(stationnaire)
         assert 100 * 10.0 <= delta_min <= 100 * (10.0 + 1000 * stationnaire.TOL_ZETA_MINIMUM)
 
 
+@pytest.mark.parametrize("haut", [
+    lambda zeta: 0.0 if zeta < 10.0 else 10.0 + 1000 * abs(zeta - 50.0),
+    lambda zeta: 0.0 if zeta > 150.0 else 10.0 + 1000 * abs(zeta - 50.0)], ids=["borne_basse", "borne_haute"])
+def test_minimum_de_delta_r_alpha_refuse_un_minimum_aux_bornes(stationnaire, haut):
+    """P281 (constat R1 de l'audit de #173) : le creux symétrique de C2 (pentes ∓1 000, accepté par
+    `test_minimum_de_delta_r_alpha_refuse_un_croisement_non_minimal`) reste un minimum local à ζ = 50, mais
+    r̄_α(10 %) tombe à 0 près d'une borne : Δr̄_α y vaut 48 (ζ = 2) ou 150 points (ζ = 200), sous les 1 000 points du
+    croisement. Le minimum global est à la borne : refus `MinimumNonEncadre`, motif « minimum aux bornes », et non une
+    valeur publiée comme minimum « sur [2 ; 200] »."""
+    with pytest.raises(stationnaire.MinimumNonEncadre, match="minimum aux bornes") as refus:
+        stationnaire.minimum_delta_r_alpha_en_zeta(_RAlphaSynthetique(haut))
+    assert "n'est pas au croisement" in refus.value.motif
+
+
+def _creux_symetrique(zeta):
+    """r̄_α(10 %) du creux symétrique de C2 (pentes ∓1 000 autour de ζ = 50), accepté comme minimum."""
+    return 10.0 + 1000 * abs(zeta - 50.0)
+
+
+class _RAlphaEgalAUneBorne(_RAlphaSynthetique):
+    """Creux symétrique dont le triplet r̄_α à `borne` reprend celui de ζ* : Δr̄_α(borne) = Δr̄_α(ζ*) au bit. Avec
+    `permuter` (borne basse), r̄_α(0) et r̄_α(2 %) y sont échangés : Δr̄_α inchangé, signe de r̄_α(0) − r̄_α(2 %)
+    opposé à celui de ζ* > 50. La bissection ne lit que ce signe et suit donc le même chemin vers le même ζ*."""
+
+    def __init__(self, borne, zeta_etoile, permuter) -> None:
+        super().__init__(_creux_symetrique)
+        self.borne, self.zeta_etoile, self.permuter = borne, zeta_etoile, permuter
+
+    def r_alpha(self, pi: float, zeta: float) -> float:
+        if zeta != self.borne:
+            return super().r_alpha(pi, zeta)
+        if self.permuter:
+            pi = {0.0: 0.02, 0.02: 0.0, 0.10: 0.10}[pi]
+        return super().r_alpha(pi, self.zeta_etoile)
+
+
+@pytest.mark.parametrize("cote", [0, 1], ids=["borne_basse", "borne_haute"])
+def test_minimum_de_delta_r_alpha_refuse_l_egalite_a_une_borne(stationnaire, cote):
+    """m2 de l'audit de #173 (P281) : Δr̄_α à une borne égal au bit à Δr̄_α(ζ*) est refusé (« ≤ », pas « < ») :
+    le minimum sur [2 ; 200] n'est pas unique au croisement."""
+    zeta_etoile, _ = stationnaire.minimum_delta_r_alpha_en_zeta(_RAlphaSynthetique(_creux_symetrique))
+    assert zeta_etoile > 50.0  # r̄_α(0) − r̄_α(2 %) < 0 en ζ*, la permutation à la borne basse le rend > 0
+    borne = stationnaire.ZETA_MINIMUM_BORNES[cote]
+    calc = _RAlphaEgalAUneBorne(borne, zeta_etoile, permuter=cote == 0)
+    assert stationnaire._delta_r_alpha(calc, borne) == stationnaire._delta_r_alpha(calc, zeta_etoile)
+    with pytest.raises(stationnaire.MinimumNonEncadre, match="minimum aux bornes"):
+        stationnaire.minimum_delta_r_alpha_en_zeta(calc)
+
+
+@pytest.mark.parametrize("ou", [
+    lambda zeta: zeta == 2.0, lambda zeta: zeta == 200.0, lambda zeta: abs(zeta - 50.0) < 0.01, lambda zeta: True],
+    ids=["borne_basse", "borne_haute", "zeta_etoile", "partout"])
+def test_minimum_de_delta_r_alpha_refuse_r_alpha_10_non_fini(stationnaire, ou):
+    """M1 et m1 de l'audit de #173 : r̄_α(10 %), qui n'entre pas dans la bissection, NaN à une borne, autour de ζ*
+    ou partout. `max` et `min` ignoreraient ce NaN (il n'est pas en tête du triplet) : refus `MinimumNonEncadre`,
+    motif « r̄_α non fini », et non un minimum rendu ni le motif « minimum aux bornes »."""
+    calc = _RAlphaSynthetique(lambda zeta: math.nan if ou(zeta) else _creux_symetrique(zeta))
+    with pytest.raises(stationnaire.MinimumNonEncadre, match="r̄_α non fini à ζ = ") as refus:
+        stationnaire.minimum_delta_r_alpha_en_zeta(calc)
+    assert "minimum aux bornes" not in refus.value.motif and "non minimal" not in refus.value.motif
+
+
+def test_minimum_de_delta_r_alpha_refuse_r_alpha_10_non_fini_en_zeta_etoile_exact(stationnaire):
+    """n2 de la ré-audit de #173 : r̄_α(10 %) NaN au seul ζ* (mesuré d'abord ; la bissection ne lit pas r̄_α(10 %),
+    donc suit le même chemin) : le refus vient du contrôle de finitude en ζ*, motif « r̄_α non fini », et non de la
+    comparaison aux bornes qui lirait la valeur NaN."""
+    zeta_etoile, _ = stationnaire.minimum_delta_r_alpha_en_zeta(_RAlphaSynthetique(_creux_symetrique))
+    calc = _RAlphaSynthetique(lambda zeta: math.nan if zeta == zeta_etoile else _creux_symetrique(zeta))
+    with pytest.raises(stationnaire.MinimumNonEncadre, match="r̄_α non fini à ζ = ") as refus:
+        stationnaire.minimum_delta_r_alpha_en_zeta(calc)
+    assert "minimum aux bornes" not in refus.value.motif and "non minimal" not in refus.value.motif
+
+
+def test_delta_r_alpha_non_fini_publie_nan(stationnaire):
+    """M1 de l'audit de #173 : `_delta_r_alpha` rend NaN dès qu'un r̄_α n'est pas fini, quelle que soit sa place dans
+    le triplet ; les lignes « Δr̄_α à ζ = 2, 8, 68 » sortent alors en écart (« script sans objet ; écart +nan »), jamais un Δr̄_α
+    calculé sur les deux seules valeurs finies."""
+    assert max([0.0, math.nan, 1.0]) - min([0.0, math.nan, 1.0]) == 1.0  # le masquage corrigé
+    assert math.isnan(stationnaire._delta_r_alpha(_RAlphaSynthetique(lambda zeta: math.nan), 8.0))
+    assert math.isnan(stationnaire._delta_r_alpha(_RAlphaSynthetique(lambda zeta: math.inf), 8.0))
+    assert stationnaire._delta_r_alpha(_RAlphaSynthetique(lambda zeta: 1.0), 8.0) == 100 * (1.0 - 0.0)
+    ligne = [l for l in stationnaire.table_publiees(_RAlphaSynthetique(lambda zeta: math.nan),
+                                                     tuple(v for v in stationnaire.VALEURS_PUBLIEES
+                                                           if v[1] == "Δr̄_α à ζ = 8, point"))]
+    assert len(ligne) == 1 and ligne[0]["verdict"] == "écart" and math.isnan(ligne[0]["script"])
+
+
 def test_ligne_refusee_constat_publie_code_0(stationnaire, monkeypatch, capsys):
     """C3 de l'audit de #173 : une ligne « refusée » est un constat publié, comme « état non publié », et non un refus
     de domaine des paramètres : `main` sort en code 0, la table imprimée en entier, bilan accordé au singulier."""
