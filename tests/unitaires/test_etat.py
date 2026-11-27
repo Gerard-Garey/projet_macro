@@ -1148,6 +1148,12 @@ _ACCES_DYNAMIQUES = {"getattr", "setattr", "delattr", "attrgetter", "methodcalle
 # Accès dynamiques dont le nom d'attribut est le premier argument (`attrgetter(nom)`,
 # `methodcaller(nom, *args)`), et non le deuxième (`getattr(objet, nom)`).
 _NOM_EN_PREMIER = {"attrgetter", "methodcaller"}
+# Méthodes d'accès qui, passées à `methodcaller`, prennent le nom d'attribut en deuxième argument
+# (`methodcaller("__getattribute__", "etat_suivant")`, R2 de #157).
+_METHODES_D_ACCES = {"__getattribute__", "__setattr__", "__delattr__"}
+# Attributs que nul accès dynamique ne nomme par un littéral, segment par segment d'un chemin
+# pointé (`attrgetter("_pas.etat_suivant")`, R2 de #157).
+_NOMS_PROTEGES = {"etat_suivant", "_pas"}
 # Références à un accès dynamique qui ne sont pas appelées directement (alias, argument, valeur
 # rendue ; réserve r1 de l'audit du rang 2) : (fichier, fonction, instruction), liste fermée.
 # Seule admise : `poser = object.__setattr__` dans `_construire`, constructeur privé de
@@ -1181,12 +1187,43 @@ def _reference_dynamique(n, parent):
             and not (isinstance(parent, ast.Call) and parent.func is n))
 
 
-def _nom_litteral(n):
-    f = n.func
-    nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
-    arguments = n.args[:1] if nom in _NOM_EN_PREMIER else n.args[1:2]
+def _litteral(arguments):
+    """Chaîne littérale du premier des `arguments` (liste de nœuds), sinon None."""
     return (arguments[0].value if arguments and isinstance(arguments[0], ast.Constant)
             and type(arguments[0].value) is str else None)
+
+
+def _nom_litteral(n):
+    """Nom d'attribut littéral d'un accès dynamique, sinon None ; `methodcaller` d'une méthode
+    d'accès (`__getattribute__`, `__setattr__`, `__delattr__`) : son deuxième argument."""
+    f = n.func
+    nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+    litteral = _litteral(n.args[:1] if nom in _NOM_EN_PREMIER else n.args[1:2])
+    if nom == "methodcaller" and litteral in _METHODES_D_ACCES:
+        return _litteral(n.args[1:2])
+    return litteral
+
+
+def _segments_litteraux(n):
+    """Segments des noms d'attribut d'un accès dynamique, chemins pointés décomposés et chaque nom
+    d'`attrgetter` compris (`attrgetter("_pas.etat_suivant", "x")` : {`_pas`, `etat_suivant`,
+    `x`}), ou None si un des noms n'est pas un littéral (R2 de #157)."""
+    f = n.func
+    nom = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+    noms = ([_litteral([a]) for a in n.args] or [None]) if nom == "attrgetter" else [
+        _nom_litteral(n)]
+    return None if None in noms else {s for x in noms for s in x.split(".")}
+
+
+def _acces_a_nom_calcule(n):
+    """Accès dynamique dont un nom d'attribut n'est pas un littéral (liste fermée des sites)."""
+    return _acces_dynamique(n) and _segments_litteraux(n) is None
+
+
+def _acces_a_nom_protege(n):
+    """Accès dynamique qui nomme par un littéral, en un segment quelconque, `etat_suivant` ou
+    `_pas` (jamais admis)."""
+    return _acces_dynamique(n) and bool((_segments_litteraux(n) or set()) & _NOMS_PROTEGES)
 
 
 def test_acces_dynamique_detecte():
@@ -1221,6 +1258,36 @@ def test_acces_dynamique_detecte():
     assert appels("operator.itemgetter(0)(x)") == []
 
 
+def test_acces_dynamique_a_chemin_pointe_ou_par_methode_d_acces_detecte():
+    """R2 de #157 : un chemin pointé est examiné segment par segment, chaque nom d'`attrgetter`
+    compris ; `methodcaller` de `__getattribute__`, `__setattr__` ou `__delattr__` nomme
+    l'attribut par son deuxième argument. Témoins : noms littéraux ordinaires, deuxième argument
+    d'une méthode ordinaire."""
+    def acces(source):
+        appel, = [n for n in ast.walk(ast.parse(source)) if _acces_dynamique(n)]
+        return appel
+
+    for source in ('operator.attrgetter("_pas.etat_suivant")(vue)',
+                   'attrgetter("x.etat_suivant")(vue)', 'attrgetter("a", "_pas")(vue)',
+                   'methodcaller("__getattribute__", "etat_suivant")(vue)',
+                   'operator.methodcaller("__setattr__", "_pas", 0.0)(vue)',
+                   'methodcaller("__delattr__", "etat_suivant")(vue)',
+                   'methodcaller("__getattribute__", "_pas.etat_suivant")(vue)'):
+        n = acces(source)
+        assert _acces_a_nom_protege(n) and not _acces_a_nom_calcule(n), source
+    for source in ('methodcaller("__getattribute__", nom)(vue)',
+                   'methodcaller("__setattr__")(vue)', 'attrgetter("a", nom)(vue)',
+                   "attrgetter(*noms)(vue)", 'attrgetter("_pas.x", nom)(vue)'):
+        n = acces(source)
+        assert _acces_a_nom_calcule(n), source
+    for source in ('attrgetter("a.b", "c")(vue)', 'methodcaller("ecrire", "etat_suivant")(vue)',
+                   'getattr(vue, "etat")', 'methodcaller("__getattribute__", "etat")(vue)'):
+        n = acces(source)
+        assert not _acces_a_nom_calcule(n) and not _acces_a_nom_protege(n), source
+    assert _segments_litteraux(acces('attrgetter("_pas.etat_suivant", "x")(vue)')) == {
+        "_pas", "etat_suivant", "x"}
+
+
 def test_acces_dynamiques_aux_attributs_liste_fermee():
     """M1 de l'audit du rang 2 (#144, point 1) : un accès dynamique à nom calculé n'existe que
     sur une liste fermée de sites, sans `_Pas` ; un nom littéral `etat_suivant` ou `_pas` n'est
@@ -1228,10 +1295,8 @@ def test_acces_dynamiques_aux_attributs_liste_fermee():
     référence à un accès dynamique qui n'est pas appelée directement (alias) est sur une liste
     fermée, `poser` de `_construire`, dont chaque appel nomme par un littéral un attribut privé
     de l'objet neuf `livre`."""
-    assert _sites(lambda n: _acces_dynamique(n) and _nom_litteral(n) is None) == (
-        ACCES_DYNAMIQUES_ADMIS)
-    assert _sites(lambda n: _acces_dynamique(n)
-                  and _nom_litteral(n) in ("etat_suivant", "_pas")) == set()
+    assert _sites(_acces_a_nom_calcule) == ACCES_DYNAMIQUES_ADMIS
+    assert _sites(_acces_a_nom_protege) == set()
     references = {(fichier, nom, ast.unparse(parent))
                   for fichier, nom, n, parent in _noeuds_de_src()
                   if _reference_dynamique(n, parent)}
@@ -1257,12 +1322,17 @@ def test_acces_dynamiques_aux_attributs_liste_fermee():
 # `builtins`), les tables d'espaces de noms (`globals`, `vars`, `sys.modules`, sous son nom,
 # importé de `sys` ou pris sur un alias de `sys` ; attributs `__globals__` d'une fonction,
 # `f_globals`, `f_builtins` et `f_locals` d'un cadre, P196) et l'importation dynamique
-# (`importlib`, `import_module`).
+# (`importlib`, `import_module`). P202 (m1 de #157) : `sys` et `os` (modules de rebond, dont
+# l'espace atteint `sys.modules` ou les primitives) ne s'emploient que pour lire un attribut
+# ordinaire (`sys.float_info`) : ni importation étoilée, ni alias lié par affectation ou passé
+# en valeur, ni `__dict__`, ni `sys` ou `os` pris comme attribut d'un objet (`os.sys`).
 EXECUTIONS_DE_TEXTE = {"eval", "exec", "compile", "__import__"}
 _ESPACES_DES_PRIMITIVES = {"builtins", "__builtins__"}
 _TABLES_D_ESPACES = {"globals", "vars"}
 _ATTRIBUTS_D_ESPACES = {"__globals__", "f_globals", "f_builtins", "f_locals"}
 _IMPORTATION_DYNAMIQUE = {"importlib", "import_module"}
+_MODULES_DE_REBOND = {"sys", "os"}
+_ATTRIBUTS_DE_REBOND = {"modules", "__dict__"}
 
 
 def _noms_importes_d_ailleurs(arbre):
@@ -1273,44 +1343,52 @@ def _noms_importes_d_ailleurs(arbre):
             for a in n.names}
 
 
-def _alias_de_sys(arbre):
-    """Noms sous lesquels le module lie `sys` (`import sys`, `import sys as s`), `sys` compris
-    dans tous les cas (au plus strict)."""
-    return {"sys"} | {a.asname or a.name for n in ast.walk(arbre) if isinstance(n, ast.Import)
-                      for a in n.names if a.name == "sys"}
+def _alias_de_rebond(arbre):
+    """Noms sous lesquels le module lie `sys` ou `os` (`import sys`, `import sys as s`,
+    `from os import sys`), `sys` et `os` compris dans tous les cas (au plus strict)."""
+    return _MODULES_DE_REBOND | {a.asname or a.name for n in ast.walk(arbre)
+                                 if isinstance(n, ast.Import | ast.ImportFrom)
+                                 for a in n.names if a.name in _MODULES_DE_REBOND}
 
 
-def _execution_de_texte(n, parent, importes=frozenset(), alias_de_sys=frozenset({"sys"})):
+def _execution_de_texte(n, parent, importes=frozenset(), alias_de_rebond=_MODULES_DE_REBOND):
     """Chemin vers une exécution de texte (voir ci-dessus) :
 
     - nom (appelé ou non, alias compris) : `eval`, `exec`, `compile`, `__import__` des
       primitives (non liés par `from <autre module> import`), `builtins`, `__builtins__`,
-      `globals`, `vars`, `importlib`, `import_module` ;
+      `globals`, `vars`, `importlib`, `import_module` ; `sys`, `os` ou un de leurs alias
+      (`alias_de_rebond`) lu autrement que pour en prendre un attribut (`m = s`, `f(sys)`) ;
     - attribut : `__self__`, `__builtins__`, `builtins`, `import_module`, `__globals__`,
-      `f_globals`, `f_builtins`, `f_locals`, `modules` pris sur `sys` ou sur un de ses alias
-      (`alias_de_sys`, `import sys as s` puis `s.modules`), ou une des quatre primitives prise
-      sur `builtins` ou `__builtins__` (`builtins.exec`) ; `re.compile`, `x.eval()` ne sont pas
-      visés ;
+      `f_globals`, `f_builtins`, `f_locals`, `sys` et `os` pris sur un objet quelconque
+      (`os.sys`), `modules` ou `__dict__` pris sur `sys`, `os` ou un de leurs alias
+      (`import sys as s` puis `s.modules`, `os.__dict__`), ou une des quatre primitives prise
+      sur `builtins` ou `__builtins__` (`builtins.exec`) ; `re.compile`, `x.eval()`,
+      `x.__dict__` ne sont pas visés ;
     - importation : de `builtins` ou d'`importlib` (`import builtins`, `from builtins import
-      eval as e`, `import importlib.util`, `from importlib import import_module`), ou de
-      `modules` depuis `sys` (`from sys import modules`).
+      eval as e`, `import importlib.util`, `from importlib import import_module`), ou, depuis
+      `sys` ou `os`, de tout leur espace (`from sys import *`), de `modules` ou de `__dict__`
+      (`from sys import modules`).
     """
     if isinstance(n, ast.Name):
         if n.id in EXECUTIONS_DE_TEXTE:
             return n.id not in importes
+        if n.id in alias_de_rebond:
+            return isinstance(n.ctx, ast.Load) and not (
+                isinstance(parent, ast.Attribute) and parent.value is n)
         return n.id in _ESPACES_DES_PRIMITIVES | _TABLES_D_ESPACES | _IMPORTATION_DYNAMIQUE
     if isinstance(n, ast.Attribute):
-        return (n.attr in _ESPACES_DES_PRIMITIVES | _ATTRIBUTS_D_ESPACES
+        return (n.attr in _ESPACES_DES_PRIMITIVES | _ATTRIBUTS_D_ESPACES | _MODULES_DE_REBOND
                 | {"__self__", "import_module"}
-                or (n.attr == "modules" and isinstance(n.value, ast.Name)
-                    and n.value.id in alias_de_sys)
+                or (n.attr in _ATTRIBUTS_DE_REBOND and isinstance(n.value, ast.Name)
+                    and n.value.id in alias_de_rebond)
                 or (n.attr in EXECUTIONS_DE_TEXTE and isinstance(n.value, ast.Name)
                     and n.value.id in _ESPACES_DES_PRIMITIVES))
     if isinstance(n, ast.alias):
         racines = _ESPACES_DES_PRIMITIVES | {"importlib"}
         if isinstance(parent, ast.ImportFrom):
             return ((parent.module or "").split(".")[0] in racines
-                    or (parent.module == "sys" and n.name == "modules"))
+                    or (parent.module in _MODULES_DE_REBOND
+                        and n.name in _ATTRIBUTS_DE_REBOND | {"*"}))
         return n.name.split(".")[0] in racines
     return False
 
@@ -1322,27 +1400,30 @@ def test_aucune_execution_de_texte_dans_src():
     arbres = {chemin.relative_to(SOURCE).as_posix(): ast.parse(
         chemin.read_text(encoding="utf-8")) for chemin in SOURCE.rglob("*.py")}
     importes = {fichier: _noms_importes_d_ailleurs(arbre) for fichier, arbre in arbres.items()}
-    alias_de_sys = {fichier: _alias_de_sys(arbre) for fichier, arbre in arbres.items()}
+    alias_de_rebond = {fichier: _alias_de_rebond(arbre) for fichier, arbre in arbres.items()}
     sites = {(fichier, nom, ast.unparse(parent if isinstance(n, ast.alias) else n))
              for fichier, nom, n, parent in _noeuds_de_src()
-             if _execution_de_texte(n, parent, importes[fichier], alias_de_sys[fichier])}
+             if _execution_de_texte(n, parent, importes[fichier], alias_de_rebond[fichier])}
     assert sites == set()
 
 
 def test_execution_de_texte_detectee():
     """Le prédicat de `test_aucune_execution_de_texte_dans_src` reconnaît chaque forme visée
     (dont les formes de l'audit du rang 4, et celles de P196 : `__globals__`, `f_globals`,
-    `f_builtins`, `f_locals`, `modules` importé de `sys`, `sys` sous alias) et ignore `compile`
-    importé d'un autre module, `re.compile`, `x.eval()`, `x.evaluer(1)`, `modules` importé d'un
-    autre module ou pris sur un autre objet."""
+    `f_builtins`, `f_locals`, `modules` importé de `sys`, `sys` sous alias ; et celles de P202 :
+    `from sys import *`, alias de `sys` lié par affectation, `os.__dict__`, `sys.__dict__`,
+    `os.sys`) et ignore `compile` importé d'un autre module, `re.compile`, `x.eval()`,
+    `x.evaluer(1)`, `modules` importé d'un autre module ou pris sur un autre objet,
+    `from re import *`, `x.__dict__` hors de `sys` et `os`, attribut ordinaire de `sys` ou
+    d'`os`."""
     def trouves(source):
         arbre = ast.parse(source)
         importes = _noms_importes_d_ailleurs(arbre)
-        alias_de_sys = _alias_de_sys(arbre)
+        alias_de_rebond = _alias_de_rebond(arbre)
         parents = {id(e): p for p in ast.walk(arbre) for e in ast.iter_child_nodes(p)}
         return [ast.unparse(parents[id(n)] if isinstance(n, ast.alias) else n)
                 for n in ast.walk(arbre)
-                if _execution_de_texte(n, parents.get(id(n)), importes, alias_de_sys)]
+                if _execution_de_texte(n, parents.get(id(n)), importes, alias_de_rebond)]
     for source in ('eval("pas.etat_" + "suivant")', "exec(texte)", "c = compile",
                    '__import__("os")', "import builtins", "from builtins import eval as e",
                    "x = __builtins__", "m.__builtins__", "builtins.exec(t)",
@@ -1358,8 +1439,24 @@ def test_execution_de_texte_detectee():
                    'import sys as s\ns.modules["builtins"]'):
         assert trouves(source), source
     assert trouves('import sys as s\ns.modules["builtins"]') == ['s.modules']
+    # P202 (m1 de #157) : importation étoilée de `sys`, alias de `sys` lié par affectation,
+    # `__dict__` de `os` ou de `sys`, `sys` pris sur `os` ; chaque forme, au site attendu.
+    for source, attendu in (
+            ('from sys import *\nmodules["builtins"]', ["from sys import *"]),
+            ("import sys as s\nm = s\nm.modules", ["s"]),
+            ("import os\nos.__dict__['__builtins__']", ["os.__dict__"]),
+            ("import sys\nsys.__dict__['modules']", ["sys.__dict__"]),
+            ("import os\nos.sys.modules['builtins']", ["os.sys"]),
+            ("from os import *", ["from os import *"]),
+            ("from os import sys as t\nt.modules", ["t.modules"]),
+            ("import sys\nf(sys)", ["sys"])):
+        assert trouves(source) == attendu, (source, trouves(source))
     for source in ("from re import compile", 'from re import compile\ncompile("a")',
                    're.compile("a")', "x.eval()", "x.evaluer(1)", "from paquet import modules",
+                   # P202 : témoins négatifs.
+                   "from re import *", "x.__dict__", 'classe.__dict__.get("__slots__", ())',
+                   "import sys\nsys.float_info.min", "import os\nos.path.join(a, b)",
+                   "from os import path", "import sys",
                    "x.modules", "import sys as s\ns.argv"):
         assert trouves(source) == [], (source, trouves(source))
 

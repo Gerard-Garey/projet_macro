@@ -1899,3 +1899,11 @@ def test_glissement_non_fini_refuse_par_la_vue():
     assert (refus.value.etape, refus.value.bloc, refus.value.nom) == (
         "1", "banque_centrale", "glissement")
     assert "inf" in str(refus.value) and lus == []
+
+
+def test_fabrique_de_fin_de_pas_du_moteur_hors_des_invariants():
+    """R1 (#157) : la garde de fin de pas de `tests/invariants/conftest.py` (fabrique
+    `_fin_de_pas_controlee`, portée module) ne déborde pas sur les tests unitaires, même lancés
+    dans la même session pytest après les tests d'invariants (`uv run pytest`) : le moteur
+    construit ici la `FinDePas` réelle."""
+    assert ordo.FinDePas is FinDePas
