@@ -34,7 +34,8 @@ direct, critère 11), θ_H aux deux sens (C52), racine dominante et temps de dou
 identifiée sur le moteur, maquette en regard, #166), marge de
 `sec:finances_publiques-caisse`, et, remesurés à la table T1 (#171) : nombre de tours de
 rationnement au retour d'une baisse de 5 % sous une encaisse visée à ν_G = 1 (n°1, P274, bloc 9
-dérivé dans `tests/`), premier pas d'un écart d'un point du taux directeur sous φ = 0 (n°4).
+dérivé dans `tests/`), premier pas d'un écart d'un point du taux directeur sous φ = 0 (n°4),
+P_36 d'une hausse de taux d'un point aux tours 1 à 12 sous φ ∈ {0 ; 1} (n°6, P275).
 Aucune mesure ici ne vaut résultat final (J3-e).
 """
 
@@ -48,10 +49,11 @@ import pytest
 from nations.blocs import finances_publiques as bloc_9
 from nations.blocs import investissement as bloc_6
 from nations.blocs import menages as bloc_5
+from nations.blocs.banque_centrale import taux_indique_par_la_regle
 from nations.blocs.finances_publiques import FinancesPubliques
 from nations.etat import schema
 from nations.etat.sauvegarde import charger, sauvegarder
-from nations.moteur import calendrier
+from nations.moteur import calendrier, registre
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import TauxDeFlux, par_pas
 from nations.moteur.diagnostics import RefusDuMoteur
@@ -1246,6 +1248,96 @@ def test_couverture_d_un_choc_de_taux_au_tour_n(socle, pi):
     for r, bareme in ((c, bareme_c), (s, bareme_s)):
         v2 = r.pas[1]["variables"]
         assert abs((v2["T_H"] - v2["T_cou"]) / bareme - 1.0) <= SEUIL_FLUX
+
+
+# Hausse de taux d'un point pendant 12 tours sous φ ∈ {0 ; 1} (#171, n°6 ; fiche 9, Q2, table φ ;
+# critère écrit avant l'essai par `monnaie`, décision P275). Configuration (A) du critère 15 de la
+# fiche 8 : règle de taux en vigueur, taux décidé = prescription + 1 point aux tours 1 à 12,
+# action intégrale jamais réinitialisée. Les colonnes φ ∈ {0,1 ; 0,25 ; 0,5} sont hors du domaine
+# du levier (M33) et renvoyées à #111 : non mesurées.
+HAUSSE_DE_TAUX = 0.01
+PAS_DE_P36 = 35  # tour 36 = pas 35 (tour k = pas k − 1, `sec:cadre-calendrier`)
+
+
+def _hausse_de_taux_d_un_point(socle, sentier, tables):
+    """Contrôle et trajectoire choquée, mêmes tables, depuis `socle.etat_initial`, sur
+    `PAS_DE_P36` + 1 pas ; injection par composition sur l'état d'ouverture : r̂* += Δ à
+    l'ouverture du pas 0, retiré à l'ouverture du pas 12, Δ = 0,01/(1 + π*), d'où +0,01 exact
+    sur (1 + r̂*)(1 + π*) dans BC1. BC2 étant additive en r̂*, la composante Δ se conserve sous
+    l'action intégrale, qui n'est pas réinitialisée. Rend (relevé du contrôle, relevé du choc,
+    Δ, arrêt du choc ou None)."""
+    initial = socle.etat_initial(sentier)
+    delta = HAUSSE_DE_TAUX / (1.0 + initial.pi_etoile)
+    _, c = derouler(socle, sentier, PAS_DE_P36 + 1, parametres=tables)
+    o = assembler(socle, sentier, parametres=tables)
+    s = Releve()
+    etat, arret = initial, None
+    try:
+        for t in range(PAS_DE_P36 + 1):
+            if t in (0, TOURS_DU_CHOC):
+                signe = 1.0 if t == 0 else -1.0
+                etat = dataclasses.replace(etat, r_hat_etoile=etat.r_hat_etoile + signe * delta)
+            etat = ordo.executer_pas(etat, socle.entrees_du_tour(), o, s)
+    except (RefusDuMoteur, DefautComptable) as refus:
+        arret = f"non mesurable (arrêt au pas {len(s.pas)} : {refus})"
+    assert [p["t"] for p in s.pas] == list(range(len(s.pas)))
+    return c, s, delta, arret
+
+
+def _verifier_l_injection(c, s, initial, delta, a_pi):
+    """Assertions du banc (critère de `monnaie`), à 1e−12 relatif : pas 0, i_CB choqué − contrôle
+    = 0,01 ; pas 1 à 11, i_CB = BC1 sur l'ouverture choquée avec r̂* − Δ, + 0,01 ; pas 12,
+    i_CB = BC1 sur l'ouverture (Δ retiré)."""
+    d0 = s.pas[0]["variables"]["i_CB"] - c.pas[0]["variables"]["i_CB"]
+    assert abs(d0 / HAUSSE_DE_TAUX - 1.0) <= SEUIL_NUL, d0
+    ouvertures = [initial] + [p["etat"] for p in s.pas[:-1]]
+    for t in range(1, TOURS_DU_CHOC + 1):
+        o, i_cb = ouvertures[t], s.pas[t]["variables"]["i_CB"]
+        # État de fin du pas t − 1 : il porte encore Δ aux pas 1 à 12 ; au pas 12, Δ est retiré
+        # à l'ouverture exécutée, et la prescription est lue sans hausse.
+        hausse = HAUSSE_DE_TAUX if t < TOURS_DU_CHOC else 0.0
+        attendu = taux_indique_par_la_regle(o.r_hat_etoile - delta, o.pi_etoile,
+                                            registre.glissement(o.registre_prix), a_pi) + hausse
+        assert abs(i_cb / attendu - 1.0) <= SEUIL_NUL, (t, i_cb, attendu)
+
+
+@pytest.mark.parametrize("pi", [0.02, 0.10])
+def test_p36_d_une_hausse_de_taux_aux_deux_valeurs_de_phi(socle, pi, publier):
+    """#171, n°6 (fiche 9, Q2, table φ, colonnes φ ∈ {0 ; 1} ; critère écrit avant l'essai par
+    `monnaie`, décision P275) : P_36 = 100 (p^choc_36/p^contrôle_36 − 1), en %, p = indice des
+    prix du tour (phase 5), au tour 36 (pas 35), contre le contrôle apparié (même état initial
+    résolu, mêmes tables T1, sans choc), choc (A) du critère 15 de la fiche 8 injecté par
+    `_hausse_de_taux_d_un_point`. Propriétés : (1) φ = 1 : P_36 < 0 ; (2) P_36(φ = 0) >
+    P_36(φ = 1) ; (3) publiés sans verdict : P_36 aux deux φ, écart de r̂* (choqué − contrôle) à
+    l'ouverture du pas 35. Un arrêt du moteur sous φ = 0 avant le pas 35 est publié « non
+    mesurable », sans verdict sur (2). L'écart 10 % − 2 % se lit sur les deux publications."""
+    sentier = socle.sentier(pi)
+    initial = socle.etat_initial(sentier)
+    a_pi = socle.parametres_du_sentier(sentier).banque_centrale.a_pi
+    mesures, lignes = {}, []
+    for phi, tables in ((1.0, socle.parametres_du_sentier(sentier)),
+                        (0.0, _sous_phi_nul(socle, sentier))):
+        assert tables.finances_publiques.phi == phi
+        c, s, delta, arret = _hausse_de_taux_d_un_point(socle, sentier, tables)
+        if arret is not None:
+            assert phi == 0.0, arret  # sous φ = 1, un arrêt n'est pas une mesure admise
+            mesures[phi] = None
+            lignes.append(f"φ = {phi:g} : P_36 {arret}")
+            continue
+        _verifier_l_injection(c, s, initial, delta, a_pi)
+        assert s.pas[PAS_DE_P36]["t"] == c.pas[PAS_DE_P36]["t"] == PAS_DE_P36
+        p36 = 100.0 * (s.pas[PAS_DE_P36]["variables"]["p"]
+                       / c.pas[PAS_DE_P36]["variables"]["p"] - 1.0)
+        d_r_hat = s.pas[PAS_DE_P36 - 1]["etat"].r_hat_etoile - c.pas[PAS_DE_P36 - 1][
+            "etat"].r_hat_etoile
+        mesures[phi] = p36
+        lignes.append(f"φ = {phi:g} : P_36 = {p36:+.3f} % ({p36:+.6e}) ; r̂* choqué − contrôle à "
+                      f"l'ouverture du pas {PAS_DE_P36} = {d_r_hat:+.4e} par an")
+    publier(f"P_36 d'une hausse de taux d'un point aux tours 1 à 12, π* = {100 * pi:g} % "
+            f"({ETIQUETTE} ; table T1 ; #171, n°6)", lignes)
+    assert mesures[1.0] < 0.0, mesures  # (1) : un échec est une condition d'arrêt, pas un xfail
+    if mesures[0.0] is not None:
+        assert mesures[0.0] > mesures[1.0], mesures  # (2)
 
 
 def test_ligne_11c_egale_au_premier_terme_de_pi_cb(socle):
