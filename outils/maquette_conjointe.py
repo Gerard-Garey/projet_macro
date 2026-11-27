@@ -1707,7 +1707,6 @@ EXCLUS: dict[tuple[str, str], str] = {
     ("sec:investissement-conditions", "0,7985"): "trajectoire simulée du taux d'utilisation, non une valeur propre",
     ("sec:investissement-conditions", "0,861"): "part de la production versée aux ménages, cas à la main",
     ("sec:banque_centrale-conditions", "0,5"): "constante ln 0,5 de la demi-vie ; entrée : facteur commun 0,5",
-    ("sec:banque_centrale-conditions", "0,22"): "gain statique de la demande au taux réel (C36, #88), non un rayon",
     ("sec:banque_centrale-conditions", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:banque_centrale-conditions", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:banque_centrale-conditions", "1,01"): "entrée : part de la dépense visée multipliée par 1,01",
@@ -1718,7 +1717,6 @@ EXCLUS: dict[tuple[str, str], str] = {
                                                     "rédaction non versionné) : la maquette n'a pas cette variante",
     ("sec:banque_centrale-conditions", "1,009006"): "mesure hors outil, ancienne E12 (sans −T^cou, variante non "
                                                     "versionnée)",
-    ("sec:finances_publiques-conditions", "0,2208"): "gain statique de la demande au taux réel (C36, #88)",
     ("sec:finances_publiques-conditions", "0,42"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:finances_publiques-conditions", "0,21"): "couverture des intérêts à l'arrivée, forme fermée (#88)",
     ("sec:finances_publiques-conditions", "1,01"): "entrée : part de la dépense visée multipliée par 1,01",
