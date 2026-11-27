@@ -2,11 +2,11 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; le reste est dans `docs/feuille-de-route-historique.md` (parties A à J et leurs compléments, sans rien supprimé ni réécrit), dont la « Lecture des renvois » dit où lire chaque renvoi absent de la tête.
 
-**Dernière mise à jour** : 27/11/2026, rang 0 de la ligne 13 ter (`architect`) — `main` = `7fc1cdf` (PR #193, § 7) ; branche `claude/j3-suites-pr184` créée depuis `7fc1cdf`, PR brouillon (numéro à reporter ; § 1) ; P312, P315 à P317 décidées, P313 et P314 réservées au rang 1 (§ 4) ; N2 à N6 créées sous #198 à #202 et rattachées, relevé recompté (§ 3) ; extraits sortis : historique, partie J. Mises à jour antérieures : historique, partie J, puis partie I et ses compléments, parties H à A et `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 27/11/2026, rang 0 de la ligne 13 ter (`architect`) — `main` = `7fc1cdf` (PR #193, § 7) ; branche `claude/j3-suites-pr184` créée depuis `7fc1cdf`, PR brouillon #203 (§ 1) ; P312, P315 à P317 décidées, P313 et P314 réservées au rang 1 (§ 4) ; N2 à N6 créées sous #198 à #202 et rattachées, relevé recompté (§ 3) ; extraits sortis : historique, partie J. Mises à jour antérieures : historique, partie J, puis partie I et ses compléments, parties H à A et `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
-**Branche 13 ter, « suites de la PR #184 »** — `claude/j3-suites-pr184`, créée le 27/11/2026 par la session depuis `main` = `7fc1cdf` (fusion de la PR #193) ; **PR brouillon (numéro à reporter)**. Plan proposé par `architect` au point d'étape du 27/11/2026, décidé le même jour par le mainteneur (P312) ; l'option de #185 et le critère de #186 restent à trancher au rang 1, sur lecture de `macro` (P313, P314, réservées, § 4). Fiche de J3-e2 à sa fusion : historique, partie J, § 1.
+**Branche 13 ter, « suites de la PR #184 »** — `claude/j3-suites-pr184`, créée le 27/11/2026 par la session depuis `main` = `7fc1cdf` (fusion de la PR #193) ; **PR brouillon #203**. Plan proposé par `architect` au point d'étape du 27/11/2026, décidé le même jour par le mainteneur (P312) ; l'option de #185 et le critère de #186 restent à trancher au rang 1, sur lecture de `macro` (P313, P314, réservées, § 4). Fiche de J3-e2 à sa fusion : historique, partie J, § 1.
 
 **Périmètre (P312)** : avec `Closes` : #185, #186, #188, #191, #198. #198 (N2 du rang 9 de J3-e2) entre à la place de #192, qui passe en J3-g2 avec #189 (P316). Aucun fichier de `src/` n'est touché : `outils/etat_stationnaire.py`, ses tests et, au rang 8, la spécification.
 
@@ -38,7 +38,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 **Visa** : aucun résultat final ne doit changer. Changement de sortie du script par #198 : visa donné par le mainteneur (P315), tableau avant / après au commit. Validations de l'expert pilote : `monnaie` pour #188 et #191 ; `macro` pour #185, #186 et #198 (`monnaie` consultée). Fable : aucune consultation prévue (0 sur 3).
 
-**Escalades, relances et arrêts** : à noter dans la PR brouillon (numéro à reporter) ; aucun au rang 0.
+**Escalades, relances et arrêts** : à noter dans la PR brouillon #203 ; aucun au rang 0.
 
 **Vigilance** : #163 avant la démonstration J4 (condition de M34) ; sorties du script et de la maquette tenues par aucune batterie (#179) : sha256 sur stdout seul remesuré à chaque commit `code:` ou `tests:`, et pour la maquette à chaque commit qui déplace des lignes du `.tex` (#189) ; valeurs à `7fc1cdf` : § 7.
 
@@ -50,7 +50,7 @@ Les branches fusionnées sont au § 7 ; lignes 7 à 9 (J3-b, J3-c, J3-d1) : hist
 
 | Ordre | Branche | Issues | Motif du regroupement et état |
 |---|---|---|---|
-| 13 ter | « suites de la PR #184 » `claude/j3-suites-pr184` — **en cours** depuis le 27/11/2026, rang 0 (PR brouillon, numéro à reporter ; § 1) | #185, #186, #188, #191, #198 (P312) | `outils/etat_stationnaire.py` et ses tests : NaN masqué et refus de domaine non capté (#188, #191) ; contre-épreuve et contrôles appliqués aux variantes de lv\* (#185, option P313) ; besoin d'émission de E9 au relevé (#198, sortie changée, visa P315) ; fenêtre de lv\* (#186, critère P314 avant l'essai). Sort de la ligne : #192, en J3-g2 (P316). Ligne 13 (J3-e2), fusionnée : § 7. |
+| 13 ter | « suites de la PR #184 » `claude/j3-suites-pr184` — **en cours** depuis le 27/11/2026, rang 0 (PR brouillon #203 ; § 1) | #185, #186, #188, #191, #198 (P312) | `outils/etat_stationnaire.py` et ses tests : NaN masqué et refus de domaine non capté (#188, #191) ; contre-épreuve et contrôles appliqués aux variantes de lv\* (#185, option P313) ; besoin d'émission de E9 au relevé (#198, sortie changée, visa P315) ; fenêtre de lv\* (#186, critère P314 avant l'essai). Sort de la ligne : #192, en J3-g2 (P316). Ligne 13 (J3-e2), fusionnée : § 7. |
 | 14 | J3-e3 « critère I1 » | #114 (avec #131, mesure), #139, #140, #169 (P240), #187 (P300) | Lignes « J3 » des fiches sur le socle complet depuis l'état résolu (P122, P149, P150) ; après J3-e1 et la ligne 13 ter. #187 : origine de « 1,0015 » (ligne (d) de `sec:menages-conditions`), `macro`. |
 | 15 | J3-f1 « stabilité linéarisée » | S1 (à rédiger), #147, #116, #125 (point 2, `Closes`), #163 (P204) ; F2 (P249) ; #190 après décision du mainteneur (P300) | Linéarisation sur le moteur ; ratio de sacrifice sur le socle linéarisé (C7). **Condition de M34 : #163 traitée avant la démonstration J4.** #180 (J4) traitée avant F2 (P296). Plus de cinq éléments : à redécouper au point d'étape qui la précède. |
 | 16 | J3-f2 « trajectoires après chocs » | S2 (à rédiger), #87, #88, #111, #154 ; avant elle, instruction de #195 et #200 par `monnaie` (P316) | Après J3-f1 (#116 → #111). |
