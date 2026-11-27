@@ -38,7 +38,7 @@ def _fin_de_pas_controlee(t, etat, *args, **kwargs):
     return FinDePas(t, etat, *args, **kwargs)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def etat_de_fin_de_pas_controle_en_entier():
     """Contrôle complet de chaque état de fin de pas, sur toutes les trajectoires des tests
     d'invariants (#144, point 1 ; M1 de l'audit du rang 2 de la branche « forme du code »).
@@ -50,15 +50,22 @@ def etat_de_fin_de_pas_controle_en_entier():
     (`EtatPays(**champs)`, contrôle complet) avant de rendre la `FinDePas` réelle (le type relevé
     par les observateurs est inchangé).
 
-    **Portée** (réserve r2 de l'audit du rang 2 ; #144, point 1, revue finale du rang 8) : les
-    seules trajectoires des tests d'invariants (`tests/invariants/`), **fixtures de portée module
-    comprises** (`banc`, `trajectoires`…) : la fabrique est posée pour toute la session
-    (`pytest.MonkeyPatch.context()`, portée session, `autouse`), avant toute fixture de portée
-    module ; une fixture de portée fonction ne couvrait pas ces dernières, construites avant elle.
+    **Portée** (réserve r2 de l'audit du rang 2 ; #144, point 1, revue finale du rang 8 ; R1,
+    #157) : les seules trajectoires des tests d'invariants (`tests/invariants/`), **fixtures de
+    portée module comprises** (`banc`, `trajectoires`…) : la fabrique est posée pour chaque module
+    de `tests/invariants/` (`pytest.MonkeyPatch.context()`, portée module, `autouse`), avant toute
+    fixture de portée module du module de test (pytest instancie d'abord les fixtures `autouse`
+    d'une même portée), et retirée à la fin du module ; une fixture de portée fonction ne couvrait
+    pas ces dernières, construites avant elle. La portée session débordait sur les tests
+    unitaires lancés dans la même session pytest (`uv run pytest`, `tests/invariants/` collecté
+    avant `tests/unitaires/`) ; la portée `package` s'y réduit à la session, faute de
+    `__init__.py` (mesuré avec pytest 9.1). Les fixtures de portée session de ce dossier
+    chargent des modules sans dérouler le moteur. Contrôle : `test_garde_de_fin_de_pas.py`.
     Exception : les tests du budget (`budget`), qui chronomètrent le moteur, la retirent pour leur
     durée (`_sans_controle_pour_le_budget`) ; un test qui compte les contrôles du moteur seul la
-    retire de même (`monkeypatch.setattr(ordo, "FinDePas", FinDePas)`). Ni les tests unitaires ni
-    le moteur hors des tests n'y passent. Sur ces trajectoires, c'est la **garde principale** :
+    retire de même (`monkeypatch.setattr(ordo, "FinDePas", FinDePas)`). Ni les tests unitaires
+    (même session pytest comprise : `test_fabrique_de_fin_de_pas_du_moteur_hors_des_invariants`)
+    ni le moteur hors des tests n'y passent. Sur ces trajectoires, c'est la **garde principale** :
     elle refuse un état de fin de pas hors domaine quelle que soit la voie d'entrée de la valeur.
     Les tests textuels de `tests/unitaires/test_etat.py` (seul site qui remplit `etat_suivant`,
     accès dynamiques et alias sur liste fermée) viennent **en appoint** : ils couvrent tout
