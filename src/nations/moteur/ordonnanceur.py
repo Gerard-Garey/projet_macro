@@ -65,7 +65,9 @@ couches de la phase 9, écriture unique des variables d'état) ; ADR 0011
   jamais écrêtage (P138).
 - Un **dépassement de la double précision** (`OverflowError`) dans une méthode
   d'étape d'un bloc est traduit en `DepassementNumerique`, refus typé qui
-  nomme le pas, l'étape et le bloc (P139).
+  nomme le pas, l'étape et le bloc (P139) ; une **division par zéro**
+  (`ZeroDivisionError`) l'est en `DivisionParZero`, de mêmes champs (ADR 0016,
+  point 10.1 ; #158). Liste fermée : aucune autre exception n'est traduite.
 
 Les observateurs ne reçoivent que des valeurs immuables et sont appelés par le
 moteur seul (ADR 0012, E1).
@@ -93,6 +95,7 @@ from nations.moteur.contrat_bloc import (
 from nations.moteur.diagnostics import (
     DefautDeDeclaration,
     DepassementNumerique,
+    DivisionParZero,
     EntreeHorsDomaine,
     PlanHorsDomaine,
     RefusDuMoteur,
@@ -920,13 +923,18 @@ def assembler(phases: tuple[Phase, ...], blocs: Sequence[object], parametres: ob
 
 def _appeler(methode: Callable[[Vue], None], vue: Vue, droits: _Droits, t: int) -> None:
     """Appelle la méthode d'étape d'un bloc ; un dépassement de la double précision
-    (`OverflowError`) y devient `DepassementNumerique`, qui nomme le pas, l'étape et le bloc
-    (P139). Aucune autre exception n'est touchée, et rien n'est rattrapé pour continuer."""
+    (`OverflowError`) y devient `DepassementNumerique` (P139), une division par zéro
+    (`ZeroDivisionError`) `DivisionParZero` (ADR 0016, point 10.1 ; #158), qui nomment le pas,
+    l'étape et le bloc, l'exception d'origine chaînée. Liste fermée de deux : aucune autre
+    exception n'est touchée, et rien n'est rattrapé pour continuer."""
     try:
         methode(vue)
     except OverflowError as erreur:
         raise DepassementNumerique(f"dépassement de la double précision ({erreur})", t=t,
                                    etape=droits.etape, bloc=droits.radical) from erreur
+    except ZeroDivisionError as erreur:
+        raise DivisionParZero(f"division par zéro ({erreur})", t=t, etape=droits.etape,
+                              bloc=droits.radical) from erreur
 
 
 def executer_pas(etat_ouverture: schema.EtatPays, entrees_du_tour: EntreesDuTour,

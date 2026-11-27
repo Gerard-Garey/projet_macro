@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from nations.etat import schema, unites
+from nations.etat import prix, schema, unites
 from nations.etat.sauvegarde import SauvegardeRefusee, charger, sauvegarder
 from nations.etat.schema import (
     CHAMPS,
@@ -30,6 +30,7 @@ from nations.etat.schema import (
     Invariance,
     VariableEtat,
 )
+from nations.moteur.parametres.ensemble import PARAMETRES_DE_REFERENCE
 from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
 from nations.noyau.grand_livre import FluxPropose, ouvrir_pas
@@ -106,6 +107,20 @@ def etats_tires(rng, n=3):
             return float(rng.uniform(-0.999, 10.0))
         if nom in ("IN_vol", "N") and rng.integers(0, 4) == 0:
             return (0.0, -0.0)[int(rng.integers(0, 2))]
+        if nom == "mu_tilde":
+            # |μ̃| ≤ ln(DBL_MAX) (#158) : signe quelconque, −0,0, sous-normaux et bornes compris ;
+            # petits normaux par la loi de `tirage` à exposant ≤ 8 (|μ̃| < 2^9 < ln(DBL_MAX)),
+            # que le tirage uniforme sur [−L ; L] ne produit presque jamais.
+            choix = int(rng.integers(0, 5))
+            if choix == 0:
+                return (prix.BORNE_MU_TILDE, -prix.BORNE_MU_TILDE)[int(rng.integers(0, 2))]
+            if choix == 1:
+                sous_normal = math.ulp(0.0) * float(rng.integers(1, 1000))
+                return (-0.0, 0.0, sous_normal, -sous_normal)[int(rng.integers(0, 4))]
+            if choix == 2:
+                signe = -1.0 if rng.integers(0, 2) else 1.0
+                return signe * float(rng.uniform(1.0, 2.0)) * 2.0 ** float(rng.integers(-1000, 9))
+            return float(rng.uniform(-prix.BORNE_MU_TILDE, prix.BORNE_MU_TILDE))
         if nom in schema.DOMAINES_DES_BLOCS:
             return tirage_positif()
         return tirage()
@@ -261,11 +276,11 @@ def test_variables_des_blocs_du_schema_v5():
                                           + investissement.VARIABLES
                                           + banque.VARIABLES + banque_centrale.VARIABLES
                                           + finances_publiques.VARIABLES)
-    # μ̃, r̂*, i_L, i_D, YD_{t−1}, T_{F,t−1} et ϱ̄_L : finitude seule, sans domaine propre (point
-    # 1.4 de l'annotation du 13/11/2026 ; ADR 0013, annotation du 14/11/2026, point 4 ;
-    # annotation du 14/11/2026 (rang 1b de J3-d1), point 1).
+    # r̂*, i_L, i_D, YD_{t−1}, T_{F,t−1}, ϱ̄_L et Y^HS_{t−1} : finitude seule, sans domaine propre
+    # (ADR 0013, annotation du 14/11/2026, point 4 ; annotation du 14/11/2026 (rang 1b de
+    # J3-d1), point 1). μ̃ a un domaine de représentabilité depuis #158 (ADR 0016, point 18.1).
     assert set(schema.DOMAINES_DES_BLOCS) == {v[0] for v in blocs} - {
-        "mu_tilde", "r_hat_etoile", "i_L", "i_D", "YD_m1", "T_F_m1", "varrho_bar_L", "Y_HS_m1"}
+        "r_hat_etoile", "i_L", "i_D", "YD_m1", "T_F_m1", "varrho_bar_L", "Y_HS_m1"}
 
 
 def test_cloture_du_noyau_couvre_exactement_ses_variables_d_etat():
@@ -379,6 +394,13 @@ HORS_DOMAINE = [
     # Schéma v3 (ADR 0013, annotation du 14/11/2026, point 4 ; #61).
     ("pi_etoile", -1.0, "hors du domaine 1 \\+ π\\* > 0"),
     ("pi_etoile", -1.5, "1 \\+ π\\* > 0"),
+    # μ̃ : domaine de représentabilité |μ̃| ≤ ln(DBL_MAX) (ADR 0016, point 18.1 ; #158) ; les
+    # trois valeurs de l'issue au-delà de la borne, et le flottant voisin de chaque borne.
+    ("mu_tilde", 745.0, "hors du domaine \\|μ̃\\| ≤ ln\\(DBL_MAX\\)"),
+    ("mu_tilde", 746.0, "hors du domaine \\|μ̃\\| ≤ ln\\(DBL_MAX\\)"),
+    ("mu_tilde", -710.0, "hors du domaine \\|μ̃\\| ≤ ln\\(DBL_MAX\\)"),
+    ("mu_tilde", math.nextafter(prix.BORNE_MU_TILDE, math.inf), "\\|μ̃\\| ≤ ln\\(DBL_MAX\\)"),
+    ("mu_tilde", math.nextafter(-prix.BORNE_MU_TILDE, -math.inf), "\\|μ̃\\| ≤ ln\\(DBL_MAX\\)"),
 ]
 
 # Valeurs non finies des variables des blocs : refusées à la construction par le domaine
@@ -440,13 +462,15 @@ def test_etat_non_fini_refuse_a_la_construction(nom):
 
 
 def test_plus_l_infini_d_une_variable_a_domaine_ouvert_est_non_fini():
-    """v^e > 0, K^vol > 0, W > 0 admettaient `+inf` avant le contrôle de finitude ; μ̃, sans
-    domaine propre, admettait `NaN` : refusés désormais sous le motif « non fini »."""
+    """v^e > 0, K^vol > 0, W > 0 admettaient `+inf` avant le contrôle de finitude : refusés
+    désormais sous le motif « non fini ». μ̃, qui admettait `NaN` sans domaine propre, est
+    refusé depuis #158 par son domaine de représentabilité, qui refuse aussi `NaN`."""
     for nom in ("v_e", "K_vol", "W", "IN_vol", "N"):
         with pytest.raises(ValueError, match=f"EtatPays.{nom} : inf non fini"):
             dataclasses.replace(etat_pays(), **{nom: math.inf})
-    with pytest.raises(ValueError, match="EtatPays.mu_tilde : nan non fini"):
-        dataclasses.replace(etat_pays(), mu_tilde=math.nan)
+    for x in NON_FINIS:
+        with pytest.raises(ValueError, match="EtatPays.mu_tilde : .* hors du domaine \\|μ̃\\|"):
+            dataclasses.replace(etat_pays(), mu_tilde=x)
 
 
 def _registre_avec(u, niveau):
@@ -480,7 +504,9 @@ def test_registre_hors_domaine_refuse_a_la_construction(u, niveau):
     {"identifiant": "\U0001F30D"}, {"identifiant": "\u00e9"},
     {"U": 0.0}, {"U": 1.0}, {"U": -0.0}, {"IN_vol": 0.0, "IN": 0.0}, {"N": 0.0},
     {"pi_e": -0.999},
-    {"mu_tilde": -3.0}, {"mu_tilde": 0.0}, {"W": 5e-324}, {"v_e": 1e300},
+    {"mu_tilde": -3.0}, {"mu_tilde": 0.0}, {"mu_tilde": -0.0},
+    {"mu_tilde": prix.BORNE_MU_TILDE}, {"mu_tilde": -prix.BORNE_MU_TILDE},
+    {"W": 5e-324}, {"v_e": 1e300},
     {"pi_etoile": -0.999}, {"pi_etoile": 0.0}, {"pi_etoile": -0.05},
     # r̂* : finitude seule, sans condition de signe (ADR 0013, annotation du 14/11/2026,
     # point 4 ; #91).
@@ -496,6 +522,27 @@ def test_valeurs_aux_bornes_du_domaine_admises(champs):
     e = dataclasses.replace(etat_pays(), **champs)
     assert all(getattr(e, nom) == valeur for nom, valeur in champs.items())
     assert charger(sauvegarder([e])) == (e,)
+
+
+def test_domaine_de_mu_tilde_garde_e_puissance_plus_et_moins_mu_finis():
+    """Critère 1 de `macro` (#158 ; ADR 0016, points 17 et 18.1) : la borne L du domaine de μ̃
+    est ln(DBL_MAX), calculée ; sa propriété est vérifiée, non un littéral : exp(±L) est fini,
+    exp(±μ̃) déborde au flottant suivant. Le prédicat du domaine admet −L, −0,0, 0,0,
+    ln(1 + μ̄) et +L, et refuse le flottant voisin de chaque borne, ±∞ et NaN, par la seule
+    fonction de domaine du schéma."""
+    borne = prix.BORNE_MU_TILDE
+    assert borne == math.log(sys.float_info.max)
+    for x in (borne, -borne):
+        assert math.isfinite(math.exp(x)) and math.isfinite(math.exp(-x))
+        with pytest.raises(OverflowError):
+            math.exp(abs(math.nextafter(x, math.copysign(math.inf, x))))
+    mu_stationnaire = math.log(1.0 + PARAMETRES_DE_REFERENCE.prix.mu_bar)
+    for x in (-borne, -0.0, 0.0, mu_stationnaire, borne):
+        assert schema.defaut_de_domaine("mu_tilde", x) is None, x
+    for x in (math.nextafter(borne, math.inf), math.nextafter(-borne, -math.inf),
+              math.inf, -math.inf, math.nan):
+        motif = schema.defaut_de_domaine("mu_tilde", x)
+        assert motif is not None and "|μ̃| ≤ ln(DBL_MAX)" in motif, x
 
 
 def test_bornes_declarees():

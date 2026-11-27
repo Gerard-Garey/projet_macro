@@ -51,20 +51,21 @@ from nations.blocs import investissement as bloc_6
 from nations.blocs import menages as bloc_5
 from nations.blocs.banque_centrale import taux_indique_par_la_regle
 from nations.blocs.finances_publiques import FinancesPubliques
-from nations.etat import schema
+from nations.etat import prix, schema
 from nations.etat.sauvegarde import charger, sauvegarder
 from nations.moteur import calendrier, registre
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import TauxDeFlux, par_pas
-from nations.moteur.diagnostics import RefusDuMoteur
+from nations.moteur.diagnostics import ArretMoteur, RefusDuMoteur
 from nations.moteur.parametres import varier
 from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
 from nations.moteur.phases import PHASES
 from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
-from nations.noyau.diagnostics import DefautComptable
+from nations.noyau.diagnostics import ArretNoyau, DefautComptable
 from nations.noyau.grand_livre import ClotureDePhase, FluxPropose, ouvrir_pas
 from nations.observation.observateur import FinDePas
+from nations.scenarios import initial as initial_du_scenario
 
 N_A = PAS_PAR_AN.valeur
 NB_PAS = 720
@@ -536,6 +537,69 @@ def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, 
     compte = {nom: appels.count(nom) for nom in schema.CHAMPS}
     assert compte == {nom: nb_pas for nom in schema.CHAMPS}
     assert len(appels) == nb_pas * len(schema.CHAMPS)
+
+
+# --------------------------------------------------------------------------
+# Domaine de représentabilité de μ̃ et refus de division (#158 ; ADR 0016, points 10, 11, 18.1)
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("mu_tilde", [700.0, -709.0, prix.BORNE_MU_TILDE,
+                                      -prix.BORNE_MU_TILDE])
+def test_mu_tilde_extreme_dans_le_domaine_resultat_fini_ou_arret_type(socle, mu_tilde):
+    """Critère 3 de `macro` (#158), écrit avant l'essai : avec μ̃_{−1} dans le domaine, aux
+    valeurs de l'issue (700, −709) et aux bornes ±ln(DBL_MAX), chargé par `dataclasses.replace`
+    de l'état résolu, le pas 0 du socle complet (π* = 2 %) rend un état fini (contrôlé par le
+    constructeur), ou s'arrête par un arrêt typé, `ArretMoteur` ou `ArretNoyau` ; jamais une
+    exception brute (critère « aucune exception brute ne sort du moteur », point 11)."""
+    sentier = socle.sentier(0.02)
+    initial = dataclasses.replace(socle.etat_initial(sentier), mu_tilde=mu_tilde)
+    try:
+        suivant, _ = derouler(socle, sentier, 1, initial=initial)
+    except (ArretMoteur, ArretNoyau):
+        return
+    assert all(math.isfinite(getattr(suivant, v.nom)) for v in schema.VARIABLES
+               if v.type is float)
+
+
+def test_sigma_infime_arret_par_le_domaine_de_mu_tilde_en_phase_5(socle):
+    """Critère 4 de `macro` (#158), écrit avant l'essai : avec σ = 1e−12 (table de production),
+    depuis l'état résolu à ces tables, socle complet, π* = 2 %, la trajectoire s'arrête par le
+    refus du domaine de μ̃ à l'écriture en phase 5 (`Vue.ecrire_etat`) : `RefusDuMoteur` qui
+    nomme le bloc prix, l'étape « 5 » et « mu_tilde », et non par une division par zéro du bloc
+    production (la `ZeroDivisionError` brute d'avant #158, p_t = UC_t e^{μ̃_t} = 0 en
+    arithmétique flottante)."""
+    sentier = socle.sentier(0.02)
+    tables = socle.parametres_du_sentier(sentier)
+    tables = dataclasses.replace(tables, production=varier(tables.production, sigma=1e-12))
+    resolu = initial_du_scenario.etat_initial(tables, socle.normalisation_du_sentier(sentier),
+                                              identifiant="A", graine=socle.GRAINE)
+    with pytest.raises(RefusDuMoteur) as refus:
+        derouler(socle, sentier, 12, initial=resolu.etat, parametres=resolu.parametres)
+    assert type(refus.value) is RefusDuMoteur
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == ("5", "prix", "mu_tilde")
+    assert "|μ̃| ≤ ln(DBL_MAX)" in str(refus.value)
+
+
+def test_mu_tilde_au_dela_du_domaine_refuse_avec_son_nom_avant_le_prix(socle):
+    """Constat m2 de l'audit de #158, décision du mainteneur du 27/11/2026 (μ̃ écrit avant le
+    prix) : avec ψ_ξ = 1e6 et IN^vol_{−1} réduit de moitié dans l'état résolu à ces tables
+    (ξ_0 = 0,5, μ̃_0 ≈ 5e4 > ln(DBL_MAX)), socle complet, π* = 2 %, le pas 0 s'arrête par le
+    refus du domaine de μ̃ à son écriture (`Vue.ecrire_etat`) : `RefusDuMoteur` exact qui nomme
+    l'étape « 5 », le bloc prix et « mu_tilde », et non par le `DepassementNumerique` anonyme
+    de exp(μ̃_0) (P3), que rendait l'ordre d'écriture précédent."""
+    sentier = socle.sentier(0.02)
+    tables = socle.parametres_du_sentier(sentier)
+    tables = dataclasses.replace(tables, prix=varier(tables.prix, psi_xi=1e6))
+    resolu = initial_du_scenario.etat_initial(tables, socle.normalisation_du_sentier(sentier),
+                                              identifiant="A", graine=socle.GRAINE)
+    initial = dataclasses.replace(resolu.etat, IN_vol=0.5 * resolu.etat.IN_vol)
+    with pytest.raises(RefusDuMoteur) as refus:
+        derouler(socle, sentier, 1, initial=initial, parametres=resolu.parametres)
+    assert type(refus.value) is RefusDuMoteur
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "5", "prix", "mu_tilde")
+    assert "|μ̃| ≤ ln(DBL_MAX)" in str(refus.value)
 
 
 # --------------------------------------------------------------------------

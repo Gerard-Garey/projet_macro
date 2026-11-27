@@ -39,8 +39,10 @@ from nations.moteur.contrat_bloc import (
 )
 from nations.moteur.conversions import facteur_par_pas, par_pas
 from nations.moteur.diagnostics import (
+    ArretMoteur,
     DefautDeDeclaration,
     DepassementNumerique,
+    DivisionParZero,
     EntreeHorsDomaine,
     PlanHorsDomaine,
     RefusDuMoteur,
@@ -1342,7 +1344,7 @@ def test_domaines_des_entrees_liste_fermee():
 def test_depassement_numerique_d_un_bloc_refuse_et_type():
     """P139 : une `OverflowError` levée dans une méthode d'étape d'un bloc (ici `math.exp`
     au-delà de 709) devient `DepassementNumerique`, dérivée de `RefusDuMoteur`, qui nomme le pas,
-    l'étape et le bloc, l'exception d'origine chaînée ; aucune autre exception n'est traduite."""
+    l'étape et le bloc, l'exception d'origine chaînée."""
     def deborde(vue):
         math.exp(710.0)
     o = ordonnanceur_d_essai(plans_nuls(1), actions={("travail", "4"): deborde})
@@ -1351,11 +1353,54 @@ def test_depassement_numerique_d_un_bloc_refuse_et_type():
     assert (refus.value.t, refus.value.etape, refus.value.bloc) == (0, "4", "travail")
     assert type(refus.value.__cause__) is OverflowError
 
+
+@pytest.mark.parametrize("radical, etape", [("travail", "4"), ("menages", "9")])
+def test_division_par_zero_d_un_bloc_refusee_et_typee(radical, etape):
+    """ADR 0016, point 10.1 (#158) : une `ZeroDivisionError` levée dans une méthode d'étape d'un
+    bloc, phase 9 comprise, devient `DivisionParZero`, dérivée de `RefusDuMoteur` (et non de
+    `DepassementNumerique`), qui nomme le pas, l'étape et le bloc, `nom = None`, l'exception
+    d'origine chaînée ; l'état d'ouverture reste intact et aucun état t + 1 n'est relevé."""
     def divise(vue):
         return 1.0 / 0.0
-    o = ordonnanceur_d_essai(plans_nuls(1), actions={("travail", "4"): divise})
-    with pytest.raises(ZeroDivisionError):
+    ouverture = etat_initial()
+    temoin = dataclasses.replace(ouverture)
+    o = ordonnanceur_d_essai(plans_nuls(1), actions=_remplacer_action(
+        radical, etape, lambda vue, base: (base(vue), divise(vue))))
+    releve = Enregistreur()
+    with pytest.raises(DivisionParZero, match="division par zéro") as refus:
+        executer_pas(ouverture, ENTREES_VIDES, o, releve)
+    assert isinstance(refus.value, RefusDuMoteur)
+    assert not isinstance(refus.value, DepassementNumerique)
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, etape, radical, None)
+    assert type(refus.value.__cause__) is ZeroDivisionError
+    assert ouverture == temoin
+    assert not any(type(e) is FinDePas for e in releve.evenements)
+
+
+def _lever(exception):
+    def leve(vue):
+        raise exception("essai")
+    return leve
+
+
+@pytest.mark.parametrize("action, exception", [
+    (lambda vue: math.log(-1.0), ValueError),  # erreur de domaine de `math`
+    (lambda vue: math.sqrt(-1.0), ValueError),
+    (lambda vue: 1.0 + "x", TypeError),
+    (_lever(KeyError), KeyError),
+    (_lever(ArithmeticError), ArithmeticError),
+    (_lever(FloatingPointError), FloatingPointError),
+], ids=["log", "sqrt", "type", "cle", "arithmetique", "virgule_flottante"])
+def test_traductions_du_moteur_liste_fermee_de_deux(action, exception):
+    """ADR 0016, point 10.1 : `_appeler` ne traduit que `OverflowError` et `ZeroDivisionError` ;
+    toute autre exception d'une méthode d'étape (erreur de domaine de `math`, type faux, clé
+    absente, autre exception arithmétique) sort telle quelle, jamais en refus du moteur."""
+    o = ordonnanceur_d_essai(plans_nuls(1), actions={("travail", "4"): action})
+    with pytest.raises(exception) as sortie:
         executer_pas(etat_initial(), ENTREES_VIDES, o, ObservateurNul())
+    assert type(sortie.value) is exception
+    assert not isinstance(sortie.value, ArretMoteur)
 
 
 def test_lecture_d_une_variable_non_ecrite_refusee():
