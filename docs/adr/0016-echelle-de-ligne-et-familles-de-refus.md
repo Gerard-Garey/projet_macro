@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-11-27
 ---
 
@@ -171,3 +171,25 @@ Au-delà de ln(DBL_MAX), `math.exp` lève `OverflowError` (« math range error �
   - un besoin, au J4, d'une racine commune que la liste fermée de l'appelant ne couvre pas.
 
 Issues : #153, #158, #125 (point 6), #178, #194, #195 ; liées : #148, #143, #181.
+
+## Annotations
+
+### Annotation du 27/11/2026 (rang 9 de J3-e2, PR #193, tête `baf0128` ; P303 à P311)
+
+Rédigée par `architect` à la consignation de J3-e2. Elle ne change aucune règle : elle attribue les numéros des décisions, corrige deux erreurs matérielles du texte et relève les défauts connus au sens du point 11. Le texte d'origine ci-dessus n'est pas réécrit ; seul l'en-tête `status` passe de `proposed` à `accepted`, conformément au statut déjà consigné en tête de l'ADR.
+
+1. **Numéros des décisions du mainteneur du 27/11/2026** (`docs/feuille-de-route.md`, § 4) :
+   - points 1 à 7 (I, échelle de repli, label `eq:noyau-echelle-ligne`, lectures L1 et L2) : **P304** ;
+   - points 10.1, 11, 13 (deuxième tiret) et 18.1 (domaine de μ̃, filet de division, formes de refus acceptées, lecture « aucune exception brute ne sort du moteur ») : **P305** ;
+   - point 18.2 (κ, σ ≥ DBL_MIN) : **P306** ;
+   - point 19 (#178, aucun code, critère corrigé) : **P307** ;
+   - #195 (« Ce que l'ADR ne règle pas ») : **P308** ;
+   - acceptation (V1 à V4 selon l'ADR ; V5 : finitude, borne ln(DBL_MAX) maintenue ; P298 jugée non déclenchée, sans Fable) : **P309** ;
+   - constats de l'audit du rang 3 : m1, #197 (point 11 ci-dessous) ; m2, μ̃ écrit avant p (point 13) : **P310**.
+2. **Point 16, premier tiret : exemple du domaine de définition.** « W > 0, UC = W/pr » se lit **« pr > 0 et W > 0 pour UC = W/pr »** : le dénominateur est pr, et W > 0 seul ne rend pas l'équation définie. Réserve R1 de `macro` au rang 7 ; la spécification l'écrit ainsi depuis `403e2e3` (paragraphe « Trois sortes de domaines » de `sec:cadre-phases`).
+3. **Conséquences, surface pour `docwriter`, tiret #158 : renvoi de ligne erroné.** « paragraphes des domaines et des refus, l. 798-802 » est faux : à `bda0368`, le paragraphe visé commence à la l. 798, mais il était à la l. 812 à `859097e` et a encore bougé depuis. Il se lit par son titre : **`sec:cadre-phases`, paragraphe « Dépassement de la double précision et division par zéro »**. Ce titre est celui de la tête `baf0128` (« Dépassement de la double précision » avant `403e2e3`). Les autres numéros de ligne du `.tex` cités par cet ADR datent de `bda0368` et ne se tiennent pas à jour.
+4. **Point 11, défauts connus.** Deux exceptions brutes d'un autre type que les deux du point 10 peuvent sortir du moteur. Ce sont des défauts au sens du point 10.3 (V3), à corriger par un domaine ou par une forme, jamais par une traduction :
+   - #197 : `registre.avancer`, appelé hors de `_appeler`, lève une `ValueError` si P_t ≤ 0 (atteignable avec l'ordonnanceur d'essai, pas sur le socle complet) ;
+   - issue proposée N3 (`docs/feuille-de-route.md`, § 3, non créée) : à μ̃ = −ln(DBL_MAX) et μ̄ très grand, `math.log` de T3 reçoit 0,0 et lève une `ValueError`.
+5. **Point 10.4, hypothèse non gardée par un test** : issue proposée N6 (non créée).
+6. **#181** (P311) ne touche pas cet ADR : B_Bk ≥ 0 et B_CB ≥ 0 n'ont qu'un lieu d'écriture, `sec:finances_publiques-conditions`.

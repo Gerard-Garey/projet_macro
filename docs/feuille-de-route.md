@@ -2,31 +2,33 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; le reste est dans `docs/feuille-de-route-historique.md` (parties A à G et leurs compléments, sans rien supprimé ni réécrit), dont la « Lecture des renvois » dit où lire chaque renvoi absent de la tête.
 
-**Dernière mise à jour** : 27/11/2026, rang 1 de J3-e2 (`architect`) — `main` = `d08332c` (§ 7) ; branche de travail `claude/j3-e2-refus-types` créée depuis `caa6cce`, PR brouillon #193 (§ 1) ; décisions du mainteneur du 27/11/2026 sur le plan de J3-e2 consignées, P294 à P302 (§ 4) ; ligne 13 en cours, ligne 13 ter créée, #120 et #180 au J4 (§ 2) ; #194 (N1) créée et rattachée, relevé recompté (§ 3) ; texte de P277 à P293 et état de la tête au point d'étape après la PR #184 sortis dans l'historique, partie I, complément du rang 1 de J3-e2. Mises à jour antérieures et extraits sortis : historique, partie I et ses compléments, puis parties H à A et `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 27/11/2026, rang 9 de J3-e2 (`architect`) — `main` = `c9d4f28` (PR #196, § 7) ; branche `claude/j3-e2-refus-types` à `baf0128` (avant la présente consignation), PR brouillon #193, rangs 0 à 9 faits, prête à sortir du brouillon (§ 1, § 2) ; P303 à P311 et Q-a à Q-d (§ 4) ; #195 et #197 « à trier », N2 à N6 proposées, relevé recompté (§ 3) ; extraits sortis : historique, partie I, complément du rang 9 de J3-e2. Mises à jour antérieures : historique, partie I et ses compléments, puis parties H à A et `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
-**Branche 13, J3-e2 « domaines à l'état chargé et refus typés »** — `claude/j3-e2-refus-types`, créée le 27/11/2026 par la session depuis `caa6cce` (point d'étape, sur `main` = `d08332c`) ; **PR brouillon #193**. Plan proposé par `architect` le 27/11/2026, décidé le même jour par le mainteneur selon cet avis (P294 à P302, § 4). Fiche de la branche 12 bis à sa fusion : historique, partie I, complément du point d'étape après la PR #184.
+**Branche 13, J3-e2 « domaines à l'état chargé et refus typés »** — `claude/j3-e2-refus-types`, créée le 27/11/2026 par la session depuis `caa6cce` (point d'étape, sur `main` = `d08332c`) ; **PR brouillon #193**. Plan proposé par `architect` le 27/11/2026, décidé le même jour par le mainteneur selon cet avis (P294 à P302, § 4). Fiche de la branche 12 bis à sa fusion : historique, partie I, complément du point d'étape après la PR #184. **Rangs 0 à 9 faits ; prête à sortir du brouillon** (27/11/2026) : restent le corps de la PR, la sortie du brouillon (session) et la fusion (mainteneur). Tableau des rangs au rang 1 : historique, partie I, complément du rang 9 de J3-e2.
 
 **Périmètre (P294)** : avec `Closes` : #153 (noyau, échelle nulle d'une ligne), #158 (bloc 3, domaine de μ̃, exceptions brutes), #178 (bloc 2, N6, d < 0), #181 (B_CB ≥ 0, section citée) ; sans `Closes` : #125, point 6 (domaines de κ et σ ; le point 2 reste en J3-f1 avec `Closes`). Hors périmètre : #120 et #180, au J4 (P295, P296) ; familles de refus hors d'`ArretMoteur`, forme fixée par l'ADR du rang 1 et mise en œuvre par #194 (N1) au J4, qui n'est pas une sixième issue de la branche (P297) ; #157, correctif rapide hors branche (P302).
 
 | Rang | Issue | Travail | Pilote ; circuit | Commits | État |
 |---|---|---|---|---|---|
-| 0 | — | Point d'étape, plan | — | `docs:` (session) | **fait** (`caa6cce`) |
-| 1 | — | Décisions Q1 à Q9 (P294 à P302) ; PR brouillon #193 ; ADR « échelle nulle d'une ligne du noyau et familles de refus » par `architect-approfondi` (P298 ; contrat partagé, ADR 0005 et 0014) ; lectures écrites avant l'essai : `macro` (domaine de μ̃ en T2 et T3 ; bornes de κ et σ ; domaine de d), `monnaie` (dénominateur de #153, porte de la monnaie centrale ; domaine de M_G, E9 et E13 ; section de B_CB ≥ 0) ; N1 | — | `docs:` (ADR, consignation) | **en cours** : PR #193 ouverte, décisions consignées, N1 créée (#194) ; ADR et lectures à venir |
-| 2 | #153 | Dénominateur déclaré pour une ligne à échelle nulle, ou refus typé motivé ; aucune constante absolue | `monnaie` ; circuit 2, `coder` → `audit` → `monnaie` | `code:`, `tests:` | à venir |
-| 3 | #158 | Domaine de μ̃ tiré de la spécification si `macro` en trouve un, et traduction générique de `ZeroDivisionError` par l'ordonnanceur en filet, sur le modèle de `DepassementNumerique` (P299) | `macro` ; circuit 2 | `code:`, `tests:` | à venir |
-| 4 | #125 pt 6, puis #178 | Bornes inférieures de κ et σ ; domaine de d en N6 ou domaine de M_G à l'ouverture | `macro`, `monnaie` pour M_G ; circuit 2 | `code:`, `tests:` (#125, puis #178) | à venir |
-| 5 | #181 | B_CB ≥ 0 écrite dans la section citée (`docwriter`) ou citation corrigée (`coder`) ; test `7be1b4d` étendu au groupe B_Bk, B_CB, B_H | `monnaie` ; circuit 4 ou 3 | `code:` / `tests:`, ou `docs:` au rang 7 | à venir |
-| 6 | — | Mesures « après » (session) : empreintes, sorties, batteries | — | aucun | à venir |
-| 7 | toutes | `docwriter`, un `docs:` par issue (règle 9) ; diff validé une fois par `macro` et `monnaie` | circuit 4 | `docs:` | à venir |
-| 8 | toutes | Revue finale complète (`audit`, règle 10) et `/code-review` | — | selon constats | à venir |
-| 9 | — | Consignation (`architect`) | — | `docs:` | à venir |
+| 0 | — | Point d'étape, plan | — | `caa6cce` | **fait** |
+| 1 | — | P294 à P302 ; PR #193 ; #194 ; lectures de `macro` et `monnaie` ; ADR 0016 accepté (P309), ADR 0014 annoté | `architect-approfondi` | `bda0368`, `76a6e1d` | **fait** |
+| 2 | #153 | Échelle de repli d'une ligne, label `eq:noyau-echelle-ligne` (P304) | `monnaie` ; circuit 2 | `f97327a`, `bb95098` (`docs:` minimal) | **fait**, validé par `monnaie` |
+| 3 | #158 | Domaine de μ̃, `DivisionParZero` (P305) ; reprise unique (m2, P310) | `macro` ; circuit 2 | `d69a70e`, `1127ec9` | **fait**, validé par `macro` |
+| 4 | #125 pt 6, #178 | κ, σ ≥ DBL_MIN (P306) ; d ≥ 0 propriété dérivée, tests seuls (P307) | `macro` ; circuit 2 | `74e1213`, `55e915b` | **fait**, validé par `macro` |
+| 5 | #181 | B_CB ≥ 0 écrite, dix conditions comparées ; un seul lieu d'écriture (P311) | `monnaie` ; circuits 4 et 3 | `7b8504d`, `8725d02` (`docs:` minimaux), `e10f942`, `38759cc`, `313310a`, `baf0128` | **fait** |
+| 6 | — | Mesures « après » | session | aucun | **fait** (PR #193) |
+| 7 | toutes | `docwriter`, un `docs:` par issue (règle 9) | circuit 4 | `02b7896` (#153), `403e2e3` (#158), `b9f66cd` (#125), `3d90918` (#178), `37f0e8a` (#181) | **fait** ; validés par `monnaie` (#153), `macro` (#158, #125, #178), les deux (#181), selon les messages |
+| 8 | toutes | Revue finale complète (`audit`, règle 10) et `/code-review` | — | — | **fait** ; constats hors périmètre : N3 à N6 (§ 3), Q-d (§ 4) |
+| 9 | — | Consignation : P303 à P311, ADR 0016 annoté, `CONTEXT.md`, #195 et #197 | `architect` | présent commit | **fait** |
+
+**Commits** : 20 hors fusion à `baf0128` (4 `code:`, 5 `tests:`, 11 `docs:` ; `git log --no-merges main..HEAD`), plus la fusion de `main` (`859097e`, après la PR #196) et la présente consignation. **Résultats** : aucune trajectoire des bancs ni aucun verdict ne change (PR #193) ; concordance stricte 92 / 92 à `baf0128` (+1 de chaque côté, `eq:noyau-echelle-ligne`) ; cas hors bancs : tableau de la PR #193.
 
 **Ordre** : l'ADR d'abord (contrat des refus et dénominateur du noyau, que les rangs 2 à 5 respectent) ; puis #153, seul contrat partagé ; puis #158 ; puis #125 pt 6 et #178 (même module de paramètres, même bloc 2) ; #181, petit et indépendant, ferme la branche. Aucun commit n'est censé changer un résultat ni une valeur publiée.
 
 **Critères d'acceptation, écrits avant l'essai** (plan du 27/11/2026, décidé par P294) :
-- **trajectoire** : à chaque commit `code:`, empreintes des bancs identiques à `ce3662a` (P250 ; aucun commit dans `src/` depuis, `git diff --stat 4462939 d08332c -- src` vide) ; sortie du script identique à l'octet à `052db4c4…4251`, celle de la maquette à `be66c5a4…4e03` tant que le `.tex` n'a pas bougé (#189) ; tout écart demande un tableau avant / après ;
+- **trajectoire** : à chaque commit `code:`, empreintes des bancs identiques à `ce3662a` (P250 ; aucun commit dans `src/` depuis, `git diff --stat 4462939 d08332c -- src` vide) ; sortie du script identique à l'octet à `052db4c4…4251`, celle de la maquette à `be66c5a4…4e03` tant que le `.tex` n'a pas bougé (#189) ; tout écart demande un tableau avant / après ; [27/11/2026, rang 9 : la maquette vaut `2020d57b…8f7b` à `baf0128` (57 109 octets, code 0, remesurée par `architect`) ; seuls les numéros de ligne du `.tex` cités ont changé (#189) : diff contre la sortie à `d08332c` sans écart une fois la colonne des lignes retirée ; script et bancs : PR #193.]
 - **#153** : le cas (socle complet, π\* = 2 %, θ_Tr = 0,3, ς_B = 1 aux pas 5 à 7), ainsi que π\* = 10 % avec θ_Tr ∈ {0,2 ; 0,3}, passe sans arrêt ou s'arrête par un refus typé et motivé ; dénominateur déclaré dans l'ADR et dans la spécification ; aucune constante absolue ;
 - **#158** : aux cinq valeurs du tableau de l'issue, refus typé (pas, étape, bloc, variable) ou résultat fini ; aucune `ZeroDivisionError` ni `OverflowError` ne sort de T2 ou de T3 ; toute borne est déclarée ;
 - **#125 pt 6** : κ = 5,6e−309 et σ = 1e−320 refusés au chargement par la table, par un refus typé qui cite le domaine ; script et table appliquent le même domaine ;
@@ -38,21 +40,19 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 **Visa** : aucun résultat final ne doit changer. Validations de l'expert pilote : `macro` pour #158, #125 et #178 ; `monnaie` pour #153, #181 et M_G. Délégations P175 et P211 reconduites (P301).
 
-**Escalades** : Fable 0 sur 3 ; Fable seulement si l'ADR du rang 1 doit modifier l'ADR 0005 ou l'ADR 0014 (P298). Les escalades se notent dans la PR #193.
+**Escalades, relances et arrêts** (notés dans la PR #193) : Fable 0 sur 3 (P298 jugée non déclenchée, P309) ; aucune hausse d'effort ; deux relances ciblées de `macro`, chacune après la limite de 40 tours (validation de #158 ; validation du diff de la spécification) ; une reprise unique `coder` → `audit` (#158, m2). **Règle 9** (constat de `/code-review`) : trois commits `docs:` touchent la spécification pour #181 (`7b8504d`, `8725d02`, `37f0e8a`) et deux pour #153 (`bb95098`, `02b7896`) ; `7b8504d`, `8725d02` et `bb95098` sont des `docs:` minimaux annoncés dans leur message comme exceptions de la règle 9 (écart de CI) ; `02b7896` et `37f0e8a` appartiennent au passage unique.
 
 **Vigilance** : #163 avant la démonstration J4 (condition de M34) ; sorties du script et de la maquette tenues par aucune batterie (#179) : sha256 sur stdout seul remesuré à chaque commit `code:` ou `tests:`, et pour la maquette à chaque commit qui déplace des lignes du `.tex` (#189) ; valeurs à `d08332c` : § 7.
 
 ## 2. Branches suivantes
 
-Les branches fusionnées sont au § 7 ; lignes 7 à 9 (J3-b, J3-c, J3-d1) : historique, partie E, § 2 ; ligne 10 (J3-d2) : historique, partie F, § 2 ; ligne 10 bis (forme du code) : historique, partie G, § 2 ; ligne 11 (calibration) : historique, partie H, § 2 ; ligne 12 (J3-e1) avant sa fusion : historique, partie I, § 2 ; ligne 12 bis avant sa fusion : historique, partie I, complément du point d'étape après la PR #184.
+Les branches fusionnées sont au § 7 ; lignes 7 à 9 (J3-b, J3-c, J3-d1) : historique, partie E, § 2 ; ligne 10 (J3-d2) : historique, partie F, § 2 ; ligne 10 bis (forme du code) : historique, partie G, § 2 ; ligne 11 (calibration) : historique, partie H, § 2 ; ligne 12 (J3-e1) avant sa fusion : historique, partie I, § 2 ; ligne 12 bis avant sa fusion : historique, partie I, complément du point d'étape après la PR #184. Lignes 12 et 12 bis à leur fusion, ligne de la PR #174 au § 7 : historique, partie I, complément du rang 9 de J3-e2.
 
 **Découpage de J3-e à J3-g (P61, P177), décidé le 16/11/2026 (P212).** Avec les issues nées depuis P61 (#153, #154, #156, #158 à #161, #163), chacune des trois branches indicatives dépassait la règle des trois à cinq issues : chacune a été scindée selon le module touché et l'ordre des dépendances. Les lignes 13 à 18 restent indicatives jusqu'au point d'étape qui précède chacune. #157 : correctif rapide hors branche (P212).
 
 | Ordre | Branche | Issues | Motif du regroupement et état |
 |---|---|---|---|
-| 12 | J3-e1 « état initial résolu et test zéro » `claude/j3-e1-etat-initial` — **fusionnée** le 26/11/2026 (PR #174, `4462939`, § 7) | #175, #176, #115, #122 ; #125 (points 3 à 5, sans `Closes`) | Fiche à la fusion : historique, partie I, § 1. |
-| 12 bis | « suites de M34 à la table T1 » `claude/j3-suites-m34` — **fusionnée** le 27/11/2026 (PR #184, `d08332c`, § 7) | #168, #170, #171, #172, #173 | Fiche à la fusion : historique, partie I, complément du point d'étape après la PR #184. Chiffres de #171 renvoyés à #88 (J3-f2) et #131 (J3-e3), P267. Suites hors périmètre : #185 à #192 (§ 3). |
-| 13 | J3-e2 « domaines à l'état chargé et refus typés » `claude/j3-e2-refus-types` — **en cours** depuis le 27/11/2026 (PR brouillon #193, § 1) | #153, #158, #178, #181 ; #125 point 6, sans `Closes` (P294) | Refus typés au lieu d'exceptions brutes ; après J3-e1 (états chargés par `scenarios/`). Le point 1 du commentaire de #122 (μ̃) relève de #158. Familles de refus hors d'`ArretMoteur` : forme par l'ADR du rang 1, mise en œuvre par #194 au J4 (P297). Sortent de la ligne : #120 et #180, au J4 (P295, P296). |
+| 13 | J3-e2 « domaines à l'état chargé et refus typés » `claude/j3-e2-refus-types` — **prête à sortir du brouillon** le 27/11/2026, rangs 0 à 9 faits (PR brouillon #193, § 1) | #153, #158, #178, #181 ; #125 point 6, sans `Closes` (P294) | Refus typés au lieu d'exceptions brutes ; après J3-e1 (états chargés par `scenarios/`). Le point 1 du commentaire de #122 (μ̃) relève de #158. Familles de refus hors d'`ArretMoteur` : forme par l'ADR du rang 1, mise en œuvre par #194 au J4 (P297). Sortent de la ligne : #120 et #180, au J4 (P295, P296). |
 | 13 ter | « suites de la PR #184 » — créée le 27/11/2026 (P300), après J3-e2 et avant J3-e3 | #185, #186, #188, #191, #192 | `outils/etat_stationnaire.py` et ses tests : contre-épreuve et contrôles appliqués aux variantes de lv\* (#185, puis #186, critère de `macro` avant l'essai) ; NaN masqué et refus de domaine non capté (#188 avec #191 ; phrase des refus du `.tex` à rétablir après correction) ; constats mineurs (#192). Nom de branche, ordre et circuits au point d'étape qui la précède. |
 | 14 | J3-e3 « critère I1 » | #114 (avec #131, mesure), #139, #140, #169 (P240), #187 (P300) | Lignes « J3 » des fiches sur le socle complet depuis l'état résolu (P122, P149, P150) ; après J3-e1 et la ligne 13 ter. #187 : origine de « 1,0015 » (ligne (d) de `sec:menages-conditions`), `macro`. |
 | 15 | J3-f1 « stabilité linéarisée » | S1 (à rédiger), #147, #116, #125 (point 2, `Closes`), #163 (P204) ; F2 (P249) ; #190 après décision du mainteneur (P300) | Linéarisation sur le moteur ; ratio de sacrifice sur le socle linéarisé (C7). **Condition de M34 : #163 traitée avant la démonstration J4.** #180 (J4) traitée avant F2 (P296). Plus de cinq éléments : à redécouper au point d'étape qui la précède. |
@@ -62,11 +62,11 @@ Les branches fusionnées sont au § 7 ; lignes 7 à 9 (J3-b, J3-c, J3-d1) : hist
 
 Ordre des modules de J3-b à J3-d (P41 (a), P111) : historique, partie E, complément du rang 8 de J3-d2.
 
-Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaque branche, approuvées par le mainteneur) : S1 (J3-f1 ; #163 rédigée le 16/11/2026, P204) ; S2 (J3-f2) ; G1, budget du socle complet, et références avec `outils/regenerer_references.py` (J3-g2). N1 et N2 du rang 0 de J3-e1 : créées le 26/11/2026, #175 et #176 (P257). N1 du rang 1 de J3-e2 : créée le 27/11/2026, #194 (P297).
+Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaque branche, approuvées par le mainteneur) : S1 (J3-f1 ; #163 rédigée le 16/11/2026, P204) ; S2 (J3-f2) ; G1, budget du socle complet, et références avec `outils/regenerer_references.py` (J3-g2). N1 et N2 du rang 0 de J3-e1 : créées le 26/11/2026, #175 et #176 (P257). N1 du rang 1 de J3-e2 : créée le 27/11/2026, #194 (P297). N2 à N6 du rang 9 de J3-e2 : proposées, non créées (§ 3).
 
 ## 3. Issues hors plan
 
-*Relevé du 27/11/2026, rang 1 de J3-e2* : **68 issues ouvertes** (`list_issues`, état ouvert, `totalCount` = 68, `architect`, 27/11/2026 ; 67 au point d'étape après la PR #184, plus #194 créée le même jour). En-têtes des relevés antérieurs, lignes alors modifiées et dépendances d'alors : historique, partie I, complément du rang 1 de J3-e2 et compléments antérieurs. La colonne « Branche prévue » n'est pas reportée sur GitHub.
+*Relevé du 27/11/2026, rang 9 de J3-e2* : **69 issues ouvertes** (`list_issues`, état ouvert, `totalCount` = 69, `architect`, 27/11/2026 ; 68 au rang 1, plus #195 et #197 créées, moins #157 fermée par la PR #196). En-têtes des relevés antérieurs, lignes alors modifiées et dépendances d'alors : historique, partie I, complément du rang 9 de J3-e2 et compléments antérieurs. La colonne « Branche prévue » n'est pas reportée sur GitHub.
 
 | Issue | Objet | Branche prévue | Remarque |
 |---|---|---|---|
@@ -87,19 +87,18 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 | #114, #131 | Critère I1 ; BC2 en log | J3-e3 (#131 mesuré à #114, P101) | reçoit les lignes (c) des fiches 5 et 6 (P122) et l'exécution de #139 et #140 ; #131 reçoit « r̂\* » de #171 (P267) |
 | #116, #147 | Maquette conjointe ; C62 en régime linéaire | J3-f1 (S1) | #147 reçoit l'harmonisation « 63 tours » (P178) |
 | #120 | `Cadre` à n_a ≠ 12 | J4 (P295) | option (a) de P82 maintenue, déplacée : n_a constante tant qu'aucun cadre n'est chargé par un scénario |
-| #125 | Facteur de croissance par pas, formes et domaines du script | points 3 à 5 : **faits en J3-e1** (sans `Closes`) ; point 6 : **J3-e2, rang 4**, sans `Closes` (P246, P294) ; point 2 : J3-f1, `Closes` | point 1 réalisé en J3-c (P88) |
+| #125 | Facteur de croissance par pas, formes et domaines du script | points 3 à 5 : faits en J3-e1 ; point 6 : **fait en J3-e2** (`74e1213`, `b9f66cd` ; P306), sans `Closes` ; point 2 : J3-f1, `Closes` | point 1 réalisé en J3-c (P88) ; à la fermeture, noter que l'arrêt au premier pas n'était plus observable depuis `d69a70e` |
 | #135 | `tab:phases` et levier de taux au J4 | J4 | recoupe #54, #56 |
 | #139, #140 | Critère « Endettement, dépôts » ; bornes (c) de la fiche 6 | J3-e3 (voies P149, P150) | #139 en échec attendu strict (P237) |
 | #141, #145 | Restitution du refus de crédit ; coefficient de richesse sur π\* de la table | J4 (P152) | #141 avec #70 ; #145 avec #54 |
-| #143 | S6 : ti = 0 au-delà d'une frontière | (1′) en J3-e2 selon P215, absente du périmètre décidé (P294) : rattachement à trancher (§ 4) ; levier au J4, crise au J6 (P215) | instruite au rang 1 de la calibration (P207) ; M28 non rouverte ; caisse : refus voulu (P216) |
+| #143 | S6 : ti = 0 au-delà d'une frontière | (1′) de P215 au J4, avec le levier de taux (P303) ; crise au J6 (P215) | instruite au rang 1 de la calibration (P207) ; M28 non rouverte ; caisse : refus voulu (P216) |
 | #148 | B_Bk, B_CB ≥ 0 sans contrôle sous rachat net | J4, instruction de `monnaie` avant (P178) | inactif au socle ; recoupe #181 (J3-e2) |
 | #152 | E5 par colonne des entreprises | J5 (P172) | point 3 de #150 |
-| #153 | Noyau : résidu/S infini à échelle nulle | **J3-e2, rang 2** (P294) | `monnaie` ; dénominateur déclaré ou refus typé, selon l'ADR du rang 1 |
+| #153 | Noyau : résidu/S infini à échelle nulle | **J3-e2, rang 2, fait** (P304) | `monnaie` ; échelle de repli (ADR 0016, I) ; suite : N4 |
 | #154 | Plafond de E1 sous placement raté prolongé | J3-f2 (P178) | inchangé |
 | #155 | Durée d'une partie | avant le J4 (P180) | décisions du mainteneur |
 | #156 | Bloc 7 : lecture nette de D_H et D_F hors de la phase 6 | J3-g1 (P212) | P191 ; suite de #142, critère « identique au bit » |
-| #157 | Tests textuels de `src/` : m1 (P202), R1, R2 | correctif rapide hors branche, PR directe vers `main` (P302), en cours | `tests:` seul, résultats identiques |
-| #158 | T3 : domaine de μ̃, exceptions brutes | **J3-e2, rang 3** (P294) | `travail.py:73` et `:90` (relevé du 16/11/2026) ; domaine tiré de la spécification et filet `ZeroDivisionError` (P299) |
+| #158 | T3 : domaine de μ̃, exceptions brutes | **J3-e2, rang 3, fait** (P305, P310) | domaine \|μ̃\| ≤ ln(DBL_MAX) et `DivisionParZero` ; suites : #197, N3, N5, Q-a |
 | #159, #160, #161 | f(π\*_t) deux fois ; contrôles refaits par `etat_de_cloture` ; i_L·L/n_a et δK/n_a recalculés | J3-g1 (P212) | critère « identique au bit » ; #161 recoupe #144 point 2 et respecte C41 |
 | #163 | C7 : a_π, a_I, λ_e sur un ratio de sacrifice sourcé (fiche 8, critère 23) | J3-f1 (P204) | **condition de M34 : traitée avant la démonstration J4** |
 | #164 | δ et consommation de capital fixe ; dividendes dans la valeur ajoutée | hors branche (P214) | née de l'instruction de #92 |
@@ -107,10 +106,10 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 | #167 | Bêta des dépôts (limite de B2) | J4 ou J6 (P227) | née de l'instruction de #130 |
 | #169 | Critère « Endettement » de #139 en enveloppe | J3-e3, avec #139 (P240) | correction prospective |
 | #177 | Concordance : balise d'un label dans le module de son radical | J3-g2 (rang 10) | `audit` ; question du mainteneur à trancher avant ; résultats identiques |
-| #178 | N6 : domaine de la demande adressée, d < 0 accepté par le moteur | **J3-e2, rang 4** (P294) | `macro`, `monnaie` pour M_G ; inatteignable depuis l'état résolu |
+| #178 | N6 : domaine de la demande adressée, d < 0 accepté par le moteur | **J3-e2, rang 4, fait** (P307) | aucun code ; tests par appel direct |
 | #179 | CI : identité au bit de la sortie du script d'état stationnaire | J3-g2 (rang 10) | avec les références ; remesure manuelle d'ici là |
 | #180 | Série du test zéro : B19 à S^CB = 0, bande B17 vide à L ≡ 0 | J4, au plus tard avant F2 (P296) | `monnaie` ; « sans objet » ou « x = 0 exactement » déclaré avant l'essai |
-| #181 | B_CB : section citée par `CONDITIONS_D_EXISTENCE` | **J3-e2, rang 5** (P294) | `monnaie` ; recoupe #148 |
+| #181 | B_CB : section citée par `CONDITIONS_D_EXISTENCE` | **J3-e2, rang 5, fait** (P311) | un seul lieu d'écriture, `sec:finances_publiques-conditions` ; recoupe #148 ; suite : N2 |
 | #185 | `calculer` : contre-épreuve et contrôles de valeurs publiées appliqués aux variantes de lv\* | ligne 13 ter (P300) | `outils/etat_stationnaire.py` ; avant #186 |
 | #186 | Fenêtre lv\* ≈ [0,5106 ; 0,5234] à π̄ = 0 | ligne 13 ter (P300), après #185 | `macro`, critère avant l'essai ; hors verdict de #170 (P278) |
 | #187 | Ligne (d) de `sec:menages-conditions` : « 1,0015 » non reproduit à T1 | J3-e3 (P300) | `macro` ; origine du chiffre à retrouver |
@@ -119,7 +118,16 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 | #190 | Motifs d'écartement des ménages non réexaminés à T1 | décision du mainteneur d'abord, puis J3-f1 (P300) | sans rouvrir M27 ; critère avant l'essai |
 | #191 | `minimum_delta_r_alpha_en_zeta` : refus de domaine non capté | ligne 13 ter (P300) | phrase des refus du `.tex` à rétablir après correction ; avec #188 |
 | #192 | Constats mineurs de la revue finale de la PR #184 | ligne 13 ter (P300) | `outils/etat_stationnaire.py`, `outils/maquette_conjointe.py`, deux tests |
-| #194 | Familles de refus hors d'`ArretMoteur` (N1) | J4 (P297), après J3-e2 | forme fixée par l'ADR du rang 1 de J3-e2 (à venir) ; résultats identiques |
+| #194 | Familles de refus hors d'`ArretMoteur` (N1) | J4 (P297), après J3-e2 | forme fixée par l'ADR 0016, II (P309) ; résultats identiques ; recoupe Q-a, Q-c |
+| #195 | Noyau : identité cumulée de la valeur nette jugée contre une échelle effondrée | à trier (P308) | `monnaie` ; hors de l'ADR 0016 ; recoupe N4 |
+| #197 | Moteur : `registre.avancer` hors de `_appeler`, `ValueError` brute si P_t ≤ 0 | à trier (P310) | audit du rang 3 de J3-e2 ; défaut au sens de l'ADR 0016, pt 11 ; recoupe N3, Q-a, #194 |
+
+**Issues proposées au rang 9 de J3-e2, non créées** (création sur accord du mainteneur ; rattachement à trier au point d'étape) :
+- **N2** (`monnaie`, R4) : le besoin d'émission stationnaire de E9 manque au relevé des « valeurs publiées en vigueur » d'`outils/etat_stationnaire.py`, d'où la survie des valeurs de la calibration indicative jusqu'à #181 ; la sortie du script changerait (lignes nouvelles du relevé), aucun état ne change ;
+- **N3** (`/code-review`, préexistant) : à μ̃ = −ln(DBL_MAX) et μ̄ au-delà d'environ 1e15 (admis par μ̄ > 0), `math.log(ω*/ω)` de T3 (`travail.py` ~l. 90 ; domaine de `etat/prix.py` ~l. 44) reçoit 0,0 et lève une `ValueError` brute, contraire à la lecture de P305 ; pistes : borner μ̄, ou T3 en logarithmes ;
+- **N4** (`/code-review`, préexistant) : `_echelle_de_ligne` (`grand_livre.py` ~l. 104) juge « non nul » sur la cellule nette ; deux termes qui se compensent sur un même secteur l'excluent de l'échelle (α) ; à rapprocher de #195 ;
+- **N5** (`/code-review` nit, audit m2 ; diagnostics du bloc prix) : μ̃ étant écrit avant ξ, un ξ non fini est refusé sous le nom « mu_tilde_suivant » par le contrôle de finitude, non par le domaine, ce qui masque la cause (écrire ξ, puis μ̃, puis p respecte m2) ; la docstring « Bornes » de `blocs/prix.py` (~l. 35-44) ne dit ni le débordement de p en +∞ ni un p sous-normal non nul (R2 de `macro`, déjà dans la spécification) ;
+- **N6** (`/code-review` nit) : aucun test ne garde l'hypothèse de l'ADR 0016, point 10.4 (aucune division non gardée dans les chemins de vue et de noyau) ; `0.0 ** -a` serait aussi traduit en « division par zéro ».
 
 **Points ouverts sans issue** :
 - mutant équivalent B_Bk/Res dans B5, à rouvrir avec le corridor (J6, P116) ;
@@ -127,10 +135,11 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 - divergences du texte de l'ADR 0013 relevées par l'ADR 0014 (n5.1, n1.5, n6.3, n1.4, n7.5 ; compte rendu du rang 9, PR #151), sans effet sur les règles : non traitées par l'annotation du 26/11/2026, limitée aux contrats de J3-e1 ; elles restent à porter dans une annotation de l'ADR 0014.
 - exception au contrat F3 (« seules fonctions qui indexent le registre ») : `SerieDuTestZero` lit `registre_prix[0]` et `registre_prix[n_a − 1]` (`2c31301`) ; exception déclarée (P265 ; ADR 0014, annotation F3 du 26/11/2026) ; une seconde lectrice dans `observation/` rouvre la forme ;
 
-**Dépendances** (27/11/2026, rang 1 de J3-e2 ; état au point d'étape après la PR #184 : historique, partie I, complément du rang 1 de J3-e2).
-- **Ajoutées le 27/11/2026 (P294 à P300)** : ADR du rang 1 de J3-e2 → #153, #158, #125 pt 6, #178, #181 et #194 ; lectures de `macro` et `monnaie` du rang 1 → rangs 2 à 5 ; #180 → F2 (P296) ; #185 → #186 ; ligne 13 → ligne 13 ter → ligne 14 (J3-e3) ; décision du mainteneur → #190 → J3-f1.
-- **Retirée** : #185 ↔ #186, remplacée par #185 → #186 (P300).
-- **Inchangées** : #188 ↔ #191 ; #189 ↔ #179 ; #190 → motifs de M27 (décision du mainteneur) ; P267 : « +141 pb et 0,42 % » de #171 → #88 (J3-f2), « r̂\* » → #131 (J3-e3) ; question du mainteneur de #177 → #177 ; avis de `monnaie` sur le domaine de M_G → #178 ; #179 → références de J3-g2 ; #181 ↔ #148 ; S1 → #163 ; #163 → démonstration J4 (condition de M34) ; S1 → F2 (P249) ; J3-f1 → J3-f2 ; J3-g1 → J3-g2 ; #143 → domaine du levier de taux (J4) ; avis de `monnaie` sur la caisse des entreprises → #143 ; #145 → #54 ; #141 → J4 (avec #70) ; #131 → #114 ; #116 → #111 ; #89 → #88 ; #148 → leviers du J4 ; #152 → J5.
+**Dépendances** (27/11/2026, rang 9 de J3-e2 ; état du rang 1 : historique, partie I, complément du rang 9 de J3-e2).
+- **Levées** (rangs 1 à 8) : ADR du rang 1 → #153, #158, #125 pt 6, #178, #181 ; lectures de `macro` et `monnaie` → rangs 2 à 5 ; avis de `monnaie` sur le domaine de M_G → #178.
+- **Ajoutées le 27/11/2026 (rang 9)** : #195 ↔ N4 ; #197 ↔ N3 ↔ Q-a (exceptions brutes, lecture de P305) ; Q-a → #194 (avis de `macro` : J4) ; N2 → `outils/etat_stationnaire.py` (ligne 13 ter, même module).
+- **Maintenues (P294 à P300)** : ADR 0016, II → #194 ; #180 → F2 (P296) ; #185 → #186 ; ligne 13 → ligne 13 ter → ligne 14 (J3-e3) ; décision du mainteneur → #190 → J3-f1.
+- **Inchangées** : liste du rang 1 (historique, partie I, complément du rang 9 de J3-e2), sauf « #143 → domaine du levier de taux (J4) », qui se lit « (1′) de P215 → levier de taux du J4 » (P303), et « avis de `monnaie` sur le domaine de M_G → #178 », levée.
 
 ## 4. Décisions du mainteneur
 
@@ -193,31 +202,36 @@ P242 à P266 et points ouverts du rang 10 de J3-e1 : historique, partie I, § 4 
 
 ### Décisions P267 et suivantes (branche 12 bis), 26 et 27/11/2026
 
-P267 à P276 (plan, Q1 à Q6 du rang 0, `824bd44` ; lectures du rang 1) : historique, partie I, complément du rang 10 de la branche 12 bis (texte inchangé), en vigueur. **Index** : P267 périmètre, #171 réduite à huit chiffres, renvois à #88 et #131 ; P268 M27 maintenue, motif précisé ; P269 fiches décidées annotées ; P270 délégations P175 et P211 reconduites ; P271 écart de la contre-épreuve accepté ; P272 workflow pour #172 ; P273 minimum de Δr̄_α en ζ au point anguleux ; P274 cliquet par un bloc 9 dérivé ; P275 gain statique barré, P_36 remesuré ou renvoyé à #111 ; P276 texte du motif de M27.
-
-P277 à P293 (rangs 4 à 10 de la branche 12 bis et point d'étape après la PR #184) et décisions de la session de cette branche : historique, partie I, complément du rang 1 de J3-e2 (texte inchangé), en vigueur. **Index** : P277 critère de #170 corrigé prospectivement (« à au moins un π̄ ») ; P278 aucune recherche au-delà de lv\* = 0,47 ; P279 #185 ; P280 P278 maintenue, #186 ; P281 `MinimumNonEncadre` « minimum aux bornes » ; P282 bornes de `LV_173_ENCADRANTS` ; P283 intervalle [0 ; 1 000 %] par an ; P284 #187 ; P285 P_36 aux colonnes φ ∈ {0 ; 1}, renvoi à #111 ; P286 #188 ; P287 et P288 exceptions à P242 ; P289 #189, cause de l'écart de la maquette ; P290 #190 ; P291 #191, exception à la règle 9 ; P292 #192 ; P293 second `docs:` isolé `2df6a29`.
+P267 à P293 et leurs index : historique, partie I, complément du rang 10 de la branche 12 bis (P267 à P276) et complément du rang 1 de J3-e2 (P277 à P293), texte inchangé, en vigueur ; index d'alors : complément du rang 9 de J3-e2.
 
 ### Décisions P294 et suivantes (J3-e2), 27/11/2026
 
-Décisions du mainteneur du 27/11/2026 sur le plan de J3-e2 proposé par `architect` au point d'étape après la PR #184 (`caa6cce`), toutes selon cet avis :
-- **P294** (Q1) : périmètre A : #153, #158, #178, #181 avec `Closes` ; #125 point 6 sans `Closes` ;
-- **P295** (Q2) : #120 au J4 ; option (a) de P82 maintenue, seulement déplacée ;
-- **P296** (Q3) : #180 au J4, au plus tard avant F2 (J3-f1) ; dépendance #180 → F2 ;
-- **P297** (Q4) : forme des familles de refus hors d'`ArretMoteur` (`EchelleNonRepresentable`, `NormalisationHorsDomaine`, `EtatStationnaireInexistant`) fixée par l'ADR du rang 1 ; mise en œuvre par une issue N1 rattachée au J4, création approuvée : **#194**, créée le 27/11/2026 par `architect` ;
-- **P298** (Q5) : ADR du rang 1 rédigé par `architect-approfondi` ; Fable seulement s'il doit modifier l'ADR 0005 ou l'ADR 0014 ;
-- **P299** (Q6) : #158 : domaine de μ̃ tiré de la spécification si `macro` en trouve un, plus une traduction générique de `ZeroDivisionError` par l'ordonnanceur en filet, sur le modèle de `DepassementNumerique` ;
-- **P300** (Q7) : tri de #185 à #192 : ligne 13 ter « suites de la PR #184 » (§ 2), après J3-e2 et avant J3-e3, avec #185, #186, #188, #191 et #192, dépendance #185 → #186 au lieu de #185 ↔ #186 ; #187 en J3-e3 ; #189 en J3-g2 avec #179 ; #190 : décision du mainteneur d'abord, puis J3-f1 ;
-- **P301** (Q8) : délégations P175 et P211 reconduites pour J3-e2 ;
-- **P302** (Q9) : #157 traitée en correctif rapide hors branche (PR directe vers `main`), en cours le 27/11/2026.
+P294 à P302 (plan de J3-e2, Q1 à Q9, `bda0368`) et points ouverts du rang 1 : historique, partie I, complément du rang 9 de J3-e2 (texte inchangé), en vigueur. **Index** : P294 périmètre A ; P295 #120 au J4 ; P296 #180 au J4, avant F2 ; P297 forme des familles de refus par l'ADR du rang 1, #194 ; P298 ADR par `architect-approfondi`, Fable seulement s'il modifie l'ADR 0005 ou 0014 ; P299 #158, domaine et filet ; P300 ligne 13 ter, #187, #189, #190 ; P301 délégations reconduites ; P302 #157 en correctif rapide (PR #196, fusionnée).
 
-**Points ouverts au 27/11/2026** (rang 1 de J3-e2 ; version du point d'étape après la PR #184 : historique, partie I, complément du rang 1 de J3-e2) :
+Décisions du mainteneur du 27/11/2026 pendant les rangs 1 à 8 (corps de la PR #193, « Non numérotées »), numérotées au rang 9 :
+- **P303** (#143) : le point (1′) de P215 (refus typé du domaine de validité de S-ζ en ζΔϱ) passe au J4, avec le levier de taux ;
+- **P304** (#153 ; ADR 0016, I, points 1 à 7) : échelle de repli structurelle d'une ligne sans montant, jamais nulle ni absolue ; label `eq:noyau-echelle-ligne` ; lectures L1 et L2 de la spécification, écrites selon le code ;
+- **P305** (#158 ; ADR 0016, points 10.1, 11, 13 et 18.1) : domaine \|μ̃\| ≤ ln(DBL_MAX) et filet `ZeroDivisionError` en `DivisionParZero` ; formes de refus acceptées : `ValueError` sans pas, filet sans nom ; lecture du critère : « aucune exception brute ne sort du moteur » ;
+- **P306** (#125, point 6 ; ADR 0016, point 18.2) : κ ≥ DBL_MIN et σ ≥ DBL_MIN, dans la table et à l'identique dans le script ;
+- **P307** (#178 ; ADR 0016, point 19) : aucun code, d ≥ 0 propriété dérivée ; critère corrigé (tests par appel direct) ;
+- **P308** : #195 créée, hors périmètre ;
+- **P309** : ADR 0016 accepté, V1 à V4 selon l'ADR ; V5 : finitude, borne ln(DBL_MAX) maintenue ; P298 jugée non déclenchée, donc sans Fable ;
+- **P310** (audit de #158) : m1, #197 créée, hors périmètre ; m2, μ̃ écrit avant p ;
+- **P311** (#181) : B_Bk ≥ 0 et B_CB ≥ 0 n'ont qu'un lieu d'écriture, `sec:finances_publiques-conditions` (position A de `monnaie`, sans objection de `macro`) ; les sections banque et banque centrale y renvoient ; le code et le script citent cette section ; mis en œuvre par `38759cc`, `8725d02`, `313310a`, `37f0e8a` et `baf0128`.
+
+**Questions au mainteneur, non bloquantes** (rang 9 de J3-e2) :
+- **Q-a** (`macro`, #158) : refus nommé d'un prix sous-dépassé (aujourd'hui `DivisionParZero`, sans nom ; un domaine « p > 0 » sortirait de P299) ; avis de `macro` : J4, avec #194 ;
+- **Q-b** (`macro`, #125) : test de propriété « κ = DBL_MIN admis par la table, puis refusé à la résolution » ?
+- **Q-c** (`macro`, #125) : nommer « domaine de représentabilité » au paragraphe des tables de paramètres de la spécification ?
+- **Q-d** (`audit`, m3) : trois commits `code:` de la branche contiennent des fichiers `tests/` (`f97327a`, `d69a70e`, `74e1213`), comme 16 des 110 derniers commits `code:` de `main` (relevé d'`audit`) ; usage admis, ou règle à appliquer (`CLAUDE.md`, « Git et GitHub ») ?
+
+**Points ouverts au 27/11/2026** (rang 9 de J3-e2 ; version du rang 1 : historique, partie I, complément du rang 9 de J3-e2) :
 - condition de M34 : **#163 traitée avant la démonstration J4** ;
-- identité au bit des sorties du script et de la maquette : aucune batterie (#179, J3-g2) ; remesure manuelle sur stdout seul ; empreinte de la maquette dépendante des numéros de ligne du `.tex` (#189, J3-g2) ;
-- marge du noyau seul sur l'exécuteur lent (#110, J3-g1) ; familles de refus hors d'`ArretMoteur` : forme à l'ADR du rang 1 de J3-e2, mise en œuvre par #194 (J4) ; catégorie « placement raté » de C1 (J6) ;
+- identité au bit des sorties du script et de la maquette : aucune batterie (#179, J3-g2) ; remesure manuelle sur stdout seul ; maquette dépendante des numéros de ligne du `.tex` (#189, J3-g2) ;
+- marge du noyau seul sur l'exécuteur lent (#110, J3-g1) ; familles de refus : #194 (J4) ; exceptions brutes restantes : #197, N3 (ADR 0016, annotation du 27/11/2026) ; catégorie « placement raté » de C1 (J6) ;
 - déjà ouverts : plancher du taux directeur (P181), durée d'une partie (#155), #11, #14 ;
-- **(1′) de P215** (refus typé du domaine de validité de S-ζ en ζΔϱ, frontière de S6 à ζΔϱ = 13,231, prévu « en J3-e2 ») : omis du plan d'`architect` du 27/11/2026, donc absent du périmètre décidé (P294) ; rattachement à trancher par le mainteneur (J3-e2 avec son accord noté dans la PR #193, ou J4 avec le levier de taux) ;
-- J3-f1 indicative à plus de cinq éléments (S1, #147, #116, #125 pt 2, #163, F2, #190) : à redécouper au point d'étape qui la précède ;
-- en attente du mainteneur : #190 (motifs de M27, sans réouverture).
+- J3-f1 indicative à plus de cinq éléments : à redécouper au point d'étape qui la précède ;
+- en attente du mainteneur : #190 ; Q-a à Q-d ; création de N2 à N6 ; suppression de la branche distante `ccr-e5be5328-tvkv0d`.
 
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)
@@ -245,9 +259,9 @@ Détail des issues, commits, décisions et escalades de chaque branche jusqu'à 
 
 | Branche | PR | Jalon | Fusion | Détail |
 |---|---|---|---|---|
-| `claude/j3-e1-etat-initial` | #174 | J3 (état initial résolu, test zéro) | **26/11/2026, 14:40 UTC, commit de fusion `4462939`** | #175, #176, #115, #122 fermées (absentes des 65 issues ouvertes, relevé du § 3) ; #125 ouverte (points 3 à 5 faits, sans `Closes`). 35 commits hors fusion (`git log --no-merges 831547c..4462939`), consignation `b95a2cf` comprise. P246 à P266 ; ADR 0015 accepté (P258) ; ADR 0014 annoté (F2, F3). Fable : 1 sur 3. Aucun changement de trajectoire ; sortie du script `fb187be1…e088`, remesurée à `4462939`. Branche suivante : ligne 12 bis (§ 1). |
 | `claude/correctif-182-renvois-j3e` | #183 | J3 (correctif rapide #182, `docs:` seul) | **27/11/2026, 08:13 UTC, commit de fusion `9518fcd`** | `ba07717` ; #182 fermée ; `main` fusionnée dans `claude/j3-suites-m34` (`dcc883c`), branche temporaire supprimée ; aucun résultat ne change. |
 | `claude/j3-suites-m34` | #184 | J3 (suites de M34 à la table T1) | **27/11/2026, 12:39 UTC, commit de fusion `d08332c`** | #172, #173, #170, #168, #171 fermées (`completed`, vérifié par la session ; absentes des 67 issues ouvertes, § 3). 22 commits hors fusion propres à la branche (`git log --no-merges 9518fcd..d08332c` : 6 `code:`, 7 `tests:`, 9 `docs:`), consignation `d6f54de` et `2df6a29` (P293) compris ; 23 depuis la base `4462939`, avec `ba07717` (#182, PR #183). P267 à P293. Fable : 0 sur 3. Aucun commit dans `src/`, aucune trajectoire ni aucun verdict publié changé. Sorties remesurées par `architect` à `d08332c` (stdout seul, code 0) : script 206 094 octets, `052db4c4…4251` ; maquette 57 109 octets, `be66c5a4…4e03`. Branche suivante : ligne 13 (§ 2). |
+| `correctif/157-tests-textuels` | #196 | J3 (correctif rapide #157, `tests:` seul, P302) | **27/11/2026, 15:55 UTC, commit de fusion `c9d4f28`** | `007c15d` ; #157 fermée ; `main` fusionnée dans `claude/j3-e2-refus-types` (`859097e`) ; CI verte après une relance (`test_cout_du_noyau_seul`, #110) ; aucun résultat ne change. |
 
 ## 8. Escalades, relances et arrêts hors branche
 
