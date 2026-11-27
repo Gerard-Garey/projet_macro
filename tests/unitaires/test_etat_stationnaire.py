@@ -841,9 +841,11 @@ LV_170_NU = (1.0, 1.001, 1.15)
 LV_170_EXTENSION = 0.70
 # Constat de #185 : la ligne de #173 (« Δr̄_α au minimum en ζ sur [2 ; 200] ») refusée hors d'un intervalle de lv*.
 # Balayage grossier mesuré avant l'écriture (`minimum_delta_r_alpha_en_zeta`, T1) : refus « croisement non minimal »
-# en lv* ∈ {0,30 ; 0,31 ; … ; 0,34 ; 0,345} et {0,46 ; 0,47}, admission en {0,35 ; 0,36 ; … ; 0,45 ; 0,455}. Les
-# deux couples encadrants ci-dessous partent de ce balayage ; une évaluation coûte environ 1,5 s, d'où deux seules
-# bissections à 1e−4.
+# en lv* ∈ {0,30 ; 0,31 ; … ; 0,34 ; 0,345} et {0,46 ; 0,47}, admission en {0,35 ; 0,36 ; … ; 0,45 ; 0,455}. Seules
+# les quatre bornes des deux couples encadrants ci-dessous sont gardées en assertion (P282, constat N2 de l'audit :
+# une évaluation coûte environ 1,5 s). Mesure ponctuelle du commit `6c810dd` (#185), par bissection à 1e−4, citée
+# sans être remesurée : frontières [0,346094 ; 0,346172] et [0,458437 ; 0,458516], refus hors de
+# lv* ∈ [0,346172 ; 0,458437].
 LV_173_ENCADRANTS = ((0.345, 0.35), (0.455, 0.46))
 
 
@@ -865,6 +867,90 @@ def _balayage_lv(debut, fin, pas=LV_170_PAS):
     return [round(debut + k * pas, 6) for k in range(round((fin - debut) / pas) + 1)]
 
 
+# Critère de #170, paramétré par la table `b` (constat N1 de l'audit : les conjoints de `_cas_en_170`, faute de cas
+# sur la grille, sont gardés par `test_cas_en_170_conjoints_gardes` et `test_cas_en_170_table_de_verite`).
+def _etat_170(stationnaire, b, lv, pi, nu, n_a=12):
+    return stationnaire.etat_stationnaire(replace(b, lv=lv, pi_cible=pi, n_a=n_a, nu_G=nu), controler=False)
+
+
+def _e1_refuse_170(stationnaire, b, lv, pi, nu=1.0):
+    return not _etat_170(stationnaire, b, lv, pi, nu)["marge_E1_montant"] > 0  # test de `Calculs.etat`
+
+
+def _admis_170(stationnaire, b, lv, pi, nu):
+    """Admission complète à ν_G > 1 : toutes les conditions de `etat_stationnaire`, plafond de E1 compris."""
+    try:
+        stationnaire.etat_stationnaire(replace(b, lv=lv, pi_cible=pi, n_a=12, nu_G=nu), controler=True)
+    except stationnaire.HorsDomaine:
+        return False
+    return True
+
+
+def _cas_en_170(stationnaire, b, lv, pi):
+    return (_e1_refuse_170(stationnaire, b, lv, pi) and _etat_170(stationnaire, b, lv, pi, 1.0)["B"] >= 0
+            and all(_admis_170(stationnaire, b, lv, pi, nu) for nu in LV_170_NU[1:]))
+
+
+def _cas_170(stationnaire, b, lv):  # « à au moins un π̄ » (P277)
+    return any(_cas_en_170(stationnaire, b, lv, pi) for pi in stationnaire.POINTS_PI)
+
+
+def _cas_ancienne_lecture_170(stationnaire, b, lv):  # « aux trois π̄ » (formulation d'origine, verdict publié)
+    return all(_cas_en_170(stationnaire, b, lv, pi) for pi in stationnaire.POINTS_PI)
+
+
+def test_cas_en_170_conjoints_gardes(stationnaire, base):
+    """N1 de l'audit de #170 : gardes mesurées du critère (n_a = 12), que la grille de T1, sans aucun cas, ne donne
+    pas. Aux entrées des cas adverses (ϑ = 0,10, ν_H = 1) : lv* = 0,45, π̄ = 0, cas vrai (seul π̄ où E1 est refusé à
+    ν_G = 1 : vrai « à au moins un π̄ », faux « aux trois π̄ ») ; lv* = 0,515, π̄ = 0, faux, B < 0 et refus aux deux
+    ν_G > 1 ensemble. À T1, lv* = 0,53, π̄ = 0 : faux par le refus à ν_G = 1,001 seul. Les gardes à T1 en lv* = 0,515
+    ou 0,52 sont écartées : elles tombent dans la fenêtre de #186. Aucun point mesuré ne rend B < 0 seul décisif
+    (balayage d'`audit` au pas 0,001 sur [0,30 ; 0,70], deux tables, π̄ ∈ {0 ; 2 ; 10 %} : le refus à ν_G = 1,001
+    accompagne toujours B < 0) ; ce conjoint est gardé par `test_cas_en_170_table_de_verite`."""
+    adverse = aux_entrees_des_cas_adverses(stationnaire, base)
+    assert _cas_en_170(stationnaire, adverse, 0.45, 0.0)
+    assert _cas_170(stationnaire, adverse, 0.45) and not _cas_ancienne_lecture_170(stationnaire, adverse, 0.45)
+
+    # lv* = 0,515 : E1 refusé à ν_G = 1 et B < 0, refusé aussi à ν_G = 1,001 (plafond de E1) et 1,15 (dette brute).
+    assert _e1_refuse_170(stationnaire, adverse, 0.515, 0.0)
+    assert _etat_170(stationnaire, adverse, 0.515, 0.0, 1.0)["B"] < 0
+    assert not any(_admis_170(stationnaire, adverse, 0.515, 0.0, nu) for nu in LV_170_NU[1:])
+    assert not _cas_en_170(stationnaire, adverse, 0.515, 0.0)
+
+    # T1, lv* = 0,53 : E1 refusé à ν_G = 1, B ≥ 0, admis à ν_G = 1,15, refusé à ν_G = 1,001.
+    assert base.nu_H == 1.1 and base.vartheta == 0.15  # table T1
+    assert _e1_refuse_170(stationnaire, base, 0.53, 0.0)
+    assert _etat_170(stationnaire, base, 0.53, 0.0, 1.0)["B"] >= 0
+    assert _admis_170(stationnaire, base, 0.53, 0.0, LV_170_NU[2])
+    assert not _admis_170(stationnaire, base, 0.53, 0.0, LV_170_NU[1])
+    assert not _cas_en_170(stationnaire, base, 0.53, 0.0)
+
+
+@pytest.mark.parametrize("e1, b_valeur, admis_1001, admis_115",
+                         [(e1, bv, a1, a2) for e1 in (False, True) for bv in (-1.0, 0.0, 1.0)
+                          for a1 in (False, True) for a2 in (False, True)])
+def test_cas_en_170_table_de_verite(stationnaire, base, monkeypatch, e1, b_valeur, admis_1001, admis_115):
+    """N1 de l'audit de #170 : `_cas_en_170` est la conjonction de ses quatre conjoints (E1 refusé à ν_G = 1, B ≥ 0,
+    admis à ν_G = 1,001 et à 1,15), `_cas_170` leur disjonction sur π̄ et `_cas_ancienne_lecture_170` leur
+    conjonction. Prédicats substitués : logique du critère seule, dont le conjoint B ≥ 0 qu'aucun point mesuré ne
+    rend seul décisif (`test_cas_en_170_conjoints_gardes`), à B = 0 compris (B ≥ 0, m3 de l'audit)."""
+    module = sys.modules[__name__]
+    monkeypatch.setattr(module, "_e1_refuse_170", lambda stationnaire, b, lv, pi, nu=1.0: e1)
+    monkeypatch.setattr(module, "_etat_170",
+                        lambda stationnaire, b, lv, pi, nu, n_a=12: {"B": b_valeur})
+    monkeypatch.setattr(module, "_admis_170",
+                        lambda stationnaire, b, lv, pi, nu: {LV_170_NU[1]: admis_1001, LV_170_NU[2]: admis_115}[nu])
+    attendu = e1 and b_valeur >= 0 and admis_1001 and admis_115
+    assert _cas_en_170(stationnaire, base, 0.45, 0.0) is attendu
+    vrais = {0.0: attendu, 0.02: False, 0.10: True}  # π̄ = 10 % toujours vrai, 2 % toujours faux
+    monkeypatch.setattr(module, "_cas_en_170", lambda stationnaire, b, lv, pi: vrais[pi])
+    assert _cas_170(stationnaire, base, 0.45) and not _cas_ancienne_lecture_170(stationnaire, base, 0.45)
+    vrais.update({0.02: True})
+    assert _cas_ancienne_lecture_170(stationnaire, base, 0.45) is attendu
+    vrais.update({0.0: False, 0.02: False, 0.10: False})
+    assert not _cas_170(stationnaire, base, 0.45)
+
+
 def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
     """#170 : verdict du critère de `macro` (ci-dessus, lecture corrigée P277) à la table T1, et frontières mesurées.
 
@@ -877,32 +963,15 @@ def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
     contre-épreuve (`ENTREES_D_ORIGINE` sur le lv* de la variante, n_a = 12, ν_G = 1), les points T1 de la grille
     gardant B ≥ 0 (#185). L'indicateur est validé sur le cas d'origine (lv* = 0,45, ϑ = 0,10, ν_H = 1 : E1 refusé à
     ν_G = 1 en π̄ = 0, n_a = 12). Constats imprimés sans verdict : frontière de E1 à ν_G = 1,001 (π̄ = 0, P278) et
-    intervalle de lv* hors duquel la ligne de #173 est refusée (#185). Verdict et frontières imprimés (`pytest -s`)."""
+    intervalle de lv* hors duquel la ligne de #173 est refusée, encadré par les quatre bornes de `LV_173_ENCADRANTS`
+    (#185, P282). Verdict et frontières imprimés (`pytest -s`)."""
     assert base.nu_H == 1.1 and base.vartheta == 0.15  # table T1
 
     def etat(b, lv, pi, nu, n_a=12):
-        return stationnaire.etat_stationnaire(replace(b, lv=lv, pi_cible=pi, n_a=n_a, nu_G=nu), controler=False)
+        return _etat_170(stationnaire, b, lv, pi, nu, n_a)
 
     def e1_refuse(b, lv, pi, nu=1.0):
-        return not etat(b, lv, pi, nu)["marge_E1_montant"] > 0  # test de `Calculs.etat`
-
-    def admis(lv, pi, nu):
-        """Admission complète à ν_G > 1 : toutes les conditions de `etat_stationnaire`, plafond de E1 compris."""
-        try:
-            stationnaire.etat_stationnaire(replace(base, lv=lv, pi_cible=pi, n_a=12, nu_G=nu), controler=True)
-        except stationnaire.HorsDomaine:
-            return False
-        return True
-
-    def cas_en(lv, pi):
-        return (e1_refuse(base, lv, pi) and etat(base, lv, pi, 1.0)["B"] >= 0
-                and all(admis(lv, pi, nu) for nu in LV_170_NU[1:]))
-
-    def cas(lv):  # « à au moins un π̄ » (P277)
-        return any(cas_en(lv, pi) for pi in stationnaire.POINTS_PI)
-
-    def cas_ancienne_lecture(lv):  # « aux trois π̄ » (formulation d'origine, verdict publié)
-        return all(cas_en(lv, pi) for pi in stationnaire.POINTS_PI)
+        return _e1_refuse_170(stationnaire, b, lv, pi, nu)
 
     # L'indicateur reconnaît le cas d'origine (garde contre une recherche vide).
     assert e1_refuse(aux_entrees_des_cas_adverses(stationnaire, base), 0.45, 0.0)
@@ -915,8 +984,8 @@ def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
                         for a, b, ia, ib in zip(grille, grille[1:], ind, ind[1:]) if ia != ib]
                    for pi, ind in indicateur.items()}
     candidats = grille + [x for encadrements in changements.values() for ab in encadrements for x in ab]
-    trouves = sorted(lv for lv in candidats if cas(lv))
-    trouves_ancienne = sorted(lv for lv in candidats if cas_ancienne_lecture(lv))
+    trouves = sorted(lv for lv in candidats if _cas_170(stationnaire, base, lv))
+    trouves_ancienne = sorted(lv for lv in candidats if _cas_ancienne_lecture_170(stationnaire, base, lv))
     marge_min = min((etat(base, lv, pi, 1.0)["marge_E1_montant"], lv, pi)
                     for lv in grille for pi in stationnaire.POINTS_PI)
     print(f"\n#170, T1, n_a = 12, lv* ∈ [{LV_170_INTERVALLE[0]} ; {LV_170_INTERVALLE[1]}], pas {LV_170_PAS} : "
@@ -988,10 +1057,11 @@ def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
             return True
         return False
 
-    gauche, droite = (_bissection_lv(ligne_173_refusee, *ab) for ab in LV_173_ENCADRANTS)
-    print(f"#170, constat sans verdict (#185) : ligne de #173 « Δr̄_α au minimum en ζ sur [2 ; 200] » refusée hors "
-          f"de lv* ∈ [{gauche[1]:.6f} ; {droite[0]:.6f}] (frontières encadrées à 1e−4 : [{gauche[0]:.6f} ; "
-          f"{gauche[1]:.6f}] et [{droite[0]:.6f} ; {droite[1]:.6f}])")
+    (g_refus, g_admis), (d_admis, d_refus) = LV_173_ENCADRANTS
+    assert [ligne_173_refusee(lv) for lv in (g_refus, g_admis, d_admis, d_refus)] == [True, False, False, True]
+    print(f"#170, constat sans verdict (#185) : ligne de #173 « Δr̄_α au minimum en ζ sur [2 ; 200] » refusée en "
+          f"lv* = {g_refus} et {d_refus}, admise en {g_admis} et {d_admis} (frontières à 1e−4 : mesure ponctuelle de "
+          "`6c810dd`, en commentaire de `LV_173_ENCADRANTS`)")
 
 
 def test_etat_initial_publie_a_nu_G_retenu_puis_a_la_reference(stationnaire, resultat):
