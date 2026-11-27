@@ -151,6 +151,71 @@ def test_coefficient_de_richesse_refuse_au_chargement_de_l_ensemble():
         avec(g_pr=0.5)
 
 
+# #171, n°3 (P283) : intervalle de π* déclaré avant l'essai, en fraction par an ; précision de la
+# bissection, en fraction par an ; pas de la grille qui vérifie l'absence de refus, 1 point.
+INTERVALLE_DE_PI_ETOILE = (0.0, 10.0)
+PRECISION_DE_LA_FRONTIERE = 1e-6
+PAS_DE_LA_GRILLE = 0.01
+
+
+def _refus_du_coefficient(pi, lambda_H):
+    """Vrai si l'ensemble des paramètres à π* = `pi` et λ_H = `lambda_H` (autres valeurs de la
+    table de référence) est refusé par le seul coefficient de richesse ; faux s'il est admis.
+    Toute autre exception n'est pas un refus du coefficient : elle remonte (#171, n°3)."""
+    p = PARAMETRES_DE_REFERENCE
+    try:
+        dataclasses.replace(p, banque_centrale=varier(p.banque_centrale, pi_etoile=pi),
+                            menages=varier(p.menages, lambda_H=lambda_H))
+    except DefautDeDeclaration as refus:
+        if "coefficient de richesse" not in str(refus):
+            raise
+        return True
+    return False
+
+
+def _frontiere_du_coefficient(lambda_H):
+    """Frontière en π* du refus du coefficient de richesse sur `INTERVALLE_DE_PI_ETOILE`, par
+    bissection à `PRECISION_DE_LA_FRONTIERE` : (dernier π* admis, premier refusé), ou None si
+    aucune borne n'est refusée. Exige π* = 0 admis ; une borne haute admise est complétée par la
+    grille au pas `PAS_DE_LA_GRILLE` (aucun refus intérieur), sans hypothèse de monotonie."""
+    bas, haut = INTERVALLE_DE_PI_ETOILE
+    assert not _refus_du_coefficient(bas, lambda_H)
+    if not _refus_du_coefficient(haut, lambda_H):
+        n = round((haut - bas) / PAS_DE_LA_GRILLE)
+        assert not any(_refus_du_coefficient(bas + k * PAS_DE_LA_GRILLE, lambda_H)
+                       for k in range(n + 1))
+        return None
+    while haut - bas > PRECISION_DE_LA_FRONTIERE:
+        milieu = 0.5 * (bas + haut)
+        if _refus_du_coefficient(milieu, lambda_H):
+            haut = milieu
+        else:
+            bas = milieu
+    return bas, haut
+
+
+@pytest.mark.parametrize("lambda_H, admis, refuse", [(0.2, 0.2564, 0.2565),
+                                                     (0.4, 0.9318, 0.9319)])
+def test_frontiere_du_coefficient_de_richesse_par_bissection(lambda_H, admis, refuse):
+    """#171, n°3 : à ν_H = 1,1 an (table T1), la bissection sur le seul refus du coefficient de
+    richesse, sur [0 ; 1 000 %] par an (intervalle déclaré avant l'essai, P283), encadre la
+    frontière entre les π* publiés admis et refusé (`sec:menages-conditions` : 25,6496 % à
+    λ_H = 0,2 et 93,1884 % à λ_H = 0,4). Mesuré (27/11/2026, `dcc883c`) : 0,256496 et
+    0,931884 en fraction par an, à 1e−6 près."""
+    frontiere = _frontiere_du_coefficient(lambda_H)
+    assert frontiere is not None
+    assert admis <= frontiere[0] < frontiere[1] <= refuse
+
+
+def test_aucune_frontiere_du_coefficient_sous_mille_pour_cent_a_lambda_H_0_8():
+    """#171, n°3 (P283) : à λ_H = 0,8 et ν_H = 1,1 an (ν_H λ_H = 0,88), aucun π* de
+    [0 ; 1 000 %] par an n'est refusé par le coefficient de richesse (bornes et grille au pas
+    de 1 point, `_frontiere_du_coefficient`) : « aucune frontière sous 1 000 % ». La frontière
+    publiée à ν_H = 1 an (2 760 %) est hors de cet intervalle, et n'y est pas recherchée."""
+    assert PARAMETRES_DE_REFERENCE.menages.nu_H == 1.1  # table T1 (M34), lue par la docstring
+    assert _frontiere_du_coefficient(0.8) is None
+
+
 # --------------------------------------------------------------------------
 # État stationnaire, appel direct (réserve 1 ; P77)
 # --------------------------------------------------------------------------
