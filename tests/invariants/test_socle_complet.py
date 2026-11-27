@@ -1209,6 +1209,55 @@ def test_bornes_plafond_desactive_sous_douze_tours(socle, nom, choc, publier):
         + f" ; limite écrite : pas {fin}"])
 
 
+# Placement raté (ς_B = 1) aux pas 5 à 7, θ_Tr composé à tous les pas : #153, critère 1.
+PAS_DU_PLACEMENT_RATE_153 = (5, 6, 7)
+NB_PAS_153 = 36
+
+
+@pytest.mark.parametrize("pi, theta_Tr", [(0.02, 0.3), (0.10, 0.2), (0.10, 0.3)])
+def test_tresor_vide_sans_arret_echelle_de_repli(socle, pi, theta_Tr, monkeypatch, publier):
+    """#153, critère 1 (avis de `monnaie`, § 1.4, écrit avant l'essai ; ADR 0016, I) : ς_B = 1
+    aux pas 5 à 7 et θ_Tr composé à tous les pas (`bloc_9_compose`) vident le compte du Trésor
+    (S^CB effondrée) ; 36 pas sans aucun `ArretNoyau` (l'appel lèverait). À π* = 10 %,
+    θ_Tr = 0,3 (avant le repli : `DefautComptable` au pas 7, phase 6, ligne 20, S = 0) : le
+    montant de la ligne 20 au pas 7, phase 6, est nul, et sa porte ΔH est contrôlée à
+    min(S^Bk, S^CB) de l'ouverture du pas 7, > 0, avec |résidu| ≤ ε S. θ_Tr ≥ 0,35 exclu :
+    arrêt de l'identité cumulée sous échelle effondrée, #195, hors périmètre. À l'ancienne
+    règle (échelle nulle sans repli), seul le cas 10 %, θ_Tr = 0,3 s'arrête dans ce banc
+    (mesuré par `audit`, mutant « repli absent ») : les deux autres cas sont un contrôle
+    « sans arrêt », pas un témoin de régression ; l'arrêt au pas 8 que l'issue cite pour
+    2 %, θ_Tr = 0,3 venait d'une configuration de J3-d2 non reproduite à cette tête."""
+    controles = []
+    origine = idt.verifier_identites
+
+    def espion(regle, residus, echelles, objets, epsilon, *, t, phase):
+        if (t, phase, regle.nom) == (7, "6", idt.VARIATION_MONNAIE_CENTRALE.nom):
+            controles.extend((o[1], r, s) for r, s, o in zip(residus, echelles, objets,
+                                                             strict=True))
+        return origine(regle, residus, echelles, objets, epsilon, t=t, phase=phase)
+    monkeypatch.setattr(idt, "verifier_identites", espion)
+    sentier = socle.sentier(pi)
+    etat, r = derouler(
+        socle, sentier, NB_PAS_153, observateur=ReleveParPhase(),
+        bloc_9=bloc_9_compose(lambda t, table: varier(table, theta_Tr=theta_Tr)),
+        varsigma_B=lambda t: 1.0 if t in PAS_DU_PLACEMENT_RATE_153 else 0.0)
+    assert etat.t == NB_PAS_153
+    ouverture_7 = _positions(r.pas[6]["etat"])
+    s_cb = idt.echelle_bilan(ouverture_7, "banque_centrale")
+    attendue = min(idt.echelle_bilan(ouverture_7, "banque"), s_cb)
+    (porte,) = [(residu, s) for ligne, residu, s in controles if ligne == "20"]
+    montants = dict(next(m for ph, m in r.clotures[7] if ph == "6"))
+    if (pi, theta_Tr) == (0.10, 0.3):
+        assert all(x == 0.0 for _, x in montants["20"])
+        assert porte[1] == attendue > 0.0
+        assert abs(porte[0]) <= CADRE.tolerance_identite_pas * porte[1]
+    publier(f"#153, Trésor vidé, π* = {100 * pi:g} %, θ_Tr = {theta_Tr:g} ({ETIQUETTE})", [
+        f"{NB_PAS_153} pas sans arrêt ; pas 7, phase 6, ligne 20 : montant "
+        f"{sum(x for _, x in montants['20']):.3e}, échelle {porte[1]:.3e} "
+        f"(min(S^Bk, S^CB) = {attendue:.3e}, S^CB = {s_cb:.3e}), "
+        f"|résidu|/S = {abs(porte[0]) / porte[1]:.2e}"])
+
+
 # --------------------------------------------------------------------------
 # Couverture sur le moteur (F6, F7)
 # --------------------------------------------------------------------------
