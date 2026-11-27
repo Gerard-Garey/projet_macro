@@ -247,7 +247,8 @@ def verifier_identites(regle: Regle, residus: list[float], echelles: list[float]
                 "identité violée au-delà de la tolérance relative à l'échelle du bilan",
                 t=t, phase=phase, regle=regle.nom, secteur=secteur, ligne=ligne, terme=terme,
                 residu=residu, echelle=echelle, tolerance=epsilon)
-        # Sous la tolérance, une échelle nulle impose un résidu nul.
+        # Échelles reçues > 0 (ouverture ; repli de ligne, ADR 0016, I) : un résidu nul a un
+        # rapport nul.
         rapport = 0.0 if residu == 0.0 else abs(residu) / echelle
         if pire < rapport:
             pire, pire_objet = rapport, objet[2] or objet[1] or objet[0] or ""

@@ -83,13 +83,28 @@ def _sans_ligne(phase: str) -> bool:
 
 
 def _echelle_de_ligne(cellules: Mapping[str, float], echelles: Mapping[str, float]) -> float:
-    """Échelle d'une ligne (point 9, lecture (α)) : plus petit S des secteurs qui y ont un
-    montant non nul ; aucun : 0, et le résidu doit alors être nul."""
-    echelle = math.inf
+    """Échelle S_ℓ d'une ligne exécutée (ADR 0016, I ; ADR 0012, point 9, lecture (α)).
+
+    Plus petit S des secteurs qui ont un montant non nul sur la ligne ; si aucun, **échelle
+    de repli** : plus petit S des secteurs dont la ligne porte une colonne au catalogue (les
+    deux sous-colonnes des entreprises comptent pour un secteur). `cellules` porte une entrée
+    par colonne de la ligne au catalogue, montants nuls compris (colonnes + et − de chaque
+    terme : les deux sites d'appel de `GrandLivre._executer` la construisent ainsi). Les S
+    sont ceux de l'ouverture (`eq:noyau-echelle-bilan`), contrôlés > 0 : S_ℓ n'est jamais
+    nulle, et aucune constante n'y entre. Précondition : toute ligne du catalogue porte au
+    moins un terme (`cellules` non vide ; sinon la fonction rendrait math.inf, porte muette),
+    ce que contrôle `test_toute_ligne_du_catalogue_porte_un_terme`. Dénominateur de la somme de ligne et des deux
+    portes.
+    """
+    # eq:noyau-echelle-ligne
+    echelle = repli = math.inf
     for colonne, v in cellules.items():
-        if v != 0.0:
-            echelle = min(echelle, echelles[SECTEUR_DE_COLONNE[colonne]])
-    return 0.0 if echelle == math.inf else echelle
+        s = echelles[SECTEUR_DE_COLONNE[colonne]]
+        if s < repli:
+            repli = s
+        if v != 0.0 and s < echelle:
+            echelle = s
+    return repli if echelle == math.inf else echelle
 
 
 def _cellules_de_resultat(ligne: Ligne) -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]:
@@ -627,7 +642,7 @@ class GrandLivre:
         object.__setattr__(self, "_rapport_poste", rapport_poste)
         rapports.append((idt.CLOTURE_POSTE.nom, *rapport_poste))
         # Portes à l'exécution, ligne par ligne, contreparties comprises, à
-        # l'échelle de la ligne (point 9, (α)).
+        # l'échelle de la ligne (point 9, (α), et son repli : ADR 0016, I).
         rapports.append((idt.VARIATION_MONNAIE.nom, *idt.verifier_identites(
             idt.VARIATION_MONNAIE, r_porte_m, s_ligne, o_ligne, eps, t=t, phase=phase)))
         rapports.append((idt.VARIATION_MONNAIE_CENTRALE.nom, *idt.verifier_identites(

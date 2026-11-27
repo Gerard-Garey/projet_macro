@@ -34,6 +34,7 @@ import ast
 import dataclasses
 import inspect
 import math
+import sys
 from pathlib import Path
 
 import pytest
@@ -163,6 +164,17 @@ def test_lecture_nette_de_e1(poussiere):
     assert G_plan == 0.0 and math.copysign(1.0, G_plan) == 1.0
     assert bloc.plan_de_depense(-0.0, 100.0) == 0.0
     assert math.copysign(1.0, bloc.plan_de_depense(-0.0, 100.0)) == 1.0
+
+
+@pytest.mark.parametrize("M_G", [-1.0, -1e6, -sys.float_info.max], ids=repr)
+def test_plan_de_depense_sur_une_caisse_negative(M_G):
+    """#178 (ADR 0016, point 19) : au-delà de la poussière, M^G < 0 donne G^plan = +0,0
+    exactement, quel que soit le plan visé (≥ 0) : d_G ≥ 0 est tenu par E1, sans domaine
+    nouveau ; M^G < −ε S^G est en outre refusé par le noyau à l'ouverture
+    (`test_noyau_grand_livre.test_etat_charge_controle_avant_la_phase_1`)."""
+    for G_vise in (0.0, 100.0, sys.float_info.max):
+        G_plan = bloc.plan_de_depense(M_G, G_vise)
+        assert G_plan == 0.0 and math.copysign(1.0, G_plan) == 1.0
 
 
 @pytest.mark.parametrize("poussiere", POUSSIERES, ids=repr)

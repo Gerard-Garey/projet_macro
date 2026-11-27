@@ -315,8 +315,8 @@ CONDITIONS_D_EXISTENCE: tuple[tuple[str, str, str], ...] = (
     ("theta_G", "θ_G > 0", "sec:finances_publiques-conditions"),
     ("marge_plafond_E1", "ν_G PB − Γ̄ G > 0", "sec:finances_publiques-conditions"),
     ("B", "B ≥ 0", "sec:finances_publiques-conditions"),
-    ("B_Bk", "B_Bk ≥ 0", "sec:banque-conditions"),
-    ("B_CB", "B_CB ≥ 0", "sec:banque_centrale-conditions"),
+    ("B_Bk", "B_Bk ≥ 0", "sec:finances_publiques-conditions"),
+    ("B_CB", "B_CB ≥ 0", "sec:finances_publiques-conditions"),
     ("B_H", "B_H = 0", "sec:finances_publiques-stationnaire"),
 )
 _SECTIONS = {identifiant: section for identifiant, _, section in CONDITIONS_D_EXISTENCE}

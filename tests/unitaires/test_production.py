@@ -14,6 +14,7 @@ le moteur.
 import ast
 import inspect
 import math
+import sys
 
 import numpy as np
 import pytest
@@ -167,6 +168,54 @@ def test_rationnement_proportionnel_et_demande_nulle():
     for servi, demande in ((v_H, d_H), (v_F, d_F), (v_G, d_G)):
         assert abs(servi / demande - v / d) <= 2 * math.ulp(v / d)
     assert bloc.ventes(0.0, 0.0, 0.0, 0.0, 1.0) == (0.0, 0.0, 0.0, 0.0)
+
+
+# Demandes adressées d ≥ 0 (#178 ; ADR 0016, point 19) : d ≥ 0 est une propriété dérivée (E1 lit
+# max(0 ; M^G), le noyau refuse M^G < −ε S^G à l'ouverture, `PlanHorsDomaine` refuse tout plan
+# négatif avant N6 : test_moteur_ordonnanceur.test_plan_hors_domaine_refuse_par_l_espace_du_pas,
+# paramétré sur PLANS, les trois plans) ; N6 est vérifié sur ce seul domaine, par appel direct. Cas : demande nulle
+# signée (+0,0 et −0,0, composantes de même signe), inférieure, égale et supérieure au
+# disponible, disponible nul.
+DEMANDES_DANS_LE_DOMAINE = [
+    ((0.0, 0.0, 0.0), 1.0), ((-0.0, -0.0, -0.0), 1.0), ((0.0, -0.0, 0.0), 0.0),
+    ((0.62, 0.17, 0.21), 2.0), ((0.62, 0.0, 0.21), 0.83),
+    ((0.62, 0.17, 0.21), 0.5), ((1e-300, 3e-301, 0.0), 1e-301), ((0.62, 0.17, 0.21), 0.0),
+]
+
+
+def _proprietes_de_n6(d_H, d_F, d_G, disponible):
+    """Propriétés de N6 sur d ≥ 0 : v ≤ disponible, v ≤ d, v_s ≥ 0, Σ v_s = v à l'arrondi
+    près (4 ε relatifs à v : borne au premier ordre 3 ε — quotient, produit, somme d arrondie,
+    deux additions ; 1,87 ε mesuré par l'audit sur 500 000 tirages adverses), volumes servis
+    +0,0 si d = 0."""
+    d = bloc.demande_adressee(d_H, d_F, d_G)
+    v, v_H, v_F, v_G = bloc.ventes(d, d_H, d_F, d_G, disponible)
+    assert d >= 0.0
+    assert 0.0 <= v <= disponible and v <= d
+    assert v_H >= 0.0 and v_F >= 0.0 and v_G >= 0.0
+    assert abs((v_H + v_F + v_G) - v) <= 4 * sys.float_info.epsilon * v
+    if d == 0.0:
+        assert all(x == 0.0 and math.copysign(1.0, x) == 1.0 for x in (v_H, v_F, v_G))
+    return d, v
+
+
+@pytest.mark.parametrize("demandes, disponible", DEMANDES_DANS_LE_DOMAINE, ids=repr)
+def test_ventes_sur_une_demande_dans_le_domaine(demandes, disponible):
+    """#178, critère corrigé (appel direct) : sur d ≥ 0, v ≤ disponible, v_s ≥ 0, Σ v_s = v à
+    l'arrondi près, volumes servis nuls si d = 0 ; d au plus égal au disponible servi en
+    entier (v = d)."""
+    d, v = _proprietes_de_n6(*demandes, disponible)
+    if d <= disponible:
+        assert v == d
+
+
+def test_ventes_sur_des_demandes_tirees_dans_le_domaine():
+    """#178 : mêmes propriétés sur 2 000 tirages à graine explicite, composantes et disponible
+    sur douze ordres de grandeur, une composante sur quatre nulle."""
+    rng = np.random.default_rng(178)
+    for _ in range(2000):
+        composantes = 10.0 ** rng.uniform(-6, 6, 3) * (rng.uniform(size=3) > 0.25)
+        _proprietes_de_n6(*(float(x) for x in composantes), float(10.0 ** rng.uniform(-6, 6)))
 
 
 def _tirages(rng, n):

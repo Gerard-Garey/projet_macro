@@ -22,9 +22,16 @@ import math
 def rapport_a_l_echelle(residu: float, echelle: float) -> float:
     """|résidu| / S, sans division par une échelle nulle.
 
-    Une échelle nulle ne survient que pour une ligne dont aucun montant n'est
-    non nul (ADR 0012, point 9) : le résidu y est alors nul par construction,
-    et le rapport vaut 0 ; un résidu non nul sur une échelle nulle vaut l'infini.
+    Le noyau ne passe jamais d'échelle nulle : les S des secteurs sont
+    contrôlés > 0 à l'ouverture, avant tout diagnostic qui porte un résidu, et
+    l'échelle d'une ligne retombe, quand aucun montant n'est non nul, sur le
+    plus petit S des secteurs de la ligne au catalogue (ADR 0016, I). Une
+    échelle nulle n'implique donc pas un résidu nul : l'hypothèse « résidu nul
+    par construction » est démentie pour une contrepartie de règlement, dont
+    la porte compare deux calculs flottants d'une même variation (ADR 0016,
+    point 7). La garde reste pour tout autre constructeur d'`ArretNoyau` :
+    un diagnostic ne lève pas en se construisant (ADR 0016, V6). Un résidu
+    nul sur une échelle nulle vaut 0, un résidu non nul l'infini.
     """
     try:
         return abs(residu) / echelle

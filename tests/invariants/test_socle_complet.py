@@ -51,20 +51,21 @@ from nations.blocs import investissement as bloc_6
 from nations.blocs import menages as bloc_5
 from nations.blocs.banque_centrale import taux_indique_par_la_regle
 from nations.blocs.finances_publiques import FinancesPubliques
-from nations.etat import schema
+from nations.etat import prix, schema
 from nations.etat.sauvegarde import charger, sauvegarder
 from nations.moteur import calendrier, registre
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import TauxDeFlux, par_pas
-from nations.moteur.diagnostics import RefusDuMoteur
+from nations.moteur.diagnostics import ArretMoteur, RefusDuMoteur
 from nations.moteur.parametres import varier
 from nations.moteur.parametres.cadre import CADRE, PAS_PAR_AN
 from nations.moteur.phases import PHASES
 from nations.noyau import catalogue as cat
 from nations.noyau import identites as idt
-from nations.noyau.diagnostics import DefautComptable
+from nations.noyau.diagnostics import ArretNoyau, DefautComptable
 from nations.noyau.grand_livre import ClotureDePhase, FluxPropose, ouvrir_pas
 from nations.observation.observateur import FinDePas
+from nations.scenarios import initial as initial_du_scenario
 
 N_A = PAS_PAR_AN.valeur
 NB_PAS = 720
@@ -536,6 +537,70 @@ def test_domaine_d_une_variable_d_etat_de_bloc_controle_une_fois_par_pas(socle, 
     compte = {nom: appels.count(nom) for nom in schema.CHAMPS}
     assert compte == {nom: nb_pas for nom in schema.CHAMPS}
     assert len(appels) == nb_pas * len(schema.CHAMPS)
+
+
+# --------------------------------------------------------------------------
+# Domaine de représentabilité de μ̃ et refus de division (#158 ; ADR 0016, points 10, 11, 18.1)
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("mu_tilde", [700.0, -709.0, prix.BORNE_MU_TILDE,
+                                      -prix.BORNE_MU_TILDE])
+def test_mu_tilde_extreme_dans_le_domaine_resultat_fini_ou_arret_type(socle, mu_tilde):
+    """Critère 3 de `macro` (#158), écrit avant l'essai : avec μ̃_{−1} dans le domaine, aux
+    valeurs de l'issue (700, −709) et aux bornes ±ln(DBL_MAX), chargé par `dataclasses.replace`
+    de l'état résolu, le pas 0 du socle complet (π* = 2 %) rend un état fini (contrôlé par le
+    constructeur), ou s'arrête par un arrêt typé, `ArretMoteur` ou `ArretNoyau` ; jamais une
+    exception brute (critère « aucune exception brute ne sort du moteur », point 11)."""
+    sentier = socle.sentier(0.02)
+    initial = dataclasses.replace(socle.etat_initial(sentier), mu_tilde=mu_tilde)
+    try:
+        suivant, _ = derouler(socle, sentier, 1, initial=initial)
+    except (ArretMoteur, ArretNoyau):
+        return
+    assert all(math.isfinite(getattr(suivant, v.nom)) for v in schema.VARIABLES
+               if v.type is float)
+
+
+def test_sigma_infime_arret_par_le_domaine_de_mu_tilde_en_phase_5(socle):
+    """Critère 4 de `macro` (#158), écrit avant l'essai : avec σ = 1e−12 (table de production),
+    depuis l'état résolu à ces tables, socle complet, π* = 2 %, la trajectoire s'arrête par le
+    refus du domaine de μ̃ à l'écriture en phase 5 (`Vue.ecrire_etat`) : `RefusDuMoteur` qui
+    nomme le bloc prix, l'étape « 5 » et « mu_tilde », et non par une division par zéro du bloc
+    production (la `ZeroDivisionError` brute d'avant #158, p_t = UC_t e^{μ̃_t} = 0 en
+    arithmétique flottante)."""
+    sentier = socle.sentier(0.02)
+    tables = socle.parametres_du_sentier(sentier)
+    tables = dataclasses.replace(tables, production=varier(tables.production, sigma=1e-12))
+    resolu = initial_du_scenario.etat_initial(tables, socle.normalisation_du_sentier(sentier),
+                                              identifiant="A", graine=socle.GRAINE)
+    with pytest.raises(RefusDuMoteur) as refus:
+        derouler(socle, sentier, 12, initial=resolu.etat, parametres=resolu.parametres)
+    assert type(refus.value) is RefusDuMoteur
+    assert (refus.value.etape, refus.value.bloc, refus.value.nom) == ("5", "prix", "mu_tilde")
+    assert isinstance(refus.value.t, int) and 0 <= refus.value.t < 12  # pas dans l'horizon déroulé
+    assert "|μ̃| ≤ ln(DBL_MAX)" in str(refus.value)
+
+
+def test_mu_tilde_au_dela_du_domaine_refuse_avec_son_nom_avant_le_prix(socle):
+    """Constat m2 de l'audit de #158, décision du mainteneur du 27/11/2026 (μ̃ écrit avant le
+    prix) : avec ψ_ξ = 1e6 et IN^vol_{−1} réduit de moitié dans l'état résolu à ces tables
+    (ξ_0 = 0,5, μ̃_0 ≈ 5e4 > ln(DBL_MAX)), socle complet, π* = 2 %, le pas 0 s'arrête par le
+    refus du domaine de μ̃ à son écriture (`Vue.ecrire_etat`) : `RefusDuMoteur` exact qui nomme
+    l'étape « 5 », le bloc prix et « mu_tilde », et non par le `DepassementNumerique` anonyme
+    de exp(μ̃_0) (P3), que rendait l'ordre d'écriture précédent."""
+    sentier = socle.sentier(0.02)
+    tables = socle.parametres_du_sentier(sentier)
+    tables = dataclasses.replace(tables, prix=varier(tables.prix, psi_xi=1e6))
+    resolu = initial_du_scenario.etat_initial(tables, socle.normalisation_du_sentier(sentier),
+                                              identifiant="A", graine=socle.GRAINE)
+    initial = dataclasses.replace(resolu.etat, IN_vol=0.5 * resolu.etat.IN_vol)
+    with pytest.raises(RefusDuMoteur) as refus:
+        derouler(socle, sentier, 1, initial=initial, parametres=resolu.parametres)
+    assert type(refus.value) is RefusDuMoteur
+    assert (refus.value.t, refus.value.etape, refus.value.bloc, refus.value.nom) == (
+        0, "5", "prix", "mu_tilde")
+    assert "|μ̃| ≤ ln(DBL_MAX)" in str(refus.value)
 
 
 # --------------------------------------------------------------------------
@@ -1207,6 +1272,55 @@ def test_bornes_plafond_desactive_sous_douze_tours(socle, nom, choc, publier):
         "plafond de E1 actif aux pas : " + (f"{actifs[0]} à {actifs[-1]} ({len(actifs)} pas)"
                                              if actifs else "aucun")
         + f" ; limite écrite : pas {fin}"])
+
+
+# Placement raté (ς_B = 1) aux pas 5 à 7, θ_Tr composé à tous les pas : #153, critère 1.
+PAS_DU_PLACEMENT_RATE_153 = (5, 6, 7)
+NB_PAS_153 = 36
+
+
+@pytest.mark.parametrize("pi, theta_Tr", [(0.02, 0.3), (0.10, 0.2), (0.10, 0.3)])
+def test_tresor_vide_sans_arret_echelle_de_repli(socle, pi, theta_Tr, monkeypatch, publier):
+    """#153, critère 1 (avis de `monnaie`, § 1.4, écrit avant l'essai ; ADR 0016, I) : ς_B = 1
+    aux pas 5 à 7 et θ_Tr composé à tous les pas (`bloc_9_compose`) vident le compte du Trésor
+    (S^CB effondrée) ; 36 pas sans aucun `ArretNoyau` (l'appel lèverait). À π* = 10 %,
+    θ_Tr = 0,3 (avant le repli : `DefautComptable` au pas 7, phase 6, ligne 20, S = 0) : le
+    montant de la ligne 20 au pas 7, phase 6, est nul, et sa porte ΔH est contrôlée à
+    min(S^Bk, S^CB) de l'ouverture du pas 7, > 0, avec |résidu| ≤ ε S. θ_Tr ≥ 0,35 exclu :
+    arrêt de l'identité cumulée sous échelle effondrée, #195, hors périmètre. À l'ancienne
+    règle (échelle nulle sans repli), seul le cas 10 %, θ_Tr = 0,3 s'arrête dans ce banc
+    (mesuré par `audit`, mutant « repli absent ») : les deux autres cas sont un contrôle
+    « sans arrêt », pas un témoin de régression ; l'arrêt au pas 8 que l'issue cite pour
+    2 %, θ_Tr = 0,3 venait d'une configuration de J3-d2 non reproduite à cette tête."""
+    controles = []
+    origine = idt.verifier_identites
+
+    def espion(regle, residus, echelles, objets, epsilon, *, t, phase):
+        if (t, phase, regle.nom) == (7, "6", idt.VARIATION_MONNAIE_CENTRALE.nom):
+            controles.extend((o[1], r, s) for r, s, o in zip(residus, echelles, objets,
+                                                             strict=True))
+        return origine(regle, residus, echelles, objets, epsilon, t=t, phase=phase)
+    monkeypatch.setattr(idt, "verifier_identites", espion)
+    sentier = socle.sentier(pi)
+    etat, r = derouler(
+        socle, sentier, NB_PAS_153, observateur=ReleveParPhase(),
+        bloc_9=bloc_9_compose(lambda t, table: varier(table, theta_Tr=theta_Tr)),
+        varsigma_B=lambda t: 1.0 if t in PAS_DU_PLACEMENT_RATE_153 else 0.0)
+    assert etat.t == NB_PAS_153
+    ouverture_7 = _positions(r.pas[6]["etat"])
+    s_cb = idt.echelle_bilan(ouverture_7, "banque_centrale")
+    attendue = min(idt.echelle_bilan(ouverture_7, "banque"), s_cb)
+    (porte,) = [(residu, s) for ligne, residu, s in controles if ligne == "20"]
+    montants = dict(next(m for ph, m in r.clotures[7] if ph == "6"))
+    if (pi, theta_Tr) == (0.10, 0.3):
+        assert all(x == 0.0 for _, x in montants["20"])
+        assert porte[1] == attendue > 0.0
+        assert abs(porte[0]) <= CADRE.tolerance_identite_pas * porte[1]
+    publier(f"#153, Trésor vidé, π* = {100 * pi:g} %, θ_Tr = {theta_Tr:g} ({ETIQUETTE})", [
+        f"{NB_PAS_153} pas sans arrêt ; pas 7, phase 6, ligne 20 : montant "
+        f"{sum(x for _, x in montants['20']):.3e}, échelle {porte[1]:.3e} "
+        f"(min(S^Bk, S^CB) = {attendue:.3e}, S^CB = {s_cb:.3e}), "
+        f"|résidu|/S = {abs(porte[0]) / porte[1]:.2e}"])
 
 
 # --------------------------------------------------------------------------

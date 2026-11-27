@@ -1790,4 +1790,135 @@ def test_echelle_alpha_exclut_le_secteur_d_un_terme_nul(monkeypatch):
     echelles = {s: gl.echelle(s) for s in cat.SECTEURS}
     cellules = {"menages": -1.0, "etat": 1.0, "banque_centrale": 0.0}
     assert gl_module._echelle_de_ligne(cellules, echelles) == echelle_ligne
-    assert gl_module._echelle_de_ligne({"banque_centrale": -0.0, "etat": 0.0}, echelles) == 0.0
+    # Aucun montant non nul : repli sur le plus petit S des colonnes de la ligne (ADR 0016, I).
+    assert gl_module._echelle_de_ligne({"banque_centrale": -0.0, "etat": 0.0}, echelles) == s_cb
+
+
+# --------------------------------------------------------------------------
+# #153 : échelle de repli d'une ligne (ADR 0016, I, points 1 à 7)
+# --------------------------------------------------------------------------
+
+
+def secteurs_de_la_ligne(ligne):
+    """Secteurs dont la ligne porte une colonne au catalogue (entreprises réunies)."""
+    return {cat.SECTEUR_DE_COLONNE[c] for t in ligne.termes for c in (t.colonne_plus,
+                                                                         t.colonne_moins)}
+
+
+def cellules_nulles(ligne):
+    """Cellules d'une ligne à montants tous nuls, une par colonne du catalogue."""
+    return {c: 0.0 for t in ligne.termes for c in (t.colonne_plus, t.colonne_moins)}
+
+
+def test_toute_ligne_du_catalogue_porte_un_terme():
+    """Précondition de `_echelle_de_ligne` (ADR 0016, I) : une ligne sans terme donnerait des
+    cellules vides et une échelle infinie, qui rendrait sa porte muette sans rien signaler."""
+    assert [l.identifiant for l in cat.LIGNES if not l.termes] == []
+    assert [l.identifiant for l in cat.CONTREPARTIES if not l.termes] == []
+    assert gl_module._echelle_de_ligne({}, {}) == math.inf
+
+
+def test_echelle_de_repli_des_contreparties_lue_au_catalogue():
+    """Repli des trois contreparties : 17 → min(S^H, S^F, S^Bk), 20 → min(S^Bk, S^CB),
+    22 → min(S^G, S^CB) (ADR 0016, point 1, relevé du catalogue)."""
+    attendus = {"17": {"menages", "entreprises", "banque"},
+                "20": {"banque", "banque_centrale"},
+                "22": {"etat", "banque_centrale"}}
+    assert {l.identifiant: secteurs_de_la_ligne(l) for l in cat.CONTREPARTIES} == attendus
+    # Chaque secteur tour à tour le plus petit : le repli le suit s'il est sur la ligne.
+    for petit in cat.SECTEURS:
+        echelles = {s: (1e-3 if s == petit else 10.0 + i) for i, s in enumerate(cat.SECTEURS)}
+        for ligne in cat.LIGNES:
+            attendu = min(echelles[s] for s in secteurs_de_la_ligne(ligne))
+            assert gl_module._echelle_de_ligne(cellules_nulles(ligne), echelles) == attendu
+
+
+def test_echelle_de_ligne_jamais_nulle_sous_des_echelles_de_secteur_positives():
+    """Propriété : S_ℓ > 0 et égale à la règle (α) puis repli, pour toute ligne du catalogue,
+    toute configuration de montants nuls ou non et des S tirés sur toute la plage positive
+    (sous-normaux compris), générateur à graine explicite."""
+    rng = np.random.default_rng(153)
+    tirages = 0
+    for _ in range(400):
+        exposants = rng.uniform(-323.0, 300.0, size=len(cat.SECTEURS))
+        echelles = {s: float(10.0 ** e) for s, e in zip(cat.SECTEURS, exposants, strict=True)}
+        assert all(v > 0.0 for v in echelles.values())
+        for ligne in cat.LIGNES:
+            cellules = cellules_nulles(ligne)
+            for c in cellules:
+                if rng.random() < 0.3:
+                    cellules[c] = float(rng.choice([-1.0, 1.0]) * 10.0 ** rng.uniform(-320, 300))
+            touches = {cat.SECTEUR_DE_COLONNE[c] for c, v in cellules.items() if v != 0.0}
+            attendu = min(echelles[s] for s in (touches or secteurs_de_la_ligne(ligne)))
+            obtenu = gl_module._echelle_de_ligne(cellules, echelles)
+            assert obtenu > 0.0 and obtenu == attendu
+            tirages += 1
+    assert tirages == 400 * len(cat.LIGNES)
+
+
+# Montant de Tr (ligne 6) et de T_H (ligne 7) : Res d'ouverture 50, (50 + a) − a ≠ 50.
+COMPENSE = 123.456
+
+
+def test_mouvements_compenses_avec_arrondi_controles_a_l_echelle_de_repli(monkeypatch):
+    """#153, critère 2 : en phase 6, Tr = T_H = a ; les mouvements de Res se compensent
+    exactement (montant de la ligne 20 nul) mais la position garde un arrondi non nul. La porte
+    ΔH de la ligne 20 est contrôlée à min(S^Bk, S^CB) > 0 et passe (avant le repli : S = 0 et
+    `DefautComptable`)."""
+    assert (OUVERTURE["Res"] + COMPENSE) - COMPENSE != OUVERTURE["Res"]
+    controles = []
+    origine = idt.verifier_identites
+
+    def espion(regle, residus, echelles, objets, epsilon, *, t, phase):
+        controles.extend((phase, regle.nom, o[1], r, s)
+                         for r, s, o in zip(residus, echelles, objets, strict=True))
+        return origine(regle, residus, echelles, objets, epsilon, t=t, phase=phase)
+    monkeypatch.setattr(idt, "verifier_identites", espion)
+    gl = ouvrir_pas(etat(), CADRE)
+    plan = plan_nul()
+    plan["6"] = flux("6", COMPENSE)
+    plan["7"] = flux("7", COMPENSE, 0.0)
+    clotures, _ = derouler(gl, plan)
+    montants_6 = dict(next(c for c in clotures if c.phase == "6").montants)
+    assert all(m == 0.0 for _, m in montants_6["20"])
+    porte = [(r, s) for ph, regle, ligne, r, s in controles
+             if (ph, regle, ligne) == ("6", "eq:noyau-variation-monnaie-centrale", "20")]
+    assert len(porte) == 1
+    residu, echelle = porte[0]
+    assert residu != 0.0
+    assert echelle == min(gl.echelle("banque"), gl.echelle("banque_centrale")) > 0.0
+    assert abs(residu) <= EPS * echelle
+
+
+def test_erreur_de_routage_refusee_a_l_echelle_de_repli(monkeypatch):
+    """#153, critère 2, témoin : le terme Div_F de la ligne 14 (ménages ← entreprises, réglé
+    en dépôts, sans Res) fait varier Res hors de l'arbre des comptes (erreur de routage).
+    Le montant de la ligne 20 reste nul, la variation de Res ne l'est pas : `DefautComptable`
+    sur la porte ΔH de la ligne 20, à l'échelle de repli min(S^Bk, S^CB)."""
+    origine = cat.LIGNE["14"]
+    (terme,) = origine.termes
+    assert all(poste != "Res" for poste, _ in terme.reglement + terme.variations)
+    fautif = dataclasses.replace(terme, variations=terme.variations + (("Res", 1.0),))
+    faussee = dataclasses.replace(origine, termes=(fautif,))
+    phase6 = tuple(faussee if l.identifiant == "14" else l for l in cat.LIGNES_DE_LA_PHASE["6"])
+    monkeypatch.setitem(gl_module.LIGNES_DE_LA_PHASE, "6", phase6)
+    gl = ouvrir_pas(etat(), CADRE)
+    plan = plan_nul()
+    plan["14"] = flux("14", 1.0)
+    with pytest.raises(DefautComptable) as erreur:
+        derouler(gl, plan)
+    assert erreur.value.regle == "eq:noyau-variation-monnaie-centrale"
+    assert (erreur.value.ligne, erreur.value.phase) == ("20", "6")
+    assert erreur.value.echelle == min(gl.echelle("banque"), gl.echelle("banque_centrale"))
+    assert erreur.value.rapport > EPS
+
+
+def test_rapport_a_l_echelle_garde_sur_une_echelle_nulle():
+    """ADR 0016, V6 : la garde de `rapport_a_l_echelle` reste pour tout constructeur
+    d'`ArretNoyau` ; un diagnostic ne lève pas en se construisant, même sur S = 0."""
+    from nations.noyau.diagnostics import rapport_a_l_echelle
+    assert rapport_a_l_echelle(0.0, 0.0) == 0.0
+    assert rapport_a_l_echelle(-1e-17, 0.0) == math.inf
+    assert rapport_a_l_echelle(-2.0, 4.0) == 0.5
+    erreur = DefautComptable("essai", residu=1e-17, echelle=0.0)
+    assert erreur.rapport == math.inf

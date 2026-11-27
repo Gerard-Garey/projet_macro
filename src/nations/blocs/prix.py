@@ -27,12 +27,21 @@ inversée), aucune lecture du registre. À l'état initial résolu,
 
 **Phase** (`tab:prix-phases` ; ADR 0012, annotation du 13/11/2026, points 2.2,
 2.3 et 2.5) : phase 5, premier groupe ; lit l'ouverture (IN^vol, μ̃) et la
-phase 2 (IN^vol*, UC, écrits par le bloc 2, sans recalcul) ; écrit ξ, p, l'indice
-P (P4 : P_t ≡ p_t sous J = 1, dans la même méthode) et l'état `mu_tilde` ;
-aucune ligne de flux ; ni les ventes, ni la demande adressée, ni un plan.
+phase 2 (IN^vol*, UC, écrits par le bloc 2, sans recalcul) ; écrit l'état
+`mu_tilde` (d'abord, voir « Bornes »), ξ, p et l'indice P (P4 : P_t ≡ p_t sous
+J = 1, dans la même méthode) ; aucune ligne de flux ; ni les ventes, ni la
+demande adressée, ni un plan.
 
 **Bornes** : aucune (`sec:prix-conditions`). p_t > 0 découle de la forme
-exponentielle ; ξ n'est pas écrêtée.
+exponentielle en arithmétique exacte ; ξ n'est pas écrêtée. En double
+précision, μ̃ a un domaine de représentabilité, |μ̃| ≤ ln(DBL_MAX)
+(`nations.etat.prix.DOMAINES` ; ADR 0016, point 18.1 ; #158), contrôlé à
+l'écriture de `mu_tilde`, qui précède le calcul de p : un μ̃_t hors domaine est
+refusé par `RefusDuMoteur` nommant « mu_tilde », jamais par le
+`DepassementNumerique` anonyme de exp(μ̃_t) (P3) ; dans ce domaine,
+UC_t exp(μ̃_t) peut encore valoir 0,0 par sous-dépassement (UC_t = 1e−17,
+μ̃_t = −ln(DBL_MAX)), et la division par p du bloc production est alors
+refusée par le moteur (`DivisionParZero`, ADR 0016, point 10.1).
 """
 
 from __future__ import annotations
@@ -65,7 +74,8 @@ def marge(mu_tilde_prec: float, xi: float, lambda_mu_pas: float, mu_bar: float,
 
 def prix_du_pas(UC: float, mu_tilde: float) -> float:
     """P3 : ln p_t = ln UC_t + μ̃_t, soit p_t = UC_t exp(μ̃_t), u.m. par u.v. ; p > 0 par la
-    forme exponentielle, sans plancher."""
+    forme exponentielle en arithmétique exacte, sans plancher (en double précision, 0,0 par
+    sous-dépassement est possible ; voir « Bornes » au docstring du module)."""
     # eq:prix-prix-du-pas
     return UC * math.exp(mu_tilde)
 
@@ -98,8 +108,13 @@ class Prix:
         xi = tension_sur_les_stocks(vue.ouverture.IN_vol, vue.lire("IN_vol_etoile"))
         mu_tilde = marge(vue.ouverture.mu_tilde, xi, par_pas(table.lambda_mu), table.mu_bar,
                          table.psi_xi)
+        # μ̃_t écrit avant le calcul de p (décision du mainteneur du 27/11/2026, constat m2 ;
+        # #158) : un μ̃_t hors de son domaine de représentabilité est refusé avec son nom par
+        # `Vue.ecrire_etat` avant que exp(μ̃_t) (P3) ne déborde en `DepassementNumerique`
+        # anonyme. Sans effet sur les valeurs : le bloc lit μ̃_{t−1} à l'ouverture, et la
+        # valeur écrite n'est lue, sous `mu_tilde_suivant`, que par l'observation (C2).
+        vue.ecrire_etat("mu_tilde", mu_tilde)
         p = prix_du_pas(vue.lire("UC"), mu_tilde)
         vue.ecrire_pas("xi", xi)
         vue.ecrire_pas("p", p)
         vue.ecrire_pas("P", indice_des_prix(p))
-        vue.ecrire_etat("mu_tilde", mu_tilde)

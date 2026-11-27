@@ -10,6 +10,7 @@ valeurs indicatives avec le script d'état stationnaire (P63).
 
 import dataclasses
 import math
+import sys
 
 import pytest
 
@@ -112,7 +113,8 @@ HORS_DOMAINE = [
     (production.PRODUCTION, "lambda_IN", 0.0), (production.PRODUCTION, "lambda_IN", N_A + 1e-9),
     (production.PRODUCTION, "sigma", 0.0), (production.PRODUCTION, "sigma", -0.1),
     (production.PRODUCTION, "kappa", 0.0), (production.PRODUCTION, "kappa", math.inf),
-    (production.PRODUCTION, "kappa", 1e-320),
+    (production.PRODUCTION, "kappa", 1e-320), (production.PRODUCTION, "kappa", 5.6e-309),
+    (production.PRODUCTION, "sigma", 1e-320),
     (production.PRODUCTION, "g_pr", -1.0), (production.PRODUCTION, "g_pr", -2.0),
     (travail.TRAVAIL, "lambda_w", 0.0), (travail.TRAVAIL, "lambda_w", 13.0),
     (travail.TRAVAIL, "lambda_N", -3.5), (travail.TRAVAIL, "beta", 0.0),
@@ -160,12 +162,13 @@ def test_domaine_refuse_par_le_constructeur_valide(table, nom, valeur):
 @pytest.mark.parametrize("nom, motif", [
     ("U_eq", "condition de conception et d'existence de l'état stationnaire"),
     ("mu_bar", "condition de conception et d'existence de l'état stationnaire"),
-    ("sigma", "domaine de définition"), ("kappa", "domaine de définition"),
+    ("sigma", "domaine de représentabilité"), ("kappa", "domaine de représentabilité"),
     ("lambda_v", "strict"),
 ])
 def test_motif_du_refus_nomme_la_nature(nom, motif):
     """P71 : U^eq > 0 et μ̄ > 0 sont refusés comme un domaine, le motif les nommant conditions
-    de conception et d'existence ; σ, κ, domaines de définition ; λ_v, domaine strict (P70)."""
+    de conception et d'existence ; σ, κ, domaines de représentabilité (ADR 0016, point 18.2) ;
+    λ_v, domaine strict (P70)."""
     table = next(t for _, t, d in TABLES if nom in {p.nom for p in d})
     with pytest.raises(DefautDeDeclaration, match=motif):
         varier(table, **{nom: 0.0})
@@ -273,19 +276,58 @@ def test_domaines_des_tables_et_du_script_refusent_le_meme_ensemble(stationnaire
                 stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
 
 
-def test_kappa_sous_normal_refuse_par_le_script_comme_par_la_table(stationnaire):
-    """#125, point 5 : κ > 0 et 1/κ fini, refusé par le script comme par la table du bloc 2 ;
-    κ = 1e−320 (1/κ infini) refusé par les deux ; κ = 5,6e−309 (1/κ fini) et la calibration
-    admis par les deux (la borne inférieure de κ relève du point 6, J3-e2)."""
+DBL_MIN = sys.float_info.min
+# Domaines de représentabilité de κ et σ (ADR 0016, point 18.2 ; #125, point 6) : valeurs refusées
+# (sous-normales, nulle, négative, non finies) et admises (DBL_MIN, calibration), critères écrits
+# avant l'essai (rang 4 de J3-e2).
+KAPPA_SIGMA_REFUSES = (
+    [("kappa", v) for v in (5.6e-309, math.nextafter(DBL_MIN, 0.0), 1e-320, 0.0, -1.6, math.inf,
+                            math.nan)]
+    + [("sigma", v) for v in (1e-320, math.nextafter(DBL_MIN, 0.0), 0.0, -0.1)])
+KAPPA_SIGMA_ADMIS = (("kappa", DBL_MIN), ("kappa", production.KAPPA.valeur),
+                     ("sigma", DBL_MIN), ("sigma", production.SIGMA.valeur))
+
+
+def _refus_par_la_table(nom, valeur):
+    try:
+        varier(production.PRODUCTION, **{nom: valeur})
+    except DefautDeDeclaration as defaut:
+        return defaut
+    return None
+
+
+def _refus_par_le_script(stationnaire, base, nom, valeur):
+    try:
+        stationnaire.controler_domaine(dataclasses.replace(base, **{nom: valeur}))
+    except stationnaire.HorsDomaine as defaut:
+        return defaut
+    return None
+
+
+def test_kappa_et_sigma_normaux_refuses_par_le_script_comme_par_la_table(stationnaire):
+    """#125, points 5 et 6 ; ADR 0016, points 17.3 et 18.2 : κ ≥ DBL_MIN et σ ≥ DBL_MIN, borne
+    calculée depuis `sys.float_info.min`. Sur une même liste, refus par la table ⇔ refus par le
+    script ; chaque refus de la table nomme le paramètre et cite le domaine ; DBL_MIN et la
+    calibration sont admis par les deux. κ = 5,6e−309 (1/κ fini, sous-normal),
+    admis jusqu'ici, est désormais refusé (correction prospective du test de #125, point 5)."""
+    assert production.DBL_MIN == sys.float_info.min
     base = dataclasses.replace(stationnaire.Parametres(), nu_G=1.15)
-    for valeur in (1e-320, 0.0, -1.6):
-        with pytest.raises(DefautDeDeclaration, match="« kappa »"):
-            varier(production.PRODUCTION, kappa=valeur)
-        with pytest.raises(stationnaire.HorsDomaine, match="kappa"):
-            stationnaire.controler_domaine(dataclasses.replace(base, kappa=valeur))
-    for valeur in (5.6e-309, 1.6):
-        varier(production.PRODUCTION, kappa=valeur)
-        stationnaire.controler_domaine(dataclasses.replace(base, kappa=valeur))
+    for nom, valeur in KAPPA_SIGMA_REFUSES + list(KAPPA_SIGMA_ADMIS):
+        table = _refus_par_la_table(nom, valeur)
+        script = _refus_par_le_script(stationnaire, base, nom, valeur)
+        assert (table is None) == (script is None), (nom, valeur, table, script)
+        assert (table is None) == ((nom, valeur) in KAPPA_SIGMA_ADMIS), (nom, valeur, table)
+        if table is not None:
+            assert f"« {nom} »" in str(table) and "DBL_MIN" in str(table), str(table)
+            assert nom in str(script), str(script)
+
+
+def test_calibration_dans_les_domaines_de_kappa_et_sigma(stationnaire):
+    """Critère 3 : la calibration de la table et la valeur par défaut du script sont dans les
+    domaines κ ≥ DBL_MIN et σ ≥ DBL_MIN, loin de la borne (plus de 300 ordres de grandeur)."""
+    defaut = stationnaire.Parametres()
+    for valeur in (production.KAPPA.valeur, production.SIGMA.valeur, defaut.kappa, defaut.sigma):
+        assert valeur >= DBL_MIN and valeur > 1e300 * DBL_MIN
 
 
 def test_taux_de_croissance_refuses_un_a_un_par_le_script_comme_par_les_tables(stationnaire):

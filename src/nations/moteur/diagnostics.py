@@ -17,7 +17,10 @@ Contrat : ADR 0012, B3, B4 et F1 ; même forme que les diagnostics du noyau
   (J3-d1), point 4 ; P120, P129, #124) ; sa dérivée `EntreeHorsDomaine` refuse une entrée de
   scénario publiée hors de son domaine (`DOMAINES_DES_ENTREES` ; P138) ; sa dérivée
   `DepassementNumerique` traduit le dépassement de la double précision d'une règle de bloc
-  (`OverflowError` de `math.exp`, S2, S3 et S6 du bloc 6 ; P139).
+  (`OverflowError` de `math.exp`, S2, S3 et S6 du bloc 6 ; P139) ; sa dérivée `DivisionParZero`
+  traduit une division par un zéro de la double précision (`ZeroDivisionError` ; ADR 0016,
+  point 10.1 ; #158). Ces deux traductions forment une liste fermée : aucune autre exception
+  n'est traduite.
 
 Le moteur ne rattrape jamais un arrêt pour continuer, ni du noyau ni le sien :
 l'état d'ouverture reste intact (gelé), et aucun état t + 1 n'est rendu.
@@ -105,4 +108,19 @@ class DepassementNumerique(RefusDuMoteur):
     Levé par le moteur, qui traduit l'exception de l'arithmétique en refus typé à l'appel du
     bloc : champs pas, étape, bloc (radical de la méthode appelée) ; l'exception d'origine est
     chaînée. Ce n'est pas un rattrapage : le pas s'arrête comme pour tout `RefusDuMoteur`.
+    """
+
+
+class DivisionParZero(RefusDuMoteur):
+    """Division par un zéro de la double précision dans une méthode d'étape d'un bloc
+    (`ZeroDivisionError`) : refus de division (ADR 0016, point 10.1 ; décision du mainteneur du
+    27/11/2026, point 2 ; P299 ; #158).
+
+    Levé par le moteur, qui traduit l'exception de l'arithmétique en refus typé à l'appel du
+    bloc, sur le modèle de `DepassementNumerique` : champs pas, étape, bloc (radical de la
+    méthode appelée), `nom = None` (l'arithmétique ne connaît pas la variable) ; l'exception
+    d'origine est chaînée. Le filet couvre tout ce que la méthode d'étape appelle, vue et noyau
+    compris : le code du moteur et du noyau atteignable depuis une vue ne divise par aucune
+    grandeur qui puisse être nulle (ADR 0016, point 10.4). Ce n'est pas un rattrapage : le pas
+    s'arrête comme pour tout `RefusDuMoteur`.
     """

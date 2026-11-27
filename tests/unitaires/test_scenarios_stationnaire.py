@@ -38,6 +38,24 @@ NOTATION_DES_CONDITIONS = {
     "marge_plafond_E1": "marge du plafond de E1", "B": r"$B \ge 0$",
     "B_Bk": r"B_{\mathit{Bk}} \ge 0", "B_CB": r"B_{\mathit{CB}} \ge 0", "B_H": "B_H = 0",
 }
+# Forme TeX de chaque condition d'existence dans la section que cite `CONDITIONS_D_EXISTENCE`
+# (#181) : expression rationnelle cherchée dans le texte de la section, de son `\label{sec:…}`
+# au suivant, sans franchir le mode mathématique. Indice ",0" admis : la section peut écrire
+# la condition sur l'état initial ; pour B_H, chaîne d'égalités admise (`B_{H,0} = … = 0`).
+FORME_DANS_LA_SECTION = {
+    "D2": r"\\mathcal\{D\}_2 (?:= [^$]*?)?> 0",
+    "Div_F": r"\\mathit\{Div\}_F \\ge 0",
+    "theta_G": r"\\theta_G > 0",
+    "B": r"\$B \\ge 0\$",
+    "B_Bk": r"(?<!\\Delta )B_\{\\mathit\{Bk\}(?:,0|,t|,t\+1)?\} \\ge 0",
+    "B_CB": r"(?<!\\Delta )B_\{\\mathit\{CB\}(?:,0|,t|,t\+1)?\} \\ge 0",
+    "B_H": r"(?<!\\Delta )B_(?:H|\{H,0\})(?: = [^$]*?)? = 0(?![\d{])",
+}
+# Conditions écrites en mots ou en montants dans leur section, sans forme TeX courte et stable :
+# D1 (« Son coefficient doit être strictement positif », puis la définition de D1), l'existence
+# du dividende de la banque (inégalité en montants sous « Condition d'existence ») et la marge du
+# plafond de E1 (« marge du plafond de E1 non strictement positive »).
+CONDITIONS_EN_MOTS = ("D1", "existence_dividende_banque", "marge_plafond_E1")
 # Identifiants dont le message `HorsDomaine` du script cite une section (#175).
 MESSAGES_AVEC_SECTION = ("existence_dividende_banque", "theta_G", "marge_plafond_E1", "B", "B_Bk", "B_CB")
 
@@ -54,6 +72,15 @@ def groupes_de_conditions_du_paragraphe():
                           key=lambda i: groupe.index(NOTATION_DES_CONDITIONS[i]))),
              tuple(re.findall(r"\\S\\ref\{(sec:[^}]+)\}", groupe)))
             for groupe in liste.split(" ; ")]
+
+
+def texte_de_section(label):
+    """Texte de la spécification de `\\label{label}` au `\\label{sec:…}` suivant (ou à la fin),
+    commentaires LaTeX retirés (une forme en commentaire n'écrit pas la condition)."""
+    texte = re.sub(r"(?<!\\)%.*", "", SPECIFICATION.read_text(encoding="utf-8"))
+    debut = texte.index(rf"\label{{{label}}}")
+    suivant = re.compile(r"\\label\{sec:").search(texte, debut + 1)
+    return texte[debut:suivant.start() if suivant else len(texte)]
 
 
 def entrees(stationnaire, **variations):
@@ -200,18 +227,52 @@ def test_liste_fermee_des_conditions_et_sections_de_la_specification():
 def test_sections_des_conditions_citees_par_la_specification():
     """Lien code ↔ spécification (#175) : le paragraphe « État initial du moteur » nomme chaque
     condition une fois, dans l'ordre de `CONDITIONS_D_EXISTENCE` ; un groupe qui cite une section
-    la cite seule, et c'est celle de chacune de ses conditions dans le code. Un groupe sans renvoi
-    (aujourd'hui B_Bk, B_CB, B_H) n'est pas comparé."""
+    la cite seule, et c'est celle de chacune de ses conditions dans le code. Chaque groupe a son
+    renvoi : les dix conditions sont comparées (#181)."""
     groupes = groupes_de_conditions_du_paragraphe()
     assert tuple(i for ids, _ in groupes for i in ids) == CONDITIONS_ATTENDUES
     sections = {identifiant: section for identifiant, _, section in resolveur.CONDITIONS_D_EXISTENCE}
     comparees = 0
     for identifiants, renvois in groupes:
-        assert len(renvois) <= 1, (identifiants, renvois)
-        for identifiant in identifiants if renvois else ():
+        assert len(renvois) == 1, (identifiants, renvois)
+        for identifiant in identifiants:
             assert sections[identifiant] == renvois[0], identifiant
             comparees += 1
-    assert comparees >= 7
+    assert comparees == len(resolveur.CONDITIONS_D_EXISTENCE) == 10
+
+
+def test_la_section_citee_ecrit_la_condition():
+    """Lien code ↔ spécification (#181) : la section que cite `CONDITIONS_D_EXISTENCE` pour une
+    condition écrit sa forme TeX (`FORME_DANS_LA_SECTION`) ; les conditions sans forme courte
+    (`CONDITIONS_EN_MOTS`) sont nommées, pour qu'une condition nouvelle soit classée."""
+    assert set(FORME_DANS_LA_SECTION) | set(CONDITIONS_EN_MOTS) == set(CONDITIONS_ATTENDUES)
+    assert not set(FORME_DANS_LA_SECTION) & set(CONDITIONS_EN_MOTS)
+    absentes = [(identifiant, section) for identifiant, _, section in resolveur.CONDITIONS_D_EXISTENCE
+                if identifiant in FORME_DANS_LA_SECTION
+                and not re.search(FORME_DANS_LA_SECTION[identifiant], texte_de_section(section))]
+    assert absentes == []
+
+
+def sections_de_conditions_qui_ecrivent(identifiant):
+    """Sections `sec:*-conditions` de la spécification dont le texte écrit la forme TeX de la
+    condition (`FORME_DANS_LA_SECTION`), dans l'ordre du document."""
+    texte = re.sub(r"(?<!\\)%.*", "", SPECIFICATION.read_text(encoding="utf-8"))
+    labels = re.findall(r"\\label\{(sec:[^}]+-conditions)\}", texte)
+    return [label for label in labels
+            if re.search(FORME_DANS_LA_SECTION[identifiant], texte_de_section(label))]
+
+
+def test_la_condition_n_est_ecrite_que_dans_la_section_citee():
+    """Un seul lieu d'écriture (#181, décision du 27/11/2026) : la forme TeX d'une condition de
+    `FORME_DANS_LA_SECTION` ne figure, parmi les sections `sec:*-conditions`, que dans celle que
+    cite `CONDITIONS_D_EXISTENCE` (aucune quand la section citée n'en est pas une, comme pour B_H).
+    Un renvoi cohérent du code et du paragraphe vers une autre section qui écrit aussi la
+    condition est ainsi refusé."""
+    sections = {identifiant: section for identifiant, _, section in resolveur.CONDITIONS_D_EXISTENCE}
+    ailleurs = {identifiant: [s for s in sections_de_conditions_qui_ecrivent(identifiant)
+                              if s != sections[identifiant]]
+                for identifiant in FORME_DANS_LA_SECTION}
+    assert {i: s for i, s in ailleurs.items() if s} == {}
 
 
 @pytest.mark.parametrize("pi", POINTS_PI)
