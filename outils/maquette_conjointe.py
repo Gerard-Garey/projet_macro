@@ -6,7 +6,15 @@ une seule maquette conjointe, linéarisée autour de l'état stationnaire de
 et frontière de stabilité que la spécification
 (`docs/specification/nations_et_marches.tex`) cite pour une boucle conjointe,
 le script rend la valeur publiée, la valeur remesurée, l'écart et les lignes
-de la spécification où le chiffre est écrit.
+de la spécification où le chiffre est écrit. Verdicts : « reproduit » ou
+« écart » à la dernière décimale publiée ; « sans objet » si la remesure
+n'existe pas (racine réelle, frontière disparue), avec sa cause mesurée à
+l'appel (`Chiffre.cause`) ; « origine » pour une valeur historique citée à
+côté de sa remesure en vigueur, relevée à part (`Chiffre.origine`, #168),
+contrôlée par `juger_origines` (chiffre en vigueur absent, non reproduit ou
+d'une autre grandeur : « écart »). La cause ou le renvoi est publié en
+colonne « justification » (clé `justification` du JSON) ; l'écart d'une
+valeur d'origine est affiché « — » (le JSON garde sa valeur numérique).
 
 **Indépendance.** Le script n'importe ni `src/` ni `archive/` ; il charge
 `outils/etat_stationnaire.py` par son chemin, et par lui le module feuille
@@ -126,6 +134,7 @@ import json
 import math
 import re
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
@@ -244,7 +253,7 @@ def frontiere(rayon_de, bas: float, haut: float) -> float:
 def frontiere_ou_aucune(rayon_de, bas: float, haut: float) -> float | None:
     """Frontière de `frontiere`, ou sans objet (None) si le rayon, fini, est sous 1 aux deux bornes et aux
     `ECHANTILLONS_INTERIEURS` points intérieurs équidistants : régime stable sur tout l'intervalle, aucune frontière à
-    publier (#45 : à λ_w = 0,18, les frontières en ν_H et h de l'instabilité 17 disparaissent de [0,3 ; 1] ; « sans
+    publier (#45 : à λ_w = 0,18, les frontières en ν_H et h de l'instabilité 17 disparaissent de [0,3 ; 2] et [0,3 ; 1] ; « sans
     objet », M34). Un rayon non fini ou égal à 1 aux bornes reste refusé par `frontiere`. Bornes finies, un
     échantillon intérieur non fini, ou plus d'un passage de 1 sur l'échantillon (frontière double sous deux bornes
     stables, creux stable sous deux bornes instables, ou frontières multiples entre deux bornes de côtés opposés), est
@@ -257,8 +266,7 @@ def frontiere_ou_aucune(rayon_de, bas: float, haut: float) -> float | None:
     if not all(math.isfinite(r) and r != 1 for r in (r_bas, r_haut)):
         return frontiere(rayon_de, bas, haut)  # refus : intervalle non encadrant
     pas = (haut - bas) / (ECHANTILLONS_INTERIEURS + 1)
-    echantillon = [(bas, r_bas)] + [(bas + k * pas, rayon_de(bas + k * pas))
-                                    for k in range(1, ECHANTILLONS_INTERIEURS + 1)] + [(haut, r_haut)]
+    echantillon = [(bas, r_bas)] + [(x, rayon_de(x)) for x in _points_interieurs(bas, haut)] + [(haut, r_haut)]
     for x, r in echantillon[1:-1]:
         if not math.isfinite(r):
             raise ValueError(f"rayon {r!r} non fini au point intérieur {x} de [{bas} ; {haut}]")
@@ -272,6 +280,12 @@ def frontiere_ou_aucune(rayon_de, bas: float, haut: float) -> float | None:
     if not passages:
         return None
     return frontiere(rayon_de, bas, haut)
+
+
+def _points_interieurs(bas: float, haut: float) -> list[float]:
+    """Les `ECHANTILLONS_INTERIEURS` points intérieurs équidistants de [bas ; haut] (`frontiere_ou_aucune`)."""
+    pas = (haut - bas) / (ECHANTILLONS_INTERIEURS + 1)
+    return [bas + k * pas for k in range(1, ECHANTILLONS_INTERIEURS + 1)]
 
 
 def _carte(variables: list[tuple[str, float, float, bool, float]], pas, racine_nominale: bool) -> Carte:
@@ -1216,6 +1230,14 @@ class Chiffre:
     # le motif n'est cherché que là, et un nombre recensé n'est couvert que par un chiffre qui y déclare son
     # paragraphe (un nombre égal cité ailleurs, pour une autre grandeur, ne passe pas par coïncidence).
     ou: tuple[str, ...] = ()
+    # Cause d'une remesure sans objet, mesurée à l'appel : rend la phrase, ou None si la cause attendue n'est pas
+    # constatée (`evaluer` publie alors « cause non constatée », et les tests échouent).
+    cause: Callable[[], str | None] | None = None
+    # Valeur d'origine (#168) : chiffre publié comme valeur historique, mesurée sous d'autres entrées que la table
+    # en vigueur, et cité à côté de sa remesure en vigueur : (description, identifiant du chiffre en vigueur qui
+    # remesure la même grandeur). Verdict « origine » si ce chiffre est relevé, reproduit et de même remesure
+    # (`juger_origines`), « écart » sinon ; le chiffre en vigueur est jugé à part.
+    origine: tuple[str, str] | None = None
 
 
 def _r(carte_de):
@@ -1252,14 +1274,76 @@ def _vitesses_offre(k: float) -> dict[str, float]:
     return {"lambda_v": BASE.lambda_v * k, "lambda_IN": BASE.lambda_IN * k}
 
 
+def _virgule(x: float) -> str:
+    return f"{x:g}".replace(".", ",")
+
+
+def _cause_sans_frontiere(configuration: str, rayon_de, bas: float, haut: float):
+    """Cause mesurée d'une frontière sans objet (`frontiere_ou_aucune`) dans la configuration balayée : rayon sous 1
+    aux deux bornes et aux points intérieurs de l'échantillon ; None si un point de l'échantillon ne l'est pas."""
+    def cause():
+        rayons = [rayon_de(x) for x in [bas] + _points_interieurs(bas, haut) + [haut]]
+        if not max(rayons) < 1:
+            return None
+        return (f"{configuration} : rayon sous 1 aux {len(rayons)} points de [{_virgule(bas)} ; {_virgule(haut)}] "
+                f"(au plus {_f(max(rayons))}), frontière disparue ; un passage double entre deux points voisins "
+                "reste hors de portée de la grille (#172, point 5)")
+    return cause
+
+
+def _cause_racine_reelle(cas):
+    """Cause mesurée d'une période sans objet : racine dominante réelle dans les cas (libellé, () -> racine
+    dominante, () -> module de la plus grande paire complexe ou None) où elle l'est ; None si aucune ne l'est."""
+    def cause():
+        morceaux = []
+        for nom, racine, paire in cas:
+            z = complex(racine())
+            if abs(z.imag) <= 1e-12:
+                m = paire()
+                morceaux.append(f"{nom} : {_f(z.real)}" + ("" if m is None else
+                                                          f", paire complexe de module {_f(m)}, non dominante"))
+        return f"racine dominante réelle ({' ; '.join(morceaux)})" if morceaux else None
+    return cause
+
+
+def _cause_periodes_menages(cas, lecture: str):
+    """Cause mesurée d'une période sans objet sur des cas (θ_H, régime) de `carte_menages`, regroupés par θ_H : racine
+    dominante réelle (valeur et module de la plus grande paire complexe) ou paire dominante (période, en tours) ;
+    None si aucune racine dominante n'est réelle."""
+    def cause():
+        groupes, une_reelle = [], False
+        for th in sorted({th for th, _ in cas}):
+            reelles, paires = [], []
+            for t, regime in cas:
+                if t != th:
+                    continue
+                carte = carte_menages(th, regime, lecture)
+                s = spectre(carte)
+                if abs(s.racine.imag) <= 1e-12:
+                    m = module_paire(np.linalg.eigvals(jacobienne(carte)))
+                    reelles.append(f"{regime} : {_f(s.racine.real)}" + ("" if m is None else
+                                                                        f", paire de module {_f(m)}"))
+                else:
+                    paires.append(f"{_f(s.periode, 2)} ({regime})")
+            une_reelle |= bool(reelles)
+            morceaux = []
+            if reelles:
+                morceaux.append(f"racine dominante réelle ({' ; '.join(reelles)})")
+            if paires:
+                morceaux.append(f"paire dominante de période {' et '.join(paires)}")
+            groupes.append(f"à θ_H = {_virgule(th)}, " + ", ".join(morceaux))
+        return " ; ".join(groupes) if une_reelle else None
+    return cause
+
+
 def releve() -> list[Chiffre]:
     """Liste des chiffres cités, dans l'ordre de la spécification, avec leur calcul."""
     L: list[Chiffre] = []
     courant: list[tuple[str, ...]] = [()]  # paragraphes de citation du groupe en cours (`ou` par défaut)
 
-    def ajouter(ident, publie, nature, maquette, hypothese, calcul, motif=None, ou=None):
+    def ajouter(ident, publie, nature, maquette, hypothese, calcul, motif=None, ou=None, cause=None, origine=None):
         L.append(Chiffre(ident, publie, motif or publie, nature, maquette, hypothese, calcul,
-                         courant[0] if ou is None else ou))
+                         courant[0] if ou is None else ou, cause, origine))
 
     # sec:travail-conditions : boucle combinée production -- stocks -- emploi, prix figé ; les bornes (m = 0,5
     # et 0,8) sont rappelées par sec:prix-conditions.
@@ -1378,24 +1462,35 @@ def releve() -> list[Chiffre]:
         ajouter(f"menages_inflation.a.periode.{quel}", pub, "période", "menages",
                 "lecture (a), deux θ_H, deux régimes",
                 _extremes(lambda a: spectre(carte_menages(a[0], a[1], "a")).periode, lect_a, quel),
-                motif="17 à 19 tours", ou=ins)
+                motif="17 à 19 tours", ou=ins,
+                cause=_cause_periodes_menages(lect_a, "a"))
     courant[0] = ("tab:instabilites",)
     for th, pubs in ((0.8, ("0,9831", "0,9835")), (1.0, ("1,0019", "0,9965"))):
         for regime, pub in zip(("hausse", "baisse"), pubs):
             ajouter(f"instabilite17.a.theta{th}.{regime}", pub, "rayon", "menages",
                     f"lecture (a), θ_H = {th}, régime de {regime}",
                     _r(lambda th=th, regime=regime: carte_menages(th, regime, "a")))
+    rayon_nu_H = lambda nu: spectre(carte_menages(0.8, "hausse", "a", nu_H=nu)).rayon  # noqa: E731
+    rayon_h = lambda h: spectre(carte_menages(0.8, "hausse", "a", h=h)).rayon  # noqa: E731
+    config_17 = "lecture (a), θ_H = 0,8, régime de hausse"
+    # ν_H balayé sur [0,3 ; 2], h (un poids) sur [0,3 ; 1] (visa de macro, #168).
     ajouter("instabilite17.frontiere_nu_H", "0{,}586", "frontière", "menages",
-            "ν_H où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
-            lambda: frontiere_ou_aucune(lambda nu: spectre(carte_menages(0.8, "hausse", "a", nu_H=nu)).rayon, 0.3,
-                                        1.0))
+            f"ν_H où le rayon passe 1 sur [0,3 ; 2], {config_17}",
+            lambda: frontiere_ou_aucune(rayon_nu_H, 0.3, 2.0),
+            cause=_cause_sans_frontiere(f"ν_H, {config_17}", rayon_nu_H, 0.3, 2.0))
     ajouter("instabilite17.frontiere_h", "0{,}604", "frontière", "menages",
-            "poids h où le rayon passe 1, lecture (a), θ_H = 0,8, régime de hausse",
-            lambda: frontiere_ou_aucune(lambda h: spectre(carte_menages(0.8, "hausse", "a", h=h)).rayon, 0.3, 1.0))
+            f"poids h où le rayon passe 1 sur [0,3 ; 1], {config_17}",
+            lambda: frontiere_ou_aucune(rayon_h, 0.3, 1.0),
+            cause=_cause_sans_frontiere(f"h, {config_17}", rayon_h, 0.3, 1.0))
+    # 1,0415 : valeur de la fiche « ménages » (§ 3.C-10, point 3), à la calibration indicative, non reproduite
+    # (1,09, publié barré dans tab:changements-v3x, l. 115, non remesuré ici ; cause non établie selon la même
+    # ligne), citée comme telle ; la même ligne publie
+    # 0,95 à la table T1 (M34), chiffre en vigueur relevé à la ligne suivante (#168).
     ajouter("instabilite17.a.n_a4.hausse", "1,0415", "rayon", "menages",
-            "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (valeur de la fiche ; la spécification cite aussi "
-            "la contre-épreuve, ligne suivante ; la valeur à retenir revient à macro)",
-            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), ou=("sec:changements-v3x",))
+            "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (valeur de la fiche, calibration indicative)",
+            _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), ou=("sec:changements-v3x",),
+            origine=("valeur de la fiche « ménages », calibration indicative",
+                     "instabilite17.a.n_a4.hausse.contre_epreuve"))
     ajouter("instabilite17.a.n_a4.hausse.contre_epreuve", "0,95", "rayon", "menages",
             "lecture (a), θ_H = 0,8, régime de hausse, n_a = 4 (contre-épreuve citée par la spécification)",
             _r(lambda: carte_menages(0.8, "hausse", "a", n_a=4)), motif="vaut 0,95", ou=("sec:changements-v3x",))
@@ -1490,7 +1585,11 @@ def releve() -> list[Chiffre]:
                 lambda regime=regime: marge_conjointe()["x2"][regime]["rayon"], ou=socle_bc)
         ajouter(f"socle.marge_conjointe.x2.{regime}.periode", per, "période", "socle",
                 f"{', '.join(GAINS_ENSEMBLE)} ×2, régime de {regime}, période de la paire complexe (c)",
-                lambda regime=regime: marge_conjointe()["x2"][regime]["periode"], ou=socle_bc)
+                lambda regime=regime: marge_conjointe()["x2"][regime]["periode"], ou=socle_bc,
+                cause=_cause_racine_reelle([(
+                    f"lecture (c), régime de {regime}", lambda regime=regime: lectures(_ensemble(2.0), regime).suivante,
+                    lambda regime=regime: module_paire(np.linalg.eigvals(jacobiennes_carte(
+                        carte_socle(_ensemble(2.0), regime), _ensemble(2.0))[1])))]))
     ajouter("socle.marge_conjointe.x0.5", "0,999166", "rayon", "socle",
             f"{', '.join(GAINS_ENSEMBLE)} ×0,5, pire des deux régimes, lecture (c), π̄ = 2 %",
             lambda: rayon_c(_ensemble(0.5)), ou=socle_bc)
@@ -1774,9 +1873,10 @@ def _paragraphes(lignes: tuple[str, ...]) -> tuple[tuple[str, int], ...]:
 
 def evaluer(c: Chiffre, lignes: list[str], fiches: dict[str, list[str]] | None = None) -> dict[str, object]:
     """Remesure d'un chiffre ; une remesure sans objet (None : racine réelle, rayon ≥ 1) est publiée telle quelle."""
-    valeur = c.calcul()
+    valeur, justification = c.calcul(), None
     if valeur is None:
         ecart, verdict = None, "sans objet"
+        justification = (c.cause() if c.cause is not None else None) or "cause non constatée"
     else:
         valeur = float(valeur)
         if c.nature == "racine nominale":
@@ -1784,18 +1884,45 @@ def evaluer(c: Chiffre, lignes: list[str], fiches: dict[str, list[str]] | None =
         else:
             ecart, _, ok = es.comparer(c.publie.replace("{,}", ","), valeur)
         verdict = "reproduit" if ok else "écart"
+    if c.origine is not None:  # verdict provisoire, contrôlé par `juger_origines` sur le relevé entier
+        verdict = "origine"
+        justification = f"{c.origine[0]} ; en vigueur : {c.origine[1]}"
     return {
         "ident": c.ident, "nature": c.nature, "maquette": c.maquette, "hypothese": c.hypothese,
         "publie": c.publie.replace("{,}", ","), "remesure": valeur, "ecart": ecart, "verdict": verdict,
-        "reproduit": verdict == "reproduit",
+        "reproduit": verdict == "reproduit", "justification": justification,
+        "en_vigueur": None if c.origine is None else c.origine[1],
         "lignes": sorted({num for _, num in lignes_du_motif(lignes, c.motif, c.ou)}),
         "lignes_fiches": lignes_du_motif_fiches(lire_fiches() if fiches is None else fiches, c.motif, c.ou),
     }
 
 
+def juger_origines(resultats: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Contrôle du renvoi de chaque valeur d'origine (verdict « origine » d'`evaluer`) : le chiffre en vigueur nommé
+    doit être relevé, « reproduit », de même nature et de même remesure (même grandeur) ; sinon le verdict devient
+    « écart », et la justification dit pourquoi. Les autres relevés sont rendus tels quels."""
+    par_ident = {x["ident"]: x for x in resultats}
+    sortie = []
+    for x in resultats:
+        if x["verdict"] == "origine":
+            jumeau = par_ident.get(x["en_vigueur"])
+            if jumeau is None:
+                defaut = "chiffre en vigueur absent du relevé"
+            elif jumeau["verdict"] != "reproduit":
+                defaut = f"chiffre en vigueur non reproduit ({jumeau['verdict']})"
+            elif jumeau["nature"] != x["nature"] or jumeau["remesure"] != x["remesure"]:
+                defaut = "chiffre en vigueur d'une autre grandeur (nature ou remesure différente)"
+            else:
+                defaut = None
+            if defaut is not None:
+                x = x | {"verdict": "écart", "justification": f"{x['justification']} : {defaut}"}
+        sortie.append(x)
+    return sortie
+
+
 def calculer() -> dict[str, object]:
     lignes, fiches = lire_spec(), lire_fiches()
-    resultats = [evaluer(c, lignes, fiches) for c in releve()]
+    resultats = juger_origines([evaluer(c, lignes, fiches) for c in releve()])
     variantes = variantes_F()
     residus = {
         "offre": max(residu_point_fixe(carte_offre(m, p, s)) for m in M4 for p, s in
@@ -1904,7 +2031,9 @@ def afficher(r: dict[str, object], sortie=None) -> None:
         verdict = {"reproduit": "reproduit", "écart": "ÉCART"}.get(x["verdict"], x["verdict"])
         lignes = ", ".join([str(n) for n in x["lignes"]] + x["lignes_fiches"]) or "—"
         remesure = "sans objet" if x["remesure"] is None else _f(x["remesure"])
-        p(f"{x['ident']:58} {x['publie']:>9} {remesure:>12} {_f(x['ecart']):>12}  {verdict:10} {lignes}")
+        ecart = "—" if x["verdict"] == "origine" else _f(x["ecart"])  # écart à une valeur d'une autre calibration
+        justification = "" if x["justification"] is None else f"  justification : {x['justification']}"
+        p(f"{x['ident']:58} {x['publie']:>9} {remesure:>12} {ecart:>12}  {verdict:10} {lignes}{justification}")
     p("")
     p("Socle (blocs 2 à 9) : racine dominante brute, période et demi-vie")
     for pi, regimes in r["socle"].items():
@@ -1950,10 +2079,12 @@ def afficher(r: dict[str, object], sortie=None) -> None:
           f"{v['regime']:7} {_f(v['rayon']):>9} {v['nature']:16} {_f(v['periode'], 1):>8} {coude}")
     ecarts = [x for x in r["releve"] if x["verdict"] == "écart"]
     sans_objet = [x for x in r["releve"] if x["verdict"] == "sans objet"]
+    origines = [x for x in r["releve"] if x["verdict"] == "origine"]
     p("")
     p(f"{len(r['releve'])} chiffres relevés ; {sum(x['reproduit'] for x in r['releve'])} reproduits à la dernière "
       f"décimale publiée ; {len(ecarts)} écarts : {', '.join(x['ident'] for x in ecarts) or 'aucun'} ; "
-      f"{len(sans_objet)} sans objet : {', '.join(x['ident'] for x in sans_objet) or 'aucun'}")
+      f"{len(sans_objet)} sans objet : {', '.join(x['ident'] for x in sans_objet) or 'aucun'} ; "
+      f"{len(origines)} valeurs d'origine : {', '.join(x['ident'] for x in origines) or 'aucune'}")
 
 
 def main(arguments: list[str] | None = None) -> int:

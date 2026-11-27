@@ -24,6 +24,7 @@ pilote.
 import ast
 import dataclasses
 import importlib.util
+import io
 import math
 import os
 import re
@@ -64,8 +65,8 @@ def test_n_importe_ni_src_ni_archive():
         elif isinstance(noeud, ast.ImportFrom):
             modules.add((noeud.module or "").split(".")[0])
     assert not modules & {"nations", "archive", "src"}
-    assert modules <= {"__future__", "argparse", "dataclasses", "functools", "importlib", "json", "math",
-                       "pathlib", "re", "sys", "numpy"}
+    assert modules <= {"__future__", "argparse", "collections", "dataclasses", "functools", "importlib", "json",
+                       "math", "pathlib", "re", "sys", "numpy"}
     # Seul module du dépôt chargé par son chemin : le script d'état stationnaire. Aucun autre chargement
     # dynamique (indépendance de la contre-épreuve #66, symétrique de son propre test).
     assert '"etat_stationnaire"' in SCRIPT.read_text(encoding="utf-8")
@@ -198,22 +199,24 @@ def test_points_fixes_et_racine_nominale(maquette):
     assert max(r["racines_nominales"].values()) <= maquette.TOL_RACINE_NOMINALE
     assert maquette.controles_tenus(r) == []
     for x in r["releve"]:
-        assert x["verdict"] in ("reproduit", "écart", "sans objet")
+        assert x["verdict"] in ("reproduit", "écart", "sans objet", "origine")
         assert (x["remesure"] is None) == (x["verdict"] == "sans objet")
         assert x["remesure"] is None or math.isfinite(x["remesure"])
 
 
-# Chiffres du relevé en écart, liste exacte (#65) : la valeur de la fiche 5 à n_a = 4 (cause non établie). Les
-# 8 rayons φ ≠ 0 de la table φ de la fiche 9, en écart depuis l'amendement de E12 (historique de la spécification,
-# ligne 30), sont republiés à la table T1 dans la fiche (reprise du rang 9, constat m1 de `macro`) et reproduits.
-# Aucun chiffre en vigueur de la spécification n'y figure : un chiffre en vigueur qui passe en écart,
-# ou en « sans objet », fait échouer la batterie ; un écart qui se résorbe aussi, la liste est alors à revoir.
-ECARTS_ATTENDUS = frozenset({"instabilite17.a.n_a4.hausse"})
+# Chiffres du relevé en écart, liste exacte (#65) : aucun. Les 8 rayons φ ≠ 0 de la table φ de la fiche 9, en écart
+# depuis l'amendement de E12 (historique de la spécification, ligne 30), sont republiés à la table T1 dans la fiche
+# (reprise du rang 9, constat m1 de `macro`) et reproduits. La valeur de la fiche 5 à n_a = 4 (1,0415, calibration
+# indicative, cause de la non-reproduction non établie) est une valeur d'origine (#168) : la spécification la cite
+# comme telle à côté de 0,95, sa remesure à la table T1 (ligne 11 de tab:changements-v3x), relevée et reproduite.
+# Un chiffre en vigueur qui passe en écart, ou en « sans objet », fait échouer la batterie.
+ECARTS_ATTENDUS = frozenset()
+ORIGINES_ATTENDUES = {"instabilite17.a.n_a4.hausse": "instabilite17.a.n_a4.hausse.contre_epreuve"}
 #
 # Calibration du socle (M34) : la spécification republiée au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a) écrit
 # en vigueur les chiffres de la table T1 (#92, #55, #130, #62, #45), tous reproduits. Six chiffres sont sans objet à
 # la table T1 (λ_w = 0,18, #45) et barrés dans chacun de leurs paragraphes : les frontières en ν_H et h de
-# l'instabilité 17 (rayon de la lecture (a) sous 1 sur [0,3 ; 1] ; « sans objet », M34), les périodes de la lecture
+# l'instabilité 17 (rayon de la lecture (a) sous 1 sur [0,3 ; 2] en ν_H et [0,3 ; 1] en h ; « sans objet », M34), les périodes de la lecture
 # (a) (racine réelle à θ_H = 0,8) et les périodes de la branche ×2 (racines réelles). Ils restent au relevé, publiés
 # « sans objet » ; `test_chaque_chiffre_releve_a_sa_ligne` les lit barrés.
 SANS_OBJET_M34 = frozenset({
@@ -224,7 +227,18 @@ SANS_OBJET_M34 = frozenset({
     "socle.marge_conjointe.x2.baisse.periode",
     "socle.marge_conjointe.x2.hausse.periode",
 })
-NON_REPRODUITS_ATTENDUS = ECARTS_ATTENDUS | SANS_OBJET_M34
+NON_REPRODUITS_ATTENDUS = ECARTS_ATTENDUS | SANS_OBJET_M34 | set(ORIGINES_ATTENDUES)
+# Cause mesurée de chaque chiffre sans objet (#168), début de la justification publiée : frontière disparue de
+# l'intervalle balayé (`frontiere_ou_aucune`), racine dominante réelle (période sans paire complexe dominante).
+CAUSES_SANS_OBJET = {
+    "instabilite17.frontiere_h": "h, lecture (a), θ_H = 0,8, régime de hausse : rayon sous 1 aux 11 points de [0,3 ; 1]",
+    "instabilite17.frontiere_nu_H": "ν_H, lecture (a), θ_H = 0,8, régime de hausse : rayon sous 1 aux 11 points de "
+                                    "[0,3 ; 2]",
+    "menages_inflation.a.periode.max": "à θ_H = 0,8, racine dominante réelle (hausse : 0,983113, paire de module",
+    "menages_inflation.a.periode.min": "à θ_H = 0,8, racine dominante réelle (hausse : 0,983113, paire de module",
+    "socle.marge_conjointe.x2.baisse.periode": "racine dominante réelle (lecture (c), régime de baisse",
+    "socle.marge_conjointe.x2.hausse.periode": "racine dominante réelle (lecture (c), régime de hausse",
+}
 #
 # #45 (λ_w = 1 → 0,18, M34) : les variantes « toutes÷2 », « toutes×2 » et « lambda_w×2 » de la boucle salaires --
 # prix prennent λ_w relative à la table, × 0,5 et × 2, comme les autres vitesses (décision du mainteneur du
@@ -233,14 +247,60 @@ VARIANTES_RELATIVES_45 = ("toutes÷2", "toutes×2", "lambda_w×2")
 
 
 def test_ensemble_des_ecarts_fige(maquette):
-    """Liste exacte : 7 chiffres non reproduits sur 148, 1 en écart, antérieur à M34 (`ECARTS_ATTENDUS`), et 6 sans
-    objet à la table T1 (`SANS_OBJET_M34`) ; tous les autres, dont ceux republiés à la table T1, sont reproduits."""
+    """Liste exacte : 7 chiffres non reproduits sur 148, aucun en écart (`ECARTS_ATTENDUS`), 6 sans objet à la table
+    T1 (`SANS_OBJET_M34`), chacun avec sa cause mesurée (`CAUSES_SANS_OBJET`), et 1 valeur d'origine
+    (`ORIGINES_ATTENDUES`) dont la remesure en vigueur est reproduite ; tous les autres, dont ceux republiés à la
+    table T1, sont reproduits."""
     r = maquette.calculer()
     assert len(r["releve"]) == 148
-    assert len(ECARTS_ATTENDUS) == 1 and len(SANS_OBJET_M34) == 6 and not ECARTS_ATTENDUS & SANS_OBJET_M34
+    assert not ECARTS_ATTENDUS and len(SANS_OBJET_M34) == 6 and not set(ORIGINES_ATTENDUES) & SANS_OBJET_M34
     assert {x["ident"] for x in r["releve"] if not x["reproduit"]} == NON_REPRODUITS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "écart"} == ECARTS_ATTENDUS
     assert {x["ident"] for x in r["releve"] if x["verdict"] == "sans objet"} == SANS_OBJET_M34
+    par_ident = {x["ident"]: x for x in r["releve"]}
+    assert set(CAUSES_SANS_OBJET) == SANS_OBJET_M34
+    for ident, debut in CAUSES_SANS_OBJET.items():
+        assert par_ident[ident]["justification"].startswith(debut), (ident, par_ident[ident]["justification"])
+    assert {i for i, x in par_ident.items() if x["verdict"] == "origine"} == set(ORIGINES_ATTENDUES)
+    for ident, en_vigueur in ORIGINES_ATTENDUES.items():
+        assert par_ident[ident]["justification"].endswith(f"en vigueur : {en_vigueur}")
+        assert par_ident[en_vigueur]["verdict"] == "reproduit"
+        assert par_ident[en_vigueur]["remesure"] == par_ident[ident]["remesure"]  # même grandeur remesurée
+    sortie = io.StringIO()
+    maquette.afficher(r, sortie)
+    bilan = sortie.getvalue().splitlines()[-1]
+    assert "0 écarts : aucun" in bilan and "1 valeurs d'origine : instabilite17.a.n_a4.hausse" in bilan
+    assert "ÉCART" not in sortie.getvalue()
+
+
+def test_cause_sans_objet_et_valeur_d_origine(maquette, capsys):
+    """Une remesure sans objet publie la cause que rend `Chiffre.cause`, « cause non constatée » si elle n'en rend
+    pas ; une valeur d'origine (`Chiffre.origine`) a le verdict « origine », jamais « écart » ni « reproduit », et
+    nomme le chiffre en vigueur (#168). Les causes du relevé sont mesurées : frontière disparue si le rayon est sous 1
+    à chaque point de l'échantillon, aucune sinon ; racine dominante réelle seulement si elle l'est."""
+    lignes = maquette.lire_spec()
+    sans = lambda cause: maquette.Chiffre("essai", "275", "275", "période", "socle", "essai", lambda: None,  # noqa: E731
+                                          cause=cause)
+    assert maquette.evaluer(sans(lambda: "racine réelle"), lignes)["justification"] == "racine réelle"
+    assert maquette.evaluer(sans(lambda: None), lignes)["justification"] == "cause non constatée"
+    assert maquette.evaluer(sans(None), lignes)["justification"] == "cause non constatée"
+    for valeur in (2.75, 3.0):
+        c = maquette.Chiffre("essai", "2,75", "2,75", "rayon", "socle", "essai", lambda valeur=valeur: valeur,
+                             origine=("valeur de la fiche", "essai.en_vigueur"))
+        x = maquette.evaluer(c, lignes)
+        assert x["verdict"] == "origine" and not x["reproduit"]
+        assert x["justification"] == "valeur de la fiche ; en vigueur : essai.en_vigueur"
+    assert maquette.evaluer(maquette.Chiffre("essai", "2,75", "2,75", "rayon", "socle", "essai", lambda: 2.75),
+                            lignes)["justification"] is None
+    assert maquette._cause_sans_frontiere("essai", lambda x: 0.5 + 0.4 * x, 0.0, 1.0)() == (
+        "essai : rayon sous 1 aux 11 points de [0 ; 1] (au plus 0,900000), frontière disparue ; un passage double "
+        "entre deux points voisins reste hors de portée de la grille (#172, point 5)")
+    assert maquette._cause_sans_frontiere("essai", lambda x: 0.5 + x, 0.0, 1.0)() is None
+    assert maquette._cause_racine_reelle([("cas", lambda: 0.9 + 0.1j, lambda: 0.9)])() is None
+    assert maquette._cause_racine_reelle([("cas", lambda: 0.9 + 0j, lambda: None)])() == (
+        "racine dominante réelle (cas : 0,900000)")
+    # Aucune racine dominante réelle (θ_H = 1 seul : paires dominantes complexes) : cause non constatée.
+    assert maquette._cause_periodes_menages([(1.0, "hausse"), (1.0, "baisse")], "a")() is None
 
 
 # Mesures mises en cache qui lisent `BASE` à l'appel (lecture du module, 17/11/2026) : à vider quand `BASE` est
@@ -918,3 +978,42 @@ def test_variantes_de_F_publiees(maquette):
         assert (x["nature"], x["periode"]) == maquette.nature_racine(z)
     assert maquette.nature_racine(complex(-1.5, 0.0)) == ("réelle négative", 2.0)
     assert maquette.nature_racine(complex(0.5, 0.0)) == ("réelle positive", None)
+
+
+def test_juger_origines(maquette):
+    """`juger_origines` (#168) : une valeur d'origine garde son verdict si le chiffre en vigueur nommé est relevé,
+    reproduit, de même nature et de même remesure ; sinon elle passe en « écart », justification à l'appui. L'écart
+    d'une valeur d'origine est affiché « — » (le JSON garde sa valeur numérique)."""
+    def x(ident, verdict, remesure=0.95, nature="rayon", en_vigueur=None):
+        return {"ident": ident, "verdict": verdict, "remesure": remesure, "nature": nature, "ecart": -0.09,
+                "reproduit": verdict == "reproduit", "en_vigueur": en_vigueur, "justification": "valeur d'origine",
+                "publie": "1,0415", "lignes": [], "lignes_fiches": []}
+    origine = x("o", "origine", en_vigueur="v")
+    assert maquette.juger_origines([origine, x("v", "reproduit")])[0]["verdict"] == "origine"
+    for jumeaux, defaut in (([], "absent du relevé"), ([x("v", "écart")], "non reproduit (écart)"),
+                            ([x("v", "reproduit", remesure=0.94)], "d'une autre grandeur"),
+                            ([x("v", "reproduit", nature="période")], "d'une autre grandeur")):
+        juge = maquette.juger_origines([origine] + jumeaux)[0]
+        assert juge["verdict"] == "écart" and defaut in juge["justification"], (jumeaux, juge)
+    assert origine["verdict"] == "origine"  # l'entrée n'est pas modifiée
+    r = maquette.calculer()
+    r["releve"] = [origine, x("v", "reproduit")]
+    sortie = io.StringIO()
+    maquette.afficher(r, sortie)
+    ligne = next(l for l in sortie.getvalue().splitlines() if l.startswith("o "))
+    assert ligne.split()[1:5] == ["1,0415", "0,950000", "—", "origine"]
+
+
+def test_chaque_valeur_d_origine_a_son_jumeau_reproduit(maquette):
+    """Tout relevé déclaré « origine » nomme un chiffre en vigueur du relevé, de même nature et de même calcul, qui est
+    reproduit à la table en vigueur (#168)."""
+    lignes, fiches = maquette.lire_spec(), maquette.lire_fiches()
+    releve = {c.ident: c for c in maquette.releve()}
+    origines = [c for c in releve.values() if c.origine is not None]
+    assert {c.ident for c in origines} == set(ORIGINES_ATTENDUES)
+    for c in origines:
+        jumeau = releve[c.origine[1]]
+        assert jumeau.origine is None and jumeau.nature == c.nature
+        x, y = maquette.evaluer(c, lignes, fiches), maquette.evaluer(jumeau, lignes, fiches)
+        assert y["verdict"] == "reproduit" and x["remesure"] == y["remesure"]
+        assert maquette.juger_origines([x, y])[0]["verdict"] == "origine"
