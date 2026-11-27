@@ -491,8 +491,8 @@ MESSAGES_DES_CONDITIONS = {
     "marge_plafond_E1": lambda v: (f"plafond de E1 : ν_G PB − Γ̄ G = {v!r} ≤ 0 attendu > 0 (marge 1 − Γ̄ (G/PB)/ν_G "
                                    "≤ 0, sec:finances_publiques-conditions)"),
     "B": lambda v: f"B = {v!r} : dette brute ≥ 0 attendue (sec:finances_publiques-conditions)",
-    "B_Bk": lambda v: f"B_Bk = {v!r} : titres de la banque ≥ 0 attendus (sec:banque-conditions)",
-    "B_CB": lambda v: f"B_CB = {v!r} : titres de la banque centrale ≥ 0 attendus (sec:banque_centrale-conditions)",
+    "B_Bk": lambda v: f"B_Bk = {v!r} : titres de la banque ≥ 0 attendus (sec:finances_publiques-conditions)",
+    "B_CB": lambda v: f"B_CB = {v!r} : titres de la banque centrale ≥ 0 attendus (sec:finances_publiques-conditions)",
     "B_H": lambda v: f"B_H = {v!r} : titres des ménages nuls attendus au socle (C42)",
 }
 
