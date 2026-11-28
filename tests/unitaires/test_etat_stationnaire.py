@@ -19,6 +19,7 @@ import sys
 from dataclasses import fields, replace
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 RACINE = Path(__file__).resolve().parents[2]
@@ -2155,6 +2156,122 @@ def test_delta_r_alpha_non_fini_publie_nan(stationnaire):
                                                      tuple(v for v in stationnaire.VALEURS_PUBLIEES
                                                            if v[1] == "Δr̄_α à ζ = 8, point"))]
     assert len(ligne) == 1 and ligne[0]["verdict"] == "écart" and math.isnan(ligne[0]["script"])
+
+
+def _mesure_alpha_non_finie(stationnaire, monkeypatch, points, allocations=False):
+    """#188 : remplace `mesure_alpha` par la vraie mesure dont r̄_α (et, si `allocations`, chaque allocation) vaut NaN
+    aux π* de `points` ; tout le chemin de `superneutralite` en aval de `mesure_alpha` reste celui du script."""
+    vraie = stationnaire.mesure_alpha
+
+    def mesure(par, pi, n_a, lecture_ref="A"):
+        m = vraie(par, pi, n_a, lecture_ref)
+        if pi not in points:
+            return m
+        nan = {"r_alpha": math.nan}
+        if allocations:
+            nan["allocations"] = {q: math.nan for q in m["allocations"]}
+        return {**m, **nan}
+
+    monkeypatch.setattr(stationnaire, "mesure_alpha", mesure)
+
+
+def test_etendue_nan_des_qu_une_valeur_n_est_pas_finie(stationnaire):
+    """#188 : `_etendue` rend NaN dès qu'une valeur n'est pas finie, quelle que soit sa place ; sur des valeurs finies,
+    elle est identique bit à bit à `max − min`, liste ou générateur."""
+    tirages = np.random.default_rng(188).normal(size=(200, 7)).tolist()
+    for vals in tirages:
+        assert stationnaire._etendue(vals) == max(vals) - min(vals)
+        assert stationnaire._etendue(iter(vals)) == max(vals) - min(vals)
+    for non_fini in (math.nan, math.inf, -math.inf):
+        for place in range(3):
+            vals = [0.0, 0.5, 1.0]
+            vals[place] = non_fini
+            assert math.isnan(stationnaire._etendue(vals)), (non_fini, place)
+
+
+def test_verdict_seuil_sans_objet_sur_une_valeur_non_finie(stationnaire):
+    """#188 : verdict du rendu « sans objet (valeur non finie) » dès qu'une valeur n'est pas finie, jamais « tenu »
+    (NaN hors de tête ignoré par `max`) ni « non tenu » (comparaison à NaN fausse)."""
+    v = stationnaire._verdict_seuil
+    assert v([0.0005], 0.001) == "tenu" and v([0.002], 0.001) == "non tenu (défaut connu, #80)"
+    assert v([0.002, math.nan], 0.001) == v([0.0, math.nan], 0.001) == stationnaire.SANS_OBJET_NON_FINI
+    assert v([math.nan], 0.001) == v([math.inf], 0.001) == stationnaire.SANS_OBJET_NON_FINI
+    assert stationnaire.SANS_OBJET_NON_FINI == "sans objet (valeur non finie)"
+    assert v([0.0, 1e-13], 1e-12, "tenue", "NON TENUE") == "tenue"
+    assert v([0.0, math.nan], 1e-12, "tenue", "NON TENUE") == stationnaire.SANS_OBJET_NON_FINI
+
+
+@pytest.mark.parametrize("pi", [0.02, 0.10])
+def test_r_alpha_non_fini_hors_de_tete_propage_nan(stationnaire, base, monkeypatch, pi):
+    """#188, (a) et (c) : un r̄_α non fini hors de la tête du triplet {0 ; 2 ; 10 %} n'est plus masqué par max − min :
+    Δr̄_α vaut NaN au verdict, aux trois ζ et à n_a = 4 et 52 ; la ligne publiée « Δr̄_α, verdict (ζ = 8) » sort en
+    écart, script NaN. Le chemin passe par `mesure_alpha` (un remplacement de `Calculs.r_alpha` ne l'atteint pas)."""
+    _mesure_alpha_non_finie(stationnaire, monkeypatch, {pi})
+    calc = stationnaire.Calculs(base)
+    sn = calc.alpha()
+    assert math.isnan(sn["delta_r_alpha"])
+    assert sorted(sn["zeta"]) == sorted((stationnaire.ZETA_ILLUSTRATION,) + stationnaire.ZETA_PLAGE)
+    for z, d in sn["zeta"].items():
+        assert math.isnan(d["delta_r_alpha"]), z
+    for n in (4, 52):
+        assert math.isnan(sn["delta_r_alpha_n_a"][n]), n
+    assert math.isnan(sn["ecart_profil"])  # π* du triplet aussi dans le profil
+    liste = tuple(v for v in stationnaire.VALEURS_PUBLIEES if v[1] == "Δr̄_α, verdict (ζ = 8), point")
+    [ligne] = stationnaire.table_publiees(calc, liste)
+    assert ligne["verdict"] == "écart" and math.isnan(ligne["script"])
+
+
+def test_r_alpha_non_fini_dans_le_profil_propage_nan(stationnaire, base, resultat, monkeypatch):
+    """#188, (b) : un r̄_α non fini à π* = 3 % (profil hors du triplet, hors de tête) rend `ecart_profil` NaN ; Δr̄_α
+    du triplet, qui ne le lit pas, reste celui du script."""
+    _mesure_alpha_non_finie(stationnaire, monkeypatch, {0.03})
+    sn = stationnaire.superneutralite(replace(base, nu_G=stationnaire.NU_G_RETENU))
+    assert math.isnan(sn["ecart_profil"])
+    assert sn["delta_r_alpha"] == resultat["superneutralite"]["delta_r_alpha"]
+
+
+def test_lecture_beta_non_finie_hors_de_tete_propage_nan(stationnaire, base, monkeypatch):
+    """#188 (constat m1 de l'audit) : la lecture (β) passe par `etat_stationnaire` sans `r_neutre`, non par
+    `mesure_alpha`. Un état (β) non fini à π* = 10 % (hors de tête du triplet) rend NaN `beta_theta_G` et chaque
+    `beta_allocations[q]`, au lieu d'une étendue calculée sur les deux seuls états finis."""
+    vrai = stationnaire.etat_stationnaire
+    appels_beta = []
+
+    def etat(par, *args, **kwargs):
+        e = vrai(par, *args, **kwargs)
+        if args or kwargs or par.pi_cible != 0.10:  # (α) passe r_neutre et ϱ̄_L ; seule (β) à 10 % est visée
+            return e
+        appels_beta.append(par.pi_cible)
+        return {k: math.nan if isinstance(v, float) else v for k, v in e.items()}
+
+    monkeypatch.setattr(stationnaire, "etat_stationnaire", etat)
+    sn = stationnaire.superneutralite(replace(base, nu_G=stationnaire.NU_G_RETENU))
+    assert appels_beta == [0.10]
+    assert math.isnan(sn["beta_theta_G"])
+    assert sorted(sn["beta_allocations"]) == sorted(stationnaire.ALLOCATIONS_VERDICT
+                                                    + stationnaire.ALLOCATIONS_INVARIANTES
+                                                    + stationnaire.ALLOCATIONS_MESUREES)
+    for q, v in sn["beta_allocations"].items():
+        assert math.isnan(v), q
+    assert math.isfinite(sn["delta_r_alpha"])  # la lecture (α) n'est pas atteinte par l'injection
+
+
+def test_aucun_verdict_rendu_sur_une_mesure_non_finie(stationnaire, base, monkeypatch):
+    """#188, (d) : r̄_α et allocations non finis à π* = 10 % (hors de tête) ; les trois verdicts de la section de
+    superneutralité (Δr̄_α, allocations L2, invariance exacte) sortent « sans objet (valeur non finie) », aucun en
+    « tenu », « tenue », « non tenu (défaut connu, #80) » ni « NON TENUE »."""
+    _mesure_alpha_non_finie(stationnaire, monkeypatch, {0.10}, allocations=True)
+    tampon = io.StringIO()
+    stationnaire.afficher(stationnaire.calculer(base), tampon)
+    texte = tampon.getvalue()
+    debut = texte.index("## Superneutralité")
+    section = texte[debut:texte.index("\n## ", debut)]
+    verdicts = [l for l in section.splitlines() if l.startswith(("- verdict", "- invariance exacte"))]
+    assert len(verdicts) == 3
+    for l in verdicts:
+        assert l.endswith(": sans objet (valeur non finie)"), l
+    for mot in ("tenu", "tenue", "non tenu (défaut connu, #80)", "NON TENUE"):
+        assert not re.search(r"(?<![\w-])" + re.escape(mot) + r"(?![\w-])", section), mot
 
 
 def test_ligne_refusee_constat_publie_code_0(stationnaire, monkeypatch, capsys):
