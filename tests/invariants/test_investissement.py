@@ -47,7 +47,8 @@ SEUIL_D2 = 0.5  # e_I(120)/e_I(12) ≥ 0,5
 BANDE_DE_DISTRIBUTION = (0.2, 0.9)  # #55
 TOUR_DU_CHOC = 5
 NB_PAS_DES_DELAIS = 9
-TOURS_DU_REFUS = range(1, 13)  # tours 1 à 12 (C31)
+# Pas 0 à 11, tours 1 à 12 (C31 ; tour n = pas n − 1, comparé à `etat.t` d'ouverture, #209).
+TOURS_DU_REFUS = range(12)
 
 
 class Releve:
@@ -383,11 +384,11 @@ def test_refus_de_credit(socle, publier):
       satisfaite ΔL^d − ΔL publiée ;
     - effet sur Div_F, en unités du crédit nouveau de base du même pas, publié sans verdict à
       chaque pas des 40 (repères de la fiche 7 aux tours 1 à 3 : −50, −25 et −13 %), avec le
-      rebond à la levée (pas 13), le creux qui suit et le plus grand écart des pas 24 à 39 ;
-      revenu de dividendes des ménages (lignes 14 + 15), même unité, aux pas 1 et 13 (pièce des
+      rebond à la levée (pas 12), le creux qui suit et le plus grand écart des pas 24 à 39 ;
+      revenu de dividendes des ménages (lignes 14 + 15), même unité, aux pas 0 et 12 (pièce des
       chiffres de `sec:banque`, effet du refus de crédit) ;
-    - part directe du refus, Δligne 18/ΔL_base, publiée (−0,5 au tour 1, puis (1 − ς_L) fois une
-      demande qui a changé) ;
+    - part directe du refus, Δligne 18/ΔL_base, publiée (−0,5 au tour 1, pas 0, puis (1 − ς_L)
+      fois une demande qui a changé) ;
     - « Monnaie endogène », partie ς_L ≠ 0 : à la clôture de la phase 3, la variation de
       D_H + D_F (ligne 17 de la phase 3) égale au bit le montant exécuté de la ligne 18 ;
     - Div_F ≥ 0 et D_F ≥ 0 (lecture nette) inactives, ou désactivées au plus tard 12 tours après
