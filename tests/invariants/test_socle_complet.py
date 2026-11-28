@@ -23,7 +23,9 @@ dont les méthodes d'étape lisent une table modifiée (`bloc_9_compose`), des e
 - **un seul calcul du besoin d'émission par pas** (test de décompte) ;
 - **caisse** (critère 11, P158), **parts non payées** (critère 12, F9, P157), **placement raté**
   (P90), **bornes** (critère 16), **couverture** sur le moteur (F6, F7), **C59** (P156, P160),
-  **reprise** (critère 2) : seuils au docstring de chaque test.
+  **reprise** (critère 2) : seuils au docstring de chaque test ;
+- **endettement, dépôts** de la fiche 6 sous ϖ_L + 2 points (#139, critère de #169 ; P324,
+  P330) : seuil au docstring du test.
 
 Réaffirmés avec le bloc 9 réel (P162) : « Délais » des fiches 5 et 6, signe et date exacts sur la
 chaîne E3, E6, E5 → H6, F3.
@@ -1870,3 +1872,124 @@ def test_marge_de_caisse_des_menages_publiee(banc, socle, pi, publier):
     publier(f"Marge de caisse des ménages, π* = {100 * pi:g} % ({ETIQUETTE} ; sans verdict)", [
         f"D_H d'ouverture / T_H du pas : min {min(rapports):.4f}, max {max(rapports):.4f} ; "
         f"YD = Σ lignes de la colonne des ménages à {pire:.1e} S^H"])
+
+
+# --------------------------------------------------------------------------
+# Fiche 6, « Endettement », dépôts, sous ϖ_L + 2 points (#139, critère de #169 ; P324, P330)
+# --------------------------------------------------------------------------
+
+VARPI_L_CHOQUE = 0.04  # par an, taux de flux ; ϖ_L = 0,02 au sentier (table du bloc 7)
+NB_PAS_DE_L_ENDETTEMENT = 6720
+FENETRE_DE_L_ENDETTEMENT = range(6480, 6720)  # t ∈ [6 480 ; 6 720[
+PAS_DU_CRITERE_D_ORIGINE = 2159  # écart publié sans verdict (critère d'origine, #139)
+SEUIL_DEPOTS = 1e-6  # relatif, max sur la fenêtre (critère de #169, écrit avant l'essai)
+
+
+class ReleveDeL_Endettement:
+    """Observateur léger (6 720 pas) : par pas t, D_F d'ouverture, PIB du pas (lignes 1 à 4
+    exécutées, convention de B15), ligne 14 (Div_F), L/K de clôture, plan nominal servi
+    (v < y + IN^vol d'ouverture, définition du test du banc partiel) et valeur nette des
+    entreprises de clôture ; variables et état de clôture du dernier pas."""
+
+    def __init__(self, initial):
+        self._ouverture = initial
+        self._montants = {}
+        self.depots, self.pib, self.div, self.levier, self.servi, self.valeur_nette = (
+            [], [], [], [], [], [])
+        self.variables = {}
+        self.cloture = None
+
+    def relever(self, e):
+        if type(e) is ClotureDePhase:
+            for ligne, termes in e.montants:
+                if ligne in ("1", "2", "3", "4", "14"):
+                    self._montants[ligne] = sum(x for _, x in termes)
+        elif type(e) is FinDePas:
+            o, f, v = self._ouverture, e.etat, dict(e.variables_du_pas)
+            self.depots.append(o.D_F)
+            self.pib.append(sum(self._montants[ligne] for ligne in ("1", "2", "3", "4")))
+            self.div.append(self._montants["14"])
+            self.levier.append(f.L / f.K)
+            self.servi.append(v["v"] < v["y"] + o.IN_vol)
+            self.valeur_nette.append(idt.valeur_nette_stock(_positions(f), "entreprises"))
+            self.variables, self.cloture = v, f
+            self._ouverture, self._montants = f, {}
+
+
+@pytest.fixture(scope="module")
+def endettement_sous_varpi_L(socle):
+    """Socle complet, π* = 2 %, ϖ_L porté de 0,02 à 0,04 par an dans la table du bloc 7 dès le
+    pas 0 et maintenu (tables du sentier, table `banque` remplacée : composition dans `tests/`,
+    F1), depuis l'état initial résolu aux tables du sentier, 6 720 pas."""
+    sentier = socle.sentier(0.02)
+    tables = socle.parametres_du_sentier(sentier)
+    assert tables.banque.varpi_L.valeur == 0.02
+    choquees = dataclasses.replace(tables, banque=varier(tables.banque, varpi_L=VARPI_L_CHOQUE))
+    initial = socle.etat_initial(sentier)
+    releve = ReleveDeL_Endettement(initial)
+    derouler(socle, sentier, NB_PAS_DE_L_ENDETTEMENT, parametres=choquees, observateur=releve)
+    return sentier, tables, releve
+
+
+def test_endettement_depots_sous_varpi_L_releve_de_deux_points(endettement_sous_varpi_L,
+                                                                publier):
+    """Fiche 6, § 9.6, « Endettement » (7 (d)), partie dépôts, sur le socle complet (#139, critère
+    de #169, P324, P330, écrit avant l'essai) : ϖ_L + 2 points dès le pas 0, π* = 2 % ;
+    x_t = D_F d'ouverture du pas t/(n_a PIB_t), PIB_t = lignes 1 à 4 exécutées au pas t (B15),
+    en années de PIB ; référence x* = D_F/(n_a PIB) de la résolution (forme fermée
+    ν_F p v^e/(p v + ΔIN) du script, qui ne lit pas le taux), lue sur le sentier ; critère :
+    max sur t ∈ [6 480 ; 6 720[ de |x_t/x* − 1| ≤ 1e−6. Publiés sans verdict : écart au pas 2 159
+    (critère d'origine), levier (L/K de clôture sur lv*, pas où le plan nominal est servi) et
+    distribution (Div_F > 0 ; ΣDiv_F/Σ(Div_F + FU) sur les 12 tours 6 708 à 6 719), Δi_{L,t+1},
+    Δi_CB, Δi_{D,t+1} et Δr̂*_{t+1} au pas 6 719 (i_L et i_D du pas suivant, écrits en 8c, i_CB du
+    pas, r̂* du pas suivant écrit par le bloc 8, contre leurs valeurs résolues), et l'écart
+    relatif de Δr̂*_{t+1} à −Δϖ_L/(1 + π*). Probance publiée (lecture A de P330, visa du
+    mainteneur du 28/11/2026, formulation de `monnaie`) : tenu ; probant pour le retour sur x* en
+    boucle fermée et pour l'indépendance de x* à un taux des dépôts durablement abaissé avec le
+    taux directeur (Δi_D = Δi_CB = −2 points) ; non probant pour un i_L durablement relevé : sous
+    l'action intégrale de la règle (BC2) et ϱ̄_L constante (P128), le taux neutre retenu absorbe
+    ϖ_L, Δr̂* = −Δϖ_L/(1 + π*) (Δi_{L,t+1} et Δr̂* mesurés au pas 6 719). L'ancien verdict
+    (banc partiel, 2 160 pas) reste publié :
+    `test_investissement.py::test_endettement_depots_sur_leur_forme_fermee_apres_2160_pas`."""
+    sentier, tables, r = endettement_sous_varpi_L
+    x_etoile = sentier.e["D_F"] / (N_A * sentier.e["PIB"])
+    x = [d / (N_A * pib) for d, pib in zip(r.depots, r.pib)]
+    assert len(x) == NB_PAS_DE_L_ENDETTEMENT
+    pire = max(abs(x[t] / x_etoile - 1.0) for t in FENETRE_DE_L_ENDETTEMENT)
+    t_pire = max(FENETRE_DE_L_ENDETTEMENT, key=lambda t: abs(x[t] / x_etoile - 1.0))
+    origine = x[PAS_DU_CRITERE_D_ORIGINE] / x_etoile - 1.0
+    lv = tables.investissement.lv_etoile
+    servis = [abs(k / lv - 1.0) for k, s in zip(r.levier, r.servi) if s]
+    dernier = NB_PAS_DE_L_ENDETTEMENT - 1
+    fenetre = range(dernier - N_A + 1, dernier + 1)
+    div = sum(r.div[k] for k in fenetre)
+    fu = r.valeur_nette[dernier] - r.valeur_nette[fenetre[0] - 1]
+    delta_i_L = r.variables["i_L_suivant"] - sentier.s["i_L_1"]
+    delta_i_CB = r.variables["i_CB"] - sentier.s["i_CB"]
+    delta_i_D = r.cloture.i_D - sentier.s["i_D_1"]
+    delta_r_hat = r.cloture.r_hat_etoile - sentier.s["r_hat_1"]
+    # Absorption attendue par le taux neutre retenu : −Δϖ_L/(1 + π*) (lecture A de P330).
+    absorption = -(VARPI_L_CHOQUE - tables.banque.varpi_L.valeur) / (1.0 + sentier.pi)
+    publier(f"Fiche 6, endettement (dépôts), ϖ_L + 2 points dès le pas 0, π* = 2 %, 6 720 pas "
+            f"({ETIQUETTE} ; #139, critère de #169)", [
+        f"x* = {x_etoile:.12f} (résolution) ; max |x_t/x* − 1| sur [6 480 ; 6 720[ : {pire:.2e} "
+        f"(pas {f'{t_pire:_}'.replace('_', ' ')} ; seuil 1e−6, verdict)",
+        f"écart au pas 2 159 (critère d'origine, sans verdict) : {origine:.2e}",
+        f"levier : max |L/K/lv* − 1| {max(servis) if servis else float('nan'):.1e} sur "
+        f"{len(servis)} pas servis sur {NB_PAS_DE_L_ENDETTEMENT} (sans verdict)",
+        f"distribution : Div_F min {min(r.div):.6e}, Div_F ≤ 0 à {sum(d <= 0.0 for d in r.div)} "
+        f"pas ; ΣDiv_F/Σ(Div_F + FU) sur les pas 6 708 à 6 719 : {div / (div + fu):.6f} "
+        f"(sans verdict)",
+        f"au pas 6 719 : Δi_{{L,t+1}} = {delta_i_L:+.6e}, Δi_CB = {delta_i_CB:+.6e}, "
+        f"Δi_{{D,t+1}} = {delta_i_D:+.6e}, Δr̂*_{{t+1}} = {delta_r_hat:+.6e} par an, contre la "
+        f"résolution ; Δr̂*_{{t+1}}/(−Δϖ_L/(1 + π*)) − 1 = {delta_r_hat / absorption - 1.0:+.2e} "
+        f"(sans verdict)",
+        # Probance du verdict (lecture A de P330), publiée telle quelle si le critère est tenu.
+        f"tenu ; probant pour le retour sur x* en boucle fermée et pour l'indépendance de x* à "
+        f"un taux des dépôts durablement abaissé avec le taux directeur (Δi_D = Δi_CB = −2 "
+        f"points) ; non probant pour un i_L durablement relevé : sous l'action intégrale de la "
+        f"règle (BC2) et ϱ̄_L constante (P128), le taux neutre retenu absorbe ϖ_L, "
+        f"Δr̂* = −Δϖ_L/(1 + π*) (Δi_{{L,t+1}} = {delta_i_L:+.6e}, Δr̂* = {delta_r_hat:+.6e} au "
+        f"pas 6 719)" if pire <= SEUIL_DEPOTS
+        else "non tenu (probance de la lecture A de P330 sans objet)"])
+    assert pire <= SEUIL_DEPOTS

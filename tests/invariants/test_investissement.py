@@ -677,7 +677,9 @@ HORIZON_DU_VERDICT_DES_VITESSES = 6480
 SEUIL_FORMES_FERMEES = 1e-6  # relatif, après 24 000 pas
 NB_PAS_DES_FORMES_FERMEES = 24_000
 NB_PAS_DE_L_ENDETTEMENT = 2160
-SEUIL_DEPOTS = 1e-6  # relatif, après 2 160 pas
+# Déroulement du banc partiel prolongé jusqu'à la fenêtre du critère de #169 (mesure sans verdict).
+NB_PAS_DU_BANC_PARTIEL = 6720
+FENETRE_DU_BANC_PARTIEL = range(6480, 6720)  # t ∈ [6 480 ; 6 720[
 
 
 def _ratios_de_la_fiche_6(releve, initial, t):
@@ -769,7 +771,8 @@ INTERETS_SUR_L_OUVERTURE = {"9": _ligne_9_sur_l_ouverture, "10": _ligne_10_sur_l
 @pytest.fixture(scope="module")
 def endettement(socle):
     """i_L relevé de 2 points de façon permanente (bloc d'essai 7, taux exogène, lignes 9 et 10
-    sur l'ouverture ; bloc d'essai 8), π* = 2 %, blocs 2 à 6 réels, 2 160 pas.
+    sur l'ouverture ; bloc d'essai 8), π* = 2 %, blocs 2 à 6 réels, 6 720 pas : les verdicts
+    portent sur les 2 160 premiers ; les pas 6 480 à 6 719 donnent une mesure sans verdict.
 
     **Réserve déclarée** (avis de `monnaie`, rang 4) : le bloc d'essai 7 garde le dividende de la
     banque (ligne 15) au sentier ; le surplus d'intérêt payé par les entreprises reste donc à la
@@ -777,14 +780,15 @@ def endettement(socle):
     n'en dépendent pas ; la demande des ménages, si."""
     sentier = socle.sentier(0.02)
     reels = sans(socle, "banque", "banque_centrale")
-    initial, releve = derouler(socle, sentier, NB_PAS_DE_L_ENDETTEMENT, reels=reels,
+    initial, releve = derouler(socle, sentier, NB_PAS_DU_BANC_PARTIEL, reels=reels,
                                regles={"i_L": _taux_releve(socle, 0.02)},
                                lignes=INTERETS_SUR_L_OUVERTURE)
-    ouvertures = _ouvertures(initial, releve) + [releve.pas[-1]["etat"]]
-    dernier = releve.pas[-1]
-    pib = dernier["1"] + dernier["2"] + dernier["3"] + dernier["4"]
+    ouvertures = _ouvertures(initial, releve)
+    # x_t = D_F d'ouverture du pas t/(n_a PIB_t), PIB_t = lignes 1 à 4 du pas t (B12).
+    x = [o.D_F / (N_A * (p["1"] + p["2"] + p["3"] + p["4"]))
+         for o, p in zip(ouvertures, releve.pas)]
     return {"sentier": sentier, "releve": releve, "ouvertures": ouvertures,
-            "depots": ouvertures[-2].D_F / (N_A * pib),
+            "depots": x[NB_PAS_DE_L_ENDETTEMENT - 1], "x": x,
             "forme": sentier.e["D_F"] / (N_A * sentier.e["PIB"])}
 
 
@@ -792,44 +796,53 @@ def test_endettement_sous_un_taux_releve_de_deux_points(endettement, publier):
     """Fiche 6, § 9.6, « Endettement » (7 (d)), classe (b-x) : i_L relevé de 2 points de façon
     permanente (bloc d'essai 7, taux exogène, lignes 9 et 10 sur l'ouverture ; bloc d'essai 8),
     π* = 2 %, 2 160 pas : L_{t+1}/K_{t+1} = lv* à 1e−12 relatif à chaque pas où le plan nominal
-    est servi ; distribution positive (Div_F > 0) à chaque pas. Dépôts au PIB : publiés ici,
-    jugés par le test suivant."""
+    est servi ; distribution positive (Div_F > 0) à chaque pas. Dépôts au PIB : publiés sans
+    verdict par le test suivant."""
     releve, ouvertures = endettement["releve"], endettement["ouvertures"]
     pire_levier, servis = 0.0, 0
-    for t, p in enumerate(releve.pas):
+    for t, p in enumerate(releve.pas[:NB_PAS_DE_L_ENDETTEMENT]):
         v, e = p["variables"], p["etat"]
         assert p["14"] > 0.0, t
         if v["v"] < v["y"] + ouvertures[t].IN_vol:
             servis += 1
             pire_levier = max(pire_levier, ecart(e.L / e.K, TABLE.lv_etoile))
-    depots, forme = endettement["depots"], endettement["forme"]
-    # Dernier pas du relevé (dépôts d'ouverture de ce pas, `endettement`), séparateur de milliers
-    # à l'espace.
-    dernier = f"{NB_PAS_DE_L_ENDETTEMENT - 1:_}".replace("_", " ")
     publier("Bloc 6, endettement, i_L + 2 points permanent (blocs 2 à 6 réels, taux exogène)", [
         f"levier : {pire_levier:.1e} rel. sur {servis} pas servis (seuil 1e−12) ; Div_F > 0 à "
-        f"chaque pas ; D_F/(n_a PIB) au pas {dernier} : {depots:.9f}, "
-        f"forme fermée {forme:.9f}, "
-        f"écart {ecart(depots, forme):.1e} (seuil 1e−6 ; verdict : test suivant)"])
+        f"chaque pas ; dépôts au PIB : test suivant (sans verdict)"])
     assert servis > 0 and pire_levier <= SEUIL_LEVIER
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "#139 : critère « Endettement » de la fiche 6 (dépôts au PIB à 1e−6 après 2 160 pas) non "
-    "tenu sur le banc (b-x) sous i_L + 2 points permanent, convergence oscillante lente vers la "
-    "forme fermée (P140) ; tenu au rang 6 par la seule phase de l'oscillation, à nouveau non tenu "
-    "à λ_w = 0,18 (rang 7, #45) ; critère non déplacé"))
-def test_endettement_depots_sur_leur_forme_fermee_apres_2160_pas(endettement):
-    """Fiche 6, § 9.6, « Endettement » (7 (d)), partie dépôts : D_F d'ouverture/(n_a PIB du pas)
-    (convention de B12) sur sa forme fermée, ν_F p v^e/(p v + ΔIN) du script, qui ne lit pas le
-    taux, à 1e−6 relatif après 2 160 pas. Non tenu (P140, issue #139) : échec attendu strict.
-    Jusqu'à ν_H = 1 : écart −6,2e−6 à ϑ = 0,15. Rang 6 (ν_H = 1,1, #62) : −8,96e−7 au pas 2 159,
-    passage dû à la seule phase de l'oscillation (|écart| ≤ 1e−6 aux seuls pas 0, 510, 1 553 à
-    1 562 et 2 103 à 2 162 sur 2 400 pas), marque retirée. Rang 7 (λ_w = 0,18, #45 ; sonde de
-    2 400 pas, 17/11/2026) : −8,04e−6 au pas 2 159 ; |écart| ≤ 1e−6 aux seuls pas 0, 475, 1 522 à
-    1 539 et 1 812 à 1 857 ; de −8,05e−6 à −5,88e−6 sur les pas 2 160 à 2 399 ; marque remise
-    (décision du mainteneur du 17/11/2026). Le critère n'est pas déplacé."""
-    assert ecart(endettement["depots"], endettement["forme"]) <= SEUIL_DEPOTS
+def test_endettement_depots_sur_leur_forme_fermee_apres_2160_pas(endettement, publier):
+    """Fiche 6, § 9.6, « Endettement » (7 (d)), partie dépôts, sur le banc partiel : D_F
+    d'ouverture/(n_a PIB du pas) (convention de B12) sur sa forme fermée, ν_F p v^e/(p v + ΔIN) du
+    script, qui ne lit pas le taux, au pas 2 159. **Mesure publiée sans verdict** : le critère
+    d'origine (1e−6 relatif après 2 160 pas), ponctuel sur une série oscillante qui converge
+    lentement, est remplacé de façon prospective par le critère de #169 (max sur
+    [6 480 ; 6 720[, socle complet, ϖ_L + 2 points ; P324, confirmée par P330), jugé par
+    `test_socle_complet.py::test_endettement_depots_sous_varpi_L_releve_de_deux_points`. L'ancien
+    verdict reste publié (P330) : non tenu (P140, #139) ; jusqu'à ν_H = 1 : écart −6,2e−6 à
+    ϑ = 0,15 ; rang 6 (ν_H = 1,1, #62) : −8,96e−7 au pas 2 159, passage dû à la seule phase de
+    l'oscillation (|écart| ≤ 1e−6 aux seuls pas 0, 510, 1 553 à 1 562 et 2 103 à 2 162 sur
+    2 400 pas) ; rang 7 (λ_w = 0,18, #45 ; sonde de 2 400 pas, 17/11/2026) : −8,04e−6 au pas
+    2 159, échec attendu remis (P237, décision du mainteneur du 17/11/2026) ; |écart| ≤ 1e−6 aux
+    seuls pas 0, 475, 1 522 à 1 539 et 1 812 à 1 857 ; de −8,05e−6 à −5,88e−6 sur les pas 2 160 à
+    2 399. Publié aussi sans verdict (option du mainteneur, 28/11/2026) : max sur
+    t ∈ [6 480 ; 6 720[ de |x_t/x* − 1| sur ce banc partiel à taux exogène, x* la forme fermée.
+    Renvois : P237, P324, P330."""
+    depots, forme, x = endettement["depots"], endettement["forme"], endettement["x"]
+    # Dernier pas de l'horizon d'origine (dépôts d'ouverture de ce pas), séparateur de milliers à
+    # l'espace.
+    dernier = f"{NB_PAS_DE_L_ENDETTEMENT - 1:_}".replace("_", " ")
+    pire = max(ecart(x[t], forme) for t in FENETRE_DU_BANC_PARTIEL)
+    t_pire = max(FENETRE_DU_BANC_PARTIEL, key=lambda t: ecart(x[t], forme))
+    publier("Bloc 6, endettement, dépôts au PIB, i_L + 2 points permanent (blocs 2 à 6 réels, "
+            "taux exogène ; sans verdict, critère de #169 au socle complet)", [
+        f"D_F/(n_a PIB) au pas {dernier} : {depots:.9f}, forme fermée {forme:.9f}, "
+        f"écart {ecart(depots, forme):.1e} (critère d'origine 1e−6 remplacé de façon prospective "
+        f"(P324, P330) ; ancien verdict publié : non tenu)",
+        f"max |x_t/x* − 1| sur [6 480 ; 6 720[ : {pire:.2e} "
+        f"(pas {f'{t_pire:_}'.replace('_', ' ')} ; sans verdict)"])
+    assert math.isfinite(depots)
 
 
 @pytest.fixture(scope="module")
