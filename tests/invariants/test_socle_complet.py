@@ -25,7 +25,9 @@ dont les méthodes d'étape lisent une table modifiée (`bloc_9_compose`), des e
   (P90), **bornes** (critère 16), **couverture** sur le moteur (F6, F7), **C59** (P156, P160),
   **reprise** (critère 2) : seuils au docstring de chaque test ;
 - **endettement, dépôts** de la fiche 6 sous ϖ_L + 2 points (#139, critère de #169 ; P324,
-  P330) : seuil au docstring du test.
+  P330) : seuil au docstring du test ;
+- **bornes (c)** de la fiche 6 sous le refus de la moitié du crédit aux tours 1 à 12 (#140,
+  P150) : critère au docstring du test.
 
 Réaffirmés avec le bloc 9 réel (P162) : « Délais » des fiches 5 et 6, signe et date exacts sur la
 chaîne E3, E6, E5 → H6, F3.
@@ -179,14 +181,17 @@ def assembler(socle, sentier, bloc_9=None, parametres=None):
 
 
 def derouler(socle, sentier, nb_pas, *, bloc_9=None, initial=None, parametres=None,
-             varsigma_B=None, observateur=None):
-    """`nb_pas` pas du socle complet ; `varsigma_B` : t → ς_{B,t} (placement raté), nul sinon."""
+             varsigma_B=None, varsigma_L=None, observateur=None):
+    """`nb_pas` pas du socle complet ; `varsigma_B` : t → ς_{B,t} (placement raté), `varsigma_L` :
+    t → ς_{L,t} (refus de crédit, C31), t pas d'ouverture, nuls sinon."""
     o = assembler(socle, sentier, bloc_9, parametres)
     etat = socle.etat_initial(sentier) if initial is None else initial
     releve = Releve() if observateur is None else observateur
     for _ in range(nb_pas):
         part = 0.0 if varsigma_B is None else varsigma_B(etat.t)
-        etat = ordo.executer_pas(etat, socle.entrees_du_tour(varsigma_B=part), o, releve)
+        refus = 0.0 if varsigma_L is None else varsigma_L(etat.t)
+        etat = ordo.executer_pas(etat, socle.entrees_du_tour(varsigma_L=refus, varsigma_B=part),
+                                 o, releve)
     return etat, releve
 
 
@@ -1993,3 +1998,159 @@ def test_endettement_depots_sous_varpi_L_releve_de_deux_points(endettement_sous_
         f"pas 6 719)" if pire <= SEUIL_DEPOTS
         else "non tenu (probance de la lecture A de P330 sans objet)"])
     assert pire <= SEUIL_DEPOTS
+
+
+# --------------------------------------------------------------------------
+# Fiche 6, « Bornes » (c), refus de la moitié du crédit aux tours 1 à 12 (#140, P150)
+# --------------------------------------------------------------------------
+
+PART_REFUSEE = 0.5  # ς_L, part refusée de la hausse demandée (C31)
+PAS_DU_REFUS = range(12)  # pas 0 à 11, tours 1 à 12 (tour n = pas n − 1)
+FENETRE_DES_BORNES = range(24)  # A ⊂ [0 ; 23] (critère de #140, écrit avant l'essai)
+
+
+def _refus_de_moitie(t):
+    return PART_REFUSEE if t in PAS_DU_REFUS else 0.0
+
+
+@pytest.fixture(scope="module")
+def refus_de_moitie(socle):
+    """π* → (relevé, arrêt) : socle complet, ς_L = 0,5 aux pas 0 à 11 puis 0 (entrée de scénario,
+    composition dans `tests/`, F1), depuis l'état initial résolu, 720 pas ; `arrêt` : l'exception
+    du noyau ou du moteur qui a interrompu la trajectoire, `None` sinon."""
+    rendus = {}
+    for pi in socle.POINTS_PI:
+        releve, arret = Releve(), None
+        try:
+            derouler(socle, socle.sentier(pi), NB_PAS, varsigma_L=_refus_de_moitie,
+                     observateur=releve)
+        except (ArretNoyau, ArretMoteur) as e:
+            arret = e
+        rendus[pi] = (releve, arret)
+    return rendus
+
+
+def _intervalle_dans_la_fenetre(actifs):
+    """Critère de #140 : A vide, ou A ⊂ [0 ; 23] intervalle d'entiers consécutifs."""
+    return not actifs or (actifs[0] >= FENETRE_DES_BORNES[0]
+                          and actifs[-1] <= FENETRE_DES_BORNES[-1]
+                          and actifs == list(range(actifs[0], actifs[-1] + 1)))
+
+
+def _pas_actifs(choc):
+    """Borne → liste des pas où elle est active (plancher de Div_F ; D_F ≥ 0 en lecture nette)."""
+    return {"plancher de Div_F (ligne 14 = 0)": [p["t"] for p in choc if p["14"] == 0.0],
+            "D_F ≥ 0 (D_F de clôture ≤ 0)": [p["t"] for p in choc if p["etat"].D_F <= 0.0]}
+
+
+def _ensemble_publie(a):
+    """« actif à aucun pas » ; « actif aux pas a à b (n pas) » si A est un intervalle d'entiers
+    consécutifs ; la liste exacte sinon."""
+    if not a:
+        return "actif à aucun pas"
+    if a == list(range(a[0], a[-1] + 1)):
+        return f"actif aux pas {a[0]} à {a[-1]} ({len(a)} pas)"
+    return f"actif aux pas {a} ({len(a)} pas)"
+
+
+def _probance_des_bornes(choc, controle):
+    """Lignes de probance de #140, sans seuil, sur les n = len(choc) pas déroulés (720 hors
+    arrêt), appariés pas à pas au contrôle."""
+    n = len(choc)
+    if n == 0:
+        return ["aucun pas déroulé : probance sans objet"]
+    pas, fenetre = range(n), range(min(n, len(FENETRE_DES_BORNES)))
+    t_div = min(pas, key=lambda t: choc[t]["14"])
+    t_rap = min(pas, key=lambda t: choc[t]["14"] / controle[t]["14"])
+    d_f = [p["etat"].D_F / idt.echelle_bilan(_positions(p["etat"]), "entreprises") for p in choc]
+    t_df = min(pas, key=lambda t: d_f[t])
+    baisses = [choc[t]["variables"]["I_vol_plan"] / controle[t]["variables"]["I_vol_plan"] - 1.0
+               for t in fenetre]
+    t_i = min(fenetre, key=lambda t: baisses[t])
+    non_satisfaite = sum(p["variables"]["Delta_L_d"] - p["18"] for p in choc)
+    servi_au_controle = sum(controle[t]["18"] for t in PAS_DU_REFUS)
+    ecarts = [controle[t]["etat"].L - choc[t]["etat"].L for t in pas]
+    t_l = max(fenetre, key=lambda t: ecarts[t])
+    relatifs = [ecarts[t] / controle[t]["etat"].L for t in pas]
+    t_r, fin = max(pas, key=lambda t: relatifs[t]), n - 1
+    ln_p = math.log(choc[fin]["variables"]["p"] / controle[fin]["variables"]["p"])
+    div_bk = [p["t"] for p in choc if p["15"] == 0.0]
+    return [
+        *(f"{nom} : {_ensemble_publie(a)}" for nom, a in _pas_actifs(choc).items()),
+        f"ligne 14 (Div_F) : min {choc[t_div]['14']:.6e} u.m. par pas (pas {t_div}) ; "
+        f"min ligne 14/contrôle {choc[t_rap]['14'] / controle[t_rap]['14']:.6f} (pas {t_rap})",
+        f"D_F/S^F de clôture : min {d_f[t_df]:.6f} (pas {t_df})",
+        f"I^{{vol,plan}}/contrôle − 1 sur les pas 0 à {fenetre[-1]} : plus forte baisse "
+        f"{baisses[t_i]:+.4%} (pas {t_i})",
+        f"demande de crédit non satisfaite cumulée (Σ(ΔL^d − ligne 18), {n} pas ; le cumul "
+        f"inclut le report (redemandes)) : {non_satisfaite:.6e} u.m., "
+        f"{non_satisfaite / servi_au_controle:.4f} fois le crédit nouveau cumulé du contrôle "
+        f"(Σ ligne 18) des pas 0 à 11",
+        f"écart de stock maximal max_t (L^c_t − L^choc_t), L de clôture, pas 0 à "
+        f"{fenetre[-1]} : {ecarts[t_l]:.6e} u.m., {ecarts[t_l] / servi_au_controle:.4f} fois le "
+        f"même dénominateur (pas {t_l})",
+        f"écart relatif de stock (L^c_t − L^choc_t)/L^c_t : max {relatifs[t_r]:.4e} (pas {t_r}) ; "
+        f"au pas {fin} {relatifs[fin]:.4e}, ln(p^choc/p^c) {ln_p:.4e} ; résidu terminal : effet "
+        f"de niveau des prix (la règle cible l'inflation, pas le niveau)",
+        "Div_Bk = 0 (ligne 15, fiche 7) aux pas : " + (str(div_bk) if div_bk else "aucun")]
+
+
+def test_critere_des_bornes_de_140_sur_des_ensembles_synthetiques():
+    """Prédicat du critère de #140 sur des ensembles de pas actifs écrits à la main : vide,
+    intervalles inclus dans [0 ; 23] admis ; trou (réactivation), débordement après 23 refusés."""
+    admis = ([], [0], [23], list(range(24)), list(range(3, 9)))
+    refuses = ([0, 2], [5, 6, 8], [23, 24], [24], list(range(10, 30)))
+    assert all(_intervalle_dans_la_fenetre(a) for a in admis)
+    assert not any(_intervalle_dans_la_fenetre(a) for a in refuses)
+
+
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_bornes_c_sous_le_refus_de_la_moitie_du_credit(banc, refus_de_moitie, pi, publier):
+    """Fiche 6, § 9.6, « Bornes » (c), partie refus de crédit (C31), sur le socle complet (#140,
+    critère de P150, écrit avant l'essai) : ς_L,t = 0,5 aux pas 0 à 11 (tours 1 à 12), 0 ensuite ;
+    contrôle apparié (même banc sans choc, `banc`) ; 720 pas. Bornes surveillées : plancher du
+    dividende des entreprises, active au pas t si la ligne 14 exécutée = 0 ; D_F ≥ 0 en lecture
+    nette, active si D_F de clôture ≤ 0. Critère : 720 pas sans arrêt du noyau ni du moteur ;
+    pour chaque borne, l'ensemble A des pas actifs est vide, ou A ⊂ [0 ; 23] et A est un
+    intervalle d'entiers consécutifs. Contrôle du scénario : ligne 18 = clause de F1 sous ς_L,
+    au bit, à chaque pas. Probance (intention reportée, P150), publiée sans seuil : nombre de pas
+    actifs ; min de la ligne 14 (u.m. par pas) et du rapport ligne 14/contrôle ; min de D_F/S^F
+    de clôture ; plus forte baisse relative de I^{vol,plan} contre le contrôle sur les pas 0 à
+    23 ; demande de crédit non satisfaite cumulée Σ(ΔL^d − ligne 18) sur 720 pas (u.m., et
+    rapportée au crédit nouveau cumulé du contrôle, Σ ligne 18, sur les pas 0 à 11), qui inclut
+    le report : F1 vise un niveau et redemande au pas suivant le crédit refusé, chaque redemande
+    est comptée (réserve de `macro`, décision du mainteneur) ; à côté, sans seuil, l'écart de
+    stock maximal max_t (L^c_t − L^choc_t) sur les pas 0 à 23 (fenêtre du refus et de la
+    désactivation), L stock de crédit des entreprises à la clôture, en u.m. et rapporté au même
+    dénominateur, avec son pas ; l'écart relatif (L^c_t − L^choc_t)/L^c_t, max sur 720 pas avec
+    son pas, et sa valeur au dernier pas à côté de ln(p^choc/p^c) au même pas : le résidu
+    terminal est un effet de niveau des prix, la règle ciblant l'inflation et non le niveau
+    (avis de `macro`) ; pas où Div_Bk = 0 (ligne 15, fiche 7). Si
+    aucune borne ne s'active : « tenu, non probant pour le délai de désactivation » (verdict
+    visé par le mainteneur le 28/11/2026 ; non probant de façon structurelle, le refus ne
+    portant que sur la hausse demandée et le crédit refusé étant redemandé : suite à #210). En
+    cas d'arrêt, le pas atteint, l'arrêt et la probance sur la partie déroulée sont publiés
+    avant l'échec."""
+    releve, arret = refus_de_moitie[pi]
+    if arret is not None:
+        publier(f"Fiche 6, bornes (c), refus de la moitié du crédit, π* = {100 * pi:g} % : "
+                f"arrêt capté ({ETIQUETTE} ; #140)", [
+            f"pas atteint : {len(releve.pas)} sur {NB_PAS} ; arrêt : {arret!r}",
+            *_probance_des_bornes(releve.pas, banc[pi][2].pas)])
+    assert arret is None, f"arrêt au pas {len(releve.pas)} : {arret!r}"
+    controle = banc[pi][2].pas
+    choc = releve.pas
+    assert len(choc) == len(controle) == NB_PAS
+    for p in choc:
+        assert p["18"] == bloc_6.credit_servi(_refus_de_moitie(p["t"]),
+                                              p["variables"]["Delta_L_d"]), p["t"]
+    actifs = _pas_actifs(choc)
+    tenu = all(_intervalle_dans_la_fenetre(a) for a in actifs.values())
+    nb_actifs = sum(len(a) for a in actifs.values())
+    publier(f"Fiche 6, bornes (c), refus de la moitié du crédit aux pas 0 à 11 (tours 1 à 12), "
+            f"π* = {100 * pi:g} %, 720 pas ({ETIQUETTE} ; #140, critère de P150)", [
+        *_probance_des_bornes(choc, controle),
+        f"pas actifs (deux bornes) : {nb_actifs} ; verdict : "
+        + ("non tenu" if not tenu else "tenu" if nb_actifs
+           else "tenu, non probant pour le délai de désactivation")])
+    assert tenu, actifs
