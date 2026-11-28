@@ -23,7 +23,15 @@ dont les méthodes d'étape lisent une table modifiée (`bloc_9_compose`), des e
 - **un seul calcul du besoin d'émission par pas** (test de décompte) ;
 - **caisse** (critère 11, P158), **parts non payées** (critère 12, F9, P157), **placement raté**
   (P90), **bornes** (critère 16), **couverture** sur le moteur (F6, F7), **C59** (P156, P160),
-  **reprise** (critère 2) : seuils au docstring de chaque test.
+  **reprise** (critère 2) : seuils au docstring de chaque test ;
+- **endettement, dépôts** de la fiche 6 sous ϖ_L + 2 points (#139, critère de #169 ; P324,
+  P330) : seuil au docstring du test ;
+- **bornes (c)** de la fiche 6 sous le refus de la moitié du crédit aux tours 1 à 12 (#140,
+  P150) : critère au docstring du test ;
+- **#131, point 2** (mesure, constat sans verdict du modèle ; protocole de `monnaie` écrit avant
+  l'essai, `17c26c2`) : terme de Jensen de BC2 sous les formes (A), bloc 8 réel, et (L), BC2 en
+  log par sous-classe du bloc 8 dans `tests/` ; seuls les contrôles de validité K1 à K4 sont
+  assertés, la classification (F), (C) ou (I) est publiée.
 
 Réaffirmés avec le bloc 9 réel (P162) : « Délais » des fiches 5 et 6, signe et date exacts sur la
 chaîne E3, E6, E5 → H6, F3.
@@ -46,13 +54,15 @@ from typing import NamedTuple
 import numpy as np
 import pytest
 
+from nations.blocs import banque_centrale as bloc_8
 from nations.blocs import finances_publiques as bloc_9
 from nations.blocs import investissement as bloc_6
 from nations.blocs import menages as bloc_5
-from nations.blocs.banque_centrale import taux_indique_par_la_regle
+from nations.blocs.banque_centrale import BanqueCentrale, taux_indique_par_la_regle
 from nations.blocs.finances_publiques import FinancesPubliques
 from nations.etat import prix, schema
 from nations.etat.sauvegarde import charger, sauvegarder
+from nations.etat.variables import Invariance
 from nations.moteur import calendrier, registre
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import TauxDeFlux, par_pas
@@ -177,14 +187,17 @@ def assembler(socle, sentier, bloc_9=None, parametres=None):
 
 
 def derouler(socle, sentier, nb_pas, *, bloc_9=None, initial=None, parametres=None,
-             varsigma_B=None, observateur=None):
-    """`nb_pas` pas du socle complet ; `varsigma_B` : t → ς_{B,t} (placement raté), nul sinon."""
+             varsigma_B=None, varsigma_L=None, observateur=None):
+    """`nb_pas` pas du socle complet ; `varsigma_B` : t → ς_{B,t} (placement raté), `varsigma_L` :
+    t → ς_{L,t} (refus de crédit, C31), t pas d'ouverture, nuls sinon."""
     o = assembler(socle, sentier, bloc_9, parametres)
     etat = socle.etat_initial(sentier) if initial is None else initial
     releve = Releve() if observateur is None else observateur
     for _ in range(nb_pas):
         part = 0.0 if varsigma_B is None else varsigma_B(etat.t)
-        etat = ordo.executer_pas(etat, socle.entrees_du_tour(varsigma_B=part), o, releve)
+        refus = 0.0 if varsigma_L is None else varsigma_L(etat.t)
+        etat = ordo.executer_pas(etat, socle.entrees_du_tour(varsigma_L=refus, varsigma_B=part),
+                                 o, releve)
     return etat, releve
 
 
@@ -1870,3 +1883,683 @@ def test_marge_de_caisse_des_menages_publiee(banc, socle, pi, publier):
     publier(f"Marge de caisse des ménages, π* = {100 * pi:g} % ({ETIQUETTE} ; sans verdict)", [
         f"D_H d'ouverture / T_H du pas : min {min(rapports):.4f}, max {max(rapports):.4f} ; "
         f"YD = Σ lignes de la colonne des ménages à {pire:.1e} S^H"])
+
+
+# --------------------------------------------------------------------------
+# Fiche 6, « Endettement », dépôts, sous ϖ_L + 2 points (#139, critère de #169 ; P324, P330)
+# --------------------------------------------------------------------------
+
+VARPI_L_CHOQUE = 0.04  # par an, taux de flux ; ϖ_L = 0,02 au sentier (table du bloc 7)
+NB_PAS_DE_L_ENDETTEMENT = 6720
+FENETRE_DE_L_ENDETTEMENT = range(6480, 6720)  # t ∈ [6 480 ; 6 720[
+PAS_DU_CRITERE_D_ORIGINE = 2159  # écart publié sans verdict (critère d'origine, #139)
+SEUIL_DEPOTS = 1e-6  # relatif, max sur la fenêtre (critère de #169, écrit avant l'essai)
+
+
+class ReleveDeL_Endettement:
+    """Observateur léger (6 720 pas) : par pas t, D_F d'ouverture, PIB du pas (lignes 1 à 4
+    exécutées, convention de B15), ligne 14 (Div_F), L/K de clôture, plan nominal servi
+    (v < y + IN^vol d'ouverture, définition du test du banc partiel) et valeur nette des
+    entreprises de clôture ; variables et état de clôture du dernier pas."""
+
+    def __init__(self, initial):
+        self._ouverture = initial
+        self._montants = {}
+        self.depots, self.pib, self.div, self.levier, self.servi, self.valeur_nette = (
+            [], [], [], [], [], [])
+        self.variables = {}
+        self.cloture = None
+
+    def relever(self, e):
+        if type(e) is ClotureDePhase:
+            for ligne, termes in e.montants:
+                if ligne in ("1", "2", "3", "4", "14"):
+                    self._montants[ligne] = sum(x for _, x in termes)
+        elif type(e) is FinDePas:
+            o, f, v = self._ouverture, e.etat, dict(e.variables_du_pas)
+            self.depots.append(o.D_F)
+            self.pib.append(sum(self._montants[ligne] for ligne in ("1", "2", "3", "4")))
+            self.div.append(self._montants["14"])
+            self.levier.append(f.L / f.K)
+            self.servi.append(v["v"] < v["y"] + o.IN_vol)
+            self.valeur_nette.append(idt.valeur_nette_stock(_positions(f), "entreprises"))
+            self.variables, self.cloture = v, f
+            self._ouverture, self._montants = f, {}
+
+
+@pytest.fixture(scope="module")
+def endettement_sous_varpi_L(socle):
+    """Socle complet, π* = 2 %, ϖ_L porté de 0,02 à 0,04 par an dans la table du bloc 7 dès le
+    pas 0 et maintenu (tables du sentier, table `banque` remplacée : composition dans `tests/`,
+    F1), depuis l'état initial résolu aux tables du sentier, 6 720 pas."""
+    sentier = socle.sentier(0.02)
+    tables = socle.parametres_du_sentier(sentier)
+    assert tables.banque.varpi_L.valeur == 0.02
+    choquees = dataclasses.replace(tables, banque=varier(tables.banque, varpi_L=VARPI_L_CHOQUE))
+    initial = socle.etat_initial(sentier)
+    releve = ReleveDeL_Endettement(initial)
+    derouler(socle, sentier, NB_PAS_DE_L_ENDETTEMENT, parametres=choquees, observateur=releve)
+    return sentier, tables, releve
+
+
+def test_endettement_depots_sous_varpi_L_releve_de_deux_points(endettement_sous_varpi_L,
+                                                                publier):
+    """Fiche 6, § 9.6, « Endettement » (7 (d)), partie dépôts, sur le socle complet (#139, critère
+    de #169, P324, P330, écrit avant l'essai) : ϖ_L + 2 points dès le pas 0, π* = 2 % ;
+    x_t = D_F d'ouverture du pas t/(n_a PIB_t), PIB_t = lignes 1 à 4 exécutées au pas t (B15),
+    en années de PIB ; référence x* = D_F/(n_a PIB) de la résolution (forme fermée
+    ν_F p v^e/(p v + ΔIN) du script, qui ne lit pas le taux), lue sur le sentier ; critère :
+    max sur t ∈ [6 480 ; 6 720[ de |x_t/x* − 1| ≤ 1e−6. Publiés sans verdict : écart au pas 2 159
+    (critère d'origine), levier (L/K de clôture sur lv*, pas où le plan nominal est servi) et
+    distribution (Div_F > 0 ; ΣDiv_F/Σ(Div_F + FU) sur les 12 tours 6 708 à 6 719), Δi_{L,t+1},
+    Δi_CB, Δi_{D,t+1} et Δr̂*_{t+1} au pas 6 719 (i_L et i_D du pas suivant, écrits en 8c, i_CB du
+    pas, r̂* du pas suivant écrit par le bloc 8, contre leurs valeurs résolues), et l'écart
+    relatif de Δr̂*_{t+1} à −Δϖ_L/(1 + π*). Probance publiée (lecture A de P330, visa du
+    mainteneur du 28/11/2026, formulation de `monnaie`) : tenu ; probant pour le retour sur x* en
+    boucle fermée et pour l'indépendance de x* à un taux des dépôts durablement abaissé avec le
+    taux directeur (Δi_D = Δi_CB = −2 points) ; non probant pour un i_L durablement relevé : sous
+    l'action intégrale de la règle (BC2) et ϱ̄_L constante (P128), le taux neutre retenu absorbe
+    ϖ_L, Δr̂* = −Δϖ_L/(1 + π*) (Δi_{L,t+1} et Δr̂* mesurés au pas 6 719). L'ancien verdict
+    (banc partiel, 2 160 pas) reste publié :
+    `test_investissement.py::test_endettement_depots_sur_leur_forme_fermee_apres_2160_pas`."""
+    sentier, tables, r = endettement_sous_varpi_L
+    x_etoile = sentier.e["D_F"] / (N_A * sentier.e["PIB"])
+    x = [d / (N_A * pib) for d, pib in zip(r.depots, r.pib)]
+    assert len(x) == NB_PAS_DE_L_ENDETTEMENT
+    pire = max(abs(x[t] / x_etoile - 1.0) for t in FENETRE_DE_L_ENDETTEMENT)
+    t_pire = max(FENETRE_DE_L_ENDETTEMENT, key=lambda t: abs(x[t] / x_etoile - 1.0))
+    origine = x[PAS_DU_CRITERE_D_ORIGINE] / x_etoile - 1.0
+    lv = tables.investissement.lv_etoile
+    servis = [abs(k / lv - 1.0) for k, s in zip(r.levier, r.servi) if s]
+    dernier = NB_PAS_DE_L_ENDETTEMENT - 1
+    fenetre = range(dernier - N_A + 1, dernier + 1)
+    div = sum(r.div[k] for k in fenetre)
+    fu = r.valeur_nette[dernier] - r.valeur_nette[fenetre[0] - 1]
+    delta_i_L = r.variables["i_L_suivant"] - sentier.s["i_L_1"]
+    delta_i_CB = r.variables["i_CB"] - sentier.s["i_CB"]
+    delta_i_D = r.cloture.i_D - sentier.s["i_D_1"]
+    delta_r_hat = r.cloture.r_hat_etoile - sentier.s["r_hat_1"]
+    # Absorption attendue par le taux neutre retenu : −Δϖ_L/(1 + π*) (lecture A de P330).
+    absorption = -(VARPI_L_CHOQUE - tables.banque.varpi_L.valeur) / (1.0 + sentier.pi)
+    publier(f"Fiche 6, endettement (dépôts), ϖ_L + 2 points dès le pas 0, π* = 2 %, 6 720 pas "
+            f"({ETIQUETTE} ; #139, critère de #169)", [
+        f"x* = {x_etoile:.12f} (résolution) ; max |x_t/x* − 1| sur [6 480 ; 6 720[ : {pire:.2e} "
+        f"(pas {f'{t_pire:_}'.replace('_', ' ')} ; seuil 1e−6, verdict)",
+        f"écart au pas 2 159 (critère d'origine, sans verdict) : {origine:.2e}",
+        f"levier : max |L/K/lv* − 1| {max(servis) if servis else float('nan'):.1e} sur "
+        f"{len(servis)} pas servis sur {NB_PAS_DE_L_ENDETTEMENT} (sans verdict)",
+        f"distribution : Div_F min {min(r.div):.6e}, Div_F ≤ 0 à {sum(d <= 0.0 for d in r.div)} "
+        f"pas ; ΣDiv_F/Σ(Div_F + FU) sur les pas 6 708 à 6 719 : {div / (div + fu):.6f} "
+        f"(sans verdict)",
+        f"au pas 6 719 : Δi_{{L,t+1}} = {delta_i_L:+.6e}, Δi_CB = {delta_i_CB:+.6e}, "
+        f"Δi_{{D,t+1}} = {delta_i_D:+.6e}, Δr̂*_{{t+1}} = {delta_r_hat:+.6e} par an, contre la "
+        f"résolution ; Δr̂*_{{t+1}}/(−Δϖ_L/(1 + π*)) − 1 = {delta_r_hat / absorption - 1.0:+.2e} "
+        f"(sans verdict)",
+        # Probance du verdict (lecture A de P330), publiée telle quelle si le critère est tenu.
+        f"tenu ; probant pour le retour sur x* en boucle fermée et pour l'indépendance de x* à "
+        f"un taux des dépôts durablement abaissé avec le taux directeur (Δi_D = Δi_CB = −2 "
+        f"points) ; non probant pour un i_L durablement relevé : sous l'action intégrale de la "
+        f"règle (BC2) et ϱ̄_L constante (P128), le taux neutre retenu absorbe ϖ_L, "
+        f"Δr̂* = −Δϖ_L/(1 + π*) (Δi_{{L,t+1}} = {delta_i_L:+.6e}, Δr̂* = {delta_r_hat:+.6e} au "
+        f"pas 6 719)" if pire <= SEUIL_DEPOTS
+        else "non tenu (probance de la lecture A de P330 sans objet)"])
+    assert pire <= SEUIL_DEPOTS
+
+
+# --------------------------------------------------------------------------
+# Fiche 6, « Bornes » (c), refus de la moitié du crédit aux tours 1 à 12 (#140, P150)
+# --------------------------------------------------------------------------
+
+PART_REFUSEE = 0.5  # ς_L, part refusée de la hausse demandée (C31)
+PAS_DU_REFUS = range(12)  # pas 0 à 11, tours 1 à 12 (tour n = pas n − 1)
+FENETRE_DES_BORNES = range(24)  # A ⊂ [0 ; 23] (critère de #140, écrit avant l'essai)
+
+
+def _refus_de_moitie(t):
+    return PART_REFUSEE if t in PAS_DU_REFUS else 0.0
+
+
+@pytest.fixture(scope="module")
+def refus_de_moitie(socle):
+    """π* → (relevé, arrêt) : socle complet, ς_L = 0,5 aux pas 0 à 11 puis 0 (entrée de scénario,
+    composition dans `tests/`, F1), depuis l'état initial résolu, 720 pas ; `arrêt` : l'exception
+    du noyau ou du moteur qui a interrompu la trajectoire, `None` sinon."""
+    rendus = {}
+    for pi in socle.POINTS_PI:
+        releve, arret = Releve(), None
+        try:
+            derouler(socle, socle.sentier(pi), NB_PAS, varsigma_L=_refus_de_moitie,
+                     observateur=releve)
+        except (ArretNoyau, ArretMoteur) as e:
+            arret = e
+        rendus[pi] = (releve, arret)
+    return rendus
+
+
+def _intervalle_dans_la_fenetre(actifs):
+    """Critère de #140 : A vide, ou A ⊂ [0 ; 23] intervalle d'entiers consécutifs."""
+    return not actifs or (actifs[0] >= FENETRE_DES_BORNES[0]
+                          and actifs[-1] <= FENETRE_DES_BORNES[-1]
+                          and actifs == list(range(actifs[0], actifs[-1] + 1)))
+
+
+def _pas_actifs(choc):
+    """Borne → liste des pas où elle est active (plancher de Div_F ; D_F ≥ 0 en lecture nette)."""
+    return {"plancher de Div_F (ligne 14 = 0)": [p["t"] for p in choc if p["14"] == 0.0],
+            "D_F ≥ 0 (D_F de clôture ≤ 0)": [p["t"] for p in choc if p["etat"].D_F <= 0.0]}
+
+
+def _ensemble_publie(a):
+    """« actif à aucun pas » ; « actif aux pas a à b (n pas) » si A est un intervalle d'entiers
+    consécutifs ; la liste exacte sinon."""
+    if not a:
+        return "actif à aucun pas"
+    if a == list(range(a[0], a[-1] + 1)):
+        return f"actif aux pas {a[0]} à {a[-1]} ({len(a)} pas)"
+    return f"actif aux pas {a} ({len(a)} pas)"
+
+
+def _probance_des_bornes(choc, controle):
+    """Lignes de probance de #140, sans seuil, sur les n = len(choc) pas déroulés (720 hors
+    arrêt), appariés pas à pas au contrôle."""
+    n = len(choc)
+    if n == 0:
+        return ["aucun pas déroulé : probance sans objet"]
+    pas, fenetre = range(n), range(min(n, len(FENETRE_DES_BORNES)))
+    t_div = min(pas, key=lambda t: choc[t]["14"])
+    t_rap = min(pas, key=lambda t: choc[t]["14"] / controle[t]["14"])
+    d_f = [p["etat"].D_F / idt.echelle_bilan(_positions(p["etat"]), "entreprises") for p in choc]
+    t_df = min(pas, key=lambda t: d_f[t])
+    baisses = [choc[t]["variables"]["I_vol_plan"] / controle[t]["variables"]["I_vol_plan"] - 1.0
+               for t in fenetre]
+    t_i = min(fenetre, key=lambda t: baisses[t])
+    non_satisfaite = sum(p["variables"]["Delta_L_d"] - p["18"] for p in choc)
+    servi_au_controle = sum(controle[t]["18"] for t in PAS_DU_REFUS)
+    ecarts = [controle[t]["etat"].L - choc[t]["etat"].L for t in pas]
+    t_l = max(fenetre, key=lambda t: ecarts[t])
+    relatifs = [ecarts[t] / controle[t]["etat"].L for t in pas]
+    t_r, fin = max(pas, key=lambda t: relatifs[t]), n - 1
+    ln_p = math.log(choc[fin]["variables"]["p"] / controle[fin]["variables"]["p"])
+    div_bk = [p["t"] for p in choc if p["15"] == 0.0]
+    return [
+        *(f"{nom} : {_ensemble_publie(a)}" for nom, a in _pas_actifs(choc).items()),
+        f"ligne 14 (Div_F) : min {choc[t_div]['14']:.6e} u.m. par pas (pas {t_div}) ; "
+        f"min ligne 14/contrôle {choc[t_rap]['14'] / controle[t_rap]['14']:.6f} (pas {t_rap})",
+        f"D_F/S^F de clôture : min {d_f[t_df]:.6f} (pas {t_df})",
+        f"I^{{vol,plan}}/contrôle − 1 sur les pas 0 à {fenetre[-1]} : plus forte baisse "
+        f"{baisses[t_i]:+.4%} (pas {t_i})",
+        f"demande de crédit non satisfaite cumulée (Σ(ΔL^d − ligne 18), {n} pas ; le cumul "
+        f"inclut le report (redemandes)) : {non_satisfaite:.6e} u.m., "
+        f"{non_satisfaite / servi_au_controle:.4f} fois le crédit nouveau cumulé du contrôle "
+        f"(Σ ligne 18) des pas 0 à 11",
+        f"écart de stock maximal max_t (L^c_t − L^choc_t), L de clôture, pas 0 à "
+        f"{fenetre[-1]} : {ecarts[t_l]:.6e} u.m., {ecarts[t_l] / servi_au_controle:.4f} fois le "
+        f"même dénominateur (pas {t_l})",
+        f"écart relatif de stock (L^c_t − L^choc_t)/L^c_t : max {relatifs[t_r]:.4e} (pas {t_r}) ; "
+        f"au pas {fin} {relatifs[fin]:.4e}, ln(p^choc/p^c) {ln_p:.4e} ; résidu terminal : effet "
+        f"de niveau des prix (la règle cible l'inflation, pas le niveau)",
+        "Div_Bk = 0 (ligne 15, fiche 7) aux pas : " + (str(div_bk) if div_bk else "aucun")]
+
+
+def test_critere_des_bornes_de_140_sur_des_ensembles_synthetiques():
+    """Prédicat du critère de #140 sur des ensembles de pas actifs écrits à la main : vide,
+    intervalles inclus dans [0 ; 23] admis ; trou (réactivation), débordement après 23 refusés."""
+    admis = ([], [0], [23], list(range(24)), list(range(3, 9)))
+    refuses = ([0, 2], [5, 6, 8], [23, 24], [24], list(range(10, 30)))
+    assert all(_intervalle_dans_la_fenetre(a) for a in admis)
+    assert not any(_intervalle_dans_la_fenetre(a) for a in refuses)
+
+
+@pytest.mark.parametrize("pi", [0.0, 0.02, 0.10])
+def test_bornes_c_sous_le_refus_de_la_moitie_du_credit(banc, refus_de_moitie, pi, publier):
+    """Fiche 6, § 9.6, « Bornes » (c), partie refus de crédit (C31), sur le socle complet (#140,
+    critère de P150, écrit avant l'essai) : ς_L,t = 0,5 aux pas 0 à 11 (tours 1 à 12), 0 ensuite ;
+    contrôle apparié (même banc sans choc, `banc`) ; 720 pas. Bornes surveillées : plancher du
+    dividende des entreprises, active au pas t si la ligne 14 exécutée = 0 ; D_F ≥ 0 en lecture
+    nette, active si D_F de clôture ≤ 0. Critère : 720 pas sans arrêt du noyau ni du moteur ;
+    pour chaque borne, l'ensemble A des pas actifs est vide, ou A ⊂ [0 ; 23] et A est un
+    intervalle d'entiers consécutifs. Contrôle du scénario : ligne 18 = clause de F1 sous ς_L,
+    au bit, à chaque pas. Probance (intention reportée, P150), publiée sans seuil : nombre de pas
+    actifs ; min de la ligne 14 (u.m. par pas) et du rapport ligne 14/contrôle ; min de D_F/S^F
+    de clôture ; plus forte baisse relative de I^{vol,plan} contre le contrôle sur les pas 0 à
+    23 ; demande de crédit non satisfaite cumulée Σ(ΔL^d − ligne 18) sur 720 pas (u.m., et
+    rapportée au crédit nouveau cumulé du contrôle, Σ ligne 18, sur les pas 0 à 11), qui inclut
+    le report : F1 vise un niveau et redemande au pas suivant le crédit refusé, chaque redemande
+    est comptée (réserve de `macro`, décision du mainteneur) ; à côté, sans seuil, l'écart de
+    stock maximal max_t (L^c_t − L^choc_t) sur les pas 0 à 23 (fenêtre du refus et de la
+    désactivation), L stock de crédit des entreprises à la clôture, en u.m. et rapporté au même
+    dénominateur, avec son pas ; l'écart relatif (L^c_t − L^choc_t)/L^c_t, max sur 720 pas avec
+    son pas, et sa valeur au dernier pas à côté de ln(p^choc/p^c) au même pas : le résidu
+    terminal est un effet de niveau des prix, la règle ciblant l'inflation et non le niveau
+    (avis de `macro`) ; pas où Div_Bk = 0 (ligne 15, fiche 7). Si
+    aucune borne ne s'active : « tenu, non probant pour le délai de désactivation » (verdict
+    visé par le mainteneur le 28/11/2026 ; non probant de façon structurelle, le refus ne
+    portant que sur la hausse demandée et le crédit refusé étant redemandé : suite à #210). En
+    cas d'arrêt, le pas atteint, l'arrêt et la probance sur la partie déroulée sont publiés
+    avant l'échec."""
+    releve, arret = refus_de_moitie[pi]
+    if arret is not None:
+        publier(f"Fiche 6, bornes (c), refus de la moitié du crédit, π* = {100 * pi:g} % : "
+                f"arrêt capté ({ETIQUETTE} ; #140)", [
+            f"pas atteint : {len(releve.pas)} sur {NB_PAS} ; arrêt : {arret!r}",
+            *_probance_des_bornes(releve.pas, banc[pi][2].pas)])
+    assert arret is None, f"arrêt au pas {len(releve.pas)} : {arret!r}"
+    controle = banc[pi][2].pas
+    choc = releve.pas
+    assert len(choc) == len(controle) == NB_PAS
+    for p in choc:
+        assert p["18"] == bloc_6.credit_servi(_refus_de_moitie(p["t"]),
+                                              p["variables"]["Delta_L_d"]), p["t"]
+    actifs = _pas_actifs(choc)
+    tenu = all(_intervalle_dans_la_fenetre(a) for a in actifs.values())
+    nb_actifs = sum(len(a) for a in actifs.values())
+    publier(f"Fiche 6, bornes (c), refus de la moitié du crédit aux pas 0 à 11 (tours 1 à 12), "
+            f"π* = {100 * pi:g} %, 720 pas ({ETIQUETTE} ; #140, critère de P150)", [
+        *_probance_des_bornes(choc, controle),
+        f"pas actifs (deux bornes) : {nb_actifs} ; verdict : "
+        + ("non tenu" if not tenu else "tenu" if nb_actifs
+           else "tenu, non probant pour le délai de désactivation")])
+    assert tenu, actifs
+
+
+# --------------------------------------------------------------------------
+# #131, point 2 : terme de Jensen de BC2 sur le socle complet, formes (A) et (L) (mesure)
+# --------------------------------------------------------------------------
+# Protocole de `monnaie`, écrit avant l'essai (feuille de route, historique, partie J,
+# complément du rang 1 de la ligne 14, `17c26c2`) ; constat sans verdict du modèle : seuls les
+# contrôles de validité K1 à K4 sont assertés (concluant / non concluant).
+
+PI_131 = 0.02
+LAMBDAS_131 = (0.1, 0.2, 0.4)
+CHOCS_131 = (0.01, -0.01)  # Δ sur π^e_0, fraction par an ; contrôle apparié Δ = 0
+H_131 = 14_228  # 40 demi-vies de 355,69 tours (branche λ_e = 0,1, M3)
+H_PRIME_131 = 10_671  # horizon de K4
+FENETRE_131 = 12  # moyennes sur [H − 12 ; H − 1]
+SEUIL_K3 = 1e-11  # absolu, fraction par an
+SEUIL_K4_R = 1e-7  # point de % par an
+SEUIL_K4_L = 4e-9  # sans dimension (log)
+EPSILON_R = 1e-6  # point de % par an
+EPSILON_L = 4e-8  # sans dimension (log)
+NB_PAS_K2 = 720
+ARITHMETIQUE, LOG = "(A)", "(L)"
+
+
+def taux_neutre_suivant_en_log(r_hat, pi_prec, pi_etoile, a_I_pas):
+    """BC2 en log, forme (L) de #131 : r̂*_{t+1} = r̂*_t + (a_I/n_a)[ln(1 + π_{t−1}) −
+    ln(1 + π*_t)], par an ; même signature que `bloc_8.taux_neutre_suivant`. Essai dans `tests/`,
+    sans balise d'équation (la forme exécutée par le moteur reste BC2 arithmétique)."""
+    return r_hat + a_I_pas * (math.log1p(pi_prec) - math.log1p(pi_etoile))
+
+
+def bloc_8_compose(taux_neutre):
+    """Bloc 8 réel dont la phase 1 calcule le taux neutre par `taux_neutre` (signature de
+    `bloc_8.taux_neutre_suivant`) ; sous-classe sans attribut d'instance, même déclaration
+    (composition dans `tests/`, précédent `bloc_9_compose`, jamais un drapeau dans `src/`, F1).
+    Le corps est une copie de `BanqueCentrale.phase_1` où seul l'appel de BC2 change : sa
+    fidélité est soumise à K2 (`test_131_k2_sous_classe_arithmetique_au_bit`)."""
+
+    def phase_1(self, vue):
+        table = vue.parametres.banque_centrale
+        pi_prec = vue.glissement()
+        pi_etoile = vue.ouverture.pi_etoile
+        r_hat = vue.ouverture.r_hat_etoile
+        i_regle = bloc_8.taux_indique_par_la_regle(r_hat, pi_etoile, pi_prec, table.a_pi)
+        i_CB = i_regle
+        vue.ecrire_pas("i_regle", i_regle)
+        vue.ecrire_pas("i_CB", i_CB)
+        vue.ecrire_etat("r_hat_etoile",
+                        taux_neutre(r_hat, pi_prec, pi_etoile, par_pas(table.a_I)))
+        vue.ecrire_etat("pi_e", bloc_8.anticipation_suivante(vue.ouverture.pi_e, pi_prec,
+                                                             par_pas(table.lambda_e)))
+        vue.ecrire_etat("pi_etoile", bloc_8.cible_suivante(pi_etoile))
+        vue.ecrire_pas("theta_CB", bloc_8.part_a_l_emission(table.theta_CB))
+        i_pas = par_pas(TauxDeFlux(i_CB))
+        vue.ecrire_pas("Pi_CB", bloc_8.resultat(i_pas, vue.ouverture.B_CB, i_pas,
+                                                vue.ouverture.L_CB, i_pas, vue.ouverture.Res))
+
+    return type("BanqueCentraleComposee", (BanqueCentrale,),
+                {"__slots__": (), "phase_1": phase_1})()
+
+
+def _ordonnanceur_131(socle, sentier, forme):
+    """Socle complet aux tables du sentier ; bloc 8 réel sous (A), composé en log sous (L)."""
+    rendus = socle.blocs_du_socle_complet()
+    if forme == LOG:
+        bc = bloc_8_compose(taux_neutre_suivant_en_log)
+        rendus = tuple(bc if b.declaration.radical == "banque_centrale" else b for b in rendus)
+    return ordo.assembler(PHASES, rendus, socle.parametres_du_sentier(sentier),
+                          socle.ENTREES_DU_SOCLE)
+
+
+class _ReleveDe131:
+    """Observateur léger : par pas t, r̂*_{t+1} (état t + 1) et P_t (tête du registre t + 1)."""
+
+    __slots__ = ("prix", "r_hat")
+
+    def __init__(self, etat):
+        self.r_hat = [etat.r_hat_etoile]  # r̂*_t d'ouverture, t = 0, …, H
+        self.prix = []  # P_t, t = 0, …, H − 1
+
+    def relever(self, e):
+        if type(e) is FinDePas:
+            self.r_hat.append(e.etat.r_hat_etoile)
+            self.prix.append(e.etat.registre_prix[0])
+
+
+class Trajectoire131(NamedTuple):
+    r_hat: list
+    prix: list  # P_k, k = −13, …, H − 1 (indice k + 13)
+    a_I_pas: float
+    pi_etoile: float
+    arret: Exception | None
+    etat: schema.EtatPays  # état d'ouverture du pas H (dernier état atteint si arrêt)
+
+
+def _trajectoire_131(socle, forme, lambda_e, delta, nb_pas=H_131):
+    sentier = socle.sentier(PI_131, lambda_e=lambda_e)
+    o = _ordonnanceur_131(socle, sentier, forme)
+    etat = socle.etat_initial(sentier, choc_pi_e0=delta)
+    releve = _ReleveDe131(etat)
+    passe = tuple(reversed(etat.registre_prix))  # P_{−13}, …, P_{−1}
+    entrees = socle.entrees_du_tour()
+    arret = None
+    try:
+        for _ in range(nb_pas):
+            etat = ordo.executer_pas(etat, entrees, o, releve)
+    except (ArretNoyau, ArretMoteur) as e:
+        arret = e
+    table = socle.parametres_du_sentier(sentier).banque_centrale
+    return Trajectoire131(releve.r_hat, list(passe) + releve.prix, par_pas(table.a_I),
+                          socle.etat_initial(sentier).pi_etoile, arret, etat)
+
+
+@pytest.fixture(scope="module")
+def mesure_131(socle):
+    """(forme, λ_e, Δ) → `Trajectoire131` : 18 trajectoires de H pas (12 essais, 6 contrôles
+    Δ = 0), π* = 2 %, depuis l'état initial résolu aux tables du sentier à λ_e."""
+    return {(forme, lam, delta): _trajectoire_131(socle, forme, lam, delta)
+            for forme in (ARITHMETIQUE, LOG) for lam in LAMBDAS_131
+            for delta in (0.0, *CHOCS_131)}
+
+
+def _moyenne_de_fenetre(serie, fin):
+    """Moyenne de `serie` (indexée par t) sur [fin − 12 ; fin − 1]."""
+    return math.fsum(serie[fin - FENETRE_131:fin]) / FENETRE_131
+
+
+def _r_et_l(essai, controle, fin):
+    """R (point de % par an) et L (log) sur [fin − 12 ; fin − 1] ; P_t à l'indice t + 13."""
+    r = 100.0 * _moyenne_de_fenetre([a - b for a, b in zip(essai.r_hat, controle.r_hat)], fin)
+    ln_p = [math.log(a / b) for a, b in zip(essai.prix[13:], controle.prix[13:])]
+    return r, _moyenne_de_fenetre(ln_p, fin)
+
+
+def _ln_p_sur_p_etoile(traj, p_0, k):
+    """ln(P_k/P*_k), P*_k = P_0 (1 + π*)^{k/n_a}."""
+    return math.log(traj.prix[k + 13] / p_0) - k / N_A * math.log1p(traj.pi_etoile)
+
+
+def _glissements(traj, nb_pas):
+    """π_{t−1} = P_{t−1}/P_{t−13} − 1, t = 0, …, nb_pas − 1 (même calcul que le registre)."""
+    return [traj.prix[t + 12] / traj.prix[t] - 1.0 for t in range(nb_pas)]
+
+
+def _jensen(traj, nb_pas=H_131):
+    """J_H = (a_I/n_a) Σ_{t<H} [π_{t−1} − ln(1 + π_{t−1}) − (π* − ln(1 + π*))], fraction."""
+    pe = traj.pi_etoile - math.log1p(traj.pi_etoile)
+    return traj.a_I_pas * math.fsum(p - math.log1p(p) - pe for p in _glissements(traj, nb_pas))
+
+
+def _residu_telescopique(traj, forme, p_0, nb_pas=H_131):
+    """K3 : r̂*_H − r̂*_0 − (a_I/n_a)[Σ_{k=H−13}^{H−2} ln(P_k/P*_k) − Σ_{k=−13}^{−2}
+    ln(P_k/P*_k)], moins J_H sous (A) ; fraction par an."""
+    fin = math.fsum(_ln_p_sur_p_etoile(traj, p_0, k) for k in range(nb_pas - 13, nb_pas - 1))
+    debut = math.fsum(_ln_p_sur_p_etoile(traj, p_0, k) for k in range(-13, -1))
+    residu = traj.r_hat[nb_pas] - traj.r_hat[0] - traj.a_I_pas * (fin - debut)
+    return residu - _jensen(traj, nb_pas) if forme == ARITHMETIQUE else residu
+
+
+def _delta_131(delta):
+    return "0 (contrôle)" if delta == 0.0 else f"{delta:+g}"
+
+
+def _p_0(mesure_131, forme, lambda_e):
+    """P_0 simulé du contrôle apparié (forme, λ_e, Δ = 0), ancre de P* : indice des prix du pas 0
+    (indice 13 de `prix`)."""
+    return mesure_131[forme, lambda_e, 0.0].prix[13]
+
+
+def _exiger_k1(mesure_131):
+    """K3, K4 et la publication supposent les 18 trajectoires menées à H : sinon, non concluant
+    (K1), sans lever d'`IndexError`."""
+    if any(t.arret is not None for t in mesure_131.values()):
+        pytest.skip("non concluant : K1")
+
+
+def _au_bit(valeur):
+    """Forme comparable au bit (K2) : chaque flottant par `float.hex` (−0,0 distinct de +0,0, NaN
+    égal à lui-même), récursivement dans les n-uplets, listes et dictionnaires (clés triées par
+    `repr`)."""
+    if isinstance(valeur, float):
+        return float.hex(valeur)
+    if isinstance(valeur, (tuple, list)):
+        return tuple(_au_bit(x) for x in valeur)
+    if isinstance(valeur, dict):
+        return tuple(sorted(((k, _au_bit(x)) for k, x in valeur.items()),
+                            key=lambda kx: repr(kx[0])))
+    return valeur
+
+
+def test_131_k2_sous_classe_arithmetique_au_bit(socle):
+    """K2 (#131) : `bloc_8_compose(bloc_8.taux_neutre_suivant)` reproduit au bit le bloc 8 réel,
+    λ_e = 0,2, Δ = +0,01, 720 pas : à chaque pas, états de fin de pas (tous les champs du
+    schéma), variables du pas, grandeurs d'ouverture et montants exécutés de chaque ligne (et
+    leurs termes) du relevé, flottants comparés par `float.hex`."""
+    sentier = socle.sentier(PI_131, lambda_e=0.2)
+    tables = socle.parametres_du_sentier(sentier)
+    rendus = socle.blocs_du_socle_complet()
+    compose = bloc_8_compose(bloc_8.taux_neutre_suivant)
+    assert type(compose) is not BanqueCentrale and isinstance(compose, BanqueCentrale)
+    composes = tuple(compose if b.declaration.radical == "banque_centrale" else b
+                     for b in rendus)
+    suites = []
+    for blocs_du_banc in (rendus, composes):
+        o = ordo.assembler(PHASES, blocs_du_banc, tables, socle.ENTREES_DU_SOCLE)
+        etat = socle.etat_initial(sentier, choc_pi_e0=0.01)
+        releve = Releve()
+        for _ in range(NB_PAS_K2):
+            etat = ordo.executer_pas(etat, socle.entrees_du_tour(), o, releve)
+        suites.append([_au_bit({**{k: v for k, v in p.items() if k != "etat"},
+                                "etat": [getattr(p["etat"], c) for c in schema.CHAMPS]})
+                       for p in releve.pas])
+    reel, compose_ = suites
+    assert len(reel) == len(compose_) == NB_PAS_K2
+    for t, (a, b) in enumerate(zip(reel, compose_)):
+        assert a == b, f"pas {t}"
+
+
+def test_131_k1_aucun_arret_ni_refus(mesure_131, publier):
+    """K1 (#131) : aucun arrêt du noyau ni refus du moteur sur les 18 trajectoires de H pas."""
+    arrets = {cle: (len(t.prix) - 13, t.arret) for cle, t in mesure_131.items()
+              if t.arret is not None}
+    if arrets:
+        publier("#131, K1 : arrêts captés (non concluant)",
+                [f"{cle} : pas atteint {pas} ; {arret!r}" for cle, (pas, arret) in arrets.items()])
+    assert not arrets
+
+
+def test_131_k3_identites_telescopiques(mesure_131, publier):
+    """K3 (#131) : identités télescopiques à 1e−11 (absolu, fraction par an) sur les 18
+    trajectoires ; sous (L), r̂*_H − r̂*_0 = (a_I/n_a)[Σ_{k=H−13}^{H−2} ln(P_k/P*_k) −
+    Σ_{k=−13}^{−2} ln(P_k/P*_k)] ; sous (A), même écart plus le terme de Jensen J_H."""
+    _exiger_k1(mesure_131)
+    residus = {(forme, lam, delta): _residu_telescopique(t, forme, _p_0(mesure_131, forme, lam))
+               for (forme, lam, delta), t in mesure_131.items()}
+    publier(f"#131, K3 : résidus des identités télescopiques, H = {H_131} pas, seuil "
+            f"{SEUIL_K3:g} (fraction par an ; {ETIQUETTE})",
+            [f"{forme}, λ_e = {lam:g}, Δ = {_delta_131(delta)} : {r:+.3e}"
+             for (forme, lam, delta), r in residus.items()])
+    assert all(abs(r) <= SEUIL_K3 for r in residus.values()), residus
+
+
+def _mesures_131(mesure_131, fin=H_131):
+    """(forme, λ_e, Δ) → (R, L) à l'horizon `fin`, Δ ≠ 0."""
+    return {(forme, lam, delta): _r_et_l(mesure_131[forme, lam, delta],
+                                         mesure_131[forme, lam, 0.0], fin)
+            for forme in (ARITHMETIQUE, LOG) for lam in LAMBDAS_131 for delta in CHOCS_131}
+
+
+def test_131_k4_arrivee_atteinte(mesure_131, publier):
+    """K4 (#131) : |R_H − R_{H′}| ≤ 1e−7 point et |L_H − L_{H′}| ≤ 4e−9, H′ = 10 671, sur les
+    12 essais. Tenu à H (mesure du rang 4 de la ligne 14) : l'extension unique à 2H que prévoit
+    le protocole n'est pas codée ; un échec ici est « non concluant », et l'extension se déclare
+    alors par un commit (au-delà, rapport au mainteneur)."""
+    _exiger_k1(mesure_131)
+    a_h, a_hp = _mesures_131(mesure_131), _mesures_131(mesure_131, H_PRIME_131)
+    ecarts = {cle: (a_h[cle][0] - a_hp[cle][0], a_h[cle][1] - a_hp[cle][1]) for cle in a_h}
+    publier(f"#131, K4 : R_H − R_H′ (point) et L_H − L_H′, H = {H_131}, H′ = {H_PRIME_131} "
+            f"(seuils {SEUIL_K4_R:g} point, {SEUIL_K4_L:g} ; {ETIQUETTE})",
+            [f"{forme}, λ_e = {lam:g}, Δ = {delta:+g} : {dr:+.3e} point ; {dl:+.3e}"
+             for (forme, lam, delta), (dr, dl) in ecarts.items()])
+    assert all(abs(dr) <= SEUIL_K4_R and abs(dl) <= SEUIL_K4_L
+               for dr, dl in ecarts.values()), ecarts
+
+
+def classer_131(r_par_cle):
+    """Classification d'une forme (#131, constat) : `r_par_cle` : (λ_e, Δ) → R (point).
+
+    Classes testées dans cet ordre de priorité, la première vérifiée l'emporte :
+    1. (F) si max |R| ≤ ε_R ; testée en premier, elle rend aussi (F) quand max |R| ≤ ε_R alors
+       que D_R > ε_R pour un signe (possible puisque D_R ≤ 2 max |R|), cas que le protocole de
+       `monnaie` ne tranche pas ;
+    2. (C) si D_R > ε_R pour un signe au moins ;
+    3. (I) si |R| > ε_R partout (et donc D_R ≤ ε_R pour les deux signes) ;
+    4. « non classée » sinon (aucun D_R > ε_R, |R| ≤ ε_R pour une clé au moins, max |R| > ε_R) :
+       issue ajoutée hors protocole, qui n'existe que pour rendre le prédicat total et ne change
+       aucun classement des trois classes du protocole."""
+    d_r = {delta: max(r_par_cle[lam, delta] for lam in LAMBDAS_131)
+           - min(r_par_cle[lam, delta] for lam in LAMBDAS_131) for delta in CHOCS_131}
+    if max(abs(r) for r in r_par_cle.values()) <= EPSILON_R:
+        return "(F) r̂* fixé par la boucle", d_r
+    if any(d > EPSILON_R for d in d_r.values()):
+        return "(C) continuum de r̂* au socle complet", d_r
+    if all(abs(r) > EPSILON_R for r in r_par_cle.values()):
+        return "(I) écart permanent indépendant de λ_e", d_r
+    return "non classée", d_r
+
+
+def test_classer_131_sur_des_valeurs_synthetiques():
+    """Prédicat de classification de #131 sur des valeurs écrites à la main."""
+    def valeurs(f):
+        return {(lam, d): f(lam, d) for lam in LAMBDAS_131 for d in CHOCS_131}
+    assert classer_131(valeurs(lambda lam, d: 1e-7))[0].startswith("(F)")
+    assert classer_131(valeurs(lambda lam, d: 1e-4 * lam))[0].startswith("(C)")
+    assert classer_131(valeurs(lambda lam, d: 1e-4 + 1e-8 * lam))[0].startswith("(I)")
+    assert classer_131(valeurs(lambda lam, d: 1e-4 if d > 0 else 1e-8))[0] == "non classée"
+    # max |R| ≤ ε_R et D_R > ε_R (± 0,9 ε_R aux λ_e extrêmes) : (F), priorité de (F) sur (C)
+    bord = valeurs(lambda lam, d: {0.1: 0.9, 0.2: 0.0, 0.4: -0.9}[lam] * EPSILON_R)
+    classe, d_r = classer_131(bord)
+    assert all(d > EPSILON_R for d in d_r.values()) and classe.startswith("(F)")
+
+
+def _arrivee_a_l_echelle_nominale(etat, etat_c):
+    """Réserve R4 de `monnaie` (#131, hors protocole, sans seuil) : écarts de l'état `etat` à
+    l'état apparié du contrôle `etat_c`, rapportés à ln(P/P_c), P = tête du registre des prix.
+
+    Rend (ln(P/P_c), (max |x/x_c − 1|, nom) des variables d'état réelles et sans dimension
+    (invariance `VOLUME` ou `SANS_DIMENSION`), (max |ln(x/x_c) − ln(P/P_c)|, nom) des variables
+    nominales (`NOMINAL` : positions, V^flux, variables nominales des blocs) et des niveaux du
+    registre des prix (`INDICE`), noms des variables nulles aux deux états, écartées). Le
+    compteur de pas `t` (entier) est écarté ; un rapport nul, négatif ou de dénominateur nul
+    rend +inf."""
+    ln_p = math.log(etat.registre_prix[0] / etat_c.registre_prix[0])
+    reels, nominaux, nulles = [], [], []
+    for v in schema.VARIABLES:
+        if v.type is int:
+            continue
+        a, b = getattr(etat, v.nom), getattr(etat_c, v.nom)
+        paires = (tuple((f"{v.nom}[{k}]", x, y) for k, (x, y) in enumerate(zip(a, b)))
+                  if v.type is tuple else ((v.nom, a, b),))
+        for nom, x, y in paires:
+            if x == 0.0 and y == 0.0:
+                nulles.append(nom)
+            elif v.invariance in (Invariance.NOMINAL, Invariance.INDICE):
+                q = x / y if y != 0.0 else math.inf
+                nominaux.append((abs(math.log(q) - ln_p) if 0.0 < q < math.inf else math.inf,
+                                 nom))
+            else:
+                reels.append((abs(x / y - 1.0) if y != 0.0 else math.inf, nom))
+    return ln_p, max(reels), max(nominaux), nulles
+
+
+def test_131_mesure_du_terme_de_jensen_publiee(mesure_131, socle, publier):
+    """#131, point 2 (constat sans verdict du modèle, visa `monnaie`) : à π* = 2 %, par forme
+    ((A) bloc 8 réel, (L) BC2 en log), λ_e ∈ {0,1 ; 0,2 ; 0,4} et Δ = ± 1 point sur π^e_0, moyennes
+    sur [H − 12 ; H − 1], H = 14 228 pas : R = r̂*_t − r̂*_t,c (point de % par an), r̂*_t,c − r̄ ;
+    L = ln(P_t/P_t,c), ln(P_t/P*_t) avec P*_t = P_0 (1 + π*)^{t/n_a}, P_0 simulé du contrôle
+    apparié ; coefficient en Δ², R/Δ² (R et Δ en fraction), et L/Δ² (hors protocole) ; D_R =
+    max_λ R − min_λ R par signe ; sous (A), J_H − J_H,c ; contrôle de `monnaie` (rang 2)
+    r̂*_{∞,c} − [ϱ̄_L − ϖ_L/(1 + π*)], r̂*_{∞,c} moyenne du contrôle sur la même fenêtre.
+    Classification par forme (ε_R = 1e−6 point) et, sous (L), niveau des prix « ramené au
+    sentier » si max |L| ≤ ε_L = 4e−8. Sous (A), réserve R4 de `monnaie` (hors protocole, sans
+    seuil) : à l'état d'ouverture du pas H, par λ_e et par signe, écart maximal des grandeurs
+    réelles et sans dimension au contrôle apparié et des grandeurs nominales et positions à
+    ln(P/P_c) (`_arrivee_a_l_echelle_nominale`). Aucune assertion : la validité est jugée par
+    K1 à K4 (non concluant si K1 ne l'est pas)."""
+    _exiger_k1(mesure_131)
+    mesures = _mesures_131(mesure_131)
+    for forme in (ARITHMETIQUE, LOG):
+        lignes = []
+        for lam in LAMBDAS_131:
+            sentier = socle.sentier(PI_131, lambda_e=lam)
+            controle = mesure_131[forme, lam, 0.0]
+            p_0 = _p_0(mesure_131, forme, lam)
+            r_c = _moyenne_de_fenetre(controle.r_hat, H_131)
+            p_c = _moyenne_de_fenetre(
+                [_ln_p_sur_p_etoile(controle, p_0, t) for t in range(H_131)], H_131)
+            norme = sentier.s["rho_bar_L"] - sentier.par.varpi_L / (1.0 + PI_131)
+            lignes.append(
+                f"λ_e = {lam:g}, contrôle : r̂*_c − r̄ = {100 * (r_c - sentier.par.rbar):+.3e} "
+                f"point ; r̂*_∞,c − [ϱ̄_L − ϖ_L/(1 + π*)] = {100 * (r_c - norme):+.3e} point ; "
+                f"ln(P_c/P*) = {p_c:+.3e}")
+            for delta in CHOCS_131:
+                essai = mesure_131[forme, lam, delta]
+                r, ln_p = mesures[forme, lam, delta]
+                p_e = _moyenne_de_fenetre(
+                    [_ln_p_sur_p_etoile(essai, p_0, t) for t in range(H_131)], H_131)
+                jensen = (f" ; J_H − J_H,c = {_jensen(essai) - _jensen(controle):+.3e}"
+                          if forme == ARITHMETIQUE else "")
+                lignes.append(
+                    f"λ_e = {lam:g}, Δ = {delta:+g} : R = {r:+.4e} point ; "
+                    f"R/Δ² (R et Δ en fraction) = {r / 100 / delta ** 2:+.3e} ; "
+                    f"L = {ln_p:+.4e} ; L/Δ² = {ln_p / delta ** 2:+.4e} ; "
+                    f"ln(P/P*) = {p_e:+.4e}" + jensen)
+        classe, d_r = classer_131({(lam, d): mesures[forme, lam, d][0]
+                                   for lam in LAMBDAS_131 for d in CHOCS_131})
+        lignes.append("D_R (point) : " + " ; ".join(f"Δ = {d:+g} : {v:.4e}"
+                                                    for d, v in d_r.items()))
+        max_l = max(abs(mesures[forme, lam, d][1]) for lam in LAMBDAS_131 for d in CHOCS_131)
+        d_l = {d: max(mesures[forme, lam, d][1] for lam in LAMBDAS_131)
+               - min(mesures[forme, lam, d][1] for lam in LAMBDAS_131) for d in CHOCS_131}
+        lignes.append(f"max |L| = {max_l:.4e} ; D_L : "
+                      + " ; ".join(f"Δ = {d:+g} : {v:.4e}" for d, v in d_l.items()))
+        lignes.append(f"classification : {classe}")
+        if forme == ARITHMETIQUE:
+            lignes.append("arrivée = état du contrôle remis à une autre échelle nominale (racine "
+                          "nominale) ; état d'ouverture du pas H, hors protocole, sans seuil :")
+            nulles = set()
+            for lam in LAMBDAS_131:
+                for delta in CHOCS_131:
+                    ln_p, (e_r, n_r), (e_n, n_n), zeros = _arrivee_a_l_echelle_nominale(
+                        mesure_131[forme, lam, delta].etat, mesure_131[forme, lam, 0.0].etat)
+                    nulles.update(zeros)
+                    lignes.append(
+                        f"λ_e = {lam:g}, Δ = {delta:+g} : ln(P/P_c) = {ln_p:+.4e} ; réelles et "
+                        f"sans dimension, max |x/x_c − 1| = {e_r:.2e} ({n_r}) ; nominales et "
+                        f"positions, max |ln(x/x_c) − ln(P/P_c)| = {e_n:.2e} ({n_n})")
+            lignes.append("nulles aux deux états, écartées : " + ", ".join(sorted(nulles)))
+        if forme == LOG:
+            lignes.append("niveau des prix : " + ("ramené au sentier" if max_l <= EPSILON_L
+                                                  else "non ramené au sentier (max |L| > ε_L)"))
+        publier(f"#131, point 2, forme {forme}, π* = 2 %, H = {H_131} pas, moyennes sur "
+                f"[H − 12 ; H − 1] ({ETIQUETTE} ; constat sans verdict du modèle)", lignes)
