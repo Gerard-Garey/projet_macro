@@ -27,7 +27,11 @@ dont les méthodes d'étape lisent une table modifiée (`bloc_9_compose`), des e
 - **endettement, dépôts** de la fiche 6 sous ϖ_L + 2 points (#139, critère de #169 ; P324,
   P330) : seuil au docstring du test ;
 - **bornes (c)** de la fiche 6 sous le refus de la moitié du crédit aux tours 1 à 12 (#140,
-  P150) : critère au docstring du test.
+  P150) : critère au docstring du test ;
+- **#131, point 2** (mesure, constat sans verdict du modèle ; protocole de `monnaie` écrit avant
+  l'essai, `17c26c2`) : terme de Jensen de BC2 sous les formes (A), bloc 8 réel, et (L), BC2 en
+  log par sous-classe du bloc 8 dans `tests/` ; seuls les contrôles de validité K1 à K4 sont
+  assertés, la classification (F), (C) ou (I) est publiée.
 
 Réaffirmés avec le bloc 9 réel (P162) : « Délais » des fiches 5 et 6, signe et date exacts sur la
 chaîne E3, E6, E5 → H6, F3.
@@ -50,13 +54,15 @@ from typing import NamedTuple
 import numpy as np
 import pytest
 
+from nations.blocs import banque_centrale as bloc_8
 from nations.blocs import finances_publiques as bloc_9
 from nations.blocs import investissement as bloc_6
 from nations.blocs import menages as bloc_5
-from nations.blocs.banque_centrale import taux_indique_par_la_regle
+from nations.blocs.banque_centrale import BanqueCentrale, taux_indique_par_la_regle
 from nations.blocs.finances_publiques import FinancesPubliques
 from nations.etat import prix, schema
 from nations.etat.sauvegarde import charger, sauvegarder
+from nations.etat.variables import Invariance
 from nations.moteur import calendrier, registre
 from nations.moteur import ordonnanceur as ordo
 from nations.moteur.conversions import TauxDeFlux, par_pas
@@ -2154,3 +2160,406 @@ def test_bornes_c_sous_le_refus_de_la_moitie_du_credit(banc, refus_de_moitie, pi
         + ("non tenu" if not tenu else "tenu" if nb_actifs
            else "tenu, non probant pour le délai de désactivation")])
     assert tenu, actifs
+
+
+# --------------------------------------------------------------------------
+# #131, point 2 : terme de Jensen de BC2 sur le socle complet, formes (A) et (L) (mesure)
+# --------------------------------------------------------------------------
+# Protocole de `monnaie`, écrit avant l'essai (feuille de route, historique, partie J,
+# complément du rang 1 de la ligne 14, `17c26c2`) ; constat sans verdict du modèle : seuls les
+# contrôles de validité K1 à K4 sont assertés (concluant / non concluant).
+
+PI_131 = 0.02
+LAMBDAS_131 = (0.1, 0.2, 0.4)
+CHOCS_131 = (0.01, -0.01)  # Δ sur π^e_0, fraction par an ; contrôle apparié Δ = 0
+H_131 = 14_228  # 40 demi-vies de 355,69 tours (branche λ_e = 0,1, M3)
+H_PRIME_131 = 10_671  # horizon de K4
+FENETRE_131 = 12  # moyennes sur [H − 12 ; H − 1]
+SEUIL_K3 = 1e-11  # absolu, fraction par an
+SEUIL_K4_R = 1e-7  # point de % par an
+SEUIL_K4_L = 4e-9  # sans dimension (log)
+EPSILON_R = 1e-6  # point de % par an
+EPSILON_L = 4e-8  # sans dimension (log)
+NB_PAS_K2 = 720
+ARITHMETIQUE, LOG = "(A)", "(L)"
+
+
+def taux_neutre_suivant_en_log(r_hat, pi_prec, pi_etoile, a_I_pas):
+    """BC2 en log, forme (L) de #131 : r̂*_{t+1} = r̂*_t + (a_I/n_a)[ln(1 + π_{t−1}) −
+    ln(1 + π*_t)], par an ; même signature que `bloc_8.taux_neutre_suivant`. Essai dans `tests/`,
+    sans balise d'équation (la forme exécutée par le moteur reste BC2 arithmétique)."""
+    return r_hat + a_I_pas * (math.log1p(pi_prec) - math.log1p(pi_etoile))
+
+
+def bloc_8_compose(taux_neutre):
+    """Bloc 8 réel dont la phase 1 calcule le taux neutre par `taux_neutre` (signature de
+    `bloc_8.taux_neutre_suivant`) ; sous-classe sans attribut d'instance, même déclaration
+    (composition dans `tests/`, précédent `bloc_9_compose`, jamais un drapeau dans `src/`, F1).
+    Le corps est une copie de `BanqueCentrale.phase_1` où seul l'appel de BC2 change : sa
+    fidélité est soumise à K2 (`test_131_k2_sous_classe_arithmetique_au_bit`)."""
+
+    def phase_1(self, vue):
+        table = vue.parametres.banque_centrale
+        pi_prec = vue.glissement()
+        pi_etoile = vue.ouverture.pi_etoile
+        r_hat = vue.ouverture.r_hat_etoile
+        i_regle = bloc_8.taux_indique_par_la_regle(r_hat, pi_etoile, pi_prec, table.a_pi)
+        i_CB = i_regle
+        vue.ecrire_pas("i_regle", i_regle)
+        vue.ecrire_pas("i_CB", i_CB)
+        vue.ecrire_etat("r_hat_etoile",
+                        taux_neutre(r_hat, pi_prec, pi_etoile, par_pas(table.a_I)))
+        vue.ecrire_etat("pi_e", bloc_8.anticipation_suivante(vue.ouverture.pi_e, pi_prec,
+                                                             par_pas(table.lambda_e)))
+        vue.ecrire_etat("pi_etoile", bloc_8.cible_suivante(pi_etoile))
+        vue.ecrire_pas("theta_CB", bloc_8.part_a_l_emission(table.theta_CB))
+        i_pas = par_pas(TauxDeFlux(i_CB))
+        vue.ecrire_pas("Pi_CB", bloc_8.resultat(i_pas, vue.ouverture.B_CB, i_pas,
+                                                vue.ouverture.L_CB, i_pas, vue.ouverture.Res))
+
+    return type("BanqueCentraleComposee", (BanqueCentrale,),
+                {"__slots__": (), "phase_1": phase_1})()
+
+
+def _ordonnanceur_131(socle, sentier, forme):
+    """Socle complet aux tables du sentier ; bloc 8 réel sous (A), composé en log sous (L)."""
+    rendus = socle.blocs_du_socle_complet()
+    if forme == LOG:
+        bc = bloc_8_compose(taux_neutre_suivant_en_log)
+        rendus = tuple(bc if b.declaration.radical == "banque_centrale" else b for b in rendus)
+    return ordo.assembler(PHASES, rendus, socle.parametres_du_sentier(sentier),
+                          socle.ENTREES_DU_SOCLE)
+
+
+class _ReleveDe131:
+    """Observateur léger : par pas t, r̂*_{t+1} (état t + 1) et P_t (tête du registre t + 1)."""
+
+    __slots__ = ("prix", "r_hat")
+
+    def __init__(self, etat):
+        self.r_hat = [etat.r_hat_etoile]  # r̂*_t d'ouverture, t = 0, …, H
+        self.prix = []  # P_t, t = 0, …, H − 1
+
+    def relever(self, e):
+        if type(e) is FinDePas:
+            self.r_hat.append(e.etat.r_hat_etoile)
+            self.prix.append(e.etat.registre_prix[0])
+
+
+class Trajectoire131(NamedTuple):
+    r_hat: list
+    prix: list  # P_k, k = −13, …, H − 1 (indice k + 13)
+    a_I_pas: float
+    pi_etoile: float
+    arret: Exception | None
+    etat: schema.EtatPays  # état d'ouverture du pas H (dernier état atteint si arrêt)
+
+
+def _trajectoire_131(socle, forme, lambda_e, delta, nb_pas=H_131):
+    sentier = socle.sentier(PI_131, lambda_e=lambda_e)
+    o = _ordonnanceur_131(socle, sentier, forme)
+    etat = socle.etat_initial(sentier, choc_pi_e0=delta)
+    releve = _ReleveDe131(etat)
+    passe = tuple(reversed(etat.registre_prix))  # P_{−13}, …, P_{−1}
+    entrees = socle.entrees_du_tour()
+    arret = None
+    try:
+        for _ in range(nb_pas):
+            etat = ordo.executer_pas(etat, entrees, o, releve)
+    except (ArretNoyau, ArretMoteur) as e:
+        arret = e
+    table = socle.parametres_du_sentier(sentier).banque_centrale
+    return Trajectoire131(releve.r_hat, list(passe) + releve.prix, par_pas(table.a_I),
+                          socle.etat_initial(sentier).pi_etoile, arret, etat)
+
+
+@pytest.fixture(scope="module")
+def mesure_131(socle):
+    """(forme, λ_e, Δ) → `Trajectoire131` : 18 trajectoires de H pas (12 essais, 6 contrôles
+    Δ = 0), π* = 2 %, depuis l'état initial résolu aux tables du sentier à λ_e."""
+    return {(forme, lam, delta): _trajectoire_131(socle, forme, lam, delta)
+            for forme in (ARITHMETIQUE, LOG) for lam in LAMBDAS_131
+            for delta in (0.0, *CHOCS_131)}
+
+
+def _moyenne_de_fenetre(serie, fin):
+    """Moyenne de `serie` (indexée par t) sur [fin − 12 ; fin − 1]."""
+    return math.fsum(serie[fin - FENETRE_131:fin]) / FENETRE_131
+
+
+def _r_et_l(essai, controle, fin):
+    """R (point de % par an) et L (log) sur [fin − 12 ; fin − 1] ; P_t à l'indice t + 13."""
+    r = 100.0 * _moyenne_de_fenetre([a - b for a, b in zip(essai.r_hat, controle.r_hat)], fin)
+    ln_p = [math.log(a / b) for a, b in zip(essai.prix[13:], controle.prix[13:])]
+    return r, _moyenne_de_fenetre(ln_p, fin)
+
+
+def _ln_p_sur_p_etoile(traj, p_0, k):
+    """ln(P_k/P*_k), P*_k = P_0 (1 + π*)^{k/n_a}."""
+    return math.log(traj.prix[k + 13] / p_0) - k / N_A * math.log1p(traj.pi_etoile)
+
+
+def _glissements(traj, nb_pas):
+    """π_{t−1} = P_{t−1}/P_{t−13} − 1, t = 0, …, nb_pas − 1 (même calcul que le registre)."""
+    return [traj.prix[t + 12] / traj.prix[t] - 1.0 for t in range(nb_pas)]
+
+
+def _jensen(traj, nb_pas=H_131):
+    """J_H = (a_I/n_a) Σ_{t<H} [π_{t−1} − ln(1 + π_{t−1}) − (π* − ln(1 + π*))], fraction."""
+    pe = traj.pi_etoile - math.log1p(traj.pi_etoile)
+    return traj.a_I_pas * math.fsum(p - math.log1p(p) - pe for p in _glissements(traj, nb_pas))
+
+
+def _residu_telescopique(traj, forme, p_0, nb_pas=H_131):
+    """K3 : r̂*_H − r̂*_0 − (a_I/n_a)[Σ_{k=H−13}^{H−2} ln(P_k/P*_k) − Σ_{k=−13}^{−2}
+    ln(P_k/P*_k)], moins J_H sous (A) ; fraction par an."""
+    fin = math.fsum(_ln_p_sur_p_etoile(traj, p_0, k) for k in range(nb_pas - 13, nb_pas - 1))
+    debut = math.fsum(_ln_p_sur_p_etoile(traj, p_0, k) for k in range(-13, -1))
+    residu = traj.r_hat[nb_pas] - traj.r_hat[0] - traj.a_I_pas * (fin - debut)
+    return residu - _jensen(traj, nb_pas) if forme == ARITHMETIQUE else residu
+
+
+def _delta_131(delta):
+    return "0 (contrôle)" if delta == 0.0 else f"{delta:+g}"
+
+
+def _p_0(mesure_131, forme, lambda_e):
+    """P_0 simulé du contrôle apparié (forme, λ_e, Δ = 0), ancre de P* : indice des prix du pas 0
+    (indice 13 de `prix`)."""
+    return mesure_131[forme, lambda_e, 0.0].prix[13]
+
+
+def _exiger_k1(mesure_131):
+    """K3, K4 et la publication supposent les 18 trajectoires menées à H : sinon, non concluant
+    (K1), sans lever d'`IndexError`."""
+    if any(t.arret is not None for t in mesure_131.values()):
+        pytest.skip("non concluant : K1")
+
+
+def _au_bit(valeur):
+    """Forme comparable au bit (K2) : chaque flottant par `float.hex` (−0,0 distinct de +0,0, NaN
+    égal à lui-même), récursivement dans les n-uplets, listes et dictionnaires (clés triées par
+    `repr`)."""
+    if isinstance(valeur, float):
+        return float.hex(valeur)
+    if isinstance(valeur, (tuple, list)):
+        return tuple(_au_bit(x) for x in valeur)
+    if isinstance(valeur, dict):
+        return tuple(sorted(((k, _au_bit(x)) for k, x in valeur.items()),
+                            key=lambda kx: repr(kx[0])))
+    return valeur
+
+
+def test_131_k2_sous_classe_arithmetique_au_bit(socle):
+    """K2 (#131) : `bloc_8_compose(bloc_8.taux_neutre_suivant)` reproduit au bit le bloc 8 réel,
+    λ_e = 0,2, Δ = +0,01, 720 pas : à chaque pas, états de fin de pas (tous les champs du
+    schéma), variables du pas, grandeurs d'ouverture et montants exécutés de chaque ligne (et
+    leurs termes) du relevé, flottants comparés par `float.hex`."""
+    sentier = socle.sentier(PI_131, lambda_e=0.2)
+    tables = socle.parametres_du_sentier(sentier)
+    rendus = socle.blocs_du_socle_complet()
+    compose = bloc_8_compose(bloc_8.taux_neutre_suivant)
+    assert type(compose) is not BanqueCentrale and isinstance(compose, BanqueCentrale)
+    composes = tuple(compose if b.declaration.radical == "banque_centrale" else b
+                     for b in rendus)
+    suites = []
+    for blocs_du_banc in (rendus, composes):
+        o = ordo.assembler(PHASES, blocs_du_banc, tables, socle.ENTREES_DU_SOCLE)
+        etat = socle.etat_initial(sentier, choc_pi_e0=0.01)
+        releve = Releve()
+        for _ in range(NB_PAS_K2):
+            etat = ordo.executer_pas(etat, socle.entrees_du_tour(), o, releve)
+        suites.append([_au_bit({**{k: v for k, v in p.items() if k != "etat"},
+                                "etat": [getattr(p["etat"], c) for c in schema.CHAMPS]})
+                       for p in releve.pas])
+    reel, compose_ = suites
+    assert len(reel) == len(compose_) == NB_PAS_K2
+    for t, (a, b) in enumerate(zip(reel, compose_)):
+        assert a == b, f"pas {t}"
+
+
+def test_131_k1_aucun_arret_ni_refus(mesure_131, publier):
+    """K1 (#131) : aucun arrêt du noyau ni refus du moteur sur les 18 trajectoires de H pas."""
+    arrets = {cle: (len(t.prix) - 13, t.arret) for cle, t in mesure_131.items()
+              if t.arret is not None}
+    if arrets:
+        publier("#131, K1 : arrêts captés (non concluant)",
+                [f"{cle} : pas atteint {pas} ; {arret!r}" for cle, (pas, arret) in arrets.items()])
+    assert not arrets
+
+
+def test_131_k3_identites_telescopiques(mesure_131, publier):
+    """K3 (#131) : identités télescopiques à 1e−11 (absolu, fraction par an) sur les 18
+    trajectoires ; sous (L), r̂*_H − r̂*_0 = (a_I/n_a)[Σ_{k=H−13}^{H−2} ln(P_k/P*_k) −
+    Σ_{k=−13}^{−2} ln(P_k/P*_k)] ; sous (A), même écart plus le terme de Jensen J_H."""
+    _exiger_k1(mesure_131)
+    residus = {(forme, lam, delta): _residu_telescopique(t, forme, _p_0(mesure_131, forme, lam))
+               for (forme, lam, delta), t in mesure_131.items()}
+    publier(f"#131, K3 : résidus des identités télescopiques, H = {H_131} pas, seuil "
+            f"{SEUIL_K3:g} (fraction par an ; {ETIQUETTE})",
+            [f"{forme}, λ_e = {lam:g}, Δ = {_delta_131(delta)} : {r:+.3e}"
+             for (forme, lam, delta), r in residus.items()])
+    assert all(abs(r) <= SEUIL_K3 for r in residus.values()), residus
+
+
+def _mesures_131(mesure_131, fin=H_131):
+    """(forme, λ_e, Δ) → (R, L) à l'horizon `fin`, Δ ≠ 0."""
+    return {(forme, lam, delta): _r_et_l(mesure_131[forme, lam, delta],
+                                         mesure_131[forme, lam, 0.0], fin)
+            for forme in (ARITHMETIQUE, LOG) for lam in LAMBDAS_131 for delta in CHOCS_131}
+
+
+def test_131_k4_arrivee_atteinte(mesure_131, publier):
+    """K4 (#131) : |R_H − R_{H′}| ≤ 1e−7 point et |L_H − L_{H′}| ≤ 4e−9, H′ = 10 671, sur les
+    12 essais. Tenu à H (mesure du rang 4 de la ligne 14) : l'extension unique à 2H que prévoit
+    le protocole n'est pas codée ; un échec ici est « non concluant », et l'extension se déclare
+    alors par un commit (au-delà, rapport au mainteneur)."""
+    _exiger_k1(mesure_131)
+    a_h, a_hp = _mesures_131(mesure_131), _mesures_131(mesure_131, H_PRIME_131)
+    ecarts = {cle: (a_h[cle][0] - a_hp[cle][0], a_h[cle][1] - a_hp[cle][1]) for cle in a_h}
+    publier(f"#131, K4 : R_H − R_H′ (point) et L_H − L_H′, H = {H_131}, H′ = {H_PRIME_131} "
+            f"(seuils {SEUIL_K4_R:g} point, {SEUIL_K4_L:g} ; {ETIQUETTE})",
+            [f"{forme}, λ_e = {lam:g}, Δ = {delta:+g} : {dr:+.3e} point ; {dl:+.3e}"
+             for (forme, lam, delta), (dr, dl) in ecarts.items()])
+    assert all(abs(dr) <= SEUIL_K4_R and abs(dl) <= SEUIL_K4_L
+               for dr, dl in ecarts.values()), ecarts
+
+
+def classer_131(r_par_cle):
+    """Classification d'une forme (#131, constat) : `r_par_cle` : (λ_e, Δ) → R (point).
+
+    Classes testées dans cet ordre de priorité, la première vérifiée l'emporte :
+    1. (F) si max |R| ≤ ε_R ; testée en premier, elle rend aussi (F) quand max |R| ≤ ε_R alors
+       que D_R > ε_R pour un signe (possible puisque D_R ≤ 2 max |R|), cas que le protocole de
+       `monnaie` ne tranche pas ;
+    2. (C) si D_R > ε_R pour un signe au moins ;
+    3. (I) si |R| > ε_R partout (et donc D_R ≤ ε_R pour les deux signes) ;
+    4. « non classée » sinon (aucun D_R > ε_R, |R| ≤ ε_R pour une clé au moins, max |R| > ε_R) :
+       issue ajoutée hors protocole, qui n'existe que pour rendre le prédicat total et ne change
+       aucun classement des trois classes du protocole."""
+    d_r = {delta: max(r_par_cle[lam, delta] for lam in LAMBDAS_131)
+           - min(r_par_cle[lam, delta] for lam in LAMBDAS_131) for delta in CHOCS_131}
+    if max(abs(r) for r in r_par_cle.values()) <= EPSILON_R:
+        return "(F) r̂* fixé par la boucle", d_r
+    if any(d > EPSILON_R for d in d_r.values()):
+        return "(C) continuum de r̂* au socle complet", d_r
+    if all(abs(r) > EPSILON_R for r in r_par_cle.values()):
+        return "(I) écart permanent indépendant de λ_e", d_r
+    return "non classée", d_r
+
+
+def test_classer_131_sur_des_valeurs_synthetiques():
+    """Prédicat de classification de #131 sur des valeurs écrites à la main."""
+    def valeurs(f):
+        return {(lam, d): f(lam, d) for lam in LAMBDAS_131 for d in CHOCS_131}
+    assert classer_131(valeurs(lambda lam, d: 1e-7))[0].startswith("(F)")
+    assert classer_131(valeurs(lambda lam, d: 1e-4 * lam))[0].startswith("(C)")
+    assert classer_131(valeurs(lambda lam, d: 1e-4 + 1e-8 * lam))[0].startswith("(I)")
+    assert classer_131(valeurs(lambda lam, d: 1e-4 if d > 0 else 1e-8))[0] == "non classée"
+    # max |R| ≤ ε_R et D_R > ε_R (± 0,9 ε_R aux λ_e extrêmes) : (F), priorité de (F) sur (C)
+    bord = valeurs(lambda lam, d: {0.1: 0.9, 0.2: 0.0, 0.4: -0.9}[lam] * EPSILON_R)
+    classe, d_r = classer_131(bord)
+    assert all(d > EPSILON_R for d in d_r.values()) and classe.startswith("(F)")
+
+
+def _arrivee_a_l_echelle_nominale(etat, etat_c):
+    """Réserve R4 de `monnaie` (#131, hors protocole, sans seuil) : écarts de l'état `etat` à
+    l'état apparié du contrôle `etat_c`, rapportés à ln(P/P_c), P = tête du registre des prix.
+
+    Rend (ln(P/P_c), (max |x/x_c − 1|, nom) des variables d'état réelles et sans dimension
+    (invariance `VOLUME` ou `SANS_DIMENSION`), (max |ln(x/x_c) − ln(P/P_c)|, nom) des variables
+    nominales (`NOMINAL` : positions, V^flux, variables nominales des blocs) et des niveaux du
+    registre des prix (`INDICE`), noms des variables nulles aux deux états, écartées). Le
+    compteur de pas `t` (entier) est écarté ; un rapport nul, négatif ou de dénominateur nul
+    rend +inf."""
+    ln_p = math.log(etat.registre_prix[0] / etat_c.registre_prix[0])
+    reels, nominaux, nulles = [], [], []
+    for v in schema.VARIABLES:
+        if v.type is int:
+            continue
+        a, b = getattr(etat, v.nom), getattr(etat_c, v.nom)
+        paires = (tuple((f"{v.nom}[{k}]", x, y) for k, (x, y) in enumerate(zip(a, b)))
+                  if v.type is tuple else ((v.nom, a, b),))
+        for nom, x, y in paires:
+            if x == 0.0 and y == 0.0:
+                nulles.append(nom)
+            elif v.invariance in (Invariance.NOMINAL, Invariance.INDICE):
+                q = x / y if y != 0.0 else math.inf
+                nominaux.append((abs(math.log(q) - ln_p) if 0.0 < q < math.inf else math.inf,
+                                 nom))
+            else:
+                reels.append((abs(x / y - 1.0) if y != 0.0 else math.inf, nom))
+    return ln_p, max(reels), max(nominaux), nulles
+
+
+def test_131_mesure_du_terme_de_jensen_publiee(mesure_131, socle, publier):
+    """#131, point 2 (constat sans verdict du modèle, visa `monnaie`) : à π* = 2 %, par forme
+    ((A) bloc 8 réel, (L) BC2 en log), λ_e ∈ {0,1 ; 0,2 ; 0,4} et Δ = ± 1 point sur π^e_0, moyennes
+    sur [H − 12 ; H − 1], H = 14 228 pas : R = r̂*_t − r̂*_t,c (point de % par an), r̂*_t,c − r̄ ;
+    L = ln(P_t/P_t,c), ln(P_t/P*_t) avec P*_t = P_0 (1 + π*)^{t/n_a}, P_0 simulé du contrôle
+    apparié ; coefficient en Δ², R/Δ² (R et Δ en fraction), et L/Δ² (hors protocole) ; D_R =
+    max_λ R − min_λ R par signe ; sous (A), J_H − J_H,c ; contrôle de `monnaie` (rang 2)
+    r̂*_{∞,c} − [ϱ̄_L − ϖ_L/(1 + π*)], r̂*_{∞,c} moyenne du contrôle sur la même fenêtre.
+    Classification par forme (ε_R = 1e−6 point) et, sous (L), niveau des prix « ramené au
+    sentier » si max |L| ≤ ε_L = 4e−8. Sous (A), réserve R4 de `monnaie` (hors protocole, sans
+    seuil) : à l'état d'ouverture du pas H, par λ_e et par signe, écart maximal des grandeurs
+    réelles et sans dimension au contrôle apparié et des grandeurs nominales et positions à
+    ln(P/P_c) (`_arrivee_a_l_echelle_nominale`). Aucune assertion : la validité est jugée par
+    K1 à K4 (non concluant si K1 ne l'est pas)."""
+    _exiger_k1(mesure_131)
+    mesures = _mesures_131(mesure_131)
+    for forme in (ARITHMETIQUE, LOG):
+        lignes = []
+        for lam in LAMBDAS_131:
+            sentier = socle.sentier(PI_131, lambda_e=lam)
+            controle = mesure_131[forme, lam, 0.0]
+            p_0 = _p_0(mesure_131, forme, lam)
+            r_c = _moyenne_de_fenetre(controle.r_hat, H_131)
+            p_c = _moyenne_de_fenetre(
+                [_ln_p_sur_p_etoile(controle, p_0, t) for t in range(H_131)], H_131)
+            norme = sentier.s["rho_bar_L"] - sentier.par.varpi_L / (1.0 + PI_131)
+            lignes.append(
+                f"λ_e = {lam:g}, contrôle : r̂*_c − r̄ = {100 * (r_c - sentier.par.rbar):+.3e} "
+                f"point ; r̂*_∞,c − [ϱ̄_L − ϖ_L/(1 + π*)] = {100 * (r_c - norme):+.3e} point ; "
+                f"ln(P_c/P*) = {p_c:+.3e}")
+            for delta in CHOCS_131:
+                essai = mesure_131[forme, lam, delta]
+                r, ln_p = mesures[forme, lam, delta]
+                p_e = _moyenne_de_fenetre(
+                    [_ln_p_sur_p_etoile(essai, p_0, t) for t in range(H_131)], H_131)
+                jensen = (f" ; J_H − J_H,c = {_jensen(essai) - _jensen(controle):+.3e}"
+                          if forme == ARITHMETIQUE else "")
+                lignes.append(
+                    f"λ_e = {lam:g}, Δ = {delta:+g} : R = {r:+.4e} point ; "
+                    f"R/Δ² (R et Δ en fraction) = {r / 100 / delta ** 2:+.3e} ; "
+                    f"L = {ln_p:+.4e} ; L/Δ² = {ln_p / delta ** 2:+.4e} ; "
+                    f"ln(P/P*) = {p_e:+.4e}" + jensen)
+        classe, d_r = classer_131({(lam, d): mesures[forme, lam, d][0]
+                                   for lam in LAMBDAS_131 for d in CHOCS_131})
+        lignes.append("D_R (point) : " + " ; ".join(f"Δ = {d:+g} : {v:.4e}"
+                                                    for d, v in d_r.items()))
+        max_l = max(abs(mesures[forme, lam, d][1]) for lam in LAMBDAS_131 for d in CHOCS_131)
+        d_l = {d: max(mesures[forme, lam, d][1] for lam in LAMBDAS_131)
+               - min(mesures[forme, lam, d][1] for lam in LAMBDAS_131) for d in CHOCS_131}
+        lignes.append(f"max |L| = {max_l:.4e} ; D_L : "
+                      + " ; ".join(f"Δ = {d:+g} : {v:.4e}" for d, v in d_l.items()))
+        lignes.append(f"classification : {classe}")
+        if forme == ARITHMETIQUE:
+            lignes.append("arrivée = état du contrôle remis à une autre échelle nominale (racine "
+                          "nominale) ; état d'ouverture du pas H, hors protocole, sans seuil :")
+            nulles = set()
+            for lam in LAMBDAS_131:
+                for delta in CHOCS_131:
+                    ln_p, (e_r, n_r), (e_n, n_n), zeros = _arrivee_a_l_echelle_nominale(
+                        mesure_131[forme, lam, delta].etat, mesure_131[forme, lam, 0.0].etat)
+                    nulles.update(zeros)
+                    lignes.append(
+                        f"λ_e = {lam:g}, Δ = {delta:+g} : ln(P/P_c) = {ln_p:+.4e} ; réelles et "
+                        f"sans dimension, max |x/x_c − 1| = {e_r:.2e} ({n_r}) ; nominales et "
+                        f"positions, max |ln(x/x_c) − ln(P/P_c)| = {e_n:.2e} ({n_n})")
+            lignes.append("nulles aux deux états, écartées : " + ", ".join(sorted(nulles)))
+        if forme == LOG:
+            lignes.append("niveau des prix : " + ("ramené au sentier" if max_l <= EPSILON_L
+                                                  else "non ramené au sentier (max |L| > ε_L)"))
+        publier(f"#131, point 2, forme {forme}, π* = 2 %, H = {H_131} pas, moyennes sur "
+                f"[H − 12 ; H − 1] ({ETIQUETTE} ; constat sans verdict du modèle)", lignes)
