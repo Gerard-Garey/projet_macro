@@ -98,7 +98,9 @@ class MinimumNonEncadre(HorsDomaine):
     """Refus de `minimum_delta_r_alpha_en_zeta` (#173, P273) : r̄_α(0) − r̄_α(2 %) ne change pas de signe sur
     l'intervalle de ζ ou n'y est pas fini (point anguleux non encadré ; minimum non localisé par cette méthode), le
     croisement trouvé n'est pas minimal, Δr̄_α n'y est pas plus bas qu'aux deux bornes (minimum aux bornes, P281),
-    ou un r̄_α n'est pas fini là où Δr̄_α est évaluée. `motif` décrit le refus.
+    un r̄_α n'est pas fini là où Δr̄_α est évaluée, ou (#191, P320) la lecture (α) refuse un ζ évalué, la bissection
+    s'arrête avant la largeur demandée (précision de la machine, itérations) ou un voisin du contrôle de minimum local
+    sort de l'intervalle. `motif` décrit le refus.
 
     `table_publiees` publie la ligne « refusée », motif à l'appui, au lieu d'interrompre la table : une variante de
     paramètres (bords du domaine, rachat net) se calcule en entier, sans valeur NaN silencieuse. Comme « état non
@@ -2352,19 +2354,39 @@ def minimum_delta_r_alpha_en_zeta(calc: Calculs, bornes: tuple[float, float] = Z
     enfin comparé à Δr̄_α aux deux bornes de recherche (P281, constat R1 de l'audit de #173, deux évaluations de plus),
     pour que le libellé « minimum sur [2 ; 200] » ne repose pas sur le seul voisinage de ζ*.
 
-    Refus : bornes non finies ou non croissantes, ou `tol` non finie ou ≤ 0, par `HorsDomaine` ; différence de même
-    signe (ou nulle) aux deux bornes, ou non finie, par `MinimumNonEncadre` (point anguleux non encadré ; minimum non
-    localisé par cette méthode) ; croisement trouvé mais Δr̄_α non décroissante à gauche ou non croissante à droite,
-    par `MinimumNonEncadre` (croisement non minimal) ; Δr̄_α à l'une des bornes inférieure ou égale à Δr̄_α(ζ*), par
-    `MinimumNonEncadre` (minimum aux bornes) ; un r̄_α non fini à l'un des sept ζ où Δr̄_α est évaluée, par
-    `MinimumNonEncadre` (r̄_α non fini), avant la comparaison qui le lirait. Chaque refus porte son motif."""
+    Refus d'argument, par `HorsDomaine`, avant toute évaluation : bornes non finies ou non croissantes, `tol` non
+    finie ou ≤ 0, borne basse ≤ 0 (ζ > 0, terme en 1/ζ de r̄_α), `tol` ≥ largeur de `bornes` (aucune bissection,
+    voisins hors de l'intervalle). Refus par `MinimumNonEncadre` (#191, P320), que `table_publiees` publie
+    « refusée » : différence de même signe (ou nulle) aux deux bornes, ou non finie (point anguleux non encadré ;
+    minimum non localisé par cette méthode) ; refus de domaine (`HorsDomaine`) de `calc.r_alpha` en un ζ évalué,
+    converti avec son message ; milieu hors de ]a ; b[ (précision de la machine, ou a + b qui déborde) ou
+    `ITERATIONS_MAX` dépassé avant la largeur `tol` ; voisin a − w ou b + w hors de `bornes`, refusé sans écrêtage
+    ni évaluation ; croisement trouvé mais Δr̄_α non décroissante à gauche ou non croissante à droite (croisement
+    non minimal) ; Δr̄_α à l'une des bornes inférieure ou égale à Δr̄_α(ζ*) (minimum aux bornes) ; un r̄_α non fini
+    à l'un des sept ζ où Δr̄_α est évaluée (r̄_α non fini), avant la comparaison qui le lirait. Chaque refus porte
+    son motif ; tout ζ passé à `calc.r_alpha` est dans `bornes`, donc > 0."""
     a, b = bornes
     if not (math.isfinite(a) and math.isfinite(b) and a < b and math.isfinite(tol) and tol > 0):
         raise HorsDomaine(f"minimum de Δr̄_α en ζ : bornes [{a!r} ; {b!r}] finies et croissantes, tolérance {tol!r} "
                           "finie et > 0 attendues")
+    if a <= 0:
+        raise HorsDomaine(f"minimum de Δr̄_α en ζ : borne basse {a!r} ≤ 0 ; ζ > 0 attendu (terme en 1/ζ de r̄_α)")
+    if tol >= b - a:
+        raise HorsDomaine(f"minimum de Δr̄_α en ζ : tolérance {tol!r} ≥ largeur {b - a!r} de [{a!r} ; {b!r}] ; "
+                          "tolérance inférieure à la largeur attendue")
+
+    def evaluer(fonction, zeta: float) -> float:
+        """`fonction(zeta)`, son refus de domaine (lecture (α) en ζ) converti en constat publié (#191)."""
+        try:
+            return fonction(zeta)
+        except MinimumNonEncadre:
+            raise
+        except HorsDomaine as refus:
+            raise MinimumNonEncadre(f"refus de domaine à ζ = {zeta!r} ({refus}) : minimum non localisé par cette "
+                                    "méthode") from refus
 
     def ecart(zeta: float) -> float:
-        return calc.r_alpha(0.0, zeta) - calc.r_alpha(0.02, zeta)
+        return evaluer(lambda z: calc.r_alpha(0.0, z) - calc.r_alpha(0.02, z), zeta)
 
     fa, fb = ecart(a), ecart(b)
     if not (math.isfinite(fa) and math.isfinite(fb) and fa * fb < 0):
@@ -2374,8 +2396,12 @@ def minimum_delta_r_alpha_en_zeta(calc: Calculs, bornes: tuple[float, float] = Z
     iterations = 0
     while b - a > tol:
         if iterations >= ITERATIONS_MAX:
-            raise HorsDomaine(f"bissection en ζ non convergée en {ITERATIONS_MAX} itérations sur [{a!r} ; {b!r}]")
+            raise MinimumNonEncadre(f"bissection en ζ non convergée en {ITERATIONS_MAX} itérations sur [{a!r} ; "
+                                    f"{b!r}], largeur {tol!r} non atteinte : minimum non localisé par cette méthode")
         m = (a + b) / 2
+        if not (a < m < b):  # milieu égal à une extrémité (précision) ou non fini (a + b déborde)
+            raise MinimumNonEncadre(f"milieu {m!r} hors de ]{a!r} ; {b!r}[ (précision de la machine ou dépassement) "
+                                    f"avant la largeur {tol!r} : minimum non localisé par cette méthode")
         fm = ecart(m)
         iterations += 1
         if not math.isfinite(fm):
@@ -2385,20 +2411,26 @@ def minimum_delta_r_alpha_en_zeta(calc: Calculs, bornes: tuple[float, float] = Z
             a, fa = m, fm
         else:
             b = m
+
     def delta_fini(z: float) -> float:
-        d = _delta_r_alpha(calc, z)
+        d = evaluer(lambda x: _delta_r_alpha(calc, x), z)
         if not math.isfinite(d):
             raise MinimumNonEncadre(f"r̄_α non fini à ζ = {z!r} (Δr̄_α = {d!r}) : minimum non localisé par cette "
                                     "méthode")
         return d
 
     zeta, w = (a + b) / 2, b - a
+    borne_basse, borne_haute = bornes
+    hors = [z for z, dedans in ((a - w, borne_basse <= a - w), (b + w, b + w <= borne_haute)) if not dedans]
+    if hors:
+        raise MinimumNonEncadre(f"voisin du contrôle de minimum local hors de [{borne_basse!r} ; {borne_haute!r}] : "
+                                f"ζ = {' et '.join(repr(z) for z in hors)} ; croisement trop près d'une borne, "
+                                "minimum non localisé par cette méthode")
     gauche, delta_a, delta_b, droite = (delta_fini(z) for z in (a - w, a, b, b + w))
     if not (gauche > delta_a and droite > delta_b):
         raise MinimumNonEncadre(f"croisement trouvé mais non minimal : Δr̄_α vaut {gauche!r}, {delta_a!r}, "
                                 f"{delta_b!r} et {droite!r} à ζ = {a - w!r}, {a!r}, {b!r} et {b + w!r}")
     delta = delta_fini(zeta)
-    borne_basse, borne_haute = bornes
     delta_basse, delta_haute = delta_fini(borne_basse), delta_fini(borne_haute)
     if not (delta_basse > delta and delta_haute > delta):
         raise MinimumNonEncadre(f"minimum aux bornes : Δr̄_α vaut {delta!r} à ζ* = {zeta!r}, {delta_basse!r} à "
