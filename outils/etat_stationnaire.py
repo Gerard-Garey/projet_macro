@@ -1604,6 +1604,16 @@ def allocations_alpha(e: dict[str, float], n_a: int) -> dict[str, float]:
     }
 
 
+def _etendue(vals) -> float:
+    """Étendue max − min ; NaN dès qu'une valeur n'est pas finie (#188). `max` et `min` ignorent un NaN qui n'est pas
+    en tête : la valeur non finie serait masquée, comme dans `_delta_r_alpha` avant `94246ac`. Sur des valeurs
+    finies, identique bit à bit à `max(vals) - min(vals)`."""
+    vals = list(vals)
+    if not all(math.isfinite(x) for x in vals):
+        return math.nan
+    return max(vals) - min(vals)
+
+
 def superneutralite(par: Parametres) -> dict[str, object]:
     """Critère 13 de la fiche 8 (#80), lecture (α) pour le verdict, (β) en mesure (part de `monnaie`, § 7).
 
@@ -1614,12 +1624,12 @@ def superneutralite(par: Parametres) -> dict[str, object]:
 
     def ecart(d, quoi=None):
         vals = [d[pi]["r_alpha"] if quoi is None else d[pi]["allocations"][quoi] for pi in POINTS_PI]
-        return max(vals) - min(vals)
+        return _etendue(vals)
 
     beta = {pi: etat_stationnaire(replace(par, pi_cible=pi, n_a=12, rbar=0.01)) for pi in POINTS_PI}
     theta_beta = [beta[pi]["theta_G"] for pi in POINTS_PI]
     alloc_b = {pi: allocations_alpha(b, 12) for pi, b in beta.items()}
-    alloc_beta = {q: max(a[q] for a in alloc_b.values()) - min(a[q] for a in alloc_b.values())
+    alloc_beta = {q: _etendue(a[q] for a in alloc_b.values())
                   for q in ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES + ALLOCATIONS_MESUREES}
     profil = [grille[pi]["r_alpha"] for pi in PROFIL_PI]
     toutes = ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES + ALLOCATIONS_MESUREES
@@ -1637,14 +1647,14 @@ def superneutralite(par: Parametres) -> dict[str, object]:
         "delta_r_alpha_n_a": {n: ecart(autres[n]) for n in (4, 52)},
         "alpha_n_a": autres,
         "ecart_bornes": grille[0.10]["r_alpha"] - grille[0.0]["r_alpha"],
-        "ecart_profil": max(profil) - min(profil),
+        "ecart_profil": _etendue(profil),
         "marche_2_3": grille[0.03]["r_alpha"] - grille[0.02]["r_alpha"],
         "allocations": {q: ecart(grille, q) for q in ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES
                         + ALLOCATIONS_MESUREES},
         "invariance": {q: ecart(grille, q) / abs(grille[0.02]["allocations"][q]) for q in ALLOCATIONS_INVARIANTES},
         "C_PIB_relatif_2": {pi: grille[pi]["allocations"]["C/PIB"] - grille[0.02]["allocations"]["C/PIB"]
                             for pi in (0.0, 0.10)},
-        "beta_theta_G": max(theta_beta) - min(theta_beta),
+        "beta_theta_G": _etendue(theta_beta),
         "beta_allocations": alloc_beta,
     }
 
@@ -2935,6 +2945,18 @@ def _titre_nu(nu: float) -> str:
     return f"ν_G = {_f(nu)} (valeur retenue)"
 
 
+SANS_OBJET_NON_FINI = "sans objet (valeur non finie)"  # verdict du rendu sur une mesure non finie (#188)
+
+
+def _verdict_seuil(valeurs, seuil: float, tenu: str = "tenu", non_tenu: str = "non tenu (défaut connu, #80)") -> str:
+    """Verdict « max(valeurs) ≤ seuil » du rendu ; « sans objet (valeur non finie) » dès qu'une valeur n'est pas
+    finie (#188) : une comparaison à NaN est fausse et rendrait « non tenu », et `max` ignore un NaN hors de tête."""
+    valeurs = list(valeurs)
+    if not all(math.isfinite(v) for v in valeurs):
+        return SANS_OBJET_NON_FINI
+    return tenu if max(valeurs) <= seuil else non_tenu
+
+
 def afficher(r: dict[str, object], sortie=None) -> None:
     """Publie la grille complète, les contrôles et la comparaison aux valeurs publiées (texte déterministe)."""
     out = sortie or sys.stdout
@@ -3056,7 +3078,7 @@ def afficher(r: dict[str, object], sortie=None) -> None:
       "ν_G = 1, C59) : "
       f"{100 * sn['delta_r_alpha']:.6f} point ; "
       f"seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : "
-      f"{'tenu' if sn['delta_r_alpha'] <= SEUIL_SUPERNEUTRALITE else 'non tenu (défaut connu, #80)'}")
+      f"{_verdict_seuil([sn['delta_r_alpha']], SEUIL_SUPERNEUTRALITE)}")
     p(f"- écart entre les bornes r̄_α(10 %) − r̄_α(0) : {100 * sn['ecart_bornes']:+.6f} point ; écart maximal sur le "
       f"profil : {100 * sn['ecart_profil']:.6f} point ; marche de 2 à 3 % : {100 * sn['marche_2_3']:+.6f} point")
     al = sn["allocations"]
@@ -3064,13 +3086,13 @@ def afficher(r: dict[str, object], sortie=None) -> None:
         p(f"- allocations (α) à π* = {_f(100 * pi)} % : " + " ; ".join(
             f"{q} {_f(a['allocations'][q], 9)}" for q in ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES
             + ALLOCATIONS_MESUREES))
-    verdict = max(al[q] for q in ALLOCATIONS_VERDICT) <= SEUIL_SUPERNEUTRALITE
-    invariance = max(sn["invariance"].values()) <= TOL_INVARIANCE
+    verdict = _verdict_seuil((al[q] for q in ALLOCATIONS_VERDICT), SEUIL_SUPERNEUTRALITE)
+    invariance = _verdict_seuil(sn["invariance"].values(), TOL_INVARIANCE, "tenue", "NON TENUE")
     p("- verdict des allocations (liste L2), max − min sur {0 ; 2 ; 10 %}, point : " + " ; ".join(
         f"{q} {100 * al[q]:.6f}" for q in ALLOCATIONS_VERDICT)
-      + f" ; seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : {'tenu' if verdict else 'non tenu (défaut connu, #80)'}")
+      + f" ; seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : {verdict}")
     p("- invariance exacte (écart relatif max − min, seuil " + f"{TOL_INVARIANCE:g}) : " + " ; ".join(
-        f"{q} {_f(v, 3)}" for q, v in sn["invariance"].items()) + f" : {'tenue' if invariance else 'NON TENUE'}")
+        f"{q} {_f(v, 3)}" for q, v in sn["invariance"].items()) + f" : {invariance}")
     p("- mesures (sans verdict), max − min sur {0 ; 2 ; 10 %}, point : " + " ; ".join(
         f"{q} {100 * al[q]:.6f}" for q in ALLOCATIONS_MESUREES))
     p("- lecture (β) (r̄ = 1 % à chaque π*, mesure sans verdict) : "
