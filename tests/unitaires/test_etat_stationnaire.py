@@ -884,22 +884,23 @@ def _etat_170(stationnaire, b, lv, pi, nu, n_a=12):
     return stationnaire.etat_stationnaire(replace(b, lv=lv, pi_cible=pi, n_a=n_a, nu_G=nu), controler=False)
 
 
-def _e1_refuse_170(stationnaire, b, lv, pi, nu=1.0):
-    return not _etat_170(stationnaire, b, lv, pi, nu)["marge_E1_montant"] > 0  # test de `Calculs.etat`
+def _e1_refuse_170(stationnaire, b, lv, pi, nu=1.0, n_a=12):
+    return not _etat_170(stationnaire, b, lv, pi, nu, n_a)["marge_E1_montant"] > 0  # test de `Calculs.etat`
 
 
-def _admis_170(stationnaire, b, lv, pi, nu):
-    """Admission complète à ν_G > 1 : toutes les conditions de `etat_stationnaire`, plafond de E1 compris."""
+def _admis_170(stationnaire, b, lv, pi, nu, n_a=12):
+    """Admission complète à ν_G > 1 : toutes les conditions de `etat_stationnaire`, plafond de E1 compris. À
+    ν_G = 1, le plafond de E1 n'est pas un refus : toutes les autres conditions (S1 de #186)."""
     try:
-        stationnaire.etat_stationnaire(replace(b, lv=lv, pi_cible=pi, n_a=12, nu_G=nu), controler=True)
+        stationnaire.etat_stationnaire(replace(b, lv=lv, pi_cible=pi, n_a=n_a, nu_G=nu), controler=True)
     except stationnaire.HorsDomaine:
         return False
     return True
 
 
-def _cas_en_170(stationnaire, b, lv, pi):
-    return (_e1_refuse_170(stationnaire, b, lv, pi) and _etat_170(stationnaire, b, lv, pi, 1.0)["B"] >= 0
-            and all(_admis_170(stationnaire, b, lv, pi, nu) for nu in LV_170_NU[1:]))
+def _cas_en_170(stationnaire, b, lv, pi, n_a=12):  # n_a paramétré pour #186 (P314), 12 pour #170
+    return (_e1_refuse_170(stationnaire, b, lv, pi, n_a=n_a) and _etat_170(stationnaire, b, lv, pi, 1.0, n_a)["B"] >= 0
+            and all(_admis_170(stationnaire, b, lv, pi, nu, n_a) for nu in LV_170_NU[1:]))
 
 
 def _cas_170(stationnaire, b, lv):  # « à au moins un π̄ » (P277)
@@ -946,11 +947,12 @@ def test_cas_en_170_table_de_verite(stationnaire, base, monkeypatch, e1, b_valeu
     conjonction. Prédicats substitués : logique du critère seule, dont le conjoint B ≥ 0 qu'aucun point mesuré ne
     rend seul décisif (`test_cas_en_170_conjoints_gardes`), à B = 0 compris (B ≥ 0, m3 de l'audit)."""
     module = sys.modules[__name__]
-    monkeypatch.setattr(module, "_e1_refuse_170", lambda stationnaire, b, lv, pi, nu=1.0: e1)
+    monkeypatch.setattr(module, "_e1_refuse_170", lambda stationnaire, b, lv, pi, nu=1.0, n_a=12: e1)
     monkeypatch.setattr(module, "_etat_170",
                         lambda stationnaire, b, lv, pi, nu, n_a=12: {"B": b_valeur})
     monkeypatch.setattr(module, "_admis_170",
-                        lambda stationnaire, b, lv, pi, nu: {LV_170_NU[1]: admis_1001, LV_170_NU[2]: admis_115}[nu])
+                        lambda stationnaire, b, lv, pi, nu, n_a=12: {LV_170_NU[1]: admis_1001,
+                                                                     LV_170_NU[2]: admis_115}[nu])
     attendu = e1 and b_valeur >= 0 and admis_1001 and admis_115
     assert _cas_en_170(stationnaire, base, 0.45, 0.0) is attendu
     vrais = {0.0: attendu, 0.02: False, 0.10: True}  # π̄ = 10 % toujours vrai, 2 % toujours faux
@@ -1078,6 +1080,166 @@ def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
     print(f"#170, constat sans verdict (#185) : ligne de #173 « Δr̄_α au minimum en ζ sur [2 ; 200] » refusée en "
           f"lv* = {g_refus} et {d_refus}, admise en {g_admis} et {d_admis} (frontières à 1e−4 : mesure ponctuelle de "
           "`6c810dd`, en commentaire de `LV_173_ENCADRANTS`)")
+
+
+# #186 (critère P314 de `macro`, consigné avant l'essai : § 1 de la feuille de route, paragraphe #186) : fenêtre de lv*
+# où E1, refusé à ν_G = 1, est admis à ν_G = 1,001 et à 1,15 ; π̄ = 0 seulement, colonnes n_a = 4 et 12. Indicateurs par
+# appel direct d'`etat_stationnaire` : R1 = E1 refusé à ν_G = 1 ; S1 = à ν_G = 1, E1 seule condition violée
+# (`controler=True` aboutit : à ν_G = 1, le plafond de E1 n'est pas un refus) ; A(ν) = admission complète à ν.
+# Prédicat C = R1 ∧ S1 ∧ A(1,001) ∧ A(1,15) ; verdict « artefact de la marge de E1 » si chaque composante de
+# {lv* : C} vérifie N1 (bornes = frontières de E1 à ν_G = 1 et 1,001, à `LV_186_ECART_N1`) et N2 (largeur divisée par
+# un facteur dans `LV_186_RAPPORT_N2` avec la sonde `LV_186_SONDE_N2` à la place de 1,001). La grille du cas d'origine
+# n'est pas fixée par P314 : celle de l'essai de `macro` (27/11/2026), [0,43 ; 0,46] au pas 0,001.
+LV_186_GRILLE = [round(0.47 + k * 0.001, 6) for k in range(54)] + [0.5236]
+LV_186_GRILLE_ORIGINE = [round(0.43 + k * 0.001, 6) for k in range(31)]
+LV_186_TOL = 1e-6
+LV_186_ECART_N1 = 2e-6
+LV_186_SONDE_N2 = 1.0001
+LV_186_RAPPORT_N2 = (9.0, 11.0)
+
+
+def _indicateurs_186(stationnaire, b, lv, n_a, sonde):
+    """Conjoints de C à π̄ = 0 : R1, S1, A(sonde), A(1,15)."""
+    return {"R1": _e1_refuse_170(stationnaire, b, lv, 0.0, 1.0, n_a),
+            "S1": _admis_170(stationnaire, b, lv, 0.0, 1.0, n_a),
+            "A(sonde)": _admis_170(stationnaire, b, lv, 0.0, sonde, n_a),
+            "A(1,15)": _admis_170(stationnaire, b, lv, 0.0, LV_170_NU[2], n_a)}
+
+
+def _cas_186(stationnaire, b, lv, n_a, sonde=LV_170_NU[1]):
+    return all(_indicateurs_186(stationnaire, b, lv, n_a, sonde).values())
+
+
+def _composante_186(stationnaire, b, n_a, grille, sonde=LV_170_NU[1]):
+    """Encadrements à `LV_186_TOL` des deux bouts de {lv* : C} sur `grille`, qui doit en avoir exactement une
+    composante, sans toucher les bouts de la grille (sinon « non encadrée », P314)."""
+    cas = [_cas_186(stationnaire, b, lv, n_a, sonde) for lv in grille]
+    vrais = [k for k, c in enumerate(cas) if c]
+    assert vrais, f"P314, « aucun cas » : W vide sur la grille (sonde {sonde})"
+    assert vrais == list(range(vrais[0], vrais[-1] + 1)), (
+        f"plusieurs composantes de W (sonde {sonde}) : le test n'en suppose qu'une, chacune est à classer (P314)")
+    assert not cas[0] and not cas[-1], (
+        f"P314, « non encadrée » : W touche un bout de la grille (sonde {sonde}) ; rapport sans verdict")
+    i, j = vrais[0], vrais[-1]
+
+    def predicat(x):
+        return _cas_186(stationnaire, b, x, n_a, sonde)
+
+    return (_bissection_lv(predicat, grille[i - 1], grille[i], LV_186_TOL),
+            _bissection_lv(predicat, grille[j], grille[j + 1], LV_186_TOL))
+
+
+def _frontiere_e1_186(stationnaire, b, n_a, grille, nu):
+    """Encadrement à `LV_186_TOL` de l'unique frontière de E1 (`marge_E1_montant > 0`) à ν_G = `nu` sur `grille`."""
+    refus = [_e1_refuse_170(stationnaire, b, lv, 0.0, nu, n_a) for lv in grille]
+    changements = [k for k in range(1, len(grille)) if refus[k] != refus[k - 1]]
+    assert len(changements) == 1, (
+        f"frontière de E1 à ν_G = {nu} non unique sur la grille ({len(changements)} changements) : "
+        "N1 non tenu, P314 « cas adverse »")
+    k = changements[0]
+    return _bissection_lv(lambda x: _e1_refuse_170(stationnaire, b, x, 0.0, nu, n_a), grille[k - 1], grille[k],
+                          LV_186_TOL)
+
+
+def _classer_186(stationnaire, b, n_a, grille):
+    """Propriétés de P314 sur `grille` (π̄ = 0) : C = C170 en chaque point de grille et aux deux points de chaque
+    encadrement ; S1 et A(1,15) vrais en chaque point de grille (jamais seuls décisifs : constat de `macro`) ; une
+    composante encadrée ; bout bas fermé par R1 seul, bout haut par A(1,001) seul ; N1 ; N2 ; marge_E1 ≤ 0 sur la
+    composante. Rend les mesures."""
+    assert ([_cas_186(stationnaire, b, lv, n_a) for lv in grille]
+            == [_cas_en_170(stationnaire, b, lv, 0.0, n_a) for lv in grille]), (
+        "P314 : C ≠ C170 en un point de grille, arrêt et rapport sans verdict")
+    for lv in grille:
+        indicateurs = _indicateurs_186(stationnaire, b, lv, n_a, LV_170_NU[1])
+        assert indicateurs["S1"] and indicateurs["A(1,15)"], (
+            f"lv* = {lv} : S1 ou A(1,15) faux, seul décisif en un point de grille (constat publié de `macro` démenti)")
+    bas, haut = _composante_186(stationnaire, b, n_a, grille)
+    for (x_dehors, x_dedans), ferme in ((bas, {"R1"}), (haut[::-1], {"A(sonde)"})):
+        assert all(_cas_186(stationnaire, b, x, n_a) == _cas_en_170(stationnaire, b, x, 0.0, n_a)
+                   for x in (x_dehors, x_dedans)), (
+            f"P314 : C ≠ C170 à l'encadrement [{x_dehors} ; {x_dedans}], arrêt et rapport sans verdict")
+        dehors = _indicateurs_186(stationnaire, b, x_dehors, n_a, LV_170_NU[1])
+        dedans = _indicateurs_186(stationnaire, b, x_dedans, n_a, LV_170_NU[1])
+        assert all(dedans.values()) and {cle for cle in dehors if dehors[cle] != dedans[cle]} == ferme, (
+            f"bout [{x_dehors} ; {x_dedans}] fermé par {dehors} et non par {ferme} seul : N1 ne peut tenir, "
+            "P314 « cas adverse »")
+
+    # N1 : bornes de la composante sur les frontières de E1 à ν_G = 1 (bas) et 1,001 (haut).
+    f_1 = _frontiere_e1_186(stationnaire, b, n_a, grille, 1.0)
+    f_1001 = _frontiere_e1_186(stationnaire, b, n_a, grille, LV_170_NU[1])
+    assert max(abs(x - y) for x, y in zip(bas + haut, f_1 + f_1001)) <= LV_186_ECART_N1, (
+        f"N1 non tenu (W {bas}, {haut} ; frontières de E1 {f_1}, {f_1001}) : P314 « cas adverse »")
+
+    # N2 : avec la sonde 1,0001, largeur divisée par un facteur dans `LV_186_RAPPORT_N2`, encadrements compris
+    # (rapport minimal : largeur intérieure sur largeur extérieure de la sonde ; maximal : l'inverse).
+    bas_s, haut_s = _composante_186(stationnaire, b, n_a, grille, sonde=LV_186_SONDE_N2)
+    rapports = ((haut[0] - bas[1]) / (haut_s[1] - bas_s[0]), (haut[1] - bas[0]) / (haut_s[0] - bas_s[1]))
+    assert LV_186_RAPPORT_N2[0] <= rapports[0] <= rapports[1] <= LV_186_RAPPORT_N2[1], (
+        f"N2 non tenu (rapport des largeurs {rapports} hors de {LV_186_RAPPORT_N2}) : P314 « cas adverse »")
+
+    # marge_E1 (grandeur publiée, ν_G = 1) ≤ 0 sur la composante : bornes intérieures et points de grille entre elles.
+    def marge(lv):
+        p = replace(b, lv=lv, pi_cible=0.0, n_a=n_a, nu_G=1.0)
+        return stationnaire.valeurs(stationnaire.etat_stationnaire(p, controler=False), p)["marge_E1"]
+
+    marges = [marge(lv) for lv in [bas[1], *(x for x in grille if bas[1] < x < haut[0]), haut[0]]]
+    assert max(marges) <= 0, (
+        f"marge_E1 > 0 sur W (max {max(marges)}) : contradiction avec R1 (contrôle, hors des branches de P314)")
+    return {"bas": bas, "haut": haut, "sonde": (bas_s, haut_s), "rapports": rapports, "marges": marges}
+
+
+def _imprimer_186(titre, mesure):
+    (a, b), (c, d) = mesure["bas"], mesure["haut"]
+    (a_s, b_s), (c_s, d_s) = mesure["sonde"]
+    print(f"{titre} : W = {{lv* : C}}, bas [{a:.7f} ; {b:.7f}] fermé par R1, haut [{c:.7f} ; {d:.7f}] fermé par "
+          f"A(1,001) ; N1 tenu ; sonde {LV_186_SONDE_N2} : [{a_s:.7f} ; {b_s:.7f}] à [{c_s:.7f} ; {d_s:.7f}], "
+          f"rapport des largeurs [{mesure['rapports'][0]:.4f} ; {mesure['rapports'][1]:.4f}] ; marge_E1 à ν_G = 1 "
+          f"sur W : min {min(mesure['marges']):.6g}, max {max(mesure['marges']):.6g} ; "
+          "verdict : artefact de la marge de E1")
+
+
+@pytest.mark.parametrize("r1, s1, a_sonde, a_115",
+                         [(r1, s1, a1, a2) for r1 in (False, True) for s1 in (False, True)
+                          for a1 in (False, True) for a2 in (False, True)])
+def test_cas_186_table_de_verite(stationnaire, base, monkeypatch, r1, s1, a_sonde, a_115):
+    """`_cas_186` est la conjonction de ses quatre conjoints (R1, S1, A(sonde), A(1,15)), à la sonde passée en
+    argument. Prédicats substitués : logique du critère seule, dont S1 et A(1,15), qu'aucun point des grilles de
+    #186 ne rend seul décisif (vrais en chaque point : `_classer_186`) ; la table garde aussi le ν_G de chaque
+    conjoint (1, sonde, 1,15)."""
+    module = sys.modules[__name__]
+    monkeypatch.setattr(module, "_e1_refuse_170", lambda stationnaire, b, lv, pi, nu=1.0, n_a=12: r1)
+    for sonde in (LV_170_NU[1], LV_186_SONDE_N2):
+        admis = {1.0: s1, sonde: a_sonde, LV_170_NU[2]: a_115}
+        monkeypatch.setattr(module, "_admis_170", lambda stationnaire, b, lv, pi, nu, n_a=12: admis[nu])
+        assert _cas_186(stationnaire, base, 0.5, 12, sonde) is (r1 and s1 and a_sonde and a_115)
+
+
+@pytest.mark.parametrize("n_a", [4, 12])
+def test_fenetre_186_artefact_de_la_marge_de_E1(stationnaire, base, n_a):
+    """#186, critère P314 de `macro` (ci-dessus) à la table T1, π̄ = 0, colonne `n_a` : grille de 55 points
+    (0,47 + k·0,001, k = 0..53, puis 0,5236) ; C = C170 (prédicat de #170 restreint à π̄ = 0) en chaque point ;
+    S1 et A(1,15) vrais en chaque point de grille (aucune condition autre que E1 violée à ν_G = 1, admission à 1,15 :
+    jamais seuls décisifs) ; exactement une composante de {lv* : C}, C faux en 0,47 et en 0,5236 (encadrée) ; à la
+    bissection à 1e−6, C = C170 aux deux points de chaque encadrement, bout bas fermé par R1 seul, bout haut par
+    A(1,001) seul ; N1 et N2 vérifiés, d'où le verdict « artefact de la marge de E1 » ; marge_E1 ≤ 0 sur la
+    composante. Chaque assertion nomme, en cas d'échec, la branche de P314 en cause. Bornes, rapports et marges
+    imprimés (`pytest -s`)."""
+    assert base.nu_H == 1.1 and base.vartheta == 0.15  # table T1
+    assert len(LV_186_GRILLE) == 55 and LV_186_GRILLE[0] == 0.47 and LV_186_GRILLE[-2:] == [0.523, 0.5236]
+    assert LV_186_GRILLE == sorted(LV_186_GRILLE)
+    _imprimer_186(f"\n#186, T1, π̄ = 0, n_a = {n_a}", _classer_186(stationnaire, base, n_a, LV_186_GRILLE))
+
+
+def test_fenetre_186_garde_du_classifieur_sur_le_cas_d_origine(stationnaire, base):
+    """#186, garde du classifieur (P314) : aux entrées des cas adverses (lv* = 0,45, ϑ = 0,10, ν_H = 1), n_a = 12,
+    π̄ = 0, C est vrai, et la composante qui contient 0,45, encadrée sur `LV_186_GRILLE_ORIGINE`, vérifie les mêmes
+    propriétés que la fenêtre de T1 (N1 et N2 compris) : le cas d'origine est dans la classe « artefact de la marge
+    de E1 »."""
+    adverse = aux_entrees_des_cas_adverses(stationnaire, base)
+    assert _cas_186(stationnaire, adverse, 0.45, 12)
+    mesure = _classer_186(stationnaire, adverse, 12, LV_186_GRILLE_ORIGINE)
+    assert mesure["bas"][1] <= 0.45 <= mesure["haut"][0]
+    _imprimer_186("\n#186, cas d'origine (ϑ = 0,10, ν_H = 1), π̄ = 0, n_a = 12", mesure)
 
 
 def test_etat_initial_publie_a_nu_G_retenu_puis_a_la_reference(stationnaire, resultat):
