@@ -2,11 +2,11 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; le reste est dans `docs/feuille-de-route-historique.md` (parties A à J et leurs compléments, sans rien supprimé ni réécrit), dont la « Lecture des renvois » dit où lire chaque renvoi absent de la tête.
 
-**Dernière mise à jour** : 28/11/2026, rang 0 de la ligne 14 (`architect`) — `main` = `c93ddd8` (PR #203, § 7) ; branche `claude/j3-e3-critere-i1` créée depuis `c93ddd8`, PR brouillon #<PR> (§ 1) ; P323 à P327 décidées (§ 4) ; #204 à #207 rattachées (§ 3) ; extraits sortis : historique, partie J, complément du rang 0 de la ligne 14. Mises à jour antérieures : même lieu, puis partie J et ses compléments, partie I et ses compléments, parties H à A et `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 28/11/2026, rang 0 de la ligne 14 (`architect`) — `main` = `c93ddd8` (PR #203, § 7) ; branche `claude/j3-e3-critere-i1` créée depuis `c93ddd8`, PR brouillon #208 (§ 1) ; P323 à P327 décidées (§ 4) ; #204 à #207 rattachées (§ 3) ; extraits sortis : historique, partie J, complément du rang 0 de la ligne 14. Mises à jour antérieures : même lieu, puis partie J et ses compléments, partie I et ses compléments, parties H à A et `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
-**Branche 14, J3-e3 « critère I1 »** — `claude/j3-e3-critere-i1`, créée le 28/11/2026 par la session depuis `main` = `c93ddd8` (fusion de la PR #203) ; **PR brouillon #<PR>**. Plan proposé par `architect` au point d'étape du 28/11/2026, décidé le même jour par le mainteneur (P323 à P327, § 4). Fiche de la ligne 13 ter à sa fusion : historique, partie J, complément du rang 0 de la ligne 14.
+**Branche 14, J3-e3 « critère I1 »** — `claude/j3-e3-critere-i1`, créée le 28/11/2026 par la session depuis `main` = `c93ddd8` (fusion de la PR #203) ; **PR brouillon #208**. Plan proposé par `architect` au point d'étape du 28/11/2026, décidé le même jour par le mainteneur (P323 à P327, § 4). Fiche de la ligne 13 ter à sa fusion : historique, partie J, complément du rang 0 de la ligne 14.
 
 **Périmètre (P323)** : avec `Closes` : #139 et #169 (critère de #169 retenu pour #139, P324), #140, #187 ; #114 : `Closes` seulement sous la lecture stricte de P325, décidé après l'inventaire du rang 1 ; #131 : point 2 seul (mesure), sans `Closes`. Aucun fichier de `src/` ni d'`outils/` n'est touché : tests du socle complet (`tests/invariants/`) et, au rang 7, la spécification.
 
@@ -37,7 +37,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 **Visa** : chaque verdict nouveau (I1, #139, #140, et #131 si son critère porte un verdict) : mainteneur ; constats et republications (#187, chiffre de #131) : expert pilote. Aucun état stationnaire, aucune sortie du script, aucun verdict du test zéro ne doit changer. Fable : aucune consultation prévue (0 sur 3).
 
-**Escalades, relances et arrêts** : à noter dans la PR brouillon #<PR> ; aucun au rang 0.
+**Escalades, relances et arrêts** : à noter dans la PR brouillon #208 ; aucun au rang 0.
 
 **Vigilance** : #163 avant la démonstration J4 (condition de M34) ; seuil du ratio de sacrifice de la boucle T3 ↔ BC3 (#114, amendement du 14/11/2026) à classer (s) vers #163 (J3-f1) au rang 1 ; sorties du script et de la maquette tenues par aucune batterie (#179) : remesure sur stdout seul à chaque commit `tests:` ; valeurs à `c93ddd8` : § 7.
 
@@ -49,7 +49,7 @@ Les branches fusionnées sont au § 7 ; lignes antérieures du présent tableau 
 
 | Ordre | Branche | Issues | Motif du regroupement et état |
 |---|---|---|---|
-| 14 | J3-e3 « critère I1 » `claude/j3-e3-critere-i1` — **en cours** depuis le 28/11/2026 (PR brouillon #<PR> ; § 1) | #114 (`Closes` selon P325), #131 (point 2, mesure), #139 (avec #169, P324), #140, #187 (P323) | Lignes « J3 » des fiches sur le socle complet depuis l'état résolu (P122, P150, P324) ; inventaire de I1 au rang 1. #187 : origine de « 1,0015 », `macro`. Ligne 13 ter, fusionnée : § 7. |
+| 14 | J3-e3 « critère I1 » `claude/j3-e3-critere-i1` — **en cours** depuis le 28/11/2026 (PR brouillon #208 ; § 1) | #114 (`Closes` selon P325), #131 (point 2, mesure), #139 (avec #169, P324), #140, #187 (P323) | Lignes « J3 » des fiches sur le socle complet depuis l'état résolu (P122, P150, P324) ; inventaire de I1 au rang 1. #187 : origine de « 1,0015 », `macro`. Ligne 13 ter, fusionnée : § 7. |
 | 15 | J3-f1 « stabilité linéarisée » | S1 (à rédiger), #147, #116, #125 (point 2, `Closes`), #163 (P204) ; F2 (P249) ; #190 après décision du mainteneur (P300) | Linéarisation sur le moteur ; ratio de sacrifice sur le socle linéarisé (C7). **Condition de M34 : #163 traitée avant la démonstration J4.** #180 (J4) traitée avant F2 (P296). Plus de cinq éléments : à redécouper au point d'étape qui la précède. |
 | 16 | J3-f2 « trajectoires après chocs » | S2 (à rédiger), #87, #88, #111, #154 ; avant elle, instruction de #195 et #200 par `monnaie` (P316) | Après J3-f1 (#116 → #111). |
 | 17 | J3-g1 « chemin chaud » | #110, #159, #160, #161, #156 | Forme du code sans changement de résultat (critère « identique au bit ») ; avant G1, qui mesure le coût final. |
