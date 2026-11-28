@@ -2034,14 +2034,38 @@ def test_minimum_de_delta_r_alpha_en_zeta_refuse_sans_croisement(stationnaire, b
 
 
 class _RAlphaSynthetique:
-    """`calc` synthétique de `minimum_delta_r_alpha_en_zeta` : r̄_α(2 %) = 0, r̄_α(0) = (50 − ζ)/100 (croisement à
-    ζ = 50, jamais un milieu dyadique de [2 ; 200]) ; r̄_α(10 %) donné par `haut`."""
+    """`calc` synthétique de `minimum_delta_r_alpha_en_zeta` : r̄_α(2 %) = 0, r̄_α(0) = (`croisement` − ζ)/100
+    (par défaut, croisement à ζ = 50, jamais un milieu dyadique de [2 ; 200]) ; r̄_α(10 %) donné par `haut`."""
 
-    def __init__(self, haut) -> None:
-        self.haut = haut
+    def __init__(self, haut, croisement: float = 50.0) -> None:
+        self.haut, self.croisement = haut, croisement
 
     def r_alpha(self, pi: float, zeta: float) -> float:
-        return {0.0: (50.0 - zeta) / 100, 0.02: 0.0, 0.10: self.haut(zeta)}[pi]
+        return {0.0: (self.croisement - zeta) / 100, 0.02: 0.0, 0.10: self.haut(zeta)}[pi]
+
+
+class _Traceur:
+    """`calc` qui relève chaque ζ passé à `r_alpha` avant de déléguer à `calc` (#191)."""
+
+    def __init__(self, calc) -> None:
+        self.calc, self.zetas = calc, []
+
+    def r_alpha(self, pi: float, zeta: float) -> float:
+        self.zetas.append(zeta)
+        return self.calc.r_alpha(pi, zeta)
+
+
+class _RAlphaRefuse(_RAlphaSynthetique):
+    """Creux symétrique dont la lecture (α) refuse (`HorsDomaine`) les (π*, ζ) où `refuse` est vrai (#191)."""
+
+    def __init__(self, stationnaire, refuse) -> None:
+        super().__init__(_creux_symetrique)
+        self.stationnaire, self.refuse = stationnaire, refuse
+
+    def r_alpha(self, pi: float, zeta: float) -> float:
+        if self.refuse(pi, zeta):
+            raise self.stationnaire.HorsDomaine(f"refus synthétique à π* = {pi!r}")
+        return super().r_alpha(pi, zeta)
 
 
 @pytest.mark.parametrize("bornes, tol", [
@@ -2054,6 +2078,92 @@ def test_minimum_de_delta_r_alpha_refuse_bornes_et_tolerance_invalides(stationna
     with pytest.raises(stationnaire.HorsDomaine, match="finies et croissantes") as refus:
         stationnaire.minimum_delta_r_alpha_en_zeta(calc, bornes, tol)
     assert not isinstance(refus.value, stationnaire.MinimumNonEncadre)
+
+
+@pytest.mark.parametrize("bornes, tol", [
+    ((0.0, 200.0), 1e-3), ((-1.0, 200.0), 1e-3), ((2.0, 200.0), 198.0), ((2.0, 200.0), 1000.0)])
+def test_minimum_de_delta_r_alpha_refuse_borne_non_positive_et_tolerance_trop_large(stationnaire, bornes, tol):
+    """#191 (P320) : borne basse ≤ 0 (ζ > 0 attendu) ou `tol` ≥ largeur de `bornes` (aucune bissection, voisins
+    du contrôle local hors de l'intervalle) : refus d'argument `HorsDomaine` (pas `MinimumNonEncadre`), motif à
+    l'appui, avant toute évaluation de r̄_α."""
+    calc = _Traceur(_RAlphaSynthetique(_creux_symetrique))
+    with pytest.raises(stationnaire.HorsDomaine, match="minimum de Δr̄_α en ζ : ") as refus:
+        stationnaire.minimum_delta_r_alpha_en_zeta(calc, bornes, tol)
+    assert not isinstance(refus.value, stationnaire.MinimumNonEncadre)
+    assert calc.zetas == []
+
+
+@pytest.mark.parametrize("refuse", [
+    lambda pi, zeta: zeta < 10.0, lambda pi, zeta: 40.0 < zeta < 60.0 and zeta != 50.0, lambda pi, zeta: pi == 0.10],
+    ids=["borne_basse", "bissection", "delta_seul"])
+def test_minimum_de_delta_r_alpha_convertit_un_refus_de_domaine(stationnaire, refuse):
+    """#191 (P320) : un refus de domaine (`HorsDomaine`) de la lecture (α) en un ζ évalué, à une borne, pendant la
+    bissection, ou au seul r̄_α(10 %) que lit Δr̄_α, devient un `MinimumNonEncadre` dont le motif nomme le ζ et
+    reprend le message du refus, que `table_publiees` publie « refusée » au lieu d'interrompre la table."""
+    with pytest.raises(stationnaire.MinimumNonEncadre, match="refus de domaine à ζ = ") as refus:
+        stationnaire.minimum_delta_r_alpha_en_zeta(_RAlphaRefuse(stationnaire, refuse))
+    assert "refus synthétique à π* = " in refus.value.motif
+    assert isinstance(refus.value.__cause__, stationnaire.HorsDomaine)
+
+
+@pytest.mark.parametrize("bornes, tol, croisement, motif", [
+    ((2.0, 200.0), 1e-15, 50.0, "précision de la machine ou dépassement"),
+    ((1e308, 1.7e308), 1e300, 1.6e308, "précision de la machine ou dépassement"),
+    ((1e-4, 1e100), 1e-3, 50.0, "non convergée")], ids=["precision_machine", "depassement", "iterations"])
+def test_minimum_de_delta_r_alpha_refuse_une_bissection_inachevee(stationnaire, bornes, tol, croisement, motif):
+    """#191 (P320) : la bissection qui n'atteint pas la largeur `tol`, faute de précision de la machine (`tol` sous
+    l'espacement des flottants autour de ζ = 50, milieu égal à une extrémité), par dépassement (a + b déborde sur
+    [1e308 ; 1,7e308], milieu infini ; constat m1 de l'audit de #191) ou faute d'itérations
+    (⌈log₂(1e100/1e−3)⌉ > `ITERATIONS_MAX`), est refusée par `MinimumNonEncadre`, motif à l'appui, sans ζ* rendu ;
+    chaque ζ évalué reste dans `bornes`."""
+    calc = _Traceur(_RAlphaSynthetique(lambda zeta: 0.0, croisement))
+    with pytest.raises(stationnaire.MinimumNonEncadre, match=motif):
+        stationnaire.minimum_delta_r_alpha_en_zeta(calc, bornes, tol)
+    assert all(bornes[0] <= z <= bornes[1] for z in calc.zetas)
+
+
+@pytest.mark.parametrize("croisement", [5e-4, 200.0 - 5e-4], ids=["borne_basse", "borne_haute"])
+def test_minimum_de_delta_r_alpha_refuse_des_voisins_hors_des_bornes(stationnaire, croisement):
+    """#191 (P320) : croisement à moins de 2w d'une borne de [1e−4 ; 200] (tol = 1e−3) : les voisins a − w ou
+    b + w du contrôle de minimum local sortent de `bornes` (ζ < 0 à la borne basse). Refus `MinimumNonEncadre`,
+    motif « voisin », qui ne nomme que le ou les voisins fautifs, sans écrêtage ni évaluation hors de
+    l'intervalle : tout ζ passé à `calc.r_alpha` est dans `bornes`, donc > 0."""
+    bornes = (1e-4, 200.0)
+    calc = _Traceur(_RAlphaSynthetique(lambda zeta: 10.0 + 1000 * abs(zeta - croisement), croisement))
+    with pytest.raises(stationnaire.MinimumNonEncadre, match="voisin du contrôle de minimum local") as refus:
+        stationnaire.minimum_delta_r_alpha_en_zeta(calc, bornes, 1e-3)
+    assert "hors de [0.0001 ; 200.0]" in refus.value.motif
+    nommes = [float(z) for z in refus.value.motif.split("ζ = ")[1].split(" ; ")[0].split(" et ")]
+    assert nommes and all(not bornes[0] <= z <= bornes[1] for z in nommes)  # seuls les voisins fautifs sont nommés
+    assert calc.zetas and all(bornes[0] <= z <= bornes[1] and z > 0 for z in calc.zetas)
+
+
+def test_minimum_de_delta_r_alpha_n_evalue_que_dans_les_bornes_a_t1(stationnaire, base):
+    """#191 (P320) : à la table T1, bornes et tolérance par défaut, chaque ζ passé à `calc.r_alpha` est dans
+    `ZETA_MINIMUM_BORNES` et > 0, et le minimum rendu est celui du `calc` non tracé."""
+    calc = stationnaire.Calculs(base)
+    traceur = _Traceur(calc)
+    rendu = stationnaire.minimum_delta_r_alpha_en_zeta(traceur)
+    bas, haut = stationnaire.ZETA_MINIMUM_BORNES
+    assert traceur.zetas and all(bas <= z <= haut and z > 0 for z in traceur.zetas)
+    assert rendu == stationnaire.minimum_delta_r_alpha_en_zeta(calc)
+
+
+@pytest.mark.parametrize("arguments, motif", [
+    (((1e-9, 200.0),), "refus de domaine à ζ = 1e-09"),
+    (((2.0, 200.0), 1e-15), "précision de la machine ou dépassement")],
+    ids=["bornes_1e-9", "tol_1e-15"])
+def test_minimum_non_encadre_publie_refuse_a_t1_hors_domaine(stationnaire, base, arguments, motif):
+    """#191 (P320) : à la table T1, la ligne du minimum calculée sur `bornes = (1e−9, 200)` (la lecture (α) refuse
+    ζ = 1e−9) ou à `tol = 1e−15` (sous l'espacement des flottants autour de ζ*) sort « refusée », motif à l'appui,
+    sans exception : la table n'est pas interrompue."""
+    cle = ("sec:banque_centrale-conditions", "Δr̄_α au minimum en ζ sur [2 ; 200], point")
+    liste = tuple((s, d, p, lambda c: stationnaire.minimum_delta_r_alpha_en_zeta(c, *arguments)[1], k)
+                  for s, d, p, _, k in stationnaire.VALEURS_PUBLIEES if (s, d) == cle)
+    assert len(liste) == 1
+    [ligne] = stationnaire.table_publiees(stationnaire.Calculs(base), liste)
+    assert ligne["verdict"] == "refusée" and math.isnan(ligne["script"])
+    assert ligne["libelle"].startswith("refus (") and motif in ligne["libelle"]
 
 
 def test_minimum_de_delta_r_alpha_refuse_un_croisement_non_minimal(stationnaire):
