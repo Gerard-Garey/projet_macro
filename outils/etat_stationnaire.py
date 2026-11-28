@@ -98,7 +98,9 @@ class MinimumNonEncadre(HorsDomaine):
     """Refus de `minimum_delta_r_alpha_en_zeta` (#173, P273) : r̄_α(0) − r̄_α(2 %) ne change pas de signe sur
     l'intervalle de ζ ou n'y est pas fini (point anguleux non encadré ; minimum non localisé par cette méthode), le
     croisement trouvé n'est pas minimal, Δr̄_α n'y est pas plus bas qu'aux deux bornes (minimum aux bornes, P281),
-    ou un r̄_α n'est pas fini là où Δr̄_α est évaluée. `motif` décrit le refus.
+    un r̄_α n'est pas fini là où Δr̄_α est évaluée, ou (#191, P320) la lecture (α) refuse un ζ évalué, la bissection
+    s'arrête avant la largeur demandée (précision de la machine, itérations) ou un voisin du contrôle de minimum local
+    sort de l'intervalle. `motif` décrit le refus.
 
     `table_publiees` publie la ligne « refusée », motif à l'appui, au lieu d'interrompre la table : une variante de
     paramètres (bords du domaine, rachat net) se calcule en entier, sans valeur NaN silencieuse. Comme « état non
@@ -1604,6 +1606,16 @@ def allocations_alpha(e: dict[str, float], n_a: int) -> dict[str, float]:
     }
 
 
+def _etendue(vals) -> float:
+    """Étendue max − min ; NaN dès qu'une valeur n'est pas finie (#188). `max` et `min` ignorent un NaN qui n'est pas
+    en tête : la valeur non finie serait masquée, comme dans `_delta_r_alpha` avant `94246ac`. Sur des valeurs
+    finies, identique bit à bit à `max(vals) - min(vals)`."""
+    vals = list(vals)
+    if not all(math.isfinite(x) for x in vals):
+        return math.nan
+    return max(vals) - min(vals)
+
+
 def superneutralite(par: Parametres) -> dict[str, object]:
     """Critère 13 de la fiche 8 (#80), lecture (α) pour le verdict, (β) en mesure (part de `monnaie`, § 7).
 
@@ -1614,12 +1626,12 @@ def superneutralite(par: Parametres) -> dict[str, object]:
 
     def ecart(d, quoi=None):
         vals = [d[pi]["r_alpha"] if quoi is None else d[pi]["allocations"][quoi] for pi in POINTS_PI]
-        return max(vals) - min(vals)
+        return _etendue(vals)
 
     beta = {pi: etat_stationnaire(replace(par, pi_cible=pi, n_a=12, rbar=0.01)) for pi in POINTS_PI}
     theta_beta = [beta[pi]["theta_G"] for pi in POINTS_PI]
     alloc_b = {pi: allocations_alpha(b, 12) for pi, b in beta.items()}
-    alloc_beta = {q: max(a[q] for a in alloc_b.values()) - min(a[q] for a in alloc_b.values())
+    alloc_beta = {q: _etendue(a[q] for a in alloc_b.values())
                   for q in ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES + ALLOCATIONS_MESUREES}
     profil = [grille[pi]["r_alpha"] for pi in PROFIL_PI]
     toutes = ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES + ALLOCATIONS_MESUREES
@@ -1637,14 +1649,14 @@ def superneutralite(par: Parametres) -> dict[str, object]:
         "delta_r_alpha_n_a": {n: ecart(autres[n]) for n in (4, 52)},
         "alpha_n_a": autres,
         "ecart_bornes": grille[0.10]["r_alpha"] - grille[0.0]["r_alpha"],
-        "ecart_profil": max(profil) - min(profil),
+        "ecart_profil": _etendue(profil),
         "marche_2_3": grille[0.03]["r_alpha"] - grille[0.02]["r_alpha"],
         "allocations": {q: ecart(grille, q) for q in ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES
                         + ALLOCATIONS_MESUREES},
         "invariance": {q: ecart(grille, q) / abs(grille[0.02]["allocations"][q]) for q in ALLOCATIONS_INVARIANTES},
         "C_PIB_relatif_2": {pi: grille[pi]["allocations"]["C/PIB"] - grille[0.02]["allocations"]["C/PIB"]
                             for pi in (0.0, 0.10)},
-        "beta_theta_G": max(theta_beta) - min(theta_beta),
+        "beta_theta_G": _etendue(theta_beta),
         "beta_allocations": alloc_beta,
     }
 
@@ -2342,19 +2354,39 @@ def minimum_delta_r_alpha_en_zeta(calc: Calculs, bornes: tuple[float, float] = Z
     enfin comparé à Δr̄_α aux deux bornes de recherche (P281, constat R1 de l'audit de #173, deux évaluations de plus),
     pour que le libellé « minimum sur [2 ; 200] » ne repose pas sur le seul voisinage de ζ*.
 
-    Refus : bornes non finies ou non croissantes, ou `tol` non finie ou ≤ 0, par `HorsDomaine` ; différence de même
-    signe (ou nulle) aux deux bornes, ou non finie, par `MinimumNonEncadre` (point anguleux non encadré ; minimum non
-    localisé par cette méthode) ; croisement trouvé mais Δr̄_α non décroissante à gauche ou non croissante à droite,
-    par `MinimumNonEncadre` (croisement non minimal) ; Δr̄_α à l'une des bornes inférieure ou égale à Δr̄_α(ζ*), par
-    `MinimumNonEncadre` (minimum aux bornes) ; un r̄_α non fini à l'un des sept ζ où Δr̄_α est évaluée, par
-    `MinimumNonEncadre` (r̄_α non fini), avant la comparaison qui le lirait. Chaque refus porte son motif."""
+    Refus d'argument, par `HorsDomaine`, avant toute évaluation : bornes non finies ou non croissantes, `tol` non
+    finie ou ≤ 0, borne basse ≤ 0 (ζ > 0, terme en 1/ζ de r̄_α), `tol` ≥ largeur de `bornes` (aucune bissection,
+    voisins hors de l'intervalle). Refus par `MinimumNonEncadre` (#191, P320), que `table_publiees` publie
+    « refusée » : différence de même signe (ou nulle) aux deux bornes, ou non finie (point anguleux non encadré ;
+    minimum non localisé par cette méthode) ; refus de domaine (`HorsDomaine`) de `calc.r_alpha` en un ζ évalué,
+    converti avec son message ; milieu hors de ]a ; b[ (précision de la machine, ou a + b qui déborde) ou
+    `ITERATIONS_MAX` dépassé avant la largeur `tol` ; voisin a − w ou b + w hors de `bornes`, refusé sans écrêtage
+    ni évaluation ; croisement trouvé mais Δr̄_α non décroissante à gauche ou non croissante à droite (croisement
+    non minimal) ; Δr̄_α à l'une des bornes inférieure ou égale à Δr̄_α(ζ*) (minimum aux bornes) ; un r̄_α non fini
+    à l'un des sept ζ où Δr̄_α est évaluée (r̄_α non fini), avant la comparaison qui le lirait. Chaque refus porte
+    son motif ; tout ζ passé à `calc.r_alpha` est dans `bornes`, donc > 0."""
     a, b = bornes
     if not (math.isfinite(a) and math.isfinite(b) and a < b and math.isfinite(tol) and tol > 0):
         raise HorsDomaine(f"minimum de Δr̄_α en ζ : bornes [{a!r} ; {b!r}] finies et croissantes, tolérance {tol!r} "
                           "finie et > 0 attendues")
+    if a <= 0:
+        raise HorsDomaine(f"minimum de Δr̄_α en ζ : borne basse {a!r} ≤ 0 ; ζ > 0 attendu (terme en 1/ζ de r̄_α)")
+    if tol >= b - a:
+        raise HorsDomaine(f"minimum de Δr̄_α en ζ : tolérance {tol!r} ≥ largeur {b - a!r} de [{a!r} ; {b!r}] ; "
+                          "tolérance inférieure à la largeur attendue")
+
+    def evaluer(fonction, zeta: float) -> float:
+        """`fonction(zeta)`, son refus de domaine (lecture (α) en ζ) converti en constat publié (#191)."""
+        try:
+            return fonction(zeta)
+        except MinimumNonEncadre:
+            raise
+        except HorsDomaine as refus:
+            raise MinimumNonEncadre(f"refus de domaine à ζ = {zeta!r} ({refus}) : minimum non localisé par cette "
+                                    "méthode") from refus
 
     def ecart(zeta: float) -> float:
-        return calc.r_alpha(0.0, zeta) - calc.r_alpha(0.02, zeta)
+        return evaluer(lambda z: calc.r_alpha(0.0, z) - calc.r_alpha(0.02, z), zeta)
 
     fa, fb = ecart(a), ecart(b)
     if not (math.isfinite(fa) and math.isfinite(fb) and fa * fb < 0):
@@ -2364,8 +2396,12 @@ def minimum_delta_r_alpha_en_zeta(calc: Calculs, bornes: tuple[float, float] = Z
     iterations = 0
     while b - a > tol:
         if iterations >= ITERATIONS_MAX:
-            raise HorsDomaine(f"bissection en ζ non convergée en {ITERATIONS_MAX} itérations sur [{a!r} ; {b!r}]")
+            raise MinimumNonEncadre(f"bissection en ζ non convergée en {ITERATIONS_MAX} itérations sur [{a!r} ; "
+                                    f"{b!r}], largeur {tol!r} non atteinte : minimum non localisé par cette méthode")
         m = (a + b) / 2
+        if not (a < m < b):  # milieu égal à une extrémité (précision) ou non fini (a + b déborde)
+            raise MinimumNonEncadre(f"milieu {m!r} hors de ]{a!r} ; {b!r}[ (précision de la machine ou dépassement) "
+                                    f"avant la largeur {tol!r} : minimum non localisé par cette méthode")
         fm = ecart(m)
         iterations += 1
         if not math.isfinite(fm):
@@ -2375,20 +2411,26 @@ def minimum_delta_r_alpha_en_zeta(calc: Calculs, bornes: tuple[float, float] = Z
             a, fa = m, fm
         else:
             b = m
+
     def delta_fini(z: float) -> float:
-        d = _delta_r_alpha(calc, z)
+        d = evaluer(lambda x: _delta_r_alpha(calc, x), z)
         if not math.isfinite(d):
             raise MinimumNonEncadre(f"r̄_α non fini à ζ = {z!r} (Δr̄_α = {d!r}) : minimum non localisé par cette "
                                     "méthode")
         return d
 
     zeta, w = (a + b) / 2, b - a
+    borne_basse, borne_haute = bornes
+    hors = [z for z, dedans in ((a - w, borne_basse <= a - w), (b + w, b + w <= borne_haute)) if not dedans]
+    if hors:
+        raise MinimumNonEncadre(f"voisin du contrôle de minimum local hors de [{borne_basse!r} ; {borne_haute!r}] : "
+                                f"ζ = {' et '.join(repr(z) for z in hors)} ; croisement trop près d'une borne, "
+                                "minimum non localisé par cette méthode")
     gauche, delta_a, delta_b, droite = (delta_fini(z) for z in (a - w, a, b, b + w))
     if not (gauche > delta_a and droite > delta_b):
         raise MinimumNonEncadre(f"croisement trouvé mais non minimal : Δr̄_α vaut {gauche!r}, {delta_a!r}, "
                                 f"{delta_b!r} et {droite!r} à ζ = {a - w!r}, {a!r}, {b!r} et {b + w!r}")
     delta = delta_fini(zeta)
-    borne_basse, borne_haute = bornes
     delta_basse, delta_haute = delta_fini(borne_basse), delta_fini(borne_haute)
     if not (delta_basse > delta and delta_haute > delta):
         raise MinimumNonEncadre(f"minimum aux bornes : Δr̄_α vaut {delta!r} à ζ* = {zeta!r}, {delta_basse!r} à "
@@ -2616,6 +2658,15 @@ VALEURS_PUBLIEES += tuple(
     ("sec:finances_publiques-emission", f"hausse admissible à {round(100 * pi)} %, ν_G = 1,15, %", pub,
      (lambda c, pi=pi: c.v(pi=pi, nu=_NU)["hausse_admissible"]), "A")
     for pi, pub in zip(POINTS_PI, ("15,99", "20,52", "49,77"), strict=True)
+) + tuple(
+    # Besoin d'émission stationnaire de E9 (#198, P321), rubrique « Limites » de E9 : Em = (Γ̄ − 1) B, rapporté au
+    # PIB du pas, à π̄ = 0, 2 et 10 %, ν_G retenu, n_a = 12 (grandeur « Em »). Valeurs republiées par #181 à la
+    # table T1 ; les anciennes (0,2376, 1,1048 et 6,2050 %, sortie du script au commit 1aaba84, barrées dans la
+    # source) sont dans `ANCIENNES_M34_92` du test.
+    ("sec:finances_publiques-emission",
+     f"besoin d'émission Em/PIB = (Γ̄ − 1) B/PIB (E9) à {round(100 * pi)} %, ν_G = 1,15, % du PIB du pas", pub,
+     (lambda c, pi=pi: c.v(pi=pi, nu=_NU)["Em"]), "A")
+    for pi, pub in zip(POINTS_PI, ("0,4473", "1,4902", "7,1818"), strict=True)
 ) + (
     ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)", "1,0923",
      lambda c: c.v(pi=0.0, na=4, nu=_NU)["nu_G_min"], "A"),
@@ -2843,11 +2894,25 @@ def plus_grand_residu(r: dict[str, object]) -> float:
     return math.inf if any(math.isnan(v) for v in valeurs_) else max(valeurs_)
 
 
+def nu_g_mesure(nu_g_retenu: float | None) -> float:
+    """ν_G de la fermeture, de la mesure de #80 et du relevé : la valeur retenue, `NU_G_RETENU` si elle vaut None
+    (colonne retirée).
+
+    La valeur 1 est refusée : elle dupliquerait la colonne du point de référence.
+    """
+    if nu_g_retenu == 1.0:
+        raise HorsDomaine("ν_G retenu = 1 : la colonne ν_G = 1 est déjà le point de référence de la grille")
+    return NU_G_RETENU if nu_g_retenu is None else nu_g_retenu
+
+
 def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[str, object]:
-    """Calcule la grille, les contrôles, la fermeture, la mesure de #80 et la comparaison aux valeurs publiées.
+    """Calcule la grille, les contrôles, la fermeture et la mesure de #80 de la table `base`.
 
     `nu_g_retenu` : troisième colonne ν_G (1,15 par défaut, décision du 05/10/2026) ; None la retire. La valeur 1
     est refusée : elle dupliquerait la colonne du point de référence.
+
+    La comparaison aux valeurs publiées (relevé, historique, contre-épreuve) n'est pas calculée ici : elle porte sur
+    la table de référence seule (`publier`, #185, option (a) de P313), et une variante de `base` n'y est pas soumise.
 
     Les colonnes de la table (ν_G > 1) sont calculées d'abord, la colonne de référence ν_G = 1 ensuite : un refus
     porte le nom de la colonne et du point où il survient. Sur la colonne de référence, un plafond de E1 actif
@@ -2860,9 +2925,7 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
     `nu_g_retenu` vaut None (voir `Calculs` et `nu_g_mesure`).
     """
     declares = controler_domaine(base)
-    if nu_g_retenu == 1.0:
-        raise HorsDomaine("ν_G retenu = 1 : la colonne ν_G = 1 est déjà le point de référence de la grille")
-    calc = Calculs(base, NU_G_RETENU if nu_g_retenu is None else nu_g_retenu)
+    calc = Calculs(base, nu_g_mesure(nu_g_retenu))
     points = [(pi, na) for pi in POINTS_PI for na in POINTS_NA]
     nus = ([nu_g_retenu] if nu_g_retenu is not None else []) + [1.0]
     grille, ctrl, niveaux, hors_reference = {}, {}, {}, {}
@@ -2901,17 +2964,24 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
         "parametres": base, "declares": declares, "nu_g_retenu": nu_g_retenu, "grille": grille, "controles": ctrl,
         "reference_hors_domaine": hors_reference,
         "niveaux": niveaux, "propositions": propositions, "republication": republication,
-        "fermeture": calc.fermeture(), "superneutralite": calc.alpha(), "publiees": table_publiees(calc),
-        "historique": table_historique(calc),
-        "contre_epreuve": table_publiees(Calculs(replace(base, **ENTREES_D_ORIGINE), calc.nu_g_retenu),
-                                         VALEURS_CONTRE_EPREUVE),
+        "fermeture": calc.fermeture(), "superneutralite": calc.alpha(),
         "cf": {pi: calc.v(pi, 12, 1.0, "C-F") for pi in POINTS_PI},
     }
 
 
-def nu_g_mesure(r: dict[str, object]) -> float:
-    """ν_G de la fermeture et de la mesure de #80 : la valeur retenue, `NU_G_RETENU` si la colonne est retirée."""
-    return NU_G_RETENU if r["nu_g_retenu"] is None else r["nu_g_retenu"]
+def publier(nu_g_retenu: float | None = NU_G_RETENU) -> dict[str, object]:
+    """Relevé des valeurs publiées en vigueur, historique et contre-épreuve, sur la table de référence `Parametres()`.
+
+    Les valeurs publiées sont celles de la table de référence : la fonction ne prend pas de table en argument, et une
+    variante ne peut pas y être soumise (#185, option (a) de P313). La contre-épreuve lit `ENTREES_D_ORIGINE` sur
+    cette même table. `nu_g_retenu` : comme pour `calculer` (ν_G de la mesure de #80 et de la fermeture).
+    """
+    calc = Calculs(Parametres(), nu_g_mesure(nu_g_retenu))
+    return {
+        "publiees": table_publiees(calc), "historique": table_historique(calc),
+        "contre_epreuve": table_publiees(Calculs(replace(calc.base, **ENTREES_D_ORIGINE), calc.nu_g_retenu),
+                                         VALEURS_CONTRE_EPREUVE),
+    }
 
 
 def _f(x: float, chiffres: int = 10) -> str:
@@ -2935,8 +3005,24 @@ def _titre_nu(nu: float) -> str:
     return f"ν_G = {_f(nu)} (valeur retenue)"
 
 
+SANS_OBJET_NON_FINI = "sans objet (valeur non finie)"  # verdict du rendu sur une mesure non finie (#188)
+
+
+def _verdict_seuil(valeurs, seuil: float, tenu: str = "tenu", non_tenu: str = "non tenu (défaut connu, #80)") -> str:
+    """Verdict « max(valeurs) ≤ seuil » du rendu ; « sans objet (valeur non finie) » dès qu'une valeur n'est pas
+    finie (#188) : une comparaison à NaN est fausse et rendrait « non tenu », et `max` ignore un NaN hors de tête."""
+    valeurs = list(valeurs)
+    if not all(math.isfinite(v) for v in valeurs):
+        return SANS_OBJET_NON_FINI
+    return tenu if max(valeurs) <= seuil else non_tenu
+
+
 def afficher(r: dict[str, object], sortie=None) -> None:
-    """Publie la grille complète, les contrôles et la comparaison aux valeurs publiées (texte déterministe)."""
+    """Publie la grille complète, les contrôles et la comparaison aux valeurs publiées (texte déterministe).
+
+    La comparaison (relevé, historique, contre-épreuve) n'est imprimée que si `r` porte le résultat de `publier` :
+    un résultat de `calculer` seul (variante de la table) s'arrête à la configuration de contrôle C-F.
+    """
     out = sortie or sys.stdout
 
     def p(texte: str = "") -> None:
@@ -3032,7 +3118,8 @@ def afficher(r: dict[str, object], sortie=None) -> None:
         p(f"- ν_G = 1, π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
     p()
     fe = r["fermeture"]
-    p(f"## Fermeture (#44, lecture (e)) : sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12, ν_G = {_f(nu_g_mesure(r))} ; "
+    nu_mesure = nu_g_mesure(r["nu_g_retenu"])  # ν_G de la fermeture et de la mesure de #80
+    p(f"## Fermeture (#44, lecture (e)) : sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12, ν_G = {_f(nu_mesure)} ; "
       "identique bit à bit à ν_G = 1, C59)")
     p(f"- dθ_G/dr̄ = {_f(fe['dtheta_G_dr'], 6)} (% de la production par point de r̄ ; différence centrée, "
       f"pas {fe['pas']:g} ; erreur déclarée {_f(fe['erreur'], 3)})")
@@ -3052,11 +3139,11 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     for n, d in sn["alpha_n_a"].items():
         p(f"- n_a = {n} : r̄_α = " + " | ".join(f"{100 * d[pi]['r_alpha']:.6f} %" for pi in POINTS_PI)
           + f" ; Δr̄_α = {100 * sn['delta_r_alpha_n_a'][n]:.6f} point")
-    p(f"- verdict : Δr̄_α = max − min sur {{0 ; 2 ; 10 %}}, n_a = 12, ν_G = {_f(nu_g_mesure(r))} (identique bit à bit à "
+    p(f"- verdict : Δr̄_α = max − min sur {{0 ; 2 ; 10 %}}, n_a = 12, ν_G = {_f(nu_mesure)} (identique bit à bit à "
       "ν_G = 1, C59) : "
       f"{100 * sn['delta_r_alpha']:.6f} point ; "
       f"seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : "
-      f"{'tenu' if sn['delta_r_alpha'] <= SEUIL_SUPERNEUTRALITE else 'non tenu (défaut connu, #80)'}")
+      f"{_verdict_seuil([sn['delta_r_alpha']], SEUIL_SUPERNEUTRALITE)}")
     p(f"- écart entre les bornes r̄_α(10 %) − r̄_α(0) : {100 * sn['ecart_bornes']:+.6f} point ; écart maximal sur le "
       f"profil : {100 * sn['ecart_profil']:.6f} point ; marche de 2 à 3 % : {100 * sn['marche_2_3']:+.6f} point")
     al = sn["allocations"]
@@ -3064,20 +3151,20 @@ def afficher(r: dict[str, object], sortie=None) -> None:
         p(f"- allocations (α) à π* = {_f(100 * pi)} % : " + " ; ".join(
             f"{q} {_f(a['allocations'][q], 9)}" for q in ALLOCATIONS_VERDICT + ALLOCATIONS_INVARIANTES
             + ALLOCATIONS_MESUREES))
-    verdict = max(al[q] for q in ALLOCATIONS_VERDICT) <= SEUIL_SUPERNEUTRALITE
-    invariance = max(sn["invariance"].values()) <= TOL_INVARIANCE
+    verdict = _verdict_seuil((al[q] for q in ALLOCATIONS_VERDICT), SEUIL_SUPERNEUTRALITE)
+    invariance = _verdict_seuil(sn["invariance"].values(), TOL_INVARIANCE, "tenue", "NON TENUE")
     p("- verdict des allocations (liste L2), max − min sur {0 ; 2 ; 10 %}, point : " + " ; ".join(
         f"{q} {100 * al[q]:.6f}" for q in ALLOCATIONS_VERDICT)
-      + f" ; seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : {'tenu' if verdict else 'non tenu (défaut connu, #80)'}")
+      + f" ; seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : {verdict}")
     p("- invariance exacte (écart relatif max − min, seuil " + f"{TOL_INVARIANCE:g}) : " + " ; ".join(
-        f"{q} {_f(v, 3)}" for q, v in sn["invariance"].items()) + f" : {'tenue' if invariance else 'NON TENUE'}")
+        f"{q} {_f(v, 3)}" for q, v in sn["invariance"].items()) + f" : {invariance}")
     p("- mesures (sans verdict), max − min sur {0 ; 2 ; 10 %}, point : " + " ; ".join(
         f"{q} {100 * al[q]:.6f}" for q in ALLOCATIONS_MESUREES))
     p("- lecture (β) (r̄ = 1 % à chaque π*, mesure sans verdict) : "
       f"écart de θ_G {100 * sn['beta_theta_G']:.6f} point ; "
       + " ; ".join(f"{q} {100 * v:.6f}" for q, v in sn["beta_allocations"].items()))
     p(f"- sensibilité à ζ (mesure, décision de `macro`) : verdict jugé à ζ = {_f(base.zeta)} ; étendue max − min sur "
-      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = " + _f(nu_g_mesure(r)) + ", en point, sur ζ ∈ {"
+      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = " + _f(nu_mesure) + ", en point, sur ζ ∈ {"
       + " ; ".join(_f(z) for z in ZETA_PLAGE) + "} (calibration indicative ; table T1) et à ζ = "
       + f"{_f(ZETA_ILLUSTRATION)} en illustration, sans verdict")
     for z, d in sn["zeta"].items():
@@ -3095,6 +3182,9 @@ def afficher(r: dict[str, object], sortie=None) -> None:
           f"distribution {_f(v['distribution'], 6)} ; "
           f"dividendes/ventes {_f(v['Div_F_sur_ventes'], 6)} %")
     p()
+    if "publiees" not in r:  # résultat de `calculer` seul : aucune comparaison aux valeurs publiées (#185)
+        return
+
     def ligne(l: dict[str, object]) -> None:
         comparaison = ("" if l["publie"] == AUCUNE or l["verdict"] == "refusée"
                        else f"écart {l['ecart']:+.3g} (seuil {l['seuil']:.1g}) : ")
@@ -3160,7 +3250,7 @@ def main(arguments: list[str] | None = None) -> int:
     analyseur.add_argument("--json", default=None, help="écrit aussi les résultats en JSON dans ce fichier")
     args = analyseur.parse_args(arguments)
     try:
-        r = calculer(Parametres(), args.nu_g_retenu)
+        r = calculer(Parametres(), args.nu_g_retenu) | publier(args.nu_g_retenu)
     except HorsDomaine as refus:
         print(f"Refus de domaine : {refus}", file=sys.stderr)
         return 1
