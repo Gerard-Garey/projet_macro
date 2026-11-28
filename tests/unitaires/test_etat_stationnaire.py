@@ -1277,7 +1277,7 @@ def test_seuil_derniere_decimale(stationnaire):
 
 
 # Calibration du socle (M34) : valeurs republiées au rang 9 (`docwriter`, commits 9cb6ab9 à 1f86f0a), liste exacte
-# des clés (section, grandeur), chacune avec son ancienne valeur, figée en littéral et barrée dans sa source. Ces 310
+# des clés (section, grandeur), chacune avec son ancienne valeur, figée en littéral et barrée dans sa source. Ces 313
 # valeurs étaient publiées à l'état E0 (μ̄ = 0,25, ϑ = 0,10, ν_H = 1), et à ζ = 4 (`ENTREES_D_ORIGINE`) ; la table T1
 # les a déplacées au-delà de leur dernière décimale publiée. Toute autre valeur en vigueur est inchangée. Une
 # ancienne valeur ne se modifie pas sans échec (`test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine`,
@@ -1299,7 +1299,7 @@ ANCIENNES_M34_55 = {
     ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 4 %, %"): "0,706",
     ("sec:banque_centrale-conditions ; fiche 9 § 3.Q", "r̄_α à π* = 6 %, %"): "0,656",
 }
-# #92 (μ̄ = 0,25 → 0,60) : 173 valeurs, dont T_H, YD^HS et Y^HS sur le PIB à π̄ = 0, qui retombaient sur la décimale
+# #92 (μ̄ = 0,25 → 0,60) : 176 valeurs, dont T_H, YD^HS et Y^HS sur le PIB à π̄ = 0, qui retombaient sur la décimale
 # publiée sous ϑ = 0,15 (#130) et en sortent sous ν_H = 1,1 (#62).
 ANCIENNES_M34_92 = {
     ("fiche 9 § 3.C", "(α) : C/PIB à 0 % moins à 2 %, point"): "0,487",
@@ -1358,6 +1358,15 @@ ANCIENNES_M34_92 = {
     ("sec:banque_centrale-restitution", "refinancement restitué à 2 %"): "0,02222",
     ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1, % du PIB"): "0,2537",
     ("sec:banque_centrale-restitution", "résultat de la banque centrale à 10 %, ν_G = 1,15, % du PIB"): "0,2922",
+    # Besoin d'émission de E9 (#198, P321) : valeurs en vigueur republiées par #181 ; anciennes = sortie du script au
+    # commit 1aaba84 (calibration indicative). Sous `ENTREES_D_ORIGINE` sauf μ̄ (0,60), l'ancienne valeur à π̄ = 0
+    # sort de sa décimale de 6,1e-5 seulement (seuil 5e-5) : classée sous #92.
+    ("sec:finances_publiques-emission",
+     "besoin d'émission Em/PIB = (Γ̄ − 1) B/PIB (E9) à 0 %, ν_G = 1,15, % du PIB du pas"): "0,2376",
+    ("sec:finances_publiques-emission",
+     "besoin d'émission Em/PIB = (Γ̄ − 1) B/PIB (E9) à 2 %, ν_G = 1,15, % du PIB du pas"): "1,1048",
+    ("sec:finances_publiques-emission",
+     "besoin d'émission Em/PIB = (Γ̄ − 1) B/PIB (E9) à 10 %, ν_G = 1,15, % du PIB du pas"): "6,2050",
     ("sec:finances_publiques-impots", "dette consolidée, 10 % moins 2 %"): "0,253",
     ("sec:finances_publiques-restitution", "charge brute à 10 %, ν_G = 1,15, % du PIB"): "5,9546",
     ("sec:finances_publiques-restitution", "charge brute à 2 %, ν_G = 1,15, % du PIB"): "0,8410",
@@ -1624,7 +1633,7 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
     à la dernière décimale publiée, sans exception ; aucune valeur barrée n'y figure (catégories B-1 et N en
     contre-épreuve)."""
     lignes = resultat["publiees"]
-    assert len(lignes) == 450
+    assert len(lignes) == 453
     assert {l["categorie"] for l in lignes} == {"A", "S", "B-2", "D"}
     assert sum(1 for l in lignes if l["categorie"] == "S") == 20
     assert [l for l in lignes if l["verdict"] != "égal"] == []
@@ -1636,17 +1645,17 @@ def test_valeurs_publiees_toutes_egales(stationnaire, resultat):
 
 
 def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(stationnaire, base):
-    """R3 de l'audit de #130, après la republication du rang 9 : les 310 anciennes valeurs (`ANCIENNES_M34`), mises à
+    """R3 de l'audit de #130, après la republication du rang 9 : les 313 anciennes valeurs (`ANCIENNES_M34`), mises à
     la place des valeurs en vigueur, sont égales à la dernière décimale publiée sous `ENTREES_D_ORIGINE` complètes
     (état E0, ζ = 4, valeur des publications de la mesure (α) de #80, et λ_w = 1 ; ni ζ ni λ_w n'entrent dans l'état
     stationnaire) : chaque republication s'explique par un paramètre déclaré de M34. À ζ = 8 (T1), seules les 12 de
-    #55 restent en écart ; λ_w seul ne déplace aucune des 450 valeurs. Sous `ENTREES_D_ORIGINE`, les valeurs en
-    vigueur sont en écart exactement sur les 310 clés : une valeur republiée ne retombe pas sur sa décimale à l'état
+    #55 restent en écart ; λ_w seul ne déplace aucune des 453 valeurs. Sous `ENTREES_D_ORIGINE`, les valeurs en
+    vigueur sont en écart exactement sur les 313 clés : une valeur republiée ne retombe pas sur sa décimale à l'état
     E0, une valeur non republiée ne dépend pas de M34."""
     en_vigueur = {(section, grandeur): publie for section, grandeur, publie, _, _ in stationnaire.VALEURS_PUBLIEES}
     assert (len(ANCIENNES_M34_55), len(ANCIENNES_M34_92), len(ANCIENNES_M34_130), len(ANCIENNES_M34_62)) \
-        == (12, 173, 101, 24)
-    assert len(ANCIENNES_M34) == 310 and set(ANCIENNES_M34) <= set(en_vigueur)
+        == (12, 176, 101, 24)
+    assert len(ANCIENNES_M34) == 313 and set(ANCIENNES_M34) <= set(en_vigueur)
     assert [k for k, ancienne in ANCIENNES_M34.items() if ancienne == en_vigueur[k]] == []
     anciennes = tuple((section, grandeur, ANCIENNES_M34.get((section, grandeur), publie), fonction, categorie)
                       for section, grandeur, publie, fonction, categorie in stationnaire.VALEURS_PUBLIEES)
@@ -1654,7 +1663,7 @@ def test_contre_epreuve_des_valeurs_republiees_sous_les_entrees_d_origine(statio
     def ecarts(liste, **entrees):
         calc = stationnaire.Calculs(replace(base, **entrees), stationnaire.NU_G_RETENU)
         lignes = stationnaire.table_publiees(calc, liste)
-        assert len(lignes) == 450
+        assert len(lignes) == 453
         return {(l["section"], l["grandeur"]) for l in lignes if l["verdict"] != "égal"}
     origine = stationnaire.ENTREES_D_ORIGINE
     assert (origine["zeta"], origine["lambda_w"]) == (4.0, 1.0) and (base.zeta, base.lambda_w) == (8.0, 0.18)
@@ -1680,7 +1689,7 @@ def test_valeurs_republiees_toutes_egales(stationnaire, resultat):
     tampon = io.StringIO()
     stationnaire.afficher(resultat, tampon)
     texte = tampon.getvalue()
-    assert ("Bilan : 450 valeurs comparées, 430 égales sur l'état résolu, 20 égales en arithmétique de la "
+    assert ("Bilan : 453 valeurs comparées, 433 égales sur l'état résolu, 20 égales en arithmétique de la "
             "spécification (catégorie S, sans état résolu), aucun écart.") in texte
     assert "Bilan de l'historique : 29 valeurs, 29 écarts, visés le 05/10/2026" in texte
     assert "valeurs publiées avant le visa du 05/10/2026 (commit 9c8bdbd)" in texte
@@ -2012,7 +2021,7 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
 
 
 def test_releve_publie_sur_la_table_de_reference_seule(stationnaire, base, monkeypatch):
-    """#185 : le relevé (450 valeurs), l'historique (29) et la contre-épreuve (47) sont calculés par `publier`, qui
+    """#185 : le relevé (453 valeurs), l'historique (29) et la contre-épreuve (47) sont calculés par `publier`, qui
     ne prend aucune table en argument (refus par construction) ; `calculer` ne les rend plus. Le relevé ne dépend pas
     de la table passée à `calculer` (variante lv* = 0,42, où la contre-épreuve et la ligne de #173 sont admises), mais
     de `Parametres()` seule : la variante substituée à `Parametres` le change. `afficher` imprime le relevé à la fin,
@@ -2023,7 +2032,7 @@ def test_releve_publie_sur_la_table_de_reference_seule(stationnaire, base, monke
     grille = stationnaire.calculer(base)
     releve = stationnaire.publier()
     assert sorted(releve) == ["contre_epreuve", "historique", "publiees"]
-    assert (len(releve["publiees"]), len(releve["historique"]), len(releve["contre_epreuve"])) == (450, 29, 47)
+    assert (len(releve["publiees"]), len(releve["historique"]), len(releve["contre_epreuve"])) == (453, 29, 47)
     assert not set(releve) & set(grille)
     assert not set(releve) & set(stationnaire.calculer(variante))
     jsonable = stationnaire._jsonable  # NaN ≠ NaN : comparaison sur la forme exportée
@@ -2449,7 +2458,7 @@ def test_ligne_refusee_constat_publie_code_0(stationnaire, monkeypatch, capsys):
     monkeypatch.setattr(stationnaire, "minimum_delta_r_alpha_en_zeta", refus)
     assert stationnaire.main([]) == 0
     sortie = capsys.readouterr()
-    assert "Bilan : 450 valeurs comparées, 429 égales" in sortie.out
+    assert "Bilan : 453 valeurs comparées, 432 égales" in sortie.out
     assert "aucun écart, 1 refusée (minimum de Δr̄_α en ζ non localisé, motif à la ligne)." in sortie.out
     assert "script refus (refus simulé) ; refusée" in sortie.out
     assert "Refus de domaine" not in sortie.err

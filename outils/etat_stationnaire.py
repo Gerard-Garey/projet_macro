@@ -2658,6 +2658,15 @@ VALEURS_PUBLIEES += tuple(
     ("sec:finances_publiques-emission", f"hausse admissible à {round(100 * pi)} %, ν_G = 1,15, %", pub,
      (lambda c, pi=pi: c.v(pi=pi, nu=_NU)["hausse_admissible"]), "A")
     for pi, pub in zip(POINTS_PI, ("15,99", "20,52", "49,77"), strict=True)
+) + tuple(
+    # Besoin d'émission stationnaire de E9 (#198, P321), rubrique « Limites » de E9 : Em = (Γ̄ − 1) B, rapporté au
+    # PIB du pas, à π̄ = 0, 2 et 10 %, ν_G retenu, n_a = 12 (grandeur « Em »). Valeurs republiées par #181 à la
+    # table T1 ; les anciennes (0,2376, 1,1048 et 6,2050 %, sortie du script au commit 1aaba84, barrées dans la
+    # source) sont dans `ANCIENNES_M34_92` du test.
+    ("sec:finances_publiques-emission",
+     f"besoin d'émission Em/PIB = (Γ̄ − 1) B/PIB (E9) à {round(100 * pi)} %, ν_G = 1,15, % du PIB du pas", pub,
+     (lambda c, pi=pi: c.v(pi=pi, nu=_NU)["Em"]), "A")
+    for pi, pub in zip(POINTS_PI, ("0,4473", "1,4902", "7,1818"), strict=True)
 ) + (
     ("sec:finances_publiques-emission", "ν_G,min au pire point (n_a = 4, 0 %)", "1,0923",
      lambda c: c.v(pi=0.0, na=4, nu=_NU)["nu_G_min"], "A"),
