@@ -11,6 +11,7 @@ deux tests séparés, en échec attendu strict, avec renvoi à #80.
 """
 
 import ast
+import inspect
 import io
 import math
 import re
@@ -81,7 +82,8 @@ def base(stationnaire):
 
 @pytest.fixture(scope="module")
 def resultat(stationnaire, base):
-    return stationnaire.calculer(base)
+    """Résultat publié par `main` : grille de `calculer` et relevé de `publier` (table de référence, #185)."""
+    return stationnaire.calculer(base) | stationnaire.publier()
 
 
 def aux_entrees_des_cas_adverses(stationnaire, base):
@@ -267,12 +269,17 @@ def test_aucune_vitesse_n_entre_dans_l_etat_un_a_un(stationnaire, base, facteur)
 
 
 @pytest.mark.parametrize("facteur", [0.5, 2.0])
-def test_aucune_vitesse_n_entre_dans_les_sorties_toutes_ensemble(stationnaire, base, resultat, facteur):
+def test_aucune_vitesse_n_entre_dans_les_sorties_toutes_ensemble(stationnaire, base, resultat, monkeypatch,
+                                                               facteur):
+    """Grille de `calculer` sur la variante ; relevé de `publier`, qui ne lit que `Parametres()` (#185), sur la
+    variante substituée à la table de référence."""
     varie = replace(base, **{nom: getattr(base, nom) * facteur for nom in stationnaire.VITESSES})
     r = stationnaire.calculer(varie)
     for cle in ("grille", "niveaux", "propositions", "republication", "fermeture", "superneutralite", "cf"):
         assert r[cle] == resultat[cle], cle
-    assert [l["script"] for l in r["publiees"]] == [l["script"] for l in resultat["publiees"]]
+    monkeypatch.setattr(stationnaire, "Parametres", lambda: varie)
+    releve = stationnaire.publier()
+    assert [l["script"] for l in releve["publiees"]] == [l["script"] for l in resultat["publiees"]]
     # Les résidus des règles, qui lisent les vitesses, restent sous le seuil.
     assert max(max(c.values()) for c in r["controles"].values()) <= TOL
 
@@ -743,7 +750,8 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
     admissibles ; constat publié, aucune valeur d'état ni résidu pour ces points de référence ; le constat seul ne
     change pas le code de sortie. Cas construit à ϑ = 0,10 et ν_H = 1 (`aux_entrees_des_cas_adverses`). Sous ce cas,
     r̄_α(10 %) croît avec ζ et le croisement de r̄_α(0) et r̄ (ζ ≈ 77,57) n'est pas un minimum de Δr̄_α : la ligne du
-    minimum (#173) est refusée, seule, constat publié comme « état non publié » : code 0."""
+    minimum (#173) est refusée, seule, constat publié comme « état non publié » : code 0. Le relevé ne porte que sur
+    la table de référence (`publier`, #185) : la variante y est substituée à `Parametres()`, comme pour `main`."""
     variante = replace(aux_entrees_des_cas_adverses(stationnaire, base), lv=0.45)
     hors = {(0.0, 4), (0.0, 12)}
     for p in points(stationnaire, variante):
@@ -761,6 +769,9 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
         assert (1.15, pi, na) in r["grille"] and (1.15, pi, na) in r["niveaux"]
     assert (1.0, 0.0) not in r["republication"] and (1.15, 0.0) in r["republication"]
     assert stationnaire.plus_grand_residu(r) <= TOL
+    assert "publiees" not in r  # aucune comparaison aux valeurs publiées par `calculer` (#185)
+    monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
+    r = r | stationnaire.publier()
     non_publiees = [l for l in r["publiees"] if l["verdict"] == "non publiée"]
     assert non_publiees and all(math.isnan(l["script"]) for l in non_publiees)
     tampon = io.StringIO()
@@ -771,7 +782,6 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
     refusees = [l for l in r["publiees"] if l["verdict"] == "refusée"]
     assert [l["grandeur"] for l in refusees] == ["Δr̄_α au minimum en ζ sur [2 ; 200], point"]
     assert "croisement trouvé mais non minimal" in refusees[0]["libelle"]
-    monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
     assert stationnaire.main([]) == 0
     sortie = capsys.readouterr()
     assert "état non publié" in sortie.out
@@ -784,8 +794,8 @@ def test_reference_hors_domaine_publiee_comme_constat(stationnaire, base, monkey
 # aucun plafond de E1 seul), et lv* = 0,70 en reproduit le motif (mesuré sur lv* ∈ {0,65 ; 0,70 ; 0,72 ; 0,74 ; 0,75}
 # avant l'écriture ; 0,72 et au-delà : six refus). Le cas lv* = 0,45 n'a pas d'équivalent mesuré à E2 sur
 # [0,450 ; 0,500] (pas de 0,005) : à lv* = 0,475, le plafond de E1 n'agit qu'en (0, 4) et (0, 12) à ν_G = 1, mais
-# `calculer` refuse une valeur publiée (B < 0) dès lv* = 0,47 ; à E3 (table T1), sa recherche selon le critère de
-# `macro` est `test_cas_lv_0_45_a_la_table_t1_critere_de_macro` (#170).
+# `calculer` refusait une valeur publiée (B < 0) dès lv* = 0,47 (avant #185) ; à E3 (table T1), sa recherche selon le
+# critère de `macro` est `test_cas_lv_0_45_a_la_table_t1_critere_de_macro` (#170).
 
 
 @pytest.mark.parametrize("nu_H, lv, temoin", [(1.0, 0.65, 0.0224), (1.1, 0.70, 0.0228)],
@@ -833,8 +843,8 @@ def test_refus_a_lv_equivalent_a_la_table_calibree(stationnaire, base, nu_H, lv,
 # frontières mesurées (E1 à ν_G = 1, B < 0) et l'absence sont publiées. La frontière de E1, hors de l'intervalle, est
 # cherchée au-delà au même pas, jusqu'à `LV_170_EXTENSION` (borne déclarée de cette seule mesure, sans effet sur le
 # verdict) ; aucune recherche de cas au-delà de 0,47 (P278) : la frontière de E1 à ν_G = 1,001 (π̄ = 0) n'y est
-# imprimée qu'en constat. La contre-épreuve reste aux entrées d'origine (`test_reference_hors_domaine_publiee_comme_
-# constat`) ; son application aux variantes de lv* par `calculer` est #185 (P279).
+# imprimée qu'en constat. La contre-épreuve reste aux entrées d'origine, sur la table de référence seule (`publier`) :
+# `calculer` ne l'applique plus aux variantes de lv* (#185, option (a) de P313).
 LV_170_INTERVALLE = (0.30, 0.47)
 LV_170_PAS = 0.005
 LV_170_TOL = 1e-4
@@ -959,13 +969,15 @@ def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
     à faire) et ne vaut jamais vrai : aucun cas « à au moins un π̄ » (P277), donc aucun sous l'ancienne lecture
     « aux trois π̄ » ; (ii) la frontière de E1 à ν_G = 1 (π̄ = 0) est au-delà de 0,47, et elle recule quand π̄ monte
     (celle de π̄ = 0 est sous celle de 2 %, aucune à 10 % jusqu'à `LV_170_EXTENSION`) : sens de variation mesuré,
-    qui contrôle l'indicateur aux trois π̄ ; (iii) la frontière B < 0 de `calculer` est dans l'intervalle, encadrée à
-    1e−4 : `calculer` admet la borne gauche et refuse la borne droite (« dette brute ») ; le point refusé est dans la
-    contre-épreuve (`ENTREES_D_ORIGINE` sur le lv* de la variante, n_a = 12, ν_G = 1), les points T1 de la grille
-    gardant B ≥ 0 (#185). L'indicateur est validé sur le cas d'origine (lv* = 0,45, ϑ = 0,10, ν_H = 1 : E1 refusé à
-    ν_G = 1 en π̄ = 0, n_a = 12). Constats imprimés sans verdict : frontière de E1 à ν_G = 1,001 (π̄ = 0, P278) et
-    intervalle de lv* hors duquel la ligne de #173 est refusée, encadré par les quatre bornes de `LV_173_ENCADRANTS`
-    (#185, P282). Verdict et frontières imprimés (`pytest -s`)."""
+    qui contrôle l'indicateur aux trois π̄ ; (iii) la frontière B < 0 de `calculer` est celle des seuls points T1 de
+    la grille, au-delà de l'intervalle, encadrée à 1e−4 : `calculer` admet la borne gauche et refuse la borne droite
+    (« dette brute ») ; la contre-épreuve n'est plus appliquée aux variantes de lv* (#185, option (a) de P313) :
+    `calculer` admet, sans relevé, les deux bornes de l'ancienne frontière, dans l'intervalle, où B < 0 venait de
+    la seule contre-épreuve (`ENTREES_D_ORIGINE` sur le lv* de la variante, n_a = 12, ν_G = 1). L'indicateur est
+    validé sur le cas d'origine (lv* = 0,45, ϑ = 0,10, ν_H = 1 : E1 refusé à ν_G = 1 en π̄ = 0, n_a = 12).
+    Constats imprimés sans verdict : frontière de E1 à ν_G = 1,001 (π̄ = 0, P278) et intervalle de lv* hors duquel
+    la ligne de #173 est refusée, encadré par les quatre bornes de `LV_173_ENCADRANTS` (#185, P282).
+    Verdict et frontières imprimés (`pytest -s`)."""
     assert base.nu_H == 1.1 and base.vartheta == 0.15  # table T1
 
     def etat(b, lv, pi, nu, n_a=12):
@@ -1021,7 +1033,8 @@ def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
     assert frontieres_e1[0.10] is None
 
     # (iii) Frontière B < 0 de `calculer` : B minimal sur les points que `calculer` résout (grille T1 aux colonnes
-    # ν_G, contre-épreuve aux entrées d'origine, n_a = 12, ν_G = 1), encadrée à 1e−4, puis confirmée par `calculer`.
+    # ν_G), encadrée à 1e−4, puis confirmée par `calculer`. Ancienne frontière (avant #185) : B minimal de la grille
+    # T1 et de la contre-épreuve aux entrées d'origine (n_a = 12, ν_G = 1), que `calculer` n'applique plus.
     origine = replace(base, **stationnaire.ENTREES_D_ORIGINE)
     colonnes = (1.0, *stationnaire.NU_G_PROPOSES)
 
@@ -1036,18 +1049,20 @@ def test_cas_lv_0_45_a_la_table_t1_critere_de_macro(stationnaire, base):
     assert not signe_b[0] and signe_b[-1]
     k = signe_b.index(True)
     a, b = _bissection_lv(lambda x: min(b_t1(x), b_origine(x)) < 0, grille[k - 1], grille[k])
-    assert b_t1(b) >= 0 and b_origine(b) < 0  # refus de la contre-épreuve, points T1 admis
-    stationnaire.calculer(replace(base, lv=a))  # admis
-    with pytest.raises(stationnaire.HorsDomaine, match="dette brute"):
-        stationnaire.calculer(replace(base, lv=b))
+    assert b_t1(b) >= 0 and b_origine(b) < 0  # B < 0 de la seule contre-épreuve, points T1 admis
+    for lv in (a, b):  # admis, sans relevé : ni contre-épreuve ni ligne de #173 sur la variante (#185)
+        assert "publiees" not in stationnaire.calculer(replace(base, lv=lv))
     signe_t1 = [b_t1(lv) < 0 for lv in extension]
     assert not signe_t1[0] and signe_t1[-1]
     j = signe_t1.index(True)
     a1, b1 = _bissection_lv(lambda x: b_t1(x) < 0, extension[j - 1], extension[j])
-    print(f"#170, frontière B < 0 de `calculer` (contre-épreuve, ENTREES_D_ORIGINE, n_a = 12, ν_G = 1 ; points T1 : "
-          f"B ≥ 0 ; #185) : [{a:.6f} ; {b:.6f}]")
-    print(f"#170, frontière B < 0 des seuls points T1 (grille, colonnes {colonnes}) : [{a1:.6f} ; {b1:.6f}] ; "
-          "absence publiée")
+    stationnaire.calculer(replace(base, lv=a1))  # admis
+    with pytest.raises(stationnaire.HorsDomaine, match="dette brute"):
+        stationnaire.calculer(replace(base, lv=b1))
+    print(f"#170, ancienne frontière B < 0 de `calculer` (contre-épreuve, ENTREES_D_ORIGINE, n_a = 12, ν_G = 1 ; "
+          f"points T1 : B ≥ 0), admise depuis #185 : [{a:.6f} ; {b:.6f}]")
+    print(f"#170, frontière B < 0 de `calculer`, celle des seuls points T1 (grille, colonnes {colonnes} ; #185) : "
+          f"[{a1:.6f} ; {b1:.6f}] ; absence publiée")
     assert LV_170_INTERVALLE[0] < a < b <= LV_170_INTERVALLE[1] < a1
 
     # Constat sans verdict (#185) : intervalle de lv* hors duquel la ligne de #173 est refusée.
@@ -1753,7 +1768,8 @@ def test_alpha_et_fermeture_lisent_la_valeur_retenue(stationnaire, base, resulta
                                                       attendu):
     """Constat m2 : `calculer` passe à la mesure de #80 et à la fermeture le ν_G retenu effectif (l'argument, ou
     `NU_G_RETENU` s'il vaut None), et la sortie l'annonce (constat m1). L'identité bit à bit du test précédent ne
-    distingue pas une lecture de `NU_G_RETENU` d'une lecture de l'argument : la garde enregistre le ν_G reçu."""
+    distingue pas une lecture de `NU_G_RETENU` d'une lecture de l'argument : la garde enregistre le ν_G reçu.
+    `publier` (#185) reçoit le même argument et le passe de même à ses propres `Calculs`."""
     assert stationnaire.NU_G_RETENU == 1.15
     recus = []
 
@@ -1768,7 +1784,11 @@ def test_alpha_et_fermeture_lisent_la_valeur_retenue(stationnaire, base, resulta
     monkeypatch.setattr(stationnaire, "superneutralite", superneutralite)
     monkeypatch.setattr(stationnaire, "sensibilite_fermeture", sensibilite_fermeture)
     r = stationnaire.calculer(base, nu_g_retenu)
-    # Une mesure de #80 ; trois fermetures : 2 % (`Calculs.fermeture`), puis 0 et 10 % (pentes publiées).
+    # `calculer` : une mesure de #80, une fermeture à 2 % (`Calculs.fermeture`).
+    assert sorted(recus) == [("alpha", attendu), ("fermeture", attendu)]
+    recus.clear()
+    r = r | stationnaire.publier(nu_g_retenu)
+    # `publier` : une mesure de #80 ; trois fermetures : 2 % (`Calculs.fermeture`), puis 0 et 10 % (pentes publiées).
     assert sorted(recus) == [("alpha", attendu)] + [("fermeture", attendu)] * 3
     tampon = io.StringIO()
     stationnaire.afficher(r, tampon)
@@ -1986,6 +2006,43 @@ def test_contre_epreuve_hors_du_bilan_et_egale(stationnaire, resultat):
     stationnaire.afficher(resultat, tampon)
     assert "Bilan de la contre-épreuve : 47 valeurs barrées, 47 égales sous leurs entrées d'origine, aucun écart." \
         in tampon.getvalue()
+
+
+# --- Relevé sur la table de référence seule (#185, option (a) de P313) ------------------------
+
+
+def test_releve_publie_sur_la_table_de_reference_seule(stationnaire, base, monkeypatch):
+    """#185 : le relevé (450 valeurs), l'historique (29) et la contre-épreuve (47) sont calculés par `publier`, qui
+    ne prend aucune table en argument (refus par construction) ; `calculer` ne les rend plus. Le relevé ne dépend pas
+    de la table passée à `calculer` (variante lv* = 0,42, où la contre-épreuve et la ligne de #173 sont admises), mais
+    de `Parametres()` seule : la variante substituée à `Parametres` le change. `afficher` imprime le relevé à la fin,
+    au même endroit : la sortie d'un résultat sans relevé est le début exact de la sortie complète. `publier` refuse
+    ν_G retenu = 1 comme `calculer`."""
+    assert list(inspect.signature(stationnaire.publier).parameters) == ["nu_g_retenu"]
+    variante = replace(base, lv=0.42)
+    grille = stationnaire.calculer(base)
+    releve = stationnaire.publier()
+    assert sorted(releve) == ["contre_epreuve", "historique", "publiees"]
+    assert (len(releve["publiees"]), len(releve["historique"]), len(releve["contre_epreuve"])) == (450, 29, 47)
+    assert not set(releve) & set(grille)
+    assert not set(releve) & set(stationnaire.calculer(variante))
+    jsonable = stationnaire._jsonable  # NaN ≠ NaN : comparaison sur la forme exportée
+    assert jsonable(stationnaire.publier()) == jsonable(releve)  # après `calculer(variante)`
+    monkeypatch.setattr(stationnaire, "Parametres", lambda: variante)
+    substitue = stationnaire.publier()
+    monkeypatch.undo()  # avant `_jsonable`, qui lit `Parametres` (isinstance)
+    assert jsonable(substitue["publiees"]) != jsonable(releve["publiees"])
+    sans, avec = io.StringIO(), io.StringIO()
+    stationnaire.afficher(grille, sans)
+    stationnaire.afficher(grille | releve, avec)
+    assert avec.getvalue().startswith(sans.getvalue()) and len(avec.getvalue()) > len(sans.getvalue())
+    assert "## Valeurs publiées en vigueur" not in sans.getvalue()
+    reste = avec.getvalue()[len(sans.getvalue()):]
+    ordre = [reste.index("## Valeurs publiées en vigueur"), reste.index("## Contre-épreuve"),
+             reste.index("## Historique")]
+    assert ordre[0] == 0 and ordre == sorted(ordre)
+    with pytest.raises(stationnaire.HorsDomaine, match="ν_G retenu = 1"):
+        stationnaire.publier(1.0)
 
 
 # Grille du minimum de Δr̄_α en ζ (#172, point 4 ; #173) : ζ entiers autour de ζ*, puis pas de 5 jusqu'à 200.

@@ -2885,11 +2885,25 @@ def plus_grand_residu(r: dict[str, object]) -> float:
     return math.inf if any(math.isnan(v) for v in valeurs_) else max(valeurs_)
 
 
+def nu_g_mesure(nu_g_retenu: float | None) -> float:
+    """ν_G de la fermeture, de la mesure de #80 et du relevé : la valeur retenue, `NU_G_RETENU` si elle vaut None
+    (colonne retirée).
+
+    La valeur 1 est refusée : elle dupliquerait la colonne du point de référence.
+    """
+    if nu_g_retenu == 1.0:
+        raise HorsDomaine("ν_G retenu = 1 : la colonne ν_G = 1 est déjà le point de référence de la grille")
+    return NU_G_RETENU if nu_g_retenu is None else nu_g_retenu
+
+
 def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[str, object]:
-    """Calcule la grille, les contrôles, la fermeture, la mesure de #80 et la comparaison aux valeurs publiées.
+    """Calcule la grille, les contrôles, la fermeture et la mesure de #80 de la table `base`.
 
     `nu_g_retenu` : troisième colonne ν_G (1,15 par défaut, décision du 05/10/2026) ; None la retire. La valeur 1
     est refusée : elle dupliquerait la colonne du point de référence.
+
+    La comparaison aux valeurs publiées (relevé, historique, contre-épreuve) n'est pas calculée ici : elle porte sur
+    la table de référence seule (`publier`, #185, option (a) de P313), et une variante de `base` n'y est pas soumise.
 
     Les colonnes de la table (ν_G > 1) sont calculées d'abord, la colonne de référence ν_G = 1 ensuite : un refus
     porte le nom de la colonne et du point où il survient. Sur la colonne de référence, un plafond de E1 actif
@@ -2902,9 +2916,7 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
     `nu_g_retenu` vaut None (voir `Calculs` et `nu_g_mesure`).
     """
     declares = controler_domaine(base)
-    if nu_g_retenu == 1.0:
-        raise HorsDomaine("ν_G retenu = 1 : la colonne ν_G = 1 est déjà le point de référence de la grille")
-    calc = Calculs(base, NU_G_RETENU if nu_g_retenu is None else nu_g_retenu)
+    calc = Calculs(base, nu_g_mesure(nu_g_retenu))
     points = [(pi, na) for pi in POINTS_PI for na in POINTS_NA]
     nus = ([nu_g_retenu] if nu_g_retenu is not None else []) + [1.0]
     grille, ctrl, niveaux, hors_reference = {}, {}, {}, {}
@@ -2943,17 +2955,24 @@ def calculer(base: Parametres, nu_g_retenu: float | None = NU_G_RETENU) -> dict[
         "parametres": base, "declares": declares, "nu_g_retenu": nu_g_retenu, "grille": grille, "controles": ctrl,
         "reference_hors_domaine": hors_reference,
         "niveaux": niveaux, "propositions": propositions, "republication": republication,
-        "fermeture": calc.fermeture(), "superneutralite": calc.alpha(), "publiees": table_publiees(calc),
-        "historique": table_historique(calc),
-        "contre_epreuve": table_publiees(Calculs(replace(base, **ENTREES_D_ORIGINE), calc.nu_g_retenu),
-                                         VALEURS_CONTRE_EPREUVE),
+        "fermeture": calc.fermeture(), "superneutralite": calc.alpha(),
         "cf": {pi: calc.v(pi, 12, 1.0, "C-F") for pi in POINTS_PI},
     }
 
 
-def nu_g_mesure(r: dict[str, object]) -> float:
-    """ν_G de la fermeture et de la mesure de #80 : la valeur retenue, `NU_G_RETENU` si la colonne est retirée."""
-    return NU_G_RETENU if r["nu_g_retenu"] is None else r["nu_g_retenu"]
+def publier(nu_g_retenu: float | None = NU_G_RETENU) -> dict[str, object]:
+    """Relevé des valeurs publiées en vigueur, historique et contre-épreuve, sur la table de référence `Parametres()`.
+
+    Les valeurs publiées sont celles de la table de référence : la fonction ne prend pas de table en argument, et une
+    variante ne peut pas y être soumise (#185, option (a) de P313). La contre-épreuve lit `ENTREES_D_ORIGINE` sur
+    cette même table. `nu_g_retenu` : comme pour `calculer` (ν_G de la mesure de #80 et de la fermeture).
+    """
+    calc = Calculs(Parametres(), nu_g_mesure(nu_g_retenu))
+    return {
+        "publiees": table_publiees(calc), "historique": table_historique(calc),
+        "contre_epreuve": table_publiees(Calculs(replace(calc.base, **ENTREES_D_ORIGINE), calc.nu_g_retenu),
+                                         VALEURS_CONTRE_EPREUVE),
+    }
 
 
 def _f(x: float, chiffres: int = 10) -> str:
@@ -2990,7 +3009,11 @@ def _verdict_seuil(valeurs, seuil: float, tenu: str = "tenu", non_tenu: str = "n
 
 
 def afficher(r: dict[str, object], sortie=None) -> None:
-    """Publie la grille complète, les contrôles et la comparaison aux valeurs publiées (texte déterministe)."""
+    """Publie la grille complète, les contrôles et la comparaison aux valeurs publiées (texte déterministe).
+
+    La comparaison (relevé, historique, contre-épreuve) n'est imprimée que si `r` porte le résultat de `publier` :
+    un résultat de `calculer` seul (variante de la table) s'arrête à la configuration de contrôle C-F.
+    """
     out = sortie or sys.stdout
 
     def p(texte: str = "") -> None:
@@ -3086,7 +3109,8 @@ def afficher(r: dict[str, object], sortie=None) -> None:
         p(f"- ν_G = 1, π̄ = {_f(100 * pi)} %, n_a = {na} : {constat_reference(marge)}")
     p()
     fe = r["fermeture"]
-    p(f"## Fermeture (#44, lecture (e)) : sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12, ν_G = {_f(nu_g_mesure(r))} ; "
+    nu_mesure = nu_g_mesure(r["nu_g_retenu"])  # ν_G de la fermeture et de la mesure de #80
+    p(f"## Fermeture (#44, lecture (e)) : sensibilité de θ_G à r̄ (π̄ = 2 %, n_a = 12, ν_G = {_f(nu_mesure)} ; "
       "identique bit à bit à ν_G = 1, C59)")
     p(f"- dθ_G/dr̄ = {_f(fe['dtheta_G_dr'], 6)} (% de la production par point de r̄ ; différence centrée, "
       f"pas {fe['pas']:g} ; erreur déclarée {_f(fe['erreur'], 3)})")
@@ -3106,7 +3130,7 @@ def afficher(r: dict[str, object], sortie=None) -> None:
     for n, d in sn["alpha_n_a"].items():
         p(f"- n_a = {n} : r̄_α = " + " | ".join(f"{100 * d[pi]['r_alpha']:.6f} %" for pi in POINTS_PI)
           + f" ; Δr̄_α = {100 * sn['delta_r_alpha_n_a'][n]:.6f} point")
-    p(f"- verdict : Δr̄_α = max − min sur {{0 ; 2 ; 10 %}}, n_a = 12, ν_G = {_f(nu_g_mesure(r))} (identique bit à bit à "
+    p(f"- verdict : Δr̄_α = max − min sur {{0 ; 2 ; 10 %}}, n_a = 12, ν_G = {_f(nu_mesure)} (identique bit à bit à "
       "ν_G = 1, C59) : "
       f"{100 * sn['delta_r_alpha']:.6f} point ; "
       f"seuil {100 * SEUIL_SUPERNEUTRALITE:g} point : "
@@ -3131,7 +3155,7 @@ def afficher(r: dict[str, object], sortie=None) -> None:
       f"écart de θ_G {100 * sn['beta_theta_G']:.6f} point ; "
       + " ; ".join(f"{q} {100 * v:.6f}" for q, v in sn["beta_allocations"].items()))
     p(f"- sensibilité à ζ (mesure, décision de `macro`) : verdict jugé à ζ = {_f(base.zeta)} ; étendue max − min sur "
-      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = " + _f(nu_g_mesure(r)) + ", en point, sur ζ ∈ {"
+      "{0 ; 2 ; 10 %}, n_a = 12, ν_G = " + _f(nu_mesure) + ", en point, sur ζ ∈ {"
       + " ; ".join(_f(z) for z in ZETA_PLAGE) + "} (calibration indicative ; table T1) et à ζ = "
       + f"{_f(ZETA_ILLUSTRATION)} en illustration, sans verdict")
     for z, d in sn["zeta"].items():
@@ -3149,6 +3173,9 @@ def afficher(r: dict[str, object], sortie=None) -> None:
           f"distribution {_f(v['distribution'], 6)} ; "
           f"dividendes/ventes {_f(v['Div_F_sur_ventes'], 6)} %")
     p()
+    if "publiees" not in r:  # résultat de `calculer` seul : aucune comparaison aux valeurs publiées (#185)
+        return
+
     def ligne(l: dict[str, object]) -> None:
         comparaison = ("" if l["publie"] == AUCUNE or l["verdict"] == "refusée"
                        else f"écart {l['ecart']:+.3g} (seuil {l['seuil']:.1g}) : ")
@@ -3214,7 +3241,7 @@ def main(arguments: list[str] | None = None) -> int:
     analyseur.add_argument("--json", default=None, help="écrit aussi les résultats en JSON dans ce fichier")
     args = analyseur.parse_args(arguments)
     try:
-        r = calculer(Parametres(), args.nu_g_retenu)
+        r = calculer(Parametres(), args.nu_g_retenu) | publier(args.nu_g_retenu)
     except HorsDomaine as refus:
         print(f"Refus de domaine : {refus}", file=sys.stderr)
         return 1
