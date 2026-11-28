@@ -2,22 +2,22 @@
 
 Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jour est datée et cite le SHA de `main` et de la branche de travail. **Tête condensée** (#119, P76) : périmètre courant, jalons, décisions en vigueur et points ouverts ; le reste est dans `docs/feuille-de-route-historique.md` (parties A à J et leurs compléments, sans rien supprimé ni réécrit), dont la « Lecture des renvois » dit où lire chaque renvoi absent de la tête.
 
-**Dernière mise à jour** : 28/11/2026, rang 0 de la ligne 14 (`architect`) — `main` = `c93ddd8` (PR #203, § 7) ; branche `claude/j3-e3-critere-i1` créée depuis `c93ddd8`, PR brouillon #208 (§ 1) ; P323 à P327 décidées (§ 4) ; #204 à #207 rattachées (§ 3) ; extraits sortis : historique, partie J, complément du rang 0 de la ligne 14. Mises à jour antérieures : même lieu, puis partie J et ses compléments, partie I et ses compléments, parties H à A et `git log -- docs/feuille-de-route.md`.
+**Dernière mise à jour** : 28/11/2026, rang 1 de la ligne 14 (`architect`) — `main` = `c93ddd8` (PR #203, § 7) ; branche `claude/j3-e3-critere-i1` à `368e7b1` (avant la présente consignation), PR brouillon #208, rangs 0 et 1 faits (§ 1) ; P328 à P332 (§ 4) ; #209 créée (§ 3) ; critères, inventaires et extraits sortis : historique, partie J, complément du rang 1 de la ligne 14. Mises à jour antérieures : même lieu, puis partie J et ses compléments, partie I et ses compléments, parties H à A et `git log -- docs/feuille-de-route.md`.
 
 ## 1. Branche de travail en cours
 
 **Branche 14, J3-e3 « critère I1 »** — `claude/j3-e3-critere-i1`, créée le 28/11/2026 par la session depuis `main` = `c93ddd8` (fusion de la PR #203) ; **PR brouillon #208**. Plan proposé par `architect` au point d'étape du 28/11/2026, décidé le même jour par le mainteneur (P323 à P327, § 4). Fiche de la ligne 13 ter à sa fusion : historique, partie J, complément du rang 0 de la ligne 14.
 
-**Périmètre (P323)** : avec `Closes` : #139 et #169 (critère de #169 retenu pour #139, P324), #140, #187 ; #114 : `Closes` seulement sous la lecture stricte de P325, décidé après l'inventaire du rang 1 ; #131 : point 2 seul (mesure), sans `Closes`. Aucun fichier de `src/` ni d'`outils/` n'est touché : tests du socle complet (`tests/invariants/`) et, au rang 7, la spécification.
+**Périmètre (P323, P332)** : avec `Closes` : #139 et #169 (P324, confirmée par P330), #140, #187 ; #114 : **sans `Closes`** (P325, P332 : des lignes restent en (s) ; ouverte jusqu'à J3-f2) ; #131 : point 2 seul (mesure), sans `Closes` ; #209 : rattachement à décider (§ 3). Aucun fichier de `src/` ni d'`outils/` n'est touché : tests du socle complet (`tests/invariants/`) et, au rang 7, la spécification.
 
 | Rang | Issue | Travail | Pilote ; circuit | Résultat attendu | État |
 |---|---|---|---|---|---|
-| 0 | — | Consignation (feuille de route, historique, partie J ; P323 à P327) ; PR brouillon | `architect` ; session | — | **en cours** (présent commit) |
-| 1 | toutes | Inventaire de I1 (#114, corps et quatre commentaires : seuil d'origine, classe (t) tenue par un verdict publié, (e) à exécuter, (s) jugée par S1, S2, F2 ou E1, (c) critère à fixer) ; critère de #139 (P324) confirmé ; critères de #140 (P150) et de #131 (point 2) écrits avant l'essai ; origine de « 1,0015 » (#187) ; le mainteneur tranche | `macro` (fiches 2 à 6 et 9), `monnaie` (fiches 7 et 8, #131) ; Opus `high` | aucun | à faire |
-| 2 | #139, #169 | « Endettement, dépôts » de la fiche 6 sur le socle complet, critère de #169 (P324) ; ancien verdict publié | `macro` ; circuit 2 | verdict nouveau ; visa du mainteneur | à faire |
-| 3 | #140 | Refus de la moitié du crédit aux tours 1 à 12 (C31, ς_L) sur le socle complet, critère du rang 1 (P150) | `macro` ; circuit 2 | verdict nouveau ; visa du mainteneur | à faire |
-| 4 | #131 | Mesure du point 2 : BC2 arithmétique et en log (forme log par composition dans `tests/`, F1), λ_e ∈ {0,1 ; 0,2 ; 0,4}, ±1 point sur π^e_0 ; r̂\*_∞ − r̄ et ln(P_∞/P\*_∞) | `monnaie`, `macro` consulté ; circuit 1 (mesure) | constat ; chiffre « r̂\* de #131 » republié ou barré (P267) | à faire |
-| 5 | #114 | Lignes (e) de l'inventaire, un commit `tests:` par fiche, vertes ou `xfail(strict)` avec issue ; tableau des verdicts | `macro`, `monnaie` selon la fiche ; circuit 2 | verdicts nouveaux ; visa du mainteneur | à faire |
+| 0 | — | Consignation (feuille de route, historique, partie J ; P323 à P327) ; PR brouillon | `architect` ; session | — | **fait** (`36503ef`, `368e7b1`) |
+| 1 | toutes | Inventaire de I1 (#114, corps et quatre commentaires : seuil d'origine, classe (t) tenue par un verdict publié, (e) à exécuter, (s) jugée par S1, S2, F2 ou E1, (c) critère à fixer) ; critère de #139 (P324) confirmé ; critères de #140 (P150) et de #131 (point 2) écrits avant l'essai ; origine de « 1,0015 » (#187) ; le mainteneur tranche | `macro` (fiches 2 à 6 et 9), `monnaie` (fiches 7 et 8, #131) ; Opus `high` | aucun | **fait** (présent commit ; 41 lignes inventoriées, 9 en (e), plafond 12 ; P328 à P332 ; critères : historique, partie J, complément du rang 1 de la ligne 14) |
+| 2 | #139, #169 | « Endettement, dépôts » de la fiche 6 sur le socle complet, critère de #169 (P324, P330), sous ϖ_L porté de 0,02 à 0,04 par an dès le pas 0 ; ancien test (banc partiel) devenu mesure publiée sans verdict, ancien verdict publié | `macro` ; circuit 2 | verdict nouveau ; visa du mainteneur | à faire |
+| 3 | #140 (#209 : à décider) | Refus de la moitié du crédit aux pas 0 à 11 (tours 1 à 12 ; C31, ς_L) sur le socle complet, aux trois π\*, critère du rang 1 (P150) | `macro` ; circuit 2 | verdict nouveau ; visa du mainteneur | à faire |
+| 4 | #131 | Mesure du point 2 : BC2 arithmétique et en log (forme log par composition dans `tests/`, F1), λ_e ∈ {0,1 ; 0,2 ; 0,4}, ±1 point sur π^e_0 ; r̂\*_∞ − r̄ et ln(P_∞/P\*_∞) ; H = 14 228 pas, contrôles K1 à K4, classement (F), (C) ou (I) | `monnaie`, `macro` consulté ; circuit 1 (mesure) | constat ; chiffre « r̂\* de #131 » barré avec renvoi (P331 (e)) | à faire |
+| 5 | #114 | Neuf lignes (e), un commit `tests:` par fiche, vertes ou `xfail(strict)` avec issue ; tableau des verdicts. `macro` : I1-e1 (fiches 2 et 9, G + 5 % sur 12 tours), I1-e2 (fiche 3, instabilité 15), I1-e3 (fiche 4, alternance étendue), I1-e4 (fiche 5, persistance, P328), I1-e5 (fiche 5, superneutralité C15, seuil 1e−3, P331 (d)) ; `monnaie` : E-7a (fiche 7, C43), E-7b (fiche 7, parts de ΔYD), E-8a (fiche 8, cible relevée, après #131), E-8b (fiche 8, persistance, P329) | `macro` (fiches 2 à 5 et 9 : 5 lignes), `monnaie` (fiches 7 et 8 : 4 lignes) ; circuit 2 | verdicts nouveaux ; visa du mainteneur | à faire |
 | 6 | — | Mesures « après » | session | — | à faire |
 | 7 | toutes | `docwriter`, un `docs:` par issue (règle 9) ; #187 : valeur barrée, valeur à T1 et commande, ou « origine non retrouvée » | circuit 4 | — | à faire |
 | 8 | toutes | Revue finale complète (`audit`, règle 10) et `/code-review` | — | — | à faire |
@@ -25,13 +25,13 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 **Ordre** : #139 et #140 d'abord (critères arrêtés en substance par P149, remplacée par P324, et P150, fiche 6 seule ; ils montent le banc de chocs du socle complet que #114 réutilise) ; #131 avant #114, dont les lignes de la fiche 8 (persistance, cible relevée, clause II.7) lisent r̂\*, dont #131 mesure l'écart permanent ; #114 en dernier (lot le plus large, issue incertaine ; un arrêt n'y bloque rien) ; #187 documentaire, au rang 7.
 
-**Critères d'acceptation, écrits avant l'essai** (P323 ; précisés au rang 1 par la confirmation de P324 et les critères consignés dans la PR) :
+**Critères d'acceptation, écrits avant l'essai** (P323 ; critères du rang 1 consignés par le présent commit, antérieur à tout test, P328 à P332 ; **texte entier** : historique, partie J, complément du rang 1 de la ligne 14 ; synthèse ci-dessous) :
 - **commun** : `git diff --stat c93ddd8..HEAD -- src outils` vide ; bancs identiques à `ce3662a` (`outils/empreintes_des_bancs.py --comparer outils/empreintes_des_bancs_ce3662a.json`, code 0, globale `b8cbd18d…d7d3`) ; sortie du script inchangée, `dc6be5d1…4309` (206 723 octets, stdout seul), à chaque commit `tests:` ; maquette `2aeb62f7…07d7` (57 109 octets) inchangée, ou diff nul hors de la colonne des numéros de ligne du `.tex` (#189) ; concordance stricte 92 / 92 ; batteries vertes ; aucun verdict publié existant changé, hors du verdict de #139 sous son nouveau critère (l'ancien reste publié) ; chaque verdict nouveau jugé sur un critère consigné dans la PR par un commit antérieur au commit de son test ;
-- **#114** : chaque ligne citée par l'issue (corps et quatre commentaires) a une classe et une référence ; chaque ligne (e) est verte ou en `xfail(strict=True)` avec son issue ; `Closes` selon P325 ;
-- **#131** : mesure publiée aux deux formes et aux trois λ_e, selon le critère du rang 1 ; chiffre « r̂\* de #131 » republié ou barré avec renvoi (P267) ; décision sur la forme de BC2 (points 1 et 3) hors de la ligne ;
-- **#139** (P324) : max |écart| ≤ 1e−6 sur [6 480 ; 6 720[ sur le socle complet, sous réserve de la confirmation du rang 1 ; marque `xfail` retirée si tenu (règle des tests), ancien verdict publié ;
-- **#140** : test du refus de la moitié du crédit avec son critère ; intention reportée (P150) écrite au rang 7 ;
-- **#187** : origine retrouvée et citée, ou « non retrouvée » déclarée et soumise au mainteneur ; valeur barrée, valeur remesurée à T1 avec sa commande (piste : phrase entrée dans le `.tex` par `098d200`, `git log -S"1,0015 fois"`).
+- **#114** : 41 lignes inventoriées (`macro`, 25 : 5 (t), 5 (e), 14 (s), 1 renvoyée à J4, #53 ; `monnaie`, 16 : 5 (t), 5 (s), 4 (e), 2 scindées) ; les 9 lignes (e) vertes ou en `xfail(strict=True)` avec leur issue (I1-e5 : #80) ; pas de `Closes` (P332) ;
+- **#131** : constat sans verdict (visa `monnaie`) : formes (A) et (L), trois λ_e, deux signes, H = 14 228 pas, contrôles K1 à K4 concluants, classement (F), (C) ou (I) ; (C) ou (I) : rapport au mainteneur ; chiffre « r̂\* de #131 » barré avec renvoi, remplacé par la mesure sous (A) (P331 (e)) ;
+- **#139** (P324, P330) : max sur t ∈ [6 480 ; 6 720[ de |x_t/x\* − 1| ≤ 1e−6, x\* = 0,166187838170, π\* = 2 %, sous ϖ_L + 2 points dès le pas 0 ; marque `xfail` de l'ancien test remplacée par une mesure publiée sans verdict, ancien verdict publié ;
+- **#140** (P150) : aux trois π\*, 720 pas sans arrêt ; pour chaque borne (plancher du dividende des entreprises, D_F ≥ 0), pas actifs absents ou formant un intervalle d'entiers consécutifs inclus dans [0 ; 23] ; probance publiée sans seuil ;
+- **#187** : origine retrouvée (`b5e98f8`, établie sur l'arbre de `ea2e0da` ; minimum rejoué 1,001561) ; valeur barrée, remesure à T1 0,997964 publiée « 0,9979 » avec sa commande (rang 7).
 
 **Conditions d'arrêt** : un fichier de `src/` ou d'`outils/` doit changer (défaut de code : issue, arrêt de la tâche) ; l'inventaire classe plus de douze lignes en (e), ou une ligne (c) ne peut recevoir de critère sans S1 (redécoupage par `architect`, décision du mainteneur) ; essai sans critère consigné, ou divergence entre un expert et le mainteneur sur un critère ; continuum (vitesse qui détermine l'arrivée) ou instabilité connue révélés : rapport sans verdict ; sortie du script ou maquette changée hors de #189 ; une seconde reprise `coder` → `audit` sur une même issue.
 
@@ -39,7 +39,7 @@ Tenue par `architect`, après chaque série de PR fusionnées. Chaque mise à jo
 
 **Escalades, relances et arrêts** : à noter dans la PR brouillon #208 ; aucun au rang 0.
 
-**Vigilance** : #163 avant la démonstration J4 (condition de M34) ; seuil du ratio de sacrifice de la boucle T3 ↔ BC3 (#114, amendement du 14/11/2026) à classer (s) vers #163 (J3-f1) au rang 1 ; sorties du script et de la maquette tenues par aucune batterie (#179) : remesure sur stdout seul à chaque commit `tests:` ; valeurs à `c93ddd8` : § 7.
+**Vigilance** : #163 avant la démonstration J4 (condition de M34) ; seuil du ratio de sacrifice de la boucle T3 ↔ BC3 (#114, amendement du 14/11/2026) classé (s) vers #163 (J3-f1, P331 (a)) ; sorties du script et de la maquette tenues par aucune batterie (#179) : remesure sur stdout seul à chaque commit `tests:` ; valeurs à `c93ddd8` : § 7.
 
 ## 2. Branches suivantes
 
@@ -49,7 +49,7 @@ Les branches fusionnées sont au § 7 ; lignes antérieures du présent tableau 
 
 | Ordre | Branche | Issues | Motif du regroupement et état |
 |---|---|---|---|
-| 14 | J3-e3 « critère I1 » `claude/j3-e3-critere-i1` — **en cours** depuis le 28/11/2026 (PR brouillon #208 ; § 1) | #114 (`Closes` selon P325), #131 (point 2, mesure), #139 (avec #169, P324), #140, #187 (P323) | Lignes « J3 » des fiches sur le socle complet depuis l'état résolu (P122, P150, P324) ; inventaire de I1 au rang 1. #187 : origine de « 1,0015 », `macro`. Ligne 13 ter, fusionnée : § 7. |
+| 14 | J3-e3 « critère I1 » `claude/j3-e3-critere-i1` — **en cours** depuis le 28/11/2026 (PR brouillon #208 ; § 1) | #114 (sans `Closes`, P332), #131 (point 2, mesure), #139 (avec #169, P324), #140, #187 (P323) | Lignes « J3 » des fiches sur le socle complet depuis l'état résolu (P122, P150, P324) ; inventaire de I1 au rang 1. #187 : origine de « 1,0015 », `macro`. Ligne 13 ter, fusionnée : § 7. |
 | 15 | J3-f1 « stabilité linéarisée » | S1 (à rédiger), #147, #116, #125 (point 2, `Closes`), #163 (P204) ; F2 (P249) ; #190 après décision du mainteneur (P300) | Linéarisation sur le moteur ; ratio de sacrifice sur le socle linéarisé (C7). **Condition de M34 : #163 traitée avant la démonstration J4.** #180 (J4) traitée avant F2 (P296). Plus de cinq éléments : à redécouper au point d'étape qui la précède. |
 | 16 | J3-f2 « trajectoires après chocs » | S2 (à rédiger), #87, #88, #111, #154 ; avant elle, instruction de #195 et #200 par `monnaie` (P316) | Après J3-f1 (#116 → #111). |
 | 17 | J3-g1 « chemin chaud » | #110, #159, #160, #161, #156 | Forme du code sans changement de résultat (critère « identique au bit ») ; avant G1, qui mesure le coût final. |
@@ -63,7 +63,7 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 
 ## 3. Issues hors plan
 
-*Relevé du 28/11/2026, point d'étape après la fusion de la PR #203* : **69 issues ouvertes** (`list_issues`, état ouvert, `totalCount` = 69, `architect`, 28/11/2026 ; 70 au rang 0 de la ligne 13 ter, plus #204 à #207 créées, moins #185, #186, #188, #191 et #198 fermées par la PR #203). En-têtes des relevés antérieurs, lignes alors modifiées et dépendances d'alors : historique, partie J (§ 3 et compléments), et partie I et ses compléments. La colonne « Branche prévue » n'est pas reportée sur GitHub.
+*Relevé du 28/11/2026, point d'étape après la fusion de la PR #203* : **69 issues ouvertes** (`list_issues`, état ouvert, `totalCount` = 69, `architect`, 28/11/2026 ; 70 au rang 0 de la ligne 13 ter, plus #204 à #207 créées, moins #185, #186, #188, #191 et #198 fermées par la PR #203). En-têtes des relevés antérieurs, lignes alors modifiées et dépendances d'alors : historique, partie J (§ 3 et compléments), et partie I et ses compléments. La colonne « Branche prévue » n'est pas reportée sur GitHub. #209 créée au rang 1 de la ligne 14 : 70 issues ouvertes (`totalCount` = 70, `architect`, 28/11/2026).
 
 | Issue | Objet | Branche prévue | Remarque |
 |---|---|---|---|
@@ -81,7 +81,7 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 | #87, #88, #111 | D_F ≥ 0 hors stationnaire ; fenêtre longue ; trajectoires C-HS | J3-f2 (P42, P60) | #116 → #111 ; #88 reçoit « +141 pb et 0,42 % » de #171 (P267) |
 | #108 | Identifiants Cn et Co | J5 | P46 (a) |
 | #110 | Processeur de l'exécuteur en CI | J3-g1 (P60) | marge du noyau seul (P57, rang 8 de la calibration : historique, partie G) |
-| #114, #131 | Critère I1 ; BC2 en log | **ligne 14, rangs 1 et 5** (#114, `Closes` selon P325) ; **rang 4** (#131, point 2, sans `Closes` ; P101, P323) | reçoit les lignes (c) des fiches 5 et 6 (P122) et l'exécution de #139 et #140 ; #131 reçoit « r̂\* » de #171 (P267) |
+| #114, #131 | Critère I1 ; BC2 en log | **ligne 14, rangs 1 et 5** (#114, sans `Closes`, P332) ; **rang 4** (#131, point 2, sans `Closes` ; P101, P323) | reçoit les lignes (c) des fiches 5 et 6 (P122) et l'exécution de #139 et #140 ; #131 reçoit « r̂\* » de #171 (P267) |
 | #116, #147 | Maquette conjointe ; C62 en régime linéaire | J3-f1 (S1) | #147 reçoit l'harmonisation « 63 tours » (P178) |
 | #120 | `Cadre` à n_a ≠ 12 | J4 (P295) | option (a) de P82 maintenue, déplacée : n_a constante tant qu'aucun cadre n'est chargé par un scénario |
 | #125 | Facteur de croissance par pas, formes et domaines du script | points 3 à 5 : faits en J3-e1 ; point 6 : **fait en J3-e2** (`74e1213`, `b9f66cd` ; P306), sans `Closes`, commentaire posté le 27/11/2026 (symptôme non observable depuis `d69a70e`) ; point 2 : J3-f1, `Closes` | point 1 réalisé en J3-c (P88) |
@@ -99,11 +99,11 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 | #164 | δ et consommation de capital fixe ; dividendes dans la valeur ajoutée | hors branche (P214) | née de l'instruction de #92 |
 | #165 | Indicateur d'investissement au tour | J4 (P221) | avis de `jeu` sur ζ = 8 |
 | #167 | Bêta des dépôts (limite de B2) | J4 ou J6 (P227) | née de l'instruction de #130 |
-| #169 | Critère « Endettement » de #139 en enveloppe | **ligne 14, rang 2**, avec #139 (P324) | correction prospective retenue (P324), à confirmer au rang 1 sur l'avis de `macro` ; remplace P149 |
+| #169 | Critère « Endettement » de #139 en enveloppe | **ligne 14, rang 2**, avec #139 (P324) | correction prospective retenue (P324), confirmée au rang 1 (P330) ; remplace P149 |
 | #177 | Concordance : balise d'un label dans le module de son radical | J3-g2 (rang 10) | `audit` ; question du mainteneur à trancher avant ; résultats identiques |
 | #179 | CI : identité au bit de la sortie du script d'état stationnaire | J3-g2 (rang 10) | avec les références ; remesure manuelle d'ici là |
 | #180 | Série du test zéro : B19 à S^CB = 0, bande B17 vide à L ≡ 0 | J4, au plus tard avant F2 (P296) | `monnaie` ; « sans objet » ou « x = 0 exactement » déclaré avant l'essai |
-| #187 | Ligne (d) de `sec:menages-conditions` : « 1,0015 » non reproduit à T1 | **ligne 14, rang 7** (P300, P323) | `macro` ; origine du chiffre à retrouver (phrase entrée dans le `.tex` par `098d200`) |
+| #187 | Ligne (d) de `sec:menages-conditions` : « 1,0015 » non reproduit à T1 | **ligne 14, rang 7** (P300, P323) | `macro` ; origine du chiffre à retrouver (origine retrouvée au rang 1 : `b5e98f8`) |
 | #189 | Maquette : sortie dépendante des numéros de ligne du `.tex` | J3-g2, avec #179 (P300) | recoupe #179 |
 | #190 | Motifs d'écartement des ménages non réexaminés à T1 | décision du mainteneur d'abord, puis J3-f1 (P300) | sans rouvrir M27 ; critère avant l'essai |
 | #192 | Constats mineurs de la revue finale de la PR #184 | J3-g2, avec #189 (P316) | sort de la ligne 13 ter (P312) ; avec #204 à #207 (P326) ; `outils/etat_stationnaire.py`, `outils/maquette_conjointe.py`, deux tests |
@@ -118,6 +118,7 @@ Issues à rédiger plus tard (`architect`, au point d'étape qui précède chaqu
 | #205 | `superneutralite` : allocation non finie classée « non dépendante de ζ » (`dependantes_de_zeta`) | J3-g2, avec #206 (P326) | suite de #188 ; `monnaie`, circuit 3 ; sortie identique |
 | #206 | `superneutralite` : `invariance` divise sans garde | J3-g2, avec #205 (P326) | ex-point (b) du rang 10 de la ligne 13 ter ; inatteignable (ν_H > 0 refusé au chargement) |
 | #207 | Fiche de calibration : sondes par `calculer` à dater d'avant #185 | J3-g2 (P326) | ex-point (a) ; annotation datée par `monnaie` (l. 1206) et `macro` (l. 668, 701, 1895), versée par la session ; refus sur variante à remesurer ailleurs : à décider |
+| #209 | `test_refus_de_credit` : refus appliqué aux pas 1 à 12 (tours 2 à 13), docstring « tours 1 à 12 » | **à décider** : avec #140 au rang 3 de la ligne 14 (proposé), sinon hors plan | créée au rang 1 de la ligne 14 (P331 (h), `needs-triage`) ; `macro` ; constat par lecture du code ; les mesures publiées du banc partiel en dépendent |
 
 **Points ouverts sans issue** :
 - mutant équivalent B_Bk/Res dans B5, à rouvrir avec le corridor (J6, P116) ;
@@ -210,16 +211,26 @@ Décisions du mainteneur du 28/11/2026 sur le plan d'`architect` du point d'éta
 - **P326** : #205, #206 et #207 rattachées à J3-g2 ; #204 instruite par `monnaie`, `macro` consulté, hors branche et sans écriture, puis décision du mainteneur avant J3-g2 ; redécoupage J3-g2a / J3-g2b (§ 2) à confirmer au point d'étape qui précède J3-g2 ;
 - **P327** : sorties de la tête du rang 0 de la ligne 14 versées dans un complément de la partie J de l'historique (pas de partie K) : complément du rang 0 de la ligne 14.
 
+### Décisions P328 et suivantes (rang 1 de la ligne 14), 28/11/2026
+
+Décisions du mainteneur du 28/11/2026 sur les critères et les inventaires du rang 1 (texte des critères : historique, partie J, complément du rang 1 de la ligne 14) :
+- **P328** : persistance de la fiche 5 (I1-e4) comptée depuis le pic : |e_t| ≤ pic/2 pour tout t de t_pic + 60 à 719 ;
+- **P329** : persistance de la fiche 8 (E-8b) en lecture (i) : règle désactivée, i_CB tenu à i_CB,0 − 0,01, BC2 hors de la boucle ; libellé du `.tex` (l. 3097) aligné au rang 7 ;
+- **P330** : critère de #169 confirmé pour #139 (P324) ; choc représenté par ϖ_L porté de 0,02 à 0,04 par an dès le pas 0 (i_CB endogène, Δi_L durable publié) ; l'ancien test (`tests/invariants/test_investissement.py:817`, `xfail` strict, banc partiel) devient une mesure publiée sans verdict ; l'ancien verdict reste publié au `.tex` ;
+- **P331** : recommandations acceptées en bloc : (a) seuil du ratio de sacrifice T3 ↔ BC3 (P102) classé (s) vers #163 (J3-f1), pas (c) ; (b) seuils et horizons des lignes (s), dont 720 pas → H, tranchés à la rédaction de S1 et S2 ; (c) ligne 13 de `macro` (scénario adverse de l'instabilité 15, fiche 5) renvoyée à J4 (#53) ; (d) seuil 1e−3 pour I1-e5 (superneutralité), choix de conception déclaré ; (e) chiffre « r̂\* de #131 » (`.tex` l. 3135 et l. 4205) barré avec renvoi à #131, remplacé par la mesure nouvelle du socle complet sous (A) ; (f) gain statique de la fiche 8 (8-4) laissé à S1 ; (g) environ 2 min ajoutées à la batterie des invariants par #131 ; (h) issue mineure créée : #209 ;
+- **P332** : conséquence de P325 (lecture stricte) : des lignes restent en (s), donc pas de `Closes #114` dans la ligne 14 ; #114 reste ouverte jusqu'à J3-f2.
+
 **Questions au mainteneur, non bloquantes** : Q-b à Q-d (texte : historique, partie J, § 4) ; Q-a est rattachée à la ligne J4 « refus typés hors du sentier » (P316).
 
-**Points ouverts au 28/11/2026** (rang 0 de la ligne 14 ; version du rang 10 de la ligne 13 ter : historique, partie J, complément du rang 0 de la ligne 14) :
+**Points ouverts au 28/11/2026** (rang 1 de la ligne 14 ; version du rang 0 : historique, partie J, complément du rang 1 de la ligne 14 ; version du rang 10 de la ligne 13 ter : même partie, complément du rang 0 de la ligne 14) :
+- seuils et horizons des lignes (s) de I1, dont 720 pas → H : à trancher à la rédaction de S1 et S2 (P331 (b)) ; #114 ouverte jusqu'à J3-f2 (P332) ;
 - condition de M34 : **#163 traitée avant la démonstration J4** ;
 - (c) `evaluer` ne convertit que `HorsDomaine` : noté, sans issue (sans scénario réel) ; (d) coquille « républié » au titre de `431b153`, non corrigée (historique poussé) ;
 - identité au bit des sorties du script et de la maquette : aucune batterie (#179, J3-g2) ; remesure manuelle sur stdout seul ; maquette dépendante des numéros de ligne du `.tex` (#189, J3-g2) ;
 - marge du noyau seul sur l'exécuteur lent (#110, J3-g1) ; refus typés hors du sentier : ligne J4 (P316) ; catégorie « placement raté » de C1 (J6) ;
 - déjà ouverts : plancher du taux directeur (P181), durée d'une partie (#155), #11, #14 ;
 - J3-f1 indicative à plus de cinq éléments, J3-g2 à dix depuis P326 : à redécouper au point d'étape qui précède chacune (proposition pour J3-g2 au § 2) ;
-- en attente du mainteneur : #190 ; Q-b à Q-d ; suppression de la branche distante `ccr-e5be5328-tvkv0d`.
+- en attente du mainteneur : #190 ; rattachement de #209 (§ 3) ; Q-b à Q-d ; suppression de la branche distante `ccr-e5be5328-tvkv0d`.
 
 
 ## 5. Pistes à instruire dans les fiches comparatives (aucune n'est décidée)

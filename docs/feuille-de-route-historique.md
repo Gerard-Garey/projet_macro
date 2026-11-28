@@ -4,7 +4,7 @@ Tenu par `architect`. Ce fichier reçoit, **sans rien supprimer ni réécrire**,
 
 Chaque condensation ajoute une partie, la plus récente en tête. Une partie est figée.
 
-**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro. Un renvoi à P74 à P86, ou à une branche fusionnée jusqu'à J3-a, absent de la tête, se lit dans la partie B (ajoutée le 14/11/2026). Un renvoi à la fiche de J3-c, au relevé d'issues du 14/11/2026 après la PR #117 ou à P87 à P99, absent de la tête, se lit dans la partie C (ajoutée le 14/11/2026, après la fusion de la PR #129). Un renvoi au plan de J3-d1 (rangs 0 à 8), à P100 à P118, aux mises à jour de la tête du 13/11 au 14/11/2026 ou aux lignes du § 7 de la PR #118 à la PR #128, absent de la tête, se lit dans la partie D (ajoutée le 15/11/2026, rang 8 de J3-d1). Un renvoi à la fiche de J3-d1 (état et critères à la fusion de la PR #136), au relevé d'issues du 14/11/2026 après la PR #129, à P119 à P146 ou aux mises à jour de la tête du 14/11/2026 après la PR #129 et du 15/11/2026 (rangs 4 et 5 de J3-d1), absent de la tête, se lit dans la partie E (ajoutée le 15/11/2026, point d'étape après la fusion de la PR #136). Un renvoi à P147 à P155, à la ligne du § 7 de la PR #129 ou aux mises à jour de la tête des rangs 0 et 1a de J3-d2, absent de la tête, se lit dans la partie E, complément du rang 8 de J3-d2. Un renvoi à la fiche de J3-d2 (plan, mesures du rang 5, critères et conditions d'arrêt, à la fusion de la PR #146), par exemple « `docs/feuille-de-route.md` § 1, critères de #132 » dans `tests/`, au relevé d'issues du 15/11/2026 après la PR #136, aux points ouverts du rang 8 de J3-d2 ou à la ligne du § 7 de la PR #136, absent de la tête, se lit dans la partie F (ajoutée le 16/11/2026, point d'étape après la fusion de la PR #146). Un renvoi à P172 à P181, aux questions Q1 à Q8 du 16/11/2026 ou aux points ouverts du rang 0 de la branche « forme du code », absent de la tête, se lit dans la partie F, complément du rang 9 de cette branche. Un renvoi à la fiche de la branche « forme du code » (plan, critères, conditions d'arrêt et résultats des rangs 6 à 9, à la fusion de la PR #151), au relevé d'issues du 16/11/2026 après la PR #146 (avec les réserves de la revue finale et les dépendances), à P182 à P199, aux points ouverts du rang 9 de cette branche ou à la ligne du § 7 de la PR #146, absent de la tête, se lit dans la partie G (ajoutée le 16/11/2026, point d'étape après la fusion de la PR #151). Un renvoi à P200 à P203, à P213 à P224, à la présentation des parties A à G tenue en tête de `docs/feuille-de-route.md` jusqu'au 16/11/2026, à l'erratum du commit `afa9e89`, aux paragraphes de renvoi vers les parties B à F ou aux lignes J0 à J2 des jalons, absent de la tête, se lit dans la partie G, complément du rang 1 de la branche « calibration ». Un renvoi à P204 à P212, à P225 à P241, aux mesures du rang 8 de la branche « calibration » (coût P57, canal rentier ↔ rayon, consignes pour `docwriter`), à la mise à jour de la tête du 17/11/2026 (rang 8) ou aux questions Q1 à Q9 du 16/11/2026, absent de la tête, se lit dans la partie G, complément du rang 11 de la branche « calibration ». Un renvoi à la fiche de la branche « calibration » (plan, critères, précisions prospectives de M34, mesures du rang 8, conditions d'arrêt et rangs 0 à 11, à la fusion de la PR #162), au relevé d'issues du 16/11/2026 après la PR #151 (avec les issues proposées 1 à 3 du rang 11, les points ouverts et les dépendances), aux points (a) à (d) soumis au mainteneur au rang 11 de la calibration (texte du 17/11/2026), à la mise à jour de la tête du 17/11/2026 (rang 11), à la ligne 11 du § 2 ou aux lignes du § 7 de la PR #151 et de la PR #162 avant sa fusion, absent de la tête, se lit dans la partie H (ajoutée le 26/11/2026, point d'étape après la fusion de la PR #162). Un renvoi au plan de J3-e1 tel que décidé (motif, forme R1 et options écartées, contrats partagés, critères d'acceptation, conditions d'arrêt, état des rangs avant le rang 10), à P242 à P245, à l'en-tête du relevé d'issues du 26/11/2026 et à ses dépendances, à la mise à jour de la tête du rang 1 de J3-e1 ou à la ligne du § 7 de la PR #162 après sa fusion, absent de la tête, se lit dans la partie H, complément du rang 10 de J3-e1. Un renvoi à la fiche de J3-e1 telle qu'à sa fusion (rangs 0 à 10, résultats contre les critères, escalades, vigilance), au texte de P242 à P266 et aux points ouverts du 26/11/2026 (rang 10 de J3-e1), au relevé d'issues du 26/11/2026 au rang 10 de J3-e1 et à ses dépendances, à la ligne 12 du § 2 avant la fusion, à la mise à jour de la tête du rang 10 de J3-e1 ou à la ligne du § 7 de la PR #174 avant sa fusion, absent de la tête, se lit dans la partie I (ajoutée le 26/11/2026, point d'étape après la fusion de la PR #174). Un renvoi au texte de P267 à P276 ou aux critères détaillés de #171, #173, #170 et #168 (rang 1 de la branche 12 bis), absent de la tête, se lit dans la partie I, complément du rang 10 de la branche 12 bis. Un renvoi à la fiche de la branche 12 bis telle qu'à sa fusion (plan, critères, conditions d'arrêt, état des rangs, escalades), à la ligne 12 bis du § 2 avant la fusion, à l'en-tête du relevé d'issues du rang 10 de la branche 12 bis, aux lignes des issues fermées par les PR #183 et #184 et aux dépendances d'alors, aux points ouverts du rang 10 ou à la mise à jour de la tête du rang 10 de la branche 12 bis, absent de la tête, se lit dans la partie I, complément du point d'étape après la fusion de la PR #184. Un renvoi au texte de P277 à P293, aux décisions de la session de la branche 12 bis, à l'état de la tête au point d'étape après la fusion de la PR #184 (en-tête, § 1, ligne 13 du § 2 avant la décision du plan, en-tête du relevé et lignes alors modifiées, dépendances, points ouverts), absent de la tête, se lit dans la partie I, complément du rang 1 de J3-e2. Un renvoi à la fiche de J3-e2 telle qu'à sa fusion (périmètre, rangs 0 à 9, résultats, critères, conditions d'arrêt, visa, escalades, vigilance), à la ligne 13 du § 2 avant la fusion, à la ligne 13 ter avant la décision de son plan (P312), à l'en-tête du relevé d'issues du rang 9 de J3-e2, aux lignes des issues fermées par la PR #193, aux issues proposées N2 à N6 avant leur création, aux dépendances du rang 9, au texte de P303 à P311, aux questions Q-a à Q-d, aux points ouverts du rang 9 de J3-e2, à la mise à jour de la tête du rang 9 de J3-e2 ou aux lignes du § 7 des PR #183 et #184, absent de la tête, se lit dans la partie J (ajoutée le 27/11/2026, point d'étape après la fusion de la PR #193). Un renvoi au tableau des rangs ou aux critères d'acceptation de la ligne 13 ter au rang 0 (avant P313, P314 et P318 à P321), au texte réservé de P313 et P314, aux points ouverts du rang 0 de la ligne 13 ter, aux index de P204 à P241, P242 à P266, P294 à P302 et P303 à P311, au paragraphe de P213 à P224, aux faits du rang 0, aux dépendances du rang 0, aux paragraphes d'introduction du § 2 et du § 7, à la mise à jour de la tête du rang 0 de la ligne 13 ter ou à la ligne du § 7 de la PR #196, absent de la tête, se lit dans la partie J, complément du rang 1 de la ligne 13 ter. Un renvoi aux critères d'acceptation de la ligne 13 ter précisés au rang 1 (commun, #185, #186, #188, #191 et #198, dont le critère P314 de #186), à la ligne des escalades du rang 1, aux dépendances du rang 1, aux faits du rang 1, aux points ouverts du rang 1 de la ligne 13 ter ou à la mise à jour de la tête du rang 1, absent de la tête, se lit dans la partie J, complément du rang 10 de la ligne 13 ter. Un renvoi à la fiche de la ligne 13 ter à sa fusion (rangs, ordre, critères d'acceptation et résultats du 28/11/2026, conditions d'arrêt, visa, escalades, vigilance), au texte de P312 à P322, aux confirmations et au visa du 28/11/2026, aux questions et aux points ouverts du rang 10 de la ligne 13 ter (dont les points (a) et (b), devenus #207 et #206), au relevé d'issues du 27/11/2026 (rang 0 de la ligne 13 ter), aux lignes des issues #185, #186, #188, #191, #198, #204 et #205 de ce relevé, aux lignes 13 ter, 14 et 18 du § 2 d'avant P323 et P326, aux dépendances du rang 10, à la mise à jour de la tête du rang 10 de la ligne 13 ter ou à la ligne du § 7 de la PR #193, absent de la tête, se lit dans la partie J, complément du rang 0 de la ligne 14.
+**Lecture des renvois.** Un renvoi daté d'avant le 14/11/2026 vers « la feuille de route, § n » (par exemple « § 4, P10 » dans une fiche, un ADR ou la spécification) se lit dans la partie A, au § de même numéro. Un renvoi à P74 à P86, ou à une branche fusionnée jusqu'à J3-a, absent de la tête, se lit dans la partie B (ajoutée le 14/11/2026). Un renvoi à la fiche de J3-c, au relevé d'issues du 14/11/2026 après la PR #117 ou à P87 à P99, absent de la tête, se lit dans la partie C (ajoutée le 14/11/2026, après la fusion de la PR #129). Un renvoi au plan de J3-d1 (rangs 0 à 8), à P100 à P118, aux mises à jour de la tête du 13/11 au 14/11/2026 ou aux lignes du § 7 de la PR #118 à la PR #128, absent de la tête, se lit dans la partie D (ajoutée le 15/11/2026, rang 8 de J3-d1). Un renvoi à la fiche de J3-d1 (état et critères à la fusion de la PR #136), au relevé d'issues du 14/11/2026 après la PR #129, à P119 à P146 ou aux mises à jour de la tête du 14/11/2026 après la PR #129 et du 15/11/2026 (rangs 4 et 5 de J3-d1), absent de la tête, se lit dans la partie E (ajoutée le 15/11/2026, point d'étape après la fusion de la PR #136). Un renvoi à P147 à P155, à la ligne du § 7 de la PR #129 ou aux mises à jour de la tête des rangs 0 et 1a de J3-d2, absent de la tête, se lit dans la partie E, complément du rang 8 de J3-d2. Un renvoi à la fiche de J3-d2 (plan, mesures du rang 5, critères et conditions d'arrêt, à la fusion de la PR #146), par exemple « `docs/feuille-de-route.md` § 1, critères de #132 » dans `tests/`, au relevé d'issues du 15/11/2026 après la PR #136, aux points ouverts du rang 8 de J3-d2 ou à la ligne du § 7 de la PR #136, absent de la tête, se lit dans la partie F (ajoutée le 16/11/2026, point d'étape après la fusion de la PR #146). Un renvoi à P172 à P181, aux questions Q1 à Q8 du 16/11/2026 ou aux points ouverts du rang 0 de la branche « forme du code », absent de la tête, se lit dans la partie F, complément du rang 9 de cette branche. Un renvoi à la fiche de la branche « forme du code » (plan, critères, conditions d'arrêt et résultats des rangs 6 à 9, à la fusion de la PR #151), au relevé d'issues du 16/11/2026 après la PR #146 (avec les réserves de la revue finale et les dépendances), à P182 à P199, aux points ouverts du rang 9 de cette branche ou à la ligne du § 7 de la PR #146, absent de la tête, se lit dans la partie G (ajoutée le 16/11/2026, point d'étape après la fusion de la PR #151). Un renvoi à P200 à P203, à P213 à P224, à la présentation des parties A à G tenue en tête de `docs/feuille-de-route.md` jusqu'au 16/11/2026, à l'erratum du commit `afa9e89`, aux paragraphes de renvoi vers les parties B à F ou aux lignes J0 à J2 des jalons, absent de la tête, se lit dans la partie G, complément du rang 1 de la branche « calibration ». Un renvoi à P204 à P212, à P225 à P241, aux mesures du rang 8 de la branche « calibration » (coût P57, canal rentier ↔ rayon, consignes pour `docwriter`), à la mise à jour de la tête du 17/11/2026 (rang 8) ou aux questions Q1 à Q9 du 16/11/2026, absent de la tête, se lit dans la partie G, complément du rang 11 de la branche « calibration ». Un renvoi à la fiche de la branche « calibration » (plan, critères, précisions prospectives de M34, mesures du rang 8, conditions d'arrêt et rangs 0 à 11, à la fusion de la PR #162), au relevé d'issues du 16/11/2026 après la PR #151 (avec les issues proposées 1 à 3 du rang 11, les points ouverts et les dépendances), aux points (a) à (d) soumis au mainteneur au rang 11 de la calibration (texte du 17/11/2026), à la mise à jour de la tête du 17/11/2026 (rang 11), à la ligne 11 du § 2 ou aux lignes du § 7 de la PR #151 et de la PR #162 avant sa fusion, absent de la tête, se lit dans la partie H (ajoutée le 26/11/2026, point d'étape après la fusion de la PR #162). Un renvoi au plan de J3-e1 tel que décidé (motif, forme R1 et options écartées, contrats partagés, critères d'acceptation, conditions d'arrêt, état des rangs avant le rang 10), à P242 à P245, à l'en-tête du relevé d'issues du 26/11/2026 et à ses dépendances, à la mise à jour de la tête du rang 1 de J3-e1 ou à la ligne du § 7 de la PR #162 après sa fusion, absent de la tête, se lit dans la partie H, complément du rang 10 de J3-e1. Un renvoi à la fiche de J3-e1 telle qu'à sa fusion (rangs 0 à 10, résultats contre les critères, escalades, vigilance), au texte de P242 à P266 et aux points ouverts du 26/11/2026 (rang 10 de J3-e1), au relevé d'issues du 26/11/2026 au rang 10 de J3-e1 et à ses dépendances, à la ligne 12 du § 2 avant la fusion, à la mise à jour de la tête du rang 10 de J3-e1 ou à la ligne du § 7 de la PR #174 avant sa fusion, absent de la tête, se lit dans la partie I (ajoutée le 26/11/2026, point d'étape après la fusion de la PR #174). Un renvoi au texte de P267 à P276 ou aux critères détaillés de #171, #173, #170 et #168 (rang 1 de la branche 12 bis), absent de la tête, se lit dans la partie I, complément du rang 10 de la branche 12 bis. Un renvoi à la fiche de la branche 12 bis telle qu'à sa fusion (plan, critères, conditions d'arrêt, état des rangs, escalades), à la ligne 12 bis du § 2 avant la fusion, à l'en-tête du relevé d'issues du rang 10 de la branche 12 bis, aux lignes des issues fermées par les PR #183 et #184 et aux dépendances d'alors, aux points ouverts du rang 10 ou à la mise à jour de la tête du rang 10 de la branche 12 bis, absent de la tête, se lit dans la partie I, complément du point d'étape après la fusion de la PR #184. Un renvoi au texte de P277 à P293, aux décisions de la session de la branche 12 bis, à l'état de la tête au point d'étape après la fusion de la PR #184 (en-tête, § 1, ligne 13 du § 2 avant la décision du plan, en-tête du relevé et lignes alors modifiées, dépendances, points ouverts), absent de la tête, se lit dans la partie I, complément du rang 1 de J3-e2. Un renvoi à la fiche de J3-e2 telle qu'à sa fusion (périmètre, rangs 0 à 9, résultats, critères, conditions d'arrêt, visa, escalades, vigilance), à la ligne 13 du § 2 avant la fusion, à la ligne 13 ter avant la décision de son plan (P312), à l'en-tête du relevé d'issues du rang 9 de J3-e2, aux lignes des issues fermées par la PR #193, aux issues proposées N2 à N6 avant leur création, aux dépendances du rang 9, au texte de P303 à P311, aux questions Q-a à Q-d, aux points ouverts du rang 9 de J3-e2, à la mise à jour de la tête du rang 9 de J3-e2 ou aux lignes du § 7 des PR #183 et #184, absent de la tête, se lit dans la partie J (ajoutée le 27/11/2026, point d'étape après la fusion de la PR #193). Un renvoi au tableau des rangs ou aux critères d'acceptation de la ligne 13 ter au rang 0 (avant P313, P314 et P318 à P321), au texte réservé de P313 et P314, aux points ouverts du rang 0 de la ligne 13 ter, aux index de P204 à P241, P242 à P266, P294 à P302 et P303 à P311, au paragraphe de P213 à P224, aux faits du rang 0, aux dépendances du rang 0, aux paragraphes d'introduction du § 2 et du § 7, à la mise à jour de la tête du rang 0 de la ligne 13 ter ou à la ligne du § 7 de la PR #196, absent de la tête, se lit dans la partie J, complément du rang 1 de la ligne 13 ter. Un renvoi aux critères d'acceptation de la ligne 13 ter précisés au rang 1 (commun, #185, #186, #188, #191 et #198, dont le critère P314 de #186), à la ligne des escalades du rang 1, aux dépendances du rang 1, aux faits du rang 1, aux points ouverts du rang 1 de la ligne 13 ter ou à la mise à jour de la tête du rang 1, absent de la tête, se lit dans la partie J, complément du rang 10 de la ligne 13 ter. Un renvoi à la fiche de la ligne 13 ter à sa fusion (rangs, ordre, critères d'acceptation et résultats du 28/11/2026, conditions d'arrêt, visa, escalades, vigilance), au texte de P312 à P322, aux confirmations et au visa du 28/11/2026, aux questions et aux points ouverts du rang 10 de la ligne 13 ter (dont les points (a) et (b), devenus #207 et #206), au relevé d'issues du 27/11/2026 (rang 0 de la ligne 13 ter), aux lignes des issues #185, #186, #188, #191, #198, #204 et #205 de ce relevé, aux lignes 13 ter, 14 et 18 du § 2 d'avant P323 et P326, aux dépendances du rang 10, à la mise à jour de la tête du rang 10 de la ligne 13 ter ou à la ligne du § 7 de la PR #193, absent de la tête, se lit dans la partie J, complément du rang 0 de la ligne 14. Un renvoi aux critères écrits avant l'essai au rang 1 de la ligne 14 (lignes (e) de I1 : I1-e1 à I1-e5, E-7a, E-7b, E-8a, E-8b ; #131, #139, #140), aux inventaires de I1 de `macro` et de `monnaie`, à l'origine de « 1,0015 » (#187), aux mesures déclarées faites avant ces critères, ou aux lignes de la tête du rang 0 de la ligne 14 remplacées au rang 1 (en-tête, périmètre, rangs 0 à 5, critères d'acceptation, vigilance, ligne 14 du § 2, relevé et lignes #114/#131, #169, #187 du § 3, points ouverts), absent de la tête, se lit dans la partie J, complément du rang 1 de la ligne 14.
 
 ## Partie J : extraits de la tête sortis le 27/11/2026 (point d'étape après la fusion de la PR #193, rang 0 de la ligne 13 ter), figés
 
@@ -369,6 +369,225 @@ Le 28/11/2026, le mainteneur a confirmé P318, P320 et P321 comme décisions et 
 | Branche | PR | Jalon | Fusion | Détail |
 |---|---|---|---|---|
 | `claude/j3-e2-refus-types` | #193 | J3 (domaines à l'état chargé et refus typés) | **27/11/2026, 19:09 UTC, commit de fusion `7fc1cdf`** | #153, #158, #178, #181 fermées (absentes des 70 issues ouvertes, § 3, relevé d'`architect`) ; #125 ouverte (point 6 fait, sans `Closes`). 22 commits hors fusion propres à la branche (`git log --no-merges d08332c..7fc1cdf`, sans `007c15d` de la PR #196 : 4 `code:`, 5 `tests:`, 13 `docs:`), point d'étape `caa6cce` et consignation `f68171e`, `6a233fd` compris ; fusion de `main` `859097e`. P294 à P311 ; ADR 0016 accepté (P309), ADR 0014 annoté. Fable : 0 sur 3. Aucune trajectoire des bancs ni aucun verdict publié changé ; concordance stricte 92 / 92. Sorties remesurées par `architect` au point d'étape sur une extraction de `7fc1cdf` (stdout seul, code 0) : script 206 094 octets, `052db4c4…4251` ; maquette 57 109 octets, `2020d57b…8f7b` ; bancs, globale `b8cbd18d…d7d3`. Branche suivante : ligne 13 ter (§ 1). |
+
+### Complément du rang 1 de la ligne 14 (`claude/j3-e3-critere-i1`, tête `368e7b1`, PR #208), 28/11/2026
+
+Critères écrits avant l'essai au rang 1 de la ligne 14 par `macro` (fiches 2 à 6 et 9, #139, #140, #187) et par `monnaie` (fiches 7 et 8, #131), inventaires de I1 et mesures déclarées faites avant l'écriture des critères, consignés par le commit qui ajoute le présent complément, antérieur à tout commit de test de la ligne 14 (critère commun, tête, § 1). Décisions du mainteneur du 28/11/2026 qui les fixent : P328 à P332 (tête, § 4). Textes des experts recopiés sans reformulation du fond ; mise en forme seule (titres, astérisques échappés). Suivent les extraits de la tête à `368e7b1` remplacés au rang 1, copiés sans modification. Ces critères ne se déplacent pas après observation ; une correction serait prospective, l'ancien verdict restant publié.
+
+#### Décompte des lignes (e) (décisions du mainteneur du 28/11/2026, texte de la session)
+
+Décompte : lignes (e) = 5 (`macro` : I1-e1 à I1-e5) + 4 (`monnaie` : E-7a, E-7b, E-8a, E-8b) = 9 ≤ 12. Aucune condition d'arrêt.
+
+#### Critères de `macro` (fiches 2 à 6 et 9, #139, #140), écrits avant l'essai
+
+Critères écrits avant l'essai (agent macro, rang 1 de la ligne 14, 28/11/2026), à consigner dans la PR #208
+
+Mesures faites avant l'écriture, déclarées : (1) script d'état stationnaire, D_F/(12 PIB) à Δr = 0 et ±2 pts : 0,166187838170 dans les trois cas ; (2) sonde de 3 pas : i_L d'ouverture du pas 3 = 0,050200 au contrôle, 0,070200 sous ϖ_L + 2 pts, ς_L accepté, variables y, p, N_suivant présentes ; (3) #187. Aucune grandeur jugée par un des critères ci-dessous n'a été mesurée.
+
+Convention : tour n = pas t = n − 1 ; « socle complet » = huit blocs réels, aucun bloc d'essai, état initial du moteur (nations.scenarios.initial.etat_initial), table T1, n_a = 12, ν_G = 1,15 ; chocs injectés par composition dans tests/ ; « contrôle apparié » = même banc, sans choc.
+
+#139 (P324) — Endettement, dépôts, socle complet
+- Grandeur : x_t = D_F,t / (n_a · PIB_t) ; D_F d'ouverture du pas t ; PIB_t = somme des lignes 1 à 4 exécutées au pas t (convention de B15) ; années de PIB.
+- Référence : x\* = D_F/(n_a PIB) de la résolution à π\* = 2 % (forme fermée ν_F p v^e/(p v + ΔIN), qui ne lit pas le taux) = 0,166187838170.
+- Choc : ϖ_L porté de 0,02 à 0,04 par an dans la table du bloc banque, dès le pas 0 et maintenu (i_L d'ouverture + 2 points à l'impact ; i_CB endogène).
+- Critère : max sur t ∈ [6 480 ; 6 720[ de |x_t/x\* − 1| ≤ 1e−6 ; π\* = 2 % ; 6 720 pas exécutés.
+- Publiés sans verdict : écart au pas 2 159 (critère d'origine), levier et distribution, Δi_L et Δi_CB au pas 6 719.
+
+#140 (P150) — Refus de la moitié du crédit, socle complet
+- Scénario : ς_L,t = 0,5 aux pas 0 à 11 (tours 1 à 12), 0 ensuite ; contrôle apparié ; π\* ∈ {0 ; 2 % ; 10 %} ; 720 pas.
+- Bornes : plancher du dividende des entreprises, active si la ligne 14 exécutée = 0 ; D_F ≥ 0 en lecture nette, active si D_F de clôture ≤ 0.
+- Critère, aux trois π\* : 720 pas sans arrêt du noyau ni du moteur ; pour chaque borne, l'ensemble A des pas actifs est vide, ou bien A ⊂ [0 ; 23] et A est un intervalle d'entiers consécutifs.
+- Probance (intention reportée, P150), publiée sans seuil : nombre de pas actifs ; min de la ligne 14 et du rapport ligne 14 / contrôle ; min de D_F/S^F ; plus forte baisse relative de I^{vol,plan} contre le contrôle sur les pas 0 à 23 ; demande de crédit non satisfaite cumulée ; Div_Bk = 0 (fiche 7, monnaie). Si aucune borne ne s'active : « tenu, non probant pour le délai de désactivation ».
+
+I1-e1 (fiches 2 et 9 ; #114, commentaire du 13/11/2026) — G + 5 % sur 12 tours en boucle fermée
+- Choc : θ_G × 1,05 aux pas 0 à 11 ; π\* ∈ {0 ; 2 % ; 10 %} ; 720 pas.
+- Critère : (i) 720 pas sans arrêt du noyau ni du moteur ; (ii) à chaque pas, |ligne 2 / G demandée − 1| ≤ 1e−12, avec G_plan = G_vise (plafond de E1 inactif).
+
+I1-e2 (fiche 3, instabilité 15, critère 7 (c))
+- Dimensionnement : f\* est le plus petit f ∈ {1,05 ; 1,10 ; 1,15 ; 1,20} tel que, sous θ_G × f aux pas 0 à 11, la borne N ≤ N^pa soit active à au moins un des pas 0 à 11. Active : N_suivant ≥ N^pa d'ouverture (définition du test zéro, C1).
+- Critère : π\* = 2 % (0 et 10 % sont publiés) ; 720 pas sous f\* sans arrêt ; les pas actifs sont dans [0 ; 23] et forment un intervalle d'entiers consécutifs.
+- Si aucun f n'active la borne : la ligne est non probante ; constat publié (max N_suivant/N^pa pour chaque f) ; renvoi au jalon J4 (#53) à décider par le mainteneur, la ligne étant « J3 ou J4 ».
+
+I1-e3 (fiche 4, alternance étendue)
+- Choc : θ_G × 1,01 au seul pas 0 (tour 1) ; contrôle apparié.
+- Grandeurs, sur les pas 1 à 12 (tours 2 à 13) : (a) a_t = ln p_t − ln p^c_t ; (b) b_t = (ln p_t − ln p_{t−1}) − (ln p^c_t − ln p^c_{t−1}).
+- Changements de signe : comptés sur la suite des termes de |x| > 1e−12.
+- Critère : au plus 2 changements de signe pour (a) et au plus 2 pour (b), à π\* = 2 %.
+- Publiés sans verdict : π\* = 0 et 10 % ; λ_v et λ_IN × 2 ; ψ × 2.
+
+I1-e4 (fiche 5, persistance, condition 10 de jeu)
+- Chocs : (G) θ_G × 1,01 aux pas 0 à 11 ; (Tr) θ_Tr = 0,01 · θ_G aux pas 0 à 11, 0 ensuite (même impulsion nominale que G). Contrôle apparié ; 720 pas ; π\* = 2 % (0 et 10 % sont publiés).
+- Grandeur : e_t = y_t/y^c_t − 1 (production en volume du pas). t_pic = premier pas où |e_t| est maximal sur [0 ; 719] ; pic = |e_{t_pic}|.
+- Critère, pour chacun des deux chocs : |e_t| ≤ pic/2 pour tout t ∈ [t_pic + 60 ; 719].
+- Publiés : t_pic, premier pas où |e_t| ≤ pic/2, max sur t ≥ t_pic + 60 de |e_t|/pic.
+
+I1-e5 (fiche 5, superneutralité C15 ; seuil « fixé avec #49 », jamais fixé)
+- Grandeurs, sur la résolution (pas 0) à π\* ∈ {0 ; 2 % ; 10 %} : V_H/(n_a·Y_o) et C/Y_o, avec Y_o = YD − i_D·D_H/n_a et V_H = D_H (B_H ≡ 0).
+- Critère : (max − min)/(valeur à 2 %) ≤ 1e−3 pour chacune des deux grandeurs.
+- Si le critère n'est pas tenu : xfail(strict=True) avec #80 ; l'écart recalculé à r̄ tenu à sa valeur de 2 % (script, r_neutre) est publié comme attribution.
+
+#### Inventaire de I1, fiches 2 à 6 et 9 (`macro`, rang 1, recopié de son compte rendu)
+
+Sources : #114 (corps et quatre commentaires), I1 (`.tex` l. 3964), tableaux § 9.6 des fiches. Classes : (t) tenue par un verdict publié ; (e) à exécuter sur le socle complet ; (s) jugée par S1, S2 ou E1 ; (c) critère à fixer.
+
+| # | Fiche | Ligne | Seuil d'origine (source) | Classe, référence |
+|---|---|---|---|---|
+| 1 | 2 | Boucle fermée | rayon < 1 à la calibration et aux vitesses × 0,5 et × 2 (production.md l. 1143) | (s) S1, J3-f1 |
+| 2 | 2 | Vitesses en boucle fermée, avec λ_N (#114, comm. 1) | ≤ 1e−6 après 720 pas (l. 1141) | (s) S2, J3-f2 |
+| 3 | 2 et 9 | G + 5 % sur 12 tours, sans arrêt (#114, comm. 1) | « doit passer sans arrêt » ; exécuté/demandé = 1 à 1e−12 (finances_publiques.md l. 1990) | (e) I1-e1 |
+| 4 | 3 | Boucle combinée 5 (c) | rayon < 1 ; période de 36 à 96 tours (travail.md l. 1187) | (s) S1 |
+| 5 | 3 et 4 | Boucle salaires–prix 5 (d) / 5 (e) | \|λ − 1\| ≤ 1e−8 pour la racine nominale ; les autres racines < 1 (prix.md l. 1328) | (s) S1 |
+| 6 | 3 | Instabilité 15, borne N ≤ N^pa (« J3 ou J4 ») | inactive au plus tard 12 tours après la fin du choc, sans réactivation (l. 1190) | (e) I1-e2 |
+| 7 | 4 | Boucle prix–stocks–demande 5 (f) | rayon < 1 (l. 1329) | (s) S1 |
+| 8 | 4 | Alternance étendue au m effectif | ≤ 2 changements de signe pour (a) et pour (b) (l. 1330) | (e) I1-e3 |
+| 9 | 5 | Test zéro | bandes du critère 7 (menages.md l. 1833) | (t) B10, B11, C1, F1 ; P261 (`test_zero.py`) |
+| 10 | 5 | Superneutralité C15 | « seuil fixé avec #49 » (l. 1832), jamais fixé ; #49 close | (c) → (e) I1-e5 |
+| 11 | 5 | Boucle conjointe | rayon < 1 hors de la racine nominale (l. 1825) | (s) S1 |
+| 12 | 5 | Persistance (condition 10 de `jeu`) | sous la moitié du pic en ≤ 60 tours (l. 1834) ; « critère à écrire avant l'essai » (l. 1471) | (c) → (e) I1-e4 |
+| 13 | 5 | Instabilité 15, scénario adverse (« J3 ou J4 ») | scénario non défini (`.tex` l. 2104) | (c) → renvoyée à J4 (#53), P331 (c) |
+| 14 | 5 | Confirmation de P130 (« Vitesses ») | écart absolu 1e−6 sur le taux d'épargne, écart divisé par ≥ 100 de 720 à 1 440 pas | (s) S2 |
+| 15 | 6 | Test zéro | critère 8 (investissement.md l. 2108) | (t) B2, B12 à B15 ; P261 |
+| 16 | 6 | Boucle conjointe complète | rayon < 1 (l. 2096) | (s) S1 |
+| 17 | 6 | Boucle investissement–demande au m effectif, dont λ_ti × 2 à m = 0,8 (P140) | rayon < 1 sur toutes les vitesses × 0,5 et × 2 ; A > 0 (l. 2096) | (s) S1 |
+| 18 | 6 | (b-x) en régime B | idem (l. 2096) | (s) S1 (« chaque régime de l'emploi ») |
+| 19 | 6 | C36 | (i) gain statique < 0 ; (ii-a) point fixe à 1e−6 ; (ii-b) < 1e−3 en 20 demi-vies ; (iii) (l. 2098) | (s) : S1 pour (i) et (iii), S2 pour (ii) |
+| 20 | 9 | Vitesses et arrivée | 1e−6 après H (finances_publiques.md l. 1994) | (s) S2 |
+| 21 | 9 | Stabilité | rayon < 1 ; gain statique < 0 (l. 1995) | (s) S1 |
+| 22 | 9 | Test zéro | critère 15 (l. 2000) | (t) B19, B21, B22, C1 ; P261 |
+| 23 | 9 | « −2 points » | distribution > 0, ζ < 17,85 (l. 2001) | (t) `tests/unitaires/test_investissement.py:585` |
+| 24 | 9 | Superneutralité | E1 | (t) échec attendu strict, #80 |
+| 25 | 8, frontière | Seuil du ratio de sacrifice de T3 ↔ BC3 (amendement du 14/11) | aucun | (s) vers #163 (J3-f1), P331 (a) |
+
+Constat de la ligne 23 : `uv run pytest -q -rxX "tests/unitaires/test_investissement.py::test_distribution_positive_sous_un_ecart_de_taux_de_moins_deux_points" "tests/invariants/test_investissement.py::test_endettement_depots_sur_leur_forme_fermee_apres_2160_pas"` → « 1 passed, 1 xfailed ».
+
+Remarque de `macro` : les lignes 4 et 5 ont besoin de la méthode d'identification des boucles de S1 ; elles sont classées (s), non (c). S1 publie les boucles identifiées « sans seuil » alors que ces lignes en ont un (point ouvert P331 (b)).
+
+#### #187 : détail (`macro`)
+
+- Origine : `git log -S"1,0015 fois" --all` → `b5e98f8` (15/11/2026, `docwriter`, rang 6 de J3-d1), dont la surface cite `ea2e0da` (création de `test_bornes_d_de_la_fiche_5_en_o2`). `098d200` apparaissait comme racine parce que le clone est superficiel (`git rev-parse --is-shallow-repository` → `true`).
+- Rejeu à `ea2e0da` (`git archive ea2e0da | tar -x`, puis `uv run pytest -q -s tests/invariants/test_stationnarite_j3d1.py -k bornes_d_de_la_fiche_5`) : minimum 1,001561 (π\* = 0, G × 1,05) ; à 2 % : 1,003287 et 1,003214 ; à 10 % : 1,009620 et 1,009548 ; mois de consommation de 12,03 à 12,25. Calibration indicative (ν_H = 1 an) : 1,0015 est l'arrondi par défaut de 1,001561.
+- Remesure à T1 (`368e7b1`, `uv run pytest -q -s tests/invariants/test_stationnarite_j3d1.py -k bornes_d_de_la_fiche_5_en_o2`) :
+
+| π\* | G × 1,01 | G × 1,05 |
+|---|---|---|
+| 0 % | 0,998340 | 0,997964 |
+| 2 % | 0,998454 | 0,998076 |
+| 10 % | 0,998409 | 0,998031 |
+
+- Minimum 0,997964 → republication « jamais sous ~~1,0015~~ 0,9979 fois » (même arrondi par défaut). Verdict D_H ≥ 0 tenu : min D_H/S^H ≥ 0,498982.
+
+#### Inventaire et critères de `monnaie` (fiches 7 et 8, #131), écrits avant l'essai
+
+##### Inventaire de I1, fiches 7 et 8
+
+Seize entrées : 5 en (t), 5 en (s), 4 en (e), 2 scindées (C43, C46).
+
+| # | Fiche, ligne | Classe ; référence |
+|---|---|---|
+| 7-1 | Vitesses (critère 9) | (s) S2, J3-f2 ; à préciser dans S2 : B17, B18, ratio de B19, nullité de Res |
+| 7-2 | Test zéro (critère 11) | (t) P261, `.tex` l. 3969-3975, `tests/invariants/test_zero.py` |
+| 7-3 | C43 | scindée : (t) canal rentier republié (l. 2770 : 0,313 / 0,531 / 0,828 %) ; (t) rendement marginal à i_CB (F6, « Couverture ») ; (t) θ_H inchangé, couplage −ϑ·lv\* (l. 2784) ; **(e) E-7a** |
+| 7-4 | (d2), (d3) parts de ΔYD | **(e) E-7b** |
+| 8-1 | Neutralité de s_CB (C59) | (t) P160, P174 |
+| 8-2 | Stabilité 11 (a) | (s) S1 |
+| 8-3 | Vitesses (critère 7) | (s) S2 (H redéclaré à 5 450 pas) |
+| 8-4 | Gain statique | (s) S1 (décision 4 (f)) |
+| 8-5 | Clause II.7 | (s) S1 et #163 ; partie ADR 0010 (t) |
+| 8-6 | Cible relevée | **(e) E-8a**, après #131 |
+| 8-7 | Persistance | **(e) E-8b**, lecture (i) (décision 2) |
+| 8-8 | Superneutralité (13) | (t) échec attendu strict #80, E1 |
+| 8-9 | C46 | scindée : (t) gain statique publié et identité Δr̄/k_I (P87) ; (s) Δr̄ après G + 1 % permanent → #88, J3-f2 |
+| 8-10 | Test zéro (17) | (t) P261 |
+| 8-A | Ratio de sacrifice T3 ↔ BC3 | (s) vers #163 (décision 4 (a)) |
+| 8-B | H de la fiche 8 (P91) | (s) S2 (5 450 pas) |
+
+##### Banc commun des lignes (e)
+
+Socle complet `socle.blocs_du_socle_complet()`, tables `socle.parametres_du_sentier(socle.sentier(0.02))` (T1, ζ = 8, ν_G = 1,15, n_a = 12), état `socle.etat_initial`, contrôle apparié sans choc, chocs par composition dans `tests/` (F1). Aucun arrêt du noyau ni refus du moteur ; sinon « non mesurable » et rapport. Chaque composition qui copie le corps de `phase_1` est soumise au contrôle K2 de fidélité au bit.
+
+- **E-7a (C43, date et signe de la consommation)** : choc (A) de P275 (r̂\* + 0,01/(1 + π\*) à l'ouverture du pas 0, retiré au pas 12, `_hausse_de_taux_d_un_point`), sous φ = 1 et φ = 0 (`_sous_phi_nul`). Grandeur ΔC^plan_t/C^plan_t,c, sans dimension, par pas. « Inchangé » si ≤ 1e−12, « modifié » si > 1e−9, « non concluant » entre les deux. φ = 0 : inchangé aux pas ≤ 0, modifié au pas 1 (tour n + 1), signe +. φ = 1 : inchangé aux pas ≤ 1, modifié au pas 2 ; signe publié sans verdict. Délai lu par H5 : frontière de `macro`.
+- **E-7b (parts de ΔYD)** : même choc, φ = 1 (référence), φ = 0 publié comme mesure. Pour k ∈ {5, 6, 7, 10, 11a, 14, 15}, Δ_k,t = montant exécuté dans la colonne des ménages, choc moins contrôle, en u.m. par pas ; ΔYD_t = Σ_k Δ_k,t, contrôlé contre ΔYD_m1 de l'état à 1e−12 relatif à YD ; part_k,t = Δ_k,t/ΔYD_t aux pas 1, 2 et 11 (tours 2, 3, 12). Si |ΔYD_t| ≤ 1e−9 YD_t, publier Δ_k,t/YD_t avec la mention « ΔYD nul à 1e−9 ». Verdict : la publication, aucun seuil.
+- **E-8a (cible relevée)**, après #131 : marche π\*_0 = 0,03 dans l'état d'ouverture du pas 0 (BC4 la reconduit). Horizon H = 10 900 pas (40 demi-vies de 272,50 tours). Moyennes sur [H − 12 ; H − 1] :
+  - (a) |(π̄_choc − π̄_c) − 0,01| ≤ 1e−6, avec π̄ = P_t/P_{t−12} − 1 (fraction par an) ;
+  - (b) |U_choc − U_c| ≤ 1e−6 (fraction de N^pa) ;
+  - (c) M/(12 PIB) = (D_H + D_F)/(12 PIB) stationnaire : |m_H/m_{H−60} − 1| ≤ 1e−6 (m : moyenne sur 12 pas), valeur publiée ;
+  - (d) |r̂\*_H − r̄_α(3 %)| ≤ 0,01 pt, r̄_α(3 %) calculé par `outils/etat_stationnaire.py` (lecture (α)) au ζ de la table. Si #131 classe (C) ou (I) sous (A) : (d) publiée sans verdict, rapport au mainteneur (« continuum révélé ») ; (a) et (b) restent jugées.
+  - Contrôle d'arrivée : à H′ = H − 1 362, chaque grandeur s'écarte au plus de 0,1 fois son seuil, sinon « non concluant (horizon) ».
+- **E-8b (persistance)**, lecture (i) : sous-classe du bloc 8, i_CB,t = i_CB,0 − 0,01 pour tout t, avec i_CB,0 = (1 + r̄)(1 + π\*) − 1 ; i^règle publié ; r̂\* inchangé (BC2 hors de la boucle) ; BC3 et BC4 inchangées ; φ = 1 (C-HS). Grandeur e_t = g_t − g_t,c, g = P_t/P_{t−12} − 1.
+  - V1 : premier pas où |e_t| > 1e−12 au plus le pas 2 (tour 3), signe + ;
+  - V2 : g_119 − π\* ≥ 0,001 (tour 120) ; e_119 publié ;
+  - classement publié sans verdict, sur 2 400 pas : « nouveau palier » si |ē| ≥ 1e−3 et si les moyennes de e sur [2 280 ; 2 340[ et [2 340 ; 2 400[ diffèrent de moins de 1e−5 ; « retour » si |e_2399| < 1e−3 ; « dérive continue » sinon. e publié aux tours 3, 12, 60, 120 et 2 400 ; le palier sert à C46.
+
+##### #131, point 2 seul (mesure, constat sans verdict ; visa `monnaie`, `macro` consulté)
+
+- Banc : socle complet, tables `socle.parametres_du_sentier(socle.sentier(0.02, lambda_e=λ_e, nu_G=1.15))`, λ_e ∈ {0,1 ; 0,2 ; 0,4} ; état `socle.etat_initial(sentier, choc_pi_e0=Δ)`, Δ ∈ {+0,01 ; −0,01} ; contrôle apparié Δ = 0 par λ_e et par forme (12 essais, 6 contrôles).
+- Formes : (A) bloc 8 réel ; (L) sous-classe `BanqueCentrale` dans `tests/`, seule BC2 change : r̂\*_{t+1} = r̂\*_t + (a_I/n_a)[ln(1 + π_{t−1}) − ln(1 + π\*_t)] (sous-classe paramétrée par la fonction de BC2, précédent `bloc_9_compose`, plutôt qu'un `monkeypatch`).
+- Horizon H = 14 228 pas (40 demi-vies de 355,69 tours, branche λ_e = 0,1). Coût estimé ≈ 2 min.
+- Grandeurs à π\* = 2 % : R = moyenne sur [H − 12 ; H − 1] de (r̂\*_t − r̂\*_t,c), en point de % par an (r̂\*_t,c − r̄ publié) ; L = même moyenne de ln(P_t/P_t,c) (ln(P_t/P\*_t), P\*_t = P_0(1 + π\*)^{t/n_a}, publié) ; R/Δ² par signe ; D_R = max_λ R − min_λ R par forme et par signe.
+- Contrôles de validité (concluant / non concluant, pas des verdicts du modèle) :
+  - K1 : aucun arrêt ni refus sur les 18 trajectoires ;
+  - K2 : la sous-classe munie de BC2 arithmétique reproduit au bit le bloc réel (λ_e = 0,2, Δ = +0,01, 720 pas) ;
+  - K3 : identités télescopiques à 1e−11 (absolu, fraction) ; sous (L) : r̂\*_H − r̂\*_0 = (a_I/n_a)[Σ_{k=H−13}^{H−2} ln(P_k/P\*_k) − Σ_{k=−13}^{−2} ln(P_k/P\*_k)] ; sous (A) : même écart plus le terme de Jensen J_H = (a_I/n_a)Σ_t[π_{t−1} − ln(1 + π_{t−1}) − (π\* − ln(1 + π\*))], publié en écart au contrôle ;
+  - K4 : |R_H − R_{H′}| ≤ 1e−7 pt et |L_H − L_{H′}| ≤ 4e−9, H′ = 10 671 ; sinon une seule extension à 2H, déclarée ; au-delà, rapport.
+- Classification par forme (constat), ε_R = 1e−6 pt, ε_L = 4e−8 :
+  - (F) « r̂\* fixé par la boucle » : max |R| ≤ ε_R sur les trois λ_e et les deux signes ;
+  - (C) « continuum de r̂\* au socle complet » : D_R > ε_R pour un signe au moins → relève de S1, rapport au mainteneur ;
+  - (I) « écart permanent indépendant de λ_e » : |R| > ε_R et D_R ≤ ε_R → rapport ;
+  - niveau des prix sous (L) : « ramené au sentier » si max |L| ≤ ε_L ; sous (A), L publié avec sa dépendance à λ_e (constat à verser aux points 1 et 3 de #131, hors de la ligne).
+- Chiffre « r̂\* de #131 » : décision 4 (e).
+
+##### Mesures faites avant d'écrire les critères (déclarées)
+
+M1 (banc de #131 sans choc, 24 pas, trois λ_e : sentier tenu à 2,4e−17, 0,45 à 0,57 ms/pas), M2 (BC2 log par sous-classe, assemblée, écart −1,73e−18 sans choc), M3 (demi-vies de la maquette : 272,50 / 355,69 / 241,03 / 558,31 tours), M4 (échelles S^CB et S^Bk), M5 (trois compositions exécutées 2 pas, sans réponse relevée), M6 (sortie publiée du script : dθ_G/dr̄ = −0,266955, canal rentier). Aucune réponse du socle complet à un choc n'a été mesurée.
+
+#### Extraits de la tête à `368e7b1` remplacés au rang 1 de la ligne 14
+
+En-tête :
+
+**Dernière mise à jour** : 28/11/2026, rang 0 de la ligne 14 (`architect`) — `main` = `c93ddd8` (PR #203, § 7) ; branche `claude/j3-e3-critere-i1` créée depuis `c93ddd8`, PR brouillon #208 (§ 1) ; P323 à P327 décidées (§ 4) ; #204 à #207 rattachées (§ 3) ; extraits sortis : historique, partie J, complément du rang 0 de la ligne 14. Mises à jour antérieures : même lieu, puis partie J et ses compléments, partie I et ses compléments, parties H à A et `git log -- docs/feuille-de-route.md`.
+
+§ 1, périmètre, rangs 0 à 5, critères d'acceptation (en-tête, #114, #131, #139, #140, #187) et vigilance :
+
+**Périmètre (P323)** : avec `Closes` : #139 et #169 (critère de #169 retenu pour #139, P324), #140, #187 ; #114 : `Closes` seulement sous la lecture stricte de P325, décidé après l'inventaire du rang 1 ; #131 : point 2 seul (mesure), sans `Closes`. Aucun fichier de `src/` ni d'`outils/` n'est touché : tests du socle complet (`tests/invariants/`) et, au rang 7, la spécification.
+
+| Rang | Issue | Travail | Pilote ; circuit | Résultat attendu | État |
+|---|---|---|---|---|---|
+| 0 | — | Consignation (feuille de route, historique, partie J ; P323 à P327) ; PR brouillon | `architect` ; session | — | **en cours** (présent commit) |
+| 1 | toutes | Inventaire de I1 (#114, corps et quatre commentaires : seuil d'origine, classe (t) tenue par un verdict publié, (e) à exécuter, (s) jugée par S1, S2, F2 ou E1, (c) critère à fixer) ; critère de #139 (P324) confirmé ; critères de #140 (P150) et de #131 (point 2) écrits avant l'essai ; origine de « 1,0015 » (#187) ; le mainteneur tranche | `macro` (fiches 2 à 6 et 9), `monnaie` (fiches 7 et 8, #131) ; Opus `high` | aucun | à faire |
+| 2 | #139, #169 | « Endettement, dépôts » de la fiche 6 sur le socle complet, critère de #169 (P324) ; ancien verdict publié | `macro` ; circuit 2 | verdict nouveau ; visa du mainteneur | à faire |
+| 3 | #140 | Refus de la moitié du crédit aux tours 1 à 12 (C31, ς_L) sur le socle complet, critère du rang 1 (P150) | `macro` ; circuit 2 | verdict nouveau ; visa du mainteneur | à faire |
+| 4 | #131 | Mesure du point 2 : BC2 arithmétique et en log (forme log par composition dans `tests/`, F1), λ_e ∈ {0,1 ; 0,2 ; 0,4}, ±1 point sur π^e_0 ; r̂\*_∞ − r̄ et ln(P_∞/P\*_∞) | `monnaie`, `macro` consulté ; circuit 1 (mesure) | constat ; chiffre « r̂\* de #131 » republié ou barré (P267) | à faire |
+| 5 | #114 | Lignes (e) de l'inventaire, un commit `tests:` par fiche, vertes ou `xfail(strict)` avec issue ; tableau des verdicts | `macro`, `monnaie` selon la fiche ; circuit 2 | verdicts nouveaux ; visa du mainteneur | à faire |
+
+**Critères d'acceptation, écrits avant l'essai** (P323 ; précisés au rang 1 par la confirmation de P324 et les critères consignés dans la PR) :
+- **#114** : chaque ligne citée par l'issue (corps et quatre commentaires) a une classe et une référence ; chaque ligne (e) est verte ou en `xfail(strict=True)` avec son issue ; `Closes` selon P325 ;
+- **#131** : mesure publiée aux deux formes et aux trois λ_e, selon le critère du rang 1 ; chiffre « r̂\* de #131 » republié ou barré avec renvoi (P267) ; décision sur la forme de BC2 (points 1 et 3) hors de la ligne ;
+- **#139** (P324) : max |écart| ≤ 1e−6 sur [6 480 ; 6 720[ sur le socle complet, sous réserve de la confirmation du rang 1 ; marque `xfail` retirée si tenu (règle des tests), ancien verdict publié ;
+- **#140** : test du refus de la moitié du crédit avec son critère ; intention reportée (P150) écrite au rang 7 ;
+- **#187** : origine retrouvée et citée, ou « non retrouvée » déclarée et soumise au mainteneur ; valeur barrée, valeur remesurée à T1 avec sa commande (piste : phrase entrée dans le `.tex` par `098d200`, `git log -S"1,0015 fois"`).
+
+**Vigilance** : #163 avant la démonstration J4 (condition de M34) ; seuil du ratio de sacrifice de la boucle T3 ↔ BC3 (#114, amendement du 14/11/2026) à classer (s) vers #163 (J3-f1) au rang 1 ; sorties du script et de la maquette tenues par aucune batterie (#179) : remesure sur stdout seul à chaque commit `tests:` ; valeurs à `c93ddd8` : § 7.
+
+§ 2, ligne 14 :
+
+| Ordre | Branche | Issues | Motif du regroupement et état |
+|---|---|---|---|
+| 14 | J3-e3 « critère I1 » `claude/j3-e3-critere-i1` — **en cours** depuis le 28/11/2026 (PR brouillon #208 ; § 1) | #114 (`Closes` selon P325), #131 (point 2, mesure), #139 (avec #169, P324), #140, #187 (P323) | Lignes « J3 » des fiches sur le socle complet depuis l'état résolu (P122, P150, P324) ; inventaire de I1 au rang 1. #187 : origine de « 1,0015 », `macro`. Ligne 13 ter, fusionnée : § 7. |
+
+§ 3, en-tête du relevé et lignes #114/#131, #169 et #187 :
+
+*Relevé du 28/11/2026, point d'étape après la fusion de la PR #203* : **69 issues ouvertes** (`list_issues`, état ouvert, `totalCount` = 69, `architect`, 28/11/2026 ; 70 au rang 0 de la ligne 13 ter, plus #204 à #207 créées, moins #185, #186, #188, #191 et #198 fermées par la PR #203). En-têtes des relevés antérieurs, lignes alors modifiées et dépendances d'alors : historique, partie J (§ 3 et compléments), et partie I et ses compléments. La colonne « Branche prévue » n'est pas reportée sur GitHub.
+
+| Issue | Objet | Branche prévue | Remarque |
+|---|---|---|---|
+| #114, #131 | Critère I1 ; BC2 en log | **ligne 14, rangs 1 et 5** (#114, `Closes` selon P325) ; **rang 4** (#131, point 2, sans `Closes` ; P101, P323) | reçoit les lignes (c) des fiches 5 et 6 (P122) et l'exécution de #139 et #140 ; #131 reçoit « r̂\* » de #171 (P267) |
+| #169 | Critère « Endettement » de #139 en enveloppe | **ligne 14, rang 2**, avec #139 (P324) | correction prospective retenue (P324), à confirmer au rang 1 sur l'avis de `macro` ; remplace P149 |
+| #187 | Ligne (d) de `sec:menages-conditions` : « 1,0015 » non reproduit à T1 | **ligne 14, rang 7** (P300, P323) | `macro` ; origine du chiffre à retrouver (phrase entrée dans le `.tex` par `098d200`) |
+
+§ 4, points ouverts (en-tête et dernière ligne) :
+
+**Points ouverts au 28/11/2026** (rang 0 de la ligne 14 ; version du rang 10 de la ligne 13 ter : historique, partie J, complément du rang 0 de la ligne 14) :
+- en attente du mainteneur : #190 ; Q-b à Q-d ; suppression de la branche distante `ccr-e5be5328-tvkv0d`.
 
 ## Partie I : extraits de la tête sortis le 26/11/2026 (point d'étape après la fusion de la PR #174, rang 0 de la branche 12 bis), figés
 
